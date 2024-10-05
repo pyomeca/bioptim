@@ -69,9 +69,9 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path, segments_to_apply_external_forces=["Seg1", "Test"])
-    # segments_to_apply_external_forces is necessary to define the external forces.
-    # Please note that they should be declared in the same order as the external forces values bellow.
+    bio_model = BiorbdModel(biorbd_model_path, segments_to_apply_forces_in_global=["Seg1", "Test"])
+    # segments_to_apply_forces_in_global is necessary to define the external forces.
+    # Please note that they should be declared in the same order as the external forces (in the global reference frame) values bellow.
 
     # Problem parameters
     n_shooting = 30
@@ -83,19 +83,19 @@ def prepare_ocp(
 
     # External forces (shape: 9 x nb_external_forces x (n_shooting_points+1))
     # First components are the moments and forces
-    external_forces = np.zeros((9, 2, n_shooting + 1))
-    external_forces[5, 0, :] = -2
-    external_forces[5, 1, :] = 5
-    external_forces[5, 0, 4] = -22
-    external_forces[5, 1, 4] = 52
+    forces_in_global = np.zeros((9, 2, n_shooting + 1))
+    forces_in_global[5, 0, :] = -2
+    forces_in_global[5, 1, :] = 5
+    forces_in_global[5, 0, 4] = -22
+    forces_in_global[5, 1, 4] = 52
     if use_point_of_applications:
         # Last components are the point of application
-        external_forces[6, 0, :] = 0.05
-        external_forces[7, 1, :] = 0.01
-        external_forces[8, 0, :] = 0.007
-        external_forces[6, 1, :] = -0.009
-        external_forces[7, 0, :] = -0.05
-        external_forces[8, 1, :] = -0.01
+        forces_in_global[6, 0, :] = 0.05
+        forces_in_global[7, 1, :] = 0.01
+        forces_in_global[8, 0, :] = 0.007
+        forces_in_global[6, 1, :] = -0.009
+        forces_in_global[7, 0, :] = -0.05
+        forces_in_global[8, 1, :] = -0.01
 
     # Dynamics
     dynamics = DynamicsList()
@@ -104,7 +104,7 @@ def prepare_ocp(
         DynamicsFcn.TORQUE_DRIVEN,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
-        numerical_data_timeseries={"forces_in_global": external_forces},  # the key word "forces_in_global" must be used
+        numerical_data_timeseries={"forces_in_global": forces_in_global},  # the key word "forces_in_global" must be used
     )
 
     # Constraints

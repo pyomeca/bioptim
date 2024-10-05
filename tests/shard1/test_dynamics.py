@@ -49,10 +49,23 @@ class OptimalControlProgram:
 def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics, phase_dynamics):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
+
+    segments_to_apply_forces_in_global = None
+    segments_to_apply_translational_forces = None
+
+    if with_external_force:
+        segments_to_apply_forces_in_global = ["Seg0"]
+
+    if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
+        if with_contact:
+            segments_to_apply_translational_forces = ["Seg0", "Seg1"]
+
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod",
-        segments_to_apply_forces_in_global=["Seg0"],
+        segments_to_apply_forces_in_global=segments_to_apply_forces_in_global,
+        segments_to_apply_translational_forces=segments_to_apply_translational_forces,
     )
+
     nlp.ns = 5
     nlp.cx = cx
     nlp.time_cx = cx.sym("time", 1, 1)
@@ -272,8 +285,10 @@ def test_torque_driven_implicit(with_contact, cx, phase_dynamics):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod",
+        segments_to_apply_translational_forces=["Seg0", "Seg1"] if with_contact else None
     )
+
     nlp.ns = 5
     nlp.cx = cx
     nlp.time_cx = cx.sym("time", 1, 1)
@@ -430,7 +445,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod",
-        segments_to_apply_external_forces=["Seg0"],
+        segments_to_apply_forces_in_global=["Seg0"],
     )
     nlp.ns = 5
     nlp.cx = cx
@@ -938,7 +953,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod",
-        segments_to_apply_external_forces=["Seg0"],
+        segments_to_apply_forces_in_global=["Seg0"],
     )
     nlp.ns = 5
     nlp.cx = cx
@@ -1119,7 +1134,7 @@ def test_torque_activation_driven_with_residual_torque(
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/2segments_2dof_2contacts.bioMod",
-        segments_to_apply_external_forces=["Seg0"],
+        segments_to_apply_forces_in_global=["Seg0"],
     )
     nlp.ns = 5
     nlp.cx = cx
@@ -1365,7 +1380,7 @@ def test_muscle_driven(
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod",
-        segments_to_apply_external_forces=["r_ulna_radius_hand_rotation1"],
+        segments_to_apply_forces_in_global=["r_ulna_radius_hand_rotation1"],
     )
     nlp.ns = 5
     nlp.cx = cx

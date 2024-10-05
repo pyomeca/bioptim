@@ -535,7 +535,7 @@ class DynamicsFunctions:
         if with_ligament:
             tau += nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx)
 
-        external_forces = nlp.get_external_forces(time, states, controls, parameters, algebraic_states, numerical_timeseries)
+        external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
@@ -615,7 +615,7 @@ class DynamicsFunctions:
             dxdt[nlp.states["qddot"].index, :] = dddq
             dxdt[nlp.states["tau"].index, :] = dtau
         else:
-            external_forces = nlp.get_external_forces(time, states, controls, parameters, algebraic_states, numerical_timeseries)
+            external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
             ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
             dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
             dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
@@ -1151,20 +1151,23 @@ class DynamicsFunctions:
         if external_forces is None:
             tau = nlp.model.inverse_dynamics(with_contact=with_contact)(q, qdot, qddot, [], nlp.parameters.cx)
         else:
-            if "tau" in nlp.states:
-                tau_shape = nlp.states["tau"].cx.shape[0]
-            elif "tau" in nlp.controls:
-                tau_shape = nlp.controls["tau"].cx.shape[0]
-            else:
-                tau_shape = nlp.model.nb_tau
-            tau = nlp.cx(tau_shape, nlp.ns)
+            # @ipuch not sure of this part
+            tau = nlp.model.inverse_dynamics(with_contact=with_contact)(q, qdot, qddot, external_forces,
+                                                                        nlp.parameters.cx)
 
-            # @pariterre not sure of this part
-            if external_forces is not None:
-                for i in range(external_forces.shape[1]):
-                    tau[:, i] = nlp.model.inverse_dynamics(with_contact=with_contact)(
-                        q, qdot, qddot, external_forces[:, i], nlp.parameters.cx
-                    )
+            # if "tau" in nlp.states:
+            #     tau_shape = nlp.states["tau"].cx.shape[0]
+            # elif "tau" in nlp.controls:
+            #     tau_shape = nlp.controls["tau"].cx.shape[0]
+            # else:
+            #     tau_shape = nlp.model.nb_tau
+
+            # tau = nlp.cx(tau_shape, nlp.ns)
+            # if external_forces is not None:
+            #     for i in range(external_forces.shape[1]):
+            #         tau[:, i] = nlp.model.inverse_dynamics(with_contact=with_contact)(
+            #             q, qdot, qddot, external_forces[:, i], nlp.parameters.cx
+            #         )
 
         return tau  # We ignore on purpose the mapping to keep zeros in the defects of the dynamic.
 
