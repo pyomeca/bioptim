@@ -8,7 +8,7 @@ example a spring) can be found at 'examples/torque_driven_ocp/spring_load.py'
 Please note that the point of application of the external forces are defined from the name of the segment in the bioMod.
 It is expected to act on a segment in the global_reference_frame. Bioptim expects an array of shape [9, nb_external_forces, n_shooting+1]
 where the three first components are the moments, the three next components are the forces and the three last components are the point of application (Mx, My, Mz, Fx, Fy, Fz, Px, Py, Pz)
-You should also specify the name of the segments where the external forces are applied the list "segments_to_apply_external_forces".
+You should also specify the name of the segments where the external forces are applied the list "segments_to_apply_forces_in_global".
 """
 
 import platform

@@ -47,7 +47,7 @@ def states_to_markers(bio_model, states):
 
 def generate_data(bio_model, tf, x0, t_max, n_shoot, noise_std, show_plots=False):
     def pendulum_ode(t, x, u):
-        return np.concatenate((x[nq:, np.newaxis], qddot_func(x[:nq], x[nq:], u, [], [], [])))[:, 0]
+        return np.concatenate((x[nq:, np.newaxis], qddot_func(x[:nq], x[nq:], u, [], [])))[:, 0]
 
     nq = bio_model.nb_q
     qddot_func = bio_model.forward_dynamics()

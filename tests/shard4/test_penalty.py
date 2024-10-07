@@ -52,7 +52,7 @@ def prepare_test_ocp(
     elif with_contact:
         bio_model = BiorbdModel(
             bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod",
-            segments_to_apply_external_forces=["Seg1", "Seg1"],
+            segments_to_apply_forces_in_global=["Seg1", "Seg1"],
         )
         dynamics = DynamicsList()
         rigidbody_dynamics = RigidBodyDynamics.DAE_INVERSE_DYNAMICS if implicit else RigidBodyDynamics.ODE

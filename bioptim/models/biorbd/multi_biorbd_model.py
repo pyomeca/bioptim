@@ -568,13 +568,12 @@ class MultiBiorbdModel:
                     qdot_model,
                     tau_model,
                     [],
-                    [],
                     self.parameters,
                 ),
             )
         casadi_fun = Function(
             "forward_dynamics",
-            [self.q, self.qdot, self.tau, [], [], self.parameters],
+            [self.q, self.qdot, self.tau, [], self.parameters],
             [biorbd_return],
         )
         return casadi_fun
