@@ -467,18 +467,19 @@ class NonLinearProgram:
                 external_forces, DynamicsFunctions.get(self.algebraic_states["forces_in_global"], algebraic_states)
             )
 
-        component_numerical_timeseries = 0
-        for key in self.numerical_timeseries.keys():
-            if "forces_in_global" in key:
-                component_numerical_timeseries += 1
-        if component_numerical_timeseries > 0:
-            for i_component in range(component_numerical_timeseries):
-                external_forces = vertcat(
-                    external_forces,
-                    DynamicsFunctions.get(
-                        self.numerical_timeseries[f"forces_in_global_{i_component}"], numerical_timeseries
-                    ),
-                )
+        if self.numerical_timeseries is not None:
+            component_numerical_timeseries = 0
+            for key in self.numerical_timeseries.keys():
+                if "forces_in_global" in key:
+                    component_numerical_timeseries += 1
+            if component_numerical_timeseries > 0:
+                for i_component in range(component_numerical_timeseries):
+                    external_forces = vertcat(
+                        external_forces,
+                        DynamicsFunctions.get(
+                            self.numerical_timeseries[f"forces_in_global_{i_component}"], numerical_timeseries
+                        ),
+                    )
 
         if "translational_forces" in self.states:
             external_forces = vertcat(
@@ -493,17 +494,18 @@ class NonLinearProgram:
                 external_forces, DynamicsFunctions.get(self.algebraic_states["translational_forces"], algebraic_states)
             )
 
-        component_numerical_timeseries = 0
-        for key in self.numerical_timeseries.keys():
-            if "translational_forces" in key:
-                component_numerical_timeseries += 1
-        if component_numerical_timeseries > 0:
-            for i_component in range(component_numerical_timeseries):
-                external_forces = vertcat(
-                    external_forces,
-                    DynamicsFunctions.get(
-                        self.numerical_timeseries[f"translational_forces{i_component}"], numerical_timeseries
-                    ),
-                )
+        if self.numerical_timeseries is not None:
+            component_numerical_timeseries = 0
+            for key in self.numerical_timeseries.keys():
+                if "translational_forces" in key:
+                    component_numerical_timeseries += 1
+            if component_numerical_timeseries > 0:
+                for i_component in range(component_numerical_timeseries):
+                    external_forces = vertcat(
+                        external_forces,
+                        DynamicsFunctions.get(
+                            self.numerical_timeseries[f"translational_forces{i_component}"], numerical_timeseries
+                        ),
+                    )
 
         return external_forces

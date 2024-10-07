@@ -101,9 +101,11 @@ def generate_data(
     nlp.states = OptimizationVariableContainer(phase_dynamics=phase_dynamics)
     nlp.states_dot = OptimizationVariableContainer(phase_dynamics=phase_dynamics)
     nlp.controls = OptimizationVariableContainer(phase_dynamics=phase_dynamics)
+    nlp.algebraic_states = OptimizationVariableContainer(phase_dynamics=phase_dynamics)
     nlp.states.initialize_from_shooting(n_shooting, MX)
     nlp.states_dot.initialize_from_shooting(n_shooting, MX)
     nlp.controls.initialize_from_shooting(n_shooting, MX)
+    nlp.algebraic_states.initialize_from_shooting(n_shooting, MX)
 
     for node_index in range(n_shooting):
         nlp.states.append(
