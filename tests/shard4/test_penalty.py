@@ -1,5 +1,5 @@
 import pytest
-from casadi import DM, MX, vertcat, horzcat
+from casadi import DM, MX, vertcat, horzcat, Function
 import numpy as np
 import numpy.testing as npt
 from bioptim import (
@@ -51,7 +51,8 @@ def prepare_test_ocp(
         )
     elif with_contact:
         bio_model = BiorbdModel(
-            bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+            bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod",
+            segments_to_apply_forces_in_global=["Seg1", "Seg1"],
         )
         dynamics = DynamicsList()
         rigidbody_dynamics = RigidBodyDynamics.DAE_INVERSE_DYNAMICS if implicit else RigidBodyDynamics.ODE
@@ -111,8 +112,8 @@ def get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d):
         ocp.nlp[0].numerical_timeseries.cx if ocp.nlp[0].numerical_timeseries.cx.shape != (0, 0) else ocp.cx(0, 0)
     )
 
-    return ocp.nlp[0].to_casadi_func(
-        "penalty", val, time, phases_dt_cx, states, controls, parameters, algebraic_states, numerical_timeseries
+    return Function(
+        "penalty", [time, phases_dt_cx, states, controls, parameters, algebraic_states, numerical_timeseries], [val]
     )(t, phases_dt, x[0], u[0], p, a, d)
 
 
@@ -952,6 +953,7 @@ def test_penalty_minimize_comddot(value, penalty_origin, implicit, phase_dynamic
         res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, [], [], [])
 
         expected = np.array([[0], [-0.0008324], [0.002668]])
+        expected = np.array([[0], [-0.0008324], [0.002668]])
         if value == -10:
             expected = np.array([[0], [-17.5050533], [-18.2891901]])
 
@@ -974,9 +976,9 @@ def test_penalty_track_segment_with_custom_rt(penalty_origin, value, phase_dynam
     penalty_type = penalty_origin.TRACK_SEGMENT_WITH_CUSTOM_RT
 
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
-        penalty = Objective(penalty_type, segment="ground", rt=0)
+        penalty = Objective(penalty_type, segment="ground", rt_index=0)
     else:
-        penalty = Constraint(penalty_type, segment="ground", rt=0)
+        penalty = Constraint(penalty_type, segment="ground", rt_index=0)
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
     expected = np.array([[0], [0.1], [0]])
@@ -1262,7 +1264,7 @@ def test_penalty_constraint_total_time(value, phase_dynamics):
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom(penalty_origin, value, phase_dynamics):
     def custom(controller: PenaltyController, mult):
-        my_values = controller.q.cx_start * mult
+        my_values = controller.q * mult
         return my_values
 
     ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
@@ -1345,7 +1347,7 @@ def test_penalty_custom_fail(penalty_origin, value, phase_dynamics):
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom_with_bounds(value, phase_dynamics):
     def custom_with_bounds(controller: PenaltyController):
-        return -10, controller.q.cx_start, 10
+        return -10, controller.q, 10
 
     ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
     t = [0]
@@ -1368,7 +1370,7 @@ def test_penalty_custom_with_bounds(value, phase_dynamics):
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom_with_bounds_failing_min_bound(value, phase_dynamics):
     def custom_with_bounds(controller: PenaltyController):
-        return -10, controller.q.cx_start, 10
+        return -10, controller.q, 10
 
     ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
     t = [0]
@@ -1391,7 +1393,7 @@ def test_penalty_custom_with_bounds_failing_min_bound(value, phase_dynamics):
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom_with_bounds_failing_max_bound(value, phase_dynamics):
     def custom_with_bounds(controller: PenaltyController):
-        return -10, controller.q.cx_start, 10
+        return -10, controller.q, 10
 
     ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
     t = [0]
@@ -1417,7 +1419,7 @@ def test_penalty_custom_with_bounds_failing_max_bound(value, phase_dynamics):
 @pytest.mark.parametrize("node", [*Node, 2])
 @pytest.mark.parametrize("ns", [3, 10, 11])
 def test_PenaltyFunctionAbstract_get_node(node, ns, phase_dynamics):
-    nlp = NLP(phase_dynamics=phase_dynamics)
+    nlp = NLP(phase_dynamics=phase_dynamics, use_sx=False)
     nlp.control_type = ControlType.CONSTANT
     nlp.ns = ns
     nlp.X = np.linspace(0, -10, ns + 1)
@@ -1427,7 +1429,7 @@ def test_PenaltyFunctionAbstract_get_node(node, ns, phase_dynamics):
     nlp.A = np.linspace(0, 0, ns + 1)
     nlp.A_scaled = nlp.A
     tp = OptimizationVariableList(MX, phase_dynamics=phase_dynamics)
-    tp.append(name="param", cx=[MX(), MX(), MX()], mx=MX(), bimapping=BiMapping([], []))
+    tp.append(name="param", cx=[MX(), MX(), MX()], bimapping=BiMapping([], []))
     nlp.parameters = tp["param"]
 
     pn = []

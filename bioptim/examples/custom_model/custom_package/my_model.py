@@ -6,7 +6,7 @@ but it is possible to use bioptim without biorbd. This is an example of how to u
 from typing import Callable
 
 import numpy as np
-from casadi import sin, MX
+from casadi import sin, MX, Function
 from typing import Callable
 
 
@@ -20,6 +20,9 @@ class MyModel:
         # custom values for the example
         self.com = MX(np.array([-0.0005, 0.0688, -0.9542]))
         self.inertia = MX(0.0391)
+        self.q = MX.sym("q", 1)
+        self.qdot = MX.sym("qdot", 1)
+        self.tau = MX.sym("tau", 1)
 
     # ---- Absolutely needed methods ---- #
     def serialize(self) -> tuple[Callable, dict]:
@@ -57,7 +60,7 @@ class MyModel:
     def name_dof(self):
         return ["rotx"]
 
-    def forward_dynamics(self, q, qdot, tau, fext=None, f_contacts=None):
+    def forward_dynamics(self, with_contact=False) -> Function:
         # This is where you can implement your own forward dynamics
         # with casadi it your are dealing with mechanical systems
         d = 0  # damping
@@ -65,7 +68,9 @@ class MyModel:
         I = self.inertia
         m = self.mass
         g = 9.81
-        return 1 / (I + m * L**2) * (-qdot[0] * d - g * m * L * sin(q[0]) + tau[0])
+        casadi_return = 1 / (I + m * L**2) * (-self.qdot * d - g * m * L * sin(self.q) + self.tau)
+        casadi_fun = Function("forward_dynamics", [self.q, self.qdot, self.tau, MX()], [casadi_return])
+        return casadi_fun
 
     # def system_dynamics(self, *args):
     # This is where you can implement your system dynamics with casadi if you are dealing with other systems
