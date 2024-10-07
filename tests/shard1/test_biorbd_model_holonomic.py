@@ -183,7 +183,7 @@ def test_example_two_pendulums():
     )
 
     # --- Solve the ocp --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
+    sol = ocp.solve(Solver.IPOPT())
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
 
     npt.assert_almost_equal(

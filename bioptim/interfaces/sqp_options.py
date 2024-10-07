@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from ..misc.enums import SolverType
+from ..misc.enums import SolverType, OnlineOptim
 from .abstract_options import GenericSolver
 
 
@@ -11,6 +11,13 @@ class SQP_METHOD(GenericSolver):
 
     Methods
     -------
+    show_online_optim: bool | None
+        If the plot should be shown while optimizing. If set to True, it will the default online_optim. online_optim
+        and show_online_optim cannot be simultaneous set
+    online_optim: OnlineOptim
+        The type of online plot to show. If set to None (default), then no plot will be shown. If set to DEFAULT, it
+        will use the fastest method for your OS (multiprocessing on Linux and multiprocessing_server on Windows).
+        In all cases, it will slow down the optimization a bit.
     set_beta(beta: float):
         Line-search parameter, restoration factor of stepsize
     set_c1(c1: float):
@@ -66,7 +73,8 @@ class SQP_METHOD(GenericSolver):
     """
 
     type: SolverType = SolverType.SQP
-    show_online_optim: bool = False
+    show_online_optim: bool | None = None
+    online_optim: OnlineOptim | None = None
     show_options: dict = None
     c_compile = False
     _beta: float = 0.8
@@ -227,7 +235,7 @@ class SQP_METHOD(GenericSolver):
     def as_dict(self, solver):
         solver_options = self.__dict__
         options = {}
-        non_python_options = ["type", "show_online_optim", "show_options"]
+        non_python_options = ["type", "show_online_optim", "online_optim", "show_options"]
         for key in solver_options:
             if key not in non_python_options:
                 sqp_key = key[1:]

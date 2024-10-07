@@ -121,7 +121,7 @@ class OptimalControlProgram:
     prepare_plots(self, automatically_organize: bool, show_bounds: bool,
             shooting_type: Shooting) -> PlotOCP
         Create all the plots associated with the OCP
-    solve(self, solver: Solver, show_online_optim: bool, solver_options: dict) -> Solution
+    solve(self, solver: Solver) -> Solution
         Call the solver to actually solve the ocp
     _define_time(self, phase_time: float | tuple, objective_functions: ObjectiveList, constraints: ConstraintList)
         Declare the phase_time vector in v. If objective_functions or constraints defined a time optimization,
@@ -688,6 +688,73 @@ class OptimalControlProgram:
         self.update_objectives(objective_functions)
         self.update_parameter_objectives(parameter_objectives)
         return
+
+    def finalize_plot_phase_mappings(self):
+        """
+        Finalize the plot phase mappings (if not already done)
+
+        Parameters
+        ----------
+        n_phases: int
+            The number of phases
+        """
+
+        for nlp in self.nlp:
+            if not nlp.plot:
+                return
+
+            for key in nlp.plot:
+                if isinstance(nlp.plot[key], tuple):
+                    nlp.plot[key] = nlp.plot[key][0]
+
+                # This is the point where we can safely define node_idx of the plot
+                if nlp.plot[key].node_idx is None:
+                    nlp.plot[key].node_idx = range(nlp.n_states_nodes)
+
+                # If the number of subplots is not known, compute it
+                if nlp.plot[key].phase_mappings is None:
+                    node_index = nlp.plot[key].node_idx[0]
+                    nlp.states.node_index = node_index
+                    nlp.states_dot.node_index = node_index
+                    nlp.controls.node_index = node_index
+                    nlp.algebraic_states.node_index = node_index
+
+                    # If multi-node penalties = None, stays zero
+                    size_x = nlp.states.shape
+                    size_u = nlp.controls.shape
+                    size_p = nlp.parameters.shape
+                    size_a = nlp.algebraic_states.shape
+                    size_d = nlp.numerical_timeseries.shape
+                    if "penalty" in nlp.plot[key].parameters:
+                        penalty = nlp.plot[key].parameters["penalty"]
+
+                        # As stated in penalty_option, the last controller is always supposed to be the right one
+                        casadi_function = (
+                            penalty.function[0] if penalty.function[0] is not None else penalty.function[-1]
+                        )
+                        if casadi_function is not None:
+                            size_x = casadi_function.size_in("x")[0]
+                            size_u = casadi_function.size_in("u")[0]
+                            size_p = casadi_function.size_in("p")[0]
+                            size_a = casadi_function.size_in("a")[0]
+                            size_d = casadi_function.size_in("d")[0]
+
+                    size = (
+                        nlp.plot[key]
+                        .function(
+                            0,  # t0
+                            np.zeros(self.n_phases),  # phases_dt
+                            node_index,  # node_idx
+                            np.zeros((size_x, 1)),  # states
+                            np.zeros((size_u, 1)),  # controls
+                            np.zeros((size_p, 1)),  # parameters
+                            np.zeros((size_a, 1)),  # algebraic_states
+                            np.zeros((size_d, 1)),  # numerical_timeseries
+                            **nlp.plot[key].parameters,  # parameters
+                        )
+                        .shape[0]
+                    )
+                    nlp.plot[key].phase_mappings = BiMapping(to_first=range(size), to_second=range(size))
 
     @property
     def variables_vector(self):
@@ -1270,7 +1337,7 @@ class OptimalControlProgram:
             """
 
             weight = PenaltyHelpers.weight(penalty)
-            target = PenaltyHelpers.target(penalty, node_idx)
+            target = PenaltyHelpers.target(penalty, penalty.node_idx.index(node_idx))
 
             val = penalty.weighted_function_non_threaded[node_idx](t0, phases_dt, x, u, p, a, d, weight, target)
             return sum1(horzcat(val))
@@ -1363,6 +1430,7 @@ class OptimalControlProgram:
             show_bounds=show_bounds,
             shooting_type=shooting_type,
             integrator=integrator,
+            dummy_phase_times=OptimizationVectorHelper.extract_step_times(self, casadi.DM(np.ones(self.n_phases))),
         )
 
     def check_conditioning(self):
