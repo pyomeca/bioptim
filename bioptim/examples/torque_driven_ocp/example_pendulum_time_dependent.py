@@ -81,7 +81,9 @@ def time_dependent_dynamic(
     return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
 
 
-def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries: dict[str, np.ndarray] = None):
+def custom_configure(
+    ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries: dict[str, np.ndarray] = None
+):
     """
     Tell the program which variables are states and controls.
     The user is expected to use the ConfigureProblem.configure_xxx functions.

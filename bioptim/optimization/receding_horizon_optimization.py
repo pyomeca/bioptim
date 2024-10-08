@@ -847,7 +847,12 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
                 size=self.nlp[0].parameters[key].shape,
                 scaling=self.nlp[0].parameters[key].scaling,
             )
-            p_init.add(key, parameters_tp, interpolation=InterpolationType.EACH_FRAME, phase=0,)
+            p_init.add(
+                key,
+                parameters_tp,
+                interpolation=InterpolationType.EACH_FRAME,
+                phase=0,
+            )
 
         solution_ocp = OptimalControlProgram(
             bio_model=model_class(**model_initializer),

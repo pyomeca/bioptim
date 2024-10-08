@@ -191,7 +191,9 @@ def test_multi_cyclic_nmpc_with_parameters(phase_dynamics):
 
     # initial and final parameters
     for key in parameters.keys():
-        npt.assert_almost_equal(parameters[key], [np.array([2.5594204]), np.array([2.55932934]), np.array([2.56215198])])
+        npt.assert_almost_equal(
+            parameters[key], [np.array([2.5594204]), np.array([2.55932934]), np.array([2.56215198])]
+        )
 
     # check time
     n_steps = nmpc.nlp[0].ode_solver.n_integration_steps
