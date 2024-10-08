@@ -17,6 +17,7 @@ from ..interfaces import Solver
 from ..interfaces.abstract_options import GenericSolver
 from ..models.protocols.biomodel import BioModel
 from ..optimization.solution.solution_data import SolutionMerge
+from ..optimization.parameters import ParameterList
 
 
 class RecedingHorizonOptimization(OptimalControlProgram):
@@ -135,6 +136,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         sol = None
         states = []
         controls = []
+        parameters = []
 
         solver_all_iter = Solver.ACADOS() if solver is None else solver
         if solver_first_iter is None and solver is not None:
@@ -182,9 +184,10 @@ class RecedingHorizonOptimization(OptimalControlProgram):
                 real_time = perf_counter()  # Reset timer to skip the compiling time (so skip the first call to solve)
 
             # Solve and save the current window of interest
-            _states, _controls = self.export_data(sol)
+            _states, _controls, _parameters = self.export_data(sol)
             states.append(_states)
             controls.append(_controls)
+            parameters.append(_parameters)
             # Solve and save the full window of the OCP
             if get_all_iterations:
                 all_solutions.append(sol)
@@ -198,7 +201,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
 
         # Prepare the modified ocp that fits the solution dimension
         dt = sol.t_span()[0][-1]
-        final_sol = self._initialize_solution(float(dt), states, controls)
+        final_sol = self._initialize_solution(float(dt), states, controls, parameters)
         final_sol.solver_time_to_optimize = total_time
         final_sol.real_time_to_optimize = real_time
 
@@ -218,7 +221,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
 
         self.frame_to_export = export_options["frame_to_export"]
 
-    def _initialize_solution(self, dt: float, states: list, controls: list):
+    def _initialize_solution(self, dt: float, states: list, controls: list, parameters: list):
         x_init = InitialGuessList()
         for key in self.nlp[0].states.keys():
             x_init.add(
@@ -237,6 +240,19 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         model_class = model_serialized[0]
         model_initializer = model_serialized[1]
 
+        p_init = InitialGuessList()
+        for key in self.nlp[0].parameters.keys():
+            p_init[key] = parameters[0][key]
+
+        parameters = ParameterList(use_sx=self.cx == SX)
+        for key in self.nlp[0].parameters.keys():
+            parameters.add(
+                name=key,
+                function=self.nlp[0].parameters[key].function,
+                size=self.nlp[0].parameters[key].shape,
+                scaling=self.nlp[0].parameters[key].scaling,
+            )
+
         solution_ocp = OptimalControlProgram(
             bio_model=model_class(**model_initializer),
             dynamics=self.nlp[0].dynamics_type,
@@ -245,9 +261,11 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             x_init=x_init,
             u_init=u_init,
             use_sx=self.cx == SX,
+            parameters=parameters,
+            parameter_init=self.parameter_init,
+            parameter_bounds=self.parameter_bounds,
         )
         a_init = InitialGuessList()
-        p_init = InitialGuessList()
         return Solution.from_initial_guess(solution_ocp, [np.array([dt]), x_init, u_init, p_init, a_init])
 
     def advance_window(self, sol: Solution, steps: int = 0, **advance_options):
@@ -335,6 +353,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
 
         states = {}
         controls = {}
+        parameters = sol.decision_parameters()
 
         for key in self.nlp[0].states.keys():
             states[key] = merged_states[key][:, self.frame_to_export]
@@ -345,7 +364,8 @@ class RecedingHorizonOptimization(OptimalControlProgram):
                 frames = slice(self.frame_to_export.start, self.frame_to_export.stop - 1)
         for key in self.nlp[0].controls.keys():
             controls[key] = merged_controls[key][:, frames]
-        return states, controls
+
+        return states, controls, parameters
 
     def _define_time(
         self, phase_time: int | float | list | tuple, objective_functions: ObjectiveList, constraints: ConstraintList
@@ -442,7 +462,7 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
         )
 
     def export_data(self, sol) -> tuple:
-        states, controls = super(CyclicRecedingHorizonOptimization, self).export_data(sol)
+        states, controls, parameters = super(CyclicRecedingHorizonOptimization, self).export_data(sol)
 
         frames = self.frame_to_export
         if frames.stop is not None and frames.stop != self.nlp[0].n_controls_nodes:
@@ -454,9 +474,9 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
             for key in self.nlp[0].controls.keys():
                 controls[key] = controls[key][:, frames]
 
-        return states, controls
+        return states, controls, parameters
 
-    def _initialize_solution(self, dt: float, states: list, controls: list):
+    def _initialize_solution(self, dt: float, states: list, controls: list, parameters: list):
         x_init = InitialGuessList()
         for key in self.nlp[0].states.keys():
             x_init.add(
@@ -471,6 +491,19 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
             controls_tp = np.concatenate([control[key] for control in controls], axis=1)
             u_init.add(key, controls_tp, interpolation=InterpolationType.EACH_FRAME, phase=0)
 
+        p_init = InitialGuessList()
+        for key in self.nlp[0].parameters.keys():
+            p_init[key] = parameters[0][key]
+
+        parameters = ParameterList(use_sx=self.cx == SX)
+        for key in self.nlp[0].parameters.keys():
+            parameters.add(
+                name=key,
+                function=self.nlp[0].parameters[key].function,
+                size=self.nlp[0].parameters[key].shape,
+                scaling=self.nlp[0].parameters[key].scaling,
+            )
+
         model_serialized = self.nlp[0].model.serialize()
         model_class = model_serialized[0]
         model_initializer = model_serialized[1]
@@ -482,9 +515,11 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
             x_init=x_init,
             u_init=u_init,
             use_sx=self.cx == SX,
+            parameters=parameters,
+            parameter_init=p_init,
+            parameter_bounds=self.parameter_bounds,
         )
         a_init = InitialGuessList()
-        p_init = InitialGuessList()
         return Solution.from_initial_guess(solution_ocp, [np.array([dt]), x_init, u_init, p_init, a_init])
 
     def _initialize_state_idx_to_cycle(self, options):
@@ -506,7 +541,7 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
                 "type InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT"
             )
 
-        for key in self.nlp[0].x_bounds.keys():
+        for key in self.state_idx_to_cycle.keys():
             s = self.state_idx_to_cycle[key]
             range_of_motion = self.nlp[0].x_bounds[key].max[s, 1] - self.nlp[0].x_bounds[key].min[s, 1]
             if sol is None:
@@ -675,6 +710,16 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             update_function=update_function, **extra_options
         )
 
+        if self.parameters.shape != 0 and get_all_iterations:
+            final_solution_parameters_dict = [{key: None} for key in solution[0].parameters.keys()][0]
+            for key in solution[0].parameters.keys():
+                key_val = []
+                for sol in solution[1]:
+                    key_val.append(sol.parameters[key])
+                final_solution_parameters_dict[key] = key_val
+
+            solution[0].cycle_parameters = final_solution_parameters_dict
+
         final_solution = [solution[0]]
 
         if get_all_iterations:
@@ -683,22 +728,22 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         cycle_solutions_output = []
         if cycle_solutions in (MultiCyclicCycleSolutions.FIRST_CYCLES, MultiCyclicCycleSolutions.ALL_CYCLES):
             for sol in solution[1]:
-                _states, _controls = self.export_cycles(sol)
+                _states, _controls, _parameters = self.export_cycles(sol)
                 dt = float(sol.t_span()[0][-1])
-                cycle_solutions_output.append(self._initialize_one_cycle(dt, _states, _controls))
+                cycle_solutions_output.append(self._initialize_one_cycle(dt, _states, _controls, _parameters))
 
         if cycle_solutions == MultiCyclicCycleSolutions.ALL_CYCLES:
             for cycle_number in range(1, self.n_cycles):
-                _states, _controls = self.export_cycles(solution[1][-1], cycle_number=cycle_number)
+                _states, _controls, _parameters = self.export_cycles(solution[1][-1], cycle_number=cycle_number)
                 dt = float(sol.t_span()[0][-1])
-                cycle_solutions_output.append(self._initialize_one_cycle(dt, _states, _controls))
+                cycle_solutions_output.append(self._initialize_one_cycle(dt, _states, _controls, _parameters))
 
         if cycle_solutions in (MultiCyclicCycleSolutions.FIRST_CYCLES, MultiCyclicCycleSolutions.ALL_CYCLES):
             final_solution.append(cycle_solutions_output)
 
         return tuple(final_solution) if len(final_solution) > 1 else final_solution[0]
 
-    def export_cycles(self, sol: Solution, cycle_number: int = 0) -> tuple[dict, dict]:
+    def export_cycles(self, sol: Solution, cycle_number: int = 0) -> tuple[dict, dict, dict]:
         """Exports the solution of the desired cycle from the full window solution"""
 
         decision_states = sol.decision_states(to_merge=SolutionMerge.NODES)
@@ -706,6 +751,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
 
         states = {}
         controls = {}
+        parameters = {}
         window_slice = slice(cycle_number * self.cycle_len, (cycle_number + 1) * self.cycle_len + 1)
         for key in self.nlp[0].states.keys():
             states[key] = decision_states[key][:, window_slice]
@@ -715,9 +761,12 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         for key in self.nlp[0].controls.keys():
             controls[key] = decision_controls[key][:, window_slice]
 
-        return states, controls
+        for key in self.nlp[0].parameters.keys():
+            parameters[key] = sol.parameters[key][0]
 
-    def _initialize_solution(self, dt: float, states: list, controls: list):
+        return states, controls, parameters
+
+    def _initialize_solution(self, dt: float, states: list, controls: list, parameters: list):
         x_init = InitialGuessList()
         for key in self.nlp[0].states.keys():
             x_init.add(
@@ -735,6 +784,20 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         model_serialized = self.nlp[0].model.serialize()
         model_class = model_serialized[0]
         model_initializer = model_serialized[1]
+
+        p_init = InitialGuessList()
+        for key in self.nlp[0].parameters.keys():
+            p_init[key] = parameters[0][key]
+
+        parameters = ParameterList(use_sx=self.cx == SX)
+        for key in self.nlp[0].parameters.keys():
+            parameters.add(
+                name=key,
+                function=self.nlp[0].parameters[key].function,
+                size=self.nlp[0].parameters[key].shape,
+                scaling=self.nlp[0].parameters[key].scaling,
+            )
+
         solution_ocp = OptimalControlProgram(
             bio_model=model_class(**model_initializer),
             dynamics=self.nlp[0].dynamics_type,
@@ -743,12 +806,14 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             x_init=x_init,
             u_init=u_init,
             use_sx=self.cx == SX,
+            parameters=parameters,
+            parameter_init=self.parameter_init,
+            parameter_bounds=self.parameter_bounds,
         )
         a_init = InitialGuessList()
-        p_init = InitialGuessList()
         return Solution.from_initial_guess(solution_ocp, [np.array([dt]), x_init, u_init, p_init, a_init])
 
-    def _initialize_one_cycle(self, dt: float, states: np.ndarray, controls: np.ndarray):
+    def _initialize_one_cycle(self, dt: float, states: np.ndarray, controls: np.ndarray, parameters: np.ndarray):
         """return a solution for a single window kept of the MHE"""
         x_init = InitialGuessList()
         for key in self.nlp[0].states.keys():
@@ -771,6 +836,24 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         model_serialized = self.nlp[0].model.serialize()
         model_class = model_serialized[0]
         model_initializer = model_serialized[1]
+
+        param_list = ParameterList(use_sx=self.cx == SX)
+        p_init = InitialGuessList()
+        for key in self.nlp[0].parameters.keys():
+            parameters_tp = parameters[key]
+            param_list.add(
+                name=key,
+                function=self.nlp[0].parameters[key].function,
+                size=self.nlp[0].parameters[key].shape,
+                scaling=self.nlp[0].parameters[key].scaling,
+            )
+            p_init.add(
+                key,
+                parameters_tp,
+                interpolation=InterpolationType.EACH_FRAME,
+                phase=0,
+            )
+
         solution_ocp = OptimalControlProgram(
             bio_model=model_class(**model_initializer),
             dynamics=self.nlp[0].dynamics_type,
@@ -781,9 +864,11 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             x_init=x_init,
             u_init=u_init,
             use_sx=self.cx == SX,
+            parameters=param_list,
+            parameter_init=p_init,
+            parameter_bounds=self.parameter_bounds,
         )
         a_init = InitialGuessList()
-        p_init = InitialGuessList()
         return Solution.from_initial_guess(solution_ocp, [np.array([dt]), x_init, u_init_for_solution, p_init, a_init])
 
 
