@@ -1018,15 +1018,15 @@ class ConfigureProblem:
             "qv_function",
             [
                 time_span_sym,
-                nlp.states.scaled.cx,
-                nlp.controls.scaled.cx,
-                nlp.parameters.scaled.cx,
-                nlp.algebraic_states.scaled.cx,
+                nlp.states.cx,
+                nlp.controls.cx,
+                nlp.parameters.cx,
+                nlp.algebraic_states.cx,
                 nlp.numerical_timeseries.cx,
             ],
             [
                 dyn_func(
-                    nlp.get_var_from_states_or_controls("q_u", nlp.states.scaled.cx, nlp.controls.scaled.cx),
+                    nlp.get_var_from_states_or_controls("q_u", nlp.states.cx, nlp.controls.cx),
                 )
             ],
             ["t_span", "x", "u", "p", "a", "d"],

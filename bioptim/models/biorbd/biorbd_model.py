@@ -31,6 +31,19 @@ class BiorbdModel:
         segments_to_apply_translational_forces: list[str] = None,
         parameters: ParameterList = None,
     ):
+        """
+
+        Parameters
+        ----------
+        bio_model
+        friction_coefficients
+        TODO: @ipuch
+        segments_to_apply_forces_in_global:
+            Moments and forces (Mx, My Mz, Fx, Fy, Fz, Px, Py, Pz) expressed in the global reference frame will be applied at the global origin or the point of application expressed in the global reference frame to the segments listed here
+        segments_to_apply_translational_forces:
+            Forces (Fx, Fy, Fz, Px, Py, Pz) expressed in the local reference frame will be applied at the point of application expressed in the local reference frame of the segments listed here
+        parameters
+        """
         if not isinstance(bio_model, str) and not isinstance(bio_model, biorbd.Model):
             raise ValueError("The model should be of type 'str' or 'biorbd.Model'")
 
