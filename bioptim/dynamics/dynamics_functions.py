@@ -1129,17 +1129,19 @@ class DynamicsFunctions:
         else:
             qdot_var_mapping = BiMapping([i for i in range(qdot.shape[0])], [i for i in range(qdot.shape[0])]).to_first
 
-        dynamics_functions = {
-            (True, True): nlp.model.constrained_forward_dynamics,
-            (True, False): nlp.model.forward_dynamics,
-            (False, True): lambda q, qdot, tau: nlp.model.constrained_forward_dynamics(q, qdot, tau, external_forces),
-            (False, False): lambda q, qdot, tau: nlp.model.forward_dynamics(q, qdot, tau, external_forces),
-        }
+        if external_forces is None:
+            if with_contact:
+                qddot = nlp.model.constrained_forward_dynamics(q, qdot, tau)
+            else:
+                qddot = nlp.model.forward_dynamics(q, qdot, tau)
 
-        dynamics_function = dynamics_functions[(external_forces is None, with_contact)]
-
-        qddot = dynamics_function(q, qdot, tau)
-        return qdot_var_mapping.map(qddot)
+            return qdot_var_mapping.map(qddot)
+        else:
+            if with_contact:
+                qddot = nlp.model.constrained_forward_dynamics(q, qdot, tau, external_forces)
+            else:
+                qddot = nlp.model.forward_dynamics(q, qdot, tau, external_forces)
+            return qdot_var_mapping.map(qddot)
 
     @staticmethod
     def inverse_dynamics(
