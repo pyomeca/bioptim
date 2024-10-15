@@ -13,7 +13,7 @@ def _prepare_tracked_markers_for_animation(
     all_tracked_markers = []
 
     for phase, nlp in enumerate(nlps):
-        n_frames = sum(nlp.ns) + 1 if n_shooting is None else n_shooting + 1
+        n_frames = nlp.ns + 1 if n_shooting is None else n_shooting + 1
 
         n_states_nodes = nlp.n_states_nodes
 
