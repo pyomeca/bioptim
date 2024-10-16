@@ -28,7 +28,7 @@ from bioptim import (
 )
 
 
-def custom_func_track_markers(controller: PenaltyController, first_marker: str, second_marker: str, method) -> MX:
+def custom_func_track_markers(controller: PenaltyController, first_marker: str, second_marker: str) -> MX:
     """
     The used-defined objective function (This particular one mimics the ObjectiveFcn.SUPERIMPOSE_MARKERS)
     Except for the last two
@@ -41,8 +41,6 @@ def custom_func_track_markers(controller: PenaltyController, first_marker: str, 
         The index of the first marker in the bioMod
     second_marker: str
         The index of the second marker in the bioMod
-    method: int
-        Two identical ways are shown to help the new user to navigate the biorbd API
 
     Returns
     -------
@@ -54,20 +52,9 @@ def custom_func_track_markers(controller: PenaltyController, first_marker: str, 
     marker_0_idx = controller.model.marker_index(first_marker)
     marker_1_idx = controller.model.marker_index(second_marker)
 
-    if method == 0:
-        # Convert the function to the required format and then subtract
-        from bioptim import BiorbdModel
-
-        # noinspection PyTypeChecker
-        model: BiorbdModel = controller.model
-        markers = controller.mx_to_cx("markers", model.model.markers, controller.states["q"])
-        markers_diff = markers[:, marker_1_idx] - markers[:, marker_0_idx]
-
-    else:
-        # Do the calculation in biorbd API and then convert to the required format
-        markers = controller.model.markers(controller.states["q"].mx)
-        markers_diff = markers[marker_1_idx] - markers[marker_0_idx]
-        markers_diff = controller.mx_to_cx("markers", markers_diff, controller.states["q"])
+    # compute the position of the markers using the markers function from the BioModel (here a BiorbdModel)
+    markers = controller.model.markers()(controller.states["q"].cx, controller.parameters.cx)
+    markers_diff = markers[:, marker_1_idx] - markers[:, marker_0_idx]
 
     return markers_diff
 
@@ -118,8 +105,8 @@ def prepare_ocp(
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(custom_func_track_markers, node=Node.START, first_marker="m0", second_marker="m1", method=0)
-    constraints.add(custom_func_track_markers, node=Node.END, first_marker="m0", second_marker="m2", method=1)
+    constraints.add(custom_func_track_markers, node=Node.START, first_marker="m0", second_marker="m1")
+    constraints.add(custom_func_track_markers, node=Node.END, first_marker="m0", second_marker="m2")
 
     # Path constraint
     x_bounds = BoundsList()

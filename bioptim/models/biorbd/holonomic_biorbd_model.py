@@ -5,10 +5,11 @@ from biorbd_casadi import (
     GeneralizedCoordinates,
     GeneralizedVelocity,
 )
-from casadi import MX, DM, vertcat, horzcat, Function, solve, rootfinder, inv
+from casadi import MX, SX, DM, vertcat, horzcat, Function, solve, rootfinder, inv
 
 from .biorbd_model import BiorbdModel
 from ..holonomic_constraints import HolonomicConstraintsList
+from ...optimization.parameters import ParameterList
 
 
 class HolonomicBiorbdModel(BiorbdModel):
@@ -16,8 +17,12 @@ class HolonomicBiorbdModel(BiorbdModel):
     This class allows to define a biorbd model with custom holonomic constraints.
     """
 
-    def __init__(self, bio_model: str | biorbd.Model):
-        super().__init__(bio_model)
+    def __init__(
+        self,
+        bio_model: str | biorbd.Model,
+        parameters: ParameterList = None,
+    ):
+        super().__init__(bio_model, parameters=parameters)
         self._newton_tol = 1e-10
         self._holonomic_constraints = []
         self._holonomic_constraints_jacobians = []
@@ -145,6 +150,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         return vertcat(*[c(q, qdot, qddot) for c in self._holonomic_constraints_double_derivatives])
 
     def constrained_forward_dynamics(self, q, qdot, tau, external_forces=None, f_contacts=None) -> MX:
+        # @ipuch does this stays contrained_
         if external_forces is not None:
             raise NotImplementedError("External forces are not implemented yet.")
         if f_contacts is not None:
@@ -351,7 +357,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         if state_v.shape[0] != self.nb_dependent_joints:
             raise ValueError(f"Length of state v size should be: {self.nb_dependent_joints}. Got: {state_v.shape[0]}")
 
-    def compute_q_v(self, q_u: MX | DM, q_v_init: MX | DM = None) -> MX | DM:
+    def compute_q_v(self, q_u: MX | SX | DM, q_v_init: MX | SX | DM = None) -> MX | SX | DM:
         """
         Compute the dependent joint positions from the independent joint positions.
         This function might be misleading because it can be used for numerical purpose with DM
@@ -361,7 +367,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         q = self.state_from_partition(q_u, decision_variables)
         mx_residuals = self.holonomic_constraints(q)
 
-        if isinstance(q_u, MX):
+        if isinstance(q_u, MX | SX):
             q_v_init = MX.zeros(self.nb_dependent_joints) if q_v_init is None else q_v_init
             ifcn_input = (q_v_init, q_u)
             residuals = Function(

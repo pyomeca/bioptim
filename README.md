@@ -1226,11 +1226,11 @@ This constraint assumes that the normal forces is positive (that is having an ad
 - **TRACK_COM_VELOCITY**  &mdash; Constraints the center of mass velocity toward a target. The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the velocity should be tracked.
 - **TRACK_CONTACT_FORCES**  &mdash; Tracks the non-acceleration point reaction forces toward a target.
 - **TRACK_LINEAR_MOMENTUM**  &mdash; Constraints the linear momentum toward a target. The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the momentum should be tracked.
-- **TRACK_MARKER_WITH_SEGMENT_AXIS**  &mdash; Tracks a marker using a segment, that is aligning an axis toward the marker. The extra parameters `marker_idx: int`, `segment_idx: int`, and `axis: Axis` must be passed to the `Constraint` constructor
+- **TRACK_MARKER_WITH_SEGMENT_AXIS**  &mdash; Tracks a marker using a segment, that is aligning an axis toward the marker. The extra parameters `marker_idx: int`, `segment_index: int`, and `axis: Axis` must be passed to the `Constraint` constructor
 - **TRACK_MARKERS_VELOCITY** &mdash; Tracks the skin marker velocities toward a target.
 - **TRACK_MARKERS** &mdash; Tracks the skin markers toward a target. The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the markers should be tracked.
 - **TRACK_MUSCLES_CONTROL**  &mdash; Tracks the muscles (part of the control variables) toward a target.
-- **TRACK_SEGMENT_WITH_CUSTOM_RT**  &mdash;Links a segment with an RT (for instance, an Inertial Measurement Unit). It does so by computing the homogenous transformation between the segment and the RT and then converting this to Euler angles. The extra parameters `segment_idx: int` and `rt_idx: int` must be passed to the `Constraint` constructor.
+- **TRACK_SEGMENT_WITH_CUSTOM_RT**  &mdash;Links a segment with an RT (for instance, an Inertial Measurement Unit). It does so by computing the homogenous transformation between the segment and the RT and then converting this to Euler angles. The extra parameters `segment_index: int` and `rt_index: int` must be passed to the `Constraint` constructor.
 - **TRACK_STATE** &mdash; Tracks the state's variable toward a target.
 - **TRACK_TORQUE**  &mdash; Tracks the generalized forces (part of the control variables) toward a target.
 - **CUSTOM**  &mdash; The user should not directly send CUSTOM, but the user should pass the custom_constraint function directly. You can look at Constraint and ConstraintList sections for more information about how to define custom constraints.
@@ -1322,11 +1322,11 @@ Here a list of objective function with its type (Lagrange and/or Mayer) in alpha
 - **SUPERIMPOSE_MARKERS** (Lagrange and Mayer) &mdash; Tracks one marker with another one. The extra parameters `first_marker_idx: int` and `second_marker_idx: int` informs which markers are to be superimposed
 - **TRACK_ALL_CONTROLS (Lagrange)** &mdash; Tracks all the control variables toward a target.
 - **TRACK_CONTACT_FORCES** (Lagrange) &mdash; Tracks the non-acceleration points of the reaction forces toward a target.
-- **TRACK_MARKER_WITH_SEGMENT_AXIS** (Lagrange and Mayer) &mdash; Minimizes the distance between a marker and an axis of a segment, that is aligning an axis toward the marker. The extra parameters `marker_idx: int`, `segment_idx: int` and `axis: Axis` must be passed to the `Objective` constructor
+- **TRACK_MARKER_WITH_SEGMENT_AXIS** (Lagrange and Mayer) &mdash; Minimizes the distance between a marker and an axis of a segment, that is aligning an axis toward the marker. The extra parameters `marker_idx: int`, `segment_index: int` and `axis: Axis` must be passed to the `Objective` constructor
 - **TRACK_MARKERS_VELOCITY or TRACK_MARKERS_ACCELERATION** (Lagrange and Mayer) &mdash;  Tracks the marker velocities or accelerations toward a target.
 - **TRACK_MARKERS** (Lagrange and Mayer) &mdash; Tracks the skin markers towards a target. The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the markers should be tracked.
 - **TRACK_MUSCLES_CONTROL** (Lagrange) &mdash; Tracks the muscles' controls (part of the control variables) toward a target.
-- **TRACK_SEGMENT_WITH_CUSTOM_RT** (Lagrange and Mayer)  &mdash; Minimizes the distance between a segment and an RT (for instance, an Inertial Measurement Unit). It does so by computing the homogenous transformation between the segment and the RT and then converting this to Euler angles. The extra parameters `segment_idx: int` and `rt_idx: int` must be passed to the `Objective` constructor.
+- **TRACK_SEGMENT_WITH_CUSTOM_RT** (Lagrange and Mayer)  &mdash; Minimizes the distance between a segment and an RT (for instance, an Inertial Measurement Unit). It does so by computing the homogenous transformation between the segment and the RT and then converting this to Euler angles. The extra parameters `segment_index: int` and `rt_index: int` must be passed to the `Objective` constructor.
 - **TRACK_SOFT_CONTACT_FORCES**  (Lagrange)  &mdash; Tracks the external forces induced by soft contacts toward a target.
 - **TRACK_STATE**  (Lagrange and Mayer) &mdash; Tracks the state variable toward a target.
 - **TRACK_TORQUE** (Lagrange &mdash; Tracks the generalized forces (part of the control variables) toward a target.
@@ -2366,7 +2366,7 @@ definition of the constraints of the problem:
 ```python
 constraints = ConstraintList()
 constraints.add(
-ConstraintFcn.TRACK_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker_idx=1, segment_idx=2, axis=Axis.X
+ConstraintFcn.TRACK_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker_idx=1, segment_index=2, axis=Axis.X
 )
 ```
 
@@ -2380,7 +2380,7 @@ the rest is fully optimized. It is designed to show how to use the tracking RT f
 any RT (for instance, Inertial Measurement Unit [IMU]) with a body segment.
 
 To implement this tracking task, we use the `ConstraintFcn.TRACK_SEGMENT_WITH_CUSTOM_RT` constraint function, which 
-minimizes the distance between a segment and an RT. The extra parameters `segment_idx: int` and `rt_idx: int` must be 
+minimizes the distance between a segment and an RT. The extra parameters `segment_index: int` and `rt_index: int` must be 
 passed to the Objective constructor.
 
 ### The [track_vector_orientation.py](./bioptim/examples/track/track_vector_orientation.py) file

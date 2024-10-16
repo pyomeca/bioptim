@@ -59,8 +59,8 @@ def sensory_reference(
     """
     q = states[nlp.states["q"].index]
     qdot = states[nlp.states["qdot"].index]
-    hand_pos = nlp.model.markers(q)[2][:2]
-    hand_vel = nlp.model.marker_velocities(q, qdot)[2][:2]
+    hand_pos = nlp.model.marker(2)(q, [])[:2]
+    hand_vel = nlp.model.marker_velocity(2)(q, qdot, [])[:2]
     hand_pos_velo = cas.vertcat(hand_pos, hand_vel)
     return hand_pos_velo
 

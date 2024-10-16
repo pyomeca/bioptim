@@ -171,10 +171,9 @@ def main():
     x = np.concatenate((q, qdot))
 
     symbolic_states = MX.sym("q", n_q, 1)
-    markers_fun = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_states)
     markers_ref = np.zeros((3, n_marker, n_shooting + 1))
     for i in range(n_shooting + 1):
-        markers_ref[:, :, i] = markers_fun(x[:n_q, i])
+        markers_ref[:, :, i] = bio_model.markers()(x[:n_q, i])
     tau_ref = tau[:, :-1]
 
     ocp = prepare_ocp(

@@ -267,11 +267,13 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             MultinodePenaltyFunctions.Functions._prepare_controller_cx(penalty, controllers)
 
-            com_0 = controllers[0].model.center_of_mass(controllers[0].states["q"].cx)
+            com_0 = controllers[0].model.center_of_mass()(controllers[0].states["q"].cx, controllers[0].parameters.cx)
 
             out = controllers[0].cx.zeros((3, 1))
             for i in range(1, len(controllers)):
-                com_i = controllers[i].model.center_of_mass(controllers[i].states["q"].cx)
+                com_i = controllers[i].model.center_of_mass()(
+                    controllers[i].states["q"].cx, controllers[i].parameters.cx
+                )
                 out += com_0 - com_i
 
             return out
@@ -295,14 +297,18 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             MultinodePenaltyFunctions.Functions._prepare_controller_cx(penalty, controllers)
 
-            com_dot_0 = controllers[0].model.center_of_mass_velocity(
-                controllers[0].states["q"].cx, controllers[0].states["qdot"].cx
+            com_dot_0 = controllers[0].model.center_of_mass_velocity()(
+                controllers[0].states["q"].cx,
+                controllers[0].states["qdot"].cx,
+                controllers[0].parameters.cx,
             )
 
             out = controllers[0].cx.zeros((3, 1))
             for i in range(1, len(controllers)):
-                com_dot_i = controllers[i].model.center_of_mass_velocity(
-                    controllers[i].states["q"].cx, controllers[i].states["qdot"].cx
+                com_dot_i = controllers[i].model.center_of_mass_velocity()(
+                    controllers[i].states["q"].cx,
+                    controllers[i].states["qdot"].cx,
+                    controllers[i].parameters.cx,
                 )
                 out += com_dot_0 - com_dot_i
 
@@ -549,19 +555,23 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[0].algebraic_states["c"].cx, controllers[0].model.matrix_shape_c
             )
 
-            q_root = MX.sym("q_root", nb_root, 1)
-            q_joints = MX.sym("q_joints", nu, 1)
-            qdot_root = MX.sym("qdot_root", nb_root, 1)
-            qdot_joints = MX.sym("qdot_joints", nu, 1)
-            tau_joints = MX.sym("tau_joints", nu, 1)
-            algebraic_states_sym = MX.sym("algebraic_states_sym", controllers[0].algebraic_states.shape, 1)
-            numerical_timeseries_sym = MX.sym("numerical_timeseries_sym", controllers[0].numerical_timeseries.shape, 1)
+            q_root = controllers[0].cx.sym("q_root", nb_root, 1)
+            q_joints = controllers[0].cx.sym("q_joints", nu, 1)
+            qdot_root = controllers[0].cx.sym("qdot_root", nb_root, 1)
+            qdot_joints = controllers[0].cx.sym("qdot_joints", nu, 1)
+            tau_joints = controllers[0].cx.sym("tau_joints", nu, 1)
+            algebraic_states_sym = controllers[0].cx.sym(
+                "algebraic_states_sym", controllers[0].algebraic_states.shape, 1
+            )
+            numerical_timeseries_sym = controllers[0].cx.sym(
+                "numerical_timeseries_sym", controllers[0].numerical_timeseries.shape, 1
+            )
 
             dx = controllers[0].extra_dynamics(0)(
-                controllers[0].time.mx,
+                controllers[0].time.cx,
                 vertcat(q_root, q_joints, qdot_root, qdot_joints),  # States
                 tau_joints,
-                controllers[0].parameters.mx,
+                controllers[0].parameters.cx,
                 algebraic_states_sym,
                 numerical_timeseries_sym,
             )
@@ -573,13 +583,13 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             DF_DW_fun = Function(
                 "DF_DW_fun",
                 [
-                    controllers[0].time.mx,
+                    controllers[0].time.cx,
                     q_root,
                     q_joints,
                     qdot_root,
                     qdot_joints,
                     tau_joints,
-                    controllers[0].parameters.mx,
+                    controllers[0].parameters.cx,
                     algebraic_states_sym,
                     numerical_timeseries_sym,
                 ],
@@ -587,7 +597,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                     jacobian(
                         dx[non_root_index],
                         vertcat(
-                            controllers[0].parameters["motor_noise"].mx, controllers[0].parameters["sensory_noise"].mx
+                            controllers[0].parameters["motor_noise"].cx, controllers[0].parameters["sensory_noise"].cx
                         ),
                     )
                 ],

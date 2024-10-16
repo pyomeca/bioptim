@@ -15,8 +15,8 @@ class OptimizationVariable:
     ----------
     name: str
         The name of the variable
-    mx: MX
-        The MX variable associated with this variable
+    cx_start: MX | SX
+        The symbolic variable associated with this variable
     index: range
         The indices to find this variable
     mapping: BiMapping
@@ -37,7 +37,6 @@ class OptimizationVariable:
     def __init__(
         self,
         name: str,
-        mx: MX,
         cx_start: list | None,
         index: range | list,
         mapping: BiMapping = None,
@@ -48,15 +47,14 @@ class OptimizationVariable:
         ----------
         name: str
             The name of the variable
-        mx: MX
-            The MX variable associated with this variable
+        cx_start: MX | SX
+            The symbolic variable associated with this variable
         index: range | list
             The indices to find this variable
         parent_list: OptimizationVariableList
             The list the OptimizationVariable is in
         """
         self.name: str = name
-        self.mx: MX = mx
         self.original_cx: list = cx_start
         self.index: range | list = index
         self.mapping: BiMapping = mapping
@@ -159,8 +157,6 @@ class OptimizationVariableList:
         The symbolic MX or SX of the list (mid point)
     _cx_end: MX | SX
         The symbolic MX or SX of the list (ending point)
-    mx_reduced: MX
-        The reduced MX to the size of _cx
     cx_constructor: Callable
         The casadi symbolic type used for the optimization (MX or SX)
 
@@ -168,14 +164,12 @@ class OptimizationVariableList:
     -------
     __getitem__(self, item: int | str)
         Get a specific variable in the list, whether by name or by index
-    append(self, name: str, cx: list, mx: MX, bimapping: BiMapping)
+    append(self, name: str, cx: list, bimapping: BiMapping)
         Add a new variable to the list
     cx(self)
         The cx of all elements together (starting point)
     cx_end(self)
         The cx of all elements together (ending point)
-    mx(self)
-        The MX of all variable concatenated together
     shape(self)
         The size of the CX
     __len__(self)
@@ -189,7 +183,6 @@ class OptimizationVariableList:
         self._cx_mid: MX | SX | np.ndarray = np.array([])
         self._cx_end: MX | SX | np.ndarray = np.array([])
         self._cx_intermediates: list = []
-        self.mx_reduced: MX = MX.sym("var", 0, 0)
         self.cx_constructor = cx_constructor
         self._current_cx_to_get = 0
         self.phase_dynamics = phase_dynamics
@@ -215,7 +208,7 @@ class OptimizationVariableList:
                 index = []
                 for elt in self.elements:
                     index.extend(list(elt.index))
-                return OptimizationVariable("all", self.mx, self.cx_start, index, None, self)
+                return OptimizationVariable("all", self.cx_start, index, None, self)
 
             for elt in self.elements:
                 if item == elt.name:
@@ -225,12 +218,11 @@ class OptimizationVariableList:
                     return elt
             raise KeyError(f"{item} is not in the list")
         elif isinstance(item, (list, tuple)) or isinstance(item, range):
-            mx = vertcat([elt.mx for elt in self.elements if elt.name in item])
             index = []
             for elt in self.elements:
                 if elt.name in item:
                     index.extend(list(elt.index))
-            return OptimizationVariable("some", mx, None, index)
+            return OptimizationVariable("some", None, index)
         else:
             raise ValueError("OptimizationVariableList can be sliced with int, list, range or str only")
 
@@ -263,7 +255,7 @@ class OptimizationVariableList:
         else:
             self._current_cx_to_get = index if index != -1 else 2
 
-    def append_fake(self, name: str, index: MX | SX | list, mx: MX, bimapping: BiMapping):
+    def append_fake(self, name: str, index: MX | SX | list, bimapping: BiMapping):
         """
         Add a new variable to the fake list which add something without changing the size of the normal elements
 
@@ -273,15 +265,13 @@ class OptimizationVariableList:
             The name of the variable
         index: MX | SX
             The SX or MX variable associated with this variable. Is interpreted as index if is_fake is true
-        mx: MX
-            The MX variable associated with this variable
         bimapping: BiMapping
             The Mapping of the MX against CX
         """
 
-        self.fake_elements.append(OptimizationVariable(name, mx, None, index, bimapping, self))
+        self.fake_elements.append(OptimizationVariable(name, None, index, bimapping, self))
 
-    def append(self, name: str, cx: list, mx: MX, bimapping: BiMapping):
+    def append(self, name: str, cx: list, bimapping: BiMapping):
         """
         Add a new variable to the list
 
@@ -291,8 +281,6 @@ class OptimizationVariableList:
             The name of the variable
         cx: list
             The list of SX or MX variable associated with this variable
-        mx: MX
-            The MX variable associated with this variable
         """
 
         if len(cx) < 2:
@@ -310,8 +298,7 @@ class OptimizationVariableList:
             else:
                 self._cx_intermediates[i] = vertcat(self._cx_intermediates[i], c)
 
-        self.mx_reduced = vertcat(self.mx_reduced, MX.sym("var", cx[0].shape[0]))
-        self.elements.append(OptimizationVariable(name, mx, cx, index, bimapping, parent_list=self))
+        self.elements.append(OptimizationVariable(name, cx, index, bimapping, parent_list=self))
 
     def append_from_scaled(
         self,
@@ -346,9 +333,8 @@ class OptimizationVariableList:
             else:
                 self._cx_intermediates[i] = vertcat(self._cx_intermediates[i], c)
 
-        self.mx_reduced = scaled_optimization_variable.mx_reduced
         var = scaled_optimization_variable[name]
-        self.elements.append(OptimizationVariable(name, var.mx, cx, var.index, var.mapping, self))
+        self.elements.append(OptimizationVariable(name, cx, var.index, var.mapping, self))
 
     @property
     def cx(self):
@@ -408,16 +394,6 @@ class OptimizationVariableList:
         """
 
         return self._cx_intermediates
-
-    @property
-    def mx(self):
-        """
-        Returns
-        -------
-        The MX of all variable concatenated together
-        """
-
-        return vertcat(*[elt.mx for elt in self.elements])
 
     def __contains__(self, item: str):
         """
@@ -561,14 +537,6 @@ class OptimizationVariableContainer:
         return self._unscaled[0].shape
 
     @property
-    def mx(self):
-        return self.unscaled.mx
-
-    @property
-    def mx_reduced(self):
-        return self.unscaled.mx_reduced
-
-    @property
     def cx(self):
         return self.unscaled.cx
 
@@ -589,7 +557,6 @@ class OptimizationVariableContainer:
         name: str,
         cx: list,
         cx_scaled: list,
-        mx: MX,
         mapping: BiMapping,
         node_index: int,
     ):
@@ -604,14 +571,12 @@ class OptimizationVariableContainer:
             The list of unscaled SX or MX variable associated with this variable
         cx_scaled: list
             The list of scaled SX or MX variable associated with this variable
-        mx: MX
-            The symbolic variable associated to this variable
         mapping
             The mapping to apply to the unscaled variable
         node_index
             The index of the node for the scaled variable
         """
-        self._scaled[node_index].append(name, cx_scaled, mx, mapping)
+        self._scaled[node_index].append(name, cx_scaled, mapping)
         self._unscaled[node_index].append_from_scaled(name, cx, self._scaled[node_index])
 
     def __contains__(self, item: str):

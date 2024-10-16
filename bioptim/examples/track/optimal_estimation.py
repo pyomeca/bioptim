@@ -224,10 +224,9 @@ def main():
     n_marker = model.nbMarkers()
 
     symbolic_states = MX.sym("q", n_q, 1)
-    markers_fun = biorbd.to_casadi_func("ForwardKin", model.markers, symbolic_states)
     markers_ref = np.zeros((3, n_marker, n_shooting + 1))
     for i_node in range(n_shooting + 1):
-        markers_ref[:, :, i_node] = markers_fun(q[:, i_node])
+        markers_ref[:, :, i_node] = model.markers()(q[:, i_node])
 
     ocp = prepare_optimal_estimation(
         biorbd_model_path=biorbd_model_path,

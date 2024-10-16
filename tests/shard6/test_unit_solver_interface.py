@@ -18,7 +18,7 @@ def nlp_sx():
 @pytest.fixture
 def nlp_mx():
     # Create a dummy NonLinearProgram object with necessary attributes
-    nlp = NonLinearProgram(None)
+    nlp = NonLinearProgram(PhaseDynamics.SHARED_DURING_THE_PHASE, use_sx=False)
     nlp.X = [MX(np.array([[1], [2], [3]]))]
     nlp.X_scaled = [MX(np.array([[4], [5], [6]]))]
     # Add more attributes as needed
@@ -34,6 +34,6 @@ def nlp_control_sx():
 
 @pytest.fixture
 def nlp_control_mx():
-    nlp = NonLinearProgram(PhaseDynamics.SHARED_DURING_THE_PHASE)
+    nlp = NonLinearProgram(PhaseDynamics.SHARED_DURING_THE_PHASE, use_sx=False)
     nlp.U_scaled = [MX(np.array([[1], [2], [3]]))]
     return nlp

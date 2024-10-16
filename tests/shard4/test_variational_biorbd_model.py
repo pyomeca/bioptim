@@ -23,7 +23,7 @@ def test_variational_model():
     q = MX([3.0, 4.0])
     qdot = MX([1.0, 2.0])
 
-    TestUtils.assert_equal(model.lagrangian(q, qdot), -4.34239126)
+    TestUtils.assert_equal(model.lagrangian()(q, qdot), -4.34239126)
 
     time_step = MX(0.5)
 

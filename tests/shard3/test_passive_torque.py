@@ -30,7 +30,7 @@ class OptimalControlProgram:
         self.n_phases = 1
         self.nlp = [nlp]
         parameters_list = ParameterList(use_sx=use_sx)
-        self.parameters = ParameterContainer()
+        self.parameters = ParameterContainer(use_sx=use_sx)
         self.parameters.initialize(parameters_list)
         self.implicit_constraints = ConstraintList()
         self.n_threads = 1
@@ -42,14 +42,14 @@ class OptimalControlProgram:
 @pytest.mark.parametrize("rigidbody_dynamics", [RigidBodyDynamics.ODE])
 def test_torque_driven_with_passive_torque(with_passive_torque, cx, rigidbody_dynamics, phase_dynamics):
     # Prepare the program
-    nlp = NonLinearProgram(phase_dynamics=phase_dynamics)
+    nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
-    nlp.time_mx = MX.sym("time", 1, 1)
-    nlp.dt_mx = MX.sym("dt", 1, 1)
+    nlp.time_cx = cx.sym("time", 1, 1)
+    nlp.dt = cx.sym("dt", 1, 1)
     nlp.initialize(cx)
     nlp.x_scaling = VariableScalingList()
     nlp.xdot_scaling = VariableScalingList()
@@ -58,7 +58,7 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, rigidbody_dy
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
-    ocp = OptimalControlProgram(nlp, use_sx=(True if cx == SX else False))
+    ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
         ocp,
@@ -129,14 +129,14 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, rigidbody_dy
 @pytest.mark.parametrize("with_passive_torque", [False, True])
 def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx, phase_dynamics):
     # Prepare the program
-    nlp = NonLinearProgram(phase_dynamics=phase_dynamics)
+    nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
-    nlp.time_mx = MX.sym("time", 1, 1)
-    nlp.dt_mx = MX.sym("dt", 1, 1)
+    nlp.time_cx = cx.sym("time", 1, 1)
+    nlp.dt = cx.sym("dt", 1, 1)
     nlp.initialize(cx)
     nlp.x_scaling = VariableScalingList()
     nlp.xdot_scaling = VariableScalingList()
@@ -145,7 +145,7 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx, p
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
-    ocp = OptimalControlProgram(nlp, use_sx=(True if cx == SX else False))
+    ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
     nlp.control_type = ControlType.CONSTANT
 
     NonLinearProgram.add(
@@ -226,21 +226,21 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx, p
 @pytest.mark.parametrize("with_residual_torque", [False, True])
 def test_torque_activation_driven_with_passive_torque(with_passive_torque, with_residual_torque, cx, phase_dynamics):
     # Prepare the program
-    nlp = NonLinearProgram(phase_dynamics=phase_dynamics)
+    nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
-    nlp.time_mx = MX.sym("time", 1, 1)
-    nlp.dt_mx = MX.sym("dt", 1, 1)
+    nlp.time_cx = cx.sym("time", 1, 1)
+    nlp.dt = cx.sym("dt", 1, 1)
     nlp.initialize(cx)
     nlp.x_scaling = VariableScalingList()
     nlp.xdot_scaling = VariableScalingList()
     nlp.u_scaling = VariableScalingList()
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 2, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
-    ocp = OptimalControlProgram(nlp, use_sx=(True if cx == SX else False))
+    ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
         ocp,
@@ -347,12 +347,12 @@ def test_torque_activation_driven_with_passive_torque(with_passive_torque, with_
 @pytest.mark.parametrize("rigidbody_dynamics", [RigidBodyDynamics.ODE])
 def test_muscle_driven_with_passive_torque(with_passive_torque, rigidbody_dynamics, cx, phase_dynamics):
     # Prepare the program
-    nlp = NonLinearProgram(phase_dynamics=phase_dynamics)
+    nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = BiorbdModel(TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod")
     nlp.ns = 5
     nlp.cx = cx
-    nlp.time_mx = MX.sym("time", 1, 1)
-    nlp.dt_mx = MX.sym("dt", 1, 1)
+    nlp.time_cx = cx.sym("time", 1, 1)
+    nlp.dt = cx.sym("dt", 1, 1)
     nlp.initialize(cx)
     nlp.x_scaling = VariableScalingList()
     nlp.xdot_scaling = VariableScalingList()
@@ -361,7 +361,7 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, rigidbody_dynami
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 2 + nlp.model.nb_muscles, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_muscles, 1))
 
-    ocp = OptimalControlProgram(nlp, use_sx=(True if cx == SX else False))
+    ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
         ocp,
