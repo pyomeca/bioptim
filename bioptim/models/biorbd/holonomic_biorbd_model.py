@@ -205,9 +205,9 @@ class HolonomicBiorbdModel(BiorbdModel):
         return vertcat(first_line, second_line)
 
     def partitioned_non_linear_effect(self, q, qdot, f_ext=None, f_contacts=None):
-        if f_ext is not None:
+        if f_ext is not None and f_ext.shape[0] != 0:
             raise NotImplementedError("External forces are not implemented yet.")
-        if f_contacts is not None:
+        if f_contacts is not None and f_contacts.shape[0] != 0:
             raise NotImplementedError("Contact forces are not implemented yet.")
         external_forces_set = self.model.externalForceSet()
         non_linear_effect = self.model.NonLinearEffect(q, qdot, external_forces_set).to_mx()
@@ -251,9 +251,9 @@ class HolonomicBiorbdModel(BiorbdModel):
         ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
         https://doi.org/10.5194/ms-4-199-2013, 2013.
         """
-        if external_forces is not None:
+        if external_forces is not None and external_forces.shape[0] != 0:
             raise NotImplementedError("External forces are not implemented yet.")
-        if f_contacts is not None:
+        if f_contacts is not None and f_contacts.shape[0] != 0:
             raise NotImplementedError("Contact forces are not implemented yet.")
 
         # compute q and qdot
@@ -363,26 +363,18 @@ class HolonomicBiorbdModel(BiorbdModel):
         This function might be misleading because it can be used for numerical purpose with DM
         or for symbolic purpose with MX. The return type is not enforced.
         """
-        decision_variables = MX.sym("decision_variables", self.nb_dependent_joints)
-        q = self.state_from_partition(q_u, decision_variables)
+        decision_variables_sym = MX.sym("decision_variables_sym", self.nb_dependent_joints)
+        q_u_sym = MX.sym("q_u_sym", q_u.shape[0], q_u.shape[1])
+        q = self.state_from_partition(q_u_sym, decision_variables_sym)
         mx_residuals = self.holonomic_constraints(q)
 
-        if isinstance(q_u, MX | SX):
-            q_v_init = MX.zeros(self.nb_dependent_joints) if q_v_init is None else q_v_init
-            ifcn_input = (q_v_init, q_u)
-            residuals = Function(
-                "final_states_residuals",
-                [decision_variables, q_u],
-                [mx_residuals],
-            ).expand()
-        else:
-            q_v_init = DM.zeros(self.nb_dependent_joints) if q_v_init is None else q_v_init
-            ifcn_input = (q_v_init,)
-            residuals = Function(
-                "final_states_residuals",
-                [decision_variables],
-                [mx_residuals],
-            ).expand()
+        q_v_init = MX.zeros(self.nb_dependent_joints) if q_v_init is None else q_v_init
+        ifcn_input = (q_v_init, q_u)
+        residuals = Function(
+            "final_states_residuals",
+            [decision_variables_sym, q_u_sym],
+            [mx_residuals],
+        ).expand()
 
         # Create an implicit function instance to solve the system of equations
         opts = {"abstol": self._newton_tol}

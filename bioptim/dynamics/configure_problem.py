@@ -1403,7 +1403,7 @@ class ConfigureProblem:
         axes_idx: BiMapping
             The axes index to use for the plot
         """
-        new_variable_config = NewVariableConfiguration(
+        NewVariableConfiguration(
             name,
             name_elements,
             ocp,
