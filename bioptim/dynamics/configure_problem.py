@@ -15,10 +15,12 @@ from ..misc.enums import (
     RigidBodyDynamics,
     SoftContactDynamics,
     PhaseDynamics,
+    ReferenceFrame,
 )
 from ..misc.fcn_enum import FcnEnum
 from ..misc.mapping import BiMapping, Mapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
+from ..misc.external_forces import ExternalForcesList
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
 from ..optimization.problem_type import SocpType
 
@@ -2050,6 +2052,7 @@ class Dynamics(OptionGeneric):
         state_continuity_weight: float | None = None,
         phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
         numerical_data_timeseries: dict[str, np.ndarray] = None,
+        external_forces: ExternalForcesList = None,
         **extra_parameters: Any,
     ):
         """
@@ -2097,7 +2100,27 @@ class Dynamics(OptionGeneric):
         self.state_continuity_weight = state_continuity_weight
         self.phase_dynamics = phase_dynamics
         self.numerical_data_timeseries = numerical_data_timeseries
+        self.external_forces_in_numerical_timeseries(external_forces)
 
+    def external_forces_in_numerical_timeseries(self, external_forces):
+        if external_forces:
+            self.numerical_data_timeseries = {} if self.numerical_data_timeseries is None else self.numerical_data_timeseries
+            for key in external_forces.keys():
+                data = None
+                force = external_forces[key]
+                if force.torque_data is not None:
+                    data = force.torque_data
+                if force.linear_force_data is not None:
+                    data = force.linear_force_data if data is None else np.concatenate((data, force.linear_force_data), axis=1)
+                if force.point_of_application is not None:
+                    data = force.point_of_application if data is None else np.concatenate((data, force.point_of_application), axis=1)
+
+                if force.force_reference_frame == ReferenceFrame.LOCAL:
+                    self.numerical_data_timeseries["forces_in_local"] = data
+                elif force.point_of_application_reference_frame == ReferenceFrame.LOCAL:
+                    self.numerical_data_timeseries["translational_forces"] = data
+                else:
+                    self.numerical_data_timeseries["forces_in_global"] = data
 
 class DynamicsList(UniquePerPhaseOptionList):
     """

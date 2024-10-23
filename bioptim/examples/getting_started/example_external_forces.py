@@ -30,6 +30,9 @@ from bioptim import (
     OdeSolverBase,
     Solver,
     PhaseDynamics,
+    ExternalForcesList,
+    ExternalForcesType,
+    ReferenceFrame,
 )
 
 
@@ -69,33 +72,61 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path, segments_to_apply_forces_in_global=["Seg1", "Test"])
-    # segments_to_apply_forces_in_global is necessary to define the external forces.
-    # Please note that they should be declared in the same order as the external forces (in the global reference frame) values bellow.
-
     # Problem parameters
     n_shooting = 30
     final_time = 2
 
+    # TODO: add Seg1_torque = np.zeros((3, n_shooting + 1)) to test
+    # TODO test global et local
+
+    # Linear external forces
+    Seg1_force = np.zeros((3, n_shooting + 1))
+    Seg1_force[2, :] = -2
+    Seg1_force[2, 4] = -22
+
+    Test_force = np.zeros((3, n_shooting + 1))
+    Test_force[2, :] = 5
+    Test_force[2, 4] = 52
+
+    if use_point_of_applications:
+        Seg1_point_of_application = np.zeros((3, n_shooting + 1))
+        Seg1_point_of_application[0, :] = 0.05
+        Seg1_point_of_application[1, :] = -0.05
+        Seg1_point_of_application[2, :] = 0.007
+
+        Test_point_of_application = np.zeros((3, n_shooting + 1))
+        Test_point_of_application[0, :] = -0.009
+        Test_point_of_application[1, :] = 0.01
+        Test_point_of_application[2, :] = -0.01
+    else:
+        Seg1_point_of_application = None
+        Test_point_of_application = None
+
+    external_forces = ExternalForcesList()
+    external_forces.add(
+        key="Seg1",  # Name of the segment where the external force is applied
+        data=Seg1_force,  # 3 x (n_shooting_points+1) array
+        force_type=ExternalForcesType.LINEAR_FORCE,  # Type of the external force
+        force_reference_frame=ReferenceFrame.GLOBAL,  # Reference frame of the external force
+        point_of_application=Seg1_point_of_application,  # Position of the point of application
+        point_of_application_reference_frame=ReferenceFrame.GLOBAL,  # Reference frame of the point of application
+        phase=0,  # Pariterre, did we deal with phases already?
+    )
+    external_forces.add(
+        key="Test",  # Name of the segment where the external force is applied
+        data=Test_force,  # 3 x (n_shooting_points+1) array
+        force_type=ExternalForcesType.LINEAR_FORCE,  # Type of the external force
+        force_reference_frame=ReferenceFrame.GLOBAL,  # Reference frame of the external force
+        point_of_application=Test_point_of_application,  # Position of the point of application
+        point_of_application_reference_frame=ReferenceFrame.GLOBAL,  # Reference frame of the point of application
+        phase=0,
+    )
+
+    bio_model = BiorbdModel(biorbd_model_path, external_forces=external_forces)
+
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100)
-
-    # External forces (shape: 9 x nb_external_forces x (n_shooting_points+1))
-    # First components are the moments and forces
-    forces_in_global = np.zeros((9, 2, n_shooting + 1))
-    forces_in_global[5, 0, :] = -2
-    forces_in_global[5, 1, :] = 5
-    forces_in_global[5, 0, 4] = -22
-    forces_in_global[5, 1, 4] = 52
-    if use_point_of_applications:
-        # Last components are the point of application
-        forces_in_global[6, 0, :] = 0.05
-        forces_in_global[7, 1, :] = 0.01
-        forces_in_global[8, 0, :] = 0.007
-        forces_in_global[6, 1, :] = -0.009
-        forces_in_global[7, 0, :] = -0.05
-        forces_in_global[8, 1, :] = -0.01
 
     # Dynamics
     dynamics = DynamicsList()
@@ -104,7 +135,7 @@ def prepare_ocp(
         DynamicsFcn.TORQUE_DRIVEN,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
-        numerical_data_timeseries={"forces_in_global": forces_in_global},  # the key word "forces_in_global" must be used
+        external_forces=external_forces,
     )
 
     # Constraints

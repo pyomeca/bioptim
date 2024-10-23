@@ -454,58 +454,37 @@ class NonLinearProgram:
     def get_external_forces(
         self, states: MX.sym, controls: MX.sym, algebraic_states: MX.sym, numerical_timeseries: MX.sym
     ):
+
+        def retrieve_forces(name: str, external_forces: MX):
+            if name in self.states:
+                external_forces = vertcat(external_forces,
+                                          DynamicsFunctions.get(self.states[name], states))
+            if name in self.controls:
+                external_forces = vertcat(
+                    external_forces, DynamicsFunctions.get(self.controls[name], controls)
+                )
+            if name in self.algebraic_states:
+                external_forces = vertcat(
+                    external_forces, DynamicsFunctions.get(self.algebraic_states[name], algebraic_states)
+                )
+            if self.numerical_timeseries is not None:
+                component_numerical_timeseries = 0
+                for key in self.numerical_timeseries.keys():
+                    if name in key:
+                        component_numerical_timeseries += 1
+                if component_numerical_timeseries > 0:
+                    for i_component in range(component_numerical_timeseries):
+                        external_forces = vertcat(
+                            external_forces,
+                            DynamicsFunctions.get(
+                                self.numerical_timeseries[f"{name}_{i_component}"], numerical_timeseries
+                            ),
+                        )
+            return external_forces
+
         external_forces = self.cx(0, 1)
-
-        if "forces_in_global" in self.states:
-            external_forces = vertcat(external_forces, DynamicsFunctions.get(self.states["forces_in_global"], states))
-        if "forces_in_global" in self.controls:
-            external_forces = vertcat(
-                external_forces, DynamicsFunctions.get(self.controls["forces_in_global"], controls)
-            )
-        if "forces_in_global" in self.algebraic_states:
-            external_forces = vertcat(
-                external_forces, DynamicsFunctions.get(self.algebraic_states["forces_in_global"], algebraic_states)
-            )
-
-        if self.numerical_timeseries is not None:
-            component_numerical_timeseries = 0
-            for key in self.numerical_timeseries.keys():
-                if "forces_in_global" in key:
-                    component_numerical_timeseries += 1
-            if component_numerical_timeseries > 0:
-                for i_component in range(component_numerical_timeseries):
-                    external_forces = vertcat(
-                        external_forces,
-                        DynamicsFunctions.get(
-                            self.numerical_timeseries[f"forces_in_global_{i_component}"], numerical_timeseries
-                        ),
-                    )
-
-        if "translational_forces" in self.states:
-            external_forces = vertcat(
-                external_forces, DynamicsFunctions.get(self.states["translational_forces"], states)
-            )
-        if "translational_forces" in self.controls:
-            external_forces = vertcat(
-                external_forces, DynamicsFunctions.get(self.controls["translational_forces"], controls)
-            )
-        if "translational_forces" in self.algebraic_states:
-            external_forces = vertcat(
-                external_forces, DynamicsFunctions.get(self.algebraic_states["translational_forces"], algebraic_states)
-            )
-
-        if self.numerical_timeseries is not None:
-            component_numerical_timeseries = 0
-            for key in self.numerical_timeseries.keys():
-                if "translational_forces" in key:
-                    component_numerical_timeseries += 1
-            if component_numerical_timeseries > 0:
-                for i_component in range(component_numerical_timeseries):
-                    external_forces = vertcat(
-                        external_forces,
-                        DynamicsFunctions.get(
-                            self.numerical_timeseries[f"translational_forces{i_component}"], numerical_timeseries
-                        ),
-                    )
+        external_forces = retrieve_forces("forces_in_global", external_forces)
+        external_forces = retrieve_forces("forces_in_local", external_forces)
+        external_forces = retrieve_forces("translational_forces", external_forces)
 
         return external_forces

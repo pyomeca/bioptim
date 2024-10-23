@@ -13,6 +13,8 @@ from ..utils import _var_mapping, bounds_from_ranges
 from ...limits.path_conditions import Bounds
 from ...misc.mapping import BiMapping, BiMappingList
 from ...misc.utils import check_version
+from ...misc.external_forces import ExternalForcesList, get_external_forces_segments
+from ...misc.enums import ReferenceFrame
 from ...optimization.parameters import ParameterList
 
 check_version(biorbd, "1.11.1", "1.12.0")
@@ -27,8 +29,7 @@ class BiorbdModel:
         self,
         bio_model: str | biorbd.Model,
         friction_coefficients: np.ndarray = None,
-        segments_to_apply_forces_in_global: list[str] = None,
-        segments_to_apply_translational_forces: list[str] = None,
+        external_forces: ExternalForcesList = None,
         parameters: ParameterList = None,
     ):
         """
@@ -37,11 +38,7 @@ class BiorbdModel:
         ----------
         bio_model
         friction_coefficients
-        TODO: @ipuch
-        segments_to_apply_forces_in_global:
-            Moments and forces (Mx, My Mz, Fx, Fy, Fz, Px, Py, Pz) expressed in the global reference frame will be applied at the global origin or the point of application expressed in the global reference frame to the segments listed here
-        segments_to_apply_translational_forces:
-            Forces (Fx, Fy, Fz, Px, Py, Pz) expressed in the local reference frame will be applied at the point of application expressed in the local reference frame of the segments listed here
+        external_forces
         parameters
         """
         if not isinstance(bio_model, str) and not isinstance(bio_model, biorbd.Model):
@@ -52,11 +49,11 @@ class BiorbdModel:
             for param_key in parameters:
                 parameters[param_key].apply_parameter(self)
         self._friction_coefficients = friction_coefficients
-        if segments_to_apply_forces_in_global is None:
-            segments_to_apply_forces_in_global = []
+
+        # TODO extend the interface to make conversions and allow all mixed cases in an unified way
+        segments_to_apply_forces_in_global, segments_to_apply_forces_in_local, segments_to_apply_translational_forces = get_external_forces_segments(external_forces)
         self._segments_to_apply_forces_in_global = segments_to_apply_forces_in_global
-        if segments_to_apply_translational_forces is None:
-            segments_to_apply_translational_forces = []
+        self._segments_to_apply_forces_in_local = segments_to_apply_forces_in_local
         self._segments_to_apply_translational_forces = segments_to_apply_translational_forces
 
         # Declaration of MX variables of the right shape for the creation of CasADi Functions
@@ -69,7 +66,7 @@ class BiorbdModel:
         self.activations = MX.sym("activations_mx", self.nb_muscles, 1)
 
         self.external_forces = MX.sym(
-            "external_forces_mx", 9 * self.nb_forces_in_global + 6 * self.nb_translational_forces, 1
+            "external_forces_mx", 9 * self.nb_forces_in_global + 9 * self.nb_forces_in_local + 6 * self.nb_translational_forces, 1
         )
         self.external_forces_set = self._dispatch_forces()
 
@@ -79,6 +76,10 @@ class BiorbdModel:
     @property
     def nb_forces_in_global(self) -> int:
         return len(self._segments_to_apply_forces_in_global)
+
+    @property
+    def nb_forces_in_local(self) -> int:
+        return len(self._segments_to_apply_forces_in_local)
 
     @property
     def nb_translational_forces(self) -> int:
@@ -447,24 +448,35 @@ class BiorbdModel:
 
     def _dispatch_forces(self):
 
-        if self.nb_forces_in_global == 0 and self.nb_translational_forces == 0:
+        if self.nb_forces_in_global == 0 and self.nb_forces_in_local == 0 and self.nb_translational_forces == 0:
             return None
         else:
             external_forces_set = self.model.externalForceSet()
             forces_in_global = reshape(
                 self.external_forces[: 9 * self.nb_forces_in_global], (9, self.nb_forces_in_global)
             )
+            forces_in_local = reshape(
+                self.external_forces[9 * self.nb_forces_in_global : 9 * self.nb_forces_in_global + 9 * self.nb_forces_in_local], (9, self.nb_forces_in_local)
+            )
             translational_forces = reshape(
-                self.external_forces[9 * self.nb_forces_in_global :], (6, self.nb_translational_forces)
+                self.external_forces[9 * self.nb_forces_in_global + 9 * self.nb_forces_in_local :], (6, self.nb_translational_forces)
             )
 
             if forces_in_global.shape[1] > 0:
-                # Add the external forces
+                # Add the external forces in the global reference frame
                 for i_element in range(forces_in_global.shape[1]):
                     name = self._segments_to_apply_forces_in_global[i_element]
                     values = forces_in_global[:6, i_element]
                     point_of_application = forces_in_global[6:9, i_element]
                     external_forces_set.add(name, values, point_of_application)
+
+            if forces_in_local.shape[1] > 0:
+                # Add the external forces in the local reference frame
+                for i_element in range(forces_in_local.shape[1]):
+                    name = self._segments_to_apply_forces_in_local[i_element]
+                    values = forces_in_local[:6, i_element]
+                    point_of_application = forces_in_local[6:9, i_element]
+                    external_forces_set.addInSegmentReferenceFrame(name, values, point_of_application)
 
             elif translational_forces.shape[1] > 0:
                 # Add the translational forces

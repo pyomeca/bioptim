@@ -173,7 +173,9 @@ from .dynamics.fatigue.xia_fatigue import XiaFatigue, XiaTauFatigue, XiaFatigueS
 from .dynamics.fatigue.michaud_fatigue import MichaudFatigue, MichaudTauFatigue
 from .dynamics.fatigue.effort_perception import EffortPerception, TauEffortPerception
 from .dynamics.ode_solver import OdeSolver, OdeSolverBase
+
 from .interfaces import Solver
+
 from .models.biorbd.biorbd_model import BiorbdModel
 from .models.biorbd.multi_biorbd_model import MultiBiorbdModel
 from .models.biorbd.holonomic_biorbd_model import HolonomicBiorbdModel
@@ -182,6 +184,7 @@ from .models.biorbd.stochastic_biorbd_model import StochasticBiorbdModel
 from .models.holonomic_constraints import HolonomicConstraintsFcn, HolonomicConstraintsList
 from .models.protocols.stochastic_biomodel import StochasticBioModel
 from .models.protocols.biomodel import BioModel
+
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint, ParameterConstraintList
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
 from .limits.multinode_constraint import MultinodeConstraintFcn, MultinodeConstraintList, MultinodeConstraint
@@ -191,6 +194,7 @@ from .limits.path_conditions import BoundsList, InitialGuessList, Bounds, Initia
 from .limits.fatigue_path_conditions import FatigueBounds, FatigueInitialGuess
 from .limits.penalty_controller import PenaltyController
 from .limits.penalty_helpers import PenaltyHelpers
+
 from .misc.enums import (
     Axis,
     Node,
@@ -209,8 +213,12 @@ from .misc.enums import (
     MultiCyclicCycleSolutions,
     PhaseDynamics,
     OnlineOptim,
+    ReferenceFrame,
+    ExternalForcesType,
 )
 from .misc.mapping import BiMappingList, BiMapping, Mapping, NodeMapping, NodeMappingList, SelectionMapping, Dependency
+from .misc.external_forces import ExternalForces, ExternalForcesList
+
 from .optimization.multi_start import MultiStart
 from .optimization.non_linear_program import NonLinearProgram
 from .optimization.optimal_control_program import OptimalControlProgram

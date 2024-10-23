@@ -222,3 +222,20 @@ class MultiCyclicCycleSolutions(Enum):
     NONE = "none"
     FIRST_CYCLES = "first_cycles"
     ALL_CYCLES = "all_cycles"
+
+
+class ReferenceFrame(Enum):
+    """
+    Selection of reference frame
+    """
+
+    GLOBAL = "global"
+    LOCAL = "local"
+
+class ExternalForcesType(Enum):
+    """
+    Selection of external forces type
+    """
+
+    LINEAR_FORCE = "linear_force"
+    TORQUE = "torque"
