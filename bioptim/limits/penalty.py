@@ -384,9 +384,9 @@ class PenaltyFunctionAbstract:
 
             qddot = PenaltyFunctionAbstract._get_qddot(controller, "cx")
 
-            markers =controller.model.markers_accelerations(reference_index=reference_jcs)(
-                    controller.q, controller.qdot, qddot, controller.parameters.cx
-                )
+            markers = controller.model.markers_accelerations(reference_index=reference_jcs)(
+                controller.q, controller.qdot, qddot, controller.parameters.cx
+            )
 
             return markers
 
