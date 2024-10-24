@@ -2106,21 +2106,36 @@ class Dynamics(OptionGeneric):
         if external_forces:
             self.numerical_data_timeseries = {} if self.numerical_data_timeseries is None else self.numerical_data_timeseries
             for key in external_forces.keys():
-                data = None
                 force = external_forces[key]
                 if force.torque_data is not None:
-                    data = force.torque_data
+                    data = force.torque_data.reshape(3, 1, -1)
+                else:
+                    data = np.zeros((3, 1, force.len))
                 if force.linear_force_data is not None:
-                    data = force.linear_force_data if data is None else np.concatenate((data, force.linear_force_data), axis=1)
+                    data = np.concatenate((data, force.linear_force_data.reshape(3, 1, -1)), axis=0)
+                else:
+                    data = np.concatenate((data, np.zeros((3, 1, force.len))), axis=0)
                 if force.point_of_application is not None:
-                    data = force.point_of_application if data is None else np.concatenate((data, force.point_of_application), axis=1)
+                    data = np.concatenate((data, force.point_of_application.reshape(3, 1, -1)), axis=0)
+                else:
+                    data = np.concatenate((data, np.zeros((3, 1, force.len))), axis=0)
 
                 if force.force_reference_frame == ReferenceFrame.LOCAL:
-                    self.numerical_data_timeseries["forces_in_local"] = data
+                    if "forces_in_local" in self.numerical_data_timeseries:
+                        self.numerical_data_timeseries["forces_in_local"] = np.concatenate((self.numerical_data_timeseries["forces_in_local"], data), axis=1)
+                    else:
+                        self.numerical_data_timeseries["forces_in_local"] = data
                 elif force.point_of_application_reference_frame == ReferenceFrame.LOCAL:
-                    self.numerical_data_timeseries["translational_forces"] = data
+                    # exclude the torques for translational forces
+                    if "translational_forces" in self.numerical_data_timeseries:
+                        self.numerical_data_timeseries["translational_forces"] = np.concatenate((self.numerical_data_timeseries["translational_forces"], data[3:, :, :]), axis=1)
+                    else:
+                        self.numerical_data_timeseries["translational_forces"] = data[3:, :, ]
                 else:
-                    self.numerical_data_timeseries["forces_in_global"] = data
+                    if "forces_in_global" in self.numerical_data_timeseries:
+                        self.numerical_data_timeseries["forces_in_global"] = np.concatenate((self.numerical_data_timeseries["forces_in_global"], data), axis=1)
+                    else:
+                        self.numerical_data_timeseries["forces_in_global"] = data
 
 class DynamicsList(UniquePerPhaseOptionList):
     """
