@@ -20,6 +20,9 @@ from bioptim import (
     ParameterContainer,
     ParameterList,
     PhaseDynamics,
+    ExternalForcesList,
+    ExternalForcesType,
+    ReferenceFrame,
 )
 from tests.utils import TestUtils
 
@@ -44,20 +47,85 @@ class OptimalControlProgram:
 def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
+    nlp.ns = 5
 
-    segments_to_apply_forces_in_global = None
-    segments_to_apply_translational_forces = None
-
+    external_forces = None
     if with_external_force:
-        segments_to_apply_forces_in_global = ["Seg0"]
+        external_forces_array = np.zeros((9, nlp.ns + 1))
+        external_forces_array[:, 0] = [
+            0.374540118847362,
+            0.950714306409916,
+            0.731993941811405,
+            0.598658484197037,
+            0.156018640442437,
+            0.155994520336203,
+            0,
+            0,
+            0,
+        ]
+        external_forces_array[:, 1] = [
+            0.058083612168199,
+            0.866176145774935,
+            0.601115011743209,
+            0.708072577796045,
+            0.020584494295802,
+            0.969909852161994,
+            0,
+            0,
+            0,
+        ]
+        external_forces_array[:, 2] = [
+            0.832442640800422,
+            0.212339110678276,
+            0.181824967207101,
+            0.183404509853434,
+            0.304242242959538,
+            0.524756431632238,
+            0,
+            0,
+            0,
+        ]
+        external_forces_array[:, 3] = [
+            0.431945018642116,
+            0.291229140198042,
+            0.611852894722379,
+            0.139493860652042,
+            0.292144648535218,
+            0.366361843293692,
+            0,
+            0,
+            0,
+        ]
+        external_forces_array[:, 4] = [
+            0.456069984217036,
+            0.785175961393014,
+            0.19967378215836,
+            0.514234438413612,
+            0.592414568862042,
+            0.046450412719998,
+            0,
+            0,
+            0,
+        ]
+
+        external_forces = ExternalForcesList()
+        external_forces.add(key="Seg0",
+                            data=external_forces_array[:3, :],
+                            force_type=ExternalForcesType.TORQUE,
+                            force_reference_frame=ReferenceFrame.GLOBAL,
+                            phase=0)
+        external_forces.add(key="Seg0",
+                            data=external_forces_array[3:6, :],
+                            force_type=ExternalForcesType.LINEAR_FORCE,
+                            force_reference_frame=ReferenceFrame.GLOBAL,
+                            phase=0)
+
 
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod",
-        segments_to_apply_forces_in_global=segments_to_apply_forces_in_global,
-        segments_to_apply_translational_forces=segments_to_apply_translational_forces,
-    )
+        external_forces=external_forces,
+        )
 
-    nlp.ns = 5
     nlp.cx = cx
     nlp.time_cx = cx.sym("time", 1, 1)
     nlp.dt = cx.sym("dt", 1, 1)
@@ -70,65 +138,6 @@ def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
 
-    external_forces = None
-    if with_external_force:
-        external_forces = np.zeros((9, 1, nlp.ns + 1))
-        external_forces[:, 0, 0] = [
-            0.374540118847362,
-            0.950714306409916,
-            0.731993941811405,
-            0.598658484197037,
-            0.156018640442437,
-            0.155994520336203,
-            0,
-            0,
-            0,
-        ]
-        external_forces[:, 0, 1] = [
-            0.058083612168199,
-            0.866176145774935,
-            0.601115011743209,
-            0.708072577796045,
-            0.020584494295802,
-            0.969909852161994,
-            0,
-            0,
-            0,
-        ]
-        external_forces[:, 0, 2] = [
-            0.832442640800422,
-            0.212339110678276,
-            0.181824967207101,
-            0.183404509853434,
-            0.304242242959538,
-            0.524756431632238,
-            0,
-            0,
-            0,
-        ]
-        external_forces[:, 0, 3] = [
-            0.431945018642116,
-            0.291229140198042,
-            0.611852894722379,
-            0.139493860652042,
-            0.292144648535218,
-            0.366361843293692,
-            0,
-            0,
-            0,
-        ]
-        external_forces[:, 0, 4] = [
-            0.456069984217036,
-            0.785175961393014,
-            0.19967378215836,
-            0.514234438413612,
-            0.592414568862042,
-            0.046450412719998,
-            0,
-            0,
-            0,
-        ]
-
     ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
@@ -139,8 +148,8 @@ def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
             with_contact=with_contact,
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
-            numerical_data_timeseries=({"forces_in_global": external_forces} if external_forces is not None else None),
-        ),
+            external_forces=external_forces,
+            ),
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -164,7 +173,7 @@ def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
-    numerical_timeseries = external_forces[:, 0, 0] if with_external_force else []
+    numerical_timeseries = external_forces_array[:, 0] if with_external_force else []
     time = np.random.rand(2)
     x_out = np.array(
         nlp.dynamics_func(
@@ -296,11 +305,84 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
 def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_dynamics):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
+    nlp.ns = 5
+
+    external_forces = None
+    if with_external_force:
+        external_forces_array = np.zeros((9, nlp.ns + 1))
+        external_forces_array[:, 0] = [
+            0.3745401188473625,
+            0.9507143064099162,
+            0.7319939418114051,
+            0.5986584841970366,
+            0.15601864044243652,
+            0.15599452033620265,
+            0,
+            0,
+            0,
+        ]
+        external_forces_array[:, 1] = [
+            0.05808361216819946,
+            0.8661761457749352,
+            0.6011150117432088,
+            0.7080725777960455,
+            0.020584494295802447,
+            0.9699098521619943,
+            0,
+            0,
+            0,
+        ]
+        external_forces_array[:, 2] = [
+            0.8324426408004217,
+            0.21233911067827616,
+            0.18182496720710062,
+            0.18340450985343382,
+            0.3042422429595377,
+            0.5247564316322378,
+            0,
+            0,
+            0,
+        ]
+        external_forces_array[:, 3] = [
+            0.43194501864211576,
+            0.2912291401980419,
+            0.6118528947223795,
+            0.13949386065204183,
+            0.29214464853521815,
+            0.3663618432936917,
+            0,
+            0,
+            0,
+        ]
+        external_forces_array[:, 4] = [
+            0.45606998421703593,
+            0.7851759613930136,
+            0.19967378215835974,
+            0.5142344384136116,
+            0.5924145688620425,
+            0.046450412719997725,
+            0,
+            0,
+            0,
+        ]
+        external_forces = ExternalForcesList()
+        external_forces.add(
+            key="Seg0",
+            data=external_forces_array[:3, :],
+            force_type=ExternalForcesType.TORQUE,
+            force_reference_frame=ReferenceFrame.GLOBAL,
+            phase=0)
+        external_forces.add(
+            key="Seg0",
+            data=external_forces_array[3:6, :],
+            force_type=ExternalForcesType.LINEAR_FORCE,
+            force_reference_frame=ReferenceFrame.GLOBAL,
+            phase=0)
+        
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod",
-        segments_to_apply_forces_in_global=["Seg0"],
+        external_forces=external_forces,
     )
-    nlp.ns = 5
     nlp.cx = cx
     nlp.time_cx = cx.sym("time", 1, 1)
     nlp.dt = cx.sym("dt", 1, 1)
@@ -315,65 +397,6 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
     ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
     nlp.control_type = ControlType.CONSTANT
 
-    external_forces = None
-    if with_external_force:
-        external_forces = np.zeros((9, 1, nlp.ns + 1))
-        external_forces[:, 0, 0] = [
-            0.3745401188473625,
-            0.9507143064099162,
-            0.7319939418114051,
-            0.5986584841970366,
-            0.15601864044243652,
-            0.15599452033620265,
-            0,
-            0,
-            0,
-        ]
-        external_forces[:, 0, 1] = [
-            0.05808361216819946,
-            0.8661761457749352,
-            0.6011150117432088,
-            0.7080725777960455,
-            0.020584494295802447,
-            0.9699098521619943,
-            0,
-            0,
-            0,
-        ]
-        external_forces[:, 0, 2] = [
-            0.8324426408004217,
-            0.21233911067827616,
-            0.18182496720710062,
-            0.18340450985343382,
-            0.3042422429595377,
-            0.5247564316322378,
-            0,
-            0,
-            0,
-        ]
-        external_forces[:, 0, 3] = [
-            0.43194501864211576,
-            0.2912291401980419,
-            0.6118528947223795,
-            0.13949386065204183,
-            0.29214464853521815,
-            0.3663618432936917,
-            0,
-            0,
-            0,
-        ]
-        external_forces[:, 0, 4] = [
-            0.45606998421703593,
-            0.7851759613930136,
-            0.19967378215835974,
-            0.5142344384136116,
-            0.5924145688620425,
-            0.046450412719997725,
-            0,
-            0,
-            0,
-        ]
-
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
@@ -382,7 +405,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
             with_contact=with_contact,
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
-            numerical_data_timeseries=({"forces_in_global": external_forces} if external_forces is not None else None),
+            external_forces=external_forces,
         ),
         False,
     )
@@ -408,7 +431,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
-    numerical_timeseries = external_forces[:, 0, 0] if with_external_force else []
+    numerical_timeseries = external_forces_array[:, 0] if with_external_force else []
     time = np.random.rand(2)
     x_out = np.array(
         nlp.dynamics_func(
@@ -651,11 +674,87 @@ def test_soft_contacts_dynamics_errors(dynamics, phase_dynamics):
 def test_torque_activation_driven(with_contact, with_external_force, cx, phase_dynamics):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
+    nlp.ns = 5
+
+    external_forces = None
+    if with_external_force:
+        external_forces_array = np.zeros((9, nlp.ns + 1))
+        external_forces_array[:, 0] = [
+            0.3745401188473625,
+            0.9507143064099162,
+            0.7319939418114051,
+            0.5986584841970366,
+            0.15601864044243652,
+            0.15599452033620265,
+            0,
+            0,
+            0,
+        ]
+        external_forces_array[:, 1] = [
+            0.05808361216819946,
+            0.8661761457749352,
+            0.6011150117432088,
+            0.7080725777960455,
+            0.020584494295802447,
+            0.9699098521619943,
+            0,
+            0,
+            0,
+        ]
+        external_forces_array[:, 2] = [
+            0.8324426408004217,
+            0.21233911067827616,
+            0.18182496720710062,
+            0.18340450985343382,
+            0.3042422429595377,
+            0.5247564316322378,
+            0,
+            0,
+            0,
+        ]
+        external_forces_array[:, 3] = [
+            0.43194501864211576,
+            0.2912291401980419,
+            0.6118528947223795,
+            0.13949386065204183,
+            0.29214464853521815,
+            0.3663618432936917,
+            0,
+            0,
+            0,
+        ]
+        external_forces_array[:, 4] = [
+            0.45606998421703593,
+            0.7851759613930136,
+            0.19967378215835974,
+            0.5142344384136116,
+            0.5924145688620425,
+            0.046450412719997725,
+            0,
+            0,
+            0,
+        ]
+        external_forces = ExternalForcesList()
+        external_forces.add(
+            key="Seg0",
+            data=external_forces_array[:3, :],
+            force_type=ExternalForcesType.TORQUE,
+            force_reference_frame=ReferenceFrame.GLOBAL,
+            phase=0,
+        )
+        external_forces.add(
+            key="Seg0",
+            data=external_forces_array[3:6, :],
+            force_type=ExternalForcesType.LINEAR_FORCE,
+            force_reference_frame=ReferenceFrame.GLOBAL,
+            phase=0,
+        )
+
+
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod",
-        segments_to_apply_forces_in_global=["Seg0"],
+        external_forces=external_forces,
     )
-    nlp.ns = 5
     nlp.cx = cx
     nlp.time_cx = cx.sym("time", 1, 1)
     nlp.dt = cx.sym("dt", 1, 1)
@@ -668,65 +767,6 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
 
-    external_forces = None
-    if with_external_force:
-        external_forces = np.zeros((9, 1, nlp.ns + 1))
-        external_forces[:, 0, 0] = [
-            0.3745401188473625,
-            0.9507143064099162,
-            0.7319939418114051,
-            0.5986584841970366,
-            0.15601864044243652,
-            0.15599452033620265,
-            0,
-            0,
-            0,
-        ]
-        external_forces[:, 0, 1] = [
-            0.05808361216819946,
-            0.8661761457749352,
-            0.6011150117432088,
-            0.7080725777960455,
-            0.020584494295802447,
-            0.9699098521619943,
-            0,
-            0,
-            0,
-        ]
-        external_forces[:, 0, 2] = [
-            0.8324426408004217,
-            0.21233911067827616,
-            0.18182496720710062,
-            0.18340450985343382,
-            0.3042422429595377,
-            0.5247564316322378,
-            0,
-            0,
-            0,
-        ]
-        external_forces[:, 0, 3] = [
-            0.43194501864211576,
-            0.2912291401980419,
-            0.6118528947223795,
-            0.13949386065204183,
-            0.29214464853521815,
-            0.3663618432936917,
-            0,
-            0,
-            0,
-        ]
-        external_forces[:, 0, 4] = [
-            0.45606998421703593,
-            0.7851759613930136,
-            0.19967378215835974,
-            0.5142344384136116,
-            0.5924145688620425,
-            0.046450412719997725,
-            0,
-            0,
-            0,
-        ]
-
     ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
@@ -737,7 +777,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
             with_contact=with_contact,
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
-            numerical_data_timeseries=({"forces_in_global": external_forces} if external_forces is not None else None),
+            external_forces=external_forces,
         ),
         False,
     )
@@ -762,7 +802,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
-    numerical_timeseries = external_forces[:, 0, 0] if with_external_force else []
+    numerical_timeseries = external_forces_array[:, 0] if with_external_force else []
     time = np.random.rand(2)
     x_out = np.array(
         nlp.dynamics_func(
@@ -832,11 +872,86 @@ def test_torque_activation_driven_with_residual_torque(
 ):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
+    nlp.ns = 5
+
+    external_forces = None
+    if with_external_force:
+        external_forces_array = np.zeros((9, nlp.ns + 1))
+        external_forces_array[:, 0] = [
+            0.3745401188473625,
+            0.9507143064099162,
+            0.7319939418114051,
+            0.5986584841970366,
+            0.15601864044243652,
+            0.15599452033620265,
+            0,
+            0,
+            0,
+        ]
+        external_forces_array[:, 1] = [
+            0.05808361216819946,
+            0.8661761457749352,
+            0.6011150117432088,
+            0.7080725777960455,
+            0.020584494295802447,
+            0.9699098521619943,
+            0,
+            0,
+            0,
+        ]
+        external_forces_array[:, 2] = [
+            0.8324426408004217,
+            0.21233911067827616,
+            0.18182496720710062,
+            0.18340450985343382,
+            0.3042422429595377,
+            0.5247564316322378,
+            0,
+            0,
+            0,
+        ]
+        external_forces_array[:, 3] = [
+            0.43194501864211576,
+            0.2912291401980419,
+            0.6118528947223795,
+            0.13949386065204183,
+            0.29214464853521815,
+            0.3663618432936917,
+            0,
+            0,
+            0,
+        ]
+        external_forces_array[:, 4] = [
+            0.45606998421703593,
+            0.7851759613930136,
+            0.19967378215835974,
+            0.5142344384136116,
+            0.5924145688620425,
+            0.046450412719997725,
+            0,
+            0,
+            0,
+        ]
+        external_forces = ExternalForcesList()
+        external_forces.add(
+            key="Seg0",
+            data=external_forces_array[:3, :],
+            force_type=ExternalForcesType.TORQUE,
+            force_reference_frame=ReferenceFrame.GLOBAL,
+            phase=0,
+        )
+        external_forces.add(
+            key="Seg0",
+            data=external_forces_array[3:6, :],
+            force_type=ExternalForcesType.LINEAR_FORCE,
+            force_reference_frame=ReferenceFrame.GLOBAL,
+            phase=0,
+        )
+
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/2segments_2dof_2contacts.bioMod",
-        segments_to_apply_forces_in_global=["Seg0"],
+        external_forces=external_forces,
     )
-    nlp.ns = 5
     nlp.cx = cx
     nlp.time_cx = cx.sym("time", 1, 1)
     nlp.dt = cx.sym("dt", 1, 1)
@@ -848,65 +963,6 @@ def test_torque_activation_driven_with_residual_torque(
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
 
-    external_forces = None
-    if with_external_force:
-        external_forces = np.zeros((9, 1, nlp.ns + 1))
-        external_forces[:, 0, 0] = [
-            0.3745401188473625,
-            0.9507143064099162,
-            0.7319939418114051,
-            0.5986584841970366,
-            0.15601864044243652,
-            0.15599452033620265,
-            0,
-            0,
-            0,
-        ]
-        external_forces[:, 0, 1] = [
-            0.05808361216819946,
-            0.8661761457749352,
-            0.6011150117432088,
-            0.7080725777960455,
-            0.020584494295802447,
-            0.9699098521619943,
-            0,
-            0,
-            0,
-        ]
-        external_forces[:, 0, 2] = [
-            0.8324426408004217,
-            0.21233911067827616,
-            0.18182496720710062,
-            0.18340450985343382,
-            0.3042422429595377,
-            0.5247564316322378,
-            0,
-            0,
-            0,
-        ]
-        external_forces[:, 0, 3] = [
-            0.43194501864211576,
-            0.2912291401980419,
-            0.6118528947223795,
-            0.13949386065204183,
-            0.29214464853521815,
-            0.3663618432936917,
-            0,
-            0,
-            0,
-        ]
-        external_forces[:, 0, 4] = [
-            0.45606998421703593,
-            0.7851759613930136,
-            0.19967378215835974,
-            0.5142344384136116,
-            0.5924145688620425,
-            0.046450412719997725,
-            0,
-            0,
-            0,
-        ]
-
     ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
@@ -917,7 +973,7 @@ def test_torque_activation_driven_with_residual_torque(
             with_residual_torque=with_residual_torque,
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
-            numerical_data_timeseries=({"forces_in_global": external_forces} if external_forces is not None else None),
+            external_forces=external_forces,
         ),
         False,
     )
@@ -942,7 +998,7 @@ def test_torque_activation_driven_with_residual_torque(
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
-    numerical_timeseries = external_forces[:, 0, 0] if with_external_force else []
+    numerical_timeseries = external_forces_array[:, 0] if with_external_force else []
     time = np.random.rand(2)
     x_out = np.array(
         nlp.dynamics_func(
@@ -1077,11 +1133,87 @@ def test_muscle_driven(
 ):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
+    nlp.ns = 5
+
+    external_forces = None
+    if with_external_force:
+        external_forces_array = np.zeros((9, nlp.ns + 1))
+        external_forces_array[:, 0] = [
+            0.3745401188473625,
+            0.9507143064099162,
+            0.7319939418114051,
+            0.5986584841970366,
+            0.15601864044243652,
+            0.15599452033620265,
+            0,
+            0,
+            0,
+        ]
+        external_forces_array[:, 1] = [
+            0.05808361216819946,
+            0.8661761457749352,
+            0.6011150117432088,
+            0.7080725777960455,
+            0.020584494295802447,
+            0.9699098521619943,
+            0,
+            0,
+            0,
+        ]
+        external_forces_array[:, 2] = [
+            0.8324426408004217,
+            0.21233911067827616,
+            0.18182496720710062,
+            0.18340450985343382,
+            0.3042422429595377,
+            0.5247564316322378,
+            0,
+            0,
+            0,
+        ]
+        external_forces_array[:, 3] = [
+            0.43194501864211576,
+            0.2912291401980419,
+            0.6118528947223795,
+            0.13949386065204183,
+            0.29214464853521815,
+            0.3663618432936917,
+            0,
+            0,
+            0,
+        ]
+        external_forces_array[:, 4] = [
+            0.45606998421703593,
+            0.7851759613930136,
+            0.19967378215835974,
+            0.5142344384136116,
+            0.5924145688620425,
+            0.046450412719997725,
+            0,
+            0,
+            0,
+        ]
+        external_forces = ExternalForcesList()
+        external_forces.add(
+            key="r_ulna_radius_hand_rotation1",
+            data=external_forces_array[:3, :],
+            force_type=ExternalForcesType.TORQUE,
+            force_reference_frame=ReferenceFrame.GLOBAL,
+            phase=0,
+        )
+        external_forces.add(
+            key="r_ulna_radius_hand_rotation1",
+            data=external_forces_array[3:6, :],
+            force_type=ExternalForcesType.LINEAR_FORCE,
+            force_reference_frame=ReferenceFrame.GLOBAL,
+            phase=0,
+        )
+
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod",
-        segments_to_apply_forces_in_global=["r_ulna_radius_hand_rotation1"],
+        external_forces=external_forces,
     )
-    nlp.ns = 5
+
     nlp.cx = cx
     nlp.time_cx = cx.sym("time", 1, 1)
     nlp.dt = cx.sym("dt", 1, 1)
@@ -1095,65 +1227,6 @@ def test_muscle_driven(
     nlp.a_scaling = VariableScalingList()
     nlp.phase_idx = 0
 
-    external_forces = None
-    if with_external_force:
-        external_forces = np.zeros((9, 1, nlp.ns + 1))
-        external_forces[:, 0, 0] = [
-            0.3745401188473625,
-            0.9507143064099162,
-            0.7319939418114051,
-            0.5986584841970366,
-            0.15601864044243652,
-            0.15599452033620265,
-            0,
-            0,
-            0,
-        ]
-        external_forces[:, 0, 1] = [
-            0.05808361216819946,
-            0.8661761457749352,
-            0.6011150117432088,
-            0.7080725777960455,
-            0.020584494295802447,
-            0.9699098521619943,
-            0,
-            0,
-            0,
-        ]
-        external_forces[:, 0, 2] = [
-            0.8324426408004217,
-            0.21233911067827616,
-            0.18182496720710062,
-            0.18340450985343382,
-            0.3042422429595377,
-            0.5247564316322378,
-            0,
-            0,
-            0,
-        ]
-        external_forces[:, 0, 3] = [
-            0.43194501864211576,
-            0.2912291401980419,
-            0.6118528947223795,
-            0.13949386065204183,
-            0.29214464853521815,
-            0.3663618432936917,
-            0,
-            0,
-            0,
-        ]
-        external_forces[:, 0, 4] = [
-            0.45606998421703593,
-            0.7851759613930136,
-            0.19967378215835974,
-            0.5142344384136116,
-            0.5924145688620425,
-            0.046450412719997725,
-            0,
-            0,
-            0,
-        ]
-
     ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
@@ -1166,7 +1239,7 @@ def test_muscle_driven(
             with_contact=with_contact,
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
-            numerical_data_timeseries=({"forces_in_global": external_forces} if external_forces is not None else None),
+            external_forces=external_forces,
         ),
         False,
     )
@@ -1192,7 +1265,7 @@ def test_muscle_driven(
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
-    numerical_timeseries = external_forces[:, 0, 0] if with_external_force else []
+    numerical_timeseries = external_forces_array[:, 0] if with_external_force else []
     time = np.random.rand(2)
     x_out = np.array(
         nlp.dynamics_func(

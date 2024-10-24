@@ -17,7 +17,6 @@ from bioptim import (
     CostType,
     Solver,
     BiorbdModel,
-    RigidBodyDynamics,
     BoundsList,
     PhaseDynamics,
 )

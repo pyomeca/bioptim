@@ -182,7 +182,7 @@ def prepare_ocp(
     scenario=1,
 ):
     # BioModel path
-    m = BiorbdModel(biorbd_model_path, segments_to_apply_forces_in_global=["Point"])
+    m = BiorbdModel(biorbd_model_path)
     m.set_gravity(np.array((0, 0, 0)))
 
     weight = 1

@@ -4,11 +4,6 @@ and superimpose the same corner to a different marker at the end. While doing so
 The solver must minimize the force needed to lift the box while reaching the marker in time.
 It is designed to show how to use external forces. An example of external forces that depends on the state (for
 example a spring) can be found at 'examples/torque_driven_ocp/spring_load.py'
-
-Please note that the point of application of the external forces are defined from the name of the segment in the bioMod.
-It is expected to act on a segment in the global_reference_frame. Bioptim expects an array of shape [9, nb_external_forces, n_shooting+1]
-where the three first components are the moments, the three next components are the forces and the three last components are the point of application (Mx, My, Mz, Fx, Fy, Fz, Px, Py, Pz)
-You should also specify the name of the segments where the external forces are applied the list "segments_to_apply_forces_in_global".
 """
 
 import platform

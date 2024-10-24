@@ -17,7 +17,6 @@ from bioptim import (
     MultinodeConstraint,
     MultinodeObjective,
     Node,
-    RigidBodyDynamics,
     ControlType,
     PhaseDynamics,
     ConstraintList,
@@ -52,7 +51,6 @@ def prepare_test_ocp(
     elif with_contact:
         bio_model = BiorbdModel(
             bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod",
-            segments_to_apply_forces_in_global=["Seg1", "Seg1"],
         )
         dynamics = DynamicsList()
         dynamics.add(

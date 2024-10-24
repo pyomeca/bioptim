@@ -8,7 +8,6 @@ from casadi import MX, SX
 from bioptim import (
     ConfigureProblem,
     ControlType,
-    RigidBodyDynamics,
     BiorbdModel,
     NonLinearProgram,
     DynamicsFcn,

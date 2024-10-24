@@ -11,7 +11,7 @@ import pytest
 
 import numpy as np
 import numpy.testing as npt
-from bioptim import OdeSolver, RigidBodyDynamics, Solver, PhaseDynamics, SolutionMerge
+from bioptim import OdeSolver, Solver, PhaseDynamics, SolutionMerge
 
 from tests.utils import TestUtils
 
