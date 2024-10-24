@@ -86,9 +86,6 @@ venv.bak/
 # pycharm
 .idea
 
-# Personnal stuff
-Misc/
-
 # Remove symbolic links to bioptim in examples and tests folder
 examples/*/biorbd_optim
 examples/biorbd_optim
