@@ -51,7 +51,11 @@ class BiorbdModel:
         self._friction_coefficients = friction_coefficients
 
         # TODO extend the interface to make conversions and allow all mixed cases in an unified way
-        segments_to_apply_forces_in_global, segments_to_apply_forces_in_local, segments_to_apply_translational_forces = get_external_forces_segments(external_forces)
+        (
+            segments_to_apply_forces_in_global,
+            segments_to_apply_forces_in_local,
+            segments_to_apply_translational_forces,
+        ) = get_external_forces_segments(external_forces)
         self._segments_to_apply_forces_in_global = segments_to_apply_forces_in_global
         self._segments_to_apply_forces_in_local = segments_to_apply_forces_in_local
         self._segments_to_apply_translational_forces = segments_to_apply_translational_forces
@@ -66,7 +70,9 @@ class BiorbdModel:
         self.activations = MX.sym("activations_mx", self.nb_muscles, 1)
 
         self.external_forces = MX.sym(
-            "external_forces_mx", 9 * self.nb_forces_in_global + 9 * self.nb_forces_in_local + 6 * self.nb_translational_forces, 1
+            "external_forces_mx",
+            9 * self.nb_forces_in_global + 9 * self.nb_forces_in_local + 6 * self.nb_translational_forces,
+            1,
         )
         self.external_forces_set = self._dispatch_forces()
 
@@ -456,10 +462,14 @@ class BiorbdModel:
                 self.external_forces[: 9 * self.nb_forces_in_global], (9, self.nb_forces_in_global)
             )
             forces_in_local = reshape(
-                self.external_forces[9 * self.nb_forces_in_global : 9 * self.nb_forces_in_global + 9 * self.nb_forces_in_local], (9, self.nb_forces_in_local)
+                self.external_forces[
+                    9 * self.nb_forces_in_global : 9 * self.nb_forces_in_global + 9 * self.nb_forces_in_local
+                ],
+                (9, self.nb_forces_in_local),
             )
             translational_forces = reshape(
-                self.external_forces[9 * self.nb_forces_in_global + 9 * self.nb_forces_in_local :], (6, self.nb_translational_forces)
+                self.external_forces[9 * self.nb_forces_in_global + 9 * self.nb_forces_in_local :],
+                (6, self.nb_translational_forces),
             )
 
             if forces_in_global.shape[1] > 0:

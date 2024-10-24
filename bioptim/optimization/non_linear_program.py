@@ -457,12 +457,9 @@ class NonLinearProgram:
 
         def retrieve_forces(name: str, external_forces: MX):
             if name in self.states:
-                external_forces = vertcat(external_forces,
-                                          DynamicsFunctions.get(self.states[name], states))
+                external_forces = vertcat(external_forces, DynamicsFunctions.get(self.states[name], states))
             if name in self.controls:
-                external_forces = vertcat(
-                    external_forces, DynamicsFunctions.get(self.controls[name], controls)
-                )
+                external_forces = vertcat(external_forces, DynamicsFunctions.get(self.controls[name], controls))
             if name in self.algebraic_states:
                 external_forces = vertcat(
                     external_forces, DynamicsFunctions.get(self.algebraic_states[name], algebraic_states)

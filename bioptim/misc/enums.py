@@ -232,6 +232,7 @@ class ReferenceFrame(Enum):
     GLOBAL = "global"
     LOCAL = "local"
 
+
 class ExternalForcesType(Enum):
     """
     Selection of external forces type
