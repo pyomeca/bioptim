@@ -384,11 +384,9 @@ class PenaltyFunctionAbstract:
 
             qddot = PenaltyFunctionAbstract._get_qddot(controller, "cx")
 
-            markers = horzcat(
-                *controller.model.markers_accelerations(reference_index=reference_jcs)(
+            markers =controller.model.markers_accelerations(reference_index=reference_jcs)(
                     controller.q, controller.qdot, qddot, controller.parameters.cx
                 )
-            )
 
             return markers
 
@@ -474,11 +472,11 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            marker_velocity = controller.model.markers_velocities()(
+            marker_velocities = controller.model.markers_velocities()(
                 controller.q, controller.qdot, controller.parameters.cx
             )
-            marker_1 = marker_velocity[first_marker_idx][:]
-            marker_2 = marker_velocity[second_marker_idx][:]
+            marker_1 = marker_velocities[:, first_marker_idx]
+            marker_2 = marker_velocities[:, second_marker_idx]
 
             diff_markers = marker_2 - marker_1
 
@@ -1436,8 +1434,6 @@ class PenaltyFunctionAbstract:
         attribute : str
             Specifies which attribute ('cx_start' or 'mx') to use for the extraction.
         """
-        # if attribute not in ["mx", "cx_start"]:
-        #    raise ValueError("atrribute should be either mx or cx_start")
 
         if "qddot" not in controller.states and "qddot" not in controller.controls:
             source_qdot = controller.states if "qdot" in controller.states else controller.controls

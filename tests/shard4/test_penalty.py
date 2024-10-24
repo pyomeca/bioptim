@@ -34,14 +34,11 @@ def prepare_test_ocp(
     with_muscles=False,
     with_contact=False,
     with_actuator=False,
-    implicit=False,
     use_sx=True,
 ):
     bioptim_folder = TestUtils.bioptim_folder()
     if with_muscles and with_contact or with_muscles and with_actuator or with_contact and with_actuator:
         raise RuntimeError("With muscles and with contact and with_actuator together is not defined")
-    if with_muscles and implicit or implicit and with_actuator:
-        raise RuntimeError("With muscles and implicit and with_actuator together is not defined")
     elif with_muscles:
         bio_model = BiorbdModel(bioptim_folder + "/examples/muscle_driven_ocp/models/arm26.bioMod")
         dynamics = DynamicsList()
@@ -919,9 +916,8 @@ def test_penalty_minimize_linear_momentum(value, penalty_origin, use_sx, phase_d
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer])
 @pytest.mark.parametrize("value", [0.1, -10])
-@pytest.mark.parametrize("implicit", [True, False])
-def test_penalty_minimize_comddot(value, penalty_origin, implicit, phase_dynamics):
-    ocp = prepare_test_ocp(with_contact=True, implicit=implicit, phase_dynamics=phase_dynamics)
+def test_penalty_minimize_comddot(value, penalty_origin, phase_dynamics):
+    ocp = prepare_test_ocp(with_contact=True, phase_dynamics=phase_dynamics)
     t = [0]
     phases_dt = [0.05]
     x = [DM.ones((8, 1)) * value]
@@ -937,23 +933,13 @@ def test_penalty_minimize_comddot(value, penalty_origin, implicit, phase_dynamic
     else:
         penalty = Constraint(penalty_type)
 
-    if not implicit:
-        res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
+    res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
-        expected = np.array([[0.0], [-0.7168803], [-0.0740871]])
-        if value == -10:
-            expected = np.array([[0.0], [1.455063], [16.3741091]])
+    expected = np.array([[0.0], [-0.7168803], [-0.0740871]])
+    if value == -10:
+        expected = np.array([[0.0], [1.455063], [16.3741091]])
 
-        npt.assert_almost_equal(res, expected)
-    else:
-        res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, [], [], [])
-
-        expected = np.array([[0], [-0.0008324], [0.002668]])
-        expected = np.array([[0], [-0.0008324], [0.002668]])
-        if value == -10:
-            expected = np.array([[0], [-17.5050533], [-18.2891901]])
-
-        npt.assert_almost_equal(res, expected)
+    npt.assert_almost_equal(res, expected)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])

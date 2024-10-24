@@ -799,7 +799,7 @@ class BiorbdModel:
         casadi_fun = Function(
             "markers_accelerations",
             [self.q, self.qdot, self.qddot, self.parameters],
-            biorbd_return,
+            [horzcat(*biorbd_return)],
             ["q", "qdot", "qddot", "parameters"],
             ["markers_accelerations"],
         )
@@ -873,7 +873,7 @@ class BiorbdModel:
         biorbd_return = MX.zeros(self.nb_soft_contacts * 6, 1)
         for i_sc in range(self.nb_soft_contacts):
             soft_contact = self.soft_contact(i_sc)
-
+            # @ipuch: please confirm / help with the following lines
             biorbd_return[i_sc * 6 : (i_sc + 1) * 6, :] = (
                 biorbd.SoftContactSphere(soft_contact).computeForceAtOrigin(self.model, q_biorbd, qdot_biorbd).to_mx()
             )
