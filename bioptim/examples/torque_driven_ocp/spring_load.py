@@ -181,8 +181,9 @@ def prepare_ocp(
     n_shooting: float = 30,
     scenario=1,
 ):
+
     # BioModel path
-    m = BiorbdModel(biorbd_model_path)
+    m = BiorbdModel(biorbd_model_path, nb_supplementary_forces_in_global=1)
     m.set_gravity(np.array((0, 0, 0)))
 
     weight = 1

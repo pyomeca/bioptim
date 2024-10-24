@@ -189,16 +189,16 @@ def test_multi_cyclic_cycle_solutions():
 
 
 def test_external_forces_type():
-    assert ExternalForcesType.LINEAR_FORCE == "linear_force"
-    assert ExternalForcesType.TORQUE == "torque"
+    assert ExternalForcesType.LINEAR_FORCE.value == 'linear_force'
+    assert ExternalForcesType.TORQUE.value == "torque"
 
     # verify the number of elements
     assert len(ExternalForcesType) == 2
 
 
 def test_reference_frame():
-    assert ReferenceFrame.GLOBAL == "global"
-    assert ReferenceFrame.LOCAL == "local"
+    assert ReferenceFrame.GLOBAL.value == "global"
+    assert ReferenceFrame.LOCAL.value == "local"
 
     # verify the number of elements
     assert len(ReferenceFrame) == 2

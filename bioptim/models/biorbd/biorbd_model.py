@@ -31,16 +31,8 @@ class BiorbdModel:
         friction_coefficients: np.ndarray = None,
         external_forces: ExternalForcesList = None,
         parameters: ParameterList = None,
+        nb_supplementary_forces_in_global = 0,
     ):
-        """
-
-        Parameters
-        ----------
-        bio_model
-        friction_coefficients
-        external_forces
-        parameters
-        """
         if not isinstance(bio_model, str) and not isinstance(bio_model, biorbd.Model):
             raise ValueError("The model should be of type 'str' or 'biorbd.Model'")
 
@@ -60,6 +52,11 @@ class BiorbdModel:
         self._segments_to_apply_forces_in_local = segments_to_apply_forces_in_local
         self._segments_to_apply_translational_forces = segments_to_apply_translational_forces
 
+        # Declare the number of external forces that are not numerical values
+        if nb_supplementary_forces_in_global != 0 and (segments_to_apply_forces_in_global != [] or segments_to_apply_forces_in_local != [] or segments_to_apply_translational_forces != []):
+            raise ValueError(
+                "You cannot provide nb_supplementary_forces_in_global and segments_to_apply_forces_in_global/segments_to_apply_forces_in_local/segments_to_apply_translational_forces at the same time")
+
         # Declaration of MX variables of the right shape for the creation of CasADi Functions
         self.q = MX.sym("q_mx", self.nb_q, 1)
         self.qdot = MX.sym("qdot_mx", self.nb_qdot, 1)
@@ -69,12 +66,20 @@ class BiorbdModel:
         self.muscle = MX.sym("muscle_mx", self.nb_muscles, 1)
         self.activations = MX.sym("activations_mx", self.nb_muscles, 1)
 
-        self.external_forces = MX.sym(
-            "external_forces_mx",
-            9 * self.nb_forces_in_global + 9 * self.nb_forces_in_local + 6 * self.nb_translational_forces,
-            1,
-        )
-        self.external_forces_set = self._dispatch_forces()
+        if nb_supplementary_forces_in_global != 0:
+            self.external_forces = MX.sym(
+                "supplementary_forces_in_global",
+                9 * nb_supplementary_forces_in_global,
+                1,
+            )
+            self.external_forces_set = None
+        else:
+            self.external_forces = MX.sym(
+                "external_forces_mx",
+                9 * self.nb_forces_in_global + 9 * self.nb_forces_in_local + 6 * self.nb_translational_forces,
+                1,
+            )
+            self.external_forces_set = self._dispatch_forces()
 
         # TODO: remove mx (the MX parameters should be created inside the BiorbdModel)
         self.parameters = parameters.mx if parameters else MX()

@@ -35,7 +35,7 @@ def test_check_external_forces_format_invalid():
 
 # Tests for _check_soft_contacts_dynamics
 def test_check_soft_contacts_dynamics_valid_ode():
-    _check_soft_contacts_dynamics("NotDAEInverseDynamics", SoftContactDynamics.ODE, 1, 0)
+    _check_soft_contacts_dynamics(SoftContactDynamics.ODE, 1, 0)
 
 
 # More tests for _check_external_forces_format
@@ -54,16 +54,16 @@ def test_check_external_forces_format_wrong_length():
 
 # Tests for _check_soft_contacts_dynamics
 def test_check_soft_contacts_dynamics_valid_constraint():
-    _check_soft_contacts_dynamics("SomeRigidBodyDynamics", SoftContactDynamics.CONSTRAINT, 1, 0)
+    _check_soft_contacts_dynamics(SoftContactDynamics.CONSTRAINT, 1, 0)
 
 
 def test_check_soft_contacts_dynamics_invalid_soft_contacts_dynamics():
     with pytest.raises(ValueError):
-        _check_soft_contacts_dynamics("SomeRigidBodyDynamics", "InvalidSoftContactDynamics", 1, 0)
+        _check_soft_contacts_dynamics("InvalidSoftContactDynamics", 1, 0)
 
 
 def test_check_soft_contacts_dynamics_no_soft_contacts():
-    _check_soft_contacts_dynamics("SomeRigidBodyDynamics", SoftContactDynamics.ODE, 0, 0)
+    _check_soft_contacts_dynamics(SoftContactDynamics.ODE, 0, 0)
 
 
 # Tests for _check_contacts_in_biorbd_model
