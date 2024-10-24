@@ -30,7 +30,6 @@ from bioptim import (
     OdeSolverBase,
     Node,
     Solver,
-    RigidBodyDynamics,
     PhaseDynamics,
     SolutionMerge,
 )
@@ -175,7 +174,6 @@ def generate_data(
                 numerical_timeseries=MX(),
                 nlp=nlp,
                 with_contact=False,
-                rigidbody_dynamics=RigidBodyDynamics.ODE,
             ).dxdt
         ],
     )

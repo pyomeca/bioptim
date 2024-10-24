@@ -12,7 +12,6 @@ from ..misc.enums import (
     PlotType,
     Node,
     ConstraintType,
-    RigidBodyDynamics,
     SoftContactDynamics,
     PhaseDynamics,
     ReferenceFrame,
@@ -162,7 +161,6 @@ class ConfigureProblem:
         with_passive_torque: bool = False,
         with_ligament: bool = False,
         with_friction: bool = False,
-        rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
         fatigue: FatigueList = None,
         numerical_data_timeseries: dict[str, np.ndarray] = None,
@@ -184,8 +182,6 @@ class ConfigureProblem:
             If the dynamic with ligament should be used
         with_friction: bool
             If the dynamic with joint friction should be used (friction = coefficients * qdot)
-        rigidbody_dynamics: RigidBodyDynamics
-            which rigidbody dynamics should be used
         soft_contacts_dynamics: SoftContactDynamics
             which soft contact dynamic should be used
         fatigue: FatigueList
@@ -196,75 +192,14 @@ class ConfigureProblem:
 
         _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
         _check_soft_contacts_dynamics(
-            rigidbody_dynamics, soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx
+            soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx
         )
 
         # Declared rigidbody states and controls
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False, as_states_dot=True)
         ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True, fatigue=fatigue)
-
-        if (
-            rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
-            or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
-        ):
-            ConfigureProblem.configure_qddot(ocp, nlp, False, True, True)
-        elif (
-            rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK
-            or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
-        ):
-            ConfigureProblem.configure_qddot(ocp, nlp, True, False, True)
-            ConfigureProblem.configure_qdddot(ocp, nlp, False, True)
-        else:
-            ConfigureProblem.configure_qddot(ocp, nlp, False, False, True)
-
-        # Algebraic constraints of rigidbody dynamics if needed
-        if (
-            rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
-            or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
-        ):
-            ocp.implicit_constraints.add(
-                ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS,
-                node=Node.ALL_SHOOTING,
-                penalty_type=ConstraintType.IMPLICIT,
-                phase=nlp.phase_idx,
-                with_contact=with_contact,
-                with_passive_torque=with_passive_torque,
-                with_ligament=with_ligament,
-                with_friction=with_friction,
-            )
-            if with_contact:
-                # qddot is continuous with RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
-                # so the consistency constraint of the marker acceleration can only be set to zero
-                # at the first shooting node
-                node = Node.ALL_SHOOTING if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS else Node.ALL
-                ConfigureProblem.configure_contact_forces(ocp, nlp, False, True)
-                for ii in range(nlp.model.nb_rigid_contacts):
-                    for jj in nlp.model.rigid_contact_index(ii):
-                        ocp.implicit_constraints.add(
-                            ImplicitConstraintFcn.CONTACT_ACCELERATION_EQUALS_ZERO,
-                            with_contact=with_contact,
-                            contact_index=ii,
-                            contact_axis=jj,
-                            node=node,
-                            constraint_type=ConstraintType.IMPLICIT,
-                            phase=nlp.phase_idx,
-                        )
-        if (
-            rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
-            or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK
-        ):
-            # contacts forces are directly handled with this constraint
-            ocp.implicit_constraints.add(
-                ImplicitConstraintFcn.QDDOT_EQUALS_FORWARD_DYNAMICS,
-                node=Node.ALL_SHOOTING,
-                constraint_type=ConstraintType.IMPLICIT,
-                with_contact=with_contact,
-                phase=nlp.phase_idx,
-                with_passive_torque=with_passive_torque,
-                with_ligament=with_ligament,
-                with_friction=with_friction,
-            )
+        ConfigureProblem.configure_qddot(ocp, nlp, False, False, True)
 
         # Declared soft contacts controls
         if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
@@ -280,7 +215,6 @@ class ConfigureProblem:
                 DynamicsFunctions.torque_driven,
                 with_contact=with_contact,
                 fatigue=fatigue,
-                rigidbody_dynamics=rigidbody_dynamics,
                 with_passive_torque=with_passive_torque,
                 with_ligament=with_ligament,
                 with_friction=with_friction,
@@ -591,7 +525,6 @@ class ConfigureProblem:
         with_contact=False,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
-        rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
         numerical_data_timeseries: dict[str, np.ndarray] = None,
     ):
@@ -610,8 +543,6 @@ class ConfigureProblem:
             If the dynamic with passive torque should be used
         with_ligament: bool
             If the dynamic with ligament should be used
-        rigidbody_dynamics: RigidBodyDynamics
-            which rigidbody dynamics should be used
         soft_contacts_dynamics: SoftContactDynamics
             which soft contact dynamic should be used
         numerical_data_timeseries: dict[str, np.ndarray]
@@ -620,11 +551,8 @@ class ConfigureProblem:
         """
         _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
 
-        if rigidbody_dynamics not in (RigidBodyDynamics.DAE_INVERSE_DYNAMICS, RigidBodyDynamics.ODE):
-            raise NotImplementedError("TORQUE_DERIVATIVE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
-
         _check_soft_contacts_dynamics(
-            rigidbody_dynamics, soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx
+            soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx
         )
 
         ConfigureProblem.configure_q(ocp, nlp, True, False)
@@ -632,15 +560,6 @@ class ConfigureProblem:
         ConfigureProblem.configure_tau(ocp, nlp, True, False)
         ConfigureProblem.configure_taudot(ocp, nlp, False, True)
 
-        if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
-            ConfigureProblem.configure_qddot(ocp, nlp, True, False)
-            ConfigureProblem.configure_qdddot(ocp, nlp, False, True)
-            ocp.implicit_constraints.add(
-                ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS,
-                node=Node.ALL_SHOOTING,
-                penalty_type=ConstraintType.IMPLICIT,
-                phase=nlp.phase_idx,
-            )
         if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
             ConfigureProblem.configure_soft_contact_forces(ocp, nlp, False, True)
 
@@ -652,7 +571,6 @@ class ConfigureProblem:
                 nlp,
                 DynamicsFunctions.torque_derivative_driven,
                 with_contact=with_contact,
-                rigidbody_dynamics=rigidbody_dynamics,
                 with_passive_torque=with_passive_torque,
                 with_ligament=with_ligament,
             )
@@ -738,7 +656,6 @@ class ConfigureProblem:
     def joints_acceleration_driven(
         ocp,
         nlp,
-        rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         numerical_data_timeseries: dict[str, np.ndarray] = None,
     ):
         """
@@ -751,14 +668,9 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        rigidbody_dynamics: RigidBodyDynamics
-            which rigidbody dynamics should be used
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
-        if rigidbody_dynamics != RigidBodyDynamics.ODE:
-            raise NotImplementedError("Implicit dynamics not implemented yet.")
-
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False, as_states_dot=True)
         # Configure qddot joints
@@ -800,7 +712,6 @@ class ConfigureProblem:
         with_contact: bool = False,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
-        rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         numerical_data_timeseries: dict[str, np.ndarray] = None,
     ):
         """
@@ -828,8 +739,6 @@ class ConfigureProblem:
             If the dynamic with passive torque should be used
         with_ligament: bool
             If the dynamic with ligament should be used
-        rigidbody_dynamics: RigidBodyDynamics
-            which rigidbody dynamics should be used
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
@@ -838,9 +747,6 @@ class ConfigureProblem:
         if fatigue is not None and "tau" in fatigue and not with_residual_torque:
             raise RuntimeError("Residual torques need to be used to apply fatigue on torques")
 
-        if rigidbody_dynamics not in (RigidBodyDynamics.DAE_INVERSE_DYNAMICS, RigidBodyDynamics.ODE):
-            raise NotImplementedError("MUSCLE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
-
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
         ConfigureProblem.configure_qddot(ocp, nlp, False, False, True)
@@ -848,17 +754,6 @@ class ConfigureProblem:
         if with_residual_torque:
             ConfigureProblem.configure_tau(ocp, nlp, False, True, fatigue=fatigue)
         ConfigureProblem.configure_muscles(ocp, nlp, with_excitations, True, fatigue=fatigue)
-
-        if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
-            ConfigureProblem.configure_qddot(ocp, nlp, False, True)
-            ocp.implicit_constraints.add(
-                ImplicitConstraintFcn.TAU_FROM_MUSCLE_EQUAL_INVERSE_DYNAMICS,
-                node=Node.ALL_SHOOTING,
-                penalty_type=ConstraintType.IMPLICIT,
-                phase=nlp.phase_idx,
-                with_passive_torque=with_passive_torque,
-                with_ligament=with_ligament,
-            )
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
@@ -872,7 +767,6 @@ class ConfigureProblem:
                 with_residual_torque=with_residual_torque,
                 with_passive_torque=with_passive_torque,
                 with_ligament=with_ligament,
-                rigidbody_dynamics=rigidbody_dynamics,
             )
 
         if with_contact:
@@ -2203,7 +2097,6 @@ def _check_numerical_timeseries_format(numerical_timeseries: np.ndarray, n_shoot
 
 
 def _check_soft_contacts_dynamics(
-    rigidbody_dynamics: RigidBodyDynamics,
     soft_contacts_dynamics: SoftContactDynamics,
     nb_soft_contacts,
     phase_idx: int,
@@ -2217,14 +2110,6 @@ def _check_soft_contacts_dynamics(
                 f"Phase {phase_idx} has soft contacts but the soft_contacts_dynamics is not "
                 f"SoftContactDynamics.CONSTRAINT or SoftContactDynamics.ODE."
             )
-
-        if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
-            if soft_contacts_dynamics == SoftContactDynamics.ODE:
-                raise ValueError(
-                    f"Phase {phase_idx} has soft contacts but the rigidbody_dynamics is "
-                    f"RigidBodyDynamics.DAE_INVERSE_DYNAMICS and soft_contacts_dynamics is SoftContactDynamics.ODE."
-                    f"Please set soft_contacts_dynamics=SoftContactDynamics.CONSTRAINT"
-                )
 
 
 def _check_contacts_in_biorbd_model(with_contact: bool, nb_contacts: int, phase_idx: int):

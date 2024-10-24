@@ -206,7 +206,6 @@ from .misc.enums import (
     VariableType,
     SolutionIntegrator,
     QuadratureRule,
-    RigidBodyDynamics,
     SoftContactDynamics,
     DefectType,
     MagnitudeType,

@@ -206,9 +206,6 @@ def test__getting_started__example_external_forces():
     )
 
 
-# todo: Add example_implicit_dynamics.py?
-
-
 def test__getting_started__example_inequality_constraint():
     from bioptim.examples.getting_started import (
         example_inequality_constraint as ocp_module,

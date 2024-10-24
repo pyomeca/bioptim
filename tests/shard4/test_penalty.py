@@ -55,13 +55,11 @@ def prepare_test_ocp(
             segments_to_apply_forces_in_global=["Seg1", "Seg1"],
         )
         dynamics = DynamicsList()
-        rigidbody_dynamics = RigidBodyDynamics.DAE_INVERSE_DYNAMICS if implicit else RigidBodyDynamics.ODE
         dynamics.add(
             DynamicsFcn.TORQUE_DRIVEN,
             with_contact=True,
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
-            rigidbody_dynamics=rigidbody_dynamics,
         )
     elif with_actuator:
         bio_model = BiorbdModel(bioptim_folder + "/examples/torque_driven_ocp/models/cube.bioMod")

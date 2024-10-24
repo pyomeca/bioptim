@@ -39,8 +39,7 @@ class OptimalControlProgram:
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_passive_torque", [False, True])
-@pytest.mark.parametrize("rigidbody_dynamics", [RigidBodyDynamics.ODE])
-def test_torque_driven_with_passive_torque(with_passive_torque, cx, rigidbody_dynamics, phase_dynamics):
+def test_torque_driven_with_passive_torque(with_passive_torque, cx, phase_dynamics):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = BiorbdModel(
@@ -65,7 +64,6 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, rigidbody_dy
         "dynamics_type",
         Dynamics(
             DynamicsFcn.TORQUE_DRIVEN,
-            rigidbody_dynamics=rigidbody_dynamics,
             with_passive_torque=with_passive_torque,
             phase_dynamics=phase_dynamics,
         ),
@@ -94,34 +92,16 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, rigidbody_dy
     numerical_timeseries = []
     time = np.random.rand(2)
     x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states, numerical_timeseries))
-    if rigidbody_dynamics == RigidBodyDynamics.ODE:
-        if with_passive_torque:
-            npt.assert_almost_equal(
-                x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, -5.0261535, -10.5570666, 18.569191, 24.2237134]
-            )
-        else:
-            npt.assert_almost_equal(
-                x_out[:, 0],
-                [0.61185289, 0.78517596, 0.60754485, 0.80839735, -0.30241366, -10.38503791, 1.60445173, 35.80238642],
-            )
-    elif rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
-        if with_passive_torque:
-            npt.assert_almost_equal(
-                x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072]
-            )
-        else:
-            npt.assert_almost_equal(
-                x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072]
-            )
-    elif rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
-        if with_passive_torque:
-            npt.assert_almost_equal(
-                x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072]
-            )
-        else:
-            npt.assert_almost_equal(
-                x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072]
-            )
+
+    if with_passive_torque:
+        npt.assert_almost_equal(
+            x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, -5.0261535, -10.5570666, 18.569191, 24.2237134]
+        )
+    else:
+        npt.assert_almost_equal(
+            x_out[:, 0],
+            [0.61185289, 0.78517596, 0.60754485, 0.80839735, -0.30241366, -10.38503791, 1.60445173, 35.80238642],
+        )
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -344,8 +324,7 @@ def test_torque_activation_driven_with_passive_torque(with_passive_torque, with_
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_passive_torque", [False, True])
-@pytest.mark.parametrize("rigidbody_dynamics", [RigidBodyDynamics.ODE])
-def test_muscle_driven_with_passive_torque(with_passive_torque, rigidbody_dynamics, cx, phase_dynamics):
+def test_muscle_driven_with_passive_torque(with_passive_torque, cx, phase_dynamics):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = BiorbdModel(TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod")
@@ -368,7 +347,6 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, rigidbody_dynami
         "dynamics_type",
         Dynamics(
             DynamicsFcn.MUSCLE_DRIVEN,
-            rigidbody_dynamics=rigidbody_dynamics,
             with_passive_torque=with_passive_torque,
             phase_dynamics=phase_dynamics,
         ),
@@ -386,8 +364,6 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, rigidbody_dynami
     np.random.seed(42)
 
     # Prepare the dynamics
-    if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
-        pass
     nlp.numerical_timeseries = TestUtils.initialize_numerical_timeseries(nlp, dynamics=nlp.dynamics_type)
     ConfigureProblem.initialize(ocp, nlp)
 
@@ -400,47 +376,30 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, rigidbody_dynami
     time = np.random.rand(2)
     x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states, numerical_timeseries))
 
-    if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
-        if with_passive_torque:
-            npt.assert_almost_equal(
-                x_out[:, 0],
-                [0.183405, 0.611853, 0.785176, 0.388677, 0.542696, 0.772245],
-                decimal=6,
-            )
-        else:
-            npt.assert_almost_equal(
-                x_out[:, 0],
-                [0.183405, 0.611853, 0.785176, 0.388677, 0.542696, 0.772245],
-                decimal=6,
-            )
+    if with_passive_torque:
+        npt.assert_almost_equal(
+            x_out[:, 0],
+            [
+                1.8340450985e-01,
+                6.1185289472e-01,
+                7.8517596139e-01,
+                -5.3408086130e00,
+                1.6890917494e02,
+                -5.4766884856e02,
+            ],
+            decimal=6,
+        )
     else:
-        if with_passive_torque:
-            npt.assert_almost_equal(
-                x_out[:, 0],
-                [
-                    1.8340450985e-01,
-                    6.1185289472e-01,
-                    7.8517596139e-01,
-                    -5.3408086130e00,
-                    1.6890917494e02,
-                    -5.4766884856e02,
-                ],
-                decimal=6,
-            )
-        else:
-            npt.assert_almost_equal(
-                x_out[:, 0],
-                [1.83404510e-01, 6.11852895e-01, 7.85175961e-01, -4.37708456e00, 1.33221135e02, -4.71307550e02],
-                decimal=6,
-            )
+        npt.assert_almost_equal(
+            x_out[:, 0],
+            [1.83404510e-01, 6.11852895e-01, 7.85175961e-01, -4.37708456e00, 1.33221135e02, -4.71307550e02],
+            decimal=6,
+        )
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
-@pytest.mark.parametrize(
-    "rigidbody_dynamics", [RigidBodyDynamics.DAE_FORWARD_DYNAMICS, RigidBodyDynamics.DAE_INVERSE_DYNAMICS]
-)
 @pytest.mark.parametrize("with_passive_torque", [False, True])
-def test_pendulum_passive_torque(rigidbody_dynamics, with_passive_torque, phase_dynamics):
+def test_pendulum_passive_torque(with_passive_torque, phase_dynamics):
     from bioptim.examples.torque_driven_ocp import pendulum_with_passive_torque as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -454,7 +413,6 @@ def test_pendulum_passive_torque(rigidbody_dynamics, with_passive_torque, phase_
         biorbd_model_path,
         final_time,
         n_shooting,
-        rigidbody_dynamics=rigidbody_dynamics,
         with_passive_torque=with_passive_torque,
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
@@ -469,76 +427,40 @@ def test_pendulum_passive_torque(rigidbody_dynamics, with_passive_torque, phase_
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
-    if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
-        if with_passive_torque:
-            # initial and final position
-            npt.assert_almost_equal(q[:, 0], np.array([0.0, 0.0]))
-            npt.assert_almost_equal(q[:, -1], np.array([0.0, 3.14]))
-            # initial and final velocities
-            npt.assert_almost_equal(qdot[:, 0], np.array([0.0, 0.0]))
-            npt.assert_almost_equal(qdot[:, -1], np.array([0.0, 0.0]))
-            # initial and final controls
-            npt.assert_almost_equal(
-                tau[:, 0],
-                np.array([-1.071535, 0.0]),
-                decimal=6,
-            )
-            npt.assert_almost_equal(tau[:, -1], np.array([-19.422394, 0.0]), decimal=6)
-
-        else:
-            # initial and final position
-            npt.assert_almost_equal(q[:, 0], np.array([0.0, 0.0]))
-            npt.assert_almost_equal(q[:, -1], np.array([0.0, 3.14]))
-            # initial and final velocities
-            npt.assert_almost_equal(qdot[:, 0], np.array([0.0, 0.0]))
-            npt.assert_almost_equal(qdot[:, -1], np.array([0.0, 0.0]))
-            # initial and final controls
-            npt.assert_almost_equal(
-                tau[:, 0],
-                np.array([2.531529, 0.0]),
-                decimal=6,
-            )
-            npt.assert_almost_equal(
-                tau[:, -1],
-                np.array([-18.254416, 0.0]),
-                decimal=6,
-            )
+    if with_passive_torque:
+        # initial and final position
+        npt.assert_almost_equal(q[:, 0], np.array([0.0, 0.0]))
+        npt.assert_almost_equal(q[:, -1], np.array([0.0, 3.14]))
+        # initial and final velocities
+        npt.assert_almost_equal(qdot[:, 0], np.array([0.0, 0.0]))
+        npt.assert_almost_equal(qdot[:, -1], np.array([0.0, 0.0]))
+        # initial and final controls
+        npt.assert_almost_equal(
+            tau[:, 0],
+            np.array([1.587319, 0.0]),
+            decimal=6,
+        )
+        npt.assert_almost_equal(
+            tau[:, -1],
+            np.array([-39.19793, 0.0]),
+            decimal=6,
+        )
 
     else:
-        if with_passive_torque:
-            # initial and final position
-            npt.assert_almost_equal(q[:, 0], np.array([0.0, 0.0]))
-            npt.assert_almost_equal(q[:, -1], np.array([0.0, 3.14]))
-            # initial and final velocities
-            npt.assert_almost_equal(qdot[:, 0], np.array([0.0, 0.0]))
-            npt.assert_almost_equal(qdot[:, -1], np.array([0.0, 0.0]))
-            # initial and final controls
-            npt.assert_almost_equal(
-                tau[:, 0],
-                np.array([1.587319, 0.0]),
-                decimal=6,
-            )
-            npt.assert_almost_equal(
-                tau[:, -1],
-                np.array([-39.19793, 0.0]),
-                decimal=6,
-            )
-
-        else:
-            # initial and final position
-            npt.assert_almost_equal(q[:, 0], np.array([0.0, 0.0]))
-            npt.assert_almost_equal(q[:, -1], np.array([0.0, 3.14]))
-            # initial and final velocities
-            npt.assert_almost_equal(qdot[:, 0], np.array([0.0, 0.0]))
-            npt.assert_almost_equal(qdot[:, -1], np.array([0.0, 0.0]))
-            # initial and final controls
-            npt.assert_almost_equal(
-                tau[:, 0],
-                np.array([2.606971, 0.0]),
-                decimal=6,
-            )
-            npt.assert_almost_equal(
-                tau[:, -1],
-                np.array([-24.611219, 0.0]),
-                decimal=6,
-            )
+        # initial and final position
+        npt.assert_almost_equal(q[:, 0], np.array([0.0, 0.0]))
+        npt.assert_almost_equal(q[:, -1], np.array([0.0, 3.14]))
+        # initial and final velocities
+        npt.assert_almost_equal(qdot[:, 0], np.array([0.0, 0.0]))
+        npt.assert_almost_equal(qdot[:, -1], np.array([0.0, 0.0]))
+        # initial and final controls
+        npt.assert_almost_equal(
+            tau[:, 0],
+            np.array([2.606971, 0.0]),
+            decimal=6,
+        )
+        npt.assert_almost_equal(
+            tau[:, -1],
+            np.array([-24.611219, 0.0]),
+            decimal=6,
+        )

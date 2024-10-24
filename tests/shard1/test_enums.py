@@ -12,8 +12,9 @@ from bioptim import (
     ControlType,
     SolutionIntegrator,
     QuadratureRule,
-    RigidBodyDynamics,
     SoftContactDynamics,
+    ExternalForcesType,
+    ReferenceFrame,
 )
 
 from bioptim.misc.enums import SolverType, PenaltyType, ConstraintType
@@ -161,17 +162,6 @@ def test_soft_contact_dynamics():
     assert len(SoftContactDynamics) == 2
 
 
-def test_rigid_body_dynamics():
-    assert RigidBodyDynamics.ODE.value == "ode"
-    assert RigidBodyDynamics.DAE_INVERSE_DYNAMICS.value == "dae_inverse_dynamics"
-    assert RigidBodyDynamics.DAE_FORWARD_DYNAMICS.value == "dae_forward_dynamics"
-    assert RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK.value == "dae_inverse_dynamics_jerk"
-    assert RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK.value == "dae_forward_dynamics_jerk"
-
-    # verify the number of elements
-    assert len(RigidBodyDynamics) == 5
-
-
 def test_defect_type():
     assert DefectType.EXPLICIT.value == "explicit"
     assert DefectType.IMPLICIT.value == "implicit"
@@ -196,3 +186,19 @@ def test_multi_cyclic_cycle_solutions():
 
     # verify the number of elements
     assert len(MultiCyclicCycleSolutions) == 3
+
+
+def test_external_forces_type():
+    assert ExternalForcesType.LINEAR_FORCE == "linear_force"
+    assert ExternalForcesType.TORQUE == "torque"
+
+    # verify the number of elements
+    assert len(ExternalForcesType) == 2
+
+
+def test_reference_frame():
+    assert ReferenceFrame.GLOBAL == "global"
+    assert ReferenceFrame.LOCAL == "local"
+
+    # verify the number of elements
+    assert len(ReferenceFrame) == 2

@@ -28,7 +28,6 @@ def prepare_ocp(
     final_time: float,
     n_shooting: int,
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
-    rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS,
     with_passive_torque=False,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
@@ -46,8 +45,6 @@ def prepare_ocp(
         The number of shooting points to define int the direct multiple shooting program
     ode_solver: OdeSolverBase = OdeSolver.RK4()
         Which type of OdeSolver to use
-    rigidbody_dynamics : RigidBodyDynamics
-        rigidbody dynamics DAE or ODE
     with_passive_torque: bool
         If the passive torque is used in dynamics
     phase_dynamics: PhaseDynamics
@@ -73,7 +70,6 @@ def prepare_ocp(
     # Dynamics
     dynamics = Dynamics(
         DynamicsFcn.TORQUE_DRIVEN,
-        rigidbody_dynamics=rigidbody_dynamics,
         with_passive_torque=with_passive_torque,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
@@ -94,12 +90,6 @@ def prepare_ocp(
     u_bounds = BoundsList()
     u_bounds["tau"] = [tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau
     u_bounds["tau"][1, :] = 0  # Prevent the model from actively rotate
-
-    if (
-        rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
-        or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
-    ):
-        u_bounds["qddot"] = [qddot_min] * bio_model.nb_qddot, [qddot_max] * bio_model.nb_qddot
 
     return OptimalControlProgram(
         bio_model,

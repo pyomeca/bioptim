@@ -3,7 +3,7 @@ from casadi import horzcat, vertcat, MX, SX
 
 from .dynamics_evaluation import DynamicsEvaluation
 from .fatigue.fatigue_dynamics import FatigueList
-from ..misc.enums import RigidBodyDynamics, DefectType
+from ..misc.enums import DefectType
 from ..misc.mapping import BiMapping
 from ..optimization.optimization_variable import OptimizationVariable
 
@@ -95,7 +95,6 @@ class DynamicsFunctions:
         with_passive_torque: bool,
         with_ligament: bool,
         with_friction: bool,
-        rigidbody_dynamics: RigidBodyDynamics,
         fatigue: FatigueList,
     ) -> DynamicsEvaluation:
         """
@@ -125,8 +124,6 @@ class DynamicsFunctions:
             If the dynamic with ligament should be used
         with_friction: bool
             If the dynamic with friction should be used
-        rigidbody_dynamics: RigidBodyDynamics
-            which rigidbody dynamics should be used
         fatigue : FatigueList
             A list of fatigue elements
 
@@ -146,59 +143,17 @@ class DynamicsFunctions:
         tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
         tau = tau - nlp.model.friction_coefficients @ qdot if with_friction else tau
 
-        if (
-            rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
-            or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
-        ):
-            dxdt = nlp.cx(nlp.states.shape, 1)
-            dxdt[nlp.states["q"].index, :] = dq
-            dxdt[nlp.states["qdot"].index, :] = DynamicsFunctions.get(nlp.controls["qddot"], controls)
-        elif (
-            rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
-            or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK
-        ):
-            dxdt = nlp.cx(nlp.states.shape, 1)
-            dxdt[nlp.states["q"].index, :] = dq
-            qddot = DynamicsFunctions.get(nlp.states["qddot"], states)
-            dxdt[nlp.states["qdot"].index, :] = qddot
-            dxdt[nlp.states["qddot"].index, :] = DynamicsFunctions.get(nlp.controls["qdddot"], controls)
-        else:
-            external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
+        external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
 
-            ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
-            dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
-            dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
-            dxdt[nlp.states["qdot"].index, :] = ddq
+        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
+        dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
+        dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
+        dxdt[nlp.states["qdot"].index, :] = ddq
 
         if fatigue is not None and "tau" in fatigue:
             dxdt = fatigue["tau"].dynamics(dxdt, nlp, states, controls)
 
-        defects = None
-        # TODO: contacts and fatigue to be handled with implicit dynamics
-        if rigidbody_dynamics is not RigidBodyDynamics.ODE or (
-            rigidbody_dynamics is RigidBodyDynamics.ODE and nlp.ode_solver.defects_type == DefectType.IMPLICIT
-        ):
-            if not with_contact and fatigue is None:
-                qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
-                external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
-                tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact, external_forces)
-                defects = nlp.cx(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
-
-                dq_defects = []
-                for _ in range(tau_id.shape[1]):
-                    dq_defects.append(
-                        dq
-                        - DynamicsFunctions.compute_qdot(
-                            nlp,
-                            q,
-                            DynamicsFunctions.get(nlp.states_dot.scaled["qdot"], nlp.states_dot.scaled.cx),
-                        )
-                    )
-                defects[: dq.shape[0], :] = horzcat(*dq_defects)
-                # We modified on purpose the size of the tau to keep the zero in the defects in order to respect the dynamics
-                defects[dq.shape[0] :, :] = tau - tau_id
-
-        return DynamicsEvaluation(dxdt, defects)
+        return DynamicsEvaluation(dxdt, None)
 
     @staticmethod
     def torque_driven_free_floating_base(
@@ -555,7 +510,6 @@ class DynamicsFunctions:
         algebraic_states,
         numerical_timeseries,
         nlp,
-        rigidbody_dynamics: RigidBodyDynamics,
         with_contact: bool,
         with_passive_torque: bool,
         with_ligament: bool,
@@ -579,8 +533,6 @@ class DynamicsFunctions:
             The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
-        rigidbody_dynamics: RigidBodyDynamics
-            which rigidbody dynamics should be used
         with_contact: bool
             If the dynamic with contact should be used
         with_passive_torque: bool
@@ -604,25 +556,12 @@ class DynamicsFunctions:
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         dtau = DynamicsFunctions.get(nlp.controls["taudot"], controls)
 
-        if (
-            rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
-            or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
-        ):
-            ddq = DynamicsFunctions.get(nlp.states["qddot"], states)
-            dddq = DynamicsFunctions.get(nlp.controls["qdddot"], controls)
-
-            dxdt = nlp.cx(nlp.states.shape, 1)
-            dxdt[nlp.states["q"].index, :] = dq
-            dxdt[nlp.states["qdot"].index, :] = ddq
-            dxdt[nlp.states["qddot"].index, :] = dddq
-            dxdt[nlp.states["tau"].index, :] = dtau
-        else:
-            external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
-            ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
-            dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
-            dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
-            dxdt[nlp.states["qdot"].index, :] = ddq
-            dxdt[nlp.states["tau"].index, :] = horzcat(*[dtau for _ in range(ddq.shape[1])])
+        external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
+        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
+        dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
+        dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
+        dxdt[nlp.states["qdot"].index, :] = ddq
+        dxdt[nlp.states["tau"].index, :] = horzcat(*[dtau for _ in range(ddq.shape[1])])
 
         return DynamicsEvaluation(dxdt=dxdt, defects=None)
 
@@ -741,7 +680,6 @@ class DynamicsFunctions:
         with_contact: bool,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
-        rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         with_residual_torque: bool = False,
         fatigue=None,
     ) -> DynamicsEvaluation:
@@ -770,8 +708,6 @@ class DynamicsFunctions:
             If the dynamic with passive torque should be used
         with_ligament: bool
             If the dynamic with ligament should be used
-        rigidbody_dynamics: RigidBodyDynamics
-            which rigidbody dynamics should be used
         fatigue: FatigueDynamicsList
             To define fatigue elements
         with_residual_torque: bool
@@ -829,17 +765,11 @@ class DynamicsFunctions:
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
 
-        if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
-            ddq = DynamicsFunctions.get(nlp.controls["qddot"], controls)
-            dxdt = nlp.cx(nlp.states.shape, 1)
-            dxdt[nlp.states["q"].index, :] = dq
-            dxdt[nlp.states["qdot"].index, :] = DynamicsFunctions.get(nlp.controls["qddot"], controls)
-        else:
-            external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
-            ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
-            dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
-            dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
-            dxdt[nlp.states["qdot"].index, :] = ddq
+        external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
+        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
+        dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
+        dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
+        dxdt[nlp.states["qdot"].index, :] = ddq
 
         has_excitation = True if "muscles" in nlp.states else False
         if has_excitation:
@@ -850,31 +780,7 @@ class DynamicsFunctions:
         if fatigue is not None and "muscles" in fatigue:
             dxdt = fatigue["muscles"].dynamics(dxdt, nlp, states, controls)
 
-        defects = None
-        # TODO: contacts and fatigue to be handled with implicit dynamics
-        if rigidbody_dynamics is not RigidBodyDynamics.ODE or (
-            rigidbody_dynamics is RigidBodyDynamics.ODE and nlp.ode_solver.defects_type == DefectType.IMPLICIT
-        ):
-            if not with_contact and fatigue is None:
-                qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.cx)
-                external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
-                tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact, external_forces)
-                defects = nlp.cx(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
-
-                dq_defects = []
-                for _ in range(tau_id.shape[1]):
-                    dq_defects.append(
-                        dq
-                        - DynamicsFunctions.compute_qdot(
-                            nlp,
-                            q,
-                            DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.cx),
-                        )
-                    )
-                defects[: dq.shape[0], :] = horzcat(*dq_defects)
-                defects[dq.shape[0] :, :] = tau - tau_id
-
-        return DynamicsEvaluation(dxdt=dxdt, defects=defects)
+        return DynamicsEvaluation(dxdt=dxdt, defects=None)
 
     @staticmethod
     def forces_from_muscle_driven(
@@ -940,7 +846,6 @@ class DynamicsFunctions:
         algebraic_states,
         numerical_timeseries,
         nlp,
-        rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
     ) -> DynamicsEvaluation:
         """
         Forward dynamics driven by joints accelerations of a free floating body.
@@ -961,17 +866,12 @@ class DynamicsFunctions:
             The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
-        rigidbody_dynamics: RigidBodyDynamics
-            which rigid body dynamics to use
 
         Returns
         ----------
         MX.sym | SX.sym
             The derivative of states
         """
-        if rigidbody_dynamics != RigidBodyDynamics.ODE:
-            raise NotImplementedError("Implicit dynamics not implemented yet.")
-
         q = nlp.get_var_from_states_or_controls("q", states, controls)
         qdot = nlp.get_var_from_states_or_controls("qdot", states, controls)
         qddot_joints = nlp.get_var_from_states_or_controls("qddot", states, controls)
@@ -981,40 +881,8 @@ class DynamicsFunctions:
 
         qdot_mapped = nlp.variable_mappings["qdot"].to_first.map(qdot)
         qddot_mapped = nlp.variable_mappings["qdot"].to_first.map(qddot_reordered)
-        qddot_root_mapped = nlp.variable_mappings["qddot_roots"].to_first.map(qddot_root)
-        qddot_joints_mapped = nlp.variable_mappings["qddot_joints"].to_first.map(qddot_joints)
 
-        # defects
-        defects = None
-        if rigidbody_dynamics is not RigidBodyDynamics.ODE or (
-            rigidbody_dynamics is RigidBodyDynamics.ODE and nlp.ode_solver.defects_type == DefectType.IMPLICIT
-        ):
-            qddot_root_defects = DynamicsFunctions.get(nlp.states_dot["qddot_roots"], nlp.states_dot.cx)
-            qddot_defects_reordered = nlp.model.reorder_qddot_root_joints(qddot_root_defects, qddot_joints)
-
-            floating_base_constraint = nlp.model.inverse_dynamics(q, qdot, qddot_defects_reordered, [], [])[
-                : nlp.model.nb_root
-            ]
-
-            defects = nlp.cx(qdot_mapped.shape[0] + qddot_root_mapped.shape[0] + qddot_joints_mapped.shape[0], 1)
-
-            defects[: qdot_mapped.shape[0], :] = qdot_mapped - nlp.variable_mappings["qdot"].to_first.map(
-                DynamicsFunctions.compute_qdot(
-                    nlp, q, DynamicsFunctions.get((nlp.states_dot["qdot"]), nlp.states_dot.cx)
-                )
-            )
-
-            defects[qdot_mapped.shape[0] : (qdot_mapped.shape[0] + qddot_root_mapped.shape[0]), :] = (
-                floating_base_constraint
-            )
-            defects[(qdot_mapped.shape[0] + qddot_root_mapped.shape[0]) :, :] = (
-                qddot_joints_mapped
-                - nlp.variable_mappings["qddot_joints"].to_first.map(
-                    DynamicsFunctions.get(nlp.states_dot["qddot_joints"], nlp.states_dot.cx)
-                )
-            )
-
-        return DynamicsEvaluation(dxdt=vertcat(qdot_mapped, qddot_mapped), defects=defects)
+        return DynamicsEvaluation(dxdt=vertcat(qdot_mapped, qddot_mapped), defects=None)
 
     @staticmethod
     def get(var: OptimizationVariable, cx: MX | SX):

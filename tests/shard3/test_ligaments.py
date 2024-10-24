@@ -62,7 +62,7 @@ def test_torque_driven_with_ligament(with_ligament, cx, phase_dynamics):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.TORQUE_DRIVEN, rigidbody_dynamics=RigidBodyDynamics.ODE, with_ligament=with_ligament),
+        Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_ligament=with_ligament),
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -258,7 +258,6 @@ def test_muscle_driven_with_ligament(with_ligament, cx, phase_dynamics):
         "dynamics_type",
         Dynamics(
             DynamicsFcn.MUSCLE_DRIVEN,
-            rigidbody_dynamics=RigidBodyDynamics.ODE,
             with_ligament=with_ligament,
         ),
         False,
@@ -297,70 +296,5 @@ def test_muscle_driven_with_ligament(with_ligament, cx, phase_dynamics):
         npt.assert_almost_equal(
             x_out[:, 0],
             [2.0584494e-02, 1.8340451e-01, -7.3880194e00, -9.0642142e01],
-            decimal=6,
-        )
-
-
-@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
-@pytest.mark.parametrize(
-    "rigidbody_dynamics",
-    [RigidBodyDynamics.DAE_FORWARD_DYNAMICS, RigidBodyDynamics.DAE_INVERSE_DYNAMICS],
-)
-def test_ocp_mass_ligament(rigidbody_dynamics, phase_dynamics):
-    from bioptim.examples.torque_driven_ocp import ocp_mass_with_ligament as ocp_module
-
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
-
-    # Define the problem
-    biorbd_model_path = bioptim_folder + "/models/mass_point_with_ligament.bioMod"
-
-    ocp = ocp_module.prepare_ocp(
-        biorbd_model_path,
-        rigidbody_dynamics=rigidbody_dynamics,
-        phase_dynamics=phase_dynamics,
-        n_threads=8 if phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else 1,
-        expand_dynamics=True,
-    )
-    solver = Solver.IPOPT()
-
-    # solver.set_maximum_iterations(10)
-    sol = ocp.solve(solver)
-
-    # Check some results
-    states = sol.decision_states(to_merge=SolutionMerge.NODES)
-    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
-
-    if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
-        # initial and final position
-        npt.assert_almost_equal(q[:, 0], np.array([0.0]))
-        npt.assert_almost_equal(q[:, -1], np.array([0.0194773]))
-        # initial and final velocities
-        npt.assert_almost_equal(qdot[:, 0], np.array([0.0]))
-        npt.assert_almost_equal(qdot[:, -1], np.array([-2.3061592]))
-        # initial and final controls
-        npt.assert_almost_equal(
-            tau[:, 0],
-            np.array([2.158472e-16]),
-            decimal=6,
-        )
-        npt.assert_almost_equal(tau[:, -1], np.array([1.423733e-17]), decimal=6)
-
-    else:
-        # initial and final position
-        npt.assert_almost_equal(q[:, 0], np.array([0.0]))
-        npt.assert_almost_equal(q[:, -1], np.array([0.0194773]))
-        # initial and final velocities
-        npt.assert_almost_equal(qdot[:, 0], np.array([0.0]))
-        npt.assert_almost_equal(qdot[:, -1], np.array([-2.3061592]))
-        # initial and final controls
-        npt.assert_almost_equal(
-            tau[:, 0],
-            np.array([2.158472e-16]),
-            decimal=6,
-        )
-        npt.assert_almost_equal(
-            tau[:, -1],
-            np.array([1.423733e-17]),
             decimal=6,
         )

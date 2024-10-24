@@ -25,7 +25,6 @@ from bioptim import (
     ConstraintFcn,
     Node,
     Solver,
-    RigidBodyDynamics,
     PhaseDynamics,
 )
 
@@ -38,7 +37,6 @@ def prepare_ocp(
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     objective_name: str = "MINIMIZE_PREDICTED_COM_HEIGHT",
     com_constraints: bool = False,
-    rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
@@ -62,8 +60,6 @@ def prepare_ocp(
         'MINIMIZE_COM_POSITION' or 'MINIMIZE_COM_VELOCITY')
     com_constraints: bool
         If a constraint on the COM should be applied
-    rigidbody_dynamics: RigidBodyDynamics
-        which transcription of rigidbody dynamics is chosen
     phase_dynamics: PhaseDynamics
         If the dynamics equation within a phase is unique or changes at each node.
         PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
@@ -108,7 +104,6 @@ def prepare_ocp(
         dynamics.add(
             DynamicsFcn.TORQUE_DRIVEN,
             with_contact=True,
-            rigidbody_dynamics=rigidbody_dynamics,
             expand_dynamics=expand_dynamics,
             phase_dynamics=phase_dynamics,
         )
@@ -148,16 +143,6 @@ def prepare_ocp(
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds["tau"] = [tau_min] * len(dof_mapping["tau"].to_first), [tau_max] * len(dof_mapping["tau"].to_first)
-    if rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
-        u_bounds["qddot"] = [tau_min] * bio_model.nb_qddot, [tau_max] * bio_model.nb_qddot
-    elif rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
-        u_bounds["qddot"] = [tau_min] * bio_model.nb_qddot, [tau_max] * bio_model.nb_qddot
-
-        min_forces_seg1 = [0, -tau_min, -tau_min, 0, 0, 0]
-        min_forces_seg2 = [0, 0, -tau_min, 0, 0, 0]
-        max_forces_seg1 = [0, tau_max, tau_max, 0, 0, 0]
-        max_forces_seg2 = [0, 0, tau_max, 0, 0, 0]
-        u_bounds["translational_forces"] = min_forces_seg1 + min_forces_seg2, max_forces_seg1 + max_forces_seg2
 
     return OptimalControlProgram(
         bio_model,

@@ -175,7 +175,6 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
     - [CostType](#enum-costtype)
     - [SolutionIntegrator](#enum-solutionintegrator)
     - [QuadratureRule](#enum-quadraturerule)
-    - [RigidBodyDynamics](#enum-rigidbodydynamics)
     - [SoftContactDynamics](#enum-softcontactdynamics)
     - [DefectType](#enum-defecttype)
 
@@ -1746,14 +1745,6 @@ The type of integration used to integrate the cost function terms of Lagrange:
 - APPROXIMATE_TRAPEZOIDAL: The integral is approximated by a trapezoidal rule using the state at the beginning of the next interval.
 - TRAPEZOIDAL: The integral is approximated by a trapezoidal rule using the state at the end of the current interval.
 
-### Enum: RigidBodyDynamics
-The type of transcription of any dynamics (e.g., rigidbody_dynamics or soft_contact_dynamics):
-- ODE: the dynamics is handled explicitly in the continuity constraint of the ordinary differential equation of the Direct Multiple Shooting approach.
-- DAE_INVERSE_DYNAMICS: it adds an extra control *qddot* to respect inverse dynamics on nodes; this is a DAE-constrained OCP.
-- DAE_FORWARD_DYNAMICS: it adds an extra control *qddot* to respect forward dynamics on nodes; this is a DAE-constrained OCP.
-- DAE_INVERSE_DYNAMICS_JERK: it adds an extra control *qdddot* and an extra state *qddot* to respect inverse dynamics on nodes; this is a DAE-constrained OCP.
-- DAE_FORWARD_DYNAMICS_JERK: it adds an extra control *qdddot* and an extra state *qddot* to respect forward dynamics on nodes; this is a DAE-constrained OCP.
-
 ### Enum: SoftContactDynamics
 The type of transcription of any dynamics (e.g., rigidbody_dynamics or soft_contact_dynamics):
 - ODE: soft contact dynamics is handled explicitly.
@@ -1909,9 +1900,6 @@ example, a spring) can be found at 'examples/torque_driven_ocp/spring_load.py'
 
 `Bioptim` expects `external_forces` to be a np.ndarray [6 x n x n_shooting], where the six components are 
 [Mx, My, Mz, Fx, Fy, Fz], expressed at the origin of the global reference frame for each node.
-
-### The [example_implicit_dynamics.py](./bioptim/examples/getting_started/example_implicit_dynamics.py) file
-*#TODO*
 
 ### The [example_inequality_constraint.py](./bioptim/examples/getting_started/example_inequality_constraint.py) file
 This example mimics what a jumper does when maximizing the predicted height of the center of mass at the peak of an aerial phase. It does so with a simplistic two segments model.
