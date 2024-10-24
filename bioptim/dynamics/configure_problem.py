@@ -191,9 +191,7 @@ class ConfigureProblem:
         """
 
         _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
-        _check_soft_contacts_dynamics(
-            soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx
-        )
+        _check_soft_contacts_dynamics(soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx)
 
         # Declared rigidbody states and controls
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
@@ -551,9 +549,7 @@ class ConfigureProblem:
         """
         _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
 
-        _check_soft_contacts_dynamics(
-            soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx
-        )
+        _check_soft_contacts_dynamics(soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx)
 
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False)

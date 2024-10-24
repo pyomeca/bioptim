@@ -109,22 +109,25 @@ def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
         ]
 
         external_forces = ExternalForcesList()
-        external_forces.add(key="Seg0",
-                            data=external_forces_array[:3, :],
-                            force_type=ExternalForcesType.TORQUE,
-                            force_reference_frame=ReferenceFrame.GLOBAL,
-                            phase=0)
-        external_forces.add(key="Seg0",
-                            data=external_forces_array[3:6, :],
-                            force_type=ExternalForcesType.LINEAR_FORCE,
-                            force_reference_frame=ReferenceFrame.GLOBAL,
-                            phase=0)
-
+        external_forces.add(
+            key="Seg0",
+            data=external_forces_array[:3, :],
+            force_type=ExternalForcesType.TORQUE,
+            force_reference_frame=ReferenceFrame.GLOBAL,
+            phase=0,
+        )
+        external_forces.add(
+            key="Seg0",
+            data=external_forces_array[3:6, :],
+            force_type=ExternalForcesType.LINEAR_FORCE,
+            force_reference_frame=ReferenceFrame.GLOBAL,
+            phase=0,
+        )
 
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod",
         external_forces=external_forces,
-        )
+    )
 
     nlp.cx = cx
     nlp.time_cx = cx.sym("time", 1, 1)
@@ -149,7 +152,7 @@ def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
             external_forces=external_forces,
-            ),
+        ),
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -218,6 +221,7 @@ def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
                     35.80238642,
                 ],
             )
+
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("cx", [MX, SX])
@@ -371,14 +375,16 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
             data=external_forces_array[:3, :],
             force_type=ExternalForcesType.TORQUE,
             force_reference_frame=ReferenceFrame.GLOBAL,
-            phase=0)
+            phase=0,
+        )
         external_forces.add(
             key="Seg0",
             data=external_forces_array[3:6, :],
             force_type=ExternalForcesType.LINEAR_FORCE,
             force_reference_frame=ReferenceFrame.GLOBAL,
-            phase=0)
-        
+            phase=0,
+        )
+
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod",
         external_forces=external_forces,
@@ -749,7 +755,6 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
             force_reference_frame=ReferenceFrame.GLOBAL,
             phase=0,
         )
-
 
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod",
@@ -1128,9 +1133,7 @@ def test_torque_driven_free_floating_base(cx, phase_dynamics):
 @pytest.mark.parametrize("with_contact", [False, True])
 @pytest.mark.parametrize("with_residual_torque", [False, True])
 @pytest.mark.parametrize("with_excitations", [False, True])
-def test_muscle_driven(
-    with_excitations, with_contact, with_residual_torque, with_external_force, cx, phase_dynamics
-):
+def test_muscle_driven(with_excitations, with_contact, with_residual_torque, with_external_force, cx, phase_dynamics):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.ns = 5
