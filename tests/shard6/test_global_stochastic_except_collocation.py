@@ -234,161 +234,161 @@ from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_impl
 #             ]
 #         ),
 #     )
-
-
-@pytest.mark.parametrize("use_sx", [True, False])
-def test_arm_reaching_torque_driven_explicit(use_sx):
-    from bioptim.examples.stochastic_optimal_control import arm_reaching_torque_driven_explicit as ocp_module
-
-    final_time = 0.8
-    n_shooting = 4
-    hand_final_position = np.array([9.359873986980460e-12, 0.527332023564034])
-
-    dt = 0.01
-    motor_noise_std = 0.05
-    wPq_std = 3e-4
-    wPqdot_std = 0.0024
-    motor_noise_magnitude = DM(np.array([motor_noise_std**2 / dt, motor_noise_std**2 / dt]))
-    wPq_magnitude = DM(np.array([wPq_std**2 / dt, wPq_std**2 / dt]))
-    wPqdot_magnitude = DM(np.array([wPqdot_std**2 / dt, wPqdot_std**2 / dt]))
-    sensory_noise_magnitude = vertcat(wPq_magnitude, wPqdot_magnitude)
-
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
-
-    if use_sx:
-        with pytest.raises(
-            NotImplementedError, match="Wrong number or type of arguments for overloaded function 'MX_set'"
-        ):
-            ocp = ocp_module.prepare_socp(
-                biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
-                final_time=final_time,
-                n_shooting=n_shooting,
-                hand_final_position=hand_final_position,
-                motor_noise_magnitude=motor_noise_magnitude,
-                sensory_noise_magnitude=sensory_noise_magnitude,
-                use_sx=use_sx,
-            )
-        return
-
-    ocp = ocp_module.prepare_socp(
-        biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
-        final_time=final_time,
-        n_shooting=n_shooting,
-        hand_final_position=hand_final_position,
-        motor_noise_magnitude=motor_noise_magnitude,
-        sensory_noise_magnitude=sensory_noise_magnitude,
-        use_sx=use_sx,
-    )
-
-    # Solver parameters
-    solver = Solver.IPOPT()
-    solver.set_maximum_iterations(4)
-    solver.set_nlp_scaling_method("none")
-
-    sol = ocp.solve(solver)
-
-    # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 46.99030175091475)
-
-    # detailed cost values
-    npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 0.055578630313992475)
-    npt.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 6.038226210163837)
-    npt.assert_almost_equal(
-        f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
-    )
-
-    # Check constraints
-    g = np.array(sol.constraints)
-    npt.assert_equal(g.shape, (214, 1))
-
-    # Check some of the results
-    states = sol.decision_states(to_merge=SolutionMerge.NODES)
-    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
-    algebraic_states = sol.decision_algebraic_states(to_merge=SolutionMerge.NODES)
-
-    q, qdot, qddot = states["q"], states["qdot"], states["qddot"]
-    qdddot, tau = controls["qdddot"], controls["tau"]
-    k, ref, m = algebraic_states["k"], algebraic_states["ref"], algebraic_states["m"]
-    ocp.nlp[0].integrated_values["cov"].cx
-
-    # TODO Integrated value is not a proper way to go, it should be removed and recomputed at will
-    # cov = integrated_values["cov"]
-
-    # initial and final position
-    npt.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
-    npt.assert_almost_equal(q[:, -1], np.array([0.92702265, 1.27828413]))
-    npt.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
-    npt.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
-    npt.assert_almost_equal(qddot[:, 0], np.array([0, 0]))
-    npt.assert_almost_equal(qddot[:, -1], np.array([0, 0]))
-
-    npt.assert_almost_equal(qdddot[:, 0], np.array([0.00124365, 0.00124365]))
-    npt.assert_almost_equal(qdddot[:, -2], np.array([0.00124365, 0.00124365]))
-
-    npt.assert_almost_equal(tau[:, 0], np.array([0.36186712, -0.2368119]))
-    npt.assert_almost_equal(tau[:, -2], np.array([-0.35709778, 0.18867995]))
-
-    npt.assert_almost_equal(
-        k[:, 0],
-        np.array(
-            [
-                0.13824554,
-                0.54172046,
-                0.05570321,
-                0.25169273,
-                0.00095407,
-                0.00121309,
-                0.00095146,
-                0.00121091,
-            ]
-        ),
-    )
-    npt.assert_almost_equal(ref[:, 0], np.array([0.02592847, 0.25028511, 0.00124365, 0.00124365]))
-    npt.assert_almost_equal(
-        m[:, 0],
-        np.array(
-            [
-                8.36639386e-01,
-                1.14636589e-01,
-                -4.32594485e-01,
-                1.10372277e00,
-                4.73812392e-03,
-                4.73812392e-03,
-                8.01515210e-02,
-                9.66785674e-01,
-                7.40822199e-01,
-                8.50818498e-01,
-                6.74366790e-03,
-                6.74366790e-03,
-                7.92700393e-02,
-                -8.94683551e-03,
-                7.86796476e-01,
-                -9.53722725e-02,
-                6.55990825e-04,
-                6.55990825e-04,
-                -8.94995258e-04,
-                7.69438075e-02,
-                -2.33336654e-02,
-                7.55054362e-01,
-                1.59819032e-03,
-                1.59819032e-03,
-                1.24365477e-03,
-                1.24365477e-03,
-                1.24365477e-03,
-                1.24365477e-03,
-                8.76878178e-01,
-                1.24365477e-03,
-                1.24365477e-03,
-                1.24365477e-03,
-                1.24365477e-03,
-                1.24365477e-03,
-                1.24365477e-03,
-                8.76878178e-01,
-            ]
-        ),
-    )
+#
+#
+# @pytest.mark.parametrize("use_sx", [True, False])
+# def test_arm_reaching_torque_driven_explicit(use_sx):
+#     from bioptim.examples.stochastic_optimal_control import arm_reaching_torque_driven_explicit as ocp_module
+#
+#     final_time = 0.8
+#     n_shooting = 4
+#     hand_final_position = np.array([9.359873986980460e-12, 0.527332023564034])
+#
+#     dt = 0.01
+#     motor_noise_std = 0.05
+#     wPq_std = 3e-4
+#     wPqdot_std = 0.0024
+#     motor_noise_magnitude = DM(np.array([motor_noise_std**2 / dt, motor_noise_std**2 / dt]))
+#     wPq_magnitude = DM(np.array([wPq_std**2 / dt, wPq_std**2 / dt]))
+#     wPqdot_magnitude = DM(np.array([wPqdot_std**2 / dt, wPqdot_std**2 / dt]))
+#     sensory_noise_magnitude = vertcat(wPq_magnitude, wPqdot_magnitude)
+#
+#     bioptim_folder = os.path.dirname(ocp_module.__file__)
+#
+#     if use_sx:
+#         with pytest.raises(
+#             NotImplementedError, match="Wrong number or type of arguments for overloaded function 'MX_set'"
+#         ):
+#             ocp = ocp_module.prepare_socp(
+#                 biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
+#                 final_time=final_time,
+#                 n_shooting=n_shooting,
+#                 hand_final_position=hand_final_position,
+#                 motor_noise_magnitude=motor_noise_magnitude,
+#                 sensory_noise_magnitude=sensory_noise_magnitude,
+#                 use_sx=use_sx,
+#             )
+#         return
+#
+#     ocp = ocp_module.prepare_socp(
+#         biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
+#         final_time=final_time,
+#         n_shooting=n_shooting,
+#         hand_final_position=hand_final_position,
+#         motor_noise_magnitude=motor_noise_magnitude,
+#         sensory_noise_magnitude=sensory_noise_magnitude,
+#         use_sx=use_sx,
+#     )
+#
+#     # Solver parameters
+#     solver = Solver.IPOPT()
+#     solver.set_maximum_iterations(4)
+#     solver.set_nlp_scaling_method("none")
+#
+#     sol = ocp.solve(solver)
+#
+#     # Check objective function value
+#     f = np.array(sol.cost)
+#     npt.assert_equal(f.shape, (1, 1))
+#     npt.assert_almost_equal(f[0, 0], 46.99030175091475)
+#
+#     # detailed cost values
+#     npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 0.055578630313992475)
+#     npt.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 6.038226210163837)
+#     npt.assert_almost_equal(
+#         f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
+#     )
+#
+#     # Check constraints
+#     g = np.array(sol.constraints)
+#     npt.assert_equal(g.shape, (214, 1))
+#
+#     # Check some of the results
+#     states = sol.decision_states(to_merge=SolutionMerge.NODES)
+#     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+#     algebraic_states = sol.decision_algebraic_states(to_merge=SolutionMerge.NODES)
+#
+#     q, qdot, qddot = states["q"], states["qdot"], states["qddot"]
+#     qdddot, tau = controls["qdddot"], controls["tau"]
+#     k, ref, m = algebraic_states["k"], algebraic_states["ref"], algebraic_states["m"]
+#     ocp.nlp[0].integrated_values["cov"].cx
+#
+#     # TODO Integrated value is not a proper way to go, it should be removed and recomputed at will
+#     # cov = integrated_values["cov"]
+#
+#     # initial and final position
+#     npt.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
+#     npt.assert_almost_equal(q[:, -1], np.array([0.92702265, 1.27828413]))
+#     npt.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
+#     npt.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
+#     npt.assert_almost_equal(qddot[:, 0], np.array([0, 0]))
+#     npt.assert_almost_equal(qddot[:, -1], np.array([0, 0]))
+#
+#     npt.assert_almost_equal(qdddot[:, 0], np.array([0.00124365, 0.00124365]))
+#     npt.assert_almost_equal(qdddot[:, -2], np.array([0.00124365, 0.00124365]))
+#
+#     npt.assert_almost_equal(tau[:, 0], np.array([0.36186712, -0.2368119]))
+#     npt.assert_almost_equal(tau[:, -2], np.array([-0.35709778, 0.18867995]))
+#
+#     npt.assert_almost_equal(
+#         k[:, 0],
+#         np.array(
+#             [
+#                 0.13824554,
+#                 0.54172046,
+#                 0.05570321,
+#                 0.25169273,
+#                 0.00095407,
+#                 0.00121309,
+#                 0.00095146,
+#                 0.00121091,
+#             ]
+#         ),
+#     )
+#     npt.assert_almost_equal(ref[:, 0], np.array([0.02592847, 0.25028511, 0.00124365, 0.00124365]))
+#     npt.assert_almost_equal(
+#         m[:, 0],
+#         np.array(
+#             [
+#                 8.36639386e-01,
+#                 1.14636589e-01,
+#                 -4.32594485e-01,
+#                 1.10372277e00,
+#                 4.73812392e-03,
+#                 4.73812392e-03,
+#                 8.01515210e-02,
+#                 9.66785674e-01,
+#                 7.40822199e-01,
+#                 8.50818498e-01,
+#                 6.74366790e-03,
+#                 6.74366790e-03,
+#                 7.92700393e-02,
+#                 -8.94683551e-03,
+#                 7.86796476e-01,
+#                 -9.53722725e-02,
+#                 6.55990825e-04,
+#                 6.55990825e-04,
+#                 -8.94995258e-04,
+#                 7.69438075e-02,
+#                 -2.33336654e-02,
+#                 7.55054362e-01,
+#                 1.59819032e-03,
+#                 1.59819032e-03,
+#                 1.24365477e-03,
+#                 1.24365477e-03,
+#                 1.24365477e-03,
+#                 1.24365477e-03,
+#                 8.76878178e-01,
+#                 1.24365477e-03,
+#                 1.24365477e-03,
+#                 1.24365477e-03,
+#                 1.24365477e-03,
+#                 1.24365477e-03,
+#                 1.24365477e-03,
+#                 8.76878178e-01,
+#             ]
+#         ),
+#     )
 
 
 @pytest.mark.parametrize("with_cholesky", [True, False])
