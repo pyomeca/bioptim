@@ -71,7 +71,13 @@ def compute_all_states(sol, bio_model: HolonomicBiorbdModel):
             .squeeze()
         )
         qddot[:, i] = bio_model.compute_qddot()(q[:, i], qdot[:, i], qddot_u_i).toarray().squeeze()
-        lambdas[:, i] = bio_model.compute_the_lagrangian_multipliers()(states["q_u"][:, i][:, np.newaxis], states["qdot_u"][:, i], q_v_init[:, i], tau[:, i]).toarray().squeeze()
+        lambdas[:, i] = (
+            bio_model.compute_the_lagrangian_multipliers()(
+                states["q_u"][:, i][:, np.newaxis], states["qdot_u"][:, i], q_v_init[:, i], tau[:, i]
+            )
+            .toarray()
+            .squeeze()
+        )
 
     return q, qdot, qddot, lambdas
 

@@ -42,7 +42,6 @@ class HolonomicBiorbdModel(BiorbdModel):
         self.qddot_v = MX.sym("qddot_v_mx", self.nb_dependent_joints, 1)
         self.q_v_init = MX.sym("q_v_init_mx", self.nb_dependent_joints, 1)
 
-
     def set_newton_tol(self, newton_tol: float):
         self._newton_tol = newton_tol
 
@@ -178,9 +177,9 @@ class HolonomicBiorbdModel(BiorbdModel):
 
         biais = -self.holonomic_constraints_jacobian(self.qdot) @ self.qdot
         if self.stabilization:
-            biais -= self.alpha * self.holonomic_constraints(self.q) + self.beta * self.holonomic_constraints_derivative(
-                self.q, self.qdot
-            )
+            biais -= self.alpha * self.holonomic_constraints(
+                self.q
+            ) + self.beta * self.holonomic_constraints_derivative(self.q, self.qdot)
 
         tau_augmented = vertcat(tau_augmented, biais)
 
@@ -293,11 +292,13 @@ class HolonomicBiorbdModel(BiorbdModel):
             modified_generalized_forces - second_term @ self.biais_vector(q, qdot) - modified_non_linear_effect
         )
 
-        casadi_fun = Function("partitioned_forward_dynamics",
-                              [self.q_u, self.qdot_u, self.q_v_init, self.tau],
-                              [qddot_u],
-                              ["q_u", "qdot_u", "q_v_init", "tau"],
-                              ["qddot_u"])
+        casadi_fun = Function(
+            "partitioned_forward_dynamics",
+            [self.q_u, self.qdot_u, self.q_v_init, self.tau],
+            [qddot_u],
+            ["q_u", "qdot_u", "q_v_init", "tau"],
+            ["qddot_u"],
+        )
 
         return casadi_fun
 
@@ -384,51 +385,33 @@ class HolonomicBiorbdModel(BiorbdModel):
         ifcn = rootfinder("ifcn", "newton", residuals, opts)
         v_opt = ifcn(*ifcn_input)
 
-        casadi_fun = Function("compute_q_v",
-                              [self.q_u, self.q_v_init],
-                              [v_opt],
-                              ["q_u", "q_v_init"],
-                              ["q_v"])
+        casadi_fun = Function("compute_q_v", [self.q_u, self.q_v_init], [v_opt], ["q_u", "q_v_init"], ["q_v"])
         return casadi_fun
 
     def compute_q(self) -> Function:
         q_v = self.compute_q_v()(self.q_u, self.q_v_init)
         biorbd_return = self.state_from_partition(self.q_u, q_v)
-        casadi_fun = Function("compute_q",
-                                [self.q_u, self.q_v_init],
-                                [biorbd_return],
-                                ["q_u", "q_v_init"],
-                                ["q"])
+        casadi_fun = Function("compute_q", [self.q_u, self.q_v_init], [biorbd_return], ["q_u", "q_v_init"], ["q"])
         return casadi_fun
 
     def compute_qdot_v(self) -> Function:
         coupling_matrix_vu = self.coupling_matrix(self.q)
         biorbd_return = coupling_matrix_vu @ self.qdot_u
-        casadi_fun = Function("compute_qdot_v",
-                                [self.q, self.qdot_u],
-                                [biorbd_return],
-                                ["q", "qdot_u"],
-                                ["qdot_v"])
+        casadi_fun = Function("compute_qdot_v", [self.q, self.qdot_u], [biorbd_return], ["q", "qdot_u"], ["qdot_v"])
         return casadi_fun
 
     def _compute_qdot_v(self) -> Function:
         q = self.compute_q()(self.q_u, self.q_v_init)
         biorbd_return = self.compute_qdot_v()(q, self.qdot_u)
-        casadi_fun = Function("compute_qdot_v",
-                                [self.q, self.qdot_u, self.q_v_init],
-                                [biorbd_return],
-                                ["q", "qdot_u"],
-                                ["qdot_v"])
+        casadi_fun = Function(
+            "compute_qdot_v", [self.q, self.qdot_u, self.q_v_init], [biorbd_return], ["q", "qdot_u"], ["qdot_v"]
+        )
         return casadi_fun
 
     def compute_qdot(self) -> Function:
         qdot_v = self.compute_qdot_v()(self.q, self.qdot_u)
         biorbd_return = self.state_from_partition(self.qdot_u, qdot_v)
-        casadi_fun = Function("compute_qdot",
-                                [self.q, self.qdot_u],
-                                [biorbd_return],
-                                ["q", "qdot_u"],
-                                ["qdot"])
+        casadi_fun = Function("compute_qdot", [self.q, self.qdot_u], [biorbd_return], ["q", "qdot_u"], ["qdot"])
         return casadi_fun
 
     def compute_qddot_v(self) -> Function:
@@ -442,11 +425,9 @@ class HolonomicBiorbdModel(BiorbdModel):
         """
         coupling_matrix_vu = self.coupling_matrix(self.q)
         biorbd_return = coupling_matrix_vu @ self.qddot_u + self.biais_vector(self.q, self.qdot)
-        casadi_fun = Function("compute_qddot_v",
-                                [self.q, self.qdot, self.qddot_u],
-                                [biorbd_return],
-                                ["q", "qdot", "qddot_u"],
-                                ["qddot_v"])
+        casadi_fun = Function(
+            "compute_qddot_v", [self.q, self.qdot, self.qddot_u], [biorbd_return], ["q", "qdot", "qddot_u"], ["qddot_v"]
+        )
         return casadi_fun
 
     def compute_qddot(self) -> Function:
@@ -460,11 +441,9 @@ class HolonomicBiorbdModel(BiorbdModel):
         """
         qddot_v = self.compute_qddot_v()(self.q, self.qdot, self.qddot_u)
         biorbd_return = self.state_from_partition(self.qddot_u, qddot_v)
-        casadi_fun = Function("compute_qddot",
-                                [self.q, self.qdot, self.qddot_u],
-                                [biorbd_return],
-                                ["q", "qdot", "qddot_u"],
-                                ["qddot"])
+        casadi_fun = Function(
+            "compute_qddot", [self.q, self.qdot, self.qddot_u], [biorbd_return], ["q", "qdot", "qddot_u"], ["qddot"]
+        )
         return casadi_fun
 
     def compute_the_lagrangian_multipliers(self) -> Function:
@@ -481,11 +460,13 @@ class HolonomicBiorbdModel(BiorbdModel):
         qddot = self.compute_qddot()(q, qdot, qddot_u)
 
         biorbd_return = self._compute_the_lagrangian_multipliers()(q, qdot, qddot, self.tau)
-        casadi_fun = Function("compute_the_lagrangian_multipliers",
-                                [self.q_u, self.qdot_u, self.q_v_init, self.tau],
-                                [biorbd_return],
-                                ["q_u", "qdot_u", "q_v_init", "tau"],
-                                ["lambda"])
+        casadi_fun = Function(
+            "compute_the_lagrangian_multipliers",
+            [self.q_u, self.qdot_u, self.q_v_init, self.tau],
+            [biorbd_return],
+            ["q_u", "qdot_u", "q_v_init", "tau"],
+            ["lambda"],
+        )
         return casadi_fun
 
     def _compute_the_lagrangian_multipliers(self) -> Function:
@@ -518,10 +499,11 @@ class HolonomicBiorbdModel(BiorbdModel):
         biorbd_return = partitioned_constraints_jacobian_v_t_inv @ (
             m_vu @ qddot_u + m_vv @ qddot_v + non_linear_effect_v - partitioned_tau_v
         )
-        casadi_fun = Function("_compute_the_lagrangian_multipliers",
-                                [self.q, self.qdot, self.qddot, self.tau],
-                                [biorbd_return],
-                                ["q", "qdot", "qddot", "tau"],
-                                ["lambda"])
+        casadi_fun = Function(
+            "_compute_the_lagrangian_multipliers",
+            [self.q, self.qdot, self.qddot, self.tau],
+            [biorbd_return],
+            ["q", "qdot", "qddot", "tau"],
+            ["lambda"],
+        )
         return casadi_fun
-

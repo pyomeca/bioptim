@@ -233,4 +233,3 @@ class ExternalForceType(Enum):
     FORCE = "force"
     TORQUE = "torque"
     TORQUE_AND_FORCE = "torque_and_force"
-

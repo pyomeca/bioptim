@@ -29,7 +29,6 @@ class VariationalBiorbdModel(HolonomicBiorbdModel):
         self.control_type = control_type
         self.control_discrete_approximation = control_discrete_approximation
 
-
     def discrete_lagrangian(
         self,
         q1: MX | SX | DM,

@@ -103,7 +103,9 @@ def test_model_holonomic():
     )
     TestUtils.assert_equal(model.holonomic_constraints_derivative(q, q_dot), [-7.65383105, -0.44473154])
     TestUtils.assert_equal(model.holonomic_constraints_double_derivative(q, q_dot, q_ddot), [10.23374996, -11.73729905])
-    TestUtils.assert_equal(model.constrained_forward_dynamics()(q, q_dot, tau, []), [-5.18551845, -3.01921376, 25.79451813])
+    TestUtils.assert_equal(
+        model.constrained_forward_dynamics()(q, q_dot, tau, []), [-5.18551845, -3.01921376, 25.79451813]
+    )
     TestUtils.assert_equal(
         model.partitioned_mass_matrix(q),
         [
@@ -146,7 +148,10 @@ def test_model_holonomic():
     )
     TestUtils.assert_equal(
         model.compute_the_lagrangian_multipliers()(
-            MX(np.zeros(model.nb_independent_joints)), MX(np.ones(model.nb_independent_joints) * 0.001), MX(np.zeros(model.nb_dependent_joints)), tau
+            MX(np.zeros(model.nb_independent_joints)),
+            MX(np.ones(model.nb_independent_joints) * 0.001),
+            MX(np.zeros(model.nb_dependent_joints)),
+            tau,
         ),
         [np.nan, np.nan],
         expand=False,

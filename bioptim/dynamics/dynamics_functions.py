@@ -1136,7 +1136,9 @@ class DynamicsFunctions:
         q_u = DynamicsFunctions.get(nlp.states["q_u"], states)
         qdot_u = DynamicsFunctions.get(nlp.states["qdot_u"], states)
         tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
-        q_v_init = DM.zeros(nlp.model.nb_dependent_joints)  # @ipuch: I'm not sure of this, where q_v_init is supposed to be if not zeros?
+        q_v_init = DM.zeros(
+            nlp.model.nb_dependent_joints
+        )  # @ipuch: I'm not sure of this, where q_v_init is supposed to be if not zeros?
         qddot_u = nlp.model.partitioned_forward_dynamics()(q_u, qdot_u, q_v_init, tau, nlp.parameters.cx)
 
         return DynamicsEvaluation(dxdt=vertcat(qdot_u, qddot_u), defects=None)
