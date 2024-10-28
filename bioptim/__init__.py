@@ -213,10 +213,10 @@ from .misc.enums import (
     PhaseDynamics,
     OnlineOptim,
     ReferenceFrame,
-    ExternalForcesType,
+    ExternalForceType,
 )
 from .misc.mapping import BiMappingList, BiMapping, Mapping, NodeMapping, NodeMappingList, SelectionMapping, Dependency
-from .misc.external_forces import ExternalForces, ExternalForcesList
+from .misc.external_forces import ExternalForce, ExternalForces
 
 from .optimization.multi_start import MultiStart
 from .optimization.non_linear_program import NonLinearProgram

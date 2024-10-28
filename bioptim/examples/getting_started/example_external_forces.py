@@ -25,8 +25,8 @@ from bioptim import (
     OdeSolverBase,
     Solver,
     PhaseDynamics,
-    ExternalForcesList,
-    ExternalForcesType,
+    ExternalForces,
+    ExternalForceType,
     ReferenceFrame,
 )
 
@@ -36,7 +36,7 @@ def prepare_ocp(
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     expand_dynamics: bool = True,
     phase_dynamics: PhaseDynamics = PhaseDynamics.ONE_PER_NODE,
-    force_type: ExternalForcesType = ExternalForcesType.LINEAR_FORCE,
+    force_type: ExternalForceType = ExternalForceType.FORCE,
     force_reference_frame: ReferenceFrame = ReferenceFrame.GLOBAL,
     use_point_of_applications: bool = False,
     point_of_application_reference_frame: ReferenceFrame = ReferenceFrame.GLOBAL,
@@ -97,24 +97,22 @@ def prepare_ocp(
         Seg1_point_of_application = None
         Test_point_of_application = None
 
-    external_forces = ExternalForcesList()
+    external_forces = ExternalForces()
     external_forces.add(
         key="Seg1",  # Name of the segment where the external force is applied
         data=Seg1_force,  # 3 x (n_shooting_points+1) array
-        force_type=force_type,  # Type of the external force (ExternalForcesType.LINEAR_FORCE)
+        force_type=force_type,  # Type of the external force (ExternalForceType.FORCE)
         force_reference_frame=force_reference_frame,  # Reference frame of the external force (ReferenceFrame.GLOBAL)
         point_of_application=Seg1_point_of_application,  # Position of the point of application
         point_of_application_reference_frame=point_of_application_reference_frame,  # Reference frame of the point of application (ReferenceFrame.GLOBAL)
-        phase=0,  # Pariterre, did we deal with phases already?
     )
     external_forces.add(
         key="Test",  # Name of the segment where the external force is applied
         data=Test_force,  # 3 x (n_shooting_points+1) array
-        force_type=force_type,  # Type of the external force (ExternalForcesType.LINEAR_FORCE)
+        force_type=force_type,  # Type of the external force (ExternalForceType.FORCE)
         force_reference_frame=force_reference_frame,  # Reference frame of the external force (ReferenceFrame.GLOBAL)
         point_of_application=Test_point_of_application,  # Position of the point of application
         point_of_application_reference_frame=point_of_application_reference_frame,  # Reference frame of the point of application (ReferenceFrame.GLOBAL)
-        phase=0,
     )
 
     bio_model = BiorbdModel(biorbd_model_path, external_forces=external_forces)

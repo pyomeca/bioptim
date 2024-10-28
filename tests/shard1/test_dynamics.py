@@ -20,8 +20,8 @@ from bioptim import (
     ParameterContainer,
     ParameterList,
     PhaseDynamics,
-    ExternalForcesList,
-    ExternalForcesType,
+    ExternalForces,
+    ExternalForceType,
     ReferenceFrame,
 )
 from tests.utils import TestUtils
@@ -108,20 +108,18 @@ def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
             0,
         ]
 
-        external_forces = ExternalForcesList()
+        external_forces = ExternalForces()
         external_forces.add(
             key="Seg0",
             data=external_forces_array[:3, :],
-            force_type=ExternalForcesType.TORQUE,
+            force_type=ExternalForceType.TORQUE,
             force_reference_frame=ReferenceFrame.GLOBAL,
-            phase=0,
         )
         external_forces.add(
             key="Seg0",
             data=external_forces_array[3:6, :],
-            force_type=ExternalForcesType.LINEAR_FORCE,
+            force_type=ExternalForceType.FORCE,
             force_reference_frame=ReferenceFrame.GLOBAL,
-            phase=0,
         )
 
     nlp.model = BiorbdModel(
@@ -369,20 +367,18 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
             0,
             0,
         ]
-        external_forces = ExternalForcesList()
+        external_forces = ExternalForces()
         external_forces.add(
             key="Seg0",
             data=external_forces_array[:3, :],
-            force_type=ExternalForcesType.TORQUE,
+            force_type=ExternalForceType.TORQUE,
             force_reference_frame=ReferenceFrame.GLOBAL,
-            phase=0,
         )
         external_forces.add(
             key="Seg0",
             data=external_forces_array[3:6, :],
-            force_type=ExternalForcesType.LINEAR_FORCE,
+            force_type=ExternalForceType.FORCE,
             force_reference_frame=ReferenceFrame.GLOBAL,
-            phase=0,
         )
 
     nlp.model = BiorbdModel(
@@ -740,20 +736,18 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
             0,
             0,
         ]
-        external_forces = ExternalForcesList()
+        external_forces = ExternalForces()
         external_forces.add(
             key="Seg0",
             data=external_forces_array[:3, :],
-            force_type=ExternalForcesType.TORQUE,
+            force_type=ExternalForceType.TORQUE,
             force_reference_frame=ReferenceFrame.GLOBAL,
-            phase=0,
         )
         external_forces.add(
             key="Seg0",
             data=external_forces_array[3:6, :],
-            force_type=ExternalForcesType.LINEAR_FORCE,
+            force_type=ExternalForceType.FORCE,
             force_reference_frame=ReferenceFrame.GLOBAL,
-            phase=0,
         )
 
     nlp.model = BiorbdModel(
@@ -937,20 +931,18 @@ def test_torque_activation_driven_with_residual_torque(
             0,
             0,
         ]
-        external_forces = ExternalForcesList()
+        external_forces = ExternalForces()
         external_forces.add(
             key="Seg0",
             data=external_forces_array[:3, :],
-            force_type=ExternalForcesType.TORQUE,
+            force_type=ExternalForceType.TORQUE,
             force_reference_frame=ReferenceFrame.GLOBAL,
-            phase=0,
         )
         external_forces.add(
             key="Seg0",
             data=external_forces_array[3:6, :],
-            force_type=ExternalForcesType.LINEAR_FORCE,
+            force_type=ExternalForceType.FORCE,
             force_reference_frame=ReferenceFrame.GLOBAL,
-            phase=0,
         )
 
     nlp.model = BiorbdModel(
@@ -1196,20 +1188,18 @@ def test_muscle_driven(with_excitations, with_contact, with_residual_torque, wit
             0,
             0,
         ]
-        external_forces = ExternalForcesList()
+        external_forces = ExternalForces()
         external_forces.add(
             key="r_ulna_radius_hand_rotation1",
             data=external_forces_array[:3, :],
-            force_type=ExternalForcesType.TORQUE,
+            force_type=ExternalForceType.TORQUE,
             force_reference_frame=ReferenceFrame.GLOBAL,
-            phase=0,
         )
         external_forces.add(
             key="r_ulna_radius_hand_rotation1",
             data=external_forces_array[3:6, :],
-            force_type=ExternalForcesType.LINEAR_FORCE,
+            force_type=ExternalForceType.FORCE,
             force_reference_frame=ReferenceFrame.GLOBAL,
-            phase=0,
         )
 
     nlp.model = BiorbdModel(

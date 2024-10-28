@@ -13,8 +13,7 @@ from ..utils import _var_mapping, bounds_from_ranges
 from ...limits.path_conditions import Bounds
 from ...misc.mapping import BiMapping, BiMappingList
 from ...misc.utils import check_version
-from ...misc.external_forces import ExternalForcesList, get_external_forces_segments
-from ...misc.enums import ReferenceFrame
+from ...misc.external_forces import ExternalForces, get_external_forces_segments
 from ...optimization.parameters import ParameterList
 
 check_version(biorbd, "1.11.1", "1.12.0")
@@ -29,7 +28,7 @@ class BiorbdModel:
         self,
         bio_model: str | biorbd.Model,
         friction_coefficients: np.ndarray = None,
-        external_forces: ExternalForcesList = None,
+        external_forces: ExternalForces = None,
         parameters: ParameterList = None,
         nb_supplementary_forces_in_global=0,
     ):
@@ -878,7 +877,6 @@ class BiorbdModel:
         biorbd_return = MX.zeros(self.nb_soft_contacts * 6, 1)
         for i_sc in range(self.nb_soft_contacts):
             soft_contact = self.soft_contact(i_sc)
-            # @ipuch: please confirm / help with the following lines
             biorbd_return[i_sc * 6 : (i_sc + 1) * 6, :] = (
                 biorbd.SoftContactSphere(soft_contact).computeForceAtOrigin(self.model, q_biorbd, qdot_biorbd).to_mx()
             )
@@ -1039,7 +1037,7 @@ class BiorbdModel:
         )
         return casadi_fun
 
-    def partitioned_forward_dynamics(self, forces_in_global=None, f_contacts=None, q_v_init=None):
+    def partitioned_forward_dynamics(self):
         raise NotImplementedError("partitioned_forward_dynamics is not implemented for BiorbdModel")
 
     @staticmethod

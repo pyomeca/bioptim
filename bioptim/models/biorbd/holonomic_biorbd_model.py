@@ -3,9 +3,8 @@ from typing import Callable
 import biorbd_casadi as biorbd
 from biorbd_casadi import (
     GeneralizedCoordinates,
-    GeneralizedVelocity,
 )
-from casadi import MX, SX, DM, vertcat, horzcat, Function, solve, rootfinder, inv
+from casadi import MX, DM, vertcat, horzcat, Function, solve, rootfinder, inv
 
 from .biorbd_model import BiorbdModel
 from ..holonomic_constraints import HolonomicConstraintsList
@@ -33,6 +32,16 @@ class HolonomicBiorbdModel(BiorbdModel):
         self.beta = 0.01
         self._dependent_joint_index = []
         self._independent_joint_index = [i for i in range(self.nb_q)]
+
+        # Declaration of MX variables of the right shape for the creation of CasADi Functions
+        self.q_u = MX.sym("q_u_mx", self.nb_independent_joints, 1)
+        self.qdot_u = MX.sym("qdot_u_mx", self.nb_independent_joints, 1)
+        self.qddot_u = MX.sym("qddot_u_mx", self.nb_independent_joints, 1)
+        self.q_v = MX.sym("q_v_mx", self.nb_dependent_joints, 1)
+        self.qdot_v = MX.sym("qdot_v_mx", self.nb_dependent_joints, 1)
+        self.qddot_v = MX.sym("qddot_v_mx", self.nb_dependent_joints, 1)
+        self.q_v_init = MX.sym("q_v_init_mx", self.nb_dependent_joints, 1)
+
 
     def set_newton_tol(self, newton_tol: float):
         self._newton_tol = newton_tol
@@ -93,8 +102,7 @@ class HolonomicBiorbdModel(BiorbdModel):
             self.check_dependant_jacobian()
 
     def check_dependant_jacobian(self):
-        q_test = MX.sym("q_test", self.nb_q)
-        partitioned_constraints_jacobian = self.partitioned_constraints_jacobian(q_test)
+        partitioned_constraints_jacobian = self.partitioned_constraints_jacobian(self.q)
         partitioned_constraints_jacobian_v = partitioned_constraints_jacobian[:, self.nb_independent_joints :]
         shape = partitioned_constraints_jacobian_v.shape
         if shape[0] != shape[1]:
@@ -137,31 +145,22 @@ class HolonomicBiorbdModel(BiorbdModel):
     def has_holonomic_constraints(self):
         return self.nb_holonomic_constraints > 0
 
-    def holonomic_constraints(self, q: MX):
+    def holonomic_constraints(self, q: MX) -> MX:
         return vertcat(*[c(q) for c in self._holonomic_constraints])
 
-    def holonomic_constraints_jacobian(self, q: MX):
+    def holonomic_constraints_jacobian(self, q: MX) -> MX:
         return vertcat(*[c(q) for c in self._holonomic_constraints_jacobians])
 
-    def holonomic_constraints_derivative(self, q: MX, qdot: MX):
+    def holonomic_constraints_derivative(self, q: MX, qdot: MX) -> MX:
         return self.holonomic_constraints_jacobian(q) @ qdot
 
-    def holonomic_constraints_double_derivative(self, q: MX, qdot: MX, qddot: MX):
+    def holonomic_constraints_double_derivative(self, q: MX, qdot: MX, qddot: MX) -> MX:
         return vertcat(*[c(q, qdot, qddot) for c in self._holonomic_constraints_double_derivatives])
 
-    def constrained_forward_dynamics(self, q, qdot, tau, external_forces=None, f_contacts=None) -> MX:
-        # @ipuch does this stays contrained_
-        if external_forces is not None:
-            raise NotImplementedError("External forces are not implemented yet.")
-        if f_contacts is not None:
-            raise NotImplementedError("Contact forces are not implemented yet.")
-        external_forces_set = self.model.externalForceSet()
+    def constrained_forward_dynamics(self) -> Function:
 
-        q_biorbd = GeneralizedCoordinates(q)
-        qdot_biorbd = GeneralizedVelocity(qdot)
-
-        mass_matrix = self.model.massMatrix(q_biorbd).to_mx()
-        constraints_jacobian = self.holonomic_constraints_jacobian(q)
+        mass_matrix = self.mass_matrix()(self.q, self.parameters)
+        constraints_jacobian = self.holonomic_constraints_jacobian(self.q)
         constraints_jacobian_transpose = constraints_jacobian.T
 
         # compute the matrix DAE
@@ -175,12 +174,12 @@ class HolonomicBiorbdModel(BiorbdModel):
         )
 
         # compute b vector
-        tau_augmented = tau - self.model.NonLinearEffect(q_biorbd, qdot_biorbd, external_forces_set).to_mx()
+        tau_augmented = self.tau - self.non_linear_effects()(self.q, self.qdot, self.parameters)
 
-        biais = -self.holonomic_constraints_jacobian(qdot) @ qdot
+        biais = -self.holonomic_constraints_jacobian(self.qdot) @ self.qdot
         if self.stabilization:
-            biais -= self.alpha * self.holonomic_constraints(q) + self.beta * self.holonomic_constraints_derivative(
-                q, qdot
+            biais -= self.alpha * self.holonomic_constraints(self.q) + self.beta * self.holonomic_constraints_derivative(
+                self.q, self.qdot
             )
 
         tau_augmented = vertcat(tau_augmented, biais)
@@ -188,12 +187,22 @@ class HolonomicBiorbdModel(BiorbdModel):
         # solve with casadi Ax = b
         x = solve(mass_matrix_augmented, tau_augmented, "symbolicqr")
 
-        return x[: self.nb_qddot]
+        biorbd_return = x[: self.nb_qddot]
 
-    def partitioned_mass_matrix(self, q):
+        casadi_fun = Function(
+            "constrained_forward_dynamics",
+            [self.q, self.qdot, self.tau, self.parameters],
+            [biorbd_return],
+            ["q", "qdot", "tau", "parameters"],
+            ["qddot"],
+        )
+        return casadi_fun
+
+    def partitioned_mass_matrix(self, q: MX) -> MX:
         # q_u: independent
         # q_v: dependent
-        mass_matrix = self.model.massMatrix(q).to_mx()
+        # @ Ipuch: either we send the parameters as an arg of the function or we return a Function...
+        mass_matrix = self.mass_matrix()(q, [])
         mass_matrix_uu = mass_matrix[self._independent_joint_index, self._independent_joint_index]
         mass_matrix_uv = mass_matrix[self._independent_joint_index, self._dependent_joint_index]
         mass_matrix_vu = mass_matrix[self._dependent_joint_index, self._independent_joint_index]
@@ -204,11 +213,8 @@ class HolonomicBiorbdModel(BiorbdModel):
 
         return vertcat(first_line, second_line)
 
-    def partitioned_non_linear_effect(self, q, qdot, f_ext=None, f_contacts=None):
-        if f_ext is not None and f_ext.shape[0] != 0:
-            raise NotImplementedError("External forces are not implemented yet.")
-        if f_contacts is not None and f_contacts.shape[0] != 0:
-            raise NotImplementedError("Contact forces are not implemented yet.")
+    def partitioned_non_linear_effect(self, q: MX, qdot: MX) -> MX:
+        # @Ipuch: Not sure external forces work
         external_forces_set = self.model.externalForceSet()
         non_linear_effect = self.model.NonLinearEffect(q, qdot, external_forces_set).to_mx()
         non_linear_effect_u = non_linear_effect[self._independent_joint_index]
@@ -216,34 +222,32 @@ class HolonomicBiorbdModel(BiorbdModel):
 
         return vertcat(non_linear_effect_u, non_linear_effect_v)
 
-    def partitioned_q(self, q):
+    def partitioned_q(self, q: MX) -> MX:
         q_u = q[self._independent_joint_index]
         q_v = q[self._dependent_joint_index]
 
         return vertcat(q_u, q_v)
 
-    def partitioned_qdot(self, qdot):
+    def partitioned_qdot(self, qdot: MX) -> MX:
         qdot_u = qdot[self._independent_joint_index]
         qdot_v = qdot[self._dependent_joint_index]
 
         return vertcat(qdot_u, qdot_v)
 
-    def partitioned_tau(self, tau):
+    def partitioned_tau(self, tau: MX) -> MX:
         tau_u = tau[self._independent_joint_index]
         tau_v = tau[self._dependent_joint_index]
 
         return vertcat(tau_u, tau_v)
 
-    def partitioned_constraints_jacobian(self, q):
+    def partitioned_constraints_jacobian(self, q: MX) -> MX:
         constrained_jacobian = self.holonomic_constraints_jacobian(q)
         constrained_jacobian_u = constrained_jacobian[:, self._independent_joint_index]
         constrained_jacobian_v = constrained_jacobian[:, self._dependent_joint_index]
 
         return horzcat(constrained_jacobian_u, constrained_jacobian_v)
 
-    def partitioned_forward_dynamics(
-        self, q_u, qdot_u, tau, external_forces=None, f_contacts=None, q_v_init=None
-    ) -> MX:
+    def partitioned_forward_dynamics(self) -> Function:
         """
         Sources
         -------
@@ -251,14 +255,10 @@ class HolonomicBiorbdModel(BiorbdModel):
         ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
         https://doi.org/10.5194/ms-4-199-2013, 2013.
         """
-        if external_forces is not None and external_forces.shape[0] != 0:
-            raise NotImplementedError("External forces are not implemented yet.")
-        if f_contacts is not None and f_contacts.shape[0] != 0:
-            raise NotImplementedError("Contact forces are not implemented yet.")
 
         # compute q and qdot
-        q = self.compute_q(q_u, q_v_init=q_v_init)
-        qdot = self.compute_qdot(q, qdot_u)
+        q = self.compute_q()(self.q_u, self.q_v_init)
+        qdot = self.compute_qdot()(q, self.qdot_u)
 
         partitioned_mass_matrix = self.partitioned_mass_matrix(q)
         m_uu = partitioned_mass_matrix[: self.nb_independent_joints, : self.nb_independent_joints]
@@ -276,14 +276,14 @@ class HolonomicBiorbdModel(BiorbdModel):
         second_term = m_uv + coupling_matrix_vu.T @ m_vv
 
         # compute the non-linear effect
-        non_linear_effect = self.partitioned_non_linear_effect(q, qdot, external_forces, f_contacts)
+        non_linear_effect = self.partitioned_non_linear_effect(q, qdot)
         non_linear_effect_u = non_linear_effect[: self.nb_independent_joints]
         non_linear_effect_v = non_linear_effect[self.nb_independent_joints :]
 
         modified_non_linear_effect = non_linear_effect_u + coupling_matrix_vu.T @ non_linear_effect_v
 
         # compute the tau
-        partitioned_tau = self.partitioned_tau(tau)
+        partitioned_tau = self.partitioned_tau(self.tau)
         tau_u = partitioned_tau[: self.nb_independent_joints]
         tau_v = partitioned_tau[self.nb_independent_joints :]
 
@@ -293,7 +293,13 @@ class HolonomicBiorbdModel(BiorbdModel):
             modified_generalized_forces - second_term @ self.biais_vector(q, qdot) - modified_non_linear_effect
         )
 
-        return qddot_u
+        casadi_fun = Function("partitioned_forward_dynamics",
+                              [self.q_u, self.qdot_u, self.q_v_init, self.tau],
+                              [qddot_u],
+                              ["q_u", "qdot_u", "q_v_init", "tau"],
+                              ["qddot_u"])
+
+        return casadi_fun
 
     def coupling_matrix(self, q: MX) -> MX:
         """
@@ -357,22 +363,19 @@ class HolonomicBiorbdModel(BiorbdModel):
         if state_v.shape[0] != self.nb_dependent_joints:
             raise ValueError(f"Length of state v size should be: {self.nb_dependent_joints}. Got: {state_v.shape[0]}")
 
-    def compute_q_v(self, q_u: MX | SX | DM, q_v_init: MX | SX | DM = None) -> MX | SX | DM:
+    def compute_q_v(self) -> Function:
         """
-        Compute the dependent joint positions from the independent joint positions.
-        This function might be misleading because it can be used for numerical purpose with DM
-        or for symbolic purpose with MX. The return type is not enforced.
+        Compute the dependent joint positions (q_v) from the independent joint positions (q_u).
         """
-        decision_variables_sym = MX.sym("decision_variables_sym", self.nb_dependent_joints)
-        q_u_sym = MX.sym("q_u_sym", q_u.shape[0], q_u.shape[1])
-        q = self.state_from_partition(q_u_sym, decision_variables_sym)
+        q_v_sym = MX.sym("q_v_sym", self.nb_dependent_joints)
+        q_u_sym = MX.sym("q_u_sym", self.q_u.shape[0], self.q_u.shape[1])
+        q = self.state_from_partition(q_u_sym, q_v_sym)
         mx_residuals = self.holonomic_constraints(q)
 
-        q_v_init = MX.zeros(self.nb_dependent_joints) if q_v_init is None else q_v_init
-        ifcn_input = (q_v_init, q_u)
+        ifcn_input = (self.q_v_init, self.q_u)
         residuals = Function(
             "final_states_residuals",
-            [decision_variables_sym, q_u_sym],
+            [q_v_sym, q_u_sym],
             [mx_residuals],
         ).expand()
 
@@ -381,25 +384,54 @@ class HolonomicBiorbdModel(BiorbdModel):
         ifcn = rootfinder("ifcn", "newton", residuals, opts)
         v_opt = ifcn(*ifcn_input)
 
-        return v_opt
+        casadi_fun = Function("compute_q_v",
+                              [self.q_u, self.q_v_init],
+                              [v_opt],
+                              ["q_u", "q_v_init"],
+                              ["q_v"])
+        return casadi_fun
 
-    def compute_q(self, q_u: MX, q_v_init: MX = None) -> MX:
-        q_v = self.compute_q_v(q_u, q_v_init)
-        return self.state_from_partition(q_u, q_v)
+    def compute_q(self) -> Function:
+        q_v = self.compute_q_v()(self.q_u, self.q_v_init)
+        biorbd_return = self.state_from_partition(self.q_u, q_v)
+        casadi_fun = Function("compute_q",
+                                [self.q_u, self.q_v_init],
+                                [biorbd_return],
+                                ["q_u", "q_v_init"],
+                                ["q"])
+        return casadi_fun
 
-    def compute_qdot_v(self, q: MX, qdot_u: MX) -> MX:
-        coupling_matrix_vu = self.coupling_matrix(q)
-        return coupling_matrix_vu @ qdot_u
+    def compute_qdot_v(self) -> Function:
+        coupling_matrix_vu = self.coupling_matrix(self.q)
+        biorbd_return = coupling_matrix_vu @ self.qdot_u
+        casadi_fun = Function("compute_qdot_v",
+                                [self.q, self.qdot_u],
+                                [biorbd_return],
+                                ["q", "qdot_u"],
+                                ["qdot_v"])
+        return casadi_fun
 
-    def _compute_qdot_v(self, q_u: MX, qdot_u: MX) -> MX:
-        q = self.compute_q(q_u)
-        return self.compute_qdot_v(q, qdot_u)
+    def _compute_qdot_v(self) -> Function:
+        q = self.compute_q()(self.q_u, self.q_v_init)
+        biorbd_return = self.compute_qdot_v()(q, self.qdot_u)
+        casadi_fun = Function("compute_qdot_v",
+                                [self.q, self.qdot_u, self.q_v_init],
+                                [biorbd_return],
+                                ["q", "qdot_u"],
+                                ["qdot_v"])
+        return casadi_fun
 
-    def compute_qdot(self, q: MX, qdot_u: MX) -> MX:
-        qdot_v = self.compute_qdot_v(q, qdot_u)
-        return self.state_from_partition(qdot_u, qdot_v)
+    def compute_qdot(self) -> Function:
+        qdot_v = self.compute_qdot_v()(self.q, self.qdot_u)
+        biorbd_return = self.state_from_partition(self.qdot_u, qdot_v)
+        casadi_fun = Function("compute_qdot",
+                                [self.q, self.qdot_u],
+                                [biorbd_return],
+                                ["q", "qdot_u"],
+                                ["qdot"])
+        return casadi_fun
 
-    def compute_qddot_v(self, q: MX, qdot: MX, qddot_u: MX) -> MX:
+    def compute_qddot_v(self) -> Function:
         """
         Sources
         -------
@@ -408,10 +440,16 @@ class HolonomicBiorbdModel(BiorbdModel):
         https://doi.org/10.5194/ms-4-199-2013, 2013.
         Equation (17) in the paper.
         """
-        coupling_matrix_vu = self.coupling_matrix(q)
-        return coupling_matrix_vu @ qddot_u + self.biais_vector(q, qdot)
+        coupling_matrix_vu = self.coupling_matrix(self.q)
+        biorbd_return = coupling_matrix_vu @ self.qddot_u + self.biais_vector(self.q, self.qdot)
+        casadi_fun = Function("compute_qddot_v",
+                                [self.q, self.qdot, self.qddot_u],
+                                [biorbd_return],
+                                ["q", "qdot", "qddot_u"],
+                                ["qddot_v"])
+        return casadi_fun
 
-    def compute_qddot(self, q: MX, qdot: MX, qddot_u: MX) -> MX:
+    def compute_qddot(self) -> Function:
         """
         Sources
         -------
@@ -420,12 +458,16 @@ class HolonomicBiorbdModel(BiorbdModel):
         https://doi.org/10.5194/ms-4-199-2013, 2013.
         Equation (17) in the paper.
         """
-        qddot_v = self.compute_qddot_v(q, qdot, qddot_u)
-        return self.state_from_partition(qddot_u, qddot_v)
+        qddot_v = self.compute_qddot_v()(self.q, self.qdot, self.qddot_u)
+        biorbd_return = self.state_from_partition(self.qddot_u, qddot_v)
+        casadi_fun = Function("compute_qddot",
+                                [self.q, self.qdot, self.qddot_u],
+                                [biorbd_return],
+                                ["q", "qdot", "qddot_u"],
+                                ["qddot"])
+        return casadi_fun
 
-    def compute_the_lagrangian_multipliers(
-        self, q_u: MX, qdot_u: MX, tau: MX, external_forces: MX = None, f_contacts: MX = None
-    ) -> MX:
+    def compute_the_lagrangian_multipliers(self) -> Function:
         """
         Sources
         -------
@@ -433,16 +475,20 @@ class HolonomicBiorbdModel(BiorbdModel):
         ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
         https://doi.org/10.5194/ms-4-199-2013, 2013.
         """
-        q = self.compute_q(q_u)
-        qdot = self.compute_qdot(q, qdot_u)
-        qddot_u = self.partitioned_forward_dynamics(q_u, qdot_u, tau, external_forces, f_contacts)
-        qddot = self.compute_qddot(q, qdot, qddot_u)
+        q = self.compute_q()(self.q_u, self.q_v_init)
+        qdot = self.compute_qdot()(self.q, self.qdot_u)
+        qddot_u = self.partitioned_forward_dynamics()(self.q_u, self.qdot_u, self.q_v_init, self.tau)
+        qddot = self.compute_qddot()(q, qdot, qddot_u)
 
-        return self._compute_the_lagrangian_multipliers(q, qdot, qddot, tau, external_forces, f_contacts)
+        biorbd_return = self._compute_the_lagrangian_multipliers()(q, qdot, qddot, self.tau)
+        casadi_fun = Function("compute_the_lagrangian_multipliers",
+                                [self.q_u, self.qdot_u, self.q_v_init, self.tau],
+                                [biorbd_return],
+                                ["q_u", "qdot_u", "q_v_init", "tau"],
+                                ["lambda"])
+        return casadi_fun
 
-    def _compute_the_lagrangian_multipliers(
-        self, q: MX, qdot: MX, qddot: MX, tau: MX, external_forces: MX = None, f_contacts: MX = None
-    ) -> MX:
+    def _compute_the_lagrangian_multipliers(self) -> Function:
         """
         Sources
         -------
@@ -451,27 +497,31 @@ class HolonomicBiorbdModel(BiorbdModel):
         https://doi.org/10.5194/ms-4-199-2013, 2013.
         Equation (17) in the paper.
         """
-        if external_forces is not None:
-            raise NotImplementedError("External forces are not implemented yet.")
-        if f_contacts is not None:
-            raise NotImplementedError("Contact forces are not implemented yet.")
-        partitioned_constraints_jacobian = self.partitioned_constraints_jacobian(q)
+
+        partitioned_constraints_jacobian = self.partitioned_constraints_jacobian(self.q)
         partitioned_constraints_jacobian_v = partitioned_constraints_jacobian[:, self.nb_independent_joints :]
         partitioned_constraints_jacobian_v_t_inv = inv(partitioned_constraints_jacobian_v.T)
 
-        partitioned_mass_matrix = self.partitioned_mass_matrix(q)
+        partitioned_mass_matrix = self.partitioned_mass_matrix(self.q)
         m_vu = partitioned_mass_matrix[self.nb_independent_joints :, : self.nb_independent_joints]
         m_vv = partitioned_mass_matrix[self.nb_independent_joints :, self.nb_independent_joints :]
 
-        qddot_u = qddot[self._independent_joint_index]
-        qddot_v = qddot[self._dependent_joint_index]
+        qddot_u = self.qddot[self._independent_joint_index]
+        qddot_v = self.qddot[self._dependent_joint_index]
 
-        non_linear_effect = self.partitioned_non_linear_effect(q, qdot, external_forces, f_contacts)
+        non_linear_effect = self.partitioned_non_linear_effect(self.q, self.qdot)
         non_linear_effect_v = non_linear_effect[self.nb_independent_joints :]
 
-        partitioned_tau = self.partitioned_tau(tau)
+        partitioned_tau = self.partitioned_tau(self.tau)
         partitioned_tau_v = partitioned_tau[self.nb_independent_joints :]
 
-        return partitioned_constraints_jacobian_v_t_inv @ (
+        biorbd_return = partitioned_constraints_jacobian_v_t_inv @ (
             m_vu @ qddot_u + m_vv @ qddot_v + non_linear_effect_v - partitioned_tau_v
         )
+        casadi_fun = Function("_compute_the_lagrangian_multipliers",
+                                [self.q, self.qdot, self.qddot, self.tau],
+                                [biorbd_return],
+                                ["q", "qdot", "qddot", "tau"],
+                                ["lambda"])
+        return casadi_fun
+

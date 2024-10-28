@@ -965,7 +965,7 @@ class MultiBiorbdModel:
     def lagrangian(self):
         raise NotImplementedError("lagrangian is not implemented yet for MultiBiorbdModel")
 
-    def partitioned_forward_dynamics(self, q_u, qdot_u, tau, external_forces=None, f_contacts=None, q_v_init=None):
+    def partitioned_forward_dynamics(self, q_u, qdot_u, q_v_init, tau):
         raise NotImplementedError("partitioned_forward_dynamics is not implemented yet for MultiBiorbdModel")
 
     @staticmethod

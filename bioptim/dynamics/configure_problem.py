@@ -19,7 +19,7 @@ from ..misc.enums import (
 from ..misc.fcn_enum import FcnEnum
 from ..misc.mapping import BiMapping, Mapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
-from ..misc.external_forces import ExternalForcesList
+from ..misc.external_forces import ExternalForces
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
 from ..optimization.problem_type import SocpType
 
@@ -1942,7 +1942,7 @@ class Dynamics(OptionGeneric):
         state_continuity_weight: float | None = None,
         phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
         numerical_data_timeseries: dict[str, np.ndarray] = None,
-        external_forces: ExternalForcesList = None,
+        external_forces: ExternalForces = None,
         **extra_parameters: Any,
     ):
         """
@@ -2003,8 +2003,8 @@ class Dynamics(OptionGeneric):
                     data = force.torque_data.reshape(3, 1, -1)
                 else:
                     data = np.zeros((3, 1, force.len))
-                if force.linear_force_data is not None:
-                    data = np.concatenate((data, force.linear_force_data.reshape(3, 1, -1)), axis=0)
+                if force.force_data is not None:
+                    data = np.concatenate((data, force.force_data.reshape(3, 1, -1)), axis=0)
                 else:
                     data = np.concatenate((data, np.zeros((3, 1, force.len))), axis=0)
                 if force.point_of_application is not None:

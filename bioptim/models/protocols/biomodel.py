@@ -367,7 +367,7 @@ class BioModel(Protocol):
         The Lagrangian.
         """
 
-    def partitioned_forward_dynamics(self, q_u, qdot_u, tau, external_forces=None, q_v_init=None) -> Function:
+    def partitioned_forward_dynamics(self, q_u, qdot_u, q_v_init, tau) -> Function:
         """
         @ipuch: I need help on how to implement this!
         This is the forward dynamics of the model, but only for the independent joints

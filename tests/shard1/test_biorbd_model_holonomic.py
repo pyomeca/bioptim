@@ -3,7 +3,7 @@ import os
 import numpy as np
 import numpy.testing as npt
 import pytest
-from casadi import DM, MX, Function
+from casadi import DM, MX
 
 from bioptim import HolonomicBiorbdModel, HolonomicConstraintsFcn, HolonomicConstraintsList, Solver, SolutionMerge
 from tests.utils import TestUtils
@@ -103,7 +103,7 @@ def test_model_holonomic():
     )
     TestUtils.assert_equal(model.holonomic_constraints_derivative(q, q_dot), [-7.65383105, -0.44473154])
     TestUtils.assert_equal(model.holonomic_constraints_double_derivative(q, q_dot, q_ddot), [10.23374996, -11.73729905])
-    TestUtils.assert_equal(model.constrained_forward_dynamics(q, q_dot, tau), [-5.18551845, -3.01921376, 25.79451813])
+    TestUtils.assert_equal(model.constrained_forward_dynamics()(q, q_dot, tau, []), [-5.18551845, -3.01921376, 25.79451813])
     TestUtils.assert_equal(
         model.partitioned_mass_matrix(q),
         [
@@ -124,44 +124,29 @@ def test_model_holonomic():
     q_u = MX(TestUtils.to_array(q[model._independent_joint_index]))
     qdot_u = MX(TestUtils.to_array(q_dot[model._independent_joint_index]))
     q_v = MX(TestUtils.to_array(q[model._dependent_joint_index]))
-    q_u_sym = MX.sym("q_u_sym", model.nb_independent_joints, 1)
-    qdot_u_sym = MX.sym("qdot_u_sym", model.nb_independent_joints, 1)
-    tau_sym = MX.sym("tau_sym", model.nb_tau, 1)
 
-    partitioned_forward_dynamics_func = Function(
-        "partitioned_forward_dynamics",
-        [q_u_sym, qdot_u_sym, tau_sym],
-        [model.partitioned_forward_dynamics(q_u_sym, qdot_u_sym, tau_sym, q_v_init=q_v)],
-    )
-    TestUtils.assert_equal(partitioned_forward_dynamics_func(q_u, qdot_u, tau), -1.101808, expand=False)
+    TestUtils.assert_equal(model.partitioned_forward_dynamics()(q_u, qdot_u, q_v, tau), -1.101808)
     TestUtils.assert_equal(model.coupling_matrix(q), [5.79509793, -0.35166415], expand=False)
     TestUtils.assert_equal(model.biais_vector(q, q_dot), [27.03137348, 23.97095718], expand=False)
     TestUtils.assert_equal(model.state_from_partition(q_u, q_v), q)
 
-    compute_v_from_u_func = Function("compute_q_v", [q_u_sym], [model.compute_q_v(q_u_sym, q_v_init=q_v)])
-    TestUtils.assert_equal(compute_v_from_u_func(q_u), [2 * np.pi / 3, 2 * np.pi / 3], expand=False)
-    compute_q_func = Function("compute_q", [q_u_sym], [model.compute_q_v(q_u_sym, q_v_init=q_v)])
-    TestUtils.assert_equal(compute_q_func(q_u), [2.0943951, 2.0943951], expand=False)
-    TestUtils.assert_equal(model.compute_qdot_v(q, qdot_u), [23.18039172, -1.4066566], expand=False)
-    TestUtils.assert_equal(model.compute_qdot(q, qdot_u), [4.0, 23.18039172, -1.4066566], expand=False)
+    TestUtils.assert_equal(model.compute_q_v()(q_u, q_v), [2 * np.pi / 3, 2 * np.pi / 3])
+    TestUtils.assert_equal(model.compute_q()(q_u, q_v), [2.0943951, 2.0943951], expand=False)
+    TestUtils.assert_equal(model.compute_qdot_v()(q, qdot_u), [23.18039172, -1.4066566], expand=False)
+    TestUtils.assert_equal(model.compute_qdot()(q, qdot_u), [4.0, 23.18039172, -1.4066566], expand=False)
 
     npt.assert_almost_equal(
-        model.compute_q_v(DM([0.0]), q_v_init=DM([1.0, 1.0])).toarray().squeeze(),
+        model.compute_q_v()(DM([0.0]), DM([1.0, 1.0])).toarray().squeeze(),
         np.array([2 * np.pi / 3, 2 * np.pi / 3]),
         decimal=6,
     )
 
     TestUtils.assert_equal(
-        model._compute_the_lagrangian_multipliers(q, q_dot, q_ddot, tau), [20.34808, 27.119224], expand=False
-    )
-    compute_the_lagrangian_multipliers = Function(
-        "compute_the_lagrangian_multipliers",
-        [q_u_sym, qdot_u_sym, tau_sym],
-        [model.compute_the_lagrangian_multipliers(q_u_sym, qdot_u_sym, tau_sym)],
+        model._compute_the_lagrangian_multipliers()(q, q_dot, q_ddot, tau), [20.34808, 27.119224], expand=False
     )
     TestUtils.assert_equal(
-        compute_the_lagrangian_multipliers(
-            MX(np.zeros(model.nb_independent_joints)), MX(np.ones(model.nb_independent_joints) * 0.001), tau
+        model.compute_the_lagrangian_multipliers()(
+            MX(np.zeros(model.nb_independent_joints)), MX(np.ones(model.nb_independent_joints) * 0.001), MX(np.zeros(model.nb_dependent_joints)), tau
         ),
         [np.nan, np.nan],
         expand=False,

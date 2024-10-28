@@ -7,14 +7,14 @@ import pytest
 from bioptim import (
     PhaseDynamics,
     SolutionMerge,
-    ExternalForcesType,
+    ExternalForceType,
     ReferenceFrame,
     BiorbdModel,
     Node,
     OptimalControlProgram,
     DynamicsList,
     DynamicsFcn,
-    ExternalForcesList,
+    ExternalForces,
     ObjectiveList,
     ObjectiveFcn,
     ConstraintList,
@@ -25,7 +25,7 @@ from bioptim import (
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("use_sx", [True, False])
-@pytest.mark.parametrize("force_type", [ExternalForcesType.LINEAR_FORCE, ExternalForcesType.TORQUE])
+@pytest.mark.parametrize("force_type", [ExternalForceType.FORCE, ExternalForceType.TORQUE])
 @pytest.mark.parametrize("force_reference_frame", [ReferenceFrame.GLOBAL, ReferenceFrame.LOCAL])
 @pytest.mark.parametrize("use_point_of_applications", [True, False])
 @pytest.mark.parametrize("point_of_application_reference_frame", [ReferenceFrame.GLOBAL, ReferenceFrame.LOCAL])
@@ -42,15 +42,15 @@ def test_example_external_forces(phase_dynamics,
     if use_point_of_applications == False:
         point_of_application_reference_frame = None
 
-    if force_type == ExternalForcesType.LINEAR_FORCE and force_reference_frame == ReferenceFrame.GLOBAL and point_of_application_reference_frame == ReferenceFrame.GLOBAL:
+    if force_type == ExternalForceType.FORCE and force_reference_frame == ReferenceFrame.GLOBAL and point_of_application_reference_frame == ReferenceFrame.GLOBAL:
         # This combination is already tested in test_global_getting_started.py
         return
 
     # Errors for some combinations
-    if force_type == ExternalForcesType.TORQUE and use_point_of_applications:
+    if force_type == ExternalForceType.TORQUE and use_point_of_applications:
         with pytest.raises(
                 ValueError,
-                match="Point of application cannot be used with ExternalForcesType.TORQUE",
+                match="Point of application cannot be used with ExternalForceType.TORQUE",
         ):
             ocp = ocp_module.prepare_ocp(
                 biorbd_model_path=bioptim_folder + "/models/cube_with_forces.bioMod",
@@ -67,22 +67,6 @@ def test_example_external_forces(phase_dynamics,
         with pytest.raises(
                 NotImplementedError,
                 match="External forces in local reference frame cannot have a point of application in the global reference frame yet",
-        ):
-            ocp = ocp_module.prepare_ocp(
-                biorbd_model_path=bioptim_folder + "/models/cube_with_forces.bioMod",
-                phase_dynamics=phase_dynamics,
-                force_type=force_type,
-                force_reference_frame=force_reference_frame,
-                use_point_of_applications=use_point_of_applications,
-                point_of_application_reference_frame=point_of_application_reference_frame,
-                use_sx=use_sx,
-            )
-        return
-
-    if force_type == ExternalForcesType.TORQUE and force_reference_frame == ReferenceFrame.LOCAL:
-        with pytest.raises(
-                ValueError,
-                match="External torques are defined in global reference frame",
         ):
             ocp = ocp_module.prepare_ocp(
                 biorbd_model_path=bioptim_folder + "/models/cube_with_forces.bioMod",
@@ -124,7 +108,7 @@ def test_example_external_forces(phase_dynamics,
     npt.assert_almost_equal(qdot[:, 0], np.array([0.0, 0.0, 0.0, 0.0]), decimal=5)
     npt.assert_almost_equal(qdot[:, -1], np.array([0.0, 0.0, 0.0, 0.0]), decimal=5)
 
-    if force_type == ExternalForcesType.TORQUE:
+    if force_type == ExternalForceType.TORQUE:
 
         npt.assert_almost_equal(f[0, 0], 19847.887805189126)
 
@@ -139,9 +123,12 @@ def test_example_external_forces(phase_dynamics,
         npt.assert_almost_equal(q[:, -1], np.array([-4.69169398e-15,  2.00000000e+00, -1.43453709e-17,  0.0]), decimal=5)
 
         # how the force is stored
-        data = ocp.nlp[0].numerical_data_timeseries["forces_in_global"]
+        if force_reference_frame == ReferenceFrame.LOCAL:
+            data = ocp.nlp[0].numerical_data_timeseries["forces_in_local"]
+        else:
+            data = ocp.nlp[0].numerical_data_timeseries["forces_in_global"]
         npt.assert_equal(data.shape, (9, 2, 31))
-        npt.assert_almost_equal(data[:, 0, 0], np.array([0.,  0., -2.,  0.,  0.,  0.,  0.,  0.,  0.]))
+        npt.assert_almost_equal(data[:, 0, 0], np.array([0., 0., -2., 0., 0., 0., 0., 0., 0.]))
 
     else:
         if force_reference_frame == ReferenceFrame.GLOBAL:
@@ -234,6 +221,7 @@ def test_example_external_forces(phase_dynamics,
 
 def prepare_ocp(
     biorbd_model_path: str = "models/cube_with_forces.bioMod",
+    use_torque_and_force_at_the_same_time: bool = False,
 ) -> OptimalControlProgram:
 
     # Problem parameters
@@ -269,43 +257,57 @@ def prepare_ocp(
     Test_torque[1, :] = -1.8
     Test_torque[1, 4] = -18
 
-    external_forces = ExternalForcesList()
-    external_forces.add(
-        key="Seg1",
-        data=Seg1_force,
-        force_type=ExternalForcesType.LINEAR_FORCE,
-        force_reference_frame=ReferenceFrame.GLOBAL,
-        point_of_application=Seg1_point_of_application,
-        point_of_application_reference_frame=ReferenceFrame.GLOBAL,
-        phase=0,
-    )
-    external_forces.add(
-        key="Seg1",
-        data=Seg1_torque,
-        force_type=ExternalForcesType.TORQUE,
-        force_reference_frame=ReferenceFrame.GLOBAL,
-        point_of_application=None,
-        point_of_application_reference_frame=None,
-        phase=0,
-    )
-    external_forces.add(
-        key="Test",
-        data=Test_force,
-        force_type=ExternalForcesType.LINEAR_FORCE,
-        force_reference_frame=ReferenceFrame.LOCAL,
-        point_of_application=Test_point_of_application,
-        point_of_application_reference_frame=ReferenceFrame.LOCAL,
-        phase=0,
-    )
-    external_forces.add(
-        key="Test",
-        data=Test_torque,
-        force_type=ExternalForcesType.TORQUE,
-        force_reference_frame=ReferenceFrame.GLOBAL,
-        point_of_application=None,
-        point_of_application_reference_frame=None,
-        phase=0,
-    )
+    external_forces = ExternalForces()
+    if use_torque_and_force_at_the_same_time:
+        external_forces.add(
+            key="Seg1",
+            data=np.vstack((Seg1_torque, Seg1_force)),
+            force_type=ExternalForceType.TORQUE_AND_FORCE,
+            force_reference_frame=ReferenceFrame.GLOBAL,
+            point_of_application=Seg1_point_of_application,
+            point_of_application_reference_frame=ReferenceFrame.GLOBAL,
+        )
+        external_forces.add(
+            key="Test",
+            data=np.vstack((Test_torque, Test_force)),
+            force_type=ExternalForceType.TORQUE_AND_FORCE,
+            force_reference_frame=ReferenceFrame.LOCAL,
+            point_of_application=Test_point_of_application,
+            point_of_application_reference_frame=ReferenceFrame.LOCAL,
+        )
+    else:
+        external_forces.add(
+            key="Seg1",
+            data=Seg1_force,
+            force_type=ExternalForceType.FORCE,
+            force_reference_frame=ReferenceFrame.GLOBAL,
+            point_of_application=Seg1_point_of_application,
+            point_of_application_reference_frame=ReferenceFrame.GLOBAL,
+        )
+        external_forces.add(
+            key="Seg1",
+            data=Seg1_torque,
+            force_type=ExternalForceType.TORQUE,
+            force_reference_frame=ReferenceFrame.GLOBAL,
+            point_of_application=None,
+            point_of_application_reference_frame=None,
+        )
+        external_forces.add(
+            key="Test",
+            data=Test_force,
+            force_type=ExternalForceType.FORCE,
+            force_reference_frame=ReferenceFrame.LOCAL,
+            point_of_application=Test_point_of_application,
+            point_of_application_reference_frame=ReferenceFrame.LOCAL,
+        )
+        external_forces.add(
+            key="Test",
+            data=Test_torque,
+            force_type=ExternalForceType.TORQUE,
+            force_reference_frame=ReferenceFrame.LOCAL,
+            point_of_application=None,
+            point_of_application_reference_frame=None,
+        )
 
     bio_model = BiorbdModel(biorbd_model_path, external_forces=external_forces)
 
@@ -353,48 +355,135 @@ def test_example_external_forces_all_at_once():
     from bioptim.examples.getting_started import example_external_forces as ocp_module
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ocp = prepare_ocp(
+    ocp_false = prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube_with_forces.bioMod",
+        use_torque_and_force_at_the_same_time=False,
     )
-    sol = ocp.solve()
+    sol_false = ocp_false.solve()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 7067.8516045402175)
+    f_false = np.array(sol_false.cost)
+    npt.assert_equal(f_false.shape, (1, 1))
+    npt.assert_almost_equal(f_false[0, 0], 7075.438561173094)
 
     # Check constraints
-    g = np.array(sol.constraints)
-    npt.assert_equal(g.shape, (246, 1))
-    npt.assert_almost_equal(g, np.zeros((246, 1)))
+    g_false = np.array(sol_false.constraints)
+    npt.assert_equal(g_false.shape, (246, 1))
+    npt.assert_almost_equal(g_false, np.zeros((246, 1)))
 
     # Check some of the results
-    states = sol.decision_states(to_merge=SolutionMerge.NODES)
-    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    states_false = sol_false.decision_states(to_merge=SolutionMerge.NODES)
+    controls_false = sol_false.decision_controls(to_merge=SolutionMerge.NODES)
+    q_false, qdot_false, tau_false = states_false["q"], states_false["qdot"], controls_false["tau"]
 
     # initial and final controls
-    npt.assert_almost_equal(tau[:, 0], np.array([1.56834240e-09,  6.98419368e+00, -1.49703626e-10,  0.0]))
-    npt.assert_almost_equal(tau[:, 10], np.array([-7.45768885e-10,  6.24337052e+00,  6.62627954e-10,  0.0]))
-    npt.assert_almost_equal(tau[:, 20], np.array([-5.73998856e-10,  5.50254736e+00,  5.21623414e-10,  0.0]))
-    npt.assert_almost_equal(tau[:, -1], np.array([1.79690124e-09,  4.83580652e+00, -2.97742253e-10,  0.0]))
+    npt.assert_almost_equal(tau_false[:, 0], np.array([0.18595882,  6.98424521, -0.30071214,  0.]))
+    npt.assert_almost_equal(tau_false[:, 10], np.array([-0.05224518,  6.24340374, -0.17010067,  0.]))
+    npt.assert_almost_equal(tau_false[:, 20], np.array([-0.03359529,  5.50256227, -0.11790254,  0.]))
+    npt.assert_almost_equal(tau_false[:, -1], np.array([0.07805599,  4.83580495, -0.14719148,  0.]))
 
     # initial and final position
-    npt.assert_almost_equal(q[:, 0], np.array([-4.07966993e-15,  6.99774100e-16,  3.12712716e-11,  0.0]), decimal=5)
-    npt.assert_almost_equal(q[:, -1], np.array([-4.35983004e-15,  2.00000000e+00,  2.69788862e-11,  0.0]), decimal=5)
+    npt.assert_almost_equal(q_false[:, 0], np.array([-4.01261246e-15,  7.00046055e-16,  2.15375856e-03,  0.0]), decimal=5)
+    npt.assert_almost_equal(q_false[:, -1], np.array([-4.29786206e-15,  2.00000000e+00,  1.66939403e-03,  0.0]), decimal=5)
 
     # initial and final velocities
-    npt.assert_almost_equal(qdot[:, 0], np.array([0.0, 0.0, 0.0, 0.0]), decimal=5)
-    npt.assert_almost_equal(qdot[:, -1], np.array([0.0, 0.0, 0.0, 0.0]), decimal=5)
+    npt.assert_almost_equal(qdot_false[:, 0], np.array([0.0, 0.0, 0.0, 0.0]), decimal=5)
+    npt.assert_almost_equal(qdot_false[:, -1], np.array([0.0, 0.0, 0.0, 0.0]), decimal=5)
 
     # how the force is stored
-    data_Seg1 = ocp.nlp[0].numerical_data_timeseries["forces_in_global"]
-    npt.assert_equal(data_Seg1.shape, (9, 1, 31))
-    npt.assert_almost_equal(data_Seg1[:, 0, 0], np.array([0. ,  1.8,  0. ,  0. ,  0. , -2. ,  0. ,  0. ,  0.]))
+    data_Seg1_false = ocp_false.nlp[0].numerical_data_timeseries["forces_in_global"]
+    npt.assert_equal(data_Seg1_false.shape, (9, 1, 31))
+    npt.assert_almost_equal(data_Seg1_false[:, 0, 0], np.array([0.   ,  1.8  ,  0.   ,  0.   ,  0.   , -2.   ,  0.05 , -0.05 ,
+        0.007]))
 
-    data_Test = ocp.nlp[0].numerical_data_timeseries["forces_in_local"]
-    npt.assert_equal(data_Test.shape, (9, 1, 31))
-    npt.assert_almost_equal(data_Test[:, 0, 0], np.array([0. , -1.8,  0. ,  0. ,  0. ,  5. ,  0. ,  0. ,  0.]))
+    data_Test_false = ocp_false.nlp[0].numerical_data_timeseries["forces_in_local"]
+    npt.assert_equal(data_Test_false.shape, (9, 1, 31))
+    npt.assert_almost_equal(data_Test_false[:, 0, 0], np.array([0. , -1.8,  0. ,  0. ,  0. ,  5. ,  -0.009,  0.01 ,
+       -0.01]))
 
     # detailed cost values
-    npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], f[0, 0])
+    npt.assert_almost_equal(sol_false.detailed_cost[0]["cost_value_weighted"], f_false[0, 0])
+
+
+    ocp_true = prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube_with_forces.bioMod",
+        use_torque_and_force_at_the_same_time=True,
+    )
+    sol_true = ocp_true.solve()
+
+    # Check objective function value
+    f_true = np.array(sol_true.cost)
+    npt.assert_equal(f_true.shape, (1, 1))
+    npt.assert_almost_equal(f_true[0, 0], f_false[0, 0])
+
+    # Check constraints
+    g_true = np.array(sol_true.constraints)
+    npt.assert_equal(g_true.shape, (246, 1))
+    npt.assert_almost_equal(g_true, np.zeros((246, 1)))
+
+    # Check some of the results
+    states_true = sol_true.decision_states(to_merge=SolutionMerge.NODES)
+    controls_true = sol_true.decision_controls(to_merge=SolutionMerge.NODES)
+    q_true, qdot_true, tau_true = states_true["q"], states_true["qdot"], controls_true["tau"]
+
+    # initial and final controls
+    npt.assert_almost_equal(tau_true[:, 0], tau_false[:, 0])
+    npt.assert_almost_equal(tau_true[:, 10], tau_false[:, 10])
+    npt.assert_almost_equal(tau_true[:, 20], tau_false[:, 20])
+    npt.assert_almost_equal(tau_true[:, -1], tau_false[:, -1])
+
+    # initial and final position
+    npt.assert_almost_equal(q_true[:, 0], q_true[:, 0])
+    npt.assert_almost_equal(q_true[:, -1], q_true[:, -1])
+
+    # initial and final velocities
+    npt.assert_almost_equal(qdot_true[:, 0], qdot_true[:, 0])
+    npt.assert_almost_equal(qdot_true[:, -1], qdot_true[:, -1])
+
+    # how the force is stored
+    data_Seg1_true = ocp_true.nlp[0].numerical_data_timeseries["forces_in_global"]
+    npt.assert_equal(data_Seg1_true.shape, (9, 1, 31))
+    npt.assert_almost_equal(data_Seg1_true[:, 0, 0], data_Seg1_false[:, 0, 0])
+
+    data_Test_true = ocp_true.nlp[0].numerical_data_timeseries["forces_in_local"]
+    npt.assert_equal(data_Test_true.shape, (9, 1, 31))
+    npt.assert_almost_equal(data_Test_true[:, 0, 0], data_Test_false[:, 0, 0])
+
+    # detailed cost values
+    npt.assert_almost_equal(sol_true.detailed_cost[0]["cost_value_weighted"], f_true[0, 0])
+
+
+def test_fail():
+
+    n_shooting = 30
+    fake_force = np.zeros((3, n_shooting + 1))
+
+    external_forces = ExternalForces()
+    external_forces.add(
+        key="Seg1",
+        data=np.vstack((fake_force, fake_force)),
+        force_type=ExternalForceType.TORQUE_AND_FORCE,
+        force_reference_frame=ReferenceFrame.GLOBAL,
+    )
+    external_forces.add(
+        key="Test",
+        data=np.vstack((fake_force, fake_force)),
+        force_type=ExternalForceType.TORQUE_AND_FORCE,
+        force_reference_frame=ReferenceFrame.LOCAL,
+    )
+
+    with pytest.raises(ValueError, match="The force is already defined for Seg1"):
+        external_forces.add(
+            key="Seg1",
+            data=fake_force,
+            force_type=ExternalForceType.FORCE,
+            force_reference_frame=ReferenceFrame.GLOBAL,
+        )
+
+    with pytest.raises(ValueError, match="The torque is already defined for Seg1"):
+        external_forces.add(
+            key="Seg1",
+            data=fake_force,
+            force_type=ExternalForceType.TORQUE,
+            force_reference_frame=ReferenceFrame.GLOBAL,
+        )

@@ -516,7 +516,7 @@ def test_penalty_track_markers_acceleration(penalty_origin, value, phase_dynamic
 
     npt.assert_almost_equal(res, expected, decimal=5)
 
-    
+
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])

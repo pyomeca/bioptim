@@ -225,10 +225,12 @@ class ReferenceFrame(Enum):
     LOCAL = "local"
 
 
-class ExternalForcesType(Enum):
+class ExternalForceType(Enum):
     """
     Selection of external forces type
     """
 
-    LINEAR_FORCE = "linear_force"
+    FORCE = "force"
     TORQUE = "torque"
+    TORQUE_AND_FORCE = "torque_and_force"
+

@@ -3,7 +3,7 @@ Biorbd model for holonomic constraints and variational integrator.
 """
 
 import biorbd_casadi as biorbd
-from casadi import SX, MX, vertcat, jacobian, transpose
+from casadi import SX, MX, DM, vertcat, jacobian, transpose
 
 from .holonomic_biorbd_model import HolonomicBiorbdModel
 from ...misc.enums import ControlType, QuadratureRule
@@ -29,12 +29,13 @@ class VariationalBiorbdModel(HolonomicBiorbdModel):
         self.control_type = control_type
         self.control_discrete_approximation = control_discrete_approximation
 
+
     def discrete_lagrangian(
         self,
-        q1: MX | SX,
-        q2: MX | SX,
-        time_step: MX | SX,
-    ) -> MX | SX:
+        q1: MX | SX | DM,
+        q2: MX | SX | DM,
+        time_step: MX | SX | DM,
+    ) -> MX | SX | DM:
         """
         Compute the discrete Lagrangian of a biorbd model.
 
