@@ -410,7 +410,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         q = self.compute_q()(self.q_u, self.q_v_init)
         biorbd_return = self.compute_qdot_v()(q, self.qdot_u)
         casadi_fun = Function(
-            "compute_qdot_v", [self.q, self.qdot_u, self.q_v_init], [biorbd_return], ["q", "qdot_u"], ["qdot_v"]
+            "compute_qdot_v", [self.q_u, self.qdot_u, self.q_v_init], [biorbd_return], ["q_u", "qdot_u", "q_v_init"], ["qdot_v"]
         )
         return casadi_fun
 

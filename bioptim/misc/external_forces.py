@@ -136,7 +136,7 @@ def get_external_forces_segments(external_forces: ExternalForces):
         for key in external_forces.keys():
             force_torsor = external_forces[key]
             # Check sanity first
-            if force_torsor.force_reference_frame == ReferenceFrame.GLOBAL and force_torsor.point_of_application_reference_frame == ReferenceFrame.LOCAL and force.torque_data is not None:
+            if force_torsor.force_reference_frame == ReferenceFrame.GLOBAL and force_torsor.point_of_application_reference_frame == ReferenceFrame.LOCAL and force_torsor.torque_data is not None:
                 raise NotImplementedError("External forces in global reference frame cannot have a point of application in the local reference frame and torques defined at the same time yet")
             elif force_torsor.force_reference_frame == ReferenceFrame.LOCAL and force_torsor.point_of_application_reference_frame == ReferenceFrame.GLOBAL:
                 raise NotImplementedError("External forces in local reference frame cannot have a point of application in the global reference frame yet")

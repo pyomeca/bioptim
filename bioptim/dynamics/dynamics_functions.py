@@ -1,9 +1,7 @@
-import numpy as np
-from casadi import horzcat, vertcat, MX, SX
+from casadi import horzcat, vertcat, MX, SX, DM
 
 from .dynamics_evaluation import DynamicsEvaluation
 from .fatigue.fatigue_dynamics import FatigueList
-from ..misc.enums import DefectType
 from ..misc.mapping import BiMapping
 from ..optimization.optimization_variable import OptimizationVariable
 
@@ -1138,7 +1136,7 @@ class DynamicsFunctions:
         tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
         q_v_init = DM.zeros(
             nlp.model.nb_dependent_joints
-        )  # @ipuch: I'm not sure of this, where q_v_init is supposed to be if not zeros?
-        qddot_u = nlp.model.partitioned_forward_dynamics()(q_u, qdot_u, q_v_init, tau, nlp.parameters.cx)
+        )
+        qddot_u = nlp.model.partitioned_forward_dynamics()(q_u, qdot_u, q_v_init, tau)
 
         return DynamicsEvaluation(dxdt=vertcat(qdot_u, qddot_u), defects=None)

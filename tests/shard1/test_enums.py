@@ -191,7 +191,7 @@ def test_multi_cyclic_cycle_solutions():
 def test_external_forces_type():
     assert ExternalForceType.FORCE.value == "force"
     assert ExternalForceType.TORQUE.value == "torque"
-    assert ExternalForceType.TORQUE_AND_FORCE.value == "force_and_torque"
+    assert ExternalForceType.TORQUE_AND_FORCE.value == "torque_and_force"
 
     # verify the number of elements
     assert len(ExternalForceType) == 3

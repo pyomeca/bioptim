@@ -221,8 +221,10 @@ class ConfigureProblem:
         # Configure the contact forces
         if with_contact:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
+
         # Configure the soft contact forces
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
+
         # Algebraic constraints of soft contact forces if needed
         if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
             ocp.implicit_constraints.add(
@@ -853,9 +855,10 @@ class ConfigureProblem:
                 nlp.numerical_timeseries.cx,
             ],
             [
-                dyn_func(
+                dyn_func()(
                     nlp.get_var_from_states_or_controls("q_u", nlp.states.scaled.cx, nlp.controls.scaled.cx),
                     nlp.get_var_from_states_or_controls("qdot_u", nlp.states.scaled.cx, nlp.controls.scaled.cx),
+                    DM.zeros(nlp.model.nb_dependent_joints, 1),
                     DynamicsFunctions.get(nlp.controls["tau"], nlp.controls.scaled.cx),
                 )
             ],
@@ -917,8 +920,9 @@ class ConfigureProblem:
                 nlp.numerical_timeseries.cx,
             ],
             [
-                dyn_func(
+                dyn_func()(
                     nlp.get_var_from_states_or_controls("q_u", nlp.states.cx, nlp.controls.cx),
+                    DM.zeros(nlp.model.nb_dependent_joints, 1),
                 )
             ],
             ["t_span", "x", "u", "p", "a", "d"],
@@ -975,9 +979,10 @@ class ConfigureProblem:
                 nlp.numerical_timeseries.cx,
             ],
             [
-                dyn_func(
+                dyn_func()(
                     nlp.get_var_from_states_or_controls("q_u", nlp.states.scaled.cx, nlp.controls.scaled.cx),
                     nlp.get_var_from_states_or_controls("qdot_u", nlp.states.scaled.cx, nlp.controls.scaled.cx),
+                    DM.zeros(nlp.model.nb_dependent_joints, 1),
                 )
             ],
             ["t_span", "x", "u", "p", "a", "d"],
