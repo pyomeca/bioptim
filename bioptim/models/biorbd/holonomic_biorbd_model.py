@@ -33,6 +33,10 @@ class HolonomicBiorbdModel(BiorbdModel):
         self._dependent_joint_index = []
         self._independent_joint_index = [i for i in range(self.nb_q)]
 
+        if parameters is not None:
+            raise NotImplementedError("HolonomicBiorbdModel does not support parameters yet")
+
+    def _holonomic_symbolic_variables(self):
         # Declaration of MX variables of the right shape for the creation of CasADi Functions
         self.q_u = MX.sym("q_u_mx", self.nb_independent_joints, 1)
         self.qdot_u = MX.sym("qdot_u_mx", self.nb_independent_joints, 1)
@@ -100,6 +104,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         if dependent_joint_index and independent_joint_index:
             self.check_dependant_jacobian()
 
+        self._holonomic_symbolic_variables()
     def check_dependant_jacobian(self):
         partitioned_constraints_jacobian = self.partitioned_constraints_jacobian(self.q)
         partitioned_constraints_jacobian_v = partitioned_constraints_jacobian[:, self.nb_independent_joints :]
@@ -200,7 +205,6 @@ class HolonomicBiorbdModel(BiorbdModel):
     def partitioned_mass_matrix(self, q: MX) -> MX:
         # q_u: independent
         # q_v: dependent
-        # @ Ipuch: either we send the parameters as an arg of the function or we return a Function...
         mass_matrix = self.mass_matrix()(q, [])
         mass_matrix_uu = mass_matrix[self._independent_joint_index, self._independent_joint_index]
         mass_matrix_uv = mass_matrix[self._independent_joint_index, self._dependent_joint_index]
@@ -213,9 +217,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         return vertcat(first_line, second_line)
 
     def partitioned_non_linear_effect(self, q: MX, qdot: MX) -> MX:
-        # @Ipuch: Not sure external forces work
-        external_forces_set = self.model.externalForceSet()
-        non_linear_effect = self.model.NonLinearEffect(q, qdot, external_forces_set).to_mx()
+        non_linear_effect = self.non_linear_effects()(q, qdot, [])
         non_linear_effect_u = non_linear_effect[self._independent_joint_index]
         non_linear_effect_v = non_linear_effect[self._dependent_joint_index]
 
@@ -389,6 +391,9 @@ class HolonomicBiorbdModel(BiorbdModel):
         return casadi_fun
 
     def compute_q(self) -> Function:
+        """
+        If you don't know what to put as a q_v_init, use zeros.
+        """
         q_v = self.compute_q_v()(self.q_u, self.q_v_init)
         biorbd_return = self.state_from_partition(self.q_u, q_v)
         casadi_fun = Function("compute_q", [self.q_u, self.q_v_init], [biorbd_return], ["q_u", "q_v_init"], ["q"])
@@ -455,7 +460,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         https://doi.org/10.5194/ms-4-199-2013, 2013.
         """
         q = self.compute_q()(self.q_u, self.q_v_init)
-        qdot = self.compute_qdot()(self.q, self.qdot_u)
+        qdot = self.compute_qdot()(q, self.qdot_u)
         qddot_u = self.partitioned_forward_dynamics()(self.q_u, self.qdot_u, self.q_v_init, self.tau)
         qddot = self.compute_qddot()(q, qdot, qddot_u)
 
@@ -500,7 +505,7 @@ class HolonomicBiorbdModel(BiorbdModel):
             m_vu @ qddot_u + m_vv @ qddot_v + non_linear_effect_v - partitioned_tau_v
         )
         casadi_fun = Function(
-            "_compute_the_lagrangian_multipliers",
+            "compute_the_lagrangian_multipliers",
             [self.q, self.qdot, self.qddot, self.tau],
             [biorbd_return],
             ["q", "qdot", "qddot", "tau"],

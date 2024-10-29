@@ -127,13 +127,13 @@ def test_model_holonomic():
     qdot_u = MX(TestUtils.to_array(q_dot[model._independent_joint_index]))
     q_v = MX(TestUtils.to_array(q[model._dependent_joint_index]))
 
-    TestUtils.assert_equal(model.partitioned_forward_dynamics()(q_u, qdot_u, q_v, tau), -1.101808)
+    TestUtils.assert_equal(model.partitioned_forward_dynamics()(q_u, qdot_u, q_v, tau), -1.101808, expand=False)
     TestUtils.assert_equal(model.coupling_matrix(q), [5.79509793, -0.35166415], expand=False)
     TestUtils.assert_equal(model.biais_vector(q, q_dot), [27.03137348, 23.97095718], expand=False)
     TestUtils.assert_equal(model.state_from_partition(q_u, q_v), q)
 
-    TestUtils.assert_equal(model.compute_q_v()(q_u, q_v), [2 * np.pi / 3, 2 * np.pi / 3])
-    TestUtils.assert_equal(model.compute_q()(q_u, q_v), [2.0943951, 2.0943951], expand=False)
+    TestUtils.assert_equal(model.compute_q_v()(q_u, q_v), [2 * np.pi / 3, 2 * np.pi / 3], expand=False)
+    TestUtils.assert_equal(model.compute_q()(q_u, q_v), [1., 2.0943951, 2.0943951], expand=False)
     TestUtils.assert_equal(model.compute_qdot_v()(q, qdot_u), [23.18039172, -1.4066566], expand=False)
     TestUtils.assert_equal(model.compute_qdot()(q, qdot_u), [4.0, 23.18039172, -1.4066566], expand=False)
 

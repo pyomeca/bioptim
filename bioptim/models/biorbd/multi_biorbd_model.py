@@ -81,7 +81,6 @@ class MultiBiorbdModel:
         self.tau = MX.sym("tau_mx", self.nb_tau, 1)
         self.muscle = MX.sym("muscle_mx", self.nb_muscles, 1)
         self.activations = MX.sym("activations_mx", self.nb_muscles, 1)
-        # TODO: parameters should be handled model by model
         self.parameters = MX.sym("parameters_to_be_implemented", 0, 1)
 
     def __getitem__(self, index):
