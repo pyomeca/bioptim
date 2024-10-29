@@ -133,7 +133,7 @@ def test_model_holonomic():
     TestUtils.assert_equal(model.state_from_partition(q_u, q_v), q)
 
     TestUtils.assert_equal(model.compute_q_v()(q_u, q_v), [2 * np.pi / 3, 2 * np.pi / 3], expand=False)
-    TestUtils.assert_equal(model.compute_q()(q_u, q_v), [1., 2.0943951, 2.0943951], expand=False)
+    TestUtils.assert_equal(model.compute_q()(q_u, q_v), [1.0, 2.0943951, 2.0943951], expand=False)
     TestUtils.assert_equal(model.compute_qdot_v()(q, qdot_u), [23.18039172, -1.4066566], expand=False)
     TestUtils.assert_equal(model.compute_qdot()(q, qdot_u), [4.0, 23.18039172, -1.4066566], expand=False)
 

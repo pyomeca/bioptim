@@ -105,6 +105,7 @@ class HolonomicBiorbdModel(BiorbdModel):
             self.check_dependant_jacobian()
 
         self._holonomic_symbolic_variables()
+
     def check_dependant_jacobian(self):
         partitioned_constraints_jacobian = self.partitioned_constraints_jacobian(self.q)
         partitioned_constraints_jacobian_v = partitioned_constraints_jacobian[:, self.nb_independent_joints :]
