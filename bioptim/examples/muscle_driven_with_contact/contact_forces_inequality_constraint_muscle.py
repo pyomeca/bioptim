@@ -29,13 +29,6 @@ from bioptim import (
 def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound, expand_dynamics=True):
     # --- Options --- #
     # BioModel path
-
-    # TODO: Charbie
-    # force = ForcesList()
-    # force.add(Px=0, Py= 0, Pz= 0, Mx= 0, My= 0, Mz= 0
-    #           point_of_application_in_global=True,
-    #             segment_name=)
-
     bio_model = BiorbdModel(biorbd_model_path)
     tau_min, tau_max, tau_init = -500.0, 500.0, 0.0
     activation_min, activation_max, activation_init = 0.0, 1.0, 0.5
