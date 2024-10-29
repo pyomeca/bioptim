@@ -1017,25 +1017,9 @@ class DynamicsFunctions:
         if external_forces is None:
             tau = nlp.model.inverse_dynamics(with_contact=with_contact)(q, qdot, qddot, [], nlp.parameters.cx)
         else:
-            # @ipuch not sure of this part
             tau = nlp.model.inverse_dynamics(with_contact=with_contact)(
                 q, qdot, qddot, external_forces, nlp.parameters.cx
             )
-
-            # if "tau" in nlp.states:
-            #     tau_shape = nlp.states["tau"].cx.shape[0]
-            # elif "tau" in nlp.controls:
-            #     tau_shape = nlp.controls["tau"].cx.shape[0]
-            # else:
-            #     tau_shape = nlp.model.nb_tau
-
-            # tau = nlp.cx(tau_shape, nlp.ns)
-            # if external_forces is not None:
-            #     for i in range(external_forces.shape[1]):
-            #         tau[:, i] = nlp.model.inverse_dynamics(with_contact=with_contact)(
-            #             q, qdot, qddot, external_forces[:, i], nlp.parameters.cx
-            #         )
-
         return tau  # We ignore on purpose the mapping to keep zeros in the defects of the dynamic.
 
     @staticmethod
