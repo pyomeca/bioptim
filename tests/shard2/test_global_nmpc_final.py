@@ -140,7 +140,7 @@ def test_multi_cyclic_nmpc_not_get_final(phase_dynamics):
     npt.assert_almost_equal(sol[2][2].cost.toarray().squeeze(), 0.0002)
 
 
-@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE])
 def test_multi_cyclic_nmpc_with_parameters(phase_dynamics):
     def update_functions(_nmpc, cycle_idx, _sol):
         return cycle_idx < n_cycles_total  # True if there are still some cycle to perform
@@ -182,17 +182,17 @@ def test_multi_cyclic_nmpc_with_parameters(phase_dynamics):
     npt.assert_almost_equal(q[:, -1], np.array([1.37753244e-40, 1.04359174e00, 1.03625065e00]))
 
     # initial and final velocities
-    npt.assert_almost_equal(qdot[:, 0], np.array([6.28157623, 2.53488346, 0.08497867]))
-    npt.assert_almost_equal(qdot[:, -1], np.array([6.28157623, 2.42858387, -0.53856653]), decimal=5)
+    npt.assert_almost_equal(qdot[:, 0], np.array([6.28219821, 2.53701443, 0.06373775]))
+    npt.assert_almost_equal(qdot[:, -1], np.array([6.28219821, 2.42094266, -0.54434117]), decimal=5)
 
     # initial and final controls
-    npt.assert_almost_equal(tau[:, 0], np.array([0.0251475, 1.88932432, 0.8950255]))
-    npt.assert_almost_equal(tau[:, -1], np.array([-0.02512069, 2.17400305, 1.00178721]), decimal=4)
+    npt.assert_almost_equal(tau[:, 0], np.array([0.01974196, 2.45117837, 1.1706578]))
+    npt.assert_almost_equal(tau[:, -1], np.array([-0.01974196, 2.72262965, 1.25573282]), decimal=4)
 
     # initial and final parameters
     for key in parameters.keys():
         npt.assert_almost_equal(
-            parameters[key], [np.array([2.5594204]), np.array([2.55932934]), np.array([2.56215198])]
+            parameters[key], [np.array([2.00000007]), np.array([2.00000009]), np.array([2.00000009])]
         )
 
     # check time

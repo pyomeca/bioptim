@@ -27,10 +27,11 @@ from bioptim import (
     MultiCyclicNonlinearModelPredictiveControl,
     Node,
     NonLinearProgram,
-    Objective,
+    ObjectiveList,
     ObjectiveFcn,
     OptimalControlProgram,
     ParameterList,
+    PenaltyController,
     PhaseDynamics,
     Solution,
     SolutionMerge,
@@ -55,8 +56,12 @@ class MyCyclicNMPC(MultiCyclicNonlinearModelPredictiveControl):
         return True
 
 
-def add_mass_fun(bio_model: biorbd.Model, value: MX):
+def dummy_parameter_function(bio_model: biorbd.Model, value: MX):
     return
+
+
+def param_custom_objective(controller: PenaltyController) -> MX:
+    return controller.parameters["tau_modifier"].cx - 2
 
 
 def parameter_dependent_dynamic(
@@ -147,7 +152,7 @@ def prepare_nmpc(
 
     parameter.add(
         name="tau_modifier",
-        function=add_mass_fun,
+        function=dummy_parameter_function,
         size=1,
         scaling=VariableScaling("tau_modifier", [1]),
     )
@@ -172,7 +177,9 @@ def prepare_nmpc(
     u_bounds = BoundsList()
     u_bounds["tau"] = [-max_torque] * model.nb_q, [max_torque] * model.nb_q
 
-    new_objectives = Objective(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q")
+    objectives = ObjectiveList()
+    objectives.add(ObjectiveFcn.Lagrange.TRACK_STATE, key="q", index=0, target=0, weight=100)
+    objectives.add(param_custom_objective, custom_type=ObjectiveFcn.Mayer, weight=1, quadratic=True)
 
     # Rotate the wheel and force the marker of the hand to follow the marker on the wheel
     wheel_target = np.linspace(-2 * np.pi * n_cycles_simultaneous, 0, cycle_len * n_cycles_simultaneous + 1)[
@@ -195,7 +202,7 @@ def prepare_nmpc(
         cycle_duration=cycle_duration,
         n_cycles_simultaneous=n_cycles_simultaneous,
         n_cycles_to_advance=n_cycles_to_advance,
-        common_objective_functions=new_objectives,
+        common_objective_functions=objectives,
         constraints=constraints,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
