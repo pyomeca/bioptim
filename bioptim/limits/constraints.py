@@ -1074,7 +1074,6 @@ class ConstraintFcn(FcnEnum):
     TRACK_SEGMENT_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_segment_velocity,)
     TRACK_SEGMENT_WITH_CUSTOM_RT = (PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt,)
     TRACK_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
-    TRACK_VECTOR_ORIENTATIONS_FROM_MARKERS = (PenaltyFunctionAbstract.Functions.track_vector_orientations_from_markers,)
 
     @staticmethod
     def get_type():

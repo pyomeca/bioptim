@@ -1,14 +1,12 @@
 import inspect
 from typing import Any
 
-import biorbd_casadi as biorbd
-from casadi import horzcat, vertcat, Function, atan2, dot, cross, sqrt, MX_eye, SX_eye, SX, jacobian, trace
+from casadi import horzcat, vertcat, Function, acos, dot, norm_fro, MX_eye, SX_eye, SX, jacobian, trace
 from math import inf
 
 from .penalty_controller import PenaltyController
 from .penalty_option import PenaltyOption
 from ..misc.enums import Node, Axis, ControlType, QuadratureRule
-from ..models.biorbd.biorbd_model import BiorbdModel
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
 
 
@@ -1055,82 +1053,6 @@ class PenaltyFunctionAbstract:
 
             return segment_angular_velocity[axes]
 
-        @staticmethod
-        def track_vector_orientations_from_markers(
-            penalty: PenaltyOption,
-            controller: PenaltyController,
-            vector_0_marker_0: int | str,
-            vector_0_marker_1: int | str,
-            vector_1_marker_0: int | str,
-            vector_1_marker_1: int | str,
-        ):
-            """
-            Aligns two vectors together.
-            The first vector is defined by vector_0_marker_1 - vector_0_marker_0.
-            The second vector is defined by vector_1_marker_1 - vector_1_marker_0.
-            Note that is minimizes the angle between the two vectors, thus it is not possible ti specify an axis.
-            By default, this function is quadratic, meaning that it minimizes the angle between the two vectors.
-            WARNING: please be careful as there is a discontinuity when the two vectors are orthogonal.
-
-            Parameters
-            ----------
-            penalty: PenaltyOption
-                The actual penalty to declare
-            controller: PenaltyController
-                The penalty node elements
-            vector_0_marker_0: int | str
-                Name or index of the first marker of the first vector
-            vector_0_marker_1: int | str
-                Name or index of the second marker of the first vector
-            vector_1_marker_0: int | str
-                Name or index of the first marker of the second vector
-            vector_1_marker_1: int | str
-                Name or index of the second marker of the second vector
-            """
-
-            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
-
-            vector_0_marker_0_idx = (
-                controller.model.marker_index(vector_0_marker_0)
-                if isinstance(vector_0_marker_0, str)
-                else vector_0_marker_0
-            )
-            vector_0_marker_1_idx = (
-                controller.model.marker_index(vector_0_marker_1)
-                if isinstance(vector_0_marker_1, str)
-                else vector_0_marker_1
-            )
-            vector_1_marker_0_idx = (
-                controller.model.marker_index(vector_1_marker_0)
-                if isinstance(vector_1_marker_0, str)
-                else vector_1_marker_0
-            )
-            vector_1_marker_1_idx = (
-                controller.model.marker_index(vector_1_marker_1)
-                if isinstance(vector_1_marker_1, str)
-                else vector_1_marker_1
-            )
-
-            vector_0_marker_0_position = controller.model.marker(index=vector_0_marker_0_idx)(
-                controller.q, controller.parameters.cx
-            )
-            vector_0_marker_1_position = controller.model.marker(index=vector_0_marker_1_idx)(
-                controller.q, controller.parameters.cx
-            )
-            vector_1_marker_0_position = controller.model.marker(index=vector_1_marker_0_idx)(
-                controller.q, controller.parameters.cx
-            )
-            vector_1_marker_1_position = controller.model.marker(index=vector_1_marker_1_idx)(
-                controller.q, controller.parameters.cx
-            )
-
-            vector_0 = vector_0_marker_1_position - vector_0_marker_0_position
-            vector_1 = vector_1_marker_1_position - vector_1_marker_0_position
-            cross_prod = cross(vector_0, vector_1)
-            cross_prod_norm = sqrt(cross_prod[0] ** 2 + cross_prod[1] ** 2 + cross_prod[2] ** 2)
-            out = atan2(cross_prod_norm, dot(vector_0, vector_1))
-
-            return out
 
         @staticmethod
         def state_continuity(penalty: PenaltyOption, controller: PenaltyController | list):

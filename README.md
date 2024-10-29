@@ -2371,9 +2371,6 @@ To implement this tracking task, we use the `ConstraintFcn.TRACK_SEGMENT_WITH_CU
 minimizes the distance between a segment and an RT. The extra parameters `segment_index: int` and `rt_index: int` must be 
 passed to the Objective constructor.
 
-### The [track_vector_orientation.py](./bioptim/examples/track/track_vector_orientation.py) file
-*#TODO*
-
 ## Moving estimation horizon (MHE)
 In this section, we perform MHE on the pendulum example.
 

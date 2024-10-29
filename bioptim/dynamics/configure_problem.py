@@ -1212,6 +1212,8 @@ class ConfigureProblem:
         """
         component_list = ["Mx", "My", "Mz", "Fx", "Fy", "Fz"]
 
+        # TODO: this intermediary function is necessary for the tests (probably because really sensitive)
+        # but it should ideally be removed sometime
         global_soft_contact_force_func = nlp.model.soft_contact_forces()(
             nlp.states["q"].cx_start, nlp.states["qdot"].cx_start, nlp.parameters.cx
         )

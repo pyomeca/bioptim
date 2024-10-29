@@ -996,46 +996,6 @@ def test_penalty_minimize_segment_velocity(penalty_origin, value, phase_dynamics
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
-@pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
-@pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_minimize_vector_orientation(penalty_origin, value, phase_dynamics):
-    ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
-    t = [0]
-    phases_dt = [0.05]
-    x = [DM(np.array([0, 0, value, 0, 0, 0, 0, 0]))]
-    u = [0]
-    p = []
-    a = []
-    d = []
-
-    penalty_type = penalty_origin.TRACK_VECTOR_ORIENTATIONS_FROM_MARKERS
-
-    if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
-        penalty = Objective(
-            penalty_type,
-            vector_0_marker_0="m0",
-            vector_0_marker_1="m3",
-            vector_1_marker_0="origin",
-            vector_1_marker_1="m6",
-        )
-    else:
-        penalty = Constraint(
-            penalty_type,
-            vector_0_marker_0="m0",
-            vector_0_marker_1="m3",
-            vector_1_marker_0="origin",
-            vector_1_marker_1="m6",
-        )
-
-    res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
-
-    if value == 0.1:
-        npt.assert_almost_equal(float(res), 0.09999999999999999)
-    else:
-        npt.assert_almost_equal(float(res), 2.566370614359173)
-
-
-@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("penalty_origin", [ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_contact_force_inequality(penalty_origin, value, phase_dynamics):

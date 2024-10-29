@@ -368,9 +368,6 @@ class ObjectiveFcn:
         TRACK_SEGMENT_WITH_CUSTOM_RT = (PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt,)
         TRACK_SOFT_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_soft_contact_forces,)
         TRACK_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
-        TRACK_VECTOR_ORIENTATIONS_FROM_MARKERS = (
-            PenaltyFunctionAbstract.Functions.track_vector_orientations_from_markers,
-        )
 
         @staticmethod
         def get_type() -> Callable:
@@ -419,9 +416,6 @@ class ObjectiveFcn:
         TRACK_POWER = (PenaltyFunctionAbstract.Functions.minimize_power,)
         TRACK_SEGMENT_WITH_CUSTOM_RT = (PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt,)
         TRACK_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
-        TRACK_VECTOR_ORIENTATIONS_FROM_MARKERS = (
-            PenaltyFunctionAbstract.Functions.track_vector_orientations_from_markers,
-        )
         MINIMIZE_CONTACT_FORCES_END_OF_INTERVAL = (
             PenaltyFunctionAbstract.Functions.minimize_contact_forces_end_of_interval,
         )
