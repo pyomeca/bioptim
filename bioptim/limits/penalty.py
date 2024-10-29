@@ -1053,7 +1053,6 @@ class PenaltyFunctionAbstract:
 
             return segment_angular_velocity[axes]
 
-
         @staticmethod
         def state_continuity(penalty: PenaltyOption, controller: PenaltyController | list):
             if controller.control_type in (
