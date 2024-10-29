@@ -141,9 +141,9 @@ def get_external_forces_segments(external_forces: ExternalForces):
             elif force_torsor.force_reference_frame == ReferenceFrame.LOCAL and force_torsor.point_of_application_reference_frame == ReferenceFrame.GLOBAL:
                 raise NotImplementedError("External forces in local reference frame cannot have a point of application in the global reference frame yet")
 
-            if force_torsor.force_reference_frame == ReferenceFrame.GLOBAL and (force_torsor.point_of_application_reference_frame == ReferenceFrame.GLOBAL or force.point_of_application_reference_frame is None):
+            if force_torsor.force_reference_frame == ReferenceFrame.GLOBAL and (force_torsor.point_of_application_reference_frame == ReferenceFrame.GLOBAL or force_torsor.point_of_application_reference_frame is None):
                 segments_to_apply_forces_in_global.append(force_torsor.key)
-            elif force_torsor.force_reference_frame == ReferenceFrame.LOCAL and (force_torsor.point_of_application_reference_frame == ReferenceFrame.LOCAL or force.point_of_application_reference_frame is None):
+            elif force_torsor.force_reference_frame == ReferenceFrame.LOCAL and (force_torsor.point_of_application_reference_frame == ReferenceFrame.LOCAL or force_torsor.point_of_application_reference_frame is None):
                 segments_to_apply_forces_in_local.append(force_torsor.key)
             elif force_torsor.force_reference_frame == ReferenceFrame.GLOBAL and force_torsor.point_of_application_reference_frame == ReferenceFrame.LOCAL:
                 segments_to_apply_translational_forces.append(force_torsor.key)
