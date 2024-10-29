@@ -1211,7 +1211,22 @@ class ConfigureProblem:
             A reference to the phase
         """
         component_list = ["Mx", "My", "Mz", "Fx", "Fy", "Fz"]
-        nlp.soft_contact_forces_func = nlp.model.soft_contact_forces()
+
+        global_soft_contact_force_func = nlp.model.soft_contact_forces()(
+            nlp.states["q"].cx_start, nlp.states["qdot"].cx_start, nlp.parameters.cx
+        )
+        nlp.soft_contact_forces_func = Function(
+            "soft_contact_forces_func",
+            [
+                nlp.time_cx,
+                nlp.states.cx_start,
+                nlp.controls.cx_start,
+                nlp.parameters.cx_start,
+            ],
+            [global_soft_contact_force_func],
+            ["t", "x", "u", "p"],
+            ["soft_contact_forces"],
+        ).expand()
 
         for i_sc in range(nlp.model.nb_soft_contacts):
             all_soft_contact_names = []

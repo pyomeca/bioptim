@@ -863,8 +863,9 @@ class PenaltyFunctionAbstract:
                 force_idx.append(4 + (6 * i_sc))
                 force_idx.append(5 + (6 * i_sc))
             soft_contact_force = controller.get_nlp.soft_contact_forces_func(
-                controller.q,
-                controller.qdot,
+                controller.time.cx,
+                controller.states.cx_start,
+                controller.controls.cx_start,
                 controller.parameters.cx,
             )
             return soft_contact_force[force_idx]
