@@ -1,8 +1,10 @@
 import biorbd_casadi as biorbd
 import numpy as np
 import pyorerun
+from pyomeca import Markers as PyoMarkers
 from typing import Any
 
+from .viewer_utils import _prepare_tracked_markers_for_animation
 from .biorbd_model import BiorbdModel
 from .multi_biorbd_model import MultiBiorbdModel
 from ...optimization.solution.solution_data import SolutionMerge
@@ -41,12 +43,7 @@ def prepare_pyorerun_animation(ocp, solution, show_now=True, show_tracked_marker
             models += [nlp.model.model]
 
     if show_tracked_markers:
-        raise NotImplementedError(
-            "Tracking markers is not implemented for pyorerun. "
-            "Set show_tracked_markers to False such that sol.animate(show_tracked_markers=False)."
-        )
-        # TODO : Implement tracking markers for pyorerun
-        #  with the _prepare_tracked_markers_for_animation in viewer_utils.py
+        tracked_markers = _prepare_tracked_markers_for_animation(ocp.nlp, n_shooting=None)
     else:
         tracked_markers = None
 
@@ -116,11 +113,15 @@ def launch_rerun(
             )
 
         biorbd_model = pyorerun.BiorbdModel.from_biorbd_object(model)
-
+        tm = (
+            PyoMarkers(tm, channels=[n.to_string() for n in biorbd_model.model.markerNames()])
+            if tm is not None
+            else None
+        )
         prerun.add_animated_model(
             biorbd_model,
             data["q"],
-            tracked_markers=tm if tm is not None else None,
+            tracked_markers=tm,
             phase=idx_phase,
         )
 

@@ -13,25 +13,25 @@ def _prepare_tracked_markers_for_animation(
     all_tracked_markers = []
 
     for phase, nlp in enumerate(nlps):
-        n_frames = sum(nlp.ns) + 1 if n_shooting is None else n_shooting + 1
+        n_frames = nlp.ns + 1 if n_shooting is None else n_shooting + 1
 
         n_states_nodes = nlp.n_states_nodes
 
         tracked_markers = None
         for objective in nlp.J:
-            if objective.target is not None:
-                if objective.type in (
-                    ObjectiveFcn.Mayer.TRACK_MARKERS,
-                    ObjectiveFcn.Lagrange.TRACK_MARKERS,
-                ) and objective.node[0] in (Node.ALL, Node.ALL_SHOOTING):
-                    tracked_markers = np.full((3, nlp.model.nb_markers, n_states_nodes), np.nan)
 
-                    for i in range(len(objective.rows)):
-                        tracked_markers[objective.rows[i], objective.cols, :] = objective.target[i, :, :]
+            objective_has_a_target = objective.target is not None
+            objective_is_tracking_markers = objective.type in (
+                ObjectiveFcn.Mayer.TRACK_MARKERS,
+                ObjectiveFcn.Lagrange.TRACK_MARKERS,
+            )
+            objective_is_tracking_all_nodes = objective.node[0] in (Node.ALL, Node.ALL_SHOOTING)
 
-                    missing_row = np.where(np.isnan(tracked_markers))[0]
-                    if missing_row.size > 0:
-                        tracked_markers[missing_row, :, :] = 0
+            if objective_has_a_target and objective_is_tracking_markers and objective_is_tracking_all_nodes:
+                tracked_markers = np.zeros((3, nlp.model.nb_markers, n_states_nodes))
+
+                for i, row in enumerate(objective.rows):
+                    tracked_markers[row, objective.cols, :] = objective.target[i, ...]
 
         # interpolation
         if n_frames > 0 and tracked_markers is not None:
