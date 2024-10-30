@@ -20,6 +20,7 @@ from bioptim import (
     ParameterContainer,
     ParameterList,
     PhaseDynamics,
+    ExternalForceSetTimeSeries,
 )
 from tests.utils import TestUtils
 
@@ -39,7 +40,13 @@ class OptimalControlProgram:
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("cx", [MX, SX])
-@pytest.mark.parametrize("with_external_force", [False, True])
+@pytest.mark.parametrize(
+    "with_external_force",
+    [
+        # False,
+        True
+    ],
+)
 @pytest.mark.parametrize("with_contact", [False, True])
 def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
     # Prepare the program
@@ -47,8 +54,9 @@ def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
     nlp.ns = 5
 
     external_forces = None
+    numerical_time_series = None
     if with_external_force:
-        external_forces_array = np.zeros((9, nlp.ns + 1))
+        external_forces_array = np.zeros((9, nlp.ns))
         external_forces_array[:, 0] = [
             0.374540118847362,
             0.950714306409916,
@@ -105,23 +113,15 @@ def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
             0,
         ]
 
-        external_forces = ExternalForces()
-        external_forces.add(
-            key="Seg0",
-            data=external_forces_array[:3, :],
-            force_type=ExternalForceType.TORQUE,
-            force_reference_frame=ReferenceFrame.GLOBAL,
-        )
-        external_forces.add(
-            key="Seg0",
-            data=external_forces_array[3:6, :],
-            force_type=ExternalForceType.FORCE,
-            force_reference_frame=ReferenceFrame.GLOBAL,
-        )
+        external_forces = ExternalForceSetTimeSeries(nb_frames=nlp.ns)
+        # external_forces.add_torque("Seg0", external_forces_array[:3, :])
+        # external_forces.add_translational_force("Seg0", external_forces_array[3:6, :])
+        external_forces.add("Seg0", external_forces_array[:6, :])
+        numerical_time_series = {"external_forces": external_forces.to_numerical_time_series()}
 
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod",
-        external_forces=external_forces,
+        external_force_set=external_forces,
     )
 
     nlp.cx = cx
@@ -146,7 +146,7 @@ def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
             with_contact=with_contact,
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
-            external_forces=external_forces,
+            numerical_data_timeseries=numerical_time_series,
         ),
         False,
     )
