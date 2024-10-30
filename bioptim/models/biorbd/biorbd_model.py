@@ -497,7 +497,7 @@ class BiorbdModel:
                 biorbd_return = self.model.ForwardDynamics(q_biorbd, qdot_biorbd, tau_biorbd).to_mx()
             else:
                 biorbd_return = self.model.ForwardDynamics(
-                    q_biorbd, qdot_biorbd, tau_biorbd, externalForces=self.biorbd_external_forces_set
+                    q_biorbd, qdot_biorbd, tau_biorbd, self.biorbd_external_forces_set
                 ).to_mx()
             casadi_fun = Function(
                 "forward_dynamics",
