@@ -42,7 +42,9 @@ class BiorbdModel:
         self._friction_coefficients = friction_coefficients
 
         # External forces
-        self.external_force_set = self._set_external_force_set(external_force_set) if external_force_set else None
+        self.external_force_set = (
+            self._set_external_force_set(external_force_set) if external_force_set is not None else None
+        )
 
         # Declaration of MX variables of the right shape for the creation of CasADi Functions
         self.q = MX.sym("q_mx", self.nb_q, 1)
@@ -55,6 +57,7 @@ class BiorbdModel:
         self.external_forces = MX.sym(
             "external_forces_mx", external_force_set.nb_external_forces_components if external_force_set else 0, 1
         )
+        self.biorbd_external_forces_set = self._dispatch_forces() if external_force_set else None
 
         # TODO: remove mx (the MX parameters should be created inside the BiorbdModel)
         self.parameters = parameters.mx if parameters else MX()
@@ -66,6 +69,8 @@ class BiorbdModel:
         external_force_set._check_segment_names(tuple([s.name().to_string() for s in self.model.segments()]))
         external_force_set._check_all_string_points_of_application(self.marker_names)
         external_force_set._bind()
+
+        return external_force_set
 
     @property
     def name(self) -> str:
@@ -433,17 +438,22 @@ class BiorbdModel:
 
         # "type of external force": (function to call, number of force components, number of point of application components)
         bioptim_to_biorbd_map = {
-            "in_global": (external_force_set.add, 6),
-            "torque_in_global": (external_force_set.add, 3),
-            "translational_in_global": (external_force_set.addTranslationalForce, 3),
-            "in_local": (external_force_set.addInSegmentReferenceFrame, 6),
-            "torque_in_local": (external_force_set.addInSegmentReferenceFrame, 3),
+            "in_global": (biorbd_external_forces.add, 6),
+            "torque_in_global": (biorbd_external_forces.add, 3),
+            "translational_in_global": (
+                lambda segment, force, point_of_application: biorbd_external_forces.addTranslationalForce(
+                    force, segment, point_of_application
+                ),
+                3,
+            ),
+            "in_local": (biorbd_external_forces.addInSegmentReferenceFrame, 6),
+            "torque_in_local": (biorbd_external_forces.addInSegmentReferenceFrame, 3),
         }
 
         symbolic_counter = 0
         for attr in bioptim_to_biorbd_map.keys():
             function = bioptim_to_biorbd_map[attr][0]
-            for segment, forces in getattr(self, attr).items():
+            for segment, forces in getattr(self.external_force_set, attr).items():
                 for force in forces:
                     array_point_of_application = isinstance(force["point_of_application"], np.ndarray)
 
@@ -473,7 +483,7 @@ class BiorbdModel:
                 biorbd_return = self.model.ForwardDynamicsConstraintsDirect(q_biorbd, qdot_biorbd, tau_biorbd).to_mx()
             else:
                 biorbd_return = self.model.ForwardDynamicsConstraintsDirect(
-                    q_biorbd, qdot_biorbd, tau_biorbd, self.external_forces
+                    q_biorbd, qdot_biorbd, tau_biorbd, externalForces=self.biorbd_external_forces_set
                 ).to_mx()
             casadi_fun = Function(
                 "constrained_forward_dynamics",
@@ -487,7 +497,7 @@ class BiorbdModel:
                 biorbd_return = self.model.ForwardDynamics(q_biorbd, qdot_biorbd, tau_biorbd).to_mx()
             else:
                 biorbd_return = self.model.ForwardDynamics(
-                    q_biorbd, qdot_biorbd, tau_biorbd, self.external_forces
+                    q_biorbd, qdot_biorbd, tau_biorbd, externalForces=self.biorbd_external_forces_set
                 ).to_mx()
             casadi_fun = Function(
                 "forward_dynamics",
@@ -507,7 +517,7 @@ class BiorbdModel:
             biorbd_return = self.model.InverseDynamics(q_biorbd, qdot_biorbd, qddot_biorbd).to_mx()
         else:
             biorbd_return = self.model.InverseDynamics(
-                q_biorbd, qdot_biorbd, qddot_biorbd, self.external_force_set
+                q_biorbd, qdot_biorbd, qddot_biorbd, externalForces=self.biorbd_external_forces_set
             ).to_mx()
         casadi_fun = Function(
             "inverse_dynamics",
@@ -529,7 +539,7 @@ class BiorbdModel:
             ).to_mx()
         else:
             biorbd_return = self.model.ContactForcesFromForwardDynamicsConstraintsDirect(
-                q_biorbd, qdot_biorbd, tau_biorbd, self.external_force_set
+                q_biorbd, qdot_biorbd, tau_biorbd, externalForces=self.biorbd_external_forces_set
             ).to_mx()
         casadi_fun = Function(
             "contact_forces_from_constrained_forward_dynamics",

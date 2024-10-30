@@ -138,7 +138,8 @@ class PenaltyHelpers:
                     raise NotImplementedError(
                         "Numerical data timeseries is not implemented for multinode penalties yet."
                     )
-                    # Note to the developers: We do not think this will raise an error at runtime, but the results will be wrong is cx_start or cx_ens are used in multiple occasions with different values.
+                    # Note to the developers: We do not think this will raise an error at runtime,
+                    # but the results will be wrong is cx_start or cx_end are used in multiple occasions with different values.
         else:
             d = get_numerical_timeseries(penalty.phase, node, 0)  # cx_start
 
