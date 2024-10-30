@@ -1,20 +1,20 @@
 from typing import Callable, Any
 
 import casadi
-from casadi import SX, MX, Function, horzcat, vertcat
+from casadi import SX, MX, vertcat
 
-from .optimization_variable import OptimizationVariable, OptimizationVariableContainer
+from .optimization_variable import OptimizationVariableContainer
+from ..dynamics.dynamics_evaluation import DynamicsEvaluation
+from ..dynamics.dynamics_functions import DynamicsFunctions
 from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import InitialGuessList, BoundsList
 from ..misc.enums import ControlType, PhaseDynamics
-from ..misc.options import OptionList
 from ..misc.mapping import NodeMapping
-from ..dynamics.dynamics_evaluation import DynamicsEvaluation
-from ..dynamics.dynamics_functions import DynamicsFunctions
+from ..misc.options import OptionList
 from ..models.protocols.biomodel import BioModel
 from ..models.protocols.holonomic_biomodel import HolonomicBioModel
-from ..models.protocols.variational_biomodel import VariationalBioModel
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
+from ..models.protocols.variational_biomodel import VariationalBioModel
 
 
 class NonLinearProgram:
@@ -454,6 +454,7 @@ class NonLinearProgram:
     def get_external_forces(
         self, states: MX.sym, controls: MX.sym, algebraic_states: MX.sym, numerical_timeseries: MX.sym
     ):
+        # si c'est numeric c'est numerical nana sinon c'est dans les etats et tout ça
 
         def retrieve_forces(name: str, external_forces: MX):
             if name in self.states:

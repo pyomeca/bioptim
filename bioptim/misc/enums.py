@@ -1,5 +1,5 @@
-from enum import Enum, IntEnum, auto
 import platform
+from enum import Enum, IntEnum, auto
 
 
 class PhaseDynamics(Enum):
@@ -214,22 +214,3 @@ class MultiCyclicCycleSolutions(Enum):
     NONE = "none"
     FIRST_CYCLES = "first_cycles"
     ALL_CYCLES = "all_cycles"
-
-
-class ReferenceFrame(Enum):
-    """
-    Selection of reference frame
-    """
-
-    GLOBAL = "global"
-    LOCAL = "local"
-
-
-class ExternalForceType(Enum):
-    """
-    Selection of external forces type
-    """
-
-    FORCE = "force"
-    TORQUE = "torque"
-    TORQUE_AND_FORCE = "torque_and_force"

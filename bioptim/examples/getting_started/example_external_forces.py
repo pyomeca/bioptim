@@ -25,9 +25,7 @@ from bioptim import (
     OdeSolverBase,
     Solver,
     PhaseDynamics,
-    ExternalForces,
-    ExternalForceType,
-    ReferenceFrame,
+    ExternalForceSetTimeSeries,
 )
 
 
@@ -36,10 +34,10 @@ def prepare_ocp(
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     expand_dynamics: bool = True,
     phase_dynamics: PhaseDynamics = PhaseDynamics.ONE_PER_NODE,
-    force_type: ExternalForceType = ExternalForceType.FORCE,
-    force_reference_frame: ReferenceFrame = ReferenceFrame.GLOBAL,
+    # force_type: ExternalForceType = ExternalForceType.FORCE,
+    # force_reference_frame: ReferenceFrame = ReferenceFrame.GLOBAL,
     use_point_of_applications: bool = False,
-    point_of_application_reference_frame: ReferenceFrame = ReferenceFrame.GLOBAL,
+    # point_of_application_reference_frame: ReferenceFrame = ReferenceFrame.GLOBAL,
     n_threads: int = 1,
     use_sx: bool = False,
 ) -> OptimalControlProgram:
@@ -75,59 +73,71 @@ def prepare_ocp(
     final_time = 2
 
     # Linear external forces
-    Seg1_force = np.zeros((3, n_shooting + 1))
+    # Seg1_force = np.zeros((3, n_shooting + 1))
+    Seg1_force = np.zeros((3, n_shooting))
     Seg1_force[2, :] = -2
     Seg1_force[2, 4] = -22
 
-    Test_force = np.zeros((3, n_shooting + 1))
+    # Test_force = np.zeros((3, n_shooting + 1))
+    Test_force = np.zeros((3, n_shooting))
     Test_force[2, :] = 5
     Test_force[2, 4] = 52
 
     if use_point_of_applications:
-        Seg1_point_of_application = np.zeros((3, n_shooting + 1))
+        # Seg1_point_of_application = np.zeros((3, n_shooting + 1))
+        Seg1_point_of_application = np.zeros((3, n_shooting))
         Seg1_point_of_application[0, :] = 0.05
         Seg1_point_of_application[1, :] = -0.05
         Seg1_point_of_application[2, :] = 0.007
 
-        Test_point_of_application = np.zeros((3, n_shooting + 1))
+        # Test_point_of_application = np.zeros((3, n_shooting + 1))
+        Test_point_of_application = np.zeros((3, n_shooting))
         Test_point_of_application[0, :] = -0.009
         Test_point_of_application[1, :] = 0.01
         Test_point_of_application[2, :] = -0.01
     else:
         Seg1_point_of_application = None
         Test_point_of_application = None
+    #
+    # external_forces = ExternalForces()
+    # external_forces.add(
+    #     key="Seg1",  # Name of the segment where the external force is applied
+    #     data=Seg1_force,  # 3 x (n_shooting_points+1) array
+    #     force_type=force_type,  # Type of the external force (ExternalForceType.FORCE)
+    #     force_reference_frame=force_reference_frame,  # Reference frame of the external force (ReferenceFrame.GLOBAL)
+    #     point_of_application=Seg1_point_of_application,  # Position of the point of application
+    #     point_of_application_reference_frame=point_of_application_reference_frame,  # Reference frame of the point of application (ReferenceFrame.GLOBAL)
+    # )
+    # external_forces.add(
+    #     key="Test",  # Name of the segment where the external force is applied
+    #     data=Test_force,  # 3 x (n_shooting_points+1) array
+    #     force_type=force_type,  # Type of the external force (ExternalForceType.FORCE)
+    #     force_reference_frame=force_reference_frame,  # Reference frame of the external force (ReferenceFrame.GLOBAL)
+    #     point_of_application=Test_point_of_application,  # Position of the point of application
+    #     point_of_application_reference_frame=point_of_application_reference_frame,  # Reference frame of the point of application (ReferenceFrame.GLOBAL)
+    # )
 
-    external_forces = ExternalForces()
-    external_forces.add(
-        key="Seg1",  # Name of the segment where the external force is applied
-        data=Seg1_force,  # 3 x (n_shooting_points+1) array
-        force_type=force_type,  # Type of the external force (ExternalForceType.FORCE)
-        force_reference_frame=force_reference_frame,  # Reference frame of the external force (ReferenceFrame.GLOBAL)
-        point_of_application=Seg1_point_of_application,  # Position of the point of application
-        point_of_application_reference_frame=point_of_application_reference_frame,  # Reference frame of the point of application (ReferenceFrame.GLOBAL)
+    external_force_set = ExternalForceSetTimeSeries(
+        nb_frames=n_shooting,
     )
-    external_forces.add(
-        key="Test",  # Name of the segment where the external force is applied
-        data=Test_force,  # 3 x (n_shooting_points+1) array
-        force_type=force_type,  # Type of the external force (ExternalForceType.FORCE)
-        force_reference_frame=force_reference_frame,  # Reference frame of the external force (ReferenceFrame.GLOBAL)
-        point_of_application=Test_point_of_application,  # Position of the point of application
-        point_of_application_reference_frame=point_of_application_reference_frame,  # Reference frame of the point of application (ReferenceFrame.GLOBAL)
-    )
+    external_force_set.add_translational_force("Seg1", Seg1_force, point_of_application=Seg1_point_of_application)
+    external_force_set.add_translational_force("Test", Test_force, point_of_application=Test_point_of_application)
 
-    bio_model = BiorbdModel(biorbd_model_path, external_forces=external_forces)
+    bio_model = BiorbdModel(biorbd_model_path, external_force_set=external_force_set)
 
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100)
 
     # Dynamics
+    numerical_time_series = {"external_forces": external_force_set.to_numerical_time_series()}
+
     dynamics = DynamicsList()
     dynamics.add(
         DynamicsFcn.TORQUE_DRIVEN,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
-        external_forces=external_forces,
+        numerical_data_timeseries=numerical_time_series,
     )
 
     # Constraints
