@@ -1062,7 +1062,7 @@ class OptimalControlProgram:
         if not isinstance(parameters, ParameterList):
             raise RuntimeError("new_parameter must be a Parameter or a ParameterList")
 
-        self.parameters = ParameterContainer(use_sx=(True if self.cx == SX else False))
+        self.parameters = ParameterContainer(use_sx=(self.cx == SX))
         self.parameters.initialize(parameters)
 
     def update_bounds(
@@ -1630,7 +1630,7 @@ class OptimalControlProgram:
 
         self.phase_time = phase_time if isinstance(phase_time, (tuple, list)) else [phase_time]
 
-        self.dt_parameter = ParameterList(use_sx=(True if self.cx == SX else False))
+        self.dt_parameter = ParameterList(use_sx=(self.cx == SX))
         for i_phase in range(self.n_phases):
             if i_phase != self.time_phase_mapping.to_second.map_idx[i_phase]:
                 self.dt_parameter.add_a_copied_element(self.time_phase_mapping.to_second.map_idx[i_phase])

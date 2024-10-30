@@ -3,6 +3,7 @@ from casadi import horzcat, vertcat, MX, SX, DM
 from .dynamics_evaluation import DynamicsEvaluation
 from .fatigue.fatigue_dynamics import FatigueList
 from ..misc.mapping import BiMapping
+from ..misc.enums import DefectType
 from ..optimization.optimization_variable import OptimizationVariable
 
 
@@ -151,7 +152,31 @@ class DynamicsFunctions:
         if fatigue is not None and "tau" in fatigue:
             dxdt = fatigue["tau"].dynamics(dxdt, nlp, states, controls)
 
-        return DynamicsEvaluation(dxdt, None)
+        defects = None
+        # TODO: contacts and fatigue to be handled with implicit dynamics
+        if nlp.ode_solver.defects_type == DefectType.IMPLICIT:
+            if not with_contact and fatigue is None:
+                qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
+                tau_id = DynamicsFunctions.inverse_dynamics(
+                    nlp, q, qdot, qddot, with_contact, external_forces
+                )
+                defects = nlp.cx(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
+
+                dq_defects = []
+                for _ in range(tau_id.shape[1]):
+                    dq_defects.append(
+                        dq
+                        - DynamicsFunctions.compute_qdot(
+                            nlp,
+                            q,
+                            DynamicsFunctions.get(nlp.states_dot.scaled["qdot"], nlp.states_dot.scaled.cx),
+                        )
+                    )
+                defects[: dq.shape[0], :] = horzcat(*dq_defects)
+                # We modified on purpose the size of the tau to keep the zero in the defects in order to respect the dynamics
+                defects[dq.shape[0] :, :] = tau - tau_id
+
+        return DynamicsEvaluation(dxdt, defects)
 
     @staticmethod
     def torque_driven_free_floating_base(
@@ -227,9 +252,7 @@ class DynamicsFunctions:
         dxdt[:n_q, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
         dxdt[n_q:, :] = ddq
 
-        defects = None
-
-        return DynamicsEvaluation(dxdt, defects)
+        return DynamicsEvaluation(dxdt, None)
 
     @staticmethod
     def stochastic_torque_driven(

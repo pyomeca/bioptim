@@ -11,6 +11,7 @@ from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_impl
 
 # Integrated values should be handled another way
 # In the meantime, let's skip this test
+# Please note that the test is very sensitive, so approximate values are enough
 # @pytest.mark.parametrize("use_sx", [True, False])
 # def test_arm_reaching_muscle_driven(use_sx):
 #     from bioptim.examples.stochastic_optimal_control import arm_reaching_muscle_driven as ocp_module

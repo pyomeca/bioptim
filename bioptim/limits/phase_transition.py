@@ -5,10 +5,9 @@ from casadi import vertcat, MX
 
 from .multinode_constraint import MultinodeConstraint
 from .multinode_penalty import MultinodePenalty, MultinodePenaltyFunctions
-from .objective_functions import ObjectiveFunction
 from .path_conditions import Bounds
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyController
-from ..misc.enums import Node, PenaltyType, InterpolationType, ControlType
+from ..misc.enums import Node, PenaltyType, InterpolationType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.mapping import BiMapping
 from ..misc.options import UniquePerPhaseOptionList
@@ -50,8 +49,6 @@ class PhaseTransition(MultinodePenalty):
         max_bound: float = 0,
         **extra_parameters: Any,
     ):
-        # TODO: @pariterre: where did phase_post go !?
-
         if not isinstance(transition, PhaseTransitionFcn):
             custom_function = transition
             transition = PhaseTransitionFcn.CUSTOM
@@ -288,7 +285,6 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
                 )
                 val = vertcat(val, continuity)
 
-            # name = f"PHASE_TRANSITION_{pre.phase_idx % ocp.n_phases}_{post.phase_idx % ocp.n_phases}"
             return val
 
         @staticmethod
