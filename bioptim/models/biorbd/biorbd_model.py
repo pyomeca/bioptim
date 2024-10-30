@@ -42,7 +42,7 @@ class BiorbdModel:
         self._friction_coefficients = friction_coefficients
 
         # External forces
-        self.external_force_set = self._set_external_force_set(external_force_set)
+        self.external_force_set = self._set_external_force_set(external_force_set) if external_force_set else None
 
         # Declaration of MX variables of the right shape for the creation of CasADi Functions
         self.q = MX.sym("q_mx", self.nb_q, 1)
@@ -52,7 +52,9 @@ class BiorbdModel:
         self.tau = MX.sym("tau_mx", self.nb_tau, 1)
         self.muscle = MX.sym("muscle_mx", self.nb_muscles, 1)
         self.activations = MX.sym("activations_mx", self.nb_muscles, 1)
-        self.external_forces = MX.sym("external_forces_mx", external_force_set.nb_external_forces_components, 1)
+        self.external_forces = MX.sym(
+            "external_forces_mx", external_force_set.nb_external_forces_components if external_force_set else 0, 1
+        )
 
         # TODO: remove mx (the MX parameters should be created inside the BiorbdModel)
         self.parameters = parameters.mx if parameters else MX()

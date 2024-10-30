@@ -20,9 +20,6 @@ from bioptim import (
     ParameterContainer,
     ParameterList,
     PhaseDynamics,
-    ExternalForces,
-    ExternalForceType,
-    ReferenceFrame,
 )
 from tests.utils import TestUtils
 
