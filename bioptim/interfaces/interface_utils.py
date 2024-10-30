@@ -138,15 +138,24 @@ def _shake_tree_for_penalties(ocp, penalties_cx, v, v_bounds, expand):
     """
     Remove the dt in the objectives and constraints if they are constant
 
+    Note: Shake tree is a metaphor for saying it makes every unnecessary variables disappear / fall
+
     Parameters
     ----------
-    ocp
+    ocp: OptimalControlProgram
+        A reference to the current OptimalControlProgram
     penalties_cx
+        all the penalties of the ocp (objective, constraints)
     v
+        full vector of variables of the ocp
     v_bounds
+        all the bounds of the variables, use to detect constant variables if min == max
+    expand : bool
+        expand if possible the penalty but can failed but ignored if there is matrix inversion or newton descent for example
 
     Returns
     -------
+    The penalties without extra variables
 
     """
     dt = []
