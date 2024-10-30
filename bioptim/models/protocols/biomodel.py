@@ -369,7 +369,6 @@ class BioModel(Protocol):
 
     def partitioned_forward_dynamics(self, q_u, qdot_u, q_v_init, tau) -> Function:
         """
-        @ipuch: I need help on how to implement this!
         This is the forward dynamics of the model, but only for the independent joints
 
         Parameters

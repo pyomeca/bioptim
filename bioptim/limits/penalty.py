@@ -208,7 +208,6 @@ class PenaltyFunctionAbstract:
 
             jac_e_fb_x = jacobian(e_fb_mx, controller.states_scaled.cx)
 
-            # todo: Charbie remode this function
             jac_e_fb_x_cx = Function(
                 "jac_e_fb_x",
                 [
