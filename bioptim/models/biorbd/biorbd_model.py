@@ -439,7 +439,12 @@ class BiorbdModel:
         # "type of external force": (function to call, number of force components, number of point of application components)
         bioptim_to_biorbd_map = {
             "in_global": (biorbd_external_forces.add, 6),
-            "torque_in_global": (biorbd_external_forces.add, 3),
+            "torque_in_global": (
+                lambda segment, torque, point_of_application: biorbd_external_forces.add(
+                    segment, vertcat(torque, MX([0, 0, 0]))
+                ),
+                3,
+            ),
             "translational_in_global": (
                 lambda segment, force, point_of_application: biorbd_external_forces.addTranslationalForce(
                     force, segment, point_of_application
@@ -447,7 +452,12 @@ class BiorbdModel:
                 3,
             ),
             "in_local": (biorbd_external_forces.addInSegmentReferenceFrame, 6),
-            "torque_in_local": (biorbd_external_forces.addInSegmentReferenceFrame, 3),
+            "torque_in_local": (
+                lambda segment, torque, point_of_application: biorbd_external_forces.addInSegmentReferenceFrame(
+                    segment, vertcat(torque, MX([0, 0, 0])), MX([0, 0, 0])
+                ),
+                3,
+            ),
         }
 
         symbolic_counter = 0
@@ -456,6 +466,7 @@ class BiorbdModel:
             for segment, forces in getattr(self.external_force_set, attr).items():
                 for force in forces:
                     array_point_of_application = isinstance(force["point_of_application"], np.ndarray)
+                    str_point_of_application = isinstance(force["point_of_application"], str)
 
                     start = symbolic_counter
                     stop = symbolic_counter + bioptim_to_biorbd_map[attr][1]
@@ -463,9 +474,11 @@ class BiorbdModel:
 
                     if array_point_of_application:
                         point_of_application = self.external_forces[slice(stop, stop + 3)]
-                    else:
+                    elif str_point_of_application:
                         # turn it into a NodeSegment
                         point_of_application = biorbd.NodeSegment(force["point_of_application"])
+                    else:
+                        point_of_application = None
 
                     function(segment, self.external_forces[force_slicer], point_of_application)
                     symbolic_counter += stop + 3 if array_point_of_application else stop
