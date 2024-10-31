@@ -434,6 +434,7 @@ class BiorbdModel:
         return vertcat(qddot_root, qddot_joints)
 
     def _dispatch_forces(self):
+        """Dispatch the symbolic MX into the biorbd external forces object"""
         biorbd_external_forces = self.model.externalForceSet()
 
         # "type of external force": (function to call, number of force components, number of point of application components)
@@ -441,7 +442,7 @@ class BiorbdModel:
             "in_global": (biorbd_external_forces.add, 6),
             "torque_in_global": (
                 lambda segment, torque, point_of_application: biorbd_external_forces.add(
-                    segment, vertcat(torque, MX([0, 0, 0]))
+                    segment, vertcat(torque, MX([0, 0, 0])), MX([0, 0, 0])
                 ),
                 3,
             ),
