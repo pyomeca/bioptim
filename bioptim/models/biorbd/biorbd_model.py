@@ -482,7 +482,7 @@ class BiorbdModel:
                         point_of_application = None
 
                     function(segment, self.external_forces[force_slicer], point_of_application)
-                    symbolic_counter += stop + 3 if array_point_of_application else stop
+                    symbolic_counter = stop + 3 if array_point_of_application else stop
 
         return biorbd_external_forces
 
