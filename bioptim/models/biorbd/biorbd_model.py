@@ -463,8 +463,8 @@ class BiorbdModel:
         symbolic_counter = 0
         for attr in bioptim_to_biorbd_map.keys():
             function = bioptim_to_biorbd_map[attr][0]
-            for segment, forces in getattr(self.external_force_set, attr).items():
-                for force in forces:
+            for segment, forces_on_segment in getattr(self.external_force_set, attr).items():
+                for force in forces_on_segment:
                     array_point_of_application = isinstance(force["point_of_application"], np.ndarray)
                     str_point_of_application = isinstance(force["point_of_application"], str)
 
@@ -475,7 +475,7 @@ class BiorbdModel:
                     if array_point_of_application:
                         point_of_application = self.external_forces[slice(stop, stop + 3)]
                     elif str_point_of_application:
-                        # turn it into a NodeSegment
+                        # turn it into a NodeSegment, might not work yet.
                         point_of_application = biorbd.NodeSegment(force["point_of_application"])
                     else:
                         point_of_application = None
