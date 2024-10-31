@@ -121,16 +121,17 @@ class ExternalForceSetTimeSeries:
     @property
     def nb_external_forces_components(self) -> int:
         """Return the number of vertical components of the external forces if concatenated in a unique vector"""
-        attributes_three_components = ["torque_in_global", "translational_in_global", "torque_in_local"]
+        attributes_no_point_of_application = ["torque_in_global", "torque_in_local"]
         attributes_six_components = ["in_global", "in_local"]
 
         components = 0
-        for attr in attributes_three_components:
+        for attr in attributes_no_point_of_application:
             for values in getattr(self, attr).values():
-                nb_point_of_application_as_str = sum(
-                    [isinstance(force["point_of_application"], str) for force in values]
-                )
-                components += 6 * len(values) - 3 * nb_point_of_application_as_str
+                components += 3 * len(values)
+
+        for values in self.translational_in_global.values():
+            nb_point_of_application_as_str = sum([isinstance(force["point_of_application"], str) for force in values])
+            components += 6 * len(values) - 3 * nb_point_of_application_as_str
 
         for attr in attributes_six_components:
             for values in getattr(self, attr).values():
@@ -219,7 +220,7 @@ class ExternalForceSetTimeSeries:
                         poa_slicer = slice(stop, stop + 3)
                         fext_numerical_time_series[poa_slicer, 0, :-1] = force["point_of_application"]
 
-                    symbolic_counter += stop + 3 if array_point_of_application else stop
+                    symbolic_counter = stop + 3 if array_point_of_application else stop
 
         return fext_numerical_time_series
 
