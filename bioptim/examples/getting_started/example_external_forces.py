@@ -69,33 +69,23 @@ def prepare_ocp(
     n_shooting = 30
     final_time = 2
 
-    # Linear external forces
-    # Seg1_force = np.zeros((3, n_shooting + 1))
     Seg1_force = np.zeros((3, n_shooting))
     Seg1_force[2, :] = -2
     Seg1_force[2, 4] = -22
 
-    # Test_force = np.zeros((3, n_shooting + 1))
     Test_force = np.zeros((3, n_shooting))
     Test_force[2, :] = 5
     Test_force[2, 4] = 52
 
-    # Seg1_point_of_application
-    # if use_point_of_applications:
-    # Seg1_point_of_application = np.zeros((3, n_shooting + 1))
     Seg1_point_of_application = np.zeros((3, n_shooting))
     Seg1_point_of_application[0, :] = 0.05
     Seg1_point_of_application[1, :] = -0.05
     Seg1_point_of_application[2, :] = 0.007
 
-    # Test_point_of_application = np.zeros((3, n_shooting + 1))
     Test_point_of_application = np.zeros((3, n_shooting))
     Test_point_of_application[0, :] = -0.009
     Test_point_of_application[1, :] = 0.01
     Test_point_of_application[2, :] = -0.01
-    # else:
-    #     Seg1_point_of_application = None
-    #     Test_point_of_application = None
 
     external_force_set = ExternalForceSetTimeSeries(
         nb_frames=n_shooting,
