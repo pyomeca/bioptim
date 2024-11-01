@@ -43,6 +43,7 @@ from bioptim import (
         "in_global_torque",
         "in_segment_torque",
         "in_segment",
+        "translational_force_on_a_marker",
     ],
 )
 def test_example_external_forces(
@@ -59,7 +60,7 @@ def test_example_external_forces(
         phase_dynamics=phase_dynamics,
         external_force_method=method,
         use_sx=use_sx,
-        use_point_of_applications= method == "translational_force", # Only to preserve the tested values
+        use_point_of_applications=method == "translational_force",  # Only to preserve the tested values
     )
     sol = ocp.solve()
 
@@ -119,6 +120,11 @@ def test_example_external_forces(
     if method == "in_segment":
         npt.assert_almost_equal(q[:, 0], np.array([-4.64041726e-15, 6.99774094e-16, 4.75924448e-11, 0.0]), decimal=5)
         npt.assert_almost_equal(q[:, -1], np.array([-4.74298258e-15, 2.00000000e00, 3.79354612e-11, 0.0]), decimal=5)
+
+    if method == "translational_force_on_a_marker":
+        npt.assert_almost_equal(q[:, 0], np.array([-4.69167e-15, 7.80151e-16, -1.30653e-17, 0.00000e00]), decimal=5)
+        npt.assert_almost_equal(q[:, -1], np.array([-4.69169e-15, 2.00000e00, -1.30653e-17, 0.00000e00]), decimal=5)
+        npt.assert_almost_equal(qdot[:, 15], np.array([-3.39214e-19, 1.42151e00, -3.35346e-26, 0.00000e00]), decimal=5)
 
 
 def prepare_ocp(

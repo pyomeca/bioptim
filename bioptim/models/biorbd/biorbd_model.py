@@ -477,7 +477,7 @@ class BiorbdModel:
                         point_of_application = self.external_forces[slice(stop, stop + 3)]
                     elif str_point_of_application:
                         # turn it into a NodeSegment, might not work yet.
-                        point_of_application = biorbd.NodeSegment(force["point_of_application"])
+                        point_of_application = self.model.marker(self.marker_index(force["point_of_application"]))
                     else:
                         point_of_application = None
 

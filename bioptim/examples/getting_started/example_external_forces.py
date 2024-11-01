@@ -104,6 +104,12 @@ def prepare_ocp(
             Test_force,
             point_of_application_in_local=Test_point_of_application if use_point_of_applications else None,
         )
+    elif external_force_method == "translational_force_on_a_marker":
+        external_force_set.add_translational_force(
+            "Test",
+            Test_force,
+            point_of_application_in_local="m0",  # The point of application is the marker
+        )
     elif external_force_method == "in_global":
         # not mandatory to specify the point of application
         external_force_set.add(
