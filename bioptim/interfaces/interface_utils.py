@@ -1,4 +1,3 @@
-from sys import platform
 from time import perf_counter
 
 import numpy as np
@@ -7,8 +6,8 @@ from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 
 from bioptim.optimization.solution.solution import Solution
 from ..gui.online_callback_multiprocess import OnlineCallbackMultiprocess
-from ..gui.online_callback_server import OnlineCallbackServer
 from ..gui.online_callback_multiprocess_server import OnlineCallbackMultiprocessServer
+from ..gui.online_callback_server import OnlineCallbackServer
 from ..limits.path_conditions import Bounds
 from ..limits.penalty_helpers import PenaltyHelpers
 from ..misc.enums import InterpolationType, OnlineOptim
@@ -139,15 +138,24 @@ def _shake_tree_for_penalties(ocp, penalties_cx, v, v_bounds, expand):
     """
     Remove the dt in the objectives and constraints if they are constant
 
+    Note: Shake tree is a metaphor for saying it makes every unnecessary variables disappear / fall
+
     Parameters
     ----------
-    ocp
+    ocp: OptimalControlProgram
+        A reference to the current OptimalControlProgram
     penalties_cx
+        all the penalties of the ocp (objective, constraints)
     v
+        full vector of variables of the ocp
     v_bounds
+        all the bounds of the variables, use to detect constant variables if min == max
+    expand : bool
+        expand if possible the penalty but can failed but ignored if there is matrix inversion or newton descent for example
 
     Returns
     -------
+    The penalties without extra variables
 
     """
     dt = []
@@ -402,15 +410,15 @@ def _get_a(ocp, phase_idx, node_idx, subnodes_idx, scaled):
 
 
 def get_numerical_timeseries(ocp, phase_idx, node_idx, subnodes_idx):
-    dict = ocp.nlp[phase_idx].numerical_data_timeseries
-    if dict is None:
+    timeseries = ocp.nlp[phase_idx].numerical_data_timeseries
+    if timeseries is None:
         return ocp.cx()
     else:
         values = None
-        for i_d, d in enumerate(dict):
-            for i_element in range(dict[d].shape[1]):
+        for i_d, (key, array) in enumerate(timeseries.items()):
+            for i_element in range(array.shape[1]):
                 if values is None:
-                    values = dict[d][:, i_element, node_idx]
+                    values = array[:, i_element, node_idx]
                 else:
-                    values = vertcat(values, dict[d][:, i_element, node_idx])
+                    values = vertcat(values, array[:, i_element, node_idx])
         return values

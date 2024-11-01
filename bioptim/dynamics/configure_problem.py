@@ -1,6 +1,7 @@
-import numpy as np
-from casadi import vertcat, Function, DM, horzcat
 from typing import Callable, Any
+
+import numpy as np
+from casadi import vertcat, Function, DM
 
 from .configure_new_variable import NewVariableConfiguration
 from .dynamics_functions import DynamicsFunctions
@@ -14,12 +15,10 @@ from ..misc.enums import (
     ConstraintType,
     SoftContactDynamics,
     PhaseDynamics,
-    ReferenceFrame,
 )
 from ..misc.fcn_enum import FcnEnum
 from ..misc.mapping import BiMapping, Mapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
-from ..misc.external_forces import ExternalForces
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
 from ..optimization.problem_type import SocpType
 
@@ -1966,7 +1965,7 @@ class Dynamics(OptionGeneric):
         state_continuity_weight: float | None = None,
         phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
         numerical_data_timeseries: dict[str, np.ndarray] = None,
-        external_forces: ExternalForces = None,
+        # external_forces: ExternalForceSetTimeSeries = None,
         **extra_parameters: Any,
     ):
         """
@@ -2014,53 +2013,6 @@ class Dynamics(OptionGeneric):
         self.state_continuity_weight = state_continuity_weight
         self.phase_dynamics = phase_dynamics
         self.numerical_data_timeseries = numerical_data_timeseries
-        self.external_forces_in_numerical_timeseries(external_forces)
-
-    def external_forces_in_numerical_timeseries(self, external_forces):
-        if external_forces:
-            self.numerical_data_timeseries = (
-                {} if self.numerical_data_timeseries is None else self.numerical_data_timeseries
-            )
-            for key in external_forces.keys():
-                force = external_forces[key]
-                if force.torque_data is not None:
-                    data = force.torque_data.reshape(3, 1, -1)
-                else:
-                    data = np.zeros((3, 1, force.len))
-                if force.force_data is not None:
-                    data = np.concatenate((data, force.force_data.reshape(3, 1, -1)), axis=0)
-                else:
-                    data = np.concatenate((data, np.zeros((3, 1, force.len))), axis=0)
-                if force.point_of_application is not None:
-                    data = np.concatenate((data, force.point_of_application.reshape(3, 1, -1)), axis=0)
-                else:
-                    data = np.concatenate((data, np.zeros((3, 1, force.len))), axis=0)
-
-                if force.force_reference_frame == ReferenceFrame.LOCAL:
-                    if "forces_in_local" in self.numerical_data_timeseries:
-                        self.numerical_data_timeseries["forces_in_local"] = np.concatenate(
-                            (self.numerical_data_timeseries["forces_in_local"], data), axis=1
-                        )
-                    else:
-                        self.numerical_data_timeseries["forces_in_local"] = data
-                elif force.point_of_application_reference_frame == ReferenceFrame.LOCAL:
-                    # exclude the torques for translational forces
-                    if "translational_forces" in self.numerical_data_timeseries:
-                        self.numerical_data_timeseries["translational_forces"] = np.concatenate(
-                            (self.numerical_data_timeseries["translational_forces"], data[3:, :, :]), axis=1
-                        )
-                    else:
-                        self.numerical_data_timeseries["translational_forces"] = data[
-                            3:,
-                            :,
-                        ]
-                else:
-                    if "forces_in_global" in self.numerical_data_timeseries:
-                        self.numerical_data_timeseries["forces_in_global"] = np.concatenate(
-                            (self.numerical_data_timeseries["forces_in_global"], data), axis=1
-                        )
-                    else:
-                        self.numerical_data_timeseries["forces_in_global"] = data
 
 
 class DynamicsList(UniquePerPhaseOptionList):

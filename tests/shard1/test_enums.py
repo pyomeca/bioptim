@@ -13,8 +13,6 @@ from bioptim import (
     SolutionIntegrator,
     QuadratureRule,
     SoftContactDynamics,
-    ExternalForceType,
-    ReferenceFrame,
 )
 
 from bioptim.misc.enums import SolverType, PenaltyType, ConstraintType
@@ -186,20 +184,3 @@ def test_multi_cyclic_cycle_solutions():
 
     # verify the number of elements
     assert len(MultiCyclicCycleSolutions) == 3
-
-
-def test_external_forces_type():
-    assert ExternalForceType.FORCE.value == "force"
-    assert ExternalForceType.TORQUE.value == "torque"
-    assert ExternalForceType.TORQUE_AND_FORCE.value == "torque_and_force"
-
-    # verify the number of elements
-    assert len(ExternalForceType) == 3
-
-
-def test_reference_frame():
-    assert ReferenceFrame.GLOBAL.value == "global"
-    assert ReferenceFrame.LOCAL.value == "local"
-
-    # verify the number of elements
-    assert len(ReferenceFrame) == 2

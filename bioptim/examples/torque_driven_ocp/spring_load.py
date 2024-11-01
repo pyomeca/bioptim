@@ -147,11 +147,10 @@ def custom_dynamic(
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
     tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
-    force_vector = MX.zeros(9)
     stiffness = 100
-    force_vector[5] = -sign(q[0]) * stiffness * q[0] ** 2  # traction-compression spring
+    tau += -sign(q[0]) * stiffness * q[0]  # damping
 
-    qddot = nlp.model.forward_dynamics(with_contact=False)(q, qdot, tau, force_vector, [])
+    qddot = nlp.model.forward_dynamics(with_contact=False)(q, qdot, tau, [], [])
 
     return DynamicsEvaluation(dxdt=vertcat(qdot, qddot), defects=None)
 
@@ -183,7 +182,7 @@ def prepare_ocp(
 ):
 
     # BioModel path
-    m = BiorbdModel(biorbd_model_path, nb_supplementary_forces_in_global=1)
+    m = BiorbdModel(biorbd_model_path)
     m.set_gravity(np.array((0, 0, 0)))
 
     weight = 1
