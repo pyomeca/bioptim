@@ -93,8 +93,12 @@ def prepare_ocp(
     # Displays all the possible combinations of external forces
     if external_force_method == "translational_force":
         # not mandatory to specify the point of application
-        external_force_set.add_translational_force("Seg1", Seg1_force, point_of_application=Seg1_point_of_application)
-        external_force_set.add_translational_force("Test", Test_force, point_of_application=Test_point_of_application)
+        external_force_set.add_translational_force(
+            "Seg1", Seg1_force, point_of_application_in_local=Seg1_point_of_application
+        )
+        external_force_set.add_translational_force(
+            "Test", Test_force, point_of_application_in_local=Test_point_of_application
+        )
     elif external_force_method == "in_global":
         # not mandatory to specify the point of application
         external_force_set.add("Seg1", np.concatenate((Seg1_force, Seg1_force), axis=0))

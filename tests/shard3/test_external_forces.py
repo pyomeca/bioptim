@@ -126,7 +126,7 @@ def prepare_ocp(
 ) -> OptimalControlProgram:
 
     # Problem parameters
-    n_shooting = 60
+    n_shooting = 30
     final_time = 2
 
     # Linear external forces
@@ -160,19 +160,23 @@ def prepare_ocp(
 
     if together:
         external_forces = ExternalForceSetTimeSeries(nb_frames=n_shooting)
-        # external_forces.add("Seg1", np.vstack((Seg1_torque, Seg1_force)), Seg1_point_of_application)
-        external_forces.add(
-            "Test", np.vstack((np.zeros((3, n_shooting)), Seg1_force)), point_of_application=Seg1_point_of_application
-        )
-        # external_forces.add("Test", np.vstack((Test_torque, Test_force)), Test_point_of_application)
-        print("yo", external_forces.to_numerical_time_series()[:, 0, 4])
+        external_forces.add("Seg1", np.vstack((Seg1_torque, Seg1_force)), Seg1_point_of_application)
+        external_forces.add("Test", np.vstack((Test_torque, Test_force)), Test_point_of_application)
+
     else:
         external_forces = ExternalForceSetTimeSeries(nb_frames=n_shooting)
-        # external_forces.add_torque("Seg1", Seg1_torque)
-        external_forces.add_translational_force("Test", Seg1_force, point_of_application=Seg1_point_of_application)
-        # external_forces.add_torque("Test", Test_torque)
-        # external_forces.add_translational_force("Test", Test_force, point_of_application=Test_point_of_application)
-        print("yo", external_forces.to_numerical_time_series()[:, 0, 4])
+        external_forces.add(
+            "Seg1", np.vstack((Seg1_torque, np.zeros((3, n_shooting)))), point_of_application=Seg1_point_of_application
+        )
+        external_forces.add(
+            "Seg1", np.vstack((np.zeros((3, n_shooting)), Seg1_force)), point_of_application=Seg1_point_of_application
+        )
+        external_forces.add(
+            "Test", np.vstack((Test_torque, np.zeros((3, n_shooting)))), point_of_application=Test_point_of_application
+        )
+        external_forces.add(
+            "Test", np.vstack((np.zeros((3, n_shooting)), Test_force)), point_of_application=Test_point_of_application
+        )
 
     bio_model = BiorbdModel(biorbd_model_path, external_force_set=external_forces)
     numerical_data_timeseries = {"external_forces": external_forces.to_numerical_time_series()}
@@ -230,94 +234,80 @@ def test_example_external_forces_all_at_once(together: bool):
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ocp_false = prepare_ocp(
+    ocp = prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube_with_forces.bioMod",
         together=together,
     )
 
-    if together:
-        z = ocp_false.nlp[0].dynamics_func(
-            np.ones(2), np.ones(8), np.ones(4), [], [], np.hstack((np.zeros(3), np.ones(6)))
-        )
+    sol = ocp.solve()
+    # # Check objective function value
+    f = np.array(sol.cost)
+    npt.assert_equal(f.shape, (1, 1))
+    npt.assert_almost_equal(f[0, 0], 5507.938264053537)
+    npt.assert_almost_equal(f[0, 0], sol.detailed_cost[0]["cost_value_weighted"])
 
+    # Check constraints
+    g = np.array(sol.constraints)
+    npt.assert_equal(g.shape, (246, 1))
+    npt.assert_almost_equal(g, np.zeros((246, 1)))
+
+    # Check some of the results
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+
+    # initial and final controls
+    npt.assert_almost_equal(tau[:, 0], np.array([-0.17782387, 4.9626883, -0.11993298, 0.0]))
+    npt.assert_almost_equal(tau[:, 10], np.array([0.0590585, 5.15623667, -0.11993298, 0.0]))
+    npt.assert_almost_equal(tau[:, 20], np.array([0.03581958, 5.34978503, -0.11993298, 0.0]))
+    npt.assert_almost_equal(tau[:, -1], np.array([-0.12181904, 5.52397856, -0.11993298, 0.0]))
+
+    # initial and final position
+    npt.assert_almost_equal(
+        q[:, 0], np.array([-3.05006547e-15, 7.80152284e-16, -5.64943197e-03, 0.00000000e00]), decimal=5
+    )
+    npt.assert_almost_equal(
+        q[:, -1], np.array([-3.85629113e-15, 2.00000000e00, -5.02503164e-04, 0.00000000e00]), decimal=5
+    )
+
+    # initial and final velocities
+    npt.assert_almost_equal(qdot[:, 0], np.array([0.0, 0.0, 0.0, 0.0]), decimal=5)
+    npt.assert_almost_equal(qdot[:, -1], np.array([0.0, 0.0, 0.0, 0.0]), decimal=5)
+
+    # how the force is stored
+    data_Seg1 = ocp.nlp[0].numerical_data_timeseries["external_forces"]
+    if together:
+        npt.assert_equal(data_Seg1.shape, (18, 1, 31))
+        no_zeros_data_Seg1 = data_Seg1[~np.all(np.all(data_Seg1 == 0, axis=1), axis=1)]
+        npt.assert_equal(no_zeros_data_Seg1.shape, (10, 1, 31))
         npt.assert_almost_equal(
-            np.array(z[4:]).squeeze(),
-            np.array([2.00e00, -7.81e00, 1.00e00, 1.00e08]),
+            no_zeros_data_Seg1[:, 0, 4],
+            np.array([1.8e01, -2.0e00, 5.0e-02, -5.0e-02, 7.0e-03, -1.8e01, 5.2e01, -9.0e-03, 1.0e-02, -1.0e-02]),
         )
     else:
-        z = ocp_false.nlp[0].dynamics_func(np.ones(2), np.ones(8), np.ones(4), [], [], np.ones(6))
-
+        npt.assert_equal(data_Seg1.shape, (36, 1, 31))
+        no_zeros_data_Seg1 = data_Seg1[~np.all(np.all(data_Seg1 == 0, axis=1), axis=1)]
+        npt.assert_equal(no_zeros_data_Seg1.shape, (16, 1, 31))
         npt.assert_almost_equal(
-            np.array(z[4:]).squeeze(),
-            np.array([2.0000000e00, -7.8100000e00, -6.8294197e-01, 1.0000000e08]),
+            no_zeros_data_Seg1[:, 0, 4],
+            np.array(
+                [
+                    1.8e01,
+                    5.0e-02,
+                    -5.0e-02,
+                    7.0e-03,
+                    -2.0e00,
+                    5.0e-02,
+                    -5.0e-02,
+                    7.0e-03,
+                    -1.8e01,
+                    -9.0e-03,
+                    1.0e-02,
+                    -1.0e-02,
+                    5.2e01,
+                    -9.0e-03,
+                    1.0e-02,
+                    -1.0e-02,
+                ]
+            ),
         )
-
-    # z = ocp_false.nlp[0].dynamics_func(np.ones(2), np.ones(8), np.ones(4), [], [], np.zeros(9))
-    #
-    # npt.assert_almost_equal(
-    #     np.array(z[4:]).squeeze(),
-    #     np.array([9.99999990e-01, -8.81000001e00, 1.00000000e00, 1.00000000e08]),
-    # )
-    #
-    # z = ocp_false.nlp[0].dynamics_func(np.ones(2), np.ones(8), np.ones(4), [], [], np.ones(9))
-    #
-    # npt.assert_almost_equal(
-    #     np.array(z[4:]).squeeze(),
-    #     np.array([2.00e00, -7.81e00, 2.00e00, 1.00e08]),
-    # )
-    #
-    # z = ocp_false.nlp[0].model.forward_dynamics(with_contact=False)(np.ones(4), np.ones(4), np.ones(4), np.ones(9), [])
-    # npt.assert_almost_equal(
-    #     np.array(z).squeeze(),
-    #     np.array([2.00e00, -7.81e00, 2.00e00, 1.00e08]),
-    # )
-
-    # z = ocp_false.nlp[0].dynamics_func(np.ones(2), np.ones(8), np.ones(4), [], [], np.ones(18) * 0.1)
-    #
-    # npt.assert_almost_equal(
-    #     np.array(z[4:]).squeeze(),
-    #     np.array([1.20e00, -8.61e00, 1.20e00, 1.10e08]),
-    # )
-
-    # sol_false = ocp_false.solve()
-    #
-    # # Check objective function value
-    # f_false = np.array(sol_false.cost)
-    # npt.assert_equal(f_false.shape, (1, 1))
-    # npt.assert_almost_equal(f_false[0, 0], 7075.438561173094)
-    #
-    # # Check constraints
-    # g_false = np.array(sol_false.constraints)
-    # npt.assert_equal(g_false.shape, (246, 1))
-    # npt.assert_almost_equal(g_false, np.zeros((246, 1)))
-    #
-    # # Check some of the results
-    # states_false = sol_false.decision_states(to_merge=SolutionMerge.NODES)
-    # controls_false = sol_false.decision_controls(to_merge=SolutionMerge.NODES)
-    # q_false, qdot_false, tau_false = states_false["q"], states_false["qdot"], controls_false["tau"]
-    #
-    # # initial and final controls
-    # npt.assert_almost_equal(tau_false[:, 0], np.array([0.18595882, 6.98424521, -0.30071214, 0.0]))
-    # npt.assert_almost_equal(tau_false[:, 10], np.array([-0.05224518, 6.24340374, -0.17010067, 0.0]))
-    # npt.assert_almost_equal(tau_false[:, 20], np.array([-0.03359529, 5.50256227, -0.11790254, 0.0]))
-    # npt.assert_almost_equal(tau_false[:, -1], np.array([0.07805599, 4.83580495, -0.14719148, 0.0]))
-    #
-    # # initial and final position
-    # npt.assert_almost_equal(q_false[:, 0], np.array([-4.01261246e-15, 7.00046055e-16, 2.15375856e-03, 0.0]), decimal=5)
-    # npt.assert_almost_equal(q_false[:, -1], np.array([-4.29786206e-15, 2.00000000e00, 1.66939403e-03, 0.0]), decimal=5)
-    #
-    # # initial and final velocities
-    # npt.assert_almost_equal(qdot_false[:, 0], np.array([0.0, 0.0, 0.0, 0.0]), decimal=5)
-    # npt.assert_almost_equal(qdot_false[:, -1], np.array([0.0, 0.0, 0.0, 0.0]), decimal=5)
-    #
-    # # how the force is stored
-    # data_Seg1_false = ocp_false.nlp[0].numerical_data_timeseries["forces_in_global"]
-    # npt.assert_equal(data_Seg1_false.shape, (9, 1, 31))
-    # npt.assert_almost_equal(data_Seg1_false[:, 0, 0], np.array([0.0, 1.8, 0.0, 0.0, 0.0, -2.0, 0.05, -0.05, 0.007]))
-    #
-    # data_Test_false = ocp_false.nlp[0].numerical_data_timeseries["forces_in_local"]
-    # npt.assert_equal(data_Test_false.shape, (9, 1, 31))
-    # npt.assert_almost_equal(data_Test_false[:, 0, 0], np.array([0.0, -1.8, 0.0, 0.0, 0.0, 5.0, -0.009, 0.01, -0.01]))
-    #
-    # # detailed cost values
-    # npt.assert_almost_equal(sol_false.detailed_cost[0]["cost_value_weighted"], f_false[0, 0])

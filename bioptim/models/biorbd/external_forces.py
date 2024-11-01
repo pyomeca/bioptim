@@ -82,27 +82,37 @@ class ExternalForceSetTimeSeries:
         self.torque_in_global = ensure_list(self.torque_in_global, segment)
         self.torque_in_global[segment].append({"values": values, "point_of_application": None})
 
-    def add_translational_force(self, segment: str, values: np.ndarray, point_of_application: np.ndarray | str = None):
+    def add_translational_force(
+        self, segment: str, values: np.ndarray, point_of_application_in_local: np.ndarray | str = None
+    ):
         self._check_if_can_be_modified()
         if values.shape[0] != 3:
             raise ValueError(f"External forces must have 3 rows, got {values.shape[0]}")
         self._check_values_frame_shape(values)
 
-        point_of_application = np.zeros((3, self._nb_frames)) if point_of_application is None else point_of_application
-        self._check_point_of_application(point_of_application)
+        point_of_application_in_local = (
+            np.zeros((3, self._nb_frames)) if point_of_application_in_local is None else point_of_application_in_local
+        )
+        self._check_point_of_application(point_of_application_in_local)
         self.translational_in_global = ensure_list(self.translational_in_global, segment)
-        self.translational_in_global[segment].append({"values": values, "point_of_application": point_of_application})
+        self.translational_in_global[segment].append(
+            {"values": values, "point_of_application": point_of_application_in_local}
+        )
 
-    def add_in_segment_frame(self, segment: str, values: np.ndarray, point_of_application: np.ndarray | str = None):
+    def add_in_segment_frame(
+        self, segment: str, values: np.ndarray, point_of_application_in_local: np.ndarray | str = None
+    ):
         self._check_if_can_be_modified()
         if values.shape[0] != 6:
             raise ValueError(f"External forces must have 6 rows, got {values.shape[0]}")
         self._check_values_frame_shape(values)
 
-        point_of_application = np.zeros((3, self._nb_frames)) if point_of_application is None else point_of_application
+        point_of_application = (
+            np.zeros((3, self._nb_frames)) if point_of_application_in_local is None else point_of_application_in_local
+        )
         self._check_point_of_application(point_of_application)
         self.in_local = ensure_list(self.in_local, segment)
-        self.in_local[segment].append({"values": values, "point_of_application": point_of_application})
+        self.in_local[segment].append({"values": values, "point_of_application": point_of_application_in_local})
 
     def add_torque_in_segment_frame(self, segment: str, values: np.ndarray):
         self._check_if_can_be_modified()
