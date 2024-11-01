@@ -1,4 +1,5 @@
 import numpy as np
+from casadi import MX, vertcat
 
 
 class ExternalForceSetTimeSeries:
@@ -252,3 +253,24 @@ def ensure_list(data, key) -> dict[str, list]:
     if data.get(key) is None:
         data[key] = []
     return data
+
+
+# Specific functions for adding each force type to improve readability
+def _add_global_force(biorbd_external_forces, segment, force, point_of_application):
+    biorbd_external_forces.add(segment, force, point_of_application)
+
+
+def _add_torque_global(biorbd_external_forces, segment, torque, _):
+    biorbd_external_forces.add(segment, vertcat(torque, MX([0, 0, 0])), MX([0, 0, 0]))
+
+
+def _add_translational_global(biorbd_external_forces, segment, force, point_of_application):
+    biorbd_external_forces.addTranslationalForce(force, segment, point_of_application)
+
+
+def _add_local_force(biorbd_external_forces, segment, force, point_of_application):
+    biorbd_external_forces.addInSegmentReferenceFrame(segment, force, point_of_application)
+
+
+def _add_torque_local(biorbd_external_forces, segment, torque, _):
+    biorbd_external_forces.addInSegmentReferenceFrame(segment, vertcat(torque, MX([0, 0, 0])), MX([0, 0, 0]))

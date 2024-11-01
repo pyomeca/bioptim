@@ -10,7 +10,14 @@ from biorbd_casadi import (
 )
 from casadi import SX, MX, vertcat, horzcat, norm_fro, Function
 
-from bioptim.models.biorbd.external_forces import ExternalForceSetTimeSeries
+from bioptim.models.biorbd.external_forces import (
+    ExternalForceSetTimeSeries,
+    _add_global_force,
+    _add_torque_global,
+    _add_translational_global,
+    _add_local_force,
+    _add_torque_local,
+)
 from ..utils import _var_mapping, bounds_from_ranges
 from ...limits.path_conditions import Bounds
 from ...misc.mapping import BiMapping, BiMappingList
@@ -433,58 +440,93 @@ class BiorbdModel:
     def reorder_qddot_root_joints(qddot_root, qddot_joints) -> MX | SX:
         return vertcat(qddot_root, qddot_joints)
 
-    def _dispatch_forces(self):
+    def _dispatch_forces(self) -> biorbd.ExternalForceSet:
         """Dispatch the symbolic MX into the biorbd external forces object"""
         biorbd_external_forces = self.model.externalForceSet()
 
-        # "type of external force": (function to call, number of force components, number of point of application components)
-        bioptim_to_biorbd_map = {
-            "in_global": (biorbd_external_forces.add, 6),
-            "torque_in_global": (
-                lambda segment, torque, point_of_application: biorbd_external_forces.add(
-                    segment, vertcat(torque, MX([0, 0, 0])), MX([0, 0, 0])
-                ),
-                3,
-            ),
-            "translational_in_global": (
-                lambda segment, force, point_of_application: biorbd_external_forces.addTranslationalForce(
-                    force, segment, point_of_application
-                ),
-                3,
-            ),
-            "in_local": (biorbd_external_forces.addInSegmentReferenceFrame, 6),
-            "torque_in_local": (
-                lambda segment, torque, point_of_application: biorbd_external_forces.addInSegmentReferenceFrame(
-                    segment, vertcat(torque, MX([0, 0, 0])), MX([0, 0, 0])
-                ),
-                3,
-            ),
+        # "type of external force": (function to call, number of force components)
+        force_mapping = {
+            "in_global": (_add_global_force, 6),
+            "torque_in_global": (_add_torque_global, 3),
+            "translational_in_global": (_add_translational_global, 3),
+            "in_local": (_add_local_force, 6),
+            "torque_in_local": (_add_torque_local, 3),
         }
 
         symbolic_counter = 0
-        for attr in bioptim_to_biorbd_map.keys():
-            function = bioptim_to_biorbd_map[attr][0]
-            for segment, forces_on_segment in getattr(self.external_force_set, attr).items():
-                for force in forces_on_segment:
-                    array_point_of_application = isinstance(force["point_of_application"], np.ndarray)
-                    str_point_of_application = isinstance(force["point_of_application"], str)
-
-                    start = symbolic_counter
-                    stop = symbolic_counter + bioptim_to_biorbd_map[attr][1]
-                    force_slicer = slice(start, stop)
-
-                    if array_point_of_application:
-                        point_of_application = self.external_forces[slice(stop, stop + 3)]
-                    elif str_point_of_application:
-                        # turn it into a NodeSegment, might not work yet.
-                        point_of_application = self.model.marker(self.marker_index(force["point_of_application"]))
-                    else:
-                        point_of_application = None
-
-                    function(segment, self.external_forces[force_slicer], point_of_application)
-                    symbolic_counter = stop + 3 if array_point_of_application else stop
+        for force_type, val in force_mapping.items():
+            add_force_func, num_force_components = val
+            symbolic_counter = self._dispatch_forces_of_type(
+                force_type, add_force_func, num_force_components, symbolic_counter, biorbd_external_forces
+            )
 
         return biorbd_external_forces
+
+    def _dispatch_forces_of_type(
+        self,
+        force_type: str,
+        add_force_func: "Callable",
+        num_force_components: int,
+        symbolic_counter: int,
+        biorbd_external_forces: "biorbd.ExternalForces",
+    ) -> int:
+        """
+        Helper method to dispatch forces of a specific external forces.
+
+        Parameters
+        ----------
+        force_type: str
+            The type of external force to dispatch among in_global, torque_in_global, translational_in_global, in_local, torque_in_local.
+        add_force_func: Callable
+            The function to call to add the force to the biorbd external forces object.
+        num_force_components: int
+            The number of force components for the given type
+        symbolic_counter: int
+            The current symbolic counter to slice the whole external_forces mx.
+        biorbd_external_forces: biorbd.ExternalForces
+            The biorbd external forces object to add the forces to.
+
+        Returns
+        -------
+        int
+            The updated symbolic counter.
+        """
+        for segment, forces_on_segment in getattr(self.external_force_set, force_type).items():
+            for force in forces_on_segment:
+                force_slicer = slice(symbolic_counter, symbolic_counter + num_force_components)
+
+                point_of_application_mx = self._get_point_of_application(force, force_slicer.stop)
+
+                add_force_func(
+                    biorbd_external_forces, segment, self.external_forces[force_slicer], point_of_application_mx
+                )
+                symbolic_counter = force_slicer.stop + (
+                    3 if isinstance(force["point_of_application"], np.ndarray) else 0
+                )
+
+        return symbolic_counter
+
+    def _get_point_of_application(self, force, stop_index) -> biorbd.NodeSegment | np.ndarray | None:
+        """
+        Determine the point of application mx slice based on its type. Only sliced if an array is stored
+
+        Parameters
+        ----------
+        force : dict
+            The force dictionary with details on the point of application.
+        stop_index : int
+            Index position in MX where the point of application components start.
+
+        Returns
+        -------
+        biorbd.NodeSegment | np.ndarray | None
+            Returns a slice of MX, a marker node, or None if no point of application is defined.
+        """
+        if isinstance(force["point_of_application"], np.ndarray):
+            return self.external_forces[slice(stop_index, stop_index + 3)]
+        elif isinstance(force["point_of_application"], str):
+            return self.model.marker(self.marker_index(force["point_of_application"]))
+        return None
 
     def forward_dynamics(self, with_contact: bool = False) -> Function:
 
