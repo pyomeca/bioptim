@@ -4,14 +4,15 @@ Test for file IO
 
 import os
 import pickle
+import platform
 import re
 import shutil
-import platform
 
-import pytest
 import numpy as np
 import numpy.testing as npt
+import pytest
 from casadi import sum1, sum2
+
 from bioptim import (
     InterpolationType,
     OdeSolver,
@@ -21,9 +22,7 @@ from bioptim import (
     ControlType,
     PhaseDynamics,
     SolutionMerge,
-    __version__,
 )
-
 from tests.utils import TestUtils
 
 
@@ -561,8 +560,6 @@ def test_phase_transitions(ode_solver, phase_dynamics):
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.COLLOCATION])  # OdeSolver.IRK
 def test_parameter_optimization(ode_solver, phase_dynamics):
-    from bioptim.examples.getting_started import custom_parameters as ocp_module
-
     return  # TODO: Fix parameter scaling :(
     # For reducing time phase_dynamics == PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver in (OdeSolver.RK8, OdeSolver.COLLOCATION):

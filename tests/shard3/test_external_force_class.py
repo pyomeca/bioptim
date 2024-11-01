@@ -108,7 +108,7 @@ def test_external_forces_components_calculation(external_forces):
     external_forces.add_translational_force(segment1, np.random.rand(3, 10))
 
     # The actual calculation depends on implementation details
-    assert external_forces.nb_external_forces_components == 9 + 6 + 6
+    assert external_forces.nb_external_forces_components == 9 + 3 + 6
     assert external_forces.nb_external_forces == 3
 
 
@@ -186,7 +186,7 @@ def test_success_within_biomod(external_forces):
         external_force_set=external_forces,
     )
 
-    assert model.external_forces.shape == (15, 1)
+    assert model.external_forces.shape == (9 + 3, 1)
     assert model.biorbd_external_forces_set is not None
 
     with pytest.raises(RuntimeError, match="External forces have been binded and cannot be modified anymore."):

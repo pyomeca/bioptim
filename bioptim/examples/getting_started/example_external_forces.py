@@ -34,7 +34,8 @@ def prepare_ocp(
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     expand_dynamics: bool = True,
     phase_dynamics: PhaseDynamics = PhaseDynamics.ONE_PER_NODE,
-    external_force_method: str = "translational_force",
+    external_force_method: str = "in_global",
+    use_point_of_applications: bool = False,
     n_threads: int = 1,
     use_sx: bool = False,
 ) -> OptimalControlProgram:
@@ -94,15 +95,27 @@ def prepare_ocp(
     if external_force_method == "translational_force":
         # not mandatory to specify the point of application
         external_force_set.add_translational_force(
-            "Seg1", Seg1_force, point_of_application_in_local=Seg1_point_of_application
+            "Seg1",
+            Seg1_force,
+            point_of_application_in_local=Seg1_point_of_application if use_point_of_applications else None,
         )
         external_force_set.add_translational_force(
-            "Test", Test_force, point_of_application_in_local=Test_point_of_application
+            "Test",
+            Test_force,
+            point_of_application_in_local=Test_point_of_application if use_point_of_applications else None,
         )
     elif external_force_method == "in_global":
         # not mandatory to specify the point of application
-        external_force_set.add("Seg1", np.concatenate((Seg1_force, Seg1_force), axis=0))
-        external_force_set.add("Test", np.concatenate((Test_force, Test_force), axis=0))
+        external_force_set.add(
+            "Seg1",
+            np.concatenate((Seg1_force, Seg1_force), axis=0),
+            point_of_application=Seg1_point_of_application if use_point_of_applications else None,
+        )
+        external_force_set.add(
+            "Test",
+            np.concatenate((Test_force, Test_force), axis=0),
+            point_of_application=Test_point_of_application if use_point_of_applications else None,
+        )
     elif external_force_method == "in_global_torque":
         # cannot specify the point of application as it is a pure torque
         external_force_set.add_torque("Seg1", Seg1_force)

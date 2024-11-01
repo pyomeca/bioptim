@@ -497,7 +497,7 @@ class BiorbdModel:
                 biorbd_return = self.model.ForwardDynamicsConstraintsDirect(q_biorbd, qdot_biorbd, tau_biorbd).to_mx()
             else:
                 biorbd_return = self.model.ForwardDynamicsConstraintsDirect(
-                    q_biorbd, qdot_biorbd, tau_biorbd, externalForces=self.biorbd_external_forces_set
+                    q_biorbd, qdot_biorbd, tau_biorbd, self.biorbd_external_forces_set
                 ).to_mx()
             casadi_fun = Function(
                 "constrained_forward_dynamics",
@@ -534,7 +534,7 @@ class BiorbdModel:
             biorbd_return = self.model.InverseDynamics(q_biorbd, qdot_biorbd, qddot_biorbd).to_mx()
         else:
             biorbd_return = self.model.InverseDynamics(
-                q_biorbd, qdot_biorbd, qddot_biorbd, externalForces=self.biorbd_external_forces_set
+                q_biorbd, qdot_biorbd, qddot_biorbd, self.biorbd_external_forces_set
             ).to_mx()
         casadi_fun = Function(
             "inverse_dynamics",
@@ -556,7 +556,7 @@ class BiorbdModel:
             ).to_mx()
         else:
             biorbd_return = self.model.ContactForcesFromForwardDynamicsConstraintsDirect(
-                q_biorbd, qdot_biorbd, tau_biorbd, externalForces=self.biorbd_external_forces_set
+                q_biorbd, qdot_biorbd, tau_biorbd, self.biorbd_external_forces_set
             ).to_mx()
         casadi_fun = Function(
             "contact_forces_from_constrained_forward_dynamics",
