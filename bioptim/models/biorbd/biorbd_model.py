@@ -48,12 +48,17 @@ class BiorbdModel:
                 parameters[param_key].apply_parameter(self)
         self._friction_coefficients = friction_coefficients
 
-        # External forces
         self.external_force_set = (
             self._set_external_force_set(external_force_set) if external_force_set is not None else None
         )
+        self._symbolic_variables()
+        self.biorbd_external_forces_set = self._dispatch_forces() if external_force_set else None
 
-        # Declaration of MX variables of the right shape for the creation of CasADi Functions
+        # TODO: remove mx (the MX parameters should be created inside the BiorbdModel)
+        self.parameters = parameters.mx if parameters else MX()
+
+    def _symbolic_variables(self):
+        """Declaration of MX variables of the right shape for the creation of CasADi Functions"""
         self.q = MX.sym("q_mx", self.nb_q, 1)
         self.qdot = MX.sym("qdot_mx", self.nb_qdot, 1)
         self.qddot = MX.sym("qddot_mx", self.nb_qddot, 1)
@@ -62,12 +67,10 @@ class BiorbdModel:
         self.muscle = MX.sym("muscle_mx", self.nb_muscles, 1)
         self.activations = MX.sym("activations_mx", self.nb_muscles, 1)
         self.external_forces = MX.sym(
-            "external_forces_mx", external_force_set.nb_external_forces_components if external_force_set else 0, 1
+            "external_forces_mx",
+            self.external_force_set.nb_external_forces_components if self.external_force_set else 0,
+            1,
         )
-        self.biorbd_external_forces_set = self._dispatch_forces() if external_force_set else None
-
-        # TODO: remove mx (the MX parameters should be created inside the BiorbdModel)
-        self.parameters = parameters.mx if parameters else MX()
 
     def _set_external_force_set(self, external_force_set: ExternalForceSetTimeSeries):
         """
