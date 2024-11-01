@@ -102,15 +102,27 @@ class ExternalForceSetTimeSeries:
     def add_in_segment_frame(
         self, segment: str, values: np.ndarray, point_of_application_in_local: np.ndarray | str = None
     ):
+        """
+        Add external forces in the segment frame.
+
+        Parameters
+        ----------
+        segment: str
+            The name of the segment.
+        values: np.ndarray
+            The external forces (torques, forces) in the segment frame.
+        point_of_application_in_local
+            The point of application of the external forces in the segment frame.
+        """
         self._check_if_can_be_modified()
         if values.shape[0] != 6:
             raise ValueError(f"External forces must have 6 rows, got {values.shape[0]}")
         self._check_values_frame_shape(values)
 
-        point_of_application = (
+        point_of_application_in_local = (
             np.zeros((3, self._nb_frames)) if point_of_application_in_local is None else point_of_application_in_local
         )
-        self._check_point_of_application(point_of_application)
+        self._check_point_of_application(point_of_application_in_local)
         self.in_local = ensure_list(self.in_local, segment)
         self.in_local[segment].append({"values": values, "point_of_application": point_of_application_in_local})
 

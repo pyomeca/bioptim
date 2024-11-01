@@ -524,6 +524,9 @@ class BiorbdModel:
 
     def inverse_dynamics(self, with_contact: bool = False) -> Function:
 
+        if with_contact:
+            raise NotImplementedError("Inverse dynamics with contact is not implemented yet")
+
         q_biorbd = GeneralizedCoordinates(self.q)
         qdot_biorbd = GeneralizedVelocity(self.qdot)
         qddot_biorbd = GeneralizedAcceleration(self.qddot)
