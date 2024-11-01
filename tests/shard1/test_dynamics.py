@@ -114,8 +114,6 @@ def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
     if with_external_force:
 
         external_forces = ExternalForceSetTimeSeries(nb_frames=nlp.ns)
-        # external_forces.add_torque("Seg0", external_forces_array[:3, :])
-        # external_forces.add_translational_force("Seg0", external_forces_array[3:6, :])
         external_forces.add("Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :])
         numerical_time_series = {"external_forces": external_forces.to_numerical_time_series()}
 
@@ -171,7 +169,7 @@ def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
-    numerical_timeseries = external_forces_array[:, 0] if with_external_force else []
+    numerical_timeseries = EXTERNAL_FORCE_ARRAY[:, 0] if with_external_force else []
     time = np.random.rand(2)
     x_out = np.array(
         nlp.dynamics_func(

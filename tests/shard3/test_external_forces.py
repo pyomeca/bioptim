@@ -59,6 +59,7 @@ def test_example_external_forces(
         phase_dynamics=phase_dynamics,
         external_force_method=method,
         use_sx=use_sx,
+        use_point_of_applications= method == "translational_force", # Only to preserve the tested values
     )
     sol = ocp.solve()
 
