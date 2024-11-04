@@ -392,9 +392,9 @@ class PlotOcp:
                         axes = self._add_new_axis(variable, nb_subplots, n_rows, n_cols)
                         self.axes[variable] = [nlp.plot[variable], axes]
 
-                        if not y_min_all[y_range_var_idx]:
-                            y_min_all[y_range_var_idx] = [np.inf] * nb_subplots
-                            y_max_all[y_range_var_idx] = [-np.inf] * nb_subplots
+                    if not y_min_all[y_range_var_idx]:
+                        y_min_all[y_range_var_idx] = [np.inf] * nb_subplots
+                        y_max_all[y_range_var_idx] = [-np.inf] * nb_subplots
 
                 if variable not in self.custom_plots:
                     self.custom_plots[variable] = [
