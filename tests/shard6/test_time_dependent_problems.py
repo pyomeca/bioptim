@@ -308,10 +308,10 @@ def integrate(time_vector, states, controls, dyn_fun, n_shooting=30, n_steps=5):
         u_this_time = controls[:, i_shooting]
         current_time = dt * i_shooting
         for i_step in range(n_steps):
-            k1 = dyn_fun(current_time, tf, x_this_time, u_this_time)
-            k2 = dyn_fun(current_time + h / 2, tf, x_this_time + h / 2 * k1, u_this_time)
-            k3 = dyn_fun(current_time + h / 2, tf, x_this_time + h / 2 * k2, u_this_time)
-            k4 = dyn_fun(current_time + h, tf, x_this_time + h * k3, u_this_time)
+            k1 = dyn_fun(current_time, x_this_time, u_this_time)
+            k2 = dyn_fun(current_time + h / 2, x_this_time + h / 2 * k1, u_this_time)
+            k3 = dyn_fun(current_time + h / 2, x_this_time + h / 2 * k2, u_this_time)
+            k4 = dyn_fun(current_time + h, x_this_time + h * k3, u_this_time)
             x_this_time += h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
             current_time += h
         x_integrated[:, i_shooting + 1] = x_this_time
@@ -447,13 +447,12 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
                     npt.assert_almost_equal(sol.decision_time()[-1], 1.01985, decimal=5)
 
                     time_sym = MX.sym("T", 1, 1)
-                    tf_sym = ocp.nlp[0].tf_mx
                     states_sym = ocp.nlp[0].states.mx
                     controls_sym = ocp.nlp[0].controls.mx
 
                     dyn_fun = Function(
                         "dynamics",
-                        [time_sym, tf_sym, states_sym, controls_sym],
+                        [time_sym, states_sym, controls_sym],
                         [
                             time_dynamic(
                                 time_sym,

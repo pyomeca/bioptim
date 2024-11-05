@@ -244,6 +244,10 @@ class RK(Integrator):
         super(RK, self).__init__(ode, ode_opt)
 
     @property
+    def _integration_time(self):
+        return self.t_span_sym[1] / self._n_step
+
+    @property
     def shape_xf(self):
         return [self.x_sym.shape[0], 1]
 
@@ -309,7 +313,7 @@ class RK(Integrator):
         d = numerical_timeseries
 
         for i in range(1, self._n_step + 1):
-            t = self.t_span_sym[0] + self.h * (i - 1)
+            t = self.t_span_sym[0] + self._integration_time * (i - 1)
             x[:, i] = self.next_x(t, x[:, i - 1], u, p, a, d)
             if self.model.nb_quaternions > 0:
                 x[:, i] = self.model.normalize_state_quaternions(x[:, i])
