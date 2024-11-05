@@ -5,6 +5,7 @@ it is supposed to balance the pendulum. It is designed to show how to track mark
 
 Note that the final node is not tracked.
 """
+
 import os
 import pytest
 from casadi import MX, SX, vertcat, sin, Function, DM
@@ -52,7 +53,9 @@ def dynamics(
 
     q = DynamicsFunctions.get(nlp.states["q"], states)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-    tau = DynamicsFunctions.get(nlp.controls["tau"], controls) * (sin(nlp.tf_mx - time) * time.ones(nlp.model.nb_tau) * 10)
+    tau = DynamicsFunctions.get(nlp.controls["tau"], controls) * (
+        sin(nlp.tf_mx - time) * time.ones(nlp.model.nb_tau) * 10
+    )
 
     dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
     ddq = nlp.model.forward_dynamics(q, qdot, tau)
@@ -138,7 +141,7 @@ def integrate_RK4(time_vector, dt, states, controls, dyn_fun, n_shooting=30, n_s
     n_q = 2
     tf = time_vector[-1]
     h = dt / n_steps
-    x_integrated = DM.zeros((n_q*2, n_shooting + 1))
+    x_integrated = DM.zeros((n_q * 2, n_shooting + 1))
     x_integrated[:, 0] = states[:, 0]
     for i_shooting in range(n_shooting):
         x_this_time = x_integrated[:, i_shooting]
@@ -205,28 +208,35 @@ def test_dt_dependent_problem(minimize_time, use_sx):
         npt.assert_almost_equal(sol.decision_time()[-1], 1)
 
     # Test the integration
-    time_sym = MX.sym('T', 1, 1)
-    tf_sym = MX.sym('Tf', 1, 1)
-    states_sym = MX.sym('Q_Qdot', 4, 1)
-    controls_sym = MX.sym('Tau', 2, 1)
+    time_sym = MX.sym("T", 1, 1)
+    tf_sym = MX.sym("Tf", 1, 1)
+    states_sym = MX.sym("Q_Qdot", 4, 1)
+    controls_sym = MX.sym("Tau", 2, 1)
 
     tau_dyn = controls_sym * (sin(tf_sym - time_sym) * MX.ones(ocp.nlp[0].model.nb_tau) * 10)
-    out_dyn = vertcat(states_sym[ocp.nlp[0].model.nb_q:],
-                      ocp.nlp[0].model.forward_dynamics(states_sym[:ocp.nlp[0].model.nb_q],
-                                                        states_sym[ocp.nlp[0].model.nb_q:],
-                                                        tau_dyn))
+    out_dyn = vertcat(
+        states_sym[ocp.nlp[0].model.nb_q :],
+        ocp.nlp[0].model.forward_dynamics(
+            states_sym[: ocp.nlp[0].model.nb_q], states_sym[ocp.nlp[0].model.nb_q :], tau_dyn
+        ),
+    )
 
-    dyn_fun = Function('dynamics',
-                       [time_sym, tf_sym, states_sym, controls_sym],
-                       [out_dyn],
-                       )
+    dyn_fun = Function(
+        "dynamics",
+        [time_sym, tf_sym, states_sym, controls_sym],
+        [out_dyn],
+    )
     sol_time_vector = sol.decision_time()
-    sol_states = vertcat(sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])['q'],
-                         sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])['qdot'])
+    sol_states = vertcat(
+        sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["q"],
+        sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["qdot"],
+    )
     sol_controls = sol.decision_controls(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["tau"]
-    x_integrated = integrate_RK4(sol_time_vector, sol_time_vector[1], sol_states, sol_controls, dyn_fun, n_shooting=30, n_steps=5)
+    x_integrated = integrate_RK4(
+        sol_time_vector, sol_time_vector[1], sol_states, sol_controls, dyn_fun, n_shooting=30, n_steps=5
+    )
 
-    npt.assert_almost_equal(np.array(x_integrated[:4, :]).reshape(4*31, 1), np.array(sol_states).reshape(4*31, 1))
+    npt.assert_almost_equal(np.array(x_integrated[:4, :]).reshape(4 * 31, 1), np.array(sol_states).reshape(4 * 31, 1))
 
     # Test de dynamics
     node_idx = 1
@@ -239,9 +249,3 @@ def test_dt_dependent_problem(minimize_time, use_sx):
     dynamics_bioptim = ocp.nlp[0].dynamics_func(t_span, x, u, [], [], [])
     dynamics_hand_written = dyn_fun(t_span[0], sol_time_vector[-1], x, u)
     npt.assert_almost_equal(np.array(dynamics_bioptim), np.array(dynamics_hand_written))
-
-
-
-
-
-

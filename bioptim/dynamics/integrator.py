@@ -339,7 +339,9 @@ class RK2(RK):
         return (
             x_prev
             + h
-            * self.fun(vertcat(t0 + h / 2, dt), x_prev + h / 2 * k1, self.get_u(u, t0 + h / 2), p, a, d)[:, self.ode_idx]
+            * self.fun(vertcat(t0 + h / 2, dt), x_prev + h / 2 * k1, self.get_u(u, t0 + h / 2), p, a, d)[
+                :, self.ode_idx
+            ]
         )
 
 

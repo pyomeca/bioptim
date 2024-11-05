@@ -30,7 +30,8 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
     ConstraintList,
-    Node, Solver,
+    Node,
+    Solver,
 )
 
 
@@ -101,7 +102,6 @@ def custom_configure(
     ConfigureProblem.configure_dynamics_function(ocp, nlp, time_dynamic)
 
 
-
 def custom_configure_tf(
     ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries: dict[str, np.ndarray] = None
 ):
@@ -160,7 +160,9 @@ def tf_dynamic(
 
     q = DynamicsFunctions.get(nlp.states["q"], states)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-    tau = DynamicsFunctions.get(nlp.controls["tau"], controls) * (sin(nlp.dt_mx*nlp.ns - time) * time.ones(nlp.model.nb_tau) * 10)
+    tau = DynamicsFunctions.get(nlp.controls["tau"], controls) * (
+        sin(nlp.dt_mx * nlp.ns - time) * time.ones(nlp.model.nb_tau) * 10
+    )
 
     # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
     dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
@@ -299,7 +301,7 @@ def integrate(time_vector, states, controls, dyn_fun, n_shooting=30, n_steps=5):
     tf = time_vector[-1]
     dt = tf / n_shooting
     h = dt / n_steps
-    x_integrated = DM.zeros((n_q*2, n_shooting + 1))
+    x_integrated = DM.zeros((n_q * 2, n_shooting + 1))
     x_integrated[:, 0] = states[:, 0]
     for i_shooting in range(n_shooting):
         x_this_time = x_integrated[:, i_shooting]
@@ -444,29 +446,39 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
                     )
                     npt.assert_almost_equal(sol.decision_time()[-1], 1.01985, decimal=5)
 
-                    time_sym = MX.sym('T', 1, 1)
+                    time_sym = MX.sym("T", 1, 1)
                     tf_sym = ocp.nlp[0].tf_mx
                     states_sym = ocp.nlp[0].states.mx
                     controls_sym = ocp.nlp[0].controls.mx
 
-                    dyn_fun = Function('dynamics',
-                                       [time_sym, tf_sym, states_sym, controls_sym],
-                                       [time_dynamic(
-                                                    time_sym,
-                                                    states_sym,
-                                                    controls_sym,
-                                                    [],
-                                                    [],
-                                                    [],
-                                                    ocp.nlp[0],
-                                       ).dxdt])
+                    dyn_fun = Function(
+                        "dynamics",
+                        [time_sym, tf_sym, states_sym, controls_sym],
+                        [
+                            time_dynamic(
+                                time_sym,
+                                states_sym,
+                                controls_sym,
+                                [],
+                                [],
+                                [],
+                                ocp.nlp[0],
+                            ).dxdt
+                        ],
+                    )
                     sol_time_vector = sol.decision_time()
-                    sol_states = vertcat(sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])['q'],
-                                         sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])['qdot'])
+                    sol_states = vertcat(
+                        sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["q"],
+                        sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["qdot"],
+                    )
                     sol_controls = sol.decision_controls(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["tau"]
-                    x_integrated = integrate(sol_time_vector, sol_states, sol_controls, dyn_fun, n_shooting=30, n_steps=5)
+                    x_integrated = integrate(
+                        sol_time_vector, sol_states, sol_controls, dyn_fun, n_shooting=30, n_steps=5
+                    )
 
-                    npt.assert_almost_equal(np.array(reshape(x_integrated, 4*31, 1)), np.array(reshape(sol_states, 4*31, 1)))
+                    npt.assert_almost_equal(
+                        np.array(reshape(x_integrated, 4 * 31, 1)), np.array(reshape(sol_states, 4 * 31, 1))
+                    )
                 else:
                     return
             elif control_type is ControlType.LINEAR_CONTINUOUS:
@@ -678,7 +690,6 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
                     return
 
 
-
 @pytest.mark.parametrize("minimize_time", [True, False])
 @pytest.mark.parametrize("use_sx", [False, True])
 def test_time_dependent_problem_tf(minimize_time, use_sx):
@@ -715,28 +726,33 @@ def test_time_dependent_problem_tf(minimize_time, use_sx):
         )
         npt.assert_almost_equal(sol.decision_time()[-1], 1.04611, decimal=5)
 
-        time_sym = MX.sym('T', 1, 1)
-        tf_sym = MX.sym('Tf', 1, 1)
+        time_sym = MX.sym("T", 1, 1)
+        tf_sym = MX.sym("Tf", 1, 1)
         states_sym = ocp.nlp[0].states.mx
         controls_sym = ocp.nlp[0].controls.mx
 
         tau_dyn = controls_sym * (sin(tf_sym - time_sym) * MX.ones(ocp.nlp[0].model.nb_tau) * 10)
-        out_dyn = vertcat(states_sym[ocp.nlp[0].model.nb_q:],
-                          ocp.nlp[0].model.forward_dynamics(states_sym[:ocp.nlp[0].model.nb_q],
-                                                            states_sym[ocp.nlp[0].model.nb_q:],
-                                                            tau_dyn))
+        out_dyn = vertcat(
+            states_sym[ocp.nlp[0].model.nb_q :],
+            ocp.nlp[0].model.forward_dynamics(
+                states_sym[: ocp.nlp[0].model.nb_q], states_sym[ocp.nlp[0].model.nb_q :], tau_dyn
+            ),
+        )
 
-        dyn_fun = Function('dynamics',
-                           [time_sym, tf_sym, states_sym, controls_sym],
-                           [out_dyn],
-                           )
+        dyn_fun = Function(
+            "dynamics",
+            [time_sym, tf_sym, states_sym, controls_sym],
+            [out_dyn],
+        )
         sol_time_vector = sol.decision_time()
-        sol_states = vertcat(sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])['q'],
-                             sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])['qdot'])
+        sol_states = vertcat(
+            sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["q"],
+            sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["qdot"],
+        )
         sol_controls = sol.decision_controls(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["tau"]
         x_integrated = integrate(sol_time_vector, sol_states, sol_controls, dyn_fun, n_shooting=30, n_steps=5)
 
-        npt.assert_almost_equal(np.array(reshape(x_integrated, 4*31, 1)), np.array(reshape(sol_states, 4*31, 1)))
+        npt.assert_almost_equal(np.array(reshape(x_integrated, 4 * 31, 1)), np.array(reshape(sol_states, 4 * 31, 1)))
 
     else:
         npt.assert_almost_equal(np.array(sol.cost), np.array([[439.46711618]]))
@@ -753,8 +769,6 @@ def test_time_dependent_problem_tf(minimize_time, use_sx):
             0.8458229444008145,
         )
         npt.assert_almost_equal(sol.decision_time()[-1], 1.0)
-
-
 
 
 @pytest.mark.parametrize("minimize_time", [True])
@@ -792,28 +806,33 @@ def test_time_dependent_problem_as_state(minimize_time, use_sx):
         )
         npt.assert_almost_equal(sol.decision_time()[-1], 1.04611, decimal=5)
 
-        time_sym = MX.sym('T', 1, 1)
-        tf_sym = MX.sym('Tf', 1, 1)
+        time_sym = MX.sym("T", 1, 1)
+        tf_sym = MX.sym("Tf", 1, 1)
         states_sym = ocp.nlp[0].states.mx
         controls_sym = ocp.nlp[0].controls.mx
 
         tau_dyn = controls_sym * (sin(tf_sym - time_sym) * MX.ones(ocp.nlp[0].model.nb_tau) * 10)
-        out_dyn = vertcat(states_sym[ocp.nlp[0].model.nb_q:],
-                          ocp.nlp[0].model.forward_dynamics(states_sym[:ocp.nlp[0].model.nb_q],
-                                                            states_sym[ocp.nlp[0].model.nb_q:],
-                                                            tau_dyn))
+        out_dyn = vertcat(
+            states_sym[ocp.nlp[0].model.nb_q :],
+            ocp.nlp[0].model.forward_dynamics(
+                states_sym[: ocp.nlp[0].model.nb_q], states_sym[ocp.nlp[0].model.nb_q :], tau_dyn
+            ),
+        )
 
-        dyn_fun = Function('dynamics',
-                           [time_sym, tf_sym, states_sym, controls_sym],
-                           [out_dyn],
-                           )
+        dyn_fun = Function(
+            "dynamics",
+            [time_sym, tf_sym, states_sym, controls_sym],
+            [out_dyn],
+        )
         sol_time_vector = sol.decision_time()
-        sol_states = vertcat(sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])['q'],
-                             sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])['qdot'])
+        sol_states = vertcat(
+            sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["q"],
+            sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["qdot"],
+        )
         sol_controls = sol.decision_controls(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["tau"]
         x_integrated = integrate(sol_time_vector, sol_states, sol_controls, dyn_fun, n_shooting=30, n_steps=5)
 
-        npt.assert_almost_equal(np.array(reshape(x_integrated, 4*31, 1)), np.array(reshape(sol_states, 4*31, 1)))
+        npt.assert_almost_equal(np.array(reshape(x_integrated, 4 * 31, 1)), np.array(reshape(sol_states, 4 * 31, 1)))
 
     else:
         npt.assert_almost_equal(np.array(sol.cost), np.array([[439.46711618]]))
