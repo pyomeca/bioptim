@@ -263,6 +263,10 @@ class RK(Integrator):
     def h(self):
         return self.t_span_sym[1] / self._n_step
 
+    @property
+    def dt(self):
+        return self.t_span_sym[1]
+
     def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX, d: MX | SX) -> MX | SX:
         """
         Compute the next integrated state (abstract)
@@ -319,7 +323,7 @@ class RK1(RK):
     """
 
     def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX, d: MX | SX) -> MX | SX:
-        return x_prev + self.h * self.fun(vertcat(t0, self.h), x_prev, self.get_u(u, t0), p, a, d)[:, self.ode_idx]
+        return x_prev + self.h * self.fun(vertcat(t0, self.dt), x_prev, self.get_u(u, t0), p, a, d)[:, self.ode_idx]
 
 
 class RK2(RK):
@@ -329,12 +333,13 @@ class RK2(RK):
 
     def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX, d: MX | SX) -> MX | SX:
         h = self.h
+        dt = self.dt
 
-        k1 = self.fun(vertcat(t0, h), x_prev, self.get_u(u, t0), p, a, d)[:, self.ode_idx]
+        k1 = self.fun(vertcat(t0, dt), x_prev, self.get_u(u, t0), p, a, d)[:, self.ode_idx]
         return (
             x_prev
             + h
-            * self.fun(vertcat(t0 + h / 2, h), x_prev + h / 2 * k1, self.get_u(u, t0 + h / 2), p, a, d)[:, self.ode_idx]
+            * self.fun(vertcat(t0 + h / 2, dt), x_prev + h / 2 * k1, self.get_u(u, t0 + h / 2), p, a, d)[:, self.ode_idx]
         )
 
 
@@ -345,11 +350,12 @@ class RK4(RK):
 
     def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX, d: MX | SX) -> MX | SX:
         h = self.h
+        dt = self.dt
 
-        k1 = self.fun(vertcat(t0, h), x_prev, self.get_u(u, t0), p, a, d)[:, self.ode_idx]
-        k2 = self.fun(vertcat(t0 + h / 2, h), x_prev + h / 2 * k1, self.get_u(u, t0 + h / 2), p, a, d)[:, self.ode_idx]
-        k3 = self.fun(vertcat(t0 + h / 2, h), x_prev + h / 2 * k2, self.get_u(u, t0 + h / 2), p, a, d)[:, self.ode_idx]
-        k4 = self.fun(vertcat(t0 + h, h), x_prev + h * k3, self.get_u(u, t0 + h), p, a, d)[:, self.ode_idx]
+        k1 = self.fun(vertcat(t0, dt), x_prev, self.get_u(u, t0), p, a, d)[:, self.ode_idx]
+        k2 = self.fun(vertcat(t0 + h / 2, dt), x_prev + h / 2 * k1, self.get_u(u, t0 + h / 2), p, a, d)[:, self.ode_idx]
+        k3 = self.fun(vertcat(t0 + h / 2, dt), x_prev + h / 2 * k2, self.get_u(u, t0 + h / 2), p, a, d)[:, self.ode_idx]
+        k4 = self.fun(vertcat(t0 + h, dt), x_prev + h * k3, self.get_u(u, t0 + h), p, a, d)[:, self.ode_idx]
         return x_prev + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
 
@@ -360,10 +366,11 @@ class RK8(RK4):
 
     def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX, d: MX | SX) -> MX | SX:
         h = self.h
+        dt = self.dt
 
-        k1 = self.fun(vertcat(t0, h), x_prev, self.get_u(u, t0), p, a, d)[:, self.ode_idx]
+        k1 = self.fun(vertcat(t0, dt), x_prev, self.get_u(u, t0), p, a, d)[:, self.ode_idx]
         k2 = self.fun(
-            vertcat(t0 + h * 4 / 27, h),
+            vertcat(t0 + h * 4 / 27, dt),
             x_prev + (h * 4 / 27) * k1,
             self.get_u(u, t0 + h * (4 / 27)),
             p,
@@ -371,7 +378,7 @@ class RK8(RK4):
             d,
         )[:, self.ode_idx]
         k3 = self.fun(
-            vertcat(t0 + h / 18, h),
+            vertcat(t0 + h / 18, dt),
             x_prev + (h / 18) * (k1 + 3 * k2),
             self.get_u(u, t0 + h * (2 / 9)),
             p,
@@ -379,7 +386,7 @@ class RK8(RK4):
             d,
         )[:, self.ode_idx]
         k4 = self.fun(
-            vertcat(t0 + h / 12, h),
+            vertcat(t0 + h / 12, dt),
             x_prev + (h / 12) * (k1 + 3 * k3),
             self.get_u(u, t0 + h * (1 / 3)),
             p,
@@ -387,7 +394,7 @@ class RK8(RK4):
             d,
         )[:, self.ode_idx]
         k5 = self.fun(
-            vertcat(t0 + h / 8, h),
+            vertcat(t0 + h / 8, dt),
             x_prev + (h / 8) * (k1 + 3 * k4),
             self.get_u(u, t0 + h * (1 / 2)),
             p,
@@ -395,7 +402,7 @@ class RK8(RK4):
             d,
         )[:, self.ode_idx]
         k6 = self.fun(
-            vertcat(t0 + h / 54, h),
+            vertcat(t0 + h / 54, dt),
             x_prev + (h / 54) * (13 * k1 - 27 * k3 + 42 * k4 + 8 * k5),
             self.get_u(u, t0 + h * (2 / 3)),
             p,
@@ -403,7 +410,7 @@ class RK8(RK4):
             d,
         )[:, self.ode_idx]
         k7 = self.fun(
-            vertcat(t0 + h / 4320, h),
+            vertcat(t0 + h / 4320, dt),
             x_prev + (h / 4320) * (389 * k1 - 54 * k3 + 966 * k4 - 824 * k5 + 243 * k6),
             self.get_u(u, t0 + h * (1 / 6)),
             p,
@@ -411,7 +418,7 @@ class RK8(RK4):
             d,
         )[:, self.ode_idx]
         k8 = self.fun(
-            vertcat(t0 + h / 20, h),
+            vertcat(t0 + h / 20, dt),
             x_prev + (h / 20) * (-234 * k1 + 81 * k3 - 1164 * k4 + 656 * k5 - 122 * k6 + 800 * k7),
             self.get_u(u, t0 + h),
             p,
@@ -419,7 +426,7 @@ class RK8(RK4):
             d,
         )[:, self.ode_idx]
         k9 = self.fun(
-            vertcat(t0 + h / 288, h),
+            vertcat(t0 + h / 288, dt),
             x_prev + (h / 288) * (-127 * k1 + 18 * k3 - 678 * k4 + 456 * k5 - 9 * k6 + 576 * k7 + 4 * k8),
             self.get_u(u, t0 + h * (5 / 6)),
             p,
@@ -427,7 +434,7 @@ class RK8(RK4):
             d,
         )[:, self.ode_idx]
         k10 = self.fun(
-            vertcat(t0 + h / 820, h),
+            vertcat(t0 + h / 820, dt),
             x_prev
             + (h / 820) * (1481 * k1 - 81 * k3 + 7104 * k4 - 3376 * k5 + 72 * k6 - 5040 * k7 - 60 * k8 + 720 * k9),
             self.get_u(u, t0 + h),
@@ -463,8 +470,8 @@ class TRAPEZOIDAL(Integrator):
         d_prev: MX | SX,
         d_next: MX | SX,
     ):
-        dx = self.fun(vertcat(t0, self.h), x_prev, u_prev, p, a_prev, d_prev)[:, self.ode_idx]
-        dx_next = self.fun(vertcat(t0 + self.h, self.h), x_next, u_next, p, a_next, d_next)[:, self.ode_idx]
+        dx = self.fun(vertcat(t0, self.dt), x_prev, u_prev, p, a_prev, d_prev)[:, self.ode_idx]
+        dx_next = self.fun(vertcat(t0 + self.h, self.dt), x_next, u_next, p, a_next, d_next)[:, self.ode_idx]
         return x_prev + (dx + dx_next) * self.h / 2
 
     @property
@@ -485,6 +492,10 @@ class TRAPEZOIDAL(Integrator):
 
     @property
     def h(self):
+        return self.t_span_sym[1]
+
+    @property
+    def dt(self):
         return self.t_span_sym[1]
 
     def dxdt(
@@ -612,6 +623,10 @@ class COLLOCATION(Integrator):
 
     @property
     def h(self):
+        return self.t_span_sym[1]
+
+    @property
+    def dt(self):
         return self.t_span_sym[1]
 
     @property
