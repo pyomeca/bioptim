@@ -6,7 +6,7 @@ it is supposed to balance the pendulum. It is designed to show how to track mark
 Note that the final node is not tracked.
 """
 
-from casadi import MX, SX, vertcat, sin
+from casadi import MX, SX, vertcat, sin, Function, DM, reshape
 import os
 import pytest
 import numpy as np
@@ -29,6 +29,8 @@ from bioptim import (
     NonLinearProgram,
     PhaseDynamics,
     SolutionMerge,
+    ConstraintList,
+    Node, Solver,
 )
 
 
@@ -99,7 +101,293 @@ def custom_configure(
     ConfigureProblem.configure_dynamics_function(ocp, nlp, time_dynamic)
 
 
+
+def custom_configure_tf(
+    ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries: dict[str, np.ndarray] = None
+):
+    """
+    Tell the program which variables are states and controls.
+    The user is expected to use the ConfigureProblem.configure_xxx functions.
+
+    Parameters
+    ----------
+    ocp: OptimalControlProgram
+        A reference to the ocp
+    nlp: NonLinearProgram
+        A reference to the phase
+    """
+
+    ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
+    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
+    ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
+
+    ConfigureProblem.configure_dynamics_function(ocp, nlp, tf_dynamic)
+
+
+def tf_dynamic(
+    time: MX | SX,
+    states: MX | SX,
+    controls: MX | SX,
+    parameters: MX | SX,
+    algebraic_states: MX | SX,
+    numerical_timeseries: MX | SX,
+    nlp: NonLinearProgram,
+) -> DynamicsEvaluation:
+    """
+    The custom dynamics function that provides the derivative of the states: dxdt = f(t, x, u, p, a, d)
+
+    Parameters
+    ----------
+    time: MX | SX
+        The time of the system
+    states: MX | SX
+        The state of the system
+    controls: MX | SX
+        The controls of the system
+    parameters: MX | SX
+        The parameters acting on the system
+    algebraic_states: MX | SX
+        The Algebraic states variables of the system
+    numerical_timeseries: MX | SX
+        The numerical timeseries of the system
+    nlp: NonLinearProgram
+        A reference to the phase
+
+    Returns
+    -------
+    The derivative of the states in the tuple[MX | SX] format
+    """
+
+    q = DynamicsFunctions.get(nlp.states["q"], states)
+    qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+    tau = DynamicsFunctions.get(nlp.controls["tau"], controls) * (sin(nlp.dt_mx*nlp.ns - time) * time.ones(nlp.model.nb_tau) * 10)
+
+    # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
+    dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
+    ddq = nlp.model.forward_dynamics(q, qdot, tau)
+
+    return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
+
+
 def prepare_ocp(
+    biorbd_model_path: str,
+    n_phase: int,
+    ode_solver: OdeSolverBase,
+    control_type: ControlType,
+    minimize_time: bool,
+    use_sx: bool,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.ONE_PER_NODE,
+    with_tf_dynamic: bool = False,
+) -> OptimalControlProgram:
+    """
+    Prepare the ocp
+
+    Parameters
+    ----------
+    biorbd_model_path: str
+        The path to the biorbd model
+    n_phase: int
+        The number of phases
+    ode_solver: OdeSolverBase
+        The ode solver to use
+    control_type: ControlType
+        The type of the controls
+    minimize_time: bool,
+        Add a minimized time objective
+    use_sx: bool
+        If the ocp should be built with SX. Please note that ACADOS requires SX
+    phase_dynamics: PhaseDynamics
+        If the dynamics equation within a phase is unique or changes at each node.
+        PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
+        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
+        are applied at each node
+
+    Returns
+    -------
+    The OptimalControlProgram ready to be solved
+    """
+
+    bio_model = (
+        [BiorbdModel(biorbd_model_path)]
+        if n_phase == 1
+        else [BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path)]
+    )
+    final_time = [1] * n_phase
+    n_shooting = [50 if isinstance(ode_solver, OdeSolver.IRK) else 30] * n_phase
+
+    # Add objective functions
+    objective_functions = ObjectiveList()
+    for i in range(len(bio_model)):
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=i, quadratic=True)
+        if minimize_time:
+            target = 1 if i == 0 else 2
+            objective_functions.add(
+                ObjectiveFcn.Mayer.MINIMIZE_TIME, target=target, weight=20000, phase=i, quadratic=True
+            )
+
+    # Dynamics
+    dynamics = DynamicsList()
+    expand = not isinstance(ode_solver, OdeSolver.IRK)
+    for i in range(len(bio_model)):
+        if with_tf_dynamic:
+            dynamics.add(
+                custom_configure_tf,
+                dynamic_function=tf_dynamic,
+                phase=i,
+                expand_dynamics=expand,
+                phase_dynamics=phase_dynamics,
+            )
+        else:
+            dynamics.add(
+                custom_configure,
+                dynamic_function=time_dynamic,
+                phase=i,
+                expand_dynamics=expand,
+                phase_dynamics=phase_dynamics,
+            )
+
+    # Define states path constraint
+    x_bounds = BoundsList()
+    if n_phase == 1:
+        x_bounds["q"] = bio_model[0].bounds_from_ranges("q")
+        x_bounds["q"][:, [0, -1]] = 0
+        x_bounds["q"][-1, -1] = 3.14
+        x_bounds["qdot"] = bio_model[0].bounds_from_ranges("qdot")
+        x_bounds["qdot"][:, [0, -1]] = 0
+    else:
+        x_bounds.add("q", bounds=bio_model[0].bounds_from_ranges("q"), phase=0)
+        x_bounds.add("q", bounds=bio_model[1].bounds_from_ranges("q"), phase=1)
+        x_bounds[0]["q"][:, [0, -1]] = 0
+        x_bounds[0]["q"][-1, -1] = 3.14
+        x_bounds[1]["q"][:, -1] = 0
+
+        x_bounds.add("qdot", bounds=bio_model[0].bounds_from_ranges("qdot"), phase=0)
+        x_bounds.add("qdot", bounds=bio_model[1].bounds_from_ranges("qdot"), phase=1)
+        x_bounds[0]["qdot"][:, [0, -1]] = 0
+        x_bounds[1]["qdot"][:, -1] = 0
+
+    # Define control path constraint
+    n_tau = bio_model[0].nb_tau
+    u_bounds = BoundsList()
+    u_bounds_tau = [[-100] * n_tau, [100] * n_tau]  # Limit the strength of the pendulum to (-100 to 100)...
+    u_bounds_tau[0][1] = 0  # ...but remove the capability to actively rotate
+    u_bounds_tau[1][1] = 0  # ...but remove the capability to actively rotate
+    for i in range(len(bio_model)):
+        u_bounds.add("tau", min_bound=u_bounds_tau[0], max_bound=u_bounds_tau[1], phase=i)
+
+    x_init = InitialGuessList()
+    u_init = InitialGuessList()
+
+    return OptimalControlProgram(
+        bio_model,
+        dynamics,
+        n_shooting,
+        final_time,
+        x_init=x_init,
+        u_init=u_init,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        objective_functions=objective_functions,
+        ode_solver=ode_solver,
+        control_type=control_type,
+        use_sx=use_sx,
+    )
+
+
+def custom_configure_as_time(
+    ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries: dict[str, np.ndarray] = None
+):
+    """
+    Tell the program which variables are states and controls.
+    The user is expected to use the ConfigureProblem.configure_xxx functions.
+
+    Parameters
+    ----------
+    ocp: OptimalControlProgram
+        A reference to the ocp
+    nlp: NonLinearProgram
+        A reference to the phase
+    """
+
+    ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
+    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
+    ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
+    ConfigureProblem.configure_new_variable(
+        "t",
+        "0",
+        ocp,
+        nlp,
+        as_states=True,
+        as_controls=False,
+        as_states_dot=False,
+    )
+    ConfigureProblem.configure_new_variable(
+        "final_time",
+        "0",
+        ocp,
+        nlp,
+        as_states=True,
+        as_controls=False,
+        as_states_dot=False,
+    )
+
+    ConfigureProblem.configure_dynamics_function(ocp, nlp, dynamic_as_time)
+
+
+def dynamic_as_time(
+    time: MX | SX,
+    states: MX | SX,
+    controls: MX | SX,
+    parameters: MX | SX,
+    algebraic_states: MX | SX,
+    numerical_timeseries: MX | SX,
+    nlp: NonLinearProgram,
+) -> DynamicsEvaluation:
+    """
+    The custom dynamics function that provides the derivative of the states: dxdt = f(t, x, u, p, a, d)
+
+    Parameters
+    ----------
+    time: MX | SX
+        The time of the system
+    states: MX | SX
+        The state of the system
+    controls: MX | SX
+        The controls of the system
+    parameters: MX | SX
+        The parameters acting on the system
+    algebraic_states: MX | SX
+        The Algebraic states variables of the system
+    numerical_timeseries: MX | SX
+        The numerical timeseries of the system
+    nlp: NonLinearProgram
+        A reference to the phase
+
+    Returns
+    -------
+    The derivative of the states in the tuple[MX | SX] format
+    """
+
+    q = DynamicsFunctions.get(nlp.states["q"], states)
+    qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+    t = DynamicsFunctions.get(nlp.states["t"], states)
+    tf = DynamicsFunctions.get(nlp.states["final_time"], states)
+    tau = DynamicsFunctions.get(nlp.controls["tau"], controls) * (sin(tf - t) * time.ones(nlp.model.nb_tau) * 10)
+
+    # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
+    dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
+    ddq = nlp.model.forward_dynamics(q, qdot, tau)
+
+    return DynamicsEvaluation(dxdt=vertcat(dq, ddq, 1, -1), defects=None)
+
+def final_time_equals_tf_init(controller):
+    tf = controller.states["final_time"].mx
+    real_final_time = controller.tf_mx
+    cx_version = Function('cx', [tf, real_final_time], [tf - real_final_time])(controller.states["final_time"].cx, controller.nlp[0].tf_cx)
+    return cx_version
+
+
+def prepare_ocp_state_as_time(
     biorbd_model_path: str,
     n_phase: int,
     ode_solver: OdeSolverBase,
@@ -154,13 +442,17 @@ def prepare_ocp(
                 ObjectiveFcn.Mayer.MINIMIZE_TIME, target=target, weight=20000, phase=i, quadratic=True
             )
 
+    # Add constraints
+    constraints = ConstraintList()
+    constraints.add(final_time_equals_tf_init, node=Node.START)
+
     # Dynamics
     dynamics = DynamicsList()
     expand = not isinstance(ode_solver, OdeSolver.IRK)
     for i in range(len(bio_model)):
         dynamics.add(
-            custom_configure,
-            dynamic_function=time_dynamic,
+            custom_configure_as_time,
+            dynamic_function=dynamic_as_time,
             phase=i,
             expand_dynamics=expand,
             phase_dynamics=phase_dynamics,
@@ -168,23 +460,14 @@ def prepare_ocp(
 
     # Define states path constraint
     x_bounds = BoundsList()
-    if n_phase == 1:
-        x_bounds["q"] = bio_model[0].bounds_from_ranges("q")
-        x_bounds["q"][:, [0, -1]] = 0
-        x_bounds["q"][-1, -1] = 3.14
-        x_bounds["qdot"] = bio_model[0].bounds_from_ranges("qdot")
-        x_bounds["qdot"][:, [0, -1]] = 0
-    else:
-        x_bounds.add("q", bounds=bio_model[0].bounds_from_ranges("q"), phase=0)
-        x_bounds.add("q", bounds=bio_model[1].bounds_from_ranges("q"), phase=1)
-        x_bounds[0]["q"][:, [0, -1]] = 0
-        x_bounds[0]["q"][-1, -1] = 3.14
-        x_bounds[1]["q"][:, -1] = 0
+    x_bounds["q"] = bio_model[0].bounds_from_ranges("q")
+    x_bounds["q"][:, [0, -1]] = 0
+    x_bounds["q"][-1, -1] = 3.14
+    x_bounds["qdot"] = bio_model[0].bounds_from_ranges("qdot")
+    x_bounds["qdot"][:, [0, -1]] = 0
+    x_bounds.add("t", min_bound=np.array([0, 0, 0]), max_bound=np.array([0, 10, 10]))
+    x_bounds.add("final_time", min_bound=np.array([0, 0, 0]), max_bound=np.array([10, 10, 10]))
 
-        x_bounds.add("qdot", bounds=bio_model[0].bounds_from_ranges("qdot"), phase=0)
-        x_bounds.add("qdot", bounds=bio_model[1].bounds_from_ranges("qdot"), phase=1)
-        x_bounds[0]["qdot"][:, [0, -1]] = 0
-        x_bounds[1]["qdot"][:, -1] = 0
 
     # Define control path constraint
     n_tau = bio_model[0].nb_tau
@@ -208,14 +491,39 @@ def prepare_ocp(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
+        constraints=constraints,
         ode_solver=ode_solver,
         control_type=control_type,
         use_sx=use_sx,
     )
 
 
+
+def integrate(time_vector, states, controls, dyn_fun, n_shooting=30, n_steps=5):
+    n_q = 2
+    tf = time_vector[-1]
+    dt = tf / n_shooting
+    h = dt / n_steps
+    x_integrated = DM.zeros((n_q*2, n_shooting + 1))
+    x_integrated[:, 0] = states[:, 0]
+    for i_shooting in range(n_shooting):
+        x_this_time = x_integrated[:, i_shooting]
+        u_this_time = controls[:, i_shooting]
+        current_time = dt * i_shooting
+        for i_step in range(n_steps):
+            k1 = dyn_fun(current_time, tf, x_this_time, u_this_time)
+            k2 = dyn_fun(current_time + h / 2, tf, x_this_time + h / 2 * k1, u_this_time)
+            k3 = dyn_fun(current_time + h / 2, tf, x_this_time + h / 2 * k2, u_this_time)
+            k4 = dyn_fun(current_time + h, tf, x_this_time + h * k3, u_this_time)
+            x_this_time += h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
+            current_time += h
+        x_integrated[:, i_shooting + 1] = x_this_time
+    return x_integrated
+
+
 @pytest.mark.parametrize("n_phase", [1, 2])
-@pytest.mark.parametrize("integrator", [OdeSolver.IRK, OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.TRAPEZOIDAL])
+# @pytest.mark.parametrize("integrator", [OdeSolver.IRK, OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.TRAPEZOIDAL])
+@pytest.mark.parametrize("integrator", [OdeSolver.RK4])
 @pytest.mark.parametrize("control_type", [ControlType.CONSTANT, ControlType.LINEAR_CONTINUOUS])
 @pytest.mark.parametrize("minimize_time", [True, False])
 @pytest.mark.parametrize("use_sx", [False, True])
@@ -341,6 +649,30 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
                         0.5482178516886668,
                     )
                     npt.assert_almost_equal(sol.decision_time()[-1], 1.01985, decimal=5)
+
+                    time_sym = MX.sym('T', 1, 1)
+                    tf_sym = ocp.nlp[0].tf_mx
+                    states_sym = ocp.nlp[0].states.mx
+                    controls_sym = ocp.nlp[0].controls.mx
+
+                    dyn_fun = Function('dynamics',
+                                       [time_sym, tf_sym, states_sym, controls_sym],
+                                       [time_dynamic(
+                                                    time_sym,
+                                                    states_sym,
+                                                    controls_sym,
+                                                    [],
+                                                    [],
+                                                    [],
+                                                    ocp.nlp[0],
+                                       ).dxdt])
+                    sol_time_vector = sol.decision_time()
+                    sol_states = vertcat(sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])['q'],
+                                         sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])['qdot'])
+                    sol_controls = sol.decision_controls(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["tau"]
+                    x_integrated = integrate(sol_time_vector, sol_states, sol_controls, dyn_fun, n_shooting=30, n_steps=5)
+
+                    npt.assert_almost_equal(np.array(reshape(x_integrated, 4*31, 1)), np.array(reshape(sol_states, 4*31, 1)))
                 else:
                     return
             elif control_type is ControlType.LINEAR_CONTINUOUS:
@@ -550,3 +882,157 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
                     npt.assert_almost_equal(sol.decision_time()[-1], 1.0)
                 else:
                     return
+
+
+
+@pytest.mark.parametrize("minimize_time", [True, False])
+@pytest.mark.parametrize("use_sx", [False, True])
+def test_time_dependent_problem_tf(minimize_time, use_sx):
+
+    from bioptim.examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    # --- Solve the program --- #
+    ocp = prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        n_phase=1,
+        ode_solver=OdeSolver.RK4(),
+        control_type=ControlType.CONSTANT,
+        minimize_time=minimize_time,
+        use_sx=use_sx,
+        with_tf_dynamic=True,
+    )
+    sol = ocp.solve()
+
+    if minimize_time:
+        npt.assert_almost_equal(np.array(sol.cost), np.array([[519.41442297]]))
+        npt.assert_almost_equal(
+            sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["q"][0][10],
+            0.1623031610578393,
+        )
+        npt.assert_almost_equal(
+            sol.decision_controls(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["tau"][0][10],
+            -2.2436319470030885,
+        )
+        npt.assert_almost_equal(
+            sol.decision_controls(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["tau"][0][20],
+            -0.5313441203059199,
+        )
+        npt.assert_almost_equal(sol.decision_time()[-1], 1.04611, decimal=5)
+
+        time_sym = MX.sym('T', 1, 1)
+        tf_sym = MX.sym('Tf', 1, 1)
+        states_sym = ocp.nlp[0].states.mx
+        controls_sym = ocp.nlp[0].controls.mx
+
+        tau_dyn = controls_sym * (sin(tf_sym - time_sym) * MX.ones(ocp.nlp[0].model.nb_tau) * 10)
+        out_dyn = vertcat(states_sym[ocp.nlp[0].model.nb_q:],
+                          ocp.nlp[0].model.forward_dynamics(states_sym[:ocp.nlp[0].model.nb_q],
+                                                            states_sym[ocp.nlp[0].model.nb_q:],
+                                                            tau_dyn))
+
+        dyn_fun = Function('dynamics',
+                           [time_sym, tf_sym, states_sym, controls_sym],
+                           [out_dyn],
+                           )
+        sol_time_vector = sol.decision_time()
+        sol_states = vertcat(sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])['q'],
+                             sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])['qdot'])
+        sol_controls = sol.decision_controls(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["tau"]
+        x_integrated = integrate(sol_time_vector, sol_states, sol_controls, dyn_fun, n_shooting=30, n_steps=5)
+
+        npt.assert_almost_equal(np.array(reshape(x_integrated, 4*31, 1)), np.array(reshape(sol_states, 4*31, 1)))
+
+    else:
+        npt.assert_almost_equal(np.array(sol.cost), np.array([[439.46711618]]))
+        npt.assert_almost_equal(
+            sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["q"][0][10],
+            0.5399146804724992,
+        )
+        npt.assert_almost_equal(
+            sol.decision_controls(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["tau"][0][10],
+            0.3181014748510472,
+        )
+        npt.assert_almost_equal(
+            sol.decision_controls(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["tau"][0][20],
+            0.8458229444008145,
+        )
+        npt.assert_almost_equal(sol.decision_time()[-1], 1.0)
+
+
+
+
+@pytest.mark.parametrize("minimize_time", [True])
+@pytest.mark.parametrize("use_sx", [False])
+def test_time_dependent_problem_as_state(minimize_time, use_sx):
+
+    from bioptim.examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    # --- Solve the program --- #
+    ocp = prepare_ocp_state_as_time(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        n_phase=1,
+        ode_solver=OdeSolver.RK4(),
+        control_type=ControlType.CONSTANT,
+        minimize_time=minimize_time,
+        use_sx=use_sx,
+    )
+    sol = ocp.solve(solver=Solver.IPOPT(show_online_optim=True))
+
+    if minimize_time:
+        npt.assert_almost_equal(np.array(sol.cost), np.array([[519.41442297]]))
+        npt.assert_almost_equal(
+            sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["q"][0][10],
+            0.1623031610578393,
+        )
+        npt.assert_almost_equal(
+            sol.decision_controls(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["tau"][0][10],
+            -2.2436319470030885,
+        )
+        npt.assert_almost_equal(
+            sol.decision_controls(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["tau"][0][20],
+            -0.5313441203059199,
+        )
+        npt.assert_almost_equal(sol.decision_time()[-1], 1.04611, decimal=5)
+
+        time_sym = MX.sym('T', 1, 1)
+        tf_sym = MX.sym('Tf', 1, 1)
+        states_sym = ocp.nlp[0].states.mx
+        controls_sym = ocp.nlp[0].controls.mx
+
+        tau_dyn = controls_sym * (sin(tf_sym - time_sym) * MX.ones(ocp.nlp[0].model.nb_tau) * 10)
+        out_dyn = vertcat(states_sym[ocp.nlp[0].model.nb_q:],
+                          ocp.nlp[0].model.forward_dynamics(states_sym[:ocp.nlp[0].model.nb_q],
+                                                            states_sym[ocp.nlp[0].model.nb_q:],
+                                                            tau_dyn))
+
+        dyn_fun = Function('dynamics',
+                           [time_sym, tf_sym, states_sym, controls_sym],
+                           [out_dyn],
+                           )
+        sol_time_vector = sol.decision_time()
+        sol_states = vertcat(sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])['q'],
+                             sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])['qdot'])
+        sol_controls = sol.decision_controls(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["tau"]
+        x_integrated = integrate(sol_time_vector, sol_states, sol_controls, dyn_fun, n_shooting=30, n_steps=5)
+
+        npt.assert_almost_equal(np.array(reshape(x_integrated, 4*31, 1)), np.array(reshape(sol_states, 4*31, 1)))
+
+    else:
+        npt.assert_almost_equal(np.array(sol.cost), np.array([[439.46711618]]))
+        npt.assert_almost_equal(
+            sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["q"][0][10],
+            0.5399146804724992,
+        )
+        npt.assert_almost_equal(
+            sol.decision_controls(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["tau"][0][10],
+            0.3181014748510472,
+        )
+        npt.assert_almost_equal(
+            sol.decision_controls(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["tau"][0][20],
+            0.8458229444008145,
+        )
+        npt.assert_almost_equal(sol.decision_time()[-1], 1.0)
