@@ -2,8 +2,8 @@ from casadi import horzcat, vertcat, MX, SX, DM
 
 from .dynamics_evaluation import DynamicsEvaluation
 from .fatigue.fatigue_dynamics import FatigueList
-from ..misc.mapping import BiMapping
 from ..misc.enums import DefectType
+from ..misc.mapping import BiMapping
 from ..optimization.optimization_variable import OptimizationVariable
 
 
@@ -250,7 +250,7 @@ class DynamicsFunctions:
         dxdt[:n_q, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
         dxdt[n_q:, :] = ddq
 
-        return DynamicsEvaluation(dxdt, None)
+        return DynamicsEvaluation(dxdt, defects=None)
 
     @staticmethod
     def stochastic_torque_driven(
