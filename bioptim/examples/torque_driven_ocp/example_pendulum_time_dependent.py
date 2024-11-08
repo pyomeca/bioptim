@@ -11,6 +11,8 @@ appreciate it). Finally, once it finished optimizing, it animates the model usin
 
 import platform
 
+import numpy as np
+
 from casadi import MX, SX, sin, vertcat
 
 from bioptim import (
@@ -79,7 +81,9 @@ def time_dependent_dynamic(
     return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
 
 
-def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
+def custom_configure(
+    ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries: dict[str, np.ndarray] = None
+):
     """
     Tell the program which variables are states and controls.
     The user is expected to use the ConfigureProblem.configure_xxx functions.
@@ -90,6 +94,8 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
         A reference to the ocp
     nlp: NonLinearProgram
         A reference to the phase
+    numerical_data_timeseries: dict[str, np.ndarray]
+            A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
     """
 
     ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
