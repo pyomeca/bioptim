@@ -1965,7 +1965,6 @@ class Dynamics(OptionGeneric):
         state_continuity_weight: float | None = None,
         phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
         numerical_data_timeseries: dict[str, np.ndarray] = None,
-        # external_forces: ExternalForceSetTimeSeries = None,
         **extra_parameters: Any,
     ):
         """
