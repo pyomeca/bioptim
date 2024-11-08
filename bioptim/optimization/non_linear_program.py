@@ -520,7 +520,7 @@ class NonLinearProgram:
         """
         if node_idx < 0 or node_idx > self.ns:
             return ValueError(f"node_index out of range [0:{self.ns}]")
-        return self.tf / self.ns * node_idx
+        return self.dt * node_idx
 
     def get_var_from_states_or_controls(
         self, key: str, states: MX.sym, controls: MX.sym, algebraic_states: MX.sym = None
