@@ -35,8 +35,8 @@ def dynamics_torque_driven_with_feedbacks(
     tau_force_field = get_force_field(q, nlp.model.force_field_magnitude)
     torques_computed = tau + tau_feedback + motor_noise + tau_force_field
 
-    mass_matrix = nlp.model.mass_matrix(q)
-    non_linear_effects = nlp.model.non_linear_effects(q, qdot)
+    mass_matrix = nlp.model.mass_matrix()(q, [])
+    non_linear_effects = nlp.model.non_linear_effects()(q, qdot, [])
 
     return cas.inv(mass_matrix) @ (torques_computed - non_linear_effects - nlp.model.friction_coefficients @ qdot)
 

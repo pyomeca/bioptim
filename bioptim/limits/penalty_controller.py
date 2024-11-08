@@ -97,10 +97,6 @@ class PenaltyController:
         return self._nlp.cx
 
     @property
-    def to_casadi_func(self) -> Callable:
-        return self._nlp.to_casadi_func
-
-    @property
     def control_type(self) -> ControlType:
         return self._nlp.control_type
 
@@ -117,10 +113,6 @@ class PenaltyController:
         return self._nlp.ns
 
     @property
-    def mx_to_cx(self):
-        return self._nlp.mx_to_cx
-
-    @property
     def model(self):
         return self._nlp.model
 
@@ -133,12 +125,11 @@ class PenaltyController:
         -------
 
         """
-        mx = vertcat(self.time.mx, self.dt.mx)
         cx = vertcat(self.time.cx, self.dt.cx)
 
         tp = OptimizationVariableList(self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE)
         n_val = cx.shape[0]
-        tp.append("t_span", mx=mx, cx=[cx, cx, cx], bimapping=BiMapping(to_second=range(n_val), to_first=range(n_val)))
+        tp.append("t_span", cx=[cx, cx, cx], bimapping=BiMapping(to_second=range(n_val), to_first=range(n_val)))
         return tp["t_span"]
 
     @property
@@ -148,10 +139,9 @@ class PenaltyController:
         """
 
         tp = OptimizationVariableList(self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE)
-        n_val = self.ocp.dt_parameter.mx.shape[0]
+        n_val = self.ocp.dt_parameter.cx.shape[0]
         tp.append(
             "phases_dt",
-            mx=self.ocp.dt_parameter.mx,
             cx=[self.ocp.dt_parameter.cx, self.ocp.dt_parameter.cx, self.ocp.dt_parameter.cx],
             bimapping=BiMapping(to_second=range(n_val), to_first=range(n_val)),
         )
@@ -165,10 +155,9 @@ class PenaltyController:
         """
 
         tp = OptimizationVariableList(self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE)
-        n_val = self._nlp.dt_mx.shape[0]
+        n_val = self._nlp.dt.shape[0]
         tp.append(
             "dt",
-            mx=self._nlp.dt_mx,
             cx=[self._nlp.dt, self._nlp.dt, self._nlp.dt],
             bimapping=BiMapping(to_second=range(n_val), to_first=range(n_val)),
         )
@@ -181,10 +170,9 @@ class PenaltyController:
         """
 
         tp = OptimizationVariableList(self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE)
-        n_val = self._nlp.time_mx.shape[0]
+        n_val = self._nlp.time_cx.shape[0]
         tp.append(
             "time",
-            mx=self._nlp.time_mx,
             cx=[self._nlp.time_cx, self._nlp.time_cx, self._nlp.time_cx],
             bimapping=BiMapping(to_second=range(n_val), to_first=range(n_val)),
         )
@@ -197,10 +185,9 @@ class PenaltyController:
         """
 
         tp = OptimizationVariableList(self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE)
-        n_val = self._nlp.tf_mx.shape[0]
+        n_val = self._nlp.tf.shape[0]
         tp.append(
             "tf",
-            mx=self._nlp.tf_mx,
             cx=[self._nlp.tf, self._nlp.tf, self._nlp.tf],
             bimapping=BiMapping(to_second=range(n_val), to_first=range(n_val)),
         )
@@ -394,18 +381,18 @@ class PenaltyController:
         return MX() if type(self._nlp.parameters.scaled) == DM else self._nlp.parameters.scaled
 
     @property
-    def q(self) -> OptimizationVariable:
+    def q(self) -> MX | SX:
         if "q" in self.states:
-            return self.states["q"]
+            return self.states["q"].mapping.to_second.map(self.states["q"].cx)
         elif "q_roots" in self.states and "q_joints" in self.states:
-            cx_start = vertcat(self.states["q_roots"].cx_start, self.states["q_joints"].cx_start)
+            # TODO: add mapping for q_roots and q_joints
+            cx_start = vertcat(self.states["q_roots"].cx, self.states["q_joints"].cx)
             q_parent_list = OptimizationVariableList(
                 self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
             )
             q_parent_list._cx_start = cx_start
             q = OptimizationVariable(
                 name="q",
-                mx=vertcat(self.states["q_roots"].mx, self.states["q_joints"].mx),
                 cx_start=cx_start,
                 index=[i for i in range(self.states["q_roots"].shape + self.states["q_joints"].shape)],
                 mapping=BiMapping(
@@ -414,15 +401,16 @@ class PenaltyController:
                 ),
                 parent_list=q_parent_list,
             )
-            return q
+            return q.cx
         else:
             raise RuntimeError("q is not defined in the states")
 
     @property
-    def qdot(self) -> OptimizationVariable:
+    def qdot(self) -> MX | SX:
         if "qdot" in self.states:
-            return self.states["qdot"]
+            return self.states["qdot"].mapping.to_second.map(self.states["qdot"].cx)
         elif "qdot_roots" in self.states and "qdot_joints" in self.states:
+            # TODO: add mapping for qdot_roots and qdot_joints
             cx_start = vertcat(self.states["qdot_roots"].cx_start, self.states["qdot_joints"].cx_start)
             qdot_parent_list = OptimizationVariableList(
                 self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
@@ -430,7 +418,6 @@ class PenaltyController:
             qdot_parent_list._cx_start = cx_start
             qdot = OptimizationVariable(
                 name="qdot",
-                mx=vertcat(self.states["qdot_roots"].mx, self.states["qdot_joints"].mx),
                 cx_start=cx_start,
                 index=[i for i in range(self.states["qdot_roots"].shape + self.states["qdot_joints"].shape)],
                 mapping=BiMapping(
@@ -439,14 +426,14 @@ class PenaltyController:
                 ),
                 parent_list=qdot_parent_list,
             )
-            return qdot
+            return qdot.cx
 
     @property
-    def tau(self) -> OptimizationVariable:
+    def tau(self) -> MX | SX:
         if "tau" in self.controls:
-            return self.controls["tau"]
+            return self.controls["tau"].mapping.to_second.map(self.controls["tau"].cx)
         elif "tau_joints" in self.controls:
-            return self.controls["tau_joints"]
+            return self.controls["tau_joints"].mapping.to_second.map(self.controls["tau_joints"].cx)
 
     def copy(self):
         return PenaltyController(

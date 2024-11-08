@@ -13,7 +13,6 @@ from bioptim import (
     OdeSolver,
     BiorbdModel,
     DynamicsFcn,
-    RigidBodyDynamics,
     PhaseDynamics,
 )
 
@@ -22,7 +21,6 @@ def prepare_ocp(
     biorbd_model_path: str,
     use_sx: bool = False,
     ode_solver=OdeSolver.RK4(),
-    rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     n_threads: int = 8,
     expand_dynamics: bool = True,
@@ -38,8 +36,6 @@ def prepare_ocp(
         If the project should be build in mx [False] or sx [True]
     ode_solver: OdeSolverBase
         The type of integrator
-    rigidbody_dynamics: RigidBodyDynamics
-        The rigidbody dynamics to use
     phase_dynamics: PhaseDynamics
         If the dynamics equation within a phase is unique or changes at each node.
         PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
@@ -73,7 +69,6 @@ def prepare_ocp(
     dynamics = DynamicsList()
     dynamics.add(
         DynamicsFcn.TORQUE_DRIVEN,
-        rigidbody_dynamics=rigidbody_dynamics,
         with_ligament=True,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
@@ -92,12 +87,6 @@ def prepare_ocp(
 
     u_bounds["tau"] = [tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau
     u_init["tau"] = [tau_init] * bio_model.nb_tau
-    if (
-        rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
-        or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
-    ):
-        u_bounds["qddot"] = [qddot_min] * bio_model.nb_qddot, [qddot_max] * bio_model.nb_qddot
-        u_init["qddot"] = [qddot_init] * bio_model.nb_qddot
 
     return OptimalControlProgram(
         bio_model,

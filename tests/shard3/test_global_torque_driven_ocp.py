@@ -689,9 +689,6 @@ def test_example_multi_biorbd_model(phase_dynamics):
     from bioptim.examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
-
-    # Define the problem
-
     biorbd_model_path = bioptim_folder + "/models/triple_pendulum.bioMod"
     biorbd_model_path_modified_inertia = bioptim_folder + "/models/triple_pendulum_modified_inertia.bioMod"
 

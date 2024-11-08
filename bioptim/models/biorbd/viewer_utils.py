@@ -8,7 +8,14 @@ from ...misc.enums import Node
 def _prepare_tracked_markers_for_animation(
     nlps: list["NonLinearProgram", ...], n_shooting: int = None
 ) -> list[np.ndarray, ...]:
-    """Prepare the markers which are tracked to the animation"""
+    """
+    Prepare the markers which are tracked to the animation
+
+    Returns
+    -------
+    list[np.ndarray, ...]
+        The markers to be tracked for each phase
+    """
 
     all_tracked_markers = []
 

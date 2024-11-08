@@ -534,7 +534,7 @@ class OptimalControlProgram:
         self.g_implicit = []
 
         # nlp is the core of a phase
-        self.nlp = [NLP(dynamics[i].phase_dynamics) for i in range(self.n_phases)]
+        self.nlp = [NLP(dynamics[i].phase_dynamics, use_sx) for i in range(self.n_phases)]
         NLP.add(self, "model", bio_model, False)
         NLP.add(self, "phase_idx", [i for i in range(self.n_phases)], False)
 
@@ -1062,7 +1062,7 @@ class OptimalControlProgram:
         if not isinstance(parameters, ParameterList):
             raise RuntimeError("new_parameter must be a Parameter or a ParameterList")
 
-        self.parameters = ParameterContainer()
+        self.parameters = ParameterContainer(use_sx=(self.cx == SX))
         self.parameters.initialize(parameters)
 
     def update_bounds(
@@ -1630,7 +1630,7 @@ class OptimalControlProgram:
 
         self.phase_time = phase_time if isinstance(phase_time, (tuple, list)) else [phase_time]
 
-        self.dt_parameter = ParameterList(use_sx=(True if self.cx == SX else False))
+        self.dt_parameter = ParameterList(use_sx=(self.cx == SX))
         for i_phase in range(self.n_phases):
             if i_phase != self.time_phase_mapping.to_second.map_idx[i_phase]:
                 self.dt_parameter.add_a_copied_element(self.time_phase_mapping.to_second.map_idx[i_phase])
@@ -1647,7 +1647,6 @@ class OptimalControlProgram:
         dt_bounds = {}
         dt_initial_guess = {}
         dt_cx = []
-        dt_mx = []
         for i_phase in range(self.n_phases):
             if i_phase == self.time_phase_mapping.to_second.map_idx[i_phase]:
                 dt = self.phase_time[i_phase] / self.nlp[i_phase].ns
@@ -1655,7 +1654,6 @@ class OptimalControlProgram:
                 dt_initial_guess[f"dt_phase_{i_phase}"] = dt
 
             dt_cx.append(self.dt_parameter[self.time_phase_mapping.to_second.map_idx[i_phase]].cx)
-            dt_mx.append(self.dt_parameter[self.time_phase_mapping.to_second.map_idx[i_phase]].mx)
 
         has_penalty = define_parameters_phase_time(self, objective_functions)
         define_parameters_phase_time(self, constraints, has_penalty)
@@ -1663,11 +1661,8 @@ class OptimalControlProgram:
         # Add to the nlp
         NLP.add(self, "time_index", self.time_phase_mapping.to_second.map_idx, True)
         NLP.add(self, "time_cx", self.cx.sym("time", 1, 1), True)
-        NLP.add(self, "time_mx", MX.sym("time", 1, 1), True)
         NLP.add(self, "dt", dt_cx, False)
-        NLP.add(self, "dt_mx", dt_mx, False)
         NLP.add(self, "tf", [nlp.dt * max(nlp.ns, 1) for nlp in self.nlp], False)
-        NLP.add(self, "tf_mx", [nlp.dt_mx * max(nlp.ns, 1) for nlp in self.nlp], False)
 
         self.dt_parameter_bounds = Bounds(
             "dt_bounds",
@@ -1700,15 +1695,10 @@ class OptimalControlProgram:
                             f"{key}_phase{i_phase}_{i_component}_cx",
                             variable_shape[0],
                         )
-                        mx = MX.sym(
-                            f"{key}_phase{i_phase}_{i_component}_mx",
-                            variable_shape[0],
-                        )
 
                         numerical_timeseries[-1].append(
                             name=f"{key}_{i_component}",
                             cx=[cx, cx, cx],
-                            mx=mx,
                             bimapping=BiMapping(
                                 Mapping(list(range(variable_shape[0]))), Mapping(list(range(variable_shape[0])))
                             ),

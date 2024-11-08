@@ -1,14 +1,12 @@
 import inspect
 from typing import Any
 
-import biorbd_casadi as biorbd
-from casadi import horzcat, vertcat, Function, atan2, dot, cross, sqrt, MX_eye, SX_eye, SX, jacobian, trace
+from casadi import horzcat, vertcat, Function, acos, dot, norm_fro, MX_eye, SX_eye, SX, jacobian, trace
 from math import inf
 
 from .penalty_controller import PenaltyController
 from .penalty_option import PenaltyOption
 from ..misc.enums import Node, Axis, ControlType, QuadratureRule
-from ..models.biorbd.biorbd_model import BiorbdModel
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
 
 
@@ -122,14 +120,13 @@ class PenaltyFunctionAbstract:
 
             controls = controller.controls[key_control].cx_start  # select only actuacted states
             if key_control == "tau":
-                return controls * controller.qdot.cx_start
+                return controls * controller.qdot
             elif key_control == "muscles":
-                q_mx = controller.q.mx
-                qdot_mx = controller.qdot.mx
-                muscles_dot = controller.model.muscle_velocity(q_mx, qdot_mx)
-                objective = controller.mx_to_cx("muscle_velocity", muscles_dot, controller.q, controller.qdot)
+                muscles_dot = controller.model.muscle_velocity()(
+                    controller.q, controller.qdot, controller.parameters.cx
+                )
 
-                return controls * objective
+                return controls * muscles_dot
 
         @staticmethod
         def minimize_algebraic_states(penalty: PenaltyOption, controller: PenaltyController, key: str):
@@ -199,27 +196,27 @@ class PenaltyFunctionAbstract:
 
             e_fb_mx = controller.model.compute_torques_from_noise_and_feedback(
                 nlp=controller.get_nlp,
-                time=controller.time.mx,
-                states=controller.states_scaled.mx,
-                controls=controller.controls_scaled.mx,
-                parameters=controller.parameters_scaled.mx,
-                algebraic_states=controller.algebraic_states_scaled.mx,
-                numerical_timeseries=controller.numerical_timeseries.mx,
+                time=controller.time.cx,
+                states=controller.states_scaled.cx,
+                controls=controller.controls_scaled.cx,
+                parameters=controller.parameters_scaled.cx,
+                algebraic_states=controller.algebraic_states_scaled.cx,
+                numerical_timeseries=controller.numerical_timeseries.cx,
                 sensory_noise=controller.model.sensory_noise_magnitude,
                 motor_noise=controller.model.motor_noise_magnitude,
             )
 
-            jac_e_fb_x = jacobian(e_fb_mx, controller.states_scaled.mx)
+            jac_e_fb_x = jacobian(e_fb_mx, controller.states_scaled.cx)
 
             jac_e_fb_x_cx = Function(
                 "jac_e_fb_x",
                 [
-                    controller.t_span.mx,
-                    controller.states_scaled.mx,
-                    controller.controls_scaled.mx,
-                    controller.parameters_scaled.mx,
-                    controller.algebraic_states_scaled.mx,
-                    controller.numerical_timeseries.mx,
+                    controller.t_span.cx,
+                    controller.states_scaled.cx,
+                    controller.controls_scaled.cx,
+                    controller.parameters_scaled.cx,
+                    controller.algebraic_states_scaled.cx,
+                    controller.numerical_timeseries.cx,
                 ],
                 [jac_e_fb_x],
             )(
@@ -292,21 +289,22 @@ class PenaltyFunctionAbstract:
             penalty.plot_target = False
 
             # Compute the position of the marker in the requested reference frame (None for global)
-            q = controller.q
-            model: BiorbdModel = controller.model
+            CX_eye = SX_eye if controller.ocp.cx == SX else MX_eye
             jcs_t = (
-                biorbd.RotoTrans()
+                CX_eye(4)
                 if reference_jcs is None
-                else model.biorbd_homogeneous_matrices_in_global(q.mx, reference_jcs, inverse=True)
+                else controller.model.homogeneous_matrices_in_global(reference_jcs, inverse=True)(
+                    controller.q, controller.parameters.cx
+                )
             )
 
-            markers = []
-            for m in model.markers(q.mx):
-                markers_in_jcs = jcs_t.to_mx() @ vertcat(m, 1)
-                markers = horzcat(markers, markers_in_jcs[:3])
+            markers = controller.model.markers()(controller.q, controller.parameters.cx)
+            markers_in_jcs = []
+            for i in range(markers.shape[1]):
+                marker_in_jcs = jcs_t @ vertcat(markers[:, i], 1)
+                markers_in_jcs = horzcat(markers_in_jcs, marker_in_jcs[:3])
 
-            markers_objective = controller.mx_to_cx("markers", markers, controller.q)
-            return markers_objective
+            return markers_in_jcs
 
         @staticmethod
         def minimize_markers_velocity(
@@ -343,13 +341,11 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             # Add the penalty in the requested reference frame. None for global
-            q_mx = controller.q.mx
-            qdot_mx = controller.qdot.mx
+            markers = controller.model.markers_velocities(reference_index=reference_jcs)(
+                controller.q, controller.qdot, controller.parameters.cx
+            )
 
-            markers = horzcat(*controller.model.marker_velocities(q_mx, qdot_mx, reference_index=reference_jcs))
-
-            markers_objective = controller.mx_to_cx("markers_velocity", markers, controller.q, controller.qdot)
-            return markers_objective
+            return markers
 
         @staticmethod
         def minimize_markers_acceleration(
@@ -383,16 +379,13 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            q_mx = controller.q.mx
-            qdot_mx = controller.qdot.mx
-            qddot_mx = PenaltyFunctionAbstract._get_qddot(controller, "mx")
+            qddot = PenaltyFunctionAbstract._get_qddot(controller, "cx")
 
-            markers = horzcat(
-                *controller.model.marker_accelerations(q_mx, qdot_mx, qddot_mx, reference_index=reference_jcs)
+            markers = controller.model.markers_accelerations(reference_index=reference_jcs)(
+                controller.q, controller.qdot, qddot, controller.parameters.cx
             )
-            markers_objective = PenaltyFunctionAbstract._get_markers_acceleration(controller, markers, CoM=False)
 
-            return markers_objective
+            return markers
 
         @staticmethod
         def superimpose_markers(
@@ -432,15 +425,11 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            diff_markers = controller.model.marker(controller.q.mx, second_marker_idx) - controller.model.marker(
-                controller.q.mx, first_marker_idx
-            )
+            diff_markers = controller.model.marker(second_marker_idx)(
+                controller.q, controller.parameters.cx
+            ) - controller.model.marker(first_marker_idx)(controller.q, controller.parameters.cx)
 
-            return controller.mx_to_cx(
-                f"diff_markers",
-                diff_markers,
-                controller.q,
-            )
+            return diff_markers
 
         @staticmethod
         def superimpose_markers_velocity(
@@ -480,18 +469,15 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            marker_velocity = controller.model.marker_velocities(controller.q.mx, controller.qdot.mx)
-            marker_1 = marker_velocity[first_marker_idx][:]
-            marker_2 = marker_velocity[second_marker_idx][:]
+            marker_velocities = controller.model.markers_velocities()(
+                controller.q, controller.qdot, controller.parameters.cx
+            )
+            marker_1 = marker_velocities[:, first_marker_idx]
+            marker_2 = marker_velocities[:, second_marker_idx]
 
             diff_markers = marker_2 - marker_1
 
-            return controller.mx_to_cx(
-                f"diff_markers",
-                diff_markers,
-                controller.q,
-                controller.qdot,
-            )
+            return diff_markers
 
         @staticmethod
         def proportional_states(
@@ -613,12 +599,13 @@ class PenaltyFunctionAbstract:
                 The penalty node elements
             """
 
-            g = controller.model.gravity[2]
-            com = controller.model.center_of_mass(controller.q.mx)
-            com_dot = controller.model.center_of_mass_velocity(controller.q.mx, controller.qdot.mx)
+            g = controller.model.gravity()["gravity"][2]
+            com = controller.model.center_of_mass()(controller.q, controller.parameters.cx)
+            com_dot = controller.model.center_of_mass_velocity()(
+                controller.q, controller.qdot, controller.parameters.cx
+            )
             com_height = (com_dot[2] * com_dot[2]) / (2 * -g) + com[2]
-            com_height_cx = controller.mx_to_cx("com_height", com_height, controller.q, controller.qdot)
-            return com_height_cx
+            return com_height
 
         @staticmethod
         def minimize_com_position(penalty: PenaltyOption, controller: PenaltyController, axes: tuple | list = None):
@@ -641,8 +628,7 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            com_cx = controller.mx_to_cx("com", controller.model.center_of_mass, controller.q)
-            return com_cx
+            return controller.model.center_of_mass()(controller.q, controller.parameters.cx)
 
         @staticmethod
         def minimize_com_velocity(penalty: PenaltyOption, controller: PenaltyController, axes: tuple | list = None):
@@ -665,10 +651,7 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            com_dot_cx = controller.mx_to_cx(
-                "com_dot", controller.model.center_of_mass_velocity, controller.q, controller.qdot
-            )
-            return com_dot_cx
+            return controller.model.center_of_mass_velocity()(controller.q, controller.qdot, controller.parameters.cx)
 
         @staticmethod
         def minimize_com_acceleration(penalty: PenaltyOption, controller: PenaltyController, axes: tuple | list = None):
@@ -691,14 +674,13 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            q_mx = controller.q.mx
-            qdot_mx = controller.qdot.mx
-            qddot_mx = PenaltyFunctionAbstract._get_qddot(controller, "mx")
+            qddot = PenaltyFunctionAbstract._get_qddot(controller, "cx")
 
-            marker = controller.model.center_of_mass_acceleration(q_mx, qdot_mx, qddot_mx)
-            com_objective = PenaltyFunctionAbstract._get_markers_acceleration(controller, marker, CoM=True)
+            marker = controller.model.center_of_mass_acceleration()(
+                controller.q, controller.qdot, qddot, controller.parameters.cx
+            )
 
-            return com_objective
+            return marker
 
         @staticmethod
         def minimize_angular_momentum(penalty: PenaltyOption, controller: PenaltyController, axes: tuple | list = None):
@@ -718,13 +700,8 @@ class PenaltyFunctionAbstract:
             """
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
-            angular_momentum_cx = controller.mx_to_cx(
-                "angular_momentum",
-                controller.model.angular_momentum,
-                controller.q,
-                controller.qdot,
-            )
-            return angular_momentum_cx
+
+            return controller.model.angular_momentum()(controller.q, controller.qdot, controller.parameters.cx)
 
         @staticmethod
         def minimize_linear_momentum(penalty: PenaltyOption, controller: PenaltyController, axes: tuple | list = None):
@@ -746,17 +723,10 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            com_velocity = controller.mx_to_cx(
-                "com_velocity",
-                controller.model.center_of_mass_velocity,
-                controller.q,
-                controller.qdot,
+            com_velocity = controller.model.center_of_mass_velocity()(
+                controller.q, controller.qdot, controller.parameters.cx
             )
-            if isinstance(com_velocity, SX):
-                mass = Function("mass", [], [controller.model.mass]).expand()
-                mass = mass()["o0"]
-            else:
-                mass = controller.model.mass
+            mass = controller.model.mass()["mass"]
             linear_momentum_cx = com_velocity * mass
             return linear_momentum_cx
 
@@ -890,13 +860,20 @@ class PenaltyFunctionAbstract:
                 force_idx.append(4 + (6 * i_sc))
                 force_idx.append(5 + (6 * i_sc))
             soft_contact_force = controller.get_nlp.soft_contact_forces_func(
-                controller.time.cx, controller.states.cx_start, controller.controls.cx_start, controller.parameters.cx
+                controller.time.cx,
+                controller.states.cx_start,
+                controller.controls.cx_start,
+                controller.parameters.cx,
             )
             return soft_contact_force[force_idx]
 
         @staticmethod
         def track_segment_with_custom_rt(
-            penalty: PenaltyOption, controller: PenaltyController, segment: int | str, rt: int
+            penalty: PenaltyOption,
+            controller: PenaltyController,
+            segment: int | str,
+            rt_index: int,
+            sequence: str = "zyx",
         ):
             """
             Minimize the difference of the euler angles extracted from the coordinate system of a segment
@@ -910,26 +887,25 @@ class PenaltyFunctionAbstract:
                 The penalty node elements
             segment: int | str
                 The name or index of the segment
-            rt: int
+            rt_index: int
                 The index of the RT in the bioMod
+            sequence: str
+                The sequence of the euler angles (default="zyx")
             """
-            from ..models.biorbd.biorbd_model import BiorbdModel
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             segment_index = controller.model.segment_index(segment) if isinstance(segment, str) else segment
 
-            if not isinstance(controller.model, BiorbdModel):
-                raise NotImplementedError(
-                    "The track_segment_with_custom_rt penalty can only be called with a BiorbdModel"
-                )
-            model: BiorbdModel = controller.model
-            r_seg_transposed = model.model.globalJCS(controller.q.mx, segment_index).rot().transpose()
-            r_rt = model.model.RT(controller.q.mx, rt).rot()
-            angles_diff = biorbd.Rotation.toEulerAngles(r_seg_transposed * r_rt, "zyx").to_mx()
+            r_seg = controller.model.homogeneous_matrices_in_global(segment_index=segment_index)(
+                controller.q, controller.parameters.cx
+            )[:3, :3]
+            r_seg_transposed = r_seg.T
+            r_rt = controller.model.rt(rt_index=rt_index)(controller.q, controller.parameters.cx)[:3, :3]
 
-            angle_objective = controller.mx_to_cx(f"track_segment", angles_diff, controller.q)
-            return angle_objective
+            angles_diff = controller.model.rotation_matrix_to_euler_angles(sequence=sequence)(r_seg_transposed @ r_rt)
+
+            return angles_diff
 
         @staticmethod
         def track_marker_with_segment_axis(
@@ -963,11 +939,10 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             marker_idx = controller.model.marker_index(marker) if isinstance(marker, str) else marker
-            segment_idx = controller.model.segment_index(segment) if isinstance(segment, str) else segment
+            segment_index = controller.model.segment_index(segment) if isinstance(segment, str) else segment
 
-            # Get the marker in rt reference frame
-            marker = controller.model.marker(controller.q.mx, marker_idx, segment_idx)
-            marker_objective = controller.mx_to_cx("marker", marker, controller.q)
+            # Get the marker in segment_index reference frame
+            marker = controller.model.marker(marker_idx, segment_index)(controller.q, controller.parameters.cx)
 
             # To align an axis, the other must be equal to 0
             if not penalty.rows_is_set:
@@ -976,7 +951,7 @@ class PenaltyFunctionAbstract:
                 penalty.rows = [ax for ax in [Axis.X, Axis.Y, Axis.Z] if ax != axis]
                 penalty.rows_is_set = True
 
-            return marker_objective
+            return marker
 
         @staticmethod
         def minimize_segment_rotation(
@@ -984,6 +959,7 @@ class PenaltyFunctionAbstract:
             controller: PenaltyController,
             segment: int | str,
             axes: list | tuple = None,
+            sequence: str = "xyz",
         ):
             """
             Track the orientation of a segment in the global with the sequence XYZ.
@@ -999,6 +975,8 @@ class PenaltyFunctionAbstract:
                 Name or index of the segment to align with the marker
             axes: list | tuple
                 The axis that the JCS rotation should be tracked
+            sequence: str
+                The sequence of the euler angles (default="xyz")
             """
             from ..models.biorbd.biorbd_model import BiorbdModel
 
@@ -1009,13 +987,15 @@ class PenaltyFunctionAbstract:
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            segment_idx = controller.model.segment_index(segment) if isinstance(segment, str) else segment
+            segment_index = controller.model.segment_index(segment) if isinstance(segment, str) else segment
 
             if not isinstance(controller.model, BiorbdModel):
                 raise NotImplementedError("The minimize_segment_rotation penalty can only be called with a BiorbdModel")
-            model: BiorbdModel = controller.model
-            jcs_segment = model.model.globalJCS(controller.q.mx, segment_idx).rot()
-            angles_segment = biorbd.Rotation.toEulerAngles(jcs_segment, "xyz").to_mx()
+
+            jcs_segment = controller.model.homogeneous_matrices_in_global(segment_index)(
+                controller.q, controller.parameters.cx
+            )[:3, :3]
+            angles_segment = controller.model.rotation_matrix_to_euler_angles(sequence)(jcs_segment)
 
             if axes is None:
                 axes = [Axis.X, Axis.Y, Axis.Z]
@@ -1024,9 +1004,7 @@ class PenaltyFunctionAbstract:
                     if not isinstance(ax, Axis):
                         raise RuntimeError("axes must be a list of bioptim.Axis")
 
-            segment_rotation_objective = controller.mx_to_cx("segment_rotation", angles_segment[axes], controller.q)
-
-            return segment_rotation_objective
+            return angles_segment[axes]
 
         @staticmethod
         def minimize_segment_velocity(
@@ -1054,14 +1032,16 @@ class PenaltyFunctionAbstract:
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            segment_idx = controller.model.segment_index(segment) if isinstance(segment, str) else segment
+            segment_index = controller.model.segment_index(segment) if isinstance(segment, str) else segment
 
             if not isinstance(controller.model, BiorbdModel):
                 raise NotImplementedError(
                     "The minimize_segments_velocity penalty can only be called with a BiorbdModel"
                 )
             model: BiorbdModel = controller.model
-            segment_angular_velocity = model.segment_angular_velocity(controller.q.mx, controller.qdot.mx, segment_idx)
+            segment_angular_velocity = model.segment_angular_velocity(segment_index)(
+                controller.q, controller.qdot, controller.parameters.cx
+            )
 
             if axes is None:
                 axes = [Axis.X, Axis.Y, Axis.Z]
@@ -1070,83 +1050,7 @@ class PenaltyFunctionAbstract:
                     if not isinstance(ax, Axis):
                         raise RuntimeError("axes must be a list of bioptim.Axis")
 
-            segment_velocity_objective = controller.mx_to_cx(
-                "segment_velocity",
-                segment_angular_velocity[axes],
-                controller.q,
-                controller.qdot,
-            )
-
-            return segment_velocity_objective
-
-        @staticmethod
-        def track_vector_orientations_from_markers(
-            penalty: PenaltyOption,
-            controller: PenaltyController,
-            vector_0_marker_0: int | str,
-            vector_0_marker_1: int | str,
-            vector_1_marker_0: int | str,
-            vector_1_marker_1: int | str,
-        ):
-            """
-            Aligns two vectors together.
-            The first vector is defined by vector_0_marker_1 - vector_0_marker_0.
-            The second vector is defined by vector_1_marker_1 - vector_1_marker_0.
-            Note that is minimizes the angle between the two vectors, thus it is not possible ti specify an axis.
-            By default, this function is quadratic, meaning that it minimizes the angle between the two vectors.
-            WARNING: please be careful as there is a discontinuity when the two vectors are orthogonal.
-
-            Parameters
-            ----------
-            penalty: PenaltyOption
-                The actual penalty to declare
-            controller: PenaltyController
-                The penalty node elements
-            vector_0_marker_0: int | str
-                Name or index of the first marker of the first vector
-            vector_0_marker_1: int | str
-                Name or index of the second marker of the first vector
-            vector_1_marker_0: int | str
-                Name or index of the first marker of the second vector
-            vector_1_marker_1: int | str
-                Name or index of the second marker of the second vector
-            """
-
-            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
-
-            vector_0_marker_0_idx = (
-                controller.model.marker_index(vector_0_marker_0)
-                if isinstance(vector_0_marker_0, str)
-                else vector_0_marker_0
-            )
-            vector_0_marker_1_idx = (
-                controller.model.marker_index(vector_0_marker_1)
-                if isinstance(vector_0_marker_1, str)
-                else vector_0_marker_1
-            )
-            vector_1_marker_0_idx = (
-                controller.model.marker_index(vector_1_marker_0)
-                if isinstance(vector_1_marker_0, str)
-                else vector_1_marker_0
-            )
-            vector_1_marker_1_idx = (
-                controller.model.marker_index(vector_1_marker_1)
-                if isinstance(vector_1_marker_1, str)
-                else vector_1_marker_1
-            )
-
-            vector_0_marker_0_position = controller.model.marker(controller.q.mx, vector_0_marker_0_idx)
-            vector_0_marker_1_position = controller.model.marker(controller.q.mx, vector_0_marker_1_idx)
-            vector_1_marker_0_position = controller.model.marker(controller.q.mx, vector_1_marker_0_idx)
-            vector_1_marker_1_position = controller.model.marker(controller.q.mx, vector_1_marker_1_idx)
-
-            vector_0 = vector_0_marker_1_position - vector_0_marker_0_position
-            vector_1 = vector_1_marker_1_position - vector_1_marker_0_position
-            cross_prod = cross(vector_0, vector_1)
-            cross_prod_norm = sqrt(cross_prod[0] ** 2 + cross_prod[1] ** 2 + cross_prod[2] ** 2)
-            out = atan2(cross_prod_norm, dot(vector_0, vector_1))
-
-            return controller.mx_to_cx("vector_orientations_difference", out, controller.q)
+            return segment_angular_velocity[axes]
 
         @staticmethod
         def state_continuity(penalty: PenaltyOption, controller: PenaltyController | list):
@@ -1451,10 +1355,9 @@ class PenaltyFunctionAbstract:
         attribute : str
             Specifies which attribute ('cx_start' or 'mx') to use for the extraction.
         """
-        if attribute not in ["mx", "cx_start"]:
-            raise ValueError("atrribute should be either mx or cx_start")
 
         if "qddot" not in controller.states and "qddot" not in controller.controls:
+            source_qdot = controller.states if "qdot" in controller.states else controller.controls
             return controller.dynamics(
                 getattr(controller.time, attribute),
                 getattr(controller.states, attribute),
@@ -1462,41 +1365,7 @@ class PenaltyFunctionAbstract:
                 getattr(controller.parameters, attribute),
                 getattr(controller.algebraic_states, attribute),
                 getattr(controller.numerical_timeseries, attribute),
-            )[controller.qdot.index, :]
+            )[source_qdot["qdot"].index, :]
 
         source = controller.states if "qddot" in controller.states else controller.controls
         return getattr(source["qddot"], attribute)
-
-    @staticmethod
-    def _get_markers_acceleration(controller: PenaltyController, markers, CoM=False):
-        """
-        Retrieve the acceleration of either the markers or the center of mass (CoM) from the controller.
-
-        Parameters
-        ----------
-        controller
-            An object containing 'states' and 'controls' data.
-
-        markers : MX
-            A generic expression of the marker or CoM acceleration.
-
-        CoM : bool, optional
-            A boolean indicating the type of acceleration to be returned. If True, returns the CoM
-            acceleration. If False, returns the markers acceleration. Defaults to False.
-
-        """
-
-        if "qddot" not in controller.states and "qddot" not in controller.controls:
-            last_param = controller.controls["tau"]
-        else:
-            last_param = controller.states["qddot"] if "qddot" in controller.states else controller.controls["qddot"]
-
-        return controller.mx_to_cx(
-            "com_ddot" if CoM else "markers_acceleration",
-            markers,
-            controller.time,
-            controller.parameters.unscaled,
-            controller.q,
-            controller.qdot,
-            last_param,
-        )

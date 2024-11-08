@@ -51,7 +51,6 @@ examples_ = OrderedDict(
                     ("Example multiphase", "example_multiphase.py"),
                     ("Example optimal time", "example_optimal_time.py"),
                     ("Example simulation", "example_simulation.py"),
-                    ("Example Implicit Dynamics", "example_implicit_dynamics.py"),
                     ("Pendulum", "pendulum.py"),
                 ]
             ),

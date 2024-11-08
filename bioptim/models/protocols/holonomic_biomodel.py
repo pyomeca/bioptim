@@ -200,7 +200,7 @@ class HolonomicBioModel(BioModel, Protocol):
             The partitioned mass matrix, reordered in function independent and dependent joints
         """
 
-    def partitioned_non_linear_effect(self, q: MX, qdot: MX, f_ext=None, f_contacts=None) -> MX:
+    def partitioned_non_linear_effect(self, q: MX, qdot: MX) -> MX:
         """
         This function returns the partitioned non-linear effect, reordered in function independent and dependent joints
 
@@ -327,57 +327,21 @@ class HolonomicBioModel(BioModel, Protocol):
         https://doi.org/10.5194/ms-4-199-2013, 2013.
         """
 
-    def compute_q_v(self, q_u: MX | DM, q_v_init: MX | DM = None) -> MX | DM:
+    def compute_q_v(self) -> Function:
         """
         Compute the dependent joint from the independent joint,
         This is done by solving the system of equations given by the holonomic constraints
         At the end of this step, we get admissible generalized coordinates w.r.t. the holonomic constraints
-
-        Parameters
-        ----------
-        q_u: MX | DM
-            The generalized coordinates
-        q_v_init: MX | DM
-            The initial guess for the dependent joint coordinates
-
-        Returns
-        -------
-        MX | DM
-            The dependent joint
         """
 
-    def compute_q(self, q_u: MX, q_v_init: MX = None) -> MX:
+    def compute_q(self) -> Function:
         """
         Compute the generalized coordinates from the independent joint coordinates
-
-        Parameters
-        ----------
-        q_u: MX
-            The independent joint coordinates
-        q_v_init: MX
-            The initial guess for the dependent joint coordinates
-
-        Returns
-        -------
-        MX
-            The generalized coordinates
         """
 
-    def compute_qdot_v(self, q: MX, qdot_u: MX) -> MX:
+    def compute_qdot_v(self) -> Function:
         """
         Compute the dependent joint velocities from the independent joint velocities and the positions.
-
-        Parameters
-        ----------
-        q: MX
-            The generalized coordinates
-        qdot_u: MX
-            The independent joint velocities
-
-        Returns
-        -------
-        MX
-            The dependent joint velocities
         """
 
     def compute_qdot(self, q: MX, qdot_u: MX) -> MX:
@@ -397,25 +361,11 @@ class HolonomicBioModel(BioModel, Protocol):
             The dependent joint velocities
         """
 
-    def compute_qddot_v(self, q: MX, qdot: MX, qddot_u: MX) -> MX:
+    def compute_qddot_v(self) -> Function:
         """
         Compute the dependent joint accelerations from the independent joint accelerations and the velocities and
         positions.
 
-        Parameters
-        ----------
-        q: MX
-            The generalized coordinates
-        qdot:
-            The generalized velocities
-        qddot_u:
-            The independent joint accelerations
-
-        Returns
-        -------
-        MX
-            The dependent joint accelerations
-
         Sources
         -------
         Docquier, N., Poncelet, A., and Fisette, P.:
@@ -424,24 +374,10 @@ class HolonomicBioModel(BioModel, Protocol):
         Equation (17) in the paper.
         """
 
-    def compute_qddot(self, q: MX, qdot: MX, qddot_u: MX) -> MX:
+    def compute_qddot(self) -> Function:
         """
         Compute the accelerations from the independent joint accelerations and the velocities and positions.
 
-        Parameters
-        ----------
-        q: MX
-            The generalized coordinates
-        qdot:
-            The generalized velocities
-        qddot_u:
-            The independent joint accelerations
-
-        Returns
-        -------
-        MX
-            The generalized accelerations
-
         Sources
         -------
         Docquier, N., Poncelet, A., and Fisette, P.:
@@ -450,30 +386,9 @@ class HolonomicBioModel(BioModel, Protocol):
         Equation (17) in the paper.
         """
 
-    def compute_the_lagrangian_multipliers(
-        self, q: MX, qdot: MX, qddot: MX, tau: MX, external_forces: MX = None, f_contacts: MX = None
-    ) -> MX:
+    def compute_the_lagrangian_multipliers(self) -> Function:
         """
         Compute the Lagrangian multiplier, denoted lambda in the paper:
-        Parameters
-        ----------
-        q: MX
-            The generalized coordinates
-        qdot: MX
-            The generalized velocities
-        qddot: MX
-            The generalized accelerations
-        tau: MX
-            The generalized torques
-        external_forces: MX
-            The external forces
-        f_contacts: MX
-            The contact forces
-
-        Returns
-        -------
-        MX
-            The Lagrangian multipliers
 
         Sources
         -------

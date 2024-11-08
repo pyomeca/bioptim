@@ -1,7 +1,6 @@
 import os
 
 import pytest
-import numpy as np
 import numpy.testing as npt
 
 from bioptim import OdeSolver, Solver, PhaseDynamics, SolutionMerge, TimeAlignment, ControlType, Solution

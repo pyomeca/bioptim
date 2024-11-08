@@ -12,7 +12,6 @@ from bioptim import (
     ControlType,
     SolutionIntegrator,
     QuadratureRule,
-    RigidBodyDynamics,
     SoftContactDynamics,
 )
 
@@ -159,17 +158,6 @@ def test_soft_contact_dynamics():
 
     # verify the number of elements
     assert len(SoftContactDynamics) == 2
-
-
-def test_rigid_body_dynamics():
-    assert RigidBodyDynamics.ODE.value == "ode"
-    assert RigidBodyDynamics.DAE_INVERSE_DYNAMICS.value == "dae_inverse_dynamics"
-    assert RigidBodyDynamics.DAE_FORWARD_DYNAMICS.value == "dae_forward_dynamics"
-    assert RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK.value == "dae_inverse_dynamics_jerk"
-    assert RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK.value == "dae_forward_dynamics_jerk"
-
-    # verify the number of elements
-    assert len(RigidBodyDynamics) == 5
 
 
 def test_defect_type():

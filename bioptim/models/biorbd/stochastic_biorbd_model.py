@@ -5,6 +5,8 @@ from casadi import DM
 
 from bioptim import BiorbdModel, DynamicsFunctions
 from ...misc.mapping import BiMappingList
+from ...optimization.parameters import ParameterList
+from ...optimization.variable_scaling import VariableScaling
 
 
 def _compute_torques_from_noise_and_feedback_default(
@@ -48,9 +50,27 @@ class StochasticBiorbdModel(BiorbdModel):
         compute_torques_from_noise_and_feedback: Callable = _compute_torques_from_noise_and_feedback_default,
         motor_noise_mapping: BiMappingList = BiMappingList(),
         n_collocation_points: int = 1,
+        use_sx: bool = False,
+        parameters: ParameterList = None,
         **kwargs,
     ):
-        super().__init__(bio_model if isinstance(bio_model, str) else bio_model.model, **kwargs)
+        if parameters is None:
+            parameters = ParameterList(use_sx=use_sx)
+        parameters.add(
+            "motor_noise",
+            lambda model, param: None,
+            size=motor_noise_magnitude.shape[0],
+            scaling=VariableScaling("motor_noise", [1.0] * motor_noise_magnitude.shape[0]),
+        )
+        parameters.add(
+            "sensory_noise",
+            lambda model, param: None,
+            size=sensory_noise_magnitude.shape[0],
+            scaling=VariableScaling("sensory_noise", [1.0] * sensory_noise_magnitude.shape[0]),
+        )
+        super().__init__(
+            bio_model=(bio_model if isinstance(bio_model, str) else bio_model.model), parameters=parameters, **kwargs
+        )
 
         self.motor_noise_magnitude = motor_noise_magnitude
         self.sensory_noise_magnitude = sensory_noise_magnitude

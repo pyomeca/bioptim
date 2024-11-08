@@ -1,5 +1,5 @@
 import pytest
-from casadi import DM, MX, vertcat, horzcat
+from casadi import DM, MX, vertcat, horzcat, Function
 import numpy as np
 import numpy.testing as npt
 from bioptim import (
@@ -17,7 +17,6 @@ from bioptim import (
     MultinodeConstraint,
     MultinodeObjective,
     Node,
-    RigidBodyDynamics,
     ControlType,
     PhaseDynamics,
     ConstraintList,
@@ -35,14 +34,11 @@ def prepare_test_ocp(
     with_muscles=False,
     with_contact=False,
     with_actuator=False,
-    implicit=False,
     use_sx=True,
 ):
     bioptim_folder = TestUtils.bioptim_folder()
     if with_muscles and with_contact or with_muscles and with_actuator or with_contact and with_actuator:
         raise RuntimeError("With muscles and with contact and with_actuator together is not defined")
-    if with_muscles and implicit or implicit and with_actuator:
-        raise RuntimeError("With muscles and implicit and with_actuator together is not defined")
     elif with_muscles:
         bio_model = BiorbdModel(bioptim_folder + "/examples/muscle_driven_ocp/models/arm26.bioMod")
         dynamics = DynamicsList()
@@ -51,16 +47,14 @@ def prepare_test_ocp(
         )
     elif with_contact:
         bio_model = BiorbdModel(
-            bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+            bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod",
         )
         dynamics = DynamicsList()
-        rigidbody_dynamics = RigidBodyDynamics.DAE_INVERSE_DYNAMICS if implicit else RigidBodyDynamics.ODE
         dynamics.add(
             DynamicsFcn.TORQUE_DRIVEN,
             with_contact=True,
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
-            rigidbody_dynamics=rigidbody_dynamics,
         )
     elif with_actuator:
         bio_model = BiorbdModel(bioptim_folder + "/examples/torque_driven_ocp/models/cube.bioMod")
@@ -111,8 +105,8 @@ def get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d):
         ocp.nlp[0].numerical_timeseries.cx if ocp.nlp[0].numerical_timeseries.cx.shape != (0, 0) else ocp.cx(0, 0)
     )
 
-    return ocp.nlp[0].to_casadi_func(
-        "penalty", val, time, phases_dt_cx, states, controls, parameters, algebraic_states, numerical_timeseries
+    return Function(
+        "penalty", [time, phases_dt_cx, states, controls, parameters, algebraic_states, numerical_timeseries], [val]
     )(t, phases_dt, x[0], u[0], p, a, d)
 
 
@@ -402,9 +396,8 @@ def test_penalty_minimize_markers_velocity(penalty_origin, value, phase_dynamics
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer])
 @pytest.mark.parametrize("value", [0.1, -10])
-@pytest.mark.parametrize("implicit", [True, False])
-def test_penalty_minimize_markers_acceleration(penalty_origin, implicit, value, phase_dynamics):
-    ocp = prepare_test_ocp(implicit=implicit, phase_dynamics=phase_dynamics)
+def test_penalty_minimize_markers_acceleration(penalty_origin, value, phase_dynamics):
+    ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
     t = [0]
     phases_dt = [0.05]
     x = [DM.ones((8, 1)) * value]
@@ -420,49 +413,25 @@ def test_penalty_minimize_markers_acceleration(penalty_origin, implicit, value, 
     else:
         penalty = Constraint(penalty_type)
 
-    if not implicit:
-        res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
+    res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
+    expected = np.array(
+        [
+            [2.15106e-16, -0.00895171, -0.0189017, -0.00995004, 00, 00, 00, -0.00497502],
+            [0, 0, 0, 0, 00, 00, 00, 0],
+            [-9.81, -9.79905, -9.79805, -9.809, 00, 00, 00, 0.000499167],
+        ]
+    )
+    if value == -10:
         expected = np.array(
             [
-                [2.15106e-16, -0.00895171, -0.0189017, -0.00995004, 00, 00, 00, -0.00497502],
-                [0, 0, 0, 0, 00, 00, 00, 0],
-                [-9.81, -9.79905, -9.79805, -9.809, 00, 00, 00, 0.000499167],
+                [0.0, 138.309264, 222.2164169, 83.90715291, 0.0, 0.0, 0.0, 41.95357645],
+                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                [-9.81, -39.31504182, 15.08706927, 44.59211109, 0.0, 0.0, 0.0, 27.20105554],
             ]
         )
-        if value == -10:
-            expected = np.array(
-                [
-                    [0.0, 138.309264, 222.2164169, 83.90715291, 0.0, 0.0, 0.0, 41.95357645],
-                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                    [-9.81, -39.31504182, 15.08706927, 44.59211109, 0.0, 0.0, 0.0, 27.20105554],
-                ]
-            )
 
-        npt.assert_almost_equal(res, expected, decimal=5)
-    else:
-        res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
-
-        expected = np.array(
-            [
-                [2.15105711e-16, -8.95170749e-03, -1.89017491e-02, -9.95004165e-03, 00, 00, 00, -4.97502083e-03],
-                [0, 0, 0, 0, 00, 00, 00, 0],
-                [-9.81, -9.79905162e00, -9.79805329e00, -9.80900167e00, 00, 00, 00, 4.99167083e-04],
-            ]
-        )
-        if value == -10:
-            expected = np.array(
-                [
-                    [0.0, 138.309264, 222.2164169, 83.90715291, 0.0, 0.0, 0.0, 41.95357645],
-                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                    [-9.81, -39.31504182, 15.08706927, 44.59211109, 0.0, 0.0, 0.0, 27.20105554],
-                ]
-            )
-        npt.assert_almost_equal(
-            res,
-            expected,
-            decimal=5,
-        )
+    npt.assert_almost_equal(res, expected, decimal=5)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -514,9 +483,8 @@ def test_penalty_track_markers_velocity(penalty_origin, value, phase_dynamics):
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer])
 @pytest.mark.parametrize("value", [0.1, -10])
-@pytest.mark.parametrize("implicit", [True, False])
-def test_penalty_track_markers_acceleration(penalty_origin, value, implicit, phase_dynamics):
-    ocp = prepare_test_ocp(implicit=implicit, phase_dynamics=phase_dynamics)
+def test_penalty_track_markers_acceleration(penalty_origin, value, phase_dynamics):
+    ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
     t = [0]
     phases_dt = [0.05]
     x = [DM.ones((8, 1)) * value]
@@ -528,49 +496,25 @@ def test_penalty_track_markers_acceleration(penalty_origin, value, implicit, pha
     else:
         penalty = Constraint(penalty_type, target=np.ones((3, 7, 1)) * value)
 
-    if not implicit:
-        res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, [], [], [])
+    res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, [], [], [])
 
+    expected = np.array(
+        [
+            [2.15106e-16, -0.00895171, -0.0189017, -0.00995004, 00, 00, 00, -0.00497502],
+            [0, 0, 0, 0, 00, 00, 00, 0],
+            [-9.81, -9.79905, -9.79805, -9.809, 00, 00, 00, 0.000499167],
+        ]
+    )
+    if value == -10:
         expected = np.array(
             [
-                [2.15106e-16, -0.00895171, -0.0189017, -0.00995004, 00, 00, 00, -0.00497502],
-                [0, 0, 0, 0, 00, 00, 00, 0],
-                [-9.81, -9.79905, -9.79805, -9.809, 00, 00, 00, 0.000499167],
+                [0.0, 138.309264, 222.2164169, 83.90715291, 0.0, 0.0, 0.0, 41.95357645],
+                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                [-9.81, -39.31504182, 15.08706927, 44.59211109, 0.0, 0.0, 0.0, 27.20105554],
             ]
         )
-        if value == -10:
-            expected = np.array(
-                [
-                    [0.0, 138.309264, 222.2164169, 83.90715291, 0.0, 0.0, 0.0, 41.95357645],
-                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                    [-9.81, -39.31504182, 15.08706927, 44.59211109, 0.0, 0.0, 0.0, 27.20105554],
-                ]
-            )
 
-        npt.assert_almost_equal(res, expected, decimal=5)
-    else:
-        res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, [], [], [])
-
-        expected = np.array(
-            [
-                [2.15105711e-16, -8.95170749e-03, -1.89017491e-02, -9.95004165e-03, 00, 00, 00, -4.97502083e-03],
-                [0, 0, 0, 0, 00, 00, 00, 0],
-                [-9.81, -9.79905162e00, -9.79805329e00, -9.80900167e00, 00, 00, 00, 4.99167083e-04],
-            ]
-        )
-        if value == -10:
-            expected = np.array(
-                [
-                    [0.0, 138.309264, 222.2164169, 83.90715291, 0.0, 0.0, 0.0, 41.95357645],
-                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                    [-9.81, -39.31504182, 15.08706927, 44.59211109, 0.0, 0.0, 0.0, 27.20105554],
-                ]
-            )
-        npt.assert_almost_equal(
-            res,
-            expected,
-            decimal=5,
-        )
+    npt.assert_almost_equal(res, expected, decimal=5)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -922,9 +866,8 @@ def test_penalty_minimize_linear_momentum(value, penalty_origin, use_sx, phase_d
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer])
 @pytest.mark.parametrize("value", [0.1, -10])
-@pytest.mark.parametrize("implicit", [True, False])
-def test_penalty_minimize_comddot(value, penalty_origin, implicit, phase_dynamics):
-    ocp = prepare_test_ocp(with_contact=True, implicit=implicit, phase_dynamics=phase_dynamics)
+def test_penalty_minimize_comddot(value, penalty_origin, phase_dynamics):
+    ocp = prepare_test_ocp(with_contact=True, phase_dynamics=phase_dynamics)
     t = [0]
     phases_dt = [0.05]
     x = [DM.ones((8, 1)) * value]
@@ -940,22 +883,13 @@ def test_penalty_minimize_comddot(value, penalty_origin, implicit, phase_dynamic
     else:
         penalty = Constraint(penalty_type)
 
-    if not implicit:
-        res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
+    res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
-        expected = np.array([[0.0], [-0.7168803], [-0.0740871]])
-        if value == -10:
-            expected = np.array([[0.0], [1.455063], [16.3741091]])
+    expected = np.array([[0.0], [-0.7168803], [-0.0740871]])
+    if value == -10:
+        expected = np.array([[0.0], [1.455063], [16.3741091]])
 
-        npt.assert_almost_equal(res, expected)
-    else:
-        res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, [], [], [])
-
-        expected = np.array([[0], [-0.0008324], [0.002668]])
-        if value == -10:
-            expected = np.array([[0], [-17.5050533], [-18.2891901]])
-
-        npt.assert_almost_equal(res, expected)
+    npt.assert_almost_equal(res, expected)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -974,9 +908,9 @@ def test_penalty_track_segment_with_custom_rt(penalty_origin, value, phase_dynam
     penalty_type = penalty_origin.TRACK_SEGMENT_WITH_CUSTOM_RT
 
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
-        penalty = Objective(penalty_type, segment="ground", rt=0)
+        penalty = Objective(penalty_type, segment="ground", rt_index=0)
     else:
-        penalty = Constraint(penalty_type, segment="ground", rt=0)
+        penalty = Constraint(penalty_type, segment="ground", rt_index=0)
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
     expected = np.array([[0], [0.1], [0]])
@@ -1059,46 +993,6 @@ def test_penalty_minimize_segment_velocity(penalty_origin, value, phase_dynamics
 
     expected = [[0, value, 0]]
     npt.assert_almost_equal(res.T, expected)
-
-
-@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
-@pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
-@pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_minimize_vector_orientation(penalty_origin, value, phase_dynamics):
-    ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
-    t = [0]
-    phases_dt = [0.05]
-    x = [DM(np.array([0, 0, value, 0, 0, 0, 0, 0]))]
-    u = [0]
-    p = []
-    a = []
-    d = []
-
-    penalty_type = penalty_origin.TRACK_VECTOR_ORIENTATIONS_FROM_MARKERS
-
-    if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
-        penalty = Objective(
-            penalty_type,
-            vector_0_marker_0="m0",
-            vector_0_marker_1="m3",
-            vector_1_marker_0="origin",
-            vector_1_marker_1="m6",
-        )
-    else:
-        penalty = Constraint(
-            penalty_type,
-            vector_0_marker_0="m0",
-            vector_0_marker_1="m3",
-            vector_1_marker_0="origin",
-            vector_1_marker_1="m6",
-        )
-
-    res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
-
-    if value == 0.1:
-        npt.assert_almost_equal(float(res), 0.09999999999999999)
-    else:
-        npt.assert_almost_equal(float(res), 2.566370614359173)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -1262,7 +1156,7 @@ def test_penalty_constraint_total_time(value, phase_dynamics):
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom(penalty_origin, value, phase_dynamics):
     def custom(controller: PenaltyController, mult):
-        my_values = controller.q.cx_start * mult
+        my_values = controller.q * mult
         return my_values
 
     ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
@@ -1345,7 +1239,7 @@ def test_penalty_custom_fail(penalty_origin, value, phase_dynamics):
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom_with_bounds(value, phase_dynamics):
     def custom_with_bounds(controller: PenaltyController):
-        return -10, controller.q.cx_start, 10
+        return -10, controller.q, 10
 
     ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
     t = [0]
@@ -1368,7 +1262,7 @@ def test_penalty_custom_with_bounds(value, phase_dynamics):
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom_with_bounds_failing_min_bound(value, phase_dynamics):
     def custom_with_bounds(controller: PenaltyController):
-        return -10, controller.q.cx_start, 10
+        return -10, controller.q, 10
 
     ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
     t = [0]
@@ -1391,7 +1285,7 @@ def test_penalty_custom_with_bounds_failing_min_bound(value, phase_dynamics):
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom_with_bounds_failing_max_bound(value, phase_dynamics):
     def custom_with_bounds(controller: PenaltyController):
-        return -10, controller.q.cx_start, 10
+        return -10, controller.q, 10
 
     ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
     t = [0]
@@ -1417,7 +1311,7 @@ def test_penalty_custom_with_bounds_failing_max_bound(value, phase_dynamics):
 @pytest.mark.parametrize("node", [*Node, 2])
 @pytest.mark.parametrize("ns", [3, 10, 11])
 def test_PenaltyFunctionAbstract_get_node(node, ns, phase_dynamics):
-    nlp = NLP(phase_dynamics=phase_dynamics)
+    nlp = NLP(phase_dynamics=phase_dynamics, use_sx=False)
     nlp.control_type = ControlType.CONSTANT
     nlp.ns = ns
     nlp.X = np.linspace(0, -10, ns + 1)
@@ -1427,7 +1321,7 @@ def test_PenaltyFunctionAbstract_get_node(node, ns, phase_dynamics):
     nlp.A = np.linspace(0, 0, ns + 1)
     nlp.A_scaled = nlp.A
     tp = OptimizationVariableList(MX, phase_dynamics=phase_dynamics)
-    tp.append(name="param", cx=[MX(), MX(), MX()], mx=MX(), bimapping=BiMapping([], []))
+    tp.append(name="param", cx=[MX(), MX(), MX()], bimapping=BiMapping([], []))
     nlp.parameters = tp["param"]
 
     pn = []

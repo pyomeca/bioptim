@@ -10,7 +10,7 @@ import pytest
 import sys
 from casadi import Function, MX
 
-from bioptim import CostType, OdeSolver, Solver, RigidBodyDynamics, BiorbdModel, PhaseDynamics
+from bioptim import CostType, OdeSolver, Solver, BiorbdModel, PhaseDynamics
 from bioptim.limits.penalty import PenaltyOption
 
 matplotlib.use("Agg")
@@ -117,7 +117,9 @@ def test_plot_merged_graphs(phase_dynamics):
 
     # Generate random data to fit
     np.random.seed(42)
-    t, markers_ref, x_ref, muscle_excitations_ref = ocp_module.generate_data(bio_model, final_time, n_shooting)
+    t, markers_ref, x_ref, muscle_excitations_ref = ocp_module.generate_data(
+        bio_model, final_time, n_shooting, use_sx=False
+    )
 
     bio_model = BiorbdModel(model_path)  # To prevent from free variable, the model must be reloaded
     ocp = ocp_module.prepare_ocp(
@@ -180,51 +182,6 @@ def test_add_new_plot(phase_dynamics):
     # Add the plot of objectives and constraints to this mess
     ocp.add_plot_penalty(CostType.ALL)
     sol.graphs(automatically_organize=False)
-
-
-@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
-@pytest.mark.parametrize(
-    "rigidbody_dynamics",
-    [RigidBodyDynamics.ODE, RigidBodyDynamics.DAE_FORWARD_DYNAMICS, RigidBodyDynamics.DAE_INVERSE_DYNAMICS],
-)
-def test_plot_graphs_for_implicit_constraints(rigidbody_dynamics, phase_dynamics):
-    from bioptim.examples.getting_started import example_implicit_dynamics as ocp_module
-
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
-
-    ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
-        n_shooting=5,
-        final_time=1,
-        rigidbody_dynamics=rigidbody_dynamics,
-        phase_dynamics=phase_dynamics,
-        expand_dynamics=False,
-    )
-    ocp.add_plot_penalty(CostType.ALL)
-    sol = ocp.solve()
-    if sys.platform != "linux":
-        sol.graphs(automatically_organize=False)
-
-
-def test_implicit_example():
-    from bioptim.examples.getting_started import example_implicit_dynamics as ocp_module
-
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
-
-    sol_implicit = ocp_module.solve_ocp(
-        rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS,
-        max_iter=1,
-        model_path=bioptim_folder + "/models/pendulum.bioMod",
-    )
-    sol_semi_explicit = ocp_module.solve_ocp(
-        rigidbody_dynamics=RigidBodyDynamics.DAE_FORWARD_DYNAMICS,
-        max_iter=1,
-        model_path=bioptim_folder + "/models/pendulum.bioMod",
-    )
-    sol_explicit = ocp_module.solve_ocp(
-        rigidbody_dynamics=RigidBodyDynamics.ODE, max_iter=1, model_path=bioptim_folder + "/models/pendulum.bioMod"
-    )
-    ocp_module.prepare_plots(sol_implicit, sol_semi_explicit, sol_explicit)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])

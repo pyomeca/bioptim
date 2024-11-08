@@ -149,32 +149,6 @@ def prepare_ocp(
     The ocp ready to be solved
     """
 
-    # --- Options --- #
-    bio_model = BiorbdModel(biorbd_model_path)
-    n_tau = bio_model.nb_tau
-
-    # Add objective functions
-    objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q", weight=1)
-
-    # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
-
-    # Path constraint
-    x_bounds = BoundsList()
-    x_bounds["q"] = bio_model.bounds_from_ranges("q")
-    x_bounds["q"][:, [0, -1]] = 0
-    x_bounds["q"][1, -1] = 3.14
-    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
-    x_bounds["qdot"][:, [0, -1]] = 0
-
-    # Define control path constraint
-    tau_min, tau_max = -300, 300
-    u_bounds = BoundsList()
-    u_bounds["tau"] = [tau_min] * n_tau, [tau_max] * n_tau
-    u_bounds["tau"][1, :] = 0
-
     # Define the parameter to optimize
     parameters = ParameterList(use_sx=use_sx)
     parameter_objectives = ParameterObjectiveList()
@@ -191,6 +165,14 @@ def prepare_ocp(
             scaling=g_scaling,  # The scaling of the parameter
             extra_value=1,  # You can define as many extra arguments as you want
         )
+        # TODO: Add the capability to send values to the parameter so instead of being a MX it is a float
+        # This would look more or less like the following (with the values the dispatch function similar to the one in Penalty).
+        # This would simultanously solve the dispatching of all forces and the phase parameters
+        # parameters.add(
+        #     "gravity_xyz",  # The name of the parameter
+        #     my_parameter_function,  # The function that modifies the biorbd model
+        #     values=lambda phase_idx, node_idx=...
+        # )
 
         # Give the parameter some min and max bounds
         parameter_bounds.add("gravity_xyz", min_bound=min_g, max_bound=max_g, interpolation=InterpolationType.CONSTANT)
@@ -229,6 +211,32 @@ def prepare_ocp(
             target=target_m / m_scaling.scaling.T,  # Make sure your target fits the scaling
             key="mass",
         )
+
+    # --- Options --- #
+    bio_model = BiorbdModel(biorbd_model_path, parameters=parameters)
+    n_tau = bio_model.nb_tau
+
+    # Add objective functions
+    objective_functions = ObjectiveList()
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q", weight=1)
+
+    # Dynamics
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+
+    # Path constraint
+    x_bounds = BoundsList()
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["q"][:, [0, -1]] = 0
+    x_bounds["q"][1, -1] = 3.14
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+    x_bounds["qdot"][:, [0, -1]] = 0
+
+    # Define control path constraint
+    tau_min, tau_max = -300, 300
+    u_bounds = BoundsList()
+    u_bounds["tau"] = [tau_min] * n_tau, [tau_max] * n_tau
+    u_bounds["tau"][1, :] = 0
 
     return OptimalControlProgram(
         bio_model,

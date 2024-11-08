@@ -43,12 +43,12 @@ from bioptim import (
 
 
 def out_of_sphere(controller: PenaltyController, y, z):
-    q = controller.states["q"].mx
-    marker_q = controller.model.markers(q)[1]
+    q = controller.states["q"].cx
+    marker_q = controller.model.marker(1)(q, controller.parameters.cx)
 
     distance = sqrt((y - marker_q[1]) ** 2 + (z - marker_q[2]) ** 2)
 
-    return controller.mx_to_cx("out_of_sphere", distance, controller.states["q"])
+    return distance
 
 
 def prepare_ocp_first_pass(

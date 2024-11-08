@@ -1,9 +1,8 @@
-import numpy as np
-from casadi import horzcat, vertcat, MX, SX
+from casadi import horzcat, vertcat, MX, SX, DM
 
 from .dynamics_evaluation import DynamicsEvaluation
 from .fatigue.fatigue_dynamics import FatigueList
-from ..misc.enums import RigidBodyDynamics, DefectType
+from ..misc.enums import DefectType
 from ..misc.mapping import BiMapping
 from ..optimization.optimization_variable import OptimizationVariable
 
@@ -17,11 +16,11 @@ class DynamicsFunctions:
     custom(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
         Interface to custom dynamic function provided by the user
     torque_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact: bool)
-        Forward dynamics driven by joint torques, optional external forces can be declared.
+        Forward dynamics driven by joint torques
     torque_activations_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact) -> MX:
         Forward dynamics driven by joint torques activations.
     torque_derivative_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact: bool) -> MX:
-        Forward dynamics driven by joint torques, optional external forces can be declared.
+        Forward dynamics driven by joint torques derivatives
     forces_from_torque_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:
         Contact forces of a forward dynamics driven by joint torques with contact constraints.
     muscles_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact: bool) -> MX:
@@ -30,13 +29,11 @@ class DynamicsFunctions:
         Contact forces of a forward dynamics driven by muscles activations and joint torques with contact constraints.
     get(var: OptimizationVariable, cx: MX | SX):
         Main accessor to a variable in states or controls (cx)
-    apply_parameters(parameters: MX.sym, nlp: NonLinearProgram)
-        Apply the parameter variables to the model. This should be called before calling the dynamics
     reshape_qdot(nlp: NonLinearProgram, q: MX | SX, qdot: MX | SX):
         Easy accessor to derivative of q
     forward_dynamics(nlp: NonLinearProgram, q: MX | SX, qdot: MX | SX, tau: MX | SX, with_contact: bool):
         Easy accessor to derivative of qdot
-    compute_muscle_dot(nlp: NonLinearProgram, muscle_excitations: MX | SX):
+    compute_muscle_dot(nlp: NonLinearProgram, muscle_excitations: MX | SX, muscle_activations: MX | SX):
         Easy accessor to derivative of muscle activations
     compute_tau_from_muscle(nlp: NonLinearProgram, q: MX | SX, qdot: MX | SX, muscle_activations: MX | SX):
         Easy accessor to tau computed from muscles
@@ -44,12 +41,12 @@ class DynamicsFunctions:
 
     @staticmethod
     def custom(
-        time: MX.sym,
-        states: MX.sym,
-        controls: MX.sym,
-        parameters: MX.sym,
-        algebraic_states: MX.sym,
-        numerical_timeseries: MX.sym,
+        time,
+        states,
+        controls,
+        parameters,
+        algebraic_states,
+        numerical_timeseries,
         nlp,
     ) -> DynamicsEvaluation:
         """
@@ -57,26 +54,26 @@ class DynamicsFunctions:
 
         Parameters
         ----------
-        time: MX.sym
+        time: MX.sym | SX.sym
             The time of the system
-        states: MX.sym
+        states: MX.sym | SX.sym
             The state of the system
-        controls: MX.sym
+        controls: MX.sym | SX.sym
             The controls of the system
-        parameters: MX.sym
+        parameters: MX.sym | SX.sym
             The parameters of the system
-        algebraic_states: MX.sym
+        algebraic_states: MX.sym | SX.sym
             The algebraic_states of the system
-        numerical_timeseries: MX.sym
+        numerical_timeseries: MX.sym | SX.sym
             The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
 
         Returns
         ----------
-        MX.sym
+        MX.sym | SX.sym
             The derivative of the states
-        MX.sym
+        MX.sym | SX.sym
             The defects of the implicit dynamics
         """
 
@@ -86,37 +83,35 @@ class DynamicsFunctions:
 
     @staticmethod
     def torque_driven(
-        time: MX.sym,
-        states: MX.sym,
-        controls: MX.sym,
-        parameters: MX.sym,
-        algebraic_states: MX.sym,
-        numerical_timeseries: MX.sym,
+        time,
+        states,
+        controls,
+        parameters,
+        algebraic_states,
+        numerical_timeseries,
         nlp,
         with_contact: bool,
         with_passive_torque: bool,
         with_ligament: bool,
         with_friction: bool,
-        rigidbody_dynamics: RigidBodyDynamics,
         fatigue: FatigueList,
-        external_forces: np.ndarray = None,
     ) -> DynamicsEvaluation:
         """
-        Forward dynamics driven by joint torques, optional external forces can be declared.
+        Forward dynamics driven by joint torques
 
         Parameters
         ----------
-        time: MX.sym
+        time: MX.sym | SX.sym
             The time of the system
-        states: MX.sym
+        states: MX.sym | SX.sym
             The state of the system
-        controls: MX.sym
+        controls: MX.sym | SX.sym
             The controls of the system
-        parameters: MX.sym
+        parameters: MX.sym | SX.sym
             The parameters of the system
-        algebraic_states: MX.sym
+        algebraic_states: MX.sym | SX.sym
             The algebraic states of the system
-        numerical_timeseries: MX.sym
+        numerical_timeseries: MX.sym | SX.sym
             The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
@@ -128,12 +123,8 @@ class DynamicsFunctions:
             If the dynamic with ligament should be used
         with_friction: bool
             If the dynamic with friction should be used
-        rigidbody_dynamics: RigidBodyDynamics
-            which rigidbody dynamics should be used
         fatigue : FatigueList
             A list of fatigue elements
-        external_forces: np.ndarray
-            The external forces
 
         Returns
         ----------
@@ -147,44 +138,27 @@ class DynamicsFunctions:
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
 
         tau = DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue)
-        tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
-        tau = tau + nlp.model.ligament_joint_torque(q, qdot) if with_ligament else tau
+        tau = tau + nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx) if with_passive_torque else tau
+        tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
         tau = tau - nlp.model.friction_coefficients @ qdot if with_friction else tau
 
-        if (
-            rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
-            or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
-        ):
-            dxdt = MX(nlp.states.shape, 1)
-            dxdt[nlp.states["q"].index, :] = dq
-            dxdt[nlp.states["qdot"].index, :] = DynamicsFunctions.get(nlp.controls["qddot"], controls)
-        elif (
-            rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
-            or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK
-        ):
-            dxdt = MX(nlp.states.shape, 1)
-            dxdt[nlp.states["q"].index, :] = dq
-            qddot = DynamicsFunctions.get(nlp.states["qddot"], states)
-            dxdt[nlp.states["qdot"].index, :] = qddot
-            dxdt[nlp.states["qddot"].index, :] = DynamicsFunctions.get(nlp.controls["qdddot"], controls)
-        else:
-            ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
-            dxdt = MX(nlp.states.shape, ddq.shape[1])
-            dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
-            dxdt[nlp.states["qdot"].index, :] = ddq
+        external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
+
+        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
+        dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
+        dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
+        dxdt[nlp.states["qdot"].index, :] = ddq
 
         if fatigue is not None and "tau" in fatigue:
             dxdt = fatigue["tau"].dynamics(dxdt, nlp, states, controls)
 
         defects = None
         # TODO: contacts and fatigue to be handled with implicit dynamics
-        if rigidbody_dynamics is not RigidBodyDynamics.ODE or (
-            rigidbody_dynamics is RigidBodyDynamics.ODE and nlp.ode_solver.defects_type == DefectType.IMPLICIT
-        ):
+        if nlp.ode_solver.defects_type == DefectType.IMPLICIT:
             if not with_contact and fatigue is None:
-                qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.mx_reduced)
+                qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
                 tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact, external_forces)
-                defects = MX(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
+                defects = nlp.cx(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
 
                 dq_defects = []
                 for _ in range(tau_id.shape[1]):
@@ -193,7 +167,7 @@ class DynamicsFunctions:
                         - DynamicsFunctions.compute_qdot(
                             nlp,
                             q,
-                            DynamicsFunctions.get(nlp.states_dot.scaled["qdot"], nlp.states_dot.scaled.mx_reduced),
+                            DynamicsFunctions.get(nlp.states_dot.scaled["qdot"], nlp.states_dot.scaled.cx),
                         )
                     )
                 defects[: dq.shape[0], :] = horzcat(*dq_defects)
@@ -204,33 +178,33 @@ class DynamicsFunctions:
 
     @staticmethod
     def torque_driven_free_floating_base(
-        time: MX.sym,
-        states: MX.sym,
-        controls: MX.sym,
-        parameters: MX.sym,
-        algebraic_states: MX.sym,
-        numerical_timeseries: MX.sym,
+        time,
+        states,
+        controls,
+        parameters,
+        algebraic_states,
+        numerical_timeseries,
         nlp,
         with_passive_torque: bool,
         with_ligament: bool,
         with_friction: bool,
     ) -> DynamicsEvaluation:
         """
-        Forward dynamics driven by joint torques without actuation of the free floating base, optional external forces can be declared.
+        Forward dynamics driven by joint torques without actuation of the free floating base
 
         Parameters
         ----------
-        time: MX.sym
+        time: MX.sym | SX.sym
             The time of the system
-        states: MX.sym
+        states: MX.sym | SX.sym
             The state of the system
-        controls: MX.sym
+        controls: MX.sym | SX.sym
             The controls of the system
-        parameters: MX.sym
+        parameters: MX.sym | SX.sym
             The parameters of the system
-        algebraic_states: MX.sym
+        algebraic_states: MX.sym | SX.sym
             The algebraic states of the system
-        numerical_timeseries: MX.sym
+        numerical_timeseries: MX.sym | SX.sym
             The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
@@ -260,50 +234,52 @@ class DynamicsFunctions:
         n_qdot = nlp.model.nb_qdot
 
         tau_joints = (
-            tau_joints + nlp.model.passive_joint_torque(q_full, qdot_full) if with_passive_torque else tau_joints
+            tau_joints + nlp.model.passive_joint_torque()(q_full, qdot_full, nlp.parameters.cx)
+            if with_passive_torque
+            else tau_joints
         )
-        tau_joints = tau_joints + nlp.model.ligament_joint_torque(q_full, qdot_full) if with_ligament else tau_joints
+        tau_joints = tau_joints + nlp.model.ligament_joint_torque()(q_full, qdot_full) if with_ligament else tau_joints
         tau_joints = tau_joints - nlp.model.friction_coefficients @ qdot_joints if with_friction else tau_joints
 
-        tau_full = vertcat(MX.zeros(nlp.model.nb_root), tau_joints)
+        tau_full = vertcat(nlp.cx.zeros(nlp.model.nb_root), tau_joints)
 
-        ddq = DynamicsFunctions.forward_dynamics(nlp, q_full, qdot_full, tau_full, with_contact=False)
-        dxdt = MX(n_q + n_qdot, ddq.shape[1])
+        ddq = DynamicsFunctions.forward_dynamics(
+            nlp, q_full, qdot_full, tau_full, with_contact=False, external_forces=None
+        )
+        dxdt = nlp.cx(n_q + n_qdot, ddq.shape[1])
         dxdt[:n_q, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
         dxdt[n_q:, :] = ddq
 
-        defects = None
-
-        return DynamicsEvaluation(dxdt, defects)
+        return DynamicsEvaluation(dxdt, defects=None)
 
     @staticmethod
     def stochastic_torque_driven(
-        time: MX.sym,
-        states: MX.sym,
-        controls: MX.sym,
-        parameters: MX.sym,
-        algebraic_states: MX.sym,
-        numerical_timeseries: MX.sym,
+        time,
+        states,
+        controls,
+        parameters,
+        algebraic_states,
+        numerical_timeseries,
         nlp,
         with_contact: bool,
         with_friction: bool,
     ) -> DynamicsEvaluation:
         """
-        Forward dynamics subject to motor and sensory noise driven by torques, optional external forces can be declared.
+        Forward dynamics subject to motor and sensory noise driven by torques
 
         Parameters
         ----------
-        time: MX.sym
+        time: MX.sym | SX.sym
             The time
-        states: MX.sym
+        states: MX.sym | SX.sym
             The state of the system
-        controls: MX.sym
+        controls: MX.sym | SX.sym
             The controls of the system
-        parameters: MX.sym
+        parameters: MX.sym | SX.sym
             The parameters of the system
-        algebraic_states: MX.sym
+        algebraic_states: MX.sym | SX.sym
             The algebraic states variables of the system
-        numerical_timeseries: MX.sym
+        numerical_timeseries: MX.sym | SX.sym
             The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
@@ -338,8 +314,8 @@ class DynamicsFunctions:
         tau = tau - nlp.model.friction_coefficients @ qdot if with_friction else tau
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
-        dxdt = MX(nlp.states.shape, ddq.shape[1])
+        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces=None)
+        dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
         dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
         dxdt[nlp.states["qdot"].index, :] = ddq
 
@@ -347,31 +323,31 @@ class DynamicsFunctions:
 
     @staticmethod
     def stochastic_torque_driven_free_floating_base(
-        time: MX.sym,
-        states: MX.sym,
-        controls: MX.sym,
-        parameters: MX.sym,
-        algebraic_states: MX.sym,
-        numerical_timeseries: MX.sym,
+        time,
+        states,
+        controls,
+        parameters,
+        algebraic_states,
+        numerical_timeseries,
         nlp,
         with_friction: bool,
     ) -> DynamicsEvaluation:
         """
-        Forward dynamics subject to motor and sensory noise driven by joint torques, optional external forces can be declared.
+        Forward dynamics subject to motor and sensory noise driven by joint torques
 
         Parameters
         ----------
-        time: MX.sym
+        time: MX.sym | SX.sym
             The time
-        states: MX.sym
+        states: MX.sym | SX.sym
             The state of the system
-        controls: MX.sym
+        controls: MX.sym | SX.sym
             The controls of the system
-        parameters: MX.sym
+        parameters: MX.sym | SX.sym
             The parameters of the system
-        algebraic_states: MX.sym
+        algebraic_states: MX.sym | SX.sym
             The algebraic states of the system
-        numerical_timeseries: MX.sym
+        numerical_timeseries: MX.sym | SX.sym
             The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
@@ -408,18 +384,20 @@ class DynamicsFunctions:
         )
         tau_joints = (tau_joints - nlp.model.friction_coefficients @ qdot_joints) if with_friction else tau_joints
 
-        tau_full = vertcat(MX.zeros(nlp.model.nb_root), tau_joints)
+        tau_full = vertcat(nlp.cx.zeros(nlp.model.nb_root), tau_joints)
 
         dq = DynamicsFunctions.compute_qdot(nlp, q_full, qdot_full)
-        ddq = DynamicsFunctions.forward_dynamics(nlp, q_full, qdot_full, tau_full, with_contact=False)
-        dxdt = MX(nlp.states.shape, ddq.shape[1])
+        ddq = DynamicsFunctions.forward_dynamics(
+            nlp, q_full, qdot_full, tau_full, with_contact=False, external_forces=None
+        )
+        dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
         dxdt[:n_q, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
         dxdt[n_q:, :] = ddq
 
         return DynamicsEvaluation(dxdt=dxdt, defects=None)
 
     @staticmethod
-    def __get_fatigable_tau(nlp, states: MX, controls: MX, fatigue: FatigueList) -> MX:
+    def __get_fatigable_tau(nlp, states: MX | SX, controls: MX | SX, fatigue: FatigueList) -> MX | SX:
         """
         Apply the forward dynamics including (or not) the torque fatigue
 
@@ -427,9 +405,9 @@ class DynamicsFunctions:
         ----------
         nlp: NonLinearProgram
             The current phase
-        states: MX
+        states: MX | SX
             The states variable that may contains the tau and the tau fatigue variables
-        controls: MX
+        controls: MX | SX
             The controls variable that may contains the tau
         fatigue: FatigueList
             The dynamics for the torque fatigue
@@ -438,7 +416,7 @@ class DynamicsFunctions:
         -------
         The generalized accelerations
         """
-        tau_var, tau_mx = (nlp.controls, controls) if "tau" in nlp.controls else (nlp.states, states)
+        tau_var, tau_cx = (nlp.controls, controls) if "tau" in nlp.controls else (nlp.states, states)
         tau = nlp.get_var_from_states_or_controls("tau", states, controls)
         if fatigue is not None and "tau" in fatigue:
             tau_fatigue = fatigue["tau"]
@@ -459,11 +437,11 @@ class DynamicsFunctions:
             if not tau_fatigue[0].models.split_controls and "tau" in nlp.controls:
                 pass
             elif tau_fatigue[0].models.state_only:
-                tau = sum([DynamicsFunctions.get(tau_var[f"tau_{suffix}"], tau_mx) for suffix in tau_suffix])
+                tau = sum([DynamicsFunctions.get(tau_var[f"tau_{suffix}"], tau_cx) for suffix in tau_suffix])
             else:
-                tau = MX()
+                tau = nlp.cx()
                 for i, t in enumerate(tau_fatigue):
-                    tau_tp = MX(1, 1)
+                    tau_tp = nlp.cx(1, 1)
                     for suffix in tau_suffix:
                         model = t.models.models[suffix]
                         tau_tp += (
@@ -475,35 +453,34 @@ class DynamicsFunctions:
 
     @staticmethod
     def torque_activations_driven(
-        time: MX.sym,
-        states: MX.sym,
-        controls: MX.sym,
-        parameters: MX.sym,
-        algebraic_states: MX.sym,
-        numerical_timeseries: MX.sym,
+        time,
+        states,
+        controls,
+        parameters,
+        algebraic_states,
+        numerical_timeseries,
         nlp,
         with_contact: bool,
         with_passive_torque: bool,
         with_residual_torque: bool,
         with_ligament: bool,
-        external_forces: np.ndarray = None,
     ):
         """
         Forward dynamics driven by joint torques activations.
 
         Parameters
         ----------
-        time: MX.sym
+        time: MX.sym | SX.sym
             The time of the system
-        states: MX.sym
+        states: MX.sym | SX.sym
             The state of the system
-        controls: MX.sym
+        controls: MX.sym | SX.sym
             The controls of the system
-        parameters: MX.sym
+        parameters: MX.sym | SX.sym
             The parameters of the system
-        algebraic_states: MX.sym
+        algebraic_states: MX.sym | SX.sym
             The algebraic states of the system
-        numerical_timeseries: MX.sym
+        numerical_timeseries: MX.sym | SX.sym
             The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
@@ -515,8 +492,6 @@ class DynamicsFunctions:
             If the dynamic should be added with residual torques
         with_ligament: bool
             If the dynamic with ligament should be used
-        external_forces: np.ndarray
-            The external forces
 
         Returns
         ----------
@@ -528,13 +503,15 @@ class DynamicsFunctions:
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
         tau_activation = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
-        tau = nlp.model.torque(tau_activation, q, qdot)
+        tau = nlp.model.torque()(tau_activation, q, qdot, nlp.parameters.cx)
         if with_passive_torque:
-            tau += nlp.model.passive_joint_torque(q, qdot)
+            tau += nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx)
         if with_residual_torque:
             tau += DynamicsFunctions.get(nlp.controls["residual_tau"], controls)
         if with_ligament:
-            tau += nlp.model.ligament_joint_torque(q, qdot)
+            tau += nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx)
+
+        external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
@@ -545,48 +522,42 @@ class DynamicsFunctions:
 
     @staticmethod
     def torque_derivative_driven(
-        time: MX.sym,
-        states: MX.sym,
-        controls: MX.sym,
-        parameters: MX.sym,
-        algebraic_states: MX.sym,
-        numerical_timeseries: MX.sym,
+        time,
+        states,
+        controls,
+        parameters,
+        algebraic_states,
+        numerical_timeseries,
         nlp,
-        rigidbody_dynamics: RigidBodyDynamics,
         with_contact: bool,
         with_passive_torque: bool,
         with_ligament: bool,
-        external_forces: np.ndarray = None,
     ) -> DynamicsEvaluation:
         """
-        Forward dynamics driven by joint torques, optional external forces can be declared.
+        Forward dynamics driven by joint torques derivatives
 
         Parameters
         ----------
-        time: MX.sym
+        time: MX.sym | SX.sym
             The time of the system
-        states: MX.sym
+        states: MX.sym | SX.sym
             The state of the system
-        controls: MX.sym
+        controls: MX.sym | SX.sym
             The controls of the system
-        parameters: MX.sym
+        parameters: MX.sym | SX.sym
             The parameters of the system
-        algebraic_states: MX.sym
+        algebraic_states: MX.sym | SX.sym
             The algebraic states of the system
-        numerical_timeseries: MX.sym
+        numerical_timeseries: MX.sym | SX.sym
             The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
-        rigidbody_dynamics: RigidBodyDynamics
-            which rigidbody dynamics should be used
         with_contact: bool
             If the dynamic with contact should be used
         with_passive_torque: bool
             If the dynamic with passive torque should be used
         with_ligament: bool
             If the dynamic with ligament should be used
-        external_forces: np.ndarray
-            The external forces
 
         Returns
         ----------
@@ -598,62 +569,49 @@ class DynamicsFunctions:
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
 
         tau = DynamicsFunctions.get(nlp.states["tau"], states)
-        tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
-        tau = tau + nlp.model.ligament_joint_torque(q, qdot) if with_ligament else tau
+        tau = tau + nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx) if with_passive_torque else tau
+        tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         dtau = DynamicsFunctions.get(nlp.controls["taudot"], controls)
 
-        if (
-            rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
-            or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
-        ):
-            ddq = DynamicsFunctions.get(nlp.states["qddot"], states)
-            dddq = DynamicsFunctions.get(nlp.controls["qdddot"], controls)
-
-            dxdt = MX(nlp.states.shape, 1)
-            dxdt[nlp.states["q"].index, :] = dq
-            dxdt[nlp.states["qdot"].index, :] = ddq
-            dxdt[nlp.states["qddot"].index, :] = dddq
-            dxdt[nlp.states["tau"].index, :] = dtau
-        else:
-            ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
-            dxdt = MX(nlp.states.shape, ddq.shape[1])
-            dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
-            dxdt[nlp.states["qdot"].index, :] = ddq
-            dxdt[nlp.states["tau"].index, :] = horzcat(*[dtau for _ in range(ddq.shape[1])])
+        external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
+        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
+        dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
+        dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
+        dxdt[nlp.states["qdot"].index, :] = ddq
+        dxdt[nlp.states["tau"].index, :] = horzcat(*[dtau for _ in range(ddq.shape[1])])
 
         return DynamicsEvaluation(dxdt=dxdt, defects=None)
 
     @staticmethod
     def forces_from_torque_driven(
-        time: MX.sym,
-        states: MX.sym,
-        controls: MX.sym,
-        parameters: MX.sym,
-        algebraic_states: MX.sym,
+        time,
+        states,
+        controls,
+        parameters,
+        algebraic_states,
         numerical_timeseries: MX.sym,
         nlp,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
-        external_forces: np.ndarray = None,
-    ) -> MX:
+    ) -> MX | SX:
         """
         Contact forces of a forward dynamics driven by joint torques with contact constraints.
 
         Parameters
         ----------
-        time: MX.sym
+        time: MX.sym | SX.sym
             The time of the system
-        states: MX.sym
+        states: MX.sym | SX.sym
             The state of the system
-        controls: MX.sym
+        controls: MX.sym | SX.sym
             The controls of the system
-        parameters: MX.sym
+        parameters: MX.sym | SX.sym
             The parameters of the system
-        algebraic_states: MX.sym
+        algebraic_states: MX.sym | SX.sym
             The algebraic states of the system
-        numerical_timeseries: MX.sym
+        numerical_timeseries: MX.sym | SX.sym
             The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
@@ -661,52 +619,51 @@ class DynamicsFunctions:
             If the dynamic with passive torque should be used
         with_ligament: bool
             If the dynamic with ligament should be used
-        external_forces: np.ndarray
-            The external forces
 
         Returns
         ----------
-        MX.sym
+        MX.sym | SX.sym
             The contact forces that ensure no acceleration at these contact points
         """
 
         q = nlp.get_var_from_states_or_controls("q", states, controls)
         qdot = nlp.get_var_from_states_or_controls("qdot", states, controls)
         tau = nlp.get_var_from_states_or_controls("tau", states, controls)
-        tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
-        tau = tau + nlp.model.ligament_joint_torque(q, qdot) if with_ligament else tau
+        tau = tau + nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx) if with_passive_torque else tau
+        tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
 
-        return nlp.model.contact_forces(q, qdot, tau, external_forces)
+        external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
+
+        return nlp.model.contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
 
     @staticmethod
     def forces_from_torque_activation_driven(
-        time: MX.sym,
-        states: MX.sym,
-        controls: MX.sym,
-        parameters: MX.sym,
-        algebraic_states: MX.sym,
-        numerical_timeseries: MX.sym,
+        time,
+        states,
+        controls,
+        parameters,
+        algebraic_states,
+        numerical_timeseries,
         nlp,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
-        external_forces: np.ndarray = None,
-    ) -> MX:
+    ) -> MX | SX:
         """
         Contact forces of a forward dynamics driven by joint torques with contact constraints.
 
         Parameters
         ----------
-        time: MX.sym
+        time: MX.sym | SX.sym
             The time of the system
-        states: MX.sym
+        states: MX.sym | SX.sym
             The state of the system
-        controls: MX.sym
+        controls: MX.sym | SX.sym
             The controls of the system
-        parameters: MX.sym
+        parameters: MX.sym | SX.sym
             The parameters of the system
-        algebraic_states: MX.sym
+        algebraic_states: MX.sym | SX.sym
             The algebraic states of the system
-        numerical_timeseries: MX.sym
+        numerical_timeseries: MX.sym | SX.sym
             The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
@@ -714,56 +671,53 @@ class DynamicsFunctions:
             If the dynamic with passive torque should be used
         with_ligament: bool
             If the dynamic with ligament should be used
-        external_forces: np.ndarray
-            The external forces
 
         Returns
         ----------
-        MX.sym
+        MX.sym | SX.sym
             The contact forces that ensure no acceleration at these contact points
         """
         q = nlp.get_var_from_states_or_controls("q", states, controls)
         qdot = nlp.get_var_from_states_or_controls("qdot", states, controls)
         tau_activations = nlp.get_var_from_states_or_controls("tau", states, controls)
-        tau = nlp.model.torque(tau_activations, q, qdot)
-        tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
-        tau = tau + nlp.model.ligament_joint_torque(q, qdot) if with_ligament else tau
+        tau = nlp.model.torque()(tau_activations, q, qdot, nlp.parameters.cx)
+        tau = tau + nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx) if with_passive_torque else tau
+        tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
 
-        return nlp.model.contact_forces(q, qdot, tau, external_forces)
+        external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
+        return nlp.model.contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
 
     @staticmethod
     def muscles_driven(
-        time: MX.sym,
-        states: MX.sym,
-        controls: MX.sym,
-        parameters: MX.sym,
-        algebraic_states: MX.sym,
-        numerical_timeseries: MX.sym,
+        time,
+        states,
+        controls,
+        parameters,
+        algebraic_states,
+        numerical_timeseries,
         nlp,
         with_contact: bool,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
-        rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         with_residual_torque: bool = False,
         fatigue=None,
-        external_forces: np.ndarray = None,
     ) -> DynamicsEvaluation:
         """
         Forward dynamics driven by muscle.
 
         Parameters
         ----------
-        time: MX.sym
+        time: MX.sym | SX.sym
             The time of the system
-        states: MX.sym
+        states: MX.sym | SX.sym
             The state of the system
-        controls: MX.sym
+        controls: MX.sym | SX.sym
             The controls of the system
-        parameters: MX.sym
+        parameters: MX.sym | SX.sym
             The parameters of the system
-        algebraic_states: MX.sym
+        algebraic_states: MX.sym | SX.sym
             The algebraic states of the system
-        numerical_timeseries: MX.sym
+        numerical_timeseries: MX.sym | SX.sym
             The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
@@ -773,14 +727,10 @@ class DynamicsFunctions:
             If the dynamic with passive torque should be used
         with_ligament: bool
             If the dynamic with ligament should be used
-        rigidbody_dynamics: RigidBodyDynamics
-            which rigidbody dynamics should be used
         fatigue: FatigueDynamicsList
             To define fatigue elements
         with_residual_torque: bool
             If the dynamic should be added with residual torques
-        external_forces: np.ndarray
-            The external forces
 
         Returns
         ----------
@@ -829,85 +779,56 @@ class DynamicsFunctions:
         muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations, fatigue_states)
 
         tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
-        tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
-        tau = tau + nlp.model.ligament_joint_torque(q, qdot) if with_ligament else tau
+        tau = tau + nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx) if with_passive_torque else tau
+        tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
 
-        if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
-            ddq = DynamicsFunctions.get(nlp.controls["qddot"], controls)
-            dxdt = MX(nlp.states.shape, 1)
-            dxdt[nlp.states["q"].index, :] = dq
-            dxdt[nlp.states["qdot"].index, :] = DynamicsFunctions.get(nlp.controls["qddot"], controls)
-        else:
-            ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
-            dxdt = MX(nlp.states.shape, ddq.shape[1])
-            dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
-            dxdt[nlp.states["qdot"].index, :] = ddq
+        external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
+        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
+        dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
+        dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
+        dxdt[nlp.states["qdot"].index, :] = ddq
 
         has_excitation = True if "muscles" in nlp.states else False
         if has_excitation:
             mus_excitations = DynamicsFunctions.get(nlp.controls["muscles"], controls)
-            dmus = DynamicsFunctions.compute_muscle_dot(nlp, mus_excitations)
+            dmus = DynamicsFunctions.compute_muscle_dot(nlp, mus_excitations, mus_activations)
             dxdt[nlp.states["muscles"].index, :] = horzcat(*[dmus for _ in range(ddq.shape[1])])
 
         if fatigue is not None and "muscles" in fatigue:
             dxdt = fatigue["muscles"].dynamics(dxdt, nlp, states, controls)
 
-        defects = None
-        # TODO: contacts and fatigue to be handled with implicit dynamics
-        if rigidbody_dynamics is not RigidBodyDynamics.ODE or (
-            rigidbody_dynamics is RigidBodyDynamics.ODE and nlp.ode_solver.defects_type == DefectType.IMPLICIT
-        ):
-            if not with_contact and fatigue is None:
-                qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.mx_reduced)
-                tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact, external_forces)
-                defects = MX(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
-
-                dq_defects = []
-                for _ in range(tau_id.shape[1]):
-                    dq_defects.append(
-                        dq
-                        - DynamicsFunctions.compute_qdot(
-                            nlp,
-                            q,
-                            DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.mx_reduced),
-                        )
-                    )
-                defects[: dq.shape[0], :] = horzcat(*dq_defects)
-                defects[dq.shape[0] :, :] = tau - tau_id
-
-        return DynamicsEvaluation(dxdt=dxdt, defects=defects)
+        return DynamicsEvaluation(dxdt=dxdt, defects=None)
 
     @staticmethod
     def forces_from_muscle_driven(
-        time: MX.sym,
-        states: MX.sym,
-        controls: MX.sym,
-        parameters: MX.sym,
-        algebraic_states: MX.sym,
-        numerical_timeseries: MX.sym,
+        time,
+        states,
+        controls,
+        parameters,
+        algebraic_states,
+        numerical_timeseries,
         nlp,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
-        external_forces: list = None,
-    ) -> MX:
+    ) -> MX | SX:
         """
         Contact forces of a forward dynamics driven by muscles activations and joint torques with contact constraints.
 
         Parameters
         ----------
-        time: MX.sym
+        time: MX.sym | SX.sym
             The time of the system
-        states: MX.sym
+        states: MX.sym | SX.sym
             The state of the system
-        controls: MX.sym
+        controls: MX.sym | SX.sym
             The controls of the system
-        parameters: MX.sym
+        parameters: MX.sym | SX.sym
             The parameters of the system
-        algebraic_states: MX.sym
+        algebraic_states: MX.sym | SX.sym
             The algebraic states of the system
-        numerical_timeseries: MX.sym
+        numerical_timeseries: MX.sym | SX.sym
             The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
@@ -915,11 +836,10 @@ class DynamicsFunctions:
             If the dynamic with passive torque should be used
         with_ligament: bool
             If the dynamic with ligament should be used
-        external_forces: list[Any]
-            The external forces
+
         Returns
         ----------
-        MX.sym
+        MX.sym | SX.sym
             The contact forces that ensure no acceleration at these contact points
         """
 
@@ -930,93 +850,58 @@ class DynamicsFunctions:
         muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations)
 
         tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
-        tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
-        tau = tau + nlp.model.ligament_joint_torque(q, qdot) if with_ligament else tau
+        tau = tau + nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx) if with_passive_torque else tau
+        tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
 
-        return nlp.model.contact_forces(q, qdot, tau, external_forces)
+        external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
+        return nlp.model.contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
 
     @staticmethod
     def joints_acceleration_driven(
-        time: MX.sym,
-        states: MX.sym,
-        controls: MX.sym,
-        parameters: MX.sym,
-        algebraic_states: MX.sym,
-        numerical_timeseries: MX.sym,
+        time,
+        states,
+        controls,
+        parameters,
+        algebraic_states,
+        numerical_timeseries,
         nlp,
-        rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
     ) -> DynamicsEvaluation:
         """
         Forward dynamics driven by joints accelerations of a free floating body.
 
         Parameters
         ----------
-        time: MX.sym
+        time: MX.sym | SX.sym
             The time of the system
-        states: MX.sym
+        states: MX.sym | SX.sym
             The state of the system
-        controls: MX.sym
+        controls: MX.sym | SX.sym
             The controls of the system
-        parameters: MX.sym
+        parameters: MX.sym | SX.sym
             The parameters of the system
-        algebraic_states: MX.sym
+        algebraic_states: MX.sym | SX.sym
             The algebraic states of the system
-        numerical_timeseries: MX.sym
+        numerical_timeseries: MX.sym | SX.sym
             The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
-        rigidbody_dynamics: RigidBodyDynamics
-            which rigid body dynamics to use
 
         Returns
         ----------
-        MX.sym
+        MX.sym | SX.sym
             The derivative of states
         """
-        if rigidbody_dynamics != RigidBodyDynamics.ODE:
-            raise NotImplementedError("Implicit dynamics not implemented yet.")
-
         q = nlp.get_var_from_states_or_controls("q", states, controls)
         qdot = nlp.get_var_from_states_or_controls("qdot", states, controls)
         qddot_joints = nlp.get_var_from_states_or_controls("qddot", states, controls)
 
-        qddot_root = nlp.model.forward_dynamics_free_floating_base(q, qdot, qddot_joints)
+        qddot_root = nlp.model.forward_dynamics_free_floating_base()(q, qdot, qddot_joints, nlp.parameters.cx)
         qddot_reordered = nlp.model.reorder_qddot_root_joints(qddot_root, qddot_joints)
 
         qdot_mapped = nlp.variable_mappings["qdot"].to_first.map(qdot)
         qddot_mapped = nlp.variable_mappings["qdot"].to_first.map(qddot_reordered)
-        qddot_root_mapped = nlp.variable_mappings["qddot_roots"].to_first.map(qddot_root)
-        qddot_joints_mapped = nlp.variable_mappings["qddot_joints"].to_first.map(qddot_joints)
 
-        # defects
-        defects = None
-        if rigidbody_dynamics is not RigidBodyDynamics.ODE or (
-            rigidbody_dynamics is RigidBodyDynamics.ODE and nlp.ode_solver.defects_type == DefectType.IMPLICIT
-        ):
-            qddot_root_defects = DynamicsFunctions.get(nlp.states_dot["qddot_roots"], nlp.states_dot.mx_reduced)
-            qddot_defects_reordered = nlp.model.reorder_qddot_root_joints(qddot_root_defects, qddot_joints)
-
-            floating_base_constraint = nlp.model.inverse_dynamics(q, qdot, qddot_defects_reordered)[: nlp.model.nb_root]
-
-            defects = MX(qdot_mapped.shape[0] + qddot_root_mapped.shape[0] + qddot_joints_mapped.shape[0], 1)
-
-            defects[: qdot_mapped.shape[0], :] = qdot_mapped - nlp.variable_mappings["qdot"].to_first.map(
-                DynamicsFunctions.compute_qdot(
-                    nlp, q, DynamicsFunctions.get((nlp.states_dot["qdot"]), nlp.states_dot.mx_reduced)
-                )
-            )
-
-            defects[qdot_mapped.shape[0] : (qdot_mapped.shape[0] + qddot_root_mapped.shape[0]), :] = (
-                floating_base_constraint
-            )
-            defects[(qdot_mapped.shape[0] + qddot_root_mapped.shape[0]) :, :] = (
-                qddot_joints_mapped
-                - nlp.variable_mappings["qddot_joints"].to_first.map(
-                    DynamicsFunctions.get(nlp.states_dot["qddot_joints"], nlp.states_dot.mx_reduced)
-                )
-            )
-
-        return DynamicsEvaluation(dxdt=vertcat(qdot_mapped, qddot_mapped), defects=defects)
+        return DynamicsEvaluation(dxdt=vertcat(qdot_mapped, qddot_mapped), defects=None)
 
     @staticmethod
     def get(var: OptimizationVariable, cx: MX | SX):
@@ -1036,27 +921,6 @@ class DynamicsFunctions:
         """
 
         return var.mapping.to_second.map(cx[var.index, :])
-
-    @staticmethod
-    def apply_parameters(nlp):
-        """
-        Apply the parameter variables to the model. This should be called before calling the dynamics
-
-        Parameters
-        ----------
-        parameters: MX.sym
-            The state of the system
-        nlp: NonLinearProgram
-            The definition of the system
-        """
-
-        for param_key in nlp.parameters:
-            # Call the pre dynamics function
-            if nlp.parameters[param_key].function:
-                param = nlp.parameters[param_key]
-                param_scaling = nlp.parameters[param_key].scaling.scaling
-                param_reduced = nlp.parameters.scaled.mx_reduced[param.index]
-                param.function(nlp.model, param_reduced * param_scaling, **param.kwargs)
 
     @staticmethod
     def compute_qdot(nlp, q: MX | SX, qdot: MX | SX):
@@ -1090,7 +954,7 @@ class DynamicsFunctions:
             mapping = nlp.controls["q"].mapping
         else:
             raise RuntimeError("Your q key combination was not found in states or controls")
-        return mapping.to_first.map(nlp.model.reshape_qdot(q, qdot))
+        return mapping.to_first.map(nlp.model.reshape_qdot()(q, qdot, nlp.parameters.cx))
 
     @staticmethod
     def forward_dynamics(
@@ -1122,6 +986,7 @@ class DynamicsFunctions:
         -------
         The derivative of qdot
         """
+        # Get the mapping of the output
         if "qdot" in nlp.states:
             qdot_var_mapping = nlp.states["qdot"].mapping.to_first
         elif "qdot" in nlp.controls:
@@ -1129,19 +994,15 @@ class DynamicsFunctions:
         else:
             qdot_var_mapping = BiMapping([i for i in range(qdot.shape[0])], [i for i in range(qdot.shape[0])]).to_first
 
-        if external_forces is None:
-            if with_contact:
-                qddot = nlp.model.constrained_forward_dynamics(q, qdot, tau)
-            else:
-                qddot = nlp.model.forward_dynamics(q, qdot, tau)
-
-            return qdot_var_mapping.map(qddot)
-        else:
-            if with_contact:
-                qddot = nlp.model.constrained_forward_dynamics(q, qdot, tau, external_forces)
-            else:
-                qddot = nlp.model.forward_dynamics(q, qdot, tau, external_forces)
-            return qdot_var_mapping.map(qddot)
+        external_forces = [] if external_forces is None else external_forces
+        qddot = nlp.model.forward_dynamics(with_contact=with_contact)(
+            q,
+            qdot,
+            tau,
+            external_forces,
+            nlp.parameters.cx,
+        )
+        return qdot_var_mapping.map(qddot)
 
     @staticmethod
     def inverse_dynamics(
@@ -1174,23 +1035,16 @@ class DynamicsFunctions:
         -------
         Torques in tau
         """
-
         if external_forces is None:
-            tau = nlp.model.inverse_dynamics(q, qdot, qddot)
+            tau = nlp.model.inverse_dynamics(with_contact=with_contact)(q, qdot, qddot, [], nlp.parameters.cx)
         else:
-            if "tau" in nlp.states:
-                tau_shape = nlp.states["tau"].mx.shape[0]
-            elif "tau" in nlp.controls:
-                tau_shape = nlp.controls["tau"].mx.shape[0]
-            else:
-                tau_shape = nlp.model.nb_tau
-            tau = MX(tau_shape, nlp.ns)
-            for i in range(external_forces.shape[1]):
-                tau[:, i] = nlp.model.inverse_dynamics(q, qdot, qddot, external_forces[:, i])
+            tau = nlp.model.inverse_dynamics(with_contact=with_contact)(
+                q, qdot, qddot, external_forces, nlp.parameters.cx
+            )
         return tau  # We ignore on purpose the mapping to keep zeros in the defects of the dynamic.
 
     @staticmethod
-    def compute_muscle_dot(nlp, muscle_excitations: MX | SX):
+    def compute_muscle_dot(nlp, muscle_excitations: MX | SX, muscle_activations: MX | SX):
         """
         Easy accessor to derivative of muscle activations
 
@@ -1200,13 +1054,15 @@ class DynamicsFunctions:
             The phase of the program
         muscle_excitations: MX | SX
             The value of muscle_excitations from "get"
+        muscle_activations: MX | SX
+            The value of muscle_activations from "get"
 
         Returns
         -------
         The derivative of muscle activations
         """
 
-        return nlp.model.muscle_activation_dot(muscle_excitations)
+        return nlp.model.muscle_activation_dot()(muscle_excitations, muscle_activations, nlp.parameters.cx)
 
     @staticmethod
     def compute_tau_from_muscle(
@@ -1237,46 +1093,43 @@ class DynamicsFunctions:
         The generalized forces computed from the muscles
         """
 
-        activations = []
+        activations = type(q)()
         for k in range(len(nlp.controls["muscles"])):
             if fatigue_states is not None:
-                activations.append(muscle_activations[k] * (1 - fatigue_states[k]))
+                activations = vertcat(activations, muscle_activations[k] * (1 - fatigue_states[k]))
             else:
-                activations.append(muscle_activations[k])
-        return nlp.model.muscle_joint_torque(activations, q, qdot)
+                activations = vertcat(activations, muscle_activations[k])
+        return nlp.model.muscle_joint_torque()(activations, q, qdot, nlp.parameters.cx)
 
     @staticmethod
     def holonomic_torque_driven(
-        time: MX.sym,
-        states: MX.sym,
-        controls: MX.sym,
-        parameters: MX.sym,
-        algebraic_states: MX.sym,
-        numerical_timeseries: MX.sym,
+        time,
+        states,
+        controls,
+        parameters,
+        algebraic_states,
+        numerical_timeseries,
         nlp,
-        external_forces: list = None,
     ) -> DynamicsEvaluation:
         """
         The custom dynamics function that provides the derivative of the states: dxdt = f(t, x, u, p, a, d)
 
         Parameters
         ----------
-        time: MX.sym
+        time: MX.sym | SX.sym
             The time of the system
-        states: MX.sym
+        states: MX.sym | SX.sym
             The state of the system
-        controls: MX.sym
+        controls: MX.sym | SX.sym
             The controls of the system
-        parameters: MX.sym
+        parameters: MX.sym | SX.sym
             The parameters acting on the system
-        algebraic_states: MX.sym
+        algebraic_states: MX.sym | SX.sym
             The algebraic states of the system
-        numerical_timeseries: MX.sym
+        numerical_timeseries: MX.sym | SX.sym
             The numerical timeseries of the system
         nlp: NonLinearProgram
             A reference to the phase
-        external_forces: list[Any]
-            The external forces
 
         Returns
         -------
@@ -1286,6 +1139,7 @@ class DynamicsFunctions:
         q_u = DynamicsFunctions.get(nlp.states["q_u"], states)
         qdot_u = DynamicsFunctions.get(nlp.states["qdot_u"], states)
         tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
-        qddot_u = nlp.model.partitioned_forward_dynamics(q_u, qdot_u, tau, external_forces=external_forces)
+        q_v_init = DM.zeros(nlp.model.nb_dependent_joints)
+        qddot_u = nlp.model.partitioned_forward_dynamics()(q_u, qdot_u, q_v_init, tau)
 
         return DynamicsEvaluation(dxdt=vertcat(qdot_u, qddot_u), defects=None)

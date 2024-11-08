@@ -47,16 +47,11 @@ def prepare_ocp(
     method_bound_states: int = 0,
     bio_model_path: str = "models/double_pendulum.bioMod",
 ) -> OptimalControlProgram:
-    bio_model = BiorbdModel(bio_model_path)
 
     # Problem parameters
     n_shooting = 50
     final_time = 1
     tau_min, tau_max, tau_init = -10, 10, 0
-
-    # Mapping
-    tau_mappings = BiMappingList()
-    tau_mappings.add("tau", to_second=[None, 0], to_first=[1])
 
     # Define the parameter to optimize
     parameters = ParameterList(use_sx=False)
@@ -76,6 +71,13 @@ def prepare_ocp(
     parameter_objectives = ParameterObjectiveList()
     parameter_objectives.add(ObjectiveFcn.Parameter.MINIMIZE_PARAMETER, key="max_tau", weight=10, quadratic=True)
     parameter_objectives.add(ObjectiveFcn.Parameter.MINIMIZE_PARAMETER, key="min_tau", weight=10, quadratic=True)
+
+    # Define the model
+    bio_model = BiorbdModel(bio_model_path, parameters=parameters)
+
+    # Mapping
+    tau_mappings = BiMappingList()
+    tau_mappings.add("tau", to_second=[None, 0], to_first=[1])
 
     # Add objective functions
     objective_functions = ObjectiveList()

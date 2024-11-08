@@ -44,7 +44,7 @@ class Parameter(OptimizationVariable):
         parent_list: ParameterList
             The list the OptimizationVariable is in
         """
-        super(Parameter, self).__init__(name, mx, cx_start, index, mapping, parent_list)
+        super(Parameter, self).__init__(name, cx_start, index, mapping, parent_list)
         self.function = function
         self.size = size
         self.cx_type = cx_type
@@ -62,6 +62,12 @@ class Parameter(OptimizationVariable):
         self.scaling = scaling
         self.index = index
         self.kwargs = kwargs
+        self._mx = mx
+
+    @property
+    def mx(self):
+        # TODO: this should removed and placed in the BiorbdModel
+        return self._mx
 
     @property
     def cx(self):
@@ -90,6 +96,15 @@ class Parameter(OptimizationVariable):
 
     def cx_intermediates_list(self):
         raise RuntimeError("cx_intermediates_list is not available for parameters, only cx_start is accepted.")
+
+    def apply_parameter(self, model):
+        """
+        Apply the parameter variables to the model. This should be called during the creation of the biomodel
+        """
+        if self.function:
+            param_scaling = self.scaling.scaling
+            param_reduced = self.mx  # because this function will be used directly in the biorbd model
+            self.function(model, param_reduced * param_scaling, **self.kwargs)
 
 
 class ParameterList(OptimizationVariableList):
@@ -170,7 +185,6 @@ class ParameterList(OptimizationVariableList):
         self.scaling.add(key=name, scaling=scaling)
         index = range(self._cx_start.shape[0], self._cx_start.shape[0] + cx[0].shape[0])
         self._cx_start = vertcat(self._cx_start, cx[0])
-        self.mx_reduced = vertcat(self.mx_reduced, MX.sym("var", cx[0].shape[0]))
         mx = MX.sym(name, size)
         self.elements.append(
             Parameter(
@@ -224,7 +238,6 @@ class ParameterList(OptimizationVariableList):
             unscaled_parameter._cx_start = vertcat(
                 unscaled_parameter._cx_start, element.cx_start * element.scaling.scaling
             )
-            unscaled_parameter.mx_reduced = vertcat(unscaled_parameter.mx_reduced, element.mx * element.scaling.scaling)
 
         return unscaled_parameter
 
@@ -261,10 +274,10 @@ class ParameterContainer(OptimizationVariableContainer):
     A parameter container (i.e., the list of scaled parameters and a list of unscaled parameters).
     """
 
-    def __init__(self):
+    def __init__(self, use_sx: bool):
         super(ParameterContainer, self).__init__(phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE)
-        self._scaled: ParameterList = ParameterList(use_sx=True)
-        self._unscaled: ParameterList = ParameterList(use_sx=True)
+        self._scaled: ParameterList = ParameterList(use_sx=use_sx)
+        self._unscaled: ParameterList = ParameterList(use_sx=use_sx)
 
     @property
     def node_index(self):
@@ -324,3 +337,7 @@ class ParameterContainer(OptimizationVariableContainer):
     @property
     def cx_end(self):
         raise RuntimeError("cx_end is not available for parameters, only cx_start is accepted.")
+
+    @property
+    def mx(self):
+        return self.unscaled.mx

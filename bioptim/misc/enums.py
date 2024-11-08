@@ -1,5 +1,5 @@
-from enum import Enum, IntEnum, auto
 import platform
+from enum import Enum, IntEnum, auto
 
 
 class PhaseDynamics(Enum):
@@ -193,14 +193,6 @@ class QuadratureRule(Enum):
 class SoftContactDynamics(Enum):
     ODE = "ode"
     CONSTRAINT = "constraint"
-
-
-class RigidBodyDynamics(Enum):
-    ODE = "ode"
-    DAE_INVERSE_DYNAMICS = "dae_inverse_dynamics"
-    DAE_FORWARD_DYNAMICS = "dae_forward_dynamics"
-    DAE_INVERSE_DYNAMICS_JERK = "dae_inverse_dynamics_jerk"
-    DAE_FORWARD_DYNAMICS_JERK = "dae_forward_dynamics_jerk"
 
 
 class DefectType(Enum):

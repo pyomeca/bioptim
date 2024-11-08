@@ -4,11 +4,6 @@ and superimpose the same corner to a different marker at the end. While doing so
 The solver must minimize the force needed to lift the box while reaching the marker in time.
 It is designed to show how to use external forces. An example of external forces that depends on the state (for
 example a spring) can be found at 'examples/torque_driven_ocp/spring_load.py'
-
-Please note that the point of application of the external forces are defined from the name of the segment in the bioMod.
-It is expected to act on a segment in the global_reference_frame. Bioptim expects an array of shape [9, nb_external_forces, n_shooting+1]
-where the three first components are the moments, the three next components are the forces and the three last components are the point of application (Mx, My, Mz, Fx, Fy, Fz, Px, Py, Pz)
-You should also specify the name of the segments where the external forces are applied the list "segments_to_apply_external_forces".
 """
 
 import platform
@@ -30,6 +25,7 @@ from bioptim import (
     OdeSolverBase,
     Solver,
     PhaseDynamics,
+    ExternalForceSetTimeSeries,
 )
 
 
@@ -38,6 +34,7 @@ def prepare_ocp(
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     expand_dynamics: bool = True,
     phase_dynamics: PhaseDynamics = PhaseDynamics.ONE_PER_NODE,
+    external_force_method: str = "in_global",
     use_point_of_applications: bool = False,
     n_threads: int = 1,
     use_sx: bool = False,
@@ -69,42 +66,28 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path, segments_to_apply_external_forces=["Seg1", "Test"])
-    # segments_to_apply_external_forces is necessary to define the external forces.
-    # Please note that they should be declared in the same order as the external forces values bellow.
-
     # Problem parameters
     n_shooting = 30
     final_time = 2
+
+    # External forces
+    external_force_set = setup_external_forces(n_shooting, external_force_method, use_point_of_applications)
+
+    bio_model = BiorbdModel(biorbd_model_path, external_force_set=external_force_set)
 
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100)
 
-    # External forces (shape: 9 x nb_external_forces x (n_shooting_points+1))
-    # First components are the moments and forces
-    external_forces = np.zeros((9, 2, n_shooting + 1))
-    external_forces[5, 0, :] = -2
-    external_forces[5, 1, :] = 5
-    external_forces[5, 0, 4] = -22
-    external_forces[5, 1, 4] = 52
-    if use_point_of_applications:
-        # Last components are the point of application
-        external_forces[6, 0, :] = 0.05
-        external_forces[7, 1, :] = 0.01
-        external_forces[8, 0, :] = 0.007
-        external_forces[6, 1, :] = -0.009
-        external_forces[7, 0, :] = -0.05
-        external_forces[8, 1, :] = -0.01
-
     # Dynamics
+    numerical_time_series = {"external_forces": external_force_set.to_numerical_time_series()}
+
     dynamics = DynamicsList()
     dynamics.add(
-        # This must be PhaseDynamics.ONE_PER_NODE since external forces change at each node within the phase
         DynamicsFcn.TORQUE_DRIVEN,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
-        numerical_data_timeseries={"external_forces": external_forces},  # the key word "external_forces" must be used
+        numerical_data_timeseries=numerical_time_series,
     )
 
     # Constraints
@@ -137,6 +120,72 @@ def prepare_ocp(
         n_threads=n_threads,
         use_sx=use_sx,
     )
+
+
+def setup_external_forces(
+    n_shooting: int, external_force_method: str, use_point_of_applications: bool
+) -> ExternalForceSetTimeSeries:
+    """Configure external forces based on the specified method."""
+    Seg1_force = np.zeros((3, n_shooting))
+    Seg1_force[2, :] = -2
+    Seg1_force[2, 4] = -22
+
+    Test_force = np.zeros((3, n_shooting))
+    Test_force[2, :] = 5
+    Test_force[2, 4] = 52
+
+    Seg1_point_of_application = np.zeros((3, n_shooting))
+    Seg1_point_of_application[0, :] = 0.05
+    Seg1_point_of_application[1, :] = -0.05
+    Seg1_point_of_application[2, :] = 0.007
+
+    Test_point_of_application = np.zeros((3, n_shooting))
+    Test_point_of_application[0, :] = -0.009
+    Test_point_of_application[1, :] = 0.01
+    Test_point_of_application[2, :] = -0.01
+
+    external_force_set = ExternalForceSetTimeSeries(nb_frames=n_shooting)
+
+    # Add appropriate forces based on method
+    if external_force_method == "translational_force":
+        external_force_set.add_translational_force(
+            "Seg1",
+            Seg1_force,
+            point_of_application_in_local=Seg1_point_of_application if use_point_of_applications else None,
+        )
+        external_force_set.add_translational_force(
+            "Test",
+            Test_force,
+            point_of_application_in_local=Test_point_of_application if use_point_of_applications else None,
+        )
+
+    elif external_force_method == "translational_force_on_a_marker":
+        external_force_set.add_translational_force("Test", Test_force, point_of_application_in_local="m0")
+
+    elif external_force_method == "in_global":
+        external_force_set.add(
+            "Seg1",
+            np.concatenate((Seg1_force, Seg1_force), axis=0),
+            point_of_application=Seg1_point_of_application if use_point_of_applications else None,
+        )
+        external_force_set.add(
+            "Test",
+            np.concatenate((Test_force, Test_force), axis=0),
+            point_of_application=Test_point_of_application if use_point_of_applications else None,
+        )
+    elif external_force_method == "in_global_torque":
+        external_force_set.add_torque("Seg1", Seg1_force)
+        external_force_set.add_torque("Test", Test_force)
+
+    elif external_force_method == "in_segment_torque":
+        external_force_set.add_torque_in_segment_frame("Seg1", Seg1_force)
+        external_force_set.add_torque_in_segment_frame("Test", Test_force)
+
+    elif external_force_method == "in_segment":
+        external_force_set.add_in_segment_frame("Seg1", np.concatenate((Seg1_force, Seg1_force), axis=0))
+        external_force_set.add_in_segment_frame("Test", np.concatenate((Test_force, Test_force), axis=0))
+
+    return external_force_set
 
 
 def main():

@@ -11,7 +11,7 @@ import pytest
 
 import numpy as np
 import numpy.testing as npt
-from bioptim import OdeSolver, RigidBodyDynamics, Solver, PhaseDynamics, SolutionMerge
+from bioptim import OdeSolver, Solver, PhaseDynamics, SolutionMerge
 
 from tests.utils import TestUtils
 
@@ -140,11 +140,7 @@ def test_maximize_predicted_height_CoM_with_actuators(phase_dynamics):
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE])
-@pytest.mark.parametrize(
-    "rigidbody_dynamics",
-    [RigidBodyDynamics.ODE, RigidBodyDynamics.DAE_FORWARD_DYNAMICS, RigidBodyDynamics.DAE_INVERSE_DYNAMICS],
-)
-def test_maximize_predicted_height_CoM_rigidbody_dynamics(rigidbody_dynamics, phase_dynamics):
+def test_maximize_predicted_height_CoM_rigidbody_dynamics(phase_dynamics):
     from bioptim.examples.torque_driven_ocp import maximize_predicted_height_CoM as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -157,7 +153,6 @@ def test_maximize_predicted_height_CoM_rigidbody_dynamics(rigidbody_dynamics, ph
         n_shooting=20,
         use_actuators=False,
         ode_solver=ode_solver,
-        rigidbody_dynamics=rigidbody_dynamics,
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
     )
@@ -168,19 +163,8 @@ def test_maximize_predicted_height_CoM_rigidbody_dynamics(rigidbody_dynamics, ph
     # Check objective function value
     f = np.array(sol.cost)
     npt.assert_equal(f.shape, (1, 1))
-
-    if rigidbody_dynamics == RigidBodyDynamics.ODE:
-        npt.assert_almost_equal(f[0, 0], 0.8032447451950947)
-    elif rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
-        npt.assert_almost_equal(f[0, 0], 0.9695327421106931)
-    elif rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
-        npt.assert_almost_equal(f[0, 0], 1.691190510518052)
+    npt.assert_almost_equal(f[0, 0], 0.8032447451950947)
 
     # Check constraints
     g = np.array(sol.constraints)
-    if rigidbody_dynamics == RigidBodyDynamics.ODE:
-        npt.assert_equal(g.shape, (160, 1))
-    elif rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
-        npt.assert_equal(g.shape, (240, 1))
-    elif rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
-        npt.assert_equal(g.shape, (300, 1))
+    npt.assert_equal(g.shape, (160, 1))

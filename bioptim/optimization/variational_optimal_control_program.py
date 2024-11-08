@@ -3,12 +3,11 @@ Optimal control program with the variational integrator for the dynamics.
 """
 
 import numpy as np
-from casadi import MX, Function, vertcat
+from casadi import Function, vertcat
 
 from .optimal_control_program import OptimalControlProgram
 from ..dynamics.configure_problem import ConfigureProblem, DynamicsList
 from ..dynamics.dynamics_evaluation import DynamicsEvaluation
-from ..dynamics.dynamics_functions import DynamicsFunctions
 from ..limits.constraints import ParameterConstraintList
 from ..limits.multinode_constraint import MultinodeConstraintList
 from ..limits.objective_functions import ParameterObjectiveList
@@ -234,9 +233,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             If the dynamics should be expanded with casadi
         """
 
-        DynamicsFunctions.apply_parameters(nlp)
-
-        dynamics_eval = DynamicsEvaluation(MX(0), MX(0))
+        dynamics_eval = DynamicsEvaluation(nlp.cx(0), nlp.cx(0))
         dynamics_dxdt = dynamics_eval.dxdt
         if isinstance(dynamics_dxdt, (list, tuple)):
             dynamics_dxdt = vertcat(*dynamics_dxdt)
@@ -245,42 +242,42 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         nlp.dynamics_func = Function(
             "ForwardDyn",
             [
-                vertcat(nlp.time_mx, nlp.dt_mx),
-                nlp.states.scaled.mx_reduced,
-                nlp.controls.scaled.mx_reduced,
-                nlp.parameters.mx_reduced,
-                nlp.algebraic_states.scaled.mx_reduced,
-                nlp.numerical_timeseries.mx,
+                vertcat(nlp.time_cx, nlp.dt),
+                nlp.states.scaled.cx,
+                nlp.controls.scaled.cx,
+                nlp.parameters.cx,
+                nlp.algebraic_states.scaled.cx,
+                nlp.numerical_timeseries.cx,
             ],
             [dynamics_dxdt],
             ["t_span", "x", "u", "p", "a", "d"],
             ["xdot"],
         )
 
-        dt = MX.sym("time_step")
-        q_prev = MX.sym("q_prev", nlp.model.nb_q, 1)
-        q_cur = MX.sym("q_cur", nlp.model.nb_q, 1)
-        q_next = MX.sym("q_next", nlp.model.nb_q, 1)
-        control_prev = MX.sym("control_prev", nlp.model.nb_q, 1)
-        control_cur = MX.sym("control_cur", nlp.model.nb_q, 1)
-        control_next = MX.sym("control_next", nlp.model.nb_q, 1)
-        q0 = MX.sym("q0", nlp.model.nb_q, 1)
-        qdot0 = MX.sym("qdot_start", nlp.model.nb_q, 1)
-        q1 = MX.sym("q1", nlp.model.nb_q, 1)
-        control0 = MX.sym("control0", nlp.model.nb_q, 1)
-        control1 = MX.sym("control1", nlp.model.nb_q, 1)
-        q_ultimate = MX.sym("q_ultimate", nlp.model.nb_q, 1)
-        qdot_ultimate = MX.sym("qdot_ultimate", nlp.model.nb_q, 1)
-        q_penultimate = MX.sym("q_penultimate", nlp.model.nb_q, 1)
-        controlN_minus_1 = MX.sym("controlN_minus_1", nlp.model.nb_q, 1)
-        controlN = MX.sym("controlN", nlp.model.nb_q, 1)
+        dt = nlp.cx.sym("time_step")
+        q_prev = nlp.cx.sym("q_prev", nlp.model.nb_q, 1)
+        q_cur = nlp.cx.sym("q_cur", nlp.model.nb_q, 1)
+        q_next = nlp.cx.sym("q_next", nlp.model.nb_q, 1)
+        control_prev = nlp.cx.sym("control_prev", nlp.model.nb_q, 1)
+        control_cur = nlp.cx.sym("control_cur", nlp.model.nb_q, 1)
+        control_next = nlp.cx.sym("control_next", nlp.model.nb_q, 1)
+        q0 = nlp.cx.sym("q0", nlp.model.nb_q, 1)
+        qdot0 = nlp.cx.sym("qdot_start", nlp.model.nb_q, 1)
+        q1 = nlp.cx.sym("q1", nlp.model.nb_q, 1)
+        control0 = nlp.cx.sym("control0", nlp.model.nb_q, 1)
+        control1 = nlp.cx.sym("control1", nlp.model.nb_q, 1)
+        q_ultimate = nlp.cx.sym("q_ultimate", nlp.model.nb_q, 1)
+        qdot_ultimate = nlp.cx.sym("qdot_ultimate", nlp.model.nb_q, 1)
+        q_penultimate = nlp.cx.sym("q_penultimate", nlp.model.nb_q, 1)
+        controlN_minus_1 = nlp.cx.sym("controlN_minus_1", nlp.model.nb_q, 1)
+        controlN = nlp.cx.sym("controlN", nlp.model.nb_q, 1)
 
         three_nodes_input = [dt, q_prev, q_cur, q_next, control_prev, control_cur, control_next]
         two_first_nodes_input = [dt, q0, qdot0, q1, control0, control1]
         two_last_nodes_input = [dt, q_penultimate, q_ultimate, qdot_ultimate, controlN_minus_1, controlN]
 
         if self.bio_model.has_holonomic_constraints:
-            lambdas = MX.sym("lambda", self.bio_model.nb_holonomic_constraints, 1)
+            lambdas = nlp.cx.sym("lambda", self.bio_model.nb_holonomic_constraints, 1)
             three_nodes_input.append(lambdas)
             two_first_nodes_input.append(lambdas)
             two_last_nodes_input.append(lambdas)
@@ -390,7 +387,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
         Returns
         -------
-        The symbolic MX expression of the discrete Euler Lagrange equations
+        The symbolic expression of the discrete Euler Lagrange equations
         for the integration from node i-1, i,to i+1.
 
         """
@@ -433,7 +430,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
         Returns
         -------
-        The symbolic MX expression of the initial continuity constraint for the integration.
+        The symbolic expression of the initial continuity constraint for the integration.
 
         """
         if self.bio_model.has_holonomic_constraints:
@@ -474,7 +471,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
         Returns
         -------
-        The symbolic MX expression of the final continuity constraint for the integration.
+        The symbolic expression of the final continuity constraint for the integration.
 
         """
         if self.bio_model.has_holonomic_constraints:

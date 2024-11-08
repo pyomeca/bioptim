@@ -10,9 +10,8 @@ The difference between muscle activation and excitation is that the latter is th
 
 import platform
 
-import biorbd_casadi as biorbd
 import numpy as np
-from casadi import MX, vertcat
+from casadi import MX, SX, vertcat, horzcat, Function
 from matplotlib import pyplot as plt
 from scipy.integrate import solve_ivp
 
@@ -31,7 +30,6 @@ from bioptim import (
     OdeSolverBase,
     Node,
     Solver,
-    RigidBodyDynamics,
     PhaseDynamics,
     SolutionMerge,
 )
@@ -44,6 +42,7 @@ def generate_data(
     n_shooting: int,
     use_residual_torque: bool = True,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
+    use_sx: bool = False,
 ) -> tuple:
     """
     Generate random data. If np.random.seed is defined before, it will always return the same results
@@ -91,7 +90,8 @@ def generate_data(
     symbolic_controls = vertcat(*(symbolic_tau, symbolic_mus_controls))
 
     symbolic_parameters = MX.sym("u", 0, 0)
-    nlp = NonLinearProgram(phase_dynamics=phase_dynamics)
+    nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=use_sx)
+    nlp.cx = SX if use_sx else MX
     nlp.model = bio_model
     nlp.variable_mappings = {
         "q": BiMapping(range(n_q), range(n_q)),
@@ -100,21 +100,20 @@ def generate_data(
         "tau": BiMapping(range(n_tau), range(n_tau)),
         "muscles": BiMapping(range(n_mus), range(n_mus)),
     }
-    markers_func = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_q)
-
     nlp.states = OptimizationVariableContainer(phase_dynamics=phase_dynamics)
     nlp.states_dot = OptimizationVariableContainer(phase_dynamics=phase_dynamics)
     nlp.controls = OptimizationVariableContainer(phase_dynamics=phase_dynamics)
+    nlp.algebraic_states = OptimizationVariableContainer(phase_dynamics=phase_dynamics)
     nlp.states.initialize_from_shooting(n_shooting, MX)
     nlp.states_dot.initialize_from_shooting(n_shooting, MX)
     nlp.controls.initialize_from_shooting(n_shooting, MX)
+    nlp.algebraic_states.initialize_from_shooting(n_shooting, MX)
 
     for node_index in range(n_shooting):
         nlp.states.append(
             name="q",
             cx=[symbolic_q, symbolic_q, symbolic_q],
             cx_scaled=[symbolic_q, symbolic_q, symbolic_q],
-            mx=symbolic_q,
             mapping=nlp.variable_mappings["q"],
             node_index=node_index,
         )
@@ -122,7 +121,6 @@ def generate_data(
             name="qdot",
             cx=[symbolic_qdot, symbolic_qdot, symbolic_qdot],
             cx_scaled=[symbolic_qdot, symbolic_qdot, symbolic_qdot],
-            mx=symbolic_qdot,
             mapping=nlp.variable_mappings["qdot"],
             node_index=node_index,
         )
@@ -130,7 +128,6 @@ def generate_data(
             name="muscles",
             cx=[symbolic_mus_states, symbolic_mus_states, symbolic_mus_states],
             cx_scaled=[symbolic_mus_states, symbolic_mus_states, symbolic_mus_states],
-            mx=symbolic_mus_states,
             mapping=nlp.variable_mappings["muscles"],
             node_index=node_index,
         )
@@ -139,7 +136,6 @@ def generate_data(
             name="tau",
             cx=[symbolic_tau, symbolic_tau, symbolic_tau],
             cx_scaled=[symbolic_tau, symbolic_tau, symbolic_tau],
-            mx=symbolic_tau,
             mapping=nlp.variable_mappings["tau"],
             node_index=node_index,
         )
@@ -147,7 +143,6 @@ def generate_data(
             name="muscles",
             cx=[symbolic_mus_controls, symbolic_mus_controls, symbolic_mus_controls],
             cx_scaled=[symbolic_mus_controls, symbolic_mus_controls, symbolic_mus_controls],
-            mx=symbolic_mus_controls,
             mapping=nlp.variable_mappings["muscles"],
             node_index=node_index,
         )
@@ -155,7 +150,6 @@ def generate_data(
             name="qdot",
             cx=[symbolic_qdot, symbolic_qdot, symbolic_qdot],
             cx_scaled=[symbolic_qdot, symbolic_qdot, symbolic_qdot],
-            mx=symbolic_qdot,
             mapping=nlp.variable_mappings["qdot"],
             node_index=node_index,
         )
@@ -163,30 +157,25 @@ def generate_data(
             name="qddot",
             cx=[symbolic_qddot, symbolic_qddot, symbolic_qddot],
             cx_scaled=[symbolic_qddot, symbolic_qddot, symbolic_qddot],
-            mx=symbolic_qddot,
             mapping=nlp.variable_mappings["qddot"],
             node_index=node_index,
         )
 
-    dynamics_func = biorbd.to_casadi_func(
+    dynamics_func = Function(
         "ForwardDyn",
-        DynamicsFunctions.muscles_driven(
-            time=symbolic_time,
-            states=symbolic_states,
-            controls=symbolic_controls,
-            parameters=symbolic_parameters,
-            algebraic_states=MX(),
-            numerical_timeseries=MX(),
-            nlp=nlp,
-            with_contact=False,
-            rigidbody_dynamics=RigidBodyDynamics.ODE,
-        ).dxdt,
-        symbolic_time,
-        symbolic_states,
-        symbolic_controls,
-        symbolic_parameters,
-        nlp,
-        False,
+        [symbolic_time, symbolic_states, symbolic_controls, symbolic_parameters],
+        [
+            DynamicsFunctions.muscles_driven(
+                time=symbolic_time,
+                states=symbolic_states,
+                controls=symbolic_controls,
+                parameters=symbolic_parameters,
+                algebraic_states=MX(),
+                numerical_timeseries=MX(),
+                nlp=nlp,
+                with_contact=False,
+            ).dxdt
+        ],
     )
 
     def dyn_interface(t, x, u):
@@ -202,7 +191,7 @@ def generate_data(
 
     def add_to_data(i, q):
         X[:, i] = q
-        markers[:, :, i] = markers_func(q[:n_q])
+        markers[:, :, i] = bio_model.markers()(q[:n_q], [])
 
     x_init = np.array([0.0] * n_q + [0.0] * n_qdot + [0.5] * n_mus)
     add_to_data(0, x_init)
@@ -374,10 +363,8 @@ def main():
     n_frames = q.shape[1]
 
     markers = np.ndarray((3, n_mark, q.shape[1]))
-    symbolic_states = MX.sym("x", n_q, 1)
-    markers_func = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_states)
     for i in range(n_frames):
-        markers[:, :, i] = markers_func(q[:, i])
+        markers[:, :, i] = horzcat(*bio_model.markers()(q[:, i]))
 
     plt.figure("Markers")
     n_steps_ode = ocp.nlp[0].ode_solver.steps + 1 if ocp.nlp[0].ode_solver.is_direct_collocation else 1
