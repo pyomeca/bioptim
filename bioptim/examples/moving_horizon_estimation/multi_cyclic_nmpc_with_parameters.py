@@ -7,10 +7,10 @@ the latter has more cycle at a time giving the knowledge to the solver that 'som
 
 import platform
 
-import numpy as np
-
-from casadi import MX, SX, vertcat
 import biorbd
+import numpy as np
+from casadi import MX, SX, vertcat
+
 from bioptim import (
     Axis,
     BiorbdModel,
@@ -104,7 +104,7 @@ def parameter_dependent_dynamic(
 
     # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
     dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-    ddq = nlp.model.forward_dynamics(q, qdot, tau)
+    ddq = nlp.model.forward_dynamics(with_contact=False)(q, qdot, tau, [], [])
 
     return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
 
