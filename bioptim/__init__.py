@@ -166,7 +166,7 @@ from .dynamics.fatigue.xia_fatigue import XiaFatigue, XiaTauFatigue, XiaFatigueS
 from .dynamics.ode_solvers import OdeSolver, OdeSolverBase
 from .gui.online_callback_server import PlottingServer
 from .gui.plot import CustomPlot
-from .interfaces import Solver
+from .interfaces import Solver, CasadiFunctionInterface
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint, ParameterConstraintList
 from .limits.fatigue_path_conditions import FatigueBounds, FatigueInitialGuess
 from .limits.multinode_constraint import MultinodeConstraintFcn, MultinodeConstraintList, MultinodeConstraint
@@ -196,7 +196,7 @@ from .misc.enums import (
     OnlineOptim,
     ContactType,
 )
-from .misc.mapping import BiMappingList, BiMapping, Mapping, SelectionMapping, Dependency
+from .misc.mapping import BiMappingList, BiMapping, Mapping, NodeMapping, NodeMappingList, SelectionMapping, Dependency
 from .models.biorbd.biorbd_model import BiorbdModel
 from .models.biorbd.external_forces import ExternalForceSetTimeSeries, ExternalForceSetVariables
 from .models.biorbd.holonomic_biorbd_model import HolonomicBiorbdModel
