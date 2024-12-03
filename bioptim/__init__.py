@@ -165,48 +165,26 @@ multiphase can be found in 'examples/torque_driven_ocp'. For ACADOS specific exa
 """
 
 from .dynamics.configure_problem import ConfigureProblem, DynamicsFcn, DynamicsList, Dynamics
-from .dynamics.configure_problem import ConfigureProblem, DynamicsFcn, DynamicsList, Dynamics
-from .dynamics.dynamics_evaluation import DynamicsEvaluation
 from .dynamics.dynamics_evaluation import DynamicsEvaluation
 from .dynamics.dynamics_functions import DynamicsFunctions
-from .dynamics.dynamics_functions import DynamicsFunctions
-from .dynamics.fatigue.effort_perception import EffortPerception, TauEffortPerception
 from .dynamics.fatigue.effort_perception import EffortPerception, TauEffortPerception
 from .dynamics.fatigue.fatigue_dynamics import FatigueList
-from .dynamics.fatigue.fatigue_dynamics import FatigueList
-from .dynamics.fatigue.michaud_fatigue import MichaudFatigue, MichaudTauFatigue
 from .dynamics.fatigue.michaud_fatigue import MichaudFatigue, MichaudTauFatigue
 from .dynamics.fatigue.xia_fatigue import XiaFatigue, XiaTauFatigue, XiaFatigueStabilized
-from .dynamics.fatigue.xia_fatigue import XiaFatigue, XiaTauFatigue, XiaFatigueStabilized
-from .dynamics.ode_solver import OdeSolver, OdeSolverBase
 from .dynamics.ode_solver import OdeSolver, OdeSolverBase
 from .gui.online_callback_server import PlottingServer
-from .gui.online_callback_server import PlottingServer
 from .gui.plot import CustomPlot
-from .gui.plot import CustomPlot
-from .interfaces import Solver
-from .interfaces import Solver
-from .limits.constraints import ConstraintFcn, ConstraintList, Constraint, ParameterConstraintList
+from .interfaces import Solver, CasadiFunctionInterface
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint, ParameterConstraintList
 from .limits.fatigue_path_conditions import FatigueBounds, FatigueInitialGuess
-from .limits.fatigue_path_conditions import FatigueBounds, FatigueInitialGuess
-from .limits.multinode_constraint import MultinodeConstraintFcn, MultinodeConstraintList, MultinodeConstraint
 from .limits.multinode_constraint import MultinodeConstraintFcn, MultinodeConstraintList, MultinodeConstraint
 from .limits.multinode_objective import MultinodeObjectiveFcn, MultinodeObjectiveList, MultinodeObjective
-from .limits.multinode_objective import MultinodeObjectiveFcn, MultinodeObjectiveList, MultinodeObjective
-from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ParameterObjectiveList
 from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ParameterObjectiveList
 from .limits.path_conditions import BoundsList, InitialGuessList, Bounds, InitialGuess
-from .limits.path_conditions import BoundsList, InitialGuessList, Bounds, InitialGuess
-from .limits.penalty_controller import PenaltyController
 from .limits.penalty_controller import PenaltyController
 from .limits.penalty_helpers import PenaltyHelpers
-from .limits.penalty_helpers import PenaltyHelpers
-from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
 from .misc.__version__ import __version__
-from .misc.__version__ import __version__
-from .misc.casadi_expand import lt, le, gt, ge, if_else, if_else_zero
 from .misc.casadi_expand import lt, le, gt, ge, if_else, if_else_zero
 from .misc.enums import (
     Axis,
@@ -226,7 +204,6 @@ from .misc.enums import (
     PhaseDynamics,
     OnlineOptim,
 )
-from .misc.mapping import BiMappingList, BiMapping, Mapping, NodeMapping, NodeMappingList, SelectionMapping, Dependency
 from .misc.mapping import BiMappingList, BiMapping, Mapping, NodeMapping, NodeMappingList, SelectionMapping, Dependency
 from .models.biorbd.biorbd_model import BiorbdModel
 from .models.biorbd.external_forces import ExternalForceSetTimeSeries
