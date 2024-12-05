@@ -687,4 +687,3 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
                     npt.assert_almost_equal(sol.decision_time()[-1], 1.0)
                 else:
                     return
-
