@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from casadi import Callback, Function, Sparsity, DM, MX, SX
+from casadi import Callback, Function, Sparsity, DM, MX, jacobian
 import numpy as np
 
 
@@ -122,6 +122,7 @@ class CasadiFunctionInterface(Callback, ABC):
                 self._sparsity_out = parent.mx_in()
 
                 self.jacobian_functions = jacobian_functions
+                self.reverse_function = None
                 Callback.__init__(self)
                 self.construct("Reverse", opts)
 
@@ -143,6 +144,18 @@ class CasadiFunctionInterface(Callback, ABC):
                 inputs = arg[:-1]
                 return [jaco[index, :].T for jaco in self.jacobian_functions(*inputs)]
 
+            def has_reverse(self, nadj):
+                return nadj == 1
+
+            def get_reverse(self, nadj, name, inames, onames, opts):
+                if self.reverse_function is None:
+                    self.reverse_function = Reverse(self, jacobian(self.jacobian_functions))
+
+                cx_in = self.mx_in()
+                nominal_out = self.mx_out()
+                adj_seed = self.mx_out()
+                return Function(name, cx_in + nominal_out + adj_seed, self.reverse_function.call(cx_in + adj_seed))
+
         # Package it in the [nominal_in + nominal_out + adj_seed] form that CasADi expects
         if self.reverse_function is None:
             self.reverse_function = Reverse(self, self.jacobians)
@@ -150,4 +163,4 @@ class CasadiFunctionInterface(Callback, ABC):
         cx_in = self.mx_in()
         nominal_out = self.mx_out()
         adj_seed = self.mx_out()
-        return Function(name, cx_in + nominal_out + adj_seed, self.reverse_function(*cx_in, adj_seed[0]))
+        return Function(name, cx_in + nominal_out + adj_seed, self.reverse_function.call(cx_in + adj_seed))
