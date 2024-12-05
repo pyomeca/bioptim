@@ -40,6 +40,7 @@ examples_ = OrderedDict(
                     ("Custom Bounds", "custom_bounds.py"),
                     ("Custom constraint", "custom_constraint.py"),
                     ("Custom initial guess", "custom_initial_guess.py"),
+                    ("Custom non casadi dynamics", "custom_non_casadi_dynamics.py"),
                     ("Custom objectives", "custom_objectives.py"),
                     ("Custom parameters", "custom_parameters.py"),
                     ("Custom phase transitions", "custom_phase_transitions.py"),
