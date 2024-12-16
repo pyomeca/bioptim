@@ -117,6 +117,7 @@ bioptim/sandbox/
 
 *.png
 
+bioptim/examples/getting_started/_l4c_generated/
 sandbox/
 
 # Ignore all npy files in tests folder except those in tests/shard6
