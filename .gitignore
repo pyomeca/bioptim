@@ -117,4 +117,4 @@ bioptim/sandbox/
 
 *.png
 
-bioptim/examples/getting_started/_l4c_generated/
+bioptim/*/_l4c_generated/
