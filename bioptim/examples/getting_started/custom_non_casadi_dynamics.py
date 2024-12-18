@@ -71,7 +71,7 @@ class NeuralNetworkModel(torch.nn.Module):
             self._optimizer, mode="min", factor=0.1, patience=20, min_lr=1e-8
         )
 
-        max_epochs = 10
+        max_epochs = 500
         for _ in range(max_epochs):
             self._perform_epoch_training(targets=training_data)
             validation_loss = self._perform_epoch_training(targets=validation_data, only_compute=True)
@@ -130,6 +130,13 @@ def prepare_ocp(
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
     torch_model = TorchModel(torch_model=model)
 
+    q = np.array([0, 3.14])
+    qdot = np.array([0, 0])
+    tau = np.array([0, 0])
+    qddot = torch_model.forward_dynamics()(q, qdot, tau, np.array([]), np.array([]))
+    biorbd_model = biorbd.Model("models/pendulum.bioMod")
+    qddot2 = biorbd_model.ForwardDynamics(q, qdot, tau).to_array()
+
     # Path bounds
     x_bounds = BoundsList()
     x_bounds["q"] = [-3.14 * 1.5] * torch_model.nb_q, [3.14 * 1.5] * torch_model.nb_q
@@ -150,14 +157,35 @@ def prepare_ocp(
         final_time,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
-        use_sx=True,
+        use_sx=False,
     )
 
 
 def generate_dataset(biorbd_model: biorbd.Model, data_point_count: int) -> list[torch.Tensor]:
-    q = torch.rand(data_point_count, biorbd_model.nbQ())
-    qdot = torch.rand(data_point_count, biorbd_model.nbQdot())
-    tau = torch.rand(data_point_count, biorbd_model.nbGeneralizedTorque())
+    q_ranges = np.array(
+        [[[q_range.min(), q_range.max()] for q_range in segment.QRanges()] for segment in biorbd_model.segments()]
+    ).squeeze()
+    qdot_ranges = np.array(
+        [
+            [[qdot_range.min(), qdot_range.max()] for qdot_range in segment.QdotRanges()]
+            for segment in biorbd_model.segments()
+        ]
+    ).squeeze()
+    tau_ranges = np.array([-100, 100] * biorbd_model.nbGeneralizedTorque()).reshape(-1, 2)
+
+    q = torch.rand(data_point_count, biorbd_model.nbQ()) * (q_ranges[:, 1] - q_ranges[:, 0]) + q_ranges[:, 0]
+    qdot = (
+        torch.rand(data_point_count, biorbd_model.nbQdot()) * (qdot_ranges[:, 1] - qdot_ranges[:, 0])
+        + qdot_ranges[:, 0]
+    )
+    tau = (
+        torch.rand(data_point_count, biorbd_model.nbGeneralizedTorque()) * (tau_ranges[:, 1] - tau_ranges[:, 0])
+        + tau_ranges[:, 0]
+    )
+
+    q = q.to(torch.float)
+    qdot = qdot.to(torch.float)
+    tau = tau.to(torch.float)
 
     qddot = torch.zeros(data_point_count, biorbd_model.nbQddot())
     for i in range(data_point_count):
@@ -171,10 +199,10 @@ def generate_dataset(biorbd_model: biorbd.Model, data_point_count: int) -> list[
 def main():
     # --- Prepare a predictive model --- #
     biorbd_model = biorbd.Model("models/pendulum.bioMod")
-    training_data = generate_dataset(biorbd_model, data_point_count=1000)
-    validation_data = generate_dataset(biorbd_model, data_point_count=100)
+    training_data = generate_dataset(biorbd_model, data_point_count=30000)
+    validation_data = generate_dataset(biorbd_model, data_point_count=3000)
 
-    model = NeuralNetworkModel(layer_node_count=(6, 10, 10, 2), dropout_probability=0.2, use_batch_norm=True)
+    model = NeuralNetworkModel(layer_node_count=(6, 128, 128, 128, 2), dropout_probability=0.2, use_batch_norm=True)
     model.train_me(training_data, validation_data)
 
     ocp = prepare_ocp(model=model, final_time=1, n_shooting=40)
