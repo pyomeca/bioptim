@@ -72,7 +72,7 @@ class TorchModel:
             [self._dynamic_model(vertcat(self.q, self.qdot, self.tau).T).T],
             ["q", "qdot", "tau", "external_forces", "parameters"],
             ["qddot"],
-        ).expand()
+        )
 
     @property
     def nb_contacts(self) -> int:
