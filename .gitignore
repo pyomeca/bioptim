@@ -109,16 +109,14 @@ c_generated_code
 *.gv.pdf
 
 # Bioptim files
-bioptim/sandbox/
+sandbox/
 *.pkl
+*.pt
+*.png
+_l4c_generated/
 
 # Mac dev
 *.DS_store
-
-*.png
-
-bioptim/*/_l4c_generated/
-sandbox/
 
 # Ignore all npy files in tests folder except those in tests/shard6
 /tests/*.npy

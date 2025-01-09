@@ -6,11 +6,32 @@ This example is similar to the getting_started/pendulum.py example, but the dyna
 based model. This is useful when the dynamics are computed using a different library (e.g. TensorFlow, PyTorch, etc.)
 """
 
+import os
+from typing import Self
+
 import biorbd
 from bioptim import OptimalControlProgram, DynamicsFcn, BoundsList, Dynamics
 from bioptim.models.torch.torch_model import TorchModel
 import numpy as np
 import torch
+
+
+class EarlyStopper:
+    def __init__(self, patience=1, min_delta=0):
+        self.patience = patience
+        self.min_delta = min_delta
+        self.counter = 0
+        self.min_validation_loss = float("inf")
+
+    def early_stop(self, validation_loss):
+        if validation_loss < self.min_validation_loss:
+            self.min_validation_loss = validation_loss
+            self.counter = 0
+        elif validation_loss > (self.min_validation_loss + self.min_delta):
+            self.counter += 1
+            if self.counter >= self.patience:
+                return True
+        return False
 
 
 class NeuralNetworkModel(torch.nn.Module):
@@ -33,7 +54,8 @@ class NeuralNetworkModel(torch.nn.Module):
                 torch.nn.Linear(first_and_hidden_layers_node_count[i], first_and_hidden_layers_node_count[i + 1])
             )
             if use_batch_norm:
-                torch.nn.BatchNorm1d(first_and_hidden_layers_node_count[i + 1])
+                raise NotImplementedError("Batch normalization is not yet implemented")
+                layers.append(torch.nn.BatchNorm1d(first_and_hidden_layers_node_count[i + 1]))
             layers.append(activations)
             layers.append(torch.nn.Dropout(dropout_probability))
         layers.append(torch.nn.Linear(first_and_hidden_layers_node_count[-1], layer_node_count[-1]))
@@ -65,18 +87,62 @@ class NeuralNetworkModel(torch.nn.Module):
     def get_torch_device() -> torch.device:
         return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    def train_me(self, training_data: list[torch.Tensor], validation_data: list[torch.Tensor]):
+    def train_me(
+        self, training_data: list[torch.Tensor], validation_data: list[torch.Tensor], max_epochs: int = 5
+    ) -> None:
         # More details about scheduler in documentation
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             self._optimizer, mode="min", factor=0.1, patience=20, min_lr=1e-8
         )
 
-        max_epochs = 500
-        for _ in range(max_epochs):
+        early_stopper = EarlyStopper(patience=20, min_delta=1e-5)
+        for i in range(max_epochs):
             self._perform_epoch_training(targets=training_data)
             validation_loss = self._perform_epoch_training(targets=validation_data, only_compute=True)
-            print(f"Validation loss: {validation_loss}")
             scheduler.step(validation_loss)  # Adjust/reduce learning rate
+
+            # Check if the training should stop
+            print(f"Validation loss: {validation_loss} (epoch: {i})")
+            if early_stopper.early_stop(validation_loss):
+                print("Early stopping")
+                break
+
+    def save_me(self, path: str) -> None:
+        layer_node_count = tuple(
+            [model.in_features for model in self._forward_model if isinstance(model, torch.nn.Linear)]
+            + [self._forward_model[-1].out_features]
+        )
+
+        dropout_probability = tuple([model.p for model in self._forward_model if isinstance(model, torch.nn.Dropout)])
+        if len(dropout_probability) == 0:
+            dropout_probability = 0
+        elif len(dropout_probability) > 1:
+            # make sure that the dropout probability is the same for all layers
+            if not all(prob == dropout_probability[0] for prob in dropout_probability):
+                raise ValueError("Different dropout probabilities for different layers")
+            dropout_probability = dropout_probability[0]
+
+        use_batch_norm = any(isinstance(model, torch.nn.BatchNorm1d) for model in self._forward_model)
+
+        dico = {
+            "layer_node_count": layer_node_count,
+            "dropout_probability": dropout_probability,
+            "use_batch_norm": use_batch_norm,
+            "state_dict": self.state_dict(),
+        }
+        torch.save(dico, path)
+
+    @classmethod
+    def load_me(cls, path: str) -> Self:
+        data = torch.load(path, weights_only=True)
+        inputs = {
+            "layer_node_count": data["layer_node_count"],
+            "dropout_probability": data["dropout_probability"],
+            "use_batch_norm": data["use_batch_norm"],
+        }
+        model = NeuralNetworkModel(**inputs)
+        model.load_state_dict(data["state_dict"])
+        return model
 
     def _perform_epoch_training(
         self,
@@ -130,12 +196,13 @@ def prepare_ocp(
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
     torch_model = TorchModel(torch_model=model)
 
-    q = np.array([0, 3.14])
+    q = np.array([0, 0])
     qdot = np.array([0, 0])
     tau = np.array([0, 0])
-    qddot = torch_model.forward_dynamics()(q, qdot, tau, np.array([]), np.array([]))
+    qddot = torch_model.forward_dynamics()(q, qdot, tau, [], [])
     biorbd_model = biorbd.Model("models/pendulum.bioMod")
     qddot2 = biorbd_model.ForwardDynamics(q, qdot, tau).to_array()
+    print(qddot - qddot2)
 
     # Path bounds
     x_bounds = BoundsList()
@@ -198,12 +265,17 @@ def generate_dataset(biorbd_model: biorbd.Model, data_point_count: int) -> list[
 
 def main():
     # --- Prepare a predictive model --- #
+    force_new_training = False
     biorbd_model = biorbd.Model("models/pendulum.bioMod")
     training_data = generate_dataset(biorbd_model, data_point_count=30000)
     validation_data = generate_dataset(biorbd_model, data_point_count=3000)
 
-    model = NeuralNetworkModel(layer_node_count=(6, 128, 128, 128, 2), dropout_probability=0.2, use_batch_norm=True)
-    model.train_me(training_data, validation_data)
+    if force_new_training or not os.path.isfile("models/trained_pendulum_model.pt"):
+        model = NeuralNetworkModel(layer_node_count=(6, 512, 512, 2), dropout_probability=0.2, use_batch_norm=False)
+        model.train_me(training_data, validation_data, max_epochs=300)
+        model.save_me("models/trained_pendulum_model.pt")
+    else:
+        model = NeuralNetworkModel.load_me("models/trained_pendulum_model.pt")
 
     ocp = prepare_ocp(model=model, final_time=1, n_shooting=40)
 
