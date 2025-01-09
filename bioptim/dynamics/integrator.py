@@ -1,6 +1,7 @@
 import numpy as np
 from casadi import Function, vertcat, horzcat, collocation_points, tangent, rootfinder, DM, MX, SX, linspace
 
+from .lagrange_polynomials import lagrange_polynomial, lagrange_polynomial_derivative
 from ..misc.enums import ControlType, DefectType
 from ..models.protocols.biomodel import BioModel
 
@@ -591,27 +592,14 @@ class COLLOCATION(Integrator):
         # For all collocation points
         for j in range(self.degree + 1):
             # Construct Lagrange polynomials to get the polynomial basis at the collocation point
-            _l = 1
-            for r in range(self.degree + 1):
-                if r != j:
-                    _l *= (time_control_interval - self._integration_time[r]) / (
-                        self._integration_time[j] - self._integration_time[r]
-                    )
+            lagrange_polynom_j = lagrange_polynomial(j, time_control_interval, self._integration_time, self.degree + 1)
 
             # Evaluate the polynomial at the final time to get the coefficients of the continuity equation
             if self.method == "radau":
                 self._d[j] = 1 if j == self.degree else 0
             else:
-                lfcn = Function("lfcn", [time_control_interval], [_l])
+                lfcn = Function("lfcn", [time_control_interval], [lagrange_polynom_j])
                 self._d[j] = lfcn(1.0)
-
-            # Construct Lagrange polynomials to get the polynomial basis at the collocation point
-            _l = 1
-            for r in range(self.degree + 1):
-                if r != j:
-                    _l *= (time_control_interval - self._integration_time[r]) / (
-                        self._integration_time[j] - self._integration_time[r]
-                    )
 
             # Evaluate the time derivative of the polynomial at all collocation points to get
             # the coefficients of the continuity equation
