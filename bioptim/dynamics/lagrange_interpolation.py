@@ -127,10 +127,6 @@ class LagrangeInterpolation:
                 continue
 
             partial_Ljk = self.partial_lagrange_polynomial(j, time_control_interval, k)
-
-            # print("partial_Ljk ", partial_Ljk)
-            # print("partial_Ljk * coeff ", 1.0 / (self.time_grid[j] - self.time_grid[k]) * partial_Ljk)
-
             sum_term += 1.0 / (self.time_grid[j] - self.time_grid[k]) * partial_Ljk
 
         return sum_term
