@@ -753,12 +753,18 @@ class IRK(COLLOCATION):
         x_irk_points = ifcn(self.cx(), t, states[0], controls, params, algebraic_states, numerical_timeseries)
         x = [states[0] if r == 0 else x_irk_points[(r - 1) * nx : r * nx] for r in range(self.degree + 1)]
 
-        # Get an expression for the state at the end of the finite element
-        xf = self.cx.zeros(nx, self.degree + 1)  # 0 #
+        xf = self.cx.zeros(nx, self.degree + 1)
         for r in range(self.degree + 1):
-            xf[:, r] = xf[:, r - 1] + self._d[r] * x[r]
+            xf[:, r] = self.lagrange_interpolation.interpolate(x, self._integration_time[r])
 
-        return xf[:, -1], horzcat(states[0], xf[:, -1])
+        if self.method == "radau":
+            # For Radau, the last collocation point is the same as the final point of the interval
+            states_end = x[-1]
+        else:
+            # For Legendre, the final point is obtained by interpolation
+            states_end = self.lagrange_interpolation.interpolate(x, 1.0)
+
+        return states_end, horzcat(states[0], states_end)
 
 
 class CVODES(Integrator):
