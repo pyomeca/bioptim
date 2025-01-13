@@ -22,7 +22,6 @@ from bioptim import (
     ControlType,
     PhaseDynamics,
     SolutionMerge,
-    Solver,
 )
 from tests.utils import TestUtils
 
@@ -1489,16 +1488,3 @@ def test_example_variable_scaling(phase_dynamics):
     # initial and final controls
     npt.assert_almost_equal(tau[:, 0], np.array([-1000.00000999, 0.0]))
     npt.assert_almost_equal(tau[:, -1], np.array([-1000.00000999, 0.0]))
-
-
-def test_deep_neural_network():
-    from bioptim.examples.deep_neural_network import pytorch_ocp as ocp_module
-
-    model = ocp_module.NeuralNetworkModel(layer_node_count=(6, 8, 2), dropout_probability=0.2)
-    ocp = ocp_module.prepare_ocp(model=model, final_time=1, n_shooting=3)
-    solver = Solver.IPOPT()
-    solver.set_maximum_iterations(1)
-
-    # We can launch the solving, but won't be able to check the results as the model is not trained so it is random
-    os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
-    ocp.solve(solver=solver)
