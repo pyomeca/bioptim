@@ -51,13 +51,6 @@ jobs:
           cd ..
         if: matrix.shard == 1
 
-      - name: Test installed version of bioptim
-        run: |
-          python setup.py install
-          cd
-          python -c "import bioptim"
-        if: matrix.shard == 1
-
       - name: Install pytorch on Linux
         run: |
           pip install torch>=2.0
@@ -65,6 +58,13 @@ jobs:
           pip install . --no-build-isolation
           cd ../..
         if: matrix.shard == 3
+
+      - name: Test installed version of bioptim
+        run: |
+          python setup.py install
+          cd
+          python -c "import bioptim"
+        if: matrix.shard == 1
 
       - name: Run tests with code coverage
         run: pytest -v --color=yes --cov-report term-missing --cov=bioptim --cov-report=xml:coverage.xml tests/shard${{ matrix.shard }}
