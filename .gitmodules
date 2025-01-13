@@ -1,6 +1,3 @@
 [submodule "external/acados"]
 	path = external/acados
 	url = https://github.com/acados/acados.git
-[submodule "external/l4casadi"]
-	path = external/l4casadi
-	url = https://github.com/pariterre/l4casadi
