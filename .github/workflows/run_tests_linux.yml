@@ -45,23 +45,6 @@ jobs:
           cd ..
         if: matrix.shard == 1
 
-      - name: Install CUDA toolkit
-        uses: Jimver/cuda-toolkit@v0.2.19
-        id: cuda-toolkit
-        with:
-          cuda: '12.5.0'
-        if: matrix.shard == 3
-
-      - name: Install pytorch on Linux
-        run: |
-          git submodule update --init --recursive external/l4casadi
-          cd external/l4casadi
-          pip install torch>=2.0
-          pip install setuptools>=68.1 scikit-build>=0.17 cmake>=3.27 ninja>=1.11
-          pip install . --no-build-isolation
-          cd ../..
-        if: matrix.shard == 3
-
       - name: Test installed version of bioptim
         run: |
           python setup.py install
