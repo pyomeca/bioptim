@@ -46,8 +46,10 @@ jobs:
 
       - name: Install pytorch on Linux
         run: |
-          pip install torch>=2.0
+          git submodule update --init --recursive
           cd external/l4casadi
+          pip install torch>=2.0
+          pip install setuptools>=68.1 scikit-build>=0.17 cmake>=3.27 ninja>=1.11
           pip install . --no-build-isolation
           cd ../..
         if: matrix.shard == 3
