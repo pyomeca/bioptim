@@ -59,6 +59,14 @@ jobs:
           python -c "import bioptim"
         if: matrix.shard == 1
 
+      - name: Install pytorch on Linux
+        run: |
+          pip install torch>=2.0
+          cd external/l4casadi
+          pip install . --no-build-isolation
+          cd ../..
+        if: matrix.shard == 3
+
       - name: Run tests with code coverage
         run: pytest -v --color=yes --cov-report term-missing --cov=bioptim --cov-report=xml:coverage.xml tests/shard${{ matrix.shard }}
         if: matrix.os == 'ubuntu-latest'
