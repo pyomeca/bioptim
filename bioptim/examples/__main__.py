@@ -136,6 +136,14 @@ examples_ = OrderedDict(
                 ]
             ),
         ),
+        (
+            "deep_neural_network",
+            OrderedDict(
+                [
+                    ("pytorch ocp", "pytorch_ocp.py"),
+                ]
+            ),
+        ),
     ]
 )
 
