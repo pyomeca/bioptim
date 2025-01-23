@@ -1,10 +1,12 @@
 from typing import Callable
 
 import biorbd_casadi as biorbd
+import numpy as np
+import scipy.linalg as la
 from biorbd_casadi import (
     GeneralizedCoordinates,
 )
-from casadi import MX, DM, vertcat, horzcat, Function, solve, rootfinder, inv
+from casadi import MX, DM, vertcat, horzcat, Function, solve, rootfinder, inv, nlpsol
 
 from .biorbd_model import BiorbdModel
 from ..holonomic_constraints import HolonomicConstraintsList
@@ -111,10 +113,93 @@ class HolonomicBiorbdModel(BiorbdModel):
         partitioned_constraints_jacobian_v = partitioned_constraints_jacobian[:, self.nb_independent_joints :]
         shape = partitioned_constraints_jacobian_v.shape
         if shape[0] != shape[1]:
+            output = self.partition_coordinates()
             raise ValueError(
                 f"The shape of the dependent joint Jacobian should be square. Got: {shape}."
-                f"Please consider checking the dimension of the holonomic constraints Jacobian."
+                f"Please consider checking the dimension of the holonomic constraints Jacobian.\n"
+                f"Here is a recommended partitioning: "
+                f"      - independent_joint_index: {output[1]},"
+                f"      - dependent_joint_index: {output[0]}."
             )
+
+    def partition_coordinates(self):
+        q = MX.sym("q", self.nb_q, 1)
+        s = nlpsol("sol", "ipopt", {"x": q, "g": self.holonomic_constraints(q)})
+        q_star = np.array(
+            s(
+                x0=np.zeros(self.nb_q),
+                lbg=np.zeros(self.nb_holonomic_constraints),
+                ubg=np.zeros(self.nb_holonomic_constraints),
+            )["x"]
+        )[:, 0]
+        return self.jacobian_coordinate_partitioning(self.holonomic_constraints_jacobian(q_star).toarray())
+
+    @staticmethod
+    def jacobian_coordinate_partitioning(J, tol=None):
+        """
+        Determine a coordinate partitioning q = {q_u, q_v} from a Jacobian J(q) of size (m x n),
+        where m is the number of constraints and
+        n is the total number of generalized coordinates.
+
+        We want to find an invertible submatrix J_v of size (m x m) by reordering
+        the columns of J according to the largest pivots. Those columns in J_v
+        correspond to the 'dependent' coordinates q_v, while the remaining columns
+        correspond to the 'independent' coordinates q_u.
+
+        Parameters
+        ----------
+        J : array_like, shape (m, n)
+            The constraint Jacobian evaluated at the current configuration q.
+        tol : float, optional
+            Tolerance for rank detection. If None, a default based on the machine
+            precision and the size of J is used.
+
+        Returns
+        -------
+        qv_indices : ndarray of shape (r,)
+            The indices of the columns in J chosen as dependent coordinates.
+            Typically, we expect r = m if J has full row rank (i.e. no redundant constraints).
+        qu_indices : ndarray of shape (n - r,)
+            The indices of the columns chosen as independent coordinates.
+        rankJ : int
+            The detected rank of J. If rankJ < m, it means some constraints are redundant.
+
+        Notes
+        -----
+        - If rankJ < m, then there are redundant or degenerate constraints in J.
+          The 'extra' constraints can be ignored in subsequent computations.
+        - If rankJ = m, then J has full row rank and the submatrix J_v is invertible.
+        - After obtaining qv_indices and qu_indices, one typically reorders q
+          so that q = [q_u, q_v], and likewise reorders the columns of J so that
+          J = [J_u, J_v].
+        """
+
+        # J is (m, n): number of constraints = m, number of coords = n.
+        J = np.asarray(J, dtype=float)
+        m, n = J.shape
+
+        # Perform a pivoted QR factorization: J = Q * R[:, pivot]
+        # pivot is a permutation of [0, 1, ..., n-1],
+        # reordering the columns from "largest pivot" to "smallest pivot" in R.
+        Q, R, pivot = la.qr(J, pivoting=True)
+
+        # If no tolerance is specified, pick a default related to the matrix norms and eps
+        if tol is None:
+            # A common heuristic: tol ~ max(m, n) * machine_eps * largest_abs_entry_in_R
+            # The largest absolute entry is often approximated by abs(R[0, 0]) if the matrix
+            # is well-ordered by pivot. However, you can also do np.linalg.norm(R, ord=np.inf).
+            tol = max(m, n) * np.finfo(J.dtype).eps * abs(R[0, 0])
+
+        # Rank detection from the diagonal of R
+        diagR = np.abs(np.diag(R))
+        rankJ = np.sum(diagR > tol)
+
+        # The 'best' columns (by largest pivots) are pivot[:rankJ].
+        # If J is full row rank and not degenerate, we expect rankJ == m.
+        qv_indices = pivot[:rankJ]  # Dependent variables
+        qu_indices = pivot[rankJ:]  # Independent variables
+
+        return qv_indices, qu_indices, rankJ
 
     @property
     def nb_independent_joints(self):
