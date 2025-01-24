@@ -342,49 +342,91 @@ class HolonomicBiorbdModel(BiorbdModel):
         ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
         https://doi.org/10.5194/ms-4-199-2013, 2013.
         """
-
-        # compute q and qdot
         q = self.compute_q()(self.q_u, self.q_v_init)
-        qdot = self.compute_qdot()(q, self.qdot_u)
-
-        partitioned_mass_matrix = self.partitioned_mass_matrix(q)
-        m_uu = partitioned_mass_matrix[: self.nb_independent_joints, : self.nb_independent_joints]
-        m_uv = partitioned_mass_matrix[: self.nb_independent_joints, self.nb_independent_joints :]
-        m_vu = partitioned_mass_matrix[self.nb_independent_joints :, : self.nb_independent_joints]
-        m_vv = partitioned_mass_matrix[self.nb_independent_joints :, self.nb_independent_joints :]
-
-        coupling_matrix_vu = self.coupling_matrix(q)
-        modified_mass_matrix = (
-            m_uu
-            + m_uv @ coupling_matrix_vu
-            + coupling_matrix_vu.T @ m_vu
-            + coupling_matrix_vu.T @ m_vv @ coupling_matrix_vu
-        )
-        second_term = m_uv + coupling_matrix_vu.T @ m_vv
-
-        # compute the non-linear effect
-        non_linear_effect = self.partitioned_non_linear_effect(q, qdot)
-        non_linear_effect_u = non_linear_effect[: self.nb_independent_joints]
-        non_linear_effect_v = non_linear_effect[self.nb_independent_joints :]
-
-        modified_non_linear_effect = non_linear_effect_u + coupling_matrix_vu.T @ non_linear_effect_v
-
-        # compute the tau
-        partitioned_tau = self.partitioned_tau(self.tau)
-        tau_u = partitioned_tau[: self.nb_independent_joints]
-        tau_v = partitioned_tau[self.nb_independent_joints :]
-
-        modified_generalized_forces = tau_u + coupling_matrix_vu.T @ tau_v
-
-        qddot_u = inv(modified_mass_matrix) @ (
-            modified_generalized_forces - second_term @ self.biais_vector(q, qdot) - modified_non_linear_effect
-        )
+        qddot_u = self.partitioned_forward_dynamics_full()(q, self.qdot_u, self.tau)
 
         casadi_fun = Function(
             "partitioned_forward_dynamics",
             [self.q_u, self.qdot_u, self.q_v_init, self.tau],
             [qddot_u],
             ["q_u", "qdot_u", "q_v_init", "tau"],
+            ["qddot_u"],
+        )
+        return casadi_fun
+
+    def partitioned_forward_dynamics_with_qv(self) -> Function:
+        """
+        Sources
+        -------
+        Docquier, N., Poncelet, A., and Fisette, P.:
+        ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
+        https://doi.org/10.5194/ms-4-199-2013, 2013.
+        """
+        q = self.state_from_partition(self.q_u, self.q_v)
+        qddot_u = self.partitioned_forward_dynamics_full()(q, self.qdot_u, self.tau)
+
+        casadi_fun = Function(
+            "partitioned_forward_dynamics",
+            [self.q_u, self.q_v, self.qdot_u, self.tau],
+            [qddot_u],
+            ["q_u", "q_v", "qdot_u", "tau"],
+            ["qddot_u"],
+        )
+
+        return casadi_fun
+
+    def partitioned_forward_dynamics_full(self) -> Function:
+        """
+        Sources
+        -------
+        Docquier, N., Poncelet, A., and Fisette, P.:
+        ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
+        https://doi.org/10.5194/ms-4-199-2013, 2013.
+        """
+
+        # compute q and qdot
+        q = self.q
+        qdot = self.compute_qdot()(q, self.qdot_u)
+        tau = self.tau
+
+        partitioned_mass_matrix = self.partitioned_mass_matrix(q)
+        m_uu = partitioned_mass_matrix[: self.nb_independent_joints, : self.nb_independent_joints]
+        m_uv = partitioned_mass_matrix[: self.nb_independent_joints, self.nb_independent_joints:]
+        m_vu = partitioned_mass_matrix[self.nb_independent_joints:, : self.nb_independent_joints]
+        m_vv = partitioned_mass_matrix[self.nb_independent_joints:, self.nb_independent_joints:]
+
+        coupling_matrix_vu = self.coupling_matrix(q)
+        modified_mass_matrix = (
+                m_uu
+                + m_uv @ coupling_matrix_vu
+                + coupling_matrix_vu.T @ m_vu
+                + coupling_matrix_vu.T @ m_vv @ coupling_matrix_vu
+        )
+        second_term = m_uv + coupling_matrix_vu.T @ m_vv
+
+        # compute the non-linear effect
+        non_linear_effect = self.partitioned_non_linear_effect(q, qdot)
+        non_linear_effect_u = non_linear_effect[: self.nb_independent_joints]
+        non_linear_effect_v = non_linear_effect[self.nb_independent_joints:]
+
+        modified_non_linear_effect = non_linear_effect_u + coupling_matrix_vu.T @ non_linear_effect_v
+
+        # compute the tau
+        partitioned_tau = self.partitioned_tau(tau)
+        tau_u = partitioned_tau[: self.nb_independent_joints]
+        tau_v = partitioned_tau[self.nb_independent_joints:]
+
+        modified_generalized_forces = tau_u + coupling_matrix_vu.T @ tau_v
+
+        qddot_u = inv(modified_mass_matrix) @ (
+                modified_generalized_forces - second_term @ self.biais_vector(q, qdot) - modified_non_linear_effect
+        )
+
+        casadi_fun = Function(
+            "partitioned_forward_dynamics",
+            [self.q, self.qdot_u, self.tau],
+            [qddot_u],
+            ["q", "qdot_u", "tau"],
             ["qddot_u"],
         )
 
