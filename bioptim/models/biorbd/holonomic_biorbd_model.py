@@ -392,35 +392,35 @@ class HolonomicBiorbdModel(BiorbdModel):
 
         partitioned_mass_matrix = self.partitioned_mass_matrix(q)
         m_uu = partitioned_mass_matrix[: self.nb_independent_joints, : self.nb_independent_joints]
-        m_uv = partitioned_mass_matrix[: self.nb_independent_joints, self.nb_independent_joints:]
-        m_vu = partitioned_mass_matrix[self.nb_independent_joints:, : self.nb_independent_joints]
-        m_vv = partitioned_mass_matrix[self.nb_independent_joints:, self.nb_independent_joints:]
+        m_uv = partitioned_mass_matrix[: self.nb_independent_joints, self.nb_independent_joints :]
+        m_vu = partitioned_mass_matrix[self.nb_independent_joints :, : self.nb_independent_joints]
+        m_vv = partitioned_mass_matrix[self.nb_independent_joints :, self.nb_independent_joints :]
 
         coupling_matrix_vu = self.coupling_matrix(q)
         modified_mass_matrix = (
-                m_uu
-                + m_uv @ coupling_matrix_vu
-                + coupling_matrix_vu.T @ m_vu
-                + coupling_matrix_vu.T @ m_vv @ coupling_matrix_vu
+            m_uu
+            + m_uv @ coupling_matrix_vu
+            + coupling_matrix_vu.T @ m_vu
+            + coupling_matrix_vu.T @ m_vv @ coupling_matrix_vu
         )
         second_term = m_uv + coupling_matrix_vu.T @ m_vv
 
         # compute the non-linear effect
         non_linear_effect = self.partitioned_non_linear_effect(q, qdot)
         non_linear_effect_u = non_linear_effect[: self.nb_independent_joints]
-        non_linear_effect_v = non_linear_effect[self.nb_independent_joints:]
+        non_linear_effect_v = non_linear_effect[self.nb_independent_joints :]
 
         modified_non_linear_effect = non_linear_effect_u + coupling_matrix_vu.T @ non_linear_effect_v
 
         # compute the tau
         partitioned_tau = self.partitioned_tau(tau)
         tau_u = partitioned_tau[: self.nb_independent_joints]
-        tau_v = partitioned_tau[self.nb_independent_joints:]
+        tau_v = partitioned_tau[self.nb_independent_joints :]
 
         modified_generalized_forces = tau_u + coupling_matrix_vu.T @ tau_v
 
         qddot_u = inv(modified_mass_matrix) @ (
-                modified_generalized_forces - second_term @ self.biais_vector(q, qdot) - modified_non_linear_effect
+            modified_generalized_forces - second_term @ self.biais_vector(q, qdot) - modified_non_linear_effect
         )
 
         casadi_fun = Function(
