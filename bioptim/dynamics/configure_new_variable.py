@@ -443,7 +443,7 @@ class NewVariableConfiguration:
             for node_index in range(
                 self.nlp.n_states_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1
             ):
-                n_cx = 2
+                n_cx = self.nlp.ode_solver.n_required_cx + 2
                 cx_scaled = (
                     self.ocp.nlp[self.nlp.use_states_from_phase_idx].algebraic_states[node_index][self.name].original_cx
                     if self.copy_algebraic_states
@@ -463,14 +463,16 @@ class NewVariableConfiguration:
                     node_index,
                 )
                 if not self.skip_plot:
-                    all_variables_in_one_subplot = True if self.name in ["m", "cov", "k"] else False
+                    all_variables_in_one_subplot = (
+                        True if self.name in ["m", "cov", "k"] else False
+                    )  # To Eve: This should not be there.
                     self.nlp.plot[f"{self.name}_algebraic"] = CustomPlot(
                         lambda t0, phases_dt, node_idx, x, u, p, a, d: (
                             a[self.nlp.algebraic_states.key_index(self.name), :]
                             if a.any()
                             else np.ndarray((cx[0][0].shape[0], 1)) * np.nan
                         ),
-                        plot_type=PlotType.STEP,
+                        plot_type=PlotType.INTEGRATED,
                         axes_idx=self.axes_idx,
                         legend=self.legend,
                         combine_to=self.combine_name,

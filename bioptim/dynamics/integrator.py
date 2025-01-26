@@ -87,7 +87,7 @@ class Integrator:
                 self._x_sym_modified,
                 self.u_sym,
                 self.param_sym,
-                self.a_sym,
+                self._a_sym_modified,
                 self.numerical_timeseries_sym,
             ],
             self.dxdt(
@@ -129,6 +129,10 @@ class Integrator:
     @property
     def _x_sym_modified(self):
         return self.x_sym
+
+    @property
+    def _a_sym_modified(self):
+        return self.a_sym
 
     @property
     def _input_names(self):
@@ -586,6 +590,10 @@ class COLLOCATION(Integrator):
         return horzcat(*self.x_sym) if self.duplicate_starting_point else horzcat(*self.x_sym[1:])
 
     @property
+    def _a_sym_modified(self):
+        return horzcat(*self.a_sym) if self.duplicate_starting_point else horzcat(*self.a_sym[1:])
+
+    @property
     def _output_names(self):
         return ["xf", "xall", "defects"]
 
@@ -664,7 +672,7 @@ class COLLOCATION(Integrator):
                     states[j + 1],
                     self.get_u(controls, self._integration_time[j]),
                     params,
-                    algebraic_states,
+                    algebraic_states[j],
                     numerical_timeseries,
                 )[:, self.ode_idx]
                 defects.append(xp_j - f_j * self.h)
@@ -676,7 +684,7 @@ class COLLOCATION(Integrator):
                         states[j + 1],
                         self.get_u(controls, self._integration_time[j]),
                         params,
-                        algebraic_states,
+                        algebraic_states[j],
                         numerical_timeseries,
                         xp_j / self.h,
                     )
