@@ -167,7 +167,7 @@ from .dynamics.fatigue.effort_perception import EffortPerception, TauEffortPerce
 from .dynamics.fatigue.fatigue_dynamics import FatigueList
 from .dynamics.fatigue.michaud_fatigue import MichaudFatigue, MichaudTauFatigue
 from .dynamics.fatigue.xia_fatigue import XiaFatigue, XiaTauFatigue, XiaFatigueStabilized
-from .dynamics.ode_solver import OdeSolver, OdeSolverBase
+from .dynamics.ode_solvers import OdeSolver, OdeSolverBase
 from .gui.online_callback_server import PlottingServer
 from .gui.plot import CustomPlot
 from .interfaces import Solver, CasadiFunctionInterface
