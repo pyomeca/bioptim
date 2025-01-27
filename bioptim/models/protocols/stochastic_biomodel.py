@@ -38,6 +38,10 @@ class StochasticBioModel(BioModel):
     def reshape_to_matrix(var, shape):
         """
         Restore the matrix form of the variables
+
+        See Also
+        --------
+        reshape_to_vector
         """
 
         if var.shape[0] != shape[0] * shape[1]:
@@ -83,6 +87,10 @@ class StochasticBioModel(BioModel):
     def reshape_to_vector(matrix):
         """
         Restore the vector form of the matrix
+        
+        See Also
+        --------
+        reshape_to_matrix
         """
         shape_0, shape_1 = matrix.shape[0], matrix.shape[1]
         if isinstance(matrix, np.ndarray):
