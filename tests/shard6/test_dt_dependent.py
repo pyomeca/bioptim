@@ -53,12 +53,10 @@ def dynamics(
 
     q = DynamicsFunctions.get(nlp.states["q"], states)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-    tau = DynamicsFunctions.get(nlp.controls["tau"], controls) * (
-        sin(nlp.tf_mx - time) * time.ones(nlp.model.nb_tau) * 10
-    )
+    tau = DynamicsFunctions.get(nlp.controls["tau"], controls) * (sin(nlp.tf - time) * time.ones(nlp.model.nb_tau) * 10)
 
     dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-    ddq = nlp.model.forward_dynamics(q, qdot, tau)
+    ddq = nlp.model.forward_dynamics()(q, qdot, tau, [], parameters)
 
     return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
 
@@ -216,8 +214,8 @@ def test_dt_dependent_problem(minimize_time, use_sx):
     tau_dyn = controls_sym * (sin(tf_sym - time_sym) * MX.ones(ocp.nlp[0].model.nb_tau) * 10)
     out_dyn = vertcat(
         states_sym[ocp.nlp[0].model.nb_q :],
-        ocp.nlp[0].model.forward_dynamics(
-            states_sym[: ocp.nlp[0].model.nb_q], states_sym[ocp.nlp[0].model.nb_q :], tau_dyn
+        ocp.nlp[0].model.forward_dynamics()(
+            states_sym[: ocp.nlp[0].model.nb_q], states_sym[ocp.nlp[0].model.nb_q :], tau_dyn, [], []
         ),
     )
 
