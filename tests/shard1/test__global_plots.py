@@ -3,15 +3,17 @@ Test for file IO
 """
 
 import io
-import matplotlib
-import numpy as np
 import os
-import pytest
 import sys
-from casadi import Function, MX
 
 from bioptim import CostType, OdeSolver, Solver, BiorbdModel, PhaseDynamics
 from bioptim.limits.penalty import PenaltyOption
+from casadi import Function, MX
+import matplotlib
+import numpy as np
+import pytest
+
+from ..utils import TestUtils
 
 matplotlib.use("Agg")
 

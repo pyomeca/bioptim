@@ -1,12 +1,11 @@
-import os
-
+from bioptim import Solver, SolutionMerge, SolutionIntegrator
+from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
+from casadi import DM, vertcat
 import numpy as np
 import numpy.testing as npt
 import pytest
-from casadi import DM, vertcat
 
-from bioptim import Solver, SolutionMerge, SolutionIntegrator
-from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
+from ..utils import TestUtils
 
 
 # Integrated values should be handled another way
@@ -254,7 +253,7 @@ from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_impl
 #     wPqdot_magnitude = DM(np.array([wPqdot_std**2 / dt, wPqdot_std**2 / dt]))
 #     sensory_noise_magnitude = vertcat(wPq_magnitude, wPqdot_magnitude)
 #
-#     bioptim_folder = os.path.dirname(ocp_module.__file__)
+#     bioptim_folder = TestUtils.module_folder(ocp_module)
 #
 #     if use_sx:
 #         with pytest.raises(
@@ -420,7 +419,7 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling, use_sx
     wPqdot_magnitude = DM(np.array([wPqdot_std**2 / dt, wPqdot_std**2 / dt]))
     sensory_noise_magnitude = vertcat(wPq_magnitude, wPqdot_magnitude)
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_socp(
         biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",

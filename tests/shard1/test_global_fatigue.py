@@ -1,19 +1,18 @@
 import platform
-import os
 
-import pytest
-import numpy as np
-import numpy.testing as npt
 from bioptim import OdeSolver, Solver, PhaseDynamics, SolutionMerge
+import numpy.testing as npt
+import numpy as np
+import pytest
 
-from tests.utils import TestUtils
+from ..utils import TestUtils
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_xia_fatigable_muscles(phase_dynamics):
     from bioptim.examples.fatigue import static_arm_with_fatigue as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     model_path = f"{bioptim_folder}/models/arm26_constant.bioMod"
     ocp = ocp_module.prepare_ocp(
@@ -89,7 +88,7 @@ def test_xia_fatigable_muscles(phase_dynamics):
 def test_xia_stabilized_fatigable_muscles(phase_dynamics):
     from bioptim.examples.fatigue import static_arm_with_fatigue as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     model_path = f"{bioptim_folder}/models/arm26_constant.bioMod"
     ocp = ocp_module.prepare_ocp(
@@ -166,7 +165,7 @@ def test_xia_stabilized_fatigable_muscles(phase_dynamics):
 def test_michaud_fatigable_muscles(phase_dynamics):
     from bioptim.examples.fatigue import static_arm_with_fatigue as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     model_path = f"{bioptim_folder}/models/arm26_constant.bioMod"
     ocp = ocp_module.prepare_ocp(
@@ -203,7 +202,7 @@ def test_michaud_fatigable_muscles(phase_dynamics):
 def test_effort_fatigable_muscles(phase_dynamics):
     from bioptim.examples.fatigue import static_arm_with_fatigue as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     model_path = f"{bioptim_folder}/models/arm26_constant.bioMod"
     ocp = ocp_module.prepare_ocp(
@@ -275,7 +274,7 @@ def test_fatigable_xia_torque_non_split(phase_dynamics):
     if platform.system() == "Darwin":
         return
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     model_path = f"{bioptim_folder}/models/pendulum.bioMod"
     ocp = ocp_module.prepare_ocp(
@@ -308,7 +307,7 @@ def test_fatigable_xia_torque_non_split(phase_dynamics):
 def test_fatigable_xia_torque_split(phase_dynamics):
     from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     model_path = f"{bioptim_folder}/models/pendulum.bioMod"
     ocp = ocp_module.prepare_ocp(
@@ -378,7 +377,7 @@ def test_fatigable_xia_stabilized_torque_split(phase_dynamics):
         # This is a long test and CI is already long for Windows
         return
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     model_path = f"{bioptim_folder}/models/pendulum.bioMod"
     ocp = ocp_module.prepare_ocp(
@@ -448,7 +447,7 @@ def test_fatigable_michaud_torque_non_split(phase_dynamics):
         # This is a long test and CI is already long for Windows
         return
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     model_path = f"{bioptim_folder}/models/pendulum.bioMod"
     ocp = ocp_module.prepare_ocp(
@@ -485,7 +484,7 @@ def test_fatigable_michaud_torque_split(phase_dynamics):
         # This tst fails on the CI
         return
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     model_path = f"{bioptim_folder}/models/pendulum.bioMod"
     ocp = ocp_module.prepare_ocp(
@@ -556,7 +555,7 @@ def test_fatigable_effort_torque_non_split(phase_dynamics):
         # This tst fails on the CI
         return
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     model_path = f"{bioptim_folder}/models/pendulum.bioMod"
     ocp = ocp_module.prepare_ocp(
@@ -593,7 +592,7 @@ def test_fatigable_effort_torque_split(phase_dynamics):
         # This tst fails on the CI
         return
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     model_path = f"{bioptim_folder}/models/pendulum.bioMod"
     ocp = ocp_module.prepare_ocp(

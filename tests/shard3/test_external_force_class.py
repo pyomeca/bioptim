@@ -1,10 +1,10 @@
-import os
 import re
 
+from bioptim import ExternalForceSetTimeSeries, BiorbdModel
 import numpy as np
 import pytest
 
-from bioptim import ExternalForceSetTimeSeries, BiorbdModel
+from ..utils import TestUtils
 
 
 # Fixture for creating a standard ExternalForceSetTimeSeries instance
@@ -140,7 +140,7 @@ def test_fail_within_biomod(external_forces):
     """Test inserting the external forces in a model."""
     from bioptim.examples.getting_started import example_external_forces as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     invalid_segment_name = "segment1"
     force_array = np.random.rand(6, 10)
@@ -172,7 +172,7 @@ def test_success_within_biomod(external_forces):
     """Test inserting the external forces in a model."""
     from bioptim.examples.getting_started import example_external_forces as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     force_array = np.random.rand(6, 10)
     torque_array = np.random.rand(3, 10)

@@ -6,11 +6,7 @@ it is supposed to balance the pendulum. It is designed to show how to track mark
 Note that the final node is not tracked.
 """
 
-from casadi import MX, SX, vertcat, sin, Function, DM, reshape
 import os
-import pytest
-import numpy as np
-import numpy.testing as npt
 
 from bioptim import (
     BiorbdModel,
@@ -29,10 +25,13 @@ from bioptim import (
     NonLinearProgram,
     PhaseDynamics,
     SolutionMerge,
-    ConstraintList,
-    Node,
-    Solver,
 )
+from casadi import MX, SX, vertcat, sin, Function, DM, reshape
+import numpy as np
+import numpy.testing as npt
+import pytest
+
+from ..utils import TestUtils
 
 
 def time_dynamic(
@@ -330,7 +329,7 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
     """
     from bioptim.examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     if integrator == OdeSolver.IRK and use_sx:
         with pytest.raises(
