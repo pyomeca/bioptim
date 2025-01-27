@@ -1,6 +1,8 @@
 import importlib.util
 from pathlib import Path
+import platform
 from typing import Any
+from types import ModuleType
 
 import numpy as np
 import numpy.testing as npt
@@ -27,7 +29,18 @@ from bioptim import (
 class TestUtils:
     @staticmethod
     def bioptim_folder() -> str:
-        return str(Path(__file__).parent / "../bioptim")
+        return TestUtils._capitalize_folder_drive(str(Path(__file__).parent / "../bioptim"))
+
+    @staticmethod
+    def module_folder(module: ModuleType) -> str:
+        return TestUtils._capitalize_folder_drive(str(Path(module.__file__).parent))
+
+    @staticmethod
+    def _capitalize_folder_drive(folder: str) -> str:
+        if platform.system() == "Windows" and folder[1] == ":":
+            # Capitilize the drive letter if it is windows
+            folder = folder[0].upper() + folder[1:]
+        return folder
 
     @staticmethod
     def load_module(path: str) -> Any:

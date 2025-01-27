@@ -2,11 +2,6 @@
 Test for file IO
 """
 
-import numpy as np
-import numpy.testing as npt
-import os
-import pytest
-
 from bioptim import (
     OdeSolver,
     ConstraintList,
@@ -19,7 +14,11 @@ from bioptim import (
     SolutionMerge,
 )
 from bioptim.models.biorbd.viewer_utils import _prepare_tracked_markers_for_animation
-from tests.utils import TestUtils
+import numpy.testing as npt
+import numpy as np
+import pytest
+
+from ..utils import TestUtils
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -33,7 +32,7 @@ def test_track_markers(ode_solver, actuator_type, phase_dynamics):
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.RK8:
         return
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
@@ -88,7 +87,7 @@ def test_track_markers_changing_constraints(ode_solver, phase_dynamics):
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.RK8:
         return
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
@@ -186,7 +185,7 @@ def test_track_markers_with_actuators(ode_solver, phase_dynamics):
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.RK8:
         return
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
@@ -238,7 +237,7 @@ def test_track_marker_2D_pendulum(ode_solver, phase_dynamics):
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.RK8:
         return
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ode_solver_orig = ode_solver
     ode_solver = ode_solver()
@@ -334,7 +333,7 @@ def test_track_marker_2D_pendulum(ode_solver, defects_type, phase_dynamics):
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
         return
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ode_solver_orig = ode_solver
     ode_solver = ode_solver()
@@ -444,7 +443,7 @@ def test_trampo_quaternions(phase_dynamics):
     # Load trampo_quaternion
     from bioptim.examples.torque_driven_ocp import trampo_quaternions as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     # Define the problem
     model_path = bioptim_folder + "/models/trunk_and_2arm_quaternion.bioMod"
@@ -554,7 +553,7 @@ def test_phase_transition_uneven_variable_number_by_bounds(phase_dynamics):
     # Load phase_transition_uneven_variable_number_by_bounds
     from bioptim.examples.torque_driven_ocp import phase_transition_uneven_variable_number_by_bounds as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     # Define the problem
     biorbd_model_path_with_translations = bioptim_folder + "/models/double_pendulum_with_translations.bioMod"
@@ -585,7 +584,7 @@ def test_phase_transition_uneven_variable_number_by_mapping(phase_dynamics):
     # Load phase_transition_uneven_variable_number_by_mapping
     from bioptim.examples.torque_driven_ocp import phase_transition_uneven_variable_number_by_mapping as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     # Define the problem
     biorbd_model_path = bioptim_folder + "/models/double_pendulum.bioMod"
@@ -642,7 +641,7 @@ def test_torque_activation_driven(ode_solver, phase_dynamics):
     # Load track_markers
     from bioptim.examples.torque_driven_ocp import torque_activation_driven as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/2segments_2dof_2contacts.bioMod",
@@ -688,7 +687,7 @@ def test_example_multi_biorbd_model(phase_dynamics):
     # Load example_multi_biorbd_model
     from bioptim.examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
     biorbd_model_path = bioptim_folder + "/models/triple_pendulum.bioMod"
     biorbd_model_path_modified_inertia = bioptim_folder + "/models/triple_pendulum_modified_inertia.bioMod"
 
@@ -741,7 +740,7 @@ def test_example_multi_biorbd_model(phase_dynamics):
 def test_example_minimize_segment_velocity():
     from bioptim.examples.torque_driven_ocp import example_minimize_segment_velocity as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     # Define the problem
 

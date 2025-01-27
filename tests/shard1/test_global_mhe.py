@@ -2,11 +2,12 @@
 Test for file IO
 """
 
-import os
+from bioptim import Solver, PhaseDynamics, SolutionMerge
 import numpy as np
 import numpy.testing as npt
 import pytest
-from bioptim import Solver, PhaseDynamics, SolutionMerge
+
+from ..utils import TestUtils
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -16,7 +17,7 @@ def test_cyclic_nmpc(phase_dynamics):
 
     from bioptim.examples.moving_horizon_estimation import cyclic_nmpc as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     n_cycles = 3
     cycle_len = 20

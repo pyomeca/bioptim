@@ -1,18 +1,18 @@
 import os
 
+from bioptim import HolonomicBiorbdModel, HolonomicConstraintsFcn, HolonomicConstraintsList, Solver, SolutionMerge
+from casadi import DM, MX
 import numpy as np
 import numpy.testing as npt
 import pytest
-from casadi import DM, MX
 
-from bioptim import HolonomicBiorbdModel, HolonomicConstraintsFcn, HolonomicConstraintsList, Solver, SolutionMerge
 from tests.utils import TestUtils
 
 
 def test_model_holonomic():
     from bioptim.examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
     biorbd_model_path = bioptim_folder + "/models/triple_pendulum.bioMod"
     model = HolonomicBiorbdModel(biorbd_model_path)
 
