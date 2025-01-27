@@ -6,7 +6,7 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
-from tests.utils import TestUtils
+from ..utils import TestUtils
 
 
 def test_model_holonomic():
@@ -162,7 +162,7 @@ def test_example_two_pendulums():
     """Test the holonomic_constraints/two_pendulums example"""
     from bioptim.examples.holonomic_constraints import two_pendulums
 
-    bioptim_folder = os.path.dirname(two_pendulums.__file__)
+    bioptim_folder = TestUtils.module_folder(two_pendulums)
 
     # --- Prepare the ocp --- #
     ocp, model = two_pendulums.prepare_ocp(

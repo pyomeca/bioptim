@@ -1,3 +1,5 @@
+import os
+from pathlib import Path
 from typing import Callable
 
 import biorbd_casadi as biorbd
@@ -89,7 +91,7 @@ class BiorbdModel:
 
     @property
     def path(self) -> str:
-        return self.model.path().relativePath().to_string()
+        return self.model.path().absolutePath().to_string()
 
     def copy(self):
         return BiorbdModel(self.path)
