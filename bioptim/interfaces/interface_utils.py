@@ -79,19 +79,19 @@ def generic_solve(interface, expand_during_shake_tree=False) -> dict:
         interface.online_optim(interface.ocp, interface.opts.show_options)
 
     # Thread here on (f and all_g) instead of individually for each function?
-    interface.sqp_nlp = {"x": v, "f": sum1(all_objectives), "g": all_g}
+    interface.nlp = {"x": v, "f": sum1(all_objectives), "g": all_g}
     interface.c_compile = interface.opts.c_compile
     options = interface.opts.as_dict(interface)
 
     if interface.c_compile:
         if not interface.ocp_solver or interface.ocp.program_changed:
-            nlpsol("nlpsol", interface.solver_name.lower(), interface.sqp_nlp, options).generate_dependencies("nlp.c")
+            nlpsol("nlpsol", interface.solver_name.lower(), interface.nlp, options).generate_dependencies("nlp.c")
             interface.ocp_solver = nlpsol("nlpsol", interface.solver_name, Importer("nlp.c", "shell"), options)
             interface.ocp.program_changed = False
     else:
-        interface.ocp_solver = nlpsol("solver", interface.solver_name.lower(), interface.sqp_nlp, options)
+        interface.ocp_solver = nlpsol("solver", interface.solver_name.lower(), interface.nlp, options)
 
-    interface.sqp_limits = {
+    interface.limits = {
         "lbx": v_bounds[0],
         "ubx": v_bounds[1],
         "lbg": all_g_bounds.min,
@@ -100,13 +100,13 @@ def generic_solve(interface, expand_during_shake_tree=False) -> dict:
     }
 
     if interface.lam_g is not None:
-        interface.sqp_limits["lam_g0"] = interface.lam_g
+        interface.limits["lam_g0"] = interface.lam_g
     if interface.lam_x is not None:
-        interface.sqp_limits["lam_x0"] = interface.lam_x
+        interface.limits["lam_x0"] = interface.lam_x
 
     # Solve the problem
     tic = perf_counter()
-    interface.out = {"sol": interface.ocp_solver.call(interface.sqp_limits)}
+    interface.out = {"sol": interface.ocp_solver.call(interface.limits)}
     interface.out["sol"]["solver_time_to_optimize"] = interface.ocp_solver.stats()["t_wall_total"]
     interface.out["sol"]["real_time_to_optimize"] = perf_counter() - tic
     interface.out["sol"]["iter"] = interface.ocp_solver.stats()["iter_count"]
