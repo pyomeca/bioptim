@@ -417,6 +417,27 @@ def test_track_and_minimize_marker_velocity(ode_solver, phase_dynamics):
     )
     sol = ocp.solve()
 
+    # Prior optimization checks
+    nlp = ocp.ocp_solver.nlp
+    v = nlp["x"]
+    dummy_objectives = np.array(Function("x", [v], [nlp["f"]])(np.arange(v.numel())))
+    np.testing.assert_almost_equal(dummy_objectives, np.array([[288936.4]]))
+
+    dummy_constraints = np.sum(np.array(Function("x", [v], [nlp["g"]])(np.arange(v.numel()))))
+    np.testing.assert_almost_equal(dummy_constraints, -16.609000000000044)
+
+    limits = ocp.ocp_solver.limits
+    min_bounds = np.sum(limits["lbx"])
+    np.testing.assert_almost_equal(min_bounds, -2278.274333882308)
+    max_bounds = np.sum(limits["ubx"])
+    np.testing.assert_almost_equal(max_bounds, 2288.274333882308)
+    min_constraints = np.sum(limits["lbg"])
+    np.testing.assert_almost_equal(min_constraints, 0.0)
+    max_constraints = np.sum(limits["ubg"])
+    np.testing.assert_almost_equal(max_constraints, 0.0)
+    x0 = np.sum(limits["x0"])
+    np.testing.assert_almost_equal(x0, 33.8)
+
     # Check objective function value
     f = np.array(sol.cost)
     npt.assert_equal(f.shape, (1, 1))
