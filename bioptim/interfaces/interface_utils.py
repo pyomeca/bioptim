@@ -172,7 +172,7 @@ def _shake_tree_for_penalties(ocp, penalties_cx, v, v_bounds, expand):
         try:
             penalty = penalty.expand()
         except RuntimeError:
-            # This happens mostly when there is a Newton decent in the penalty
+            # This happens mostly when, for instance, there is a Newton decent in the penalty
             pass
     return penalty(vertcat(*dt, v[len(dt) :]))
 

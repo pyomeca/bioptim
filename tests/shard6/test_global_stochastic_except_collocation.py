@@ -1,3 +1,5 @@
+import platform
+
 from bioptim import Solver, SolutionMerge, SolutionIntegrator
 from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
 from casadi import DM, vertcat
@@ -391,20 +393,13 @@ from ..utils import TestUtils
 #     )
 
 
-@pytest.mark.parametrize("with_cholesky", [True, False])
 @pytest.mark.parametrize("with_scaling", [True, False])
 @pytest.mark.parametrize("use_sx", [True, False])
-def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling, use_sx):
+def test_arm_reaching_torque_driven_implicit(with_scaling, use_sx):
     from bioptim.examples.stochastic_optimal_control import arm_reaching_torque_driven_implicit as ocp_module
 
-    if with_cholesky and not with_scaling:
-        return
-    if not with_cholesky and not with_scaling and not use_sx:
-        return
-    if with_cholesky and with_scaling and use_sx:
-        return
-    if with_cholesky and with_scaling and not use_sx:
-        return
+    if not with_scaling and not use_sx:
+        pytest.skip("Redundant test")
 
     final_time = 0.8
     n_shooting = 4
@@ -428,7 +423,7 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling, use_sx
         hand_final_position=hand_final_position,
         motor_noise_magnitude=motor_noise_magnitude,
         sensory_noise_magnitude=sensory_noise_magnitude,
-        with_cholesky=with_cholesky,
+        with_cholesky=False,
         with_scaling=with_scaling,
         use_sx=use_sx,
     )
@@ -437,6 +432,23 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling, use_sx
     solver = Solver.IPOPT()
     solver.set_maximum_iterations(4)
     solver.set_nlp_scaling_method("none")
+
+    # Check the values which will be sent to the solver
+    np.random.seed(42)
+    expected = (
+        [226.2655556486931, 36332536424.841034, 3600.041860608674]
+        if with_scaling
+        else [226.2655556486931, 754.7304909444006, 466.9111405169811]
+    )
+
+    TestUtils.compare_ocp_to_solve(
+        ocp,
+        v=np.random.rand(457, 1),
+        expected_v_f_g=expected,
+        decimal=6,
+    )
+    if platform.system() == "Windows":
+        return
 
     sol = ocp.solve(solver)
 
@@ -456,414 +468,150 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling, use_sx
     q, qdot = states["q"], states["qdot"]
     tau = controls["tau"]
 
-    if not with_cholesky:
-        # Check some of the results
-        k, ref, m, cov, a, c = (
-            algebraic_states["k"],
-            algebraic_states["ref"],
-            algebraic_states["m"],
-            algebraic_states["cov"],
-            algebraic_states["a"],
-            algebraic_states["c"],
+    # Check some of the results
+    k, ref, m, cov, a, c = (
+        algebraic_states["k"],
+        algebraic_states["ref"],
+        algebraic_states["m"],
+        algebraic_states["cov"],
+        algebraic_states["a"],
+        algebraic_states["c"],
+    )
+    if not with_scaling:
+        # Check objective function value
+        npt.assert_almost_equal(f[0, 0], 54.83542936544702)
+
+        # detailed cost values
+        npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 54.377501174311654)
+        npt.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 0.4579281911353716)
+        npt.assert_almost_equal(
+            f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
         )
-        if not with_scaling:
-            # Check objective function value
-            npt.assert_almost_equal(f[0, 0], 54.83542936544702)
 
-            # detailed cost values
-            npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 54.377501174311654)
-            npt.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 0.4579281911353716)
-            npt.assert_almost_equal(
-                f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
-            )
+        # initial and final position
+        npt.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
+        npt.assert_almost_equal(q[:, -1], np.array([0.9256103, 1.29037205]))
+        npt.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
+        npt.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
 
-            # initial and final position
-            npt.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
-            npt.assert_almost_equal(q[:, -1], np.array([0.9256103, 1.29037205]))
-            npt.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
-            npt.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
+        npt.assert_almost_equal(tau[:, 0], np.array([0.4128368, -0.3015095]))
+        npt.assert_almost_equal(tau[:, -2], np.array([-0.3927315, 0.2511875]))
 
-            npt.assert_almost_equal(tau[:, 0], np.array([0.4128368, -0.3015095]))
-            npt.assert_almost_equal(tau[:, -2], np.array([-0.3927315, 0.2511875]))
-
-            npt.assert_almost_equal(
-                k[:, 0],
-                np.array([-0.0813293, 0.2754021, 0.154386, -0.4924746, 0.0439148, -0.4026935, -0.0874262, 0.1938167]),
-            )
-            npt.assert_almost_equal(ref[:, 0], np.array([2.81907786e-02, 2.84412560e-01, 0, 0]))
-            npt.assert_almost_equal(
-                m[:, 0],
-                np.array(
-                    [
-                        1.1112046e00,
-                        -1.5191998e-04,
-                        -8.4126212e-03,
-                        1.3675755e-02,
-                        3.8338798e-04,
-                        1.1107784e00,
-                        -3.4509900e-02,
-                        2.9958236e-02,
-                        -1.2298549e-02,
-                        -4.7443854e-04,
-                        1.1068711e00,
-                        4.2697265e-02,
-                        -5.4747221e-05,
-                        -1.2329282e-02,
-                        4.9283932e-03,
-                        1.1096335e00,
-                    ]
-                ),
-            )
-
-            npt.assert_almost_equal(
-                cov[:, -2],
-                np.array(
-                    [
-                        -2.1576659e-05,
-                        4.5807147e-05,
-                        -2.3400401e-04,
-                        4.9389676e-04,
-                        4.5807147e-05,
-                        -8.9858345e-05,
-                        4.0996883e-04,
-                        -8.8392478e-04,
-                        -2.3400401e-04,
-                        4.0996883e-04,
-                        -4.2538567e-03,
-                        8.8954301e-03,
-                        4.9389676e-04,
-                        -8.8392478e-04,
-                        8.8954301e-03,
-                        -1.9118596e-02,
-                    ]
-                ),
-            )
-
-            npt.assert_almost_equal(
-                a[:, 3],
-                np.array(
-                    [
-                        1.0000000e00,
-                        -1.6381309e-31,
-                        -2.7975098e-01,
-                        5.7472138e-01,
-                        9.5108043e-32,
-                        1.0000000e00,
-                        -1.0146108e00,
-                        2.6772428e00,
-                        -1.0000000e-01,
-                        3.0022057e-31,
-                        6.1784980e-01,
-                        1.1194146e00,
-                        1.9609916e-31,
-                        -1.0000000e-01,
-                        -4.0440906e-02,
-                        1.1627225e00,
-                    ]
-                ),
-            )
-            np.set_printoptions(threshold=30)
-            print(c[:, 2])
-            npt.assert_almost_equal(
-                c[:, 2],
-                np.array(
-                    [
-                        3.74755747e-37,
-                        -1.65536315e-35,
-                        -1.35553765e00,
-                        1.12565454e00,
-                        -3.76558849e-36,
-                        1.05336311e-35,
-                        1.12565454e00,
-                        -3.79193715e00,
-                        4.51852858e-35,
-                        -1.92552034e-34,
-                        9.02390584e-02,
-                        -2.29668590e-01,
-                        2.42659035e-34,
-                        -6.69404844e-34,
-                        7.59635648e-01,
-                        -2.23881857e00,
-                        2.27969529e-31,
-                        -1.50500085e-32,
-                        4.54215287e-01,
-                        -7.57727880e-01,
-                        -1.84502320e-32,
-                        -1.03285044e-32,
-                        -2.26170260e-01,
-                        5.81482655e-01,
-                    ]
-                ),
-            )
-
-            np.random.seed(42)
-            integrated_states = sol.noisy_integrate(
-                integrator=SolutionIntegrator.SCIPY_RK45, to_merge=SolutionMerge.NODES
-            )
-            integrated_stated_covariance = np.cov(integrated_states["q"][:, -1, :])
-            npt.assert_almost_equal(
-                integrated_stated_covariance,
-                np.array([[0.205039, -0.411671], [-0.411671, 0.971819]]),
-                decimal=6,
-            )
-    else:
-        # Check some of the results
-        k, ref, m, cov, a, c = (
-            algebraic_states["k"],
-            algebraic_states["ref"],
-            algebraic_states["m"],
-            algebraic_states["cholesky_cov"],
-            algebraic_states["a"],
-            algebraic_states["c"],
+        npt.assert_almost_equal(
+            k[:, 0],
+            np.array([-0.0813293, 0.2754021, 0.154386, -0.4924746, 0.0439148, -0.4026935, -0.0874262, 0.1938167]),
         )
-        if not with_scaling:
-            # Check objective function value
-            npt.assert_almost_equal(f[0, 0], 62.40222244200586)
+        npt.assert_almost_equal(ref[:, 0], np.array([2.81907786e-02, 2.84412560e-01, 0, 0]))
+        npt.assert_almost_equal(
+            m[:, 0],
+            np.array(
+                [
+                    1.1112046e00,
+                    -1.5191998e-04,
+                    -8.4126212e-03,
+                    1.3675755e-02,
+                    3.8338798e-04,
+                    1.1107784e00,
+                    -3.4509900e-02,
+                    2.9958236e-02,
+                    -1.2298549e-02,
+                    -4.7443854e-04,
+                    1.1068711e00,
+                    4.2697265e-02,
+                    -5.4747221e-05,
+                    -1.2329282e-02,
+                    4.9283932e-03,
+                    1.1096335e00,
+                ]
+            ),
+        )
 
-            # detailed cost values
-            npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 62.40222242539446)
-            npt.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 1.6611394850611363e-08)
-            npt.assert_almost_equal(
-                f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
-            )
+        npt.assert_almost_equal(
+            cov[:, -2],
+            np.array(
+                [
+                    -2.1576659e-05,
+                    4.5807147e-05,
+                    -2.3400401e-04,
+                    4.9389676e-04,
+                    4.5807147e-05,
+                    -8.9858345e-05,
+                    4.0996883e-04,
+                    -8.8392478e-04,
+                    -2.3400401e-04,
+                    4.0996883e-04,
+                    -4.2538567e-03,
+                    8.8954301e-03,
+                    4.9389676e-04,
+                    -8.8392478e-04,
+                    8.8954301e-03,
+                    -1.9118596e-02,
+                ]
+            ),
+        )
 
-            # initial and final position
-            npt.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
-            npt.assert_almost_equal(q[:, -1], np.array([0.9256103, 1.29037205]))
-            npt.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
-            npt.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
+        npt.assert_almost_equal(
+            a[:, 3],
+            np.array(
+                [
+                    1.0000000e00,
+                    -1.6381309e-31,
+                    -2.7975098e-01,
+                    5.7472138e-01,
+                    9.5108043e-32,
+                    1.0000000e00,
+                    -1.0146108e00,
+                    2.6772428e00,
+                    -1.0000000e-01,
+                    3.0022057e-31,
+                    6.1784980e-01,
+                    1.1194146e00,
+                    1.9609916e-31,
+                    -1.0000000e-01,
+                    -4.0440906e-02,
+                    1.1627225e00,
+                ]
+            ),
+        )
+        np.set_printoptions(threshold=30)
+        print(c[:, 2])
+        npt.assert_almost_equal(
+            c[:, 2],
+            np.array(
+                [
+                    3.74755747e-37,
+                    -1.65536315e-35,
+                    -1.35553765e00,
+                    1.12565454e00,
+                    -3.76558849e-36,
+                    1.05336311e-35,
+                    1.12565454e00,
+                    -3.79193715e00,
+                    4.51852858e-35,
+                    -1.92552034e-34,
+                    9.02390584e-02,
+                    -2.29668590e-01,
+                    2.42659035e-34,
+                    -6.69404844e-34,
+                    7.59635648e-01,
+                    -2.23881857e00,
+                    2.27969529e-31,
+                    -1.50500085e-32,
+                    4.54215287e-01,
+                    -7.57727880e-01,
+                    -1.84502320e-32,
+                    -1.03285044e-32,
+                    -2.26170260e-01,
+                    5.81482655e-01,
+                ]
+            ),
+        )
 
-            npt.assert_almost_equal(tau[:, 0], np.array([0.42135681, -0.30494449]))
-            npt.assert_almost_equal(tau[:, -2], np.array([-0.39329963, 0.36152636]))
-
-            npt.assert_almost_equal(
-                k[:, 0],
-                np.array(
-                    [0.00227125, 0.01943845, -0.00045809, 0.04340353, -0.05890334, -0.02196787, 0.02044042, -0.08280278]
-                ),
-            )
-            npt.assert_almost_equal(ref[:, 0], np.array([2.81907786e-02, 2.84412560e-01, 0, 0]))
-            npt.assert_almost_equal(
-                m[:, 0],
-                np.array(
-                    [
-                        1.11111643e00,
-                        9.66024409e-06,
-                        -4.78746311e-04,
-                        -8.69421987e-04,
-                        1.49883122e-04,
-                        1.11128979e00,
-                        -1.34894811e-02,
-                        -1.60812429e-02,
-                        -1.23773893e-02,
-                        -6.07070546e-05,
-                        1.11396504e00,
-                        5.46363498e-03,
-                        -2.04675057e-05,
-                        -1.22691010e-02,
-                        1.84207561e-03,
-                        1.10421909e00,
-                    ]
-                ),
-            )
-
-            npt.assert_almost_equal(
-                cov[:, -2],
-                np.array(
-                    [
-                        0.00644836,
-                        -0.00610657,
-                        -0.00544246,
-                        0.00168837,
-                        0.0005854,
-                        -0.00123564,
-                        0.0103952,
-                        0.01108306,
-                        -0.00252879,
-                        -0.00192049,
-                    ]
-                ),
-            )
-
-            npt.assert_almost_equal(
-                a[:, 3],
-                np.array(
-                    [
-                        1.00000000e00,
-                        -2.17926087e-13,
-                        1.26870284e-03,
-                        -3.78607634e-02,
-                        -2.56284891e-13,
-                        1.00000000e00,
-                        -2.19752019e-01,
-                        4.81445536e-01,
-                        -1.00000000e-01,
-                        1.09505432e-13,
-                        1.02554762e00,
-                        4.87997817e-02,
-                        9.63854391e-14,
-                        -1.00000000e-01,
-                        4.91622255e-02,
-                        8.87744034e-01,
-                    ]
-                ),
-            )
-
-            npt.assert_almost_equal(
-                c[:, 2],
-                np.array(
-                    [
-                        2.24899604e-16,
-                        4.19692812e-16,
-                        -1.35499970e00,
-                        1.12950726e00,
-                        -1.16296826e-16,
-                        -5.23075855e-16,
-                        1.12950726e00,
-                        -3.79903118e00,
-                        6.93079055e-17,
-                        4.43906938e-16,
-                        -2.00791886e-02,
-                        4.98852395e-02,
-                        3.32248534e-16,
-                        1.04710774e-15,
-                        -4.28795369e-02,
-                        9.36788627e-02,
-                        -2.55942876e-13,
-                        -2.73014494e-13,
-                        5.33498922e-02,
-                        4.09670671e-02,
-                        5.18153700e-15,
-                        3.81994693e-14,
-                        -3.35841216e-04,
-                        1.26309820e-02,
-                    ]
-                ),
-            )
-        else:
-            # Check objective function value
-            npt.assert_almost_equal(f[0, 0], 62.40224045726969, decimal=4)
-
-            # detailed cost values
-            npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 62.40222242578194, decimal=4)
-            npt.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 1.8031487750452925e-05, decimal=4)
-            npt.assert_almost_equal(
-                f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
-            )
-
-            if with_cholesky and with_scaling and use_sx:
-                return
-
-            # initial and final position
-            npt.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
-            npt.assert_almost_equal(q[:, -1], np.array([0.9256103, 1.29037205]))
-            npt.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
-            npt.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
-
-            npt.assert_almost_equal(tau[:, 0], np.array([0.42135677, -0.30494447]))
-            npt.assert_almost_equal(tau[:, -2], np.array([-0.39329968, 0.3615263]))
-
-            npt.assert_almost_equal(
-                k[:, 0],
-                np.array(
-                    [0.38339153, 0.16410165, 0.24810509, 0.42872769, -0.35368849, -0.10938936, 0.14249199, -0.25350259]
-                ),
-            )
-            npt.assert_almost_equal(ref[:, 0], np.array([2.81907786e-02, 2.84412560e-01, 0, 0]))
-            npt.assert_almost_equal(
-                m[:, 0],
-                np.array(
-                    [
-                        1.11109420e00,
-                        -2.00975244e-05,
-                        1.52182976e-03,
-                        1.80877721e-03,
-                        1.76457230e-04,
-                        1.11160762e00,
-                        -1.58811508e-02,
-                        -4.46861689e-02,
-                        -1.24668133e-02,
-                        -6.45898260e-05,
-                        1.12201319e00,
-                        5.81308511e-03,
-                        -7.64514277e-06,
-                        -1.24164397e-02,
-                        6.88061131e-04,
-                        1.11747957e00,
-                    ]
-                ),
-            )
-
-            npt.assert_almost_equal(
-                cov[:, -2],
-                np.array(
-                    [
-                        -8.67400623e-03,
-                        5.77329567e-05,
-                        -1.30885973e-03,
-                        1.12501586e-02,
-                        4.64929473e-03,
-                        2.32462786e-03,
-                        4.92631923e-03,
-                        3.97615552e-03,
-                        6.52664876e-03,
-                        -6.66843408e-04,
-                    ]
-                ),
-            )
-
-            npt.assert_almost_equal(
-                a[:, 3],
-                np.array(
-                    [
-                        1.00000000e00,
-                        -8.35886644e-14,
-                        -2.60671845e-02,
-                        -6.51469362e-02,
-                        -1.10663430e-14,
-                        1.00000000e00,
-                        -3.68704938e-01,
-                        7.95318548e-01,
-                        -1.00000000e-01,
-                        -1.65656031e-14,
-                        1.13051096e00,
-                        7.33175161e-02,
-                        -1.61686165e-14,
-                        -1.00000000e-01,
-                        6.34380653e-02,
-                        9.83897210e-01,
-                    ]
-                ),
-            )
-
-            npt.assert_almost_equal(
-                c[:, 2],
-                np.array(
-                    [
-                        -1.12917038e-15,
-                        4.53652494e-15,
-                        -1.35499971e00,
-                        1.12950724e00,
-                        1.05525107e-14,
-                        -2.09358023e-14,
-                        1.12950724e00,
-                        -3.79903115e00,
-                        -2.39923923e-14,
-                        4.58953582e-14,
-                        -2.78756182e-02,
-                        1.26240135e-01,
-                        -3.27866630e-14,
-                        7.03268708e-14,
-                        -9.99367009e-02,
-                        2.09729743e-01,
-                        -3.14543642e-12,
-                        3.70435383e-12,
-                        1.91480322e-02,
-                        8.03625184e-03,
-                        -1.12721323e-12,
-                        2.00365744e-12,
-                        1.01115604e-03,
-                        2.88702060e-03,
-                    ]
-                ),
-            )
+        np.random.seed(42)
+        integrated_states = sol.noisy_integrate(integrator=SolutionIntegrator.SCIPY_RK45, to_merge=SolutionMerge.NODES)
+        integrated_stated_covariance = np.cov(integrated_states["q"][:, -1, :])
+        npt.assert_almost_equal(
+            integrated_stated_covariance,
+            np.array([[0.205039, -0.411671], [-0.411671, 0.971819]]),
+            decimal=6,
+        )

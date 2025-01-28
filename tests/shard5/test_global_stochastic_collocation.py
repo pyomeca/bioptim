@@ -1,3 +1,5 @@
+import platform
+
 from bioptim import Solver, SocpType, SolutionMerge, PenaltyHelpers, SolutionIntegrator
 from casadi import DM, vertcat
 import numpy as np
@@ -425,6 +427,18 @@ def test_obstacle_avoidance_direct_collocation(use_sx: bool):
     # Solver parameters
     solver = Solver.IPOPT()
     solver.set_maximum_iterations(4)
+
+    # Check the values which will be sent to the solver
+    np.random.seed(42)
+    TestUtils.compare_ocp_to_solve(
+        ocp,
+        v=np.ones([1107, 1]),  # Random values here returns nan for g
+        expected_v_f_g=[1107.0, 10.01, -170696.19805582374],
+        decimal=6,
+    )
+    if platform.system() == "Windows":
+        return
+
     sol = ocp.solve(solver)
 
     # Check objective function value

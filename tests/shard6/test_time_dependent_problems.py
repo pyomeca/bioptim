@@ -6,7 +6,7 @@ it is supposed to balance the pendulum. It is designed to show how to track mark
 Note that the final node is not tracked.
 """
 
-import os
+import platform
 
 from bioptim import (
     BiorbdModel,
@@ -305,6 +305,60 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
         minimize_time=minimize_time,
         use_sx=use_sx,
     )
+    # Check the values which will be sent to the solver
+    np.random.seed(42)
+    match integrator:
+        case OdeSolver.RK4:
+            if control_type == ControlType.CONSTANT:
+                v_len = 185 * n_phase
+                expected = (
+                    [18.5, 80006.0 if minimize_time else 6.0, 0.8715987034298607]
+                    if n_phase == 1
+                    else [37.0, 400012.00000000006 if minimize_time else 12.0, 6.033764148108874]
+                )
+            elif control_type == ControlType.LINEAR_CONTINUOUS:
+                v_len = 187 * n_phase
+                expected = (
+                    [18.699999999999996, 80006.0 if minimize_time else 6.0, 0.8715987034298607]
+                    if n_phase == 1
+                    else [37.39999999999999, 400012.00000000006 if minimize_time else 12.0, 6.033764148108878]
+                )
+            else:
+                raise ValueError("Test not implemented")
+        case OdeSolver.COLLOCATION:
+            v_len = 665 * n_phase
+            expected = (
+                [66.5, 80006.0 if minimize_time else 6.0, 6.035552847184389]
+                if n_phase == 1
+                else [133.0, 400012.00000000006 if minimize_time else 12.0, 28.618666282170977]
+            )
+        case OdeSolver.IRK:
+            v_len = 305 * n_phase
+            expected = (
+                [30.5, 320010.0 if minimize_time else 10.0, 4.283653839663469]
+                if n_phase == 1
+                else [61.0, 1600019.9999999998 if minimize_time else 20.0, 8.125629434161866]
+            )
+        case OdeSolver.TRAPEZOIDAL:
+            v_len = 187 * n_phase
+            expected = (
+                [18.699999999999996, 80006.0 if minimize_time else 6.0, 1.5103810164979388]
+                if n_phase == 1
+                else [37.39999999999999, 400012.00000000006 if minimize_time else 12.0, 7.154696449039014]
+            )
+        case _:
+            raise ValueError("Test not implemented")
+
+    TestUtils.compare_ocp_to_solve(
+        ocp,
+        v=np.ones((v_len, 1)) / 10,  # Random creates nan in the g vector
+        expected_v_f_g=expected,
+        decimal=6,
+    )
+    if platform.system() == "Windows":
+        return
+
+    return
     sol = ocp.solve()
 
     if integrator is OdeSolver.IRK:

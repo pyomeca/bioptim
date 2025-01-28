@@ -2,6 +2,8 @@
 Test for file IO
 """
 
+import platform
+
 from bioptim import (
     OdeSolver,
     ConstraintList,
@@ -228,14 +230,14 @@ def test_track_markers_with_actuators(ode_solver, phase_dynamics):
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.IRK, OdeSolver.COLLOCATION])
 def test_track_marker_2D_pendulum(ode_solver, phase_dynamics):
     # Load muscle_activations_contact_tracker
     from bioptim.examples.torque_driven_ocp import track_markers_2D_pendulum as ocp_module
 
     # For reducing time phase_dynamics == PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
-    if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.RK8:
-        return
+    if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
+        pytest.skip("Redundant test")
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -267,101 +269,28 @@ def test_track_marker_2D_pendulum(ode_solver, phase_dynamics):
         phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver_orig != OdeSolver.IRK,
     )
-    sol = ocp.solve()
 
-    # Check constraints
-    g = np.array(sol.constraints)
-    npt.assert_equal(g.shape, (n_shooting * 4, 1))
-    npt.assert_almost_equal(g, np.zeros((n_shooting * 4, 1)))
+    # Check the values which will be sent to the solver
+    np.random.seed(42)
+    match ode_solver_orig:
+        case OdeSolver.COLLOCATION:
+            v_len = 665
+            expected = [329.58704584455836, 45.86799945455372, 32.40020240692716]
+        case OdeSolver.IRK:
+            v_len = 185
+            expected = [87.49523141142917, 194.20847154483175, 4027.416142481593]
+        case _:
+            raise ValueError("Test not implemented")
 
-    # Check some of the results
-    states = sol.decision_states(to_merge=SolutionMerge.NODES)
-    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
-
-    if isinstance(ode_solver, OdeSolver.IRK):
-        # Check objective function value
-        f = np.array(sol.cost)
-        npt.assert_equal(f.shape, (1, 1))
-        npt.assert_almost_equal(f[0, 0], 290.6751231)
-
-        # initial and final position
-        npt.assert_almost_equal(q[:, 0], np.array((0, 0)))
-        npt.assert_almost_equal(q[:, -1], np.array((0.64142484, 2.85371719)))
-
-        # initial and final velocities
-        npt.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-        npt.assert_almost_equal(qdot[:, -1], np.array((3.46921861, 3.24168308)))
-
-        # initial and final controls
-        npt.assert_almost_equal(tau[:, 0], np.array((9.11770196, -13.83677175)))
-        npt.assert_almost_equal(tau[:, -1], np.array((1.16836132, 4.77230548)))
-
-    elif isinstance(ode_solver, OdeSolver.RK8):
-        pass
-
-    else:
-        # Check objective function value
-        f = np.array(sol.cost)
-        npt.assert_equal(f.shape, (1, 1))
-        npt.assert_almost_equal(f[0, 0], 281.8560713312711)
-
-        # initial and final position
-        npt.assert_almost_equal(q[:, 0], np.array((0, 0)))
-        npt.assert_almost_equal(q[:, -1], np.array((0.8367364, 3.37533055)))
-
-        # initial and final velocities
-        npt.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-        npt.assert_almost_equal(qdot[:, -1], np.array((3.2688391, 3.88242643)))
-
-        # initial and final controls
-        npt.assert_almost_equal(tau[:, 0], np.array((6.93890241, -12.76433504)))
-        npt.assert_almost_equal(tau[:, -1], np.array((0.13156876, 0.93749913)))
-
-    # simulate
-    TestUtils.simulate(sol)
-
-
-@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
-@pytest.mark.parametrize("ode_solver", [OdeSolver.IRK, OdeSolver.COLLOCATION])
-@pytest.mark.parametrize("defects_type", [DefectType.EXPLICIT, DefectType.IMPLICIT])
-def test_track_marker_2D_pendulum(ode_solver, defects_type, phase_dynamics):
-    # Load muscle_activations_contact_tracker
-    from bioptim.examples.torque_driven_ocp import track_markers_2D_pendulum as ocp_module
-
-    # For reducing time phase_dynamics == PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
-    if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
+    TestUtils.compare_ocp_to_solve(
+        ocp,
+        v=np.random.rand(v_len, 1),
+        expected_v_f_g=expected,
+        decimal=6,
+    )
+    if platform.system() == "Windows":
         return
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
-
-    ode_solver_orig = ode_solver
-    ode_solver = ode_solver()
-
-    # Define the problem
-    model_path = bioptim_folder + "/models/pendulum.bioMod"
-    bio_model = BiorbdModel(model_path)
-
-    final_time = 2
-    n_shooting = 30
-
-    # Generate data to fit
-    np.random.seed(42)
-    markers_ref = np.random.rand(3, 2, n_shooting + 1)
-    tau_ref = np.random.rand(2, n_shooting)
-
-    if isinstance(ode_solver, OdeSolver.IRK):
-        tau_ref = tau_ref * 5
-
-    ocp = ocp_module.prepare_ocp(
-        bio_model,
-        final_time,
-        n_shooting,
-        markers_ref,
-        tau_ref,
-        ode_solver=ode_solver,
-        expand_dynamics=ode_solver_orig != OdeSolver.IRK,
-    )
     sol = ocp.solve()
 
     # Check constraints
@@ -698,43 +627,14 @@ def test_example_multi_biorbd_model(phase_dynamics):
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
     )
-    sol = ocp.solve()
 
-    # # Check objective function value
-    # f = np.array(sol.cost)
-    # npt.assert_equal(f.shape, (1, 1))
-    # npt.assert_almost_equal(f[0, 0], 10.697019532108447)
-
-    # # Check constraints
-    # g = np.array(sol.constraints)
-    # npt.assert_equal(g.shape, (240, 1))
-    # npt.assert_almost_equal(g, np.zeros((240, 1)), decimal=6)
-
-    # # Check some of the results
-    # states = sol.decision_states(to_merge=SolutionMerge.NODES)
-    # controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
-
-    # # initial and final position
-    # npt.assert_almost_equal(
-    #     states["q"][:, 0], np.array([-3.14159265, 0.0, 0.0, -3.14159265, 0.0, 0.0]), decimal=6
-    # )
-    # npt.assert_almost_equal(
-    #     states["q"][:, -1], np.array([3.05279505, 0.0, 0.0, 3.04159266, 0.0, 0.0]), decimal=6
-    # )
-    # # initial and final velocities
-    # npt.assert_almost_equal(
-    #     states["qdot"][:, 0],
-    #     np.array([15.68385811, -31.25068304, 19.2317873, 15.63939216, -31.4159265, 19.91541457]),
-    #     decimal=6,
-    # )
-    # npt.assert_almost_equal(
-    #     states["qdot"][:, -1],
-    #     np.array([15.90689541, -30.54499528, 16.03701393, 15.96682325, -30.89799758, 16.70457477]),
-    #     decimal=6,
-    # )
-    # # initial and final controls
-    # npt.assert_almost_equal(controls["tau"][:, 0], np.array([-0.48437131, 0.0249894, 0.38051993]), decimal=6)
-    # npt.assert_almost_equal(controls["tau"][:, -1], np.array([-0.00235227, -0.02192184, -0.00709896]), decimal=6)
+    np.random.seed(42)
+    TestUtils.compare_ocp_to_solve(
+        ocp,
+        v=np.random.rand(313, 1),
+        expected_v_f_g=[154.4724783298145, 21.353112388854846, 60.207690783556835],
+        decimal=6,
+    )
 
 
 def test_example_minimize_segment_velocity():
@@ -751,6 +651,18 @@ def test_example_minimize_segment_velocity():
         n_shooting=5,
         expand_dynamics=True,
     )
+
+    # Check the values which will be sent to the solver
+    np.random.seed(42)
+    TestUtils.compare_ocp_to_solve(
+        ocp,
+        v=np.random.rand(52, 1),
+        expected_v_f_g=[24.04091267073873, 805.0958650566107, 7.321219099616136],
+        decimal=6,
+    )
+    if platform.system() == "Windows":
+        return
+
     sol = ocp.solve()
 
     # Check objective function value

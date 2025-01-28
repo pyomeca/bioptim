@@ -20,8 +20,6 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
 )
-from bioptim.interfaces.ipopt_interface import IpoptInterface
-from bioptim.interfaces.interface_utils import _shake_tree_for_penalties
 from casadi import Function
 import numpy as np
 import numpy.testing as npt
@@ -203,169 +201,13 @@ def test_track_and_minimize_marker_displacement_RT(ode_solver, phase_dynamics):
     )
 
     # Check the values which will be sent to the solver
-    interface = IpoptInterface(ocp=ocp)
-    v = interface.ocp.variables_vector
-    v_bounds = interface.ocp.bounds_vectors
-    f = _shake_tree_for_penalties(interface.ocp, interface.dispatch_obj_func(), v, v_bounds, False)
-    g = _shake_tree_for_penalties(interface.ocp, interface.dispatch_bounds()[0], v, v_bounds, False)
-
     np.random.seed(42)
-    values = Function("v", [v], [v, f, g])(np.random.rand(*v.size()))
-    npt.assert_almost_equal(
-        np.array(values[0])[:, 0],
-        [
-            0.3745401188,
-            0.9507143064,
-            0.7319939418,
-            0.5986584842,
-            0.1560186404,
-            0.1559945203,
-            0.0580836122,
-            0.8661761458,
-            0.6011150117,
-            0.7080725778,
-            0.0205844943,
-            0.9699098522,
-            0.8324426408,
-            0.2123391107,
-            0.1818249672,
-            0.1834045099,
-            0.304242243,
-            0.5247564316,
-            0.4319450186,
-            0.2912291402,
-            0.6118528947,
-            0.1394938607,
-            0.2921446485,
-            0.3663618433,
-            0.4560699842,
-            0.7851759614,
-            0.1996737822,
-            0.5142344384,
-            0.5924145689,
-            0.0464504127,
-            0.6075448519,
-            0.1705241237,
-            0.065051593,
-            0.9488855373,
-            0.9656320331,
-            0.8083973481,
-            0.3046137692,
-            0.097672114,
-            0.6842330265,
-            0.4401524937,
-            0.1220382348,
-            0.4951769101,
-            0.0343885211,
-            0.9093204021,
-            0.2587799816,
-            0.6625222844,
-            0.3117110761,
-            0.5200680212,
-            0.5467102793,
-            0.1848544555,
-            0.9695846278,
-            0.7751328234,
-            0.9394989416,
-            0.8948273504,
-            0.5978999788,
-            0.921874235,
-            0.0884925021,
-            0.1959828624,
-            0.0452272889,
-            0.3253303308,
-            0.3886772897,
-            0.2713490318,
-            0.8287375092,
-            0.3567533267,
-            0.2809345097,
-            0.5426960832,
-            0.140924225,
-            0.8021969808,
-            0.0745506437,
-        ],
+    TestUtils.compare_ocp_to_solve(
+        ocp,
+        v=np.random.rand(69, 1),
+        expected_v_f_g=[31.736865760272735, 735.9774884772594, 14.88489768158775],
         decimal=6,
     )
-    npt.assert_almost_equal(
-        np.array(values[1])[:, 0],
-        [
-            2.1777249117e-01,
-            0.0000000000e00,
-            3.1860711148e01,
-            5.1534589288e-02,
-            0.0000000000e00,
-            7.5929602420e00,
-            6.6851278077e00,
-            0.0000000000e00,
-            3.0211593975e00,
-            6.4478285409e01,
-            0.0000000000e00,
-            5.2564740149e01,
-            2.5922438169e01,
-            0.0000000000e00,
-            2.0108682174e02,
-            -1.5005222310e-01,
-            -7.2267851469e-02,
-            -6.7274428469e-03,
-            -1.8512668480e-02,
-            -2.6844200044e-02,
-            -4.1599966101e-02,
-            -5.8156953519e-03,
-            -8.4634194998e-04,
-            -3.8746843549e-02,
-            -2.9786661528e-03,
-            -5.4094149330e-02,
-            -5.9778425908e-02,
-        ],
-        decimal=6,
-    )
-    npt.assert_almost_equal(
-        np.array(values[2])[:, 0],
-        [
-            -2.7753772179e-01,
-            -5.4621786250e-01,
-            1.8251348234e-01,
-            5.3741101918e-01,
-            1.9373699237e-02,
-            1.8918244295e00,
-            -8.3779820059e-01,
-            -4.8477255710e-01,
-            -2.4368051531e-01,
-            5.5923753133e-01,
-            -7.3379909864e-01,
-            -2.8320804471e-01,
-            -2.5181072011e-01,
-            1.9527396856e00,
-            -1.4175135644e-03,
-            1.3412924085e-01,
-            2.2860110038e-01,
-            -9.5404711969e-02,
-            1.4322632294e-01,
-            -1.1842586850e-01,
-            -1.3224002042e-01,
-            2.2683547456e00,
-            -2.6090378576e-01,
-            -4.6875384917e-01,
-            1.4899251268e-01,
-            8.2407453035e-01,
-            2.5292301843e-01,
-            -3.0642980848e-01,
-            -3.0481050684e-03,
-            1.8729406728e00,
-            1.9827770471e-01,
-            7.9973992202e-04,
-            -4.8409697161e-01,
-            -8.7470860176e-01,
-            -3.1513844007e-03,
-            -7.1732447416e-02,
-            4.5631095372e-01,
-            1.5612932046e00,
-            -8.0523868713e-02,
-            4.0976191576e-01,
-        ],
-        decimal=6,
-    )
-
     if platform.system() == "Windows":
         return
 
@@ -415,28 +257,19 @@ def test_track_and_minimize_marker_velocity(ode_solver, phase_dynamics):
         ode_solver=ode_solver,
         phase_dynamics=phase_dynamics,
     )
+
+    # Check the values which will be sent to the solver
+    np.random.seed(42)
+    TestUtils.compare_ocp_to_solve(
+        ocp,
+        v=np.random.rand(69, 1),
+        expected_v_f_g=[31.736865760272735, 90.85915472423895, 14.88489768158775],
+        decimal=6,
+    )
+    if platform.system() == "Windows":
+        return
+
     sol = ocp.solve()
-
-    # Prior optimization checks
-    nlp = ocp.ocp_solver.nlp
-    v = nlp["x"]
-    dummy_objectives = np.array(Function("x", [v], [nlp["f"]])(np.arange(v.numel())))
-    np.testing.assert_almost_equal(dummy_objectives, np.array([[288936.4]]))
-
-    dummy_constraints = np.sum(np.array(Function("x", [v], [nlp["g"]])(np.arange(v.numel()))))
-    np.testing.assert_almost_equal(dummy_constraints, -16.609000000000044)
-
-    limits = ocp.ocp_solver.limits
-    min_bounds = np.sum(limits["lbx"])
-    np.testing.assert_almost_equal(min_bounds, -2278.274333882308)
-    max_bounds = np.sum(limits["ubx"])
-    np.testing.assert_almost_equal(max_bounds, 2288.274333882308)
-    min_constraints = np.sum(limits["lbg"])
-    np.testing.assert_almost_equal(min_constraints, 0.0)
-    max_constraints = np.sum(limits["ubg"])
-    np.testing.assert_almost_equal(max_constraints, 0.0)
-    x0 = np.sum(limits["x0"])
-    np.testing.assert_almost_equal(x0, 33.8)
 
     # Check objective function value
     f = np.array(sol.cost)

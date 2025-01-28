@@ -2,6 +2,8 @@
 Test for file IO
 """
 
+import platform
+
 from bioptim import OdeSolver, PhaseDynamics, SolutionMerge
 import numpy as np
 import numpy.testing as npt
@@ -116,6 +118,31 @@ def test_pendulum_min_time_mayer_constrained(ode_solver, phase_dynamics):
         phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver != OdeSolver.IRK,
     )
+
+    # Check the values which will be sent to the solver
+    np.random.seed(42)
+    match ode_solver:
+        case OdeSolver.RK4:
+            v_len = 185
+            expected = [87.49523141142917, 11.236203565420874, -0.005115857843225768]
+        case OdeSolver.COLLOCATION:
+            v_len = 665
+            expected = [329.58704584455836, 11.236203565420874, 32.40020240692716]
+        case OdeSolver.IRK:
+            v_len = 185
+            expected = [87.49523141142917, 11.236203565420874, 4027.416142481593]
+        case _:
+            raise ValueError("Test not implemented")
+
+    TestUtils.compare_ocp_to_solve(
+        ocp,
+        v=np.random.rand(v_len, 1),
+        expected_v_f_g=expected,
+        decimal=6,
+    )
+    if platform.system() == "Windows":
+        return
+
     sol = ocp.solve()
 
     # Check constraints
