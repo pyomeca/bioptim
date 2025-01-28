@@ -43,7 +43,7 @@ class TestUtils:
         g = interface.dispatch_bounds()[0]
 
         values = Function("v", [v_cx], [v_cx, f, g])(v)
-        npt.assert_almost_equal([np.sum(value) for value in values], expected_v_f_g, decimal=6)
+        npt.assert_allclose([np.sum(value) for value in values], expected_v_f_g, rtol=10**-decimal)
 
     @staticmethod
     def _capitalize_folder_drive(folder: str) -> str:
