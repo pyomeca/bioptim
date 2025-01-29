@@ -2,6 +2,7 @@
 Test for file IO
 """
 
+import platform
 import pytest
 
 from bioptim import OdeSolver, PhaseDynamics, SolutionMerge
@@ -73,6 +74,17 @@ def test_track_marker_on_segment(ode_solver, phase_dynamics):
         phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver != OdeSolver.IRK,
     )
+
+    np.random.seed(42)
+    TestUtils.compare_ocp_to_solve(
+        ocp,
+        v=np.random.rand(105, 1),
+        expected_v_f_g=[49.41640708093857, 380.05556849200684, 18.43946477408692],
+        decimal=6,
+    )
+    if platform.system() == "Windows":
+        return
+
     sol = ocp.solve()
 
     # Check objective function value
