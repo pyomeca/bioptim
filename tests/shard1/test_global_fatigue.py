@@ -26,6 +26,17 @@ def test_xia_fatigable_muscles(phase_dynamics):
         n_threads=1,
         phase_dynamics=phase_dynamics,
     )
+
+    np.random.seed(42)
+    TestUtils.compare_ocp_to_solve(
+        ocp,
+        v=np.random.rand(613, 1),
+        expected_v_f_g=[306.3365222501875, 3457.8474074260107, 244.8780101727087],
+        decimal=6,
+    )
+    if platform.system() == "Windows":
+        return
+
     sol = ocp.solve()
 
     # Check objective function value
