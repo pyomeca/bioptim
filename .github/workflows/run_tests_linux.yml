@@ -59,9 +59,14 @@ jobs:
         if: matrix.shard == 1
 
       - name: Run tests with code coverage
-        run: pytest -v --color=yes --cov-report term-missing --cov=bioptim --cov-report=xml:coverage.xml tests/shard${{ matrix.shard }}
+        run: pytest -v --color=yes --cov-report term-missing --cov=bioptim tests/shard${{ matrix.shard }}
         if: matrix.os == 'ubuntu-latest'
-
+      
+      - name: Show content
+        run: | 
+          pwd
+          ls -Al
+      
       - name: Archive coverage report
         id: archive
         uses: actions/upload-artifact@v4
@@ -98,7 +103,7 @@ jobs:
       - name: Show before merging dir content
         run: | 
           pwd
-          ls -a
+          ls -Al
           ls coverage-1
           ls coverage-2
 
@@ -112,7 +117,7 @@ jobs:
         run: coverage combine .coverage1 .coverage2 .coverage3 .coverage4 .coverage5 .coverage6
   
       - name: Show after merging dir content
-        run: pwd; ls -a
+        run: pwd; ls -Al
 
       - name: Generate XML report
         run: |
