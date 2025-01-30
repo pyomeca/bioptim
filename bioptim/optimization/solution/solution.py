@@ -7,7 +7,7 @@ from typing import Any
 
 from .solution_data import SolutionData, SolutionMerge, TimeAlignment, TimeResolution
 from ..optimization_vector import OptimizationVectorHelper
-from ...dynamics.ode_solver import OdeSolver
+from ...dynamics.ode_solvers import OdeSolver
 from ...interfaces.solve_ivp_interface import solve_ivp_interface
 from ...limits.path_conditions import InitialGuess, InitialGuessList
 from ...limits.penalty_helpers import PenaltyHelpers
