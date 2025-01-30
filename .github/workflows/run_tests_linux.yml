@@ -86,21 +86,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup environment
-        uses: conda-incubator/setup-miniconda@v2
-        with:
-          miniforge-version: latest
-          use-mamba: true
-          activate-environment: bioptim
-          environment-file: environment.yml
-
-      - name: Print mamba info
-        run: |
-          conda info
-
       - name: Install extra dependencies
         run: |
-          sudo apt-get install -y python3-pip
+          sudo apt install -y python3-pip
           pip3 install coverage
 
       - name: Download all workflow run artifacts
@@ -108,7 +96,9 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           pattern: coverage-*
-          merge-multiple: true
+
+      - name: Show before merging dir content
+        run: pwd; ls -a
 
       - name: Rename coverage files
         run: |
@@ -120,7 +110,7 @@ jobs:
       - name: Merge coverage reports
         run: coverage combine .coverage1 .coverage2 .coverage3 .coverage4 .coverage5 .coverage6
   
-      - name: Show current dir content with new .coverage file
+      - name: Show after merging dir content
         run: pwd; ls -a
 
       - name: Generate XML report
@@ -128,10 +118,8 @@ jobs:
           coverage xml
           coverage report -m
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+      - uses: codecov/codecov-action@v5
         with:
-          #token: ${{ secrets.CODECOV_TOKEN }}
           files: ./coverage.xml
           flags: unittests
           fail_ci_if_error: true
