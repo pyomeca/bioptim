@@ -67,9 +67,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ matrix.shard }}
-          path: |
-            coverage.xml
-            .coverage
+          path: .coverage
 
   merge-coverage:
     needs: build
@@ -98,13 +96,16 @@ jobs:
           pattern: coverage-*
 
       - name: Show before merging dir content
-        run: pwd; ls -a
+        run: | 
+          pwd
+          ls -a
+          ls coverage-1
+          ls coverage-2
 
       - name: Rename coverage files
         run: |
           for shard in {1,2,3,4,5,6}; do
-            mv coverage-${shard}/coverage.xml coverage${shard}.xml
-            mv coverage-${shard}/.coverage* .coverage${shard}
+            mv coverage-${shard}/.coverage .coverage${shard}
           done
 
       - name: Merge coverage reports
