@@ -66,11 +66,10 @@ jobs:
         id: archive
         uses: actions/upload-artifact@v4
         with:
-          name: coverage${{ matrix.shard }}
+          name: coverage-${{ matrix.shard }}
           path: |
             coverage.xml
             .coverage
-
 
   merge-coverage:
     needs: build
@@ -83,7 +82,6 @@ jobs:
       - name: Set prefix Linux
         run:
             echo "PREFIX=${{ env.PREFIX_LINUX }}" >> $GITHUB_ENV
-
 
       - name: Checkout code
         uses: actions/checkout@v3
@@ -99,7 +97,6 @@ jobs:
       - name: Print mamba info
         run: |
           conda info
-#          mamba list
 
       - name: Install extra dependencies
         run: |
@@ -108,21 +105,21 @@ jobs:
 
       - name: Download all workflow run artifacts
         id: download
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
+          merge-multiple: true
 
       - name: Rename coverage files
         run: |
           for shard in {1,2,3,4,5,6}; do
-            mv coverage${shard}/coverage.xml coverage${shard}.xml
-            mv coverage${shard}/.coverage* .coverage${shard}
+            mv coverage-${shard}/coverage.xml coverage${shard}.xml
+            mv coverage-${shard}/.coverage* .coverage${shard}
           done
 
-      - name: Show current dir content
-        run: pwd; ls -a -l
-
       - name: Merge coverage reports
-        run: coverage combine .coverage1 .coverage2 .coverage3 .coverage4
-
+        run: coverage combine .coverage1 .coverage2 .coverage3 .coverage4 .coverage5 .coverage6
+  
       - name: Show current dir content with new .coverage file
         run: pwd; ls -a
 
@@ -132,11 +129,10 @@ jobs:
           coverage report -m
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v5
         with:
           #token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage.xml
-          #files: ./coverage1.xml, ./coverage2.xml, ./coverage3.xml, ./coverage4.xml
+          files: ./coverage.xml
           flags: unittests
           fail_ci_if_error: true
           verbose: true
