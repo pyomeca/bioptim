@@ -6,7 +6,7 @@ from casadi import SX, MX, vertcat
 from .optimization_variable import OptimizationVariableContainer
 from ..dynamics.dynamics_evaluation import DynamicsEvaluation
 from ..dynamics.dynamics_functions import DynamicsFunctions
-from ..dynamics.ode_solver import OdeSolver
+from ..dynamics.ode_solvers import OdeSolver
 from ..limits.path_conditions import InitialGuessList, BoundsList
 from ..misc.enums import ControlType, PhaseDynamics
 from ..misc.mapping import NodeMapping

@@ -10,7 +10,7 @@ from matplotlib import pyplot as plt
 from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVectorHelper
 from ..dynamics.configure_problem import DynamicsList, Dynamics, ConfigureProblem
-from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
+from ..dynamics.ode_solvers import OdeSolver, OdeSolverBase
 from ..gui.check_conditioning import check_conditioning
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..gui.ipopt_output_plot import SaveIterationsInfo
