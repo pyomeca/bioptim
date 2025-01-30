@@ -3,11 +3,10 @@ Test for file IO
 """
 
 import pytest
-import os
 
+from bioptim import OdeSolver, PhaseDynamics, SolutionMerge
 import numpy as np
 import numpy.testing as npt
-from bioptim import OdeSolver, PhaseDynamics, SolutionMerge
 
 from tests.utils import TestUtils
 
@@ -17,7 +16,7 @@ from tests.utils import TestUtils
 def test_track_segment_on_rt(ode_solver, phase_dynamics):
     from bioptim.examples.track import track_segment_on_rt as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube_and_line.bioMod",
@@ -63,7 +62,7 @@ def test_track_segment_on_rt(ode_solver, phase_dynamics):
 def test_track_marker_on_segment(ode_solver, phase_dynamics):
     from bioptim.examples.track import track_marker_on_segment as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube_and_line.bioMod",

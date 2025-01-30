@@ -1,9 +1,8 @@
-import os
-
+from bioptim import OdeSolver, Solver, PhaseDynamics, SolutionMerge, TimeAlignment, ControlType, Solution
 import pytest
 import numpy.testing as npt
 
-from bioptim import OdeSolver, Solver, PhaseDynamics, SolutionMerge, TimeAlignment, ControlType, Solution
+from ..utils import TestUtils
 
 
 def _get_solution(
@@ -23,7 +22,7 @@ def _get_solution(
     if is_multi_phase:
         from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-        bioptim_folder = os.path.dirname(ocp_module.__file__)
+        bioptim_folder = TestUtils.module_folder(ocp_module)
         model_path = bioptim_folder + "/models/cube.bioMod"
         prepare_args = {
             "biorbd_model_path": model_path,
@@ -34,7 +33,7 @@ def _get_solution(
     else:
         from bioptim.examples.getting_started import pendulum as ocp_module
 
-        bioptim_folder = os.path.dirname(ocp_module.__file__)
+        bioptim_folder = TestUtils.module_folder(ocp_module)
         model_path = bioptim_folder + "/models/pendulum.bioMod"
         prepare_args = {
             "biorbd_model_path": model_path,

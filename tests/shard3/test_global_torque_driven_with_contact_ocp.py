@@ -6,14 +6,12 @@ It tests the results of an optimal control problem with torque_driven_with_conta
 - the non_slipping constraint
 """
 
-import os
-import pytest
-
+from bioptim import OdeSolver, Solver, PhaseDynamics, SolutionMerge
 import numpy as np
 import numpy.testing as npt
-from bioptim import OdeSolver, Solver, PhaseDynamics, SolutionMerge
+import pytest
 
-from tests.utils import TestUtils
+from ..utils import TestUtils
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -23,7 +21,7 @@ from tests.utils import TestUtils
 def test_maximize_predicted_height_CoM(objective_name, phase_dynamics):
     from bioptim.examples.torque_driven_ocp import maximize_predicted_height_CoM as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts.bioMod",
@@ -97,7 +95,7 @@ def test_maximize_predicted_height_CoM(objective_name, phase_dynamics):
 def test_maximize_predicted_height_CoM_with_actuators(phase_dynamics):
     from bioptim.examples.torque_driven_ocp import maximize_predicted_height_CoM as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts.bioMod",
@@ -143,7 +141,7 @@ def test_maximize_predicted_height_CoM_with_actuators(phase_dynamics):
 def test_maximize_predicted_height_CoM_rigidbody_dynamics(phase_dynamics):
     from bioptim.examples.torque_driven_ocp import maximize_predicted_height_CoM as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ode_solver = OdeSolver.RK4()
 

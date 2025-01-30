@@ -2,14 +2,12 @@
 Test for file IO
 """
 
-import os
-import pytest
-
+from bioptim import OdeSolver, PhaseDynamics, SolutionMerge
 import numpy as np
 import numpy.testing as npt
-from bioptim import OdeSolver, PhaseDynamics, SolutionMerge
+import pytest
 
-from tests.utils import TestUtils
+from ..utils import TestUtils
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -18,7 +16,7 @@ def test_pendulum_min_time_mayer(ode_solver, phase_dynamics):
     # Load pendulum_min_time_Mayer
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     if ode_solver == OdeSolver.IRK:
         ft = 2
@@ -104,7 +102,7 @@ def test_pendulum_min_time_mayer_constrained(ode_solver, phase_dynamics):
     # Load pendulum_min_time_Mayer
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     tf = 1
     ns = 30

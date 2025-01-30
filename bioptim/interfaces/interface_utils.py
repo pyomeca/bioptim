@@ -1,3 +1,4 @@
+import warnings
 from time import perf_counter
 
 import numpy as np
@@ -172,7 +173,8 @@ def _shake_tree_for_penalties(ocp, penalties_cx, v, v_bounds, expand):
         try:
             penalty = penalty.expand()
         except RuntimeError:
-            # This happens mostly when there is a Newton decent in the penalty
+            # This happens mostly when there is a Newton decent in the penalty. Raise warning to notify the user
+            warnings.warn("Could not expand during the shake_tree.")
             pass
     return penalty(vertcat(*dt, v[len(dt) :]))
 

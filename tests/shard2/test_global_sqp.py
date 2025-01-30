@@ -2,18 +2,19 @@
 Tests for SQP interface.
 """
 
-import os
+from bioptim import Solver, PhaseDynamics, SolutionMerge
 import numpy as np
 import numpy.testing as npt
-from bioptim import Solver, PhaseDynamics, SolutionMerge
 import pytest
+
+from ..utils import TestUtils
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_pendulum(phase_dynamics):
     from bioptim.examples.sqp_method import pendulum as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",

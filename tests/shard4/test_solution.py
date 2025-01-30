@@ -1,9 +1,8 @@
-import os
-
-import pytest
-import numpy as np
-import numpy.testing as npt
 from bioptim import Shooting, OdeSolver, SolutionIntegrator, Solver, ControlType, PhaseDynamics, SolutionMerge
+import numpy.testing as npt
+import pytest
+
+from ..utils import TestUtils
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -12,7 +11,7 @@ def test_time(ode_solver, phase_dynamics):
     # Load pendulum
     from bioptim.examples.getting_started import pendulum as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
@@ -47,7 +46,7 @@ def test_time_multiphase(ode_solver, phase_dynamics, continuous):
     # Load slider
     from bioptim.examples.torque_driven_ocp import slider as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/slider.bioMod",
@@ -125,7 +124,7 @@ def test_generate_stepwise_time(ode_solver, merge_phase, phase_dynamics, continu
     # Load slider
     from bioptim.examples.torque_driven_ocp import slider as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/slider.bioMod",
@@ -221,7 +220,7 @@ def test_generate_decision_time(ode_solver, merge_phase, phase_dynamics, continu
     # Load slider
     from bioptim.examples.torque_driven_ocp import slider as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/slider.bioMod",
@@ -319,7 +318,7 @@ def test_generate_integrate(ode_solver, merge_phase, shooting_type, integrator, 
     # Load slider
     from bioptim.examples.torque_driven_ocp import slider as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     if ode_solver == OdeSolver.COLLOCATION and control_type == ControlType.LINEAR_CONTINUOUS:
         with pytest.raises(

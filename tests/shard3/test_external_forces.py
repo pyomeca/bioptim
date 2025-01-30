@@ -1,9 +1,3 @@
-import os
-
-import numpy as np
-import numpy.testing as npt
-import pytest
-
 from bioptim import (
     PhaseDynamics,
     SolutionMerge,
@@ -19,6 +13,11 @@ from bioptim import (
     BoundsList,
     ExternalForceSetTimeSeries,
 )
+import numpy as np
+import numpy.testing as npt
+import pytest
+
+from ..utils import TestUtils
 
 
 @pytest.mark.parametrize(
@@ -53,7 +52,7 @@ def test_example_external_forces(
 ):
     from bioptim.examples.getting_started import example_external_forces as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube_with_forces.bioMod",
@@ -239,7 +238,7 @@ def test_example_external_forces_all_at_once(together: bool):
 
     from bioptim.examples.getting_started import example_external_forces as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube_with_forces.bioMod",

@@ -1,15 +1,16 @@
-import pytest
-import os
+from bioptim import BiorbdModel, BoundsList, InitialGuessList, MagnitudeType, PhaseDynamics
 import numpy as np
 import numpy.testing as npt
-from bioptim import BiorbdModel, BoundsList, InitialGuessList, MagnitudeType, PhaseDynamics
+import pytest
+
+from ..utils import TestUtils
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_noisy_multiphase(phase_dynamics):
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         phase_dynamics=phase_dynamics,
@@ -738,7 +739,7 @@ def test_noisy_multiphase(phase_dynamics):
 def test_add_wrong_magnitude(magnitude, raised_str, phase_dynamics):
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         phase_dynamics=phase_dynamics,
@@ -788,7 +789,7 @@ def test_add_wrong_magnitude(magnitude, raised_str, phase_dynamics):
 def test_add_wrong_bound_push(bound_push, raised_str):
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
@@ -835,7 +836,7 @@ def test_add_wrong_bound_push(bound_push, raised_str):
 def test_add_wrong_seed(seed, raised_str):
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
@@ -875,7 +876,7 @@ def test_add_wrong_seed(seed, raised_str):
 def test_add_wrong_bounds():
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
@@ -925,7 +926,7 @@ def test_add_wrong_bounds():
 def test_add_wrong_n_shooting():
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,

@@ -1,9 +1,9 @@
 import os
 
-import numpy as np
+from bioptim import PhaseDynamics, ControlType, QuadratureRule, Solver
 import numpy.testing as npt
 
-from bioptim import PhaseDynamics, ControlType, QuadratureRule, Solver
+from ..utils import TestUtils
 
 
 def test_continuity_linear_continuous_global():
@@ -13,7 +13,7 @@ def test_continuity_linear_continuous_global():
     """
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",

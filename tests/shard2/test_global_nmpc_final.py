@@ -2,13 +2,14 @@
 Test for file IO
 """
 
-import os
 import platform
 
-import pytest
+from bioptim import Solver, MultiCyclicCycleSolutions, PhaseDynamics, SolutionMerge
 import numpy as np
 import numpy.testing as npt
-from bioptim import Solver, MultiCyclicCycleSolutions, PhaseDynamics, SolutionMerge
+import pytest
+
+from ..utils import TestUtils
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -18,7 +19,7 @@ def test_multi_cyclic_nmpc_get_final(phase_dynamics):
 
     from bioptim.examples.moving_horizon_estimation import multi_cyclic_nmpc as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     n_cycles_simultaneous = 2
     n_cycles_to_advance = 1
@@ -109,7 +110,7 @@ def test_multi_cyclic_nmpc_not_get_final(phase_dynamics):
 
     from bioptim.examples.moving_horizon_estimation import multi_cyclic_nmpc as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     n_cycles_simultaneous = 2
     n_cycles_to_advance = 1
@@ -147,7 +148,7 @@ def test_multi_cyclic_nmpc_with_parameters(phase_dynamics):
 
     from bioptim.examples.moving_horizon_estimation import multi_cyclic_nmpc_with_parameters as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     n_cycles_simultaneous = 2
     n_cycles_to_advance = 1

@@ -2,15 +2,14 @@
 Test for file IO
 """
 
-import os
-import pytest
 import platform
 
+from bioptim import OdeSolver, Solver, BiorbdModel, PhaseDynamics, SolutionMerge
 import numpy as np
 import numpy.testing as npt
-from bioptim import OdeSolver, Solver, BiorbdModel, PhaseDynamics, SolutionMerge
+import pytest
 
-from tests.utils import TestUtils
+from ..utils import TestUtils
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE])
@@ -34,7 +33,7 @@ def test_muscle_activations_and_states_tracking(ode_solver, n_threads, phase_dyn
     if n_threads > 1 and phase_dynamics == PhaseDynamics.ONE_PER_NODE:
         return
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     # Define the problem
     model_path = bioptim_folder + "/models/arm26.bioMod"

@@ -1,12 +1,10 @@
-import os
-from casadi import MX, Function
-
 from bioptim import (
     ControlType,
     HolonomicConstraintsFcn,
     QuadratureRule,
     VariationalBiorbdModel,
 )
+from casadi import MX, Function
 
 from tests.utils import TestUtils
 
@@ -16,7 +14,7 @@ def test_variational_model():
         example_variational_integrator_pendulum as ocp_module,
     )
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
     biorbd_model_path = bioptim_folder + "/models/pendulum.bioMod"
     model = VariationalBiorbdModel(biorbd_model_path)
 

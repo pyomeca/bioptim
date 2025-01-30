@@ -1,21 +1,19 @@
 import os
-import pytest
+
+from bioptim import MultiBiorbdModel, BiMappingList, BoundsList
+import biorbd_casadi as biorbd
 import numpy as np
 import numpy.testing as npt
 from casadi import DM
-import biorbd_casadi as biorbd
-from bioptim import (
-    MultiBiorbdModel,
-    BiMappingList,
-    BoundsList,
-)
+import pytest
+
 from ..utils import TestUtils
 
 
 def test_biorbd_model_import():
     from bioptim.examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
     biorbd_model_path = "/models/triple_pendulum.bioMod"
     biorbd_model_path_modified_inertia = "/models/triple_pendulum_modified_inertia.bioMod"
     MultiBiorbdModel((bioptim_folder + biorbd_model_path, bioptim_folder + biorbd_model_path_modified_inertia))
@@ -37,7 +35,7 @@ def test_biorbd_model_import():
 def test_biorbd_model():
     from bioptim.examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
     biorbd_model_path = "/models/triple_pendulum.bioMod"
     biorbd_model_path_modified_inertia = "/models/triple_pendulum_modified_inertia.bioMod"
     models = MultiBiorbdModel(

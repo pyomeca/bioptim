@@ -1,4 +1,3 @@
-import os
 import re
 
 import numpy as np
@@ -22,7 +21,8 @@ from bioptim import (
     PhaseDynamics,
     ExternalForceSetTimeSeries,
 )
-from tests.utils import TestUtils
+
+from ..utils import TestUtils
 
 
 class OptimalControlProgram:
@@ -1289,7 +1289,7 @@ def test_with_contact_error(dynamics_fcn, phase_dynamics):
     from bioptim.examples.getting_started import pendulum as ocp_module
     from bioptim import BoundsList, ObjectiveList, OdeSolver, OptimalControlProgram
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     bio_model = BiorbdModel(bioptim_folder + "/models/pendulum.bioMod")
 

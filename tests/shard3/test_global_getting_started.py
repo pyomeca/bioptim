@@ -2,16 +2,10 @@
 Test for file IO
 """
 
-import os
 import pickle
 import platform
 import re
 import shutil
-
-import numpy as np
-import numpy.testing as npt
-import pytest
-from casadi import sum1, sum2
 
 from bioptim import (
     InterpolationType,
@@ -23,7 +17,12 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
 )
-from tests.utils import TestUtils
+from casadi import sum1, sum2
+import numpy as np
+import numpy.testing as npt
+import pytest
+
+from ..utils import TestUtils
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -57,7 +56,7 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics):
     if ode_solver == OdeSolver.RK8 and not use_sx:
         return
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ode_solver_obj = ode_solver()
 
@@ -252,7 +251,7 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics):
 def test_custom_constraint_track_markers(ode_solver, phase_dynamics):
     from bioptim.examples.getting_started import custom_constraint as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ode_solver_orig = ode_solver
     ode_solver = ode_solver()
@@ -314,7 +313,7 @@ def test_custom_constraint_track_markers(ode_solver, phase_dynamics):
 def test_initial_guesses(ode_solver, interpolation, random_init, phase_dynamics):
     from bioptim.examples.getting_started import custom_initial_guess as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ode_solver = ode_solver()
 
@@ -387,7 +386,7 @@ def test_initial_guesses(ode_solver, interpolation, random_init, phase_dynamics)
 def test_cyclic_objective(ode_solver, phase_dynamics):
     from bioptim.examples.getting_started import example_cyclic_movement as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ode_solver_orig = ode_solver
     ode_solver = ode_solver()
@@ -441,7 +440,7 @@ def test_cyclic_objective(ode_solver, phase_dynamics):
 def test_cyclic_constraint(ode_solver, phase_dynamics):
     from bioptim.examples.getting_started import example_cyclic_movement as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ode_solver_orig = ode_solver
     ode_solver = ode_solver()
@@ -499,7 +498,7 @@ def test_phase_transitions(ode_solver, phase_dynamics):
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.RK8:
         return
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
@@ -565,7 +564,7 @@ def test_parameter_optimization(ode_solver, phase_dynamics):
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver in (OdeSolver.RK8, OdeSolver.COLLOCATION):
         return
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ode_solver_orig = ode_solver
     ode_solver = ode_solver()
@@ -674,7 +673,7 @@ def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver, phase
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.RK8:
         return
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ode_solver_orig = ode_solver
     ode_solver = ode_solver()
@@ -732,7 +731,7 @@ def test_example_external_forces(ode_solver, phase_dynamics, n_threads, use_sx, 
     if n_threads == 2 and phase_dynamics == PhaseDynamics.ONE_PER_NODE:
         return
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ode_solver_orig = ode_solver
     ode_solver = ode_solver()
@@ -846,7 +845,7 @@ def test_example_multiphase(ode_solver_type, phase_dynamics):
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver_type in [OdeSolver.RK8, OdeSolver.COLLOCATION]:
         return
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ode_solver = ode_solver_type()
     ocp = ocp_module.prepare_ocp(
@@ -922,7 +921,7 @@ def test_example_multiphase(ode_solver_type, phase_dynamics):
 def test_contact_forces_inequality_greater_than_constraint(ode_solver, phase_dynamics, expand_dynamics):
     from bioptim.examples.getting_started import example_inequality_constraint as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     min_bound = 50
 
@@ -994,7 +993,7 @@ def test_contact_forces_inequality_greater_than_constraint(ode_solver, phase_dyn
 def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
     from bioptim.examples.getting_started import example_inequality_constraint as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     max_bound = 75
     ocp = ocp_module.prepare_ocp(
@@ -1047,7 +1046,7 @@ def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
 def test_multinode_objective(ode_solver, phase_dynamics):
     from bioptim.examples.getting_started import example_multinode_objective as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ode_solver = ode_solver()
 
@@ -1179,7 +1178,7 @@ def test_multinode_constraints_wrong_nodes(node):
 def test_multinode_constraints_too_much_constraints(ode_solver, too_much_constraints, phase_dynamics):
     from bioptim.examples.getting_started import example_multinode_constraints as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ode_solver_obj = ode_solver
     ode_solver = ode_solver()
@@ -1218,7 +1217,7 @@ def test_multinode_constraints(ode_solver, phase_dynamics):
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.RK8:
         return
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ode_solver_orig = ode_solver
     ode_solver = ode_solver()
@@ -1265,7 +1264,7 @@ def test_multinode_constraints(ode_solver, phase_dynamics):
 def test_multistart():
     from bioptim.examples.getting_started import example_multistart as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
     bio_model_path = [bioptim_folder + "/models/pendulum.bioMod"]
     final_time = [1]
     n_shooting = [5, 10]
@@ -1452,7 +1451,7 @@ def test_multistart():
 def test_example_variable_scaling(phase_dynamics):
     from bioptim.examples.getting_started import example_variable_scaling as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",

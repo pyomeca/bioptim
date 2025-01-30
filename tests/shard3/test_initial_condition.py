@@ -1,8 +1,3 @@
-import os
-import pytest
-
-import numpy as np
-import numpy.testing as npt
 from bioptim import (
     InterpolationType,
     Solution,
@@ -19,6 +14,11 @@ from bioptim import (
     SolutionMerge,
 )
 from bioptim.limits.path_conditions import InitialGuess
+import numpy as np
+import numpy.testing as npt
+import pytest
+
+from ..utils import TestUtils
 
 # TODO: Add negative test for sizes
 
@@ -141,7 +141,7 @@ def test_initial_guess_update(phase_dynamics):
     # Load pendulum
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
@@ -207,7 +207,7 @@ def test_initial_guess_custom():
 def test_simulate_from_initial_multiple_shoot(phase_dynamics):
     from bioptim.examples.getting_started import pendulum as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
     final_time = 2
     n_shooting = 10
 
@@ -255,7 +255,7 @@ def test_simulate_from_initial_single_shoot(phase_dynamics):
     # Load pendulum
     from bioptim.examples.getting_started import pendulum as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
     final_time = 2
     n_shooting = 10
 
@@ -305,7 +305,7 @@ def test_initial_guess_error_messages(phase_dynamics):
     """
     from bioptim.examples.getting_started import pendulum as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
     biorbd_model_path = bioptim_folder + "/models/pendulum.bioMod"
 
     # Add objective functions
