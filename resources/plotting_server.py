@@ -1,6 +1,6 @@
 """
-This file is an example of how to run a bioptim Online plotting server. Apart on Macos, this is usually not the way to run a 
-bioptim server as it is easier to run it as an automatic multiprocess. This is achieved by setting 
+This file is an example of how to run a bioptim Online plotting server. Apart on Macos, this is usually not the way
+to run a bioptim server as it is easier to run it as an automatic multiprocess. This is achieved by setting
 `Solver.IPOPT(online_optim=OnlineOptim.MULTIPROCESS_SERVER)`. 
 If set to OnlineOptim.SERVER, then the plotting server is mandatory.
 
