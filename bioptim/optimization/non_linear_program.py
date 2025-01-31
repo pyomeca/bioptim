@@ -212,6 +212,11 @@ class NonLinearProgram:
         self.algebraic_states.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
         self.integrated_values.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
 
+        self.states.initialize_intermediate_cx(n_shooting=self.ns + 1, n_cx=self.ode_solver.n_required_cx)
+        self.states_dot.initialize_intermediate_cx(n_shooting=self.ns + 1, n_cx=self.ode_solver.n_required_cx)
+        self.controls.initialize_intermediate_cx(n_shooting=self.ns + 1, n_cx=1)
+        self.algebraic_states.initialize_intermediate_cx(n_shooting=self.ns + 1, n_cx=self.ode_solver.n_required_cx)
+
     @property
     def n_states_nodes(self) -> int:
         """

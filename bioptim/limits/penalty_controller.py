@@ -128,6 +128,7 @@ class PenaltyController:
         cx = vertcat(self.time.cx, self.dt.cx)
 
         tp = OptimizationVariableList(self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE)
+        tp._cx_intermediates = [self._nlp.cx([])]
         n_val = cx.shape[0]
         tp.append("t_span", cx=[cx, cx, cx], bimapping=BiMapping(to_second=range(n_val), to_first=range(n_val)))
         return tp["t_span"]
@@ -140,6 +141,7 @@ class PenaltyController:
 
         tp = OptimizationVariableList(self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE)
         n_val = self.ocp.dt_parameter.cx.shape[0]
+        tp._cx_intermediates = [self._nlp.cx([])]
         tp.append(
             "phases_dt",
             cx=[self.ocp.dt_parameter.cx, self.ocp.dt_parameter.cx, self.ocp.dt_parameter.cx],
@@ -155,6 +157,7 @@ class PenaltyController:
         """
 
         tp = OptimizationVariableList(self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE)
+        tp._cx_intermediates = [self._nlp.cx([])]
         n_val = self._nlp.dt.shape[0]
         tp.append(
             "dt",
@@ -170,6 +173,7 @@ class PenaltyController:
         """
 
         tp = OptimizationVariableList(self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE)
+        tp._cx_intermediates = [self._nlp.cx([])]
         n_val = self._nlp.time_cx.shape[0]
         tp.append(
             "time",
@@ -185,6 +189,7 @@ class PenaltyController:
         """
 
         tp = OptimizationVariableList(self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE)
+        tp._cx_intermediates = [self._nlp.cx([])]
         n_val = self._nlp.tf.shape[0]
         tp.append(
             "tf",
