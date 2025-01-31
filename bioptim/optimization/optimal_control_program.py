@@ -1693,6 +1693,7 @@ class OptimalControlProgram:
         numerical_timeseries = []
         for i_phase, nlp in enumerate(self.nlp):
             numerical_timeseries += [OptimizationVariableList(self.cx, dynamics[i_phase].phase_dynamics)]
+            numerical_timeseries[-1]._cx_intermediates = [self.cx([])]
             if dynamics[i_phase].numerical_data_timeseries is not None:
                 for key in dynamics[i_phase].numerical_data_timeseries.keys():
                     variable_shape = dynamics[i_phase].numerical_data_timeseries[key].shape

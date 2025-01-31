@@ -1,7 +1,7 @@
 """
 This example presents how to implement a holonomic constraint in bioptim.
 The simulation is two single pendulum that are forced to be coherent with a holonomic constraint. It is then a double
-pendulum simulation.
+pendulum simulation. But this time, the dynamics are computed with the algebraic states, namely q_v the dependent joints
 """
 
 import numpy as np
@@ -24,7 +24,6 @@ from bioptim import (
     Node,
     CostType,
     OdeSolver,
-    TimeAlignment,
 )
 from custom_dynamics import (
     holonomic_torque_driven_with_qv,
@@ -242,9 +241,6 @@ def main():
     )
     print(sol.real_time_to_optimize)
 
-    # _, qdot, qddot, lambdas = compute_all_states(sol, bio_model)
-
-    stepwise_time = sol.stepwise_time(to_merge=SolutionMerge.NODES, time_alignment=TimeAlignment.STATES)
     stepwise_q_u = sol.stepwise_states(to_merge=SolutionMerge.NODES)["q_u"]
     stepwise_q_v = sol.decision_algebraic_states(to_merge=SolutionMerge.NODES)["q_v"]
     q = ocp.nlp[0].model.state_from_partition(stepwise_q_u, stepwise_q_v).toarray()
@@ -268,15 +264,6 @@ def main():
 
     # --- Show results --- #
     sol.graphs()
-    #
-    # time = sol.decision_time(to_merge=SolutionMerge.NODES)
-    # plt.title("Lagrange multipliers of the holonomic constraint")
-    # plt.plot(time, lambdas[0, :], label="y")
-    # plt.plot(time, lambdas[1, :], label="z")
-    # plt.xlabel("Time (s)")
-    # plt.ylabel("Lagrange multipliers (N)")
-    # plt.legend()
-    # plt.show()
 
 
 if __name__ == "__main__":

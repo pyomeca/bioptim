@@ -4,9 +4,6 @@ The simulation is two single pendulum that are forced to be coherent with a holo
 pendulum simulation.
 """
 
-import platform
-
-import matplotlib.pyplot as plt
 import numpy as np
 from casadi import DM
 
@@ -227,15 +224,6 @@ def main():
         viz.rerun("double_pendulum")
 
     sol.graphs()
-
-    time = sol.decision_time(to_merge=SolutionMerge.NODES)
-    plt.title("Lagrange multipliers of the holonomic constraint")
-    plt.plot(time, lambdas[0, :], label="y")
-    plt.plot(time, lambdas[1, :], label="z")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Lagrange multipliers (N)")
-    plt.legend()
-    plt.show()
 
 
 if __name__ == "__main__":
