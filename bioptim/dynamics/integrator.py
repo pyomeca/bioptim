@@ -749,6 +749,9 @@ class IRK(COLLOCATION):
 
         # Root-finding function, implicitly defines x_collocation_points as a function of x0 and p
         collocation_states = vertcat(*states[1:]) if self.duplicate_starting_point else vertcat(*states[2:])
+        algebraic_states = (
+            vertcat(*algebraic_states[1:]) if self.duplicate_starting_point else vertcat(*algebraic_states[2:])
+        )
         vfcn = Function(
             "vfcn",
             [collocation_states, self.t_span_sym, states[0], controls, params, algebraic_states, numerical_timeseries],
