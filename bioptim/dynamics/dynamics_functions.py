@@ -699,6 +699,7 @@ class DynamicsFunctions:
         with_contact: bool,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
+        with_friction: bool = False,
         with_residual_torque: bool = False,
         fatigue=None,
     ) -> DynamicsEvaluation:
@@ -727,6 +728,8 @@ class DynamicsFunctions:
             If the dynamic with passive torque should be used
         with_ligament: bool
             If the dynamic with ligament should be used
+        with_friction: bool
+            If the dynamic with friction should be used
         fatigue: FatigueDynamicsList
             To define fatigue elements
         with_residual_torque: bool
@@ -781,6 +784,7 @@ class DynamicsFunctions:
         tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
         tau = tau + nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx) if with_passive_torque else tau
         tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
+        tau = tau - nlp.model.friction_coefficients @ qdot if with_friction else tau
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
 

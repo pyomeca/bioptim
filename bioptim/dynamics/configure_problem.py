@@ -709,6 +709,7 @@ class ConfigureProblem:
         with_contact: bool = False,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
+        with_friction: bool = False,
         numerical_data_timeseries: dict[str, np.ndarray] = None,
     ):
         """
@@ -736,6 +737,8 @@ class ConfigureProblem:
             If the dynamic with passive torque should be used
         with_ligament: bool
             If the dynamic with ligament should be used
+        with_friction: bool
+            If the dynamic with joint friction should be used (friction = coefficients * qdot)
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
@@ -764,6 +767,7 @@ class ConfigureProblem:
                 with_residual_torque=with_residual_torque,
                 with_passive_torque=with_passive_torque,
                 with_ligament=with_ligament,
+                with_friction=with_friction,
             )
 
         if with_contact:
