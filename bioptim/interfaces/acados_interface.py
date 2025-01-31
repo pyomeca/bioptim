@@ -163,7 +163,7 @@ class AcadosInterface(SolverInterface):
         x_sym = ocp.nlp[0].states.scaled.cx_start
         u = ocp.nlp[0].controls.cx_start
         u_sym = ocp.nlp[0].controls.scaled.cx_start
-        p = ocp.nlp[0].parameters.cx
+        p = ocp.nlp[0].parameters.scaled.cx
         p_sym = ocp.nlp[0].parameters.scaled.cx
         a = ocp.nlp[0].algebraic_states.cx_start
         a_sym = ocp.nlp[0].algebraic_states.scaled.cx_start
@@ -294,7 +294,7 @@ class AcadosInterface(SolverInterface):
             dt = nlp.dt
             x = nlp.states.cx_start
             u = nlp.controls.cx_start
-            p = nlp.parameters.cx
+            p = nlp.parameters.scaled.cx
             a = nlp.algebraic_states.cx_start
             d = nlp.numerical_timeseries.cx
 

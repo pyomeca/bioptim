@@ -90,11 +90,12 @@ class MultiBiorbdModel:
         raise NotImplementedError("Deep copy is not implemented yet for MultiBiorbdModel class")
 
     @property
-    def path(self) -> (list[str], list[str]):
+    def path(self) -> tuple[list[str], list[str]]:
         return [model.path for model in self.models], [model.path for model in self.extra_models]
 
     def copy(self):
-        return MultiBiorbdModel(tuple(self.path[0]), tuple(self.path[1]))
+        all_paths = self.path
+        return MultiBiorbdModel(tuple(all_paths[0]), tuple(all_paths[1]))
 
     def serialize(self) -> tuple[Callable, dict]:
         return MultiBiorbdModel, dict(bio_model=tuple(self.path[0]), extra_bio_models=tuple(self.path[1]))

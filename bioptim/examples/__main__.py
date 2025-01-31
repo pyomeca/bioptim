@@ -3,13 +3,14 @@
 import keyword
 import os
 import re
-import sys
 import subprocess
+import sys
+
+from collections import OrderedDict
+from functools import lru_cache
 
 import pyqtgraph as pg
-from functools import lru_cache
-from collections import OrderedDict
-from PyQt5 import QtCore, QtGui, QtWidgets
+from pyqtgraph.Qt import QT_LIB, QtCore, QtGui, QtWidgets
 
 try:
     import acados
@@ -137,6 +138,8 @@ examples_ = OrderedDict(
     ]
 )
 
+app = pg.mkQApp()
+
 
 class Ui_Form(object):
     def setupUi(self, Form):
@@ -206,7 +209,6 @@ class Ui_Form(object):
 
 path = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, path)
-app = pg.mkQApp()
 
 
 QRegularExpression = QtCore.QRegularExpression
@@ -740,7 +742,7 @@ def main():
     app = pg.mkQApp()
     loader = ExampleLoader()
     loader.ui.exampleTree.setCurrentIndex(loader.ui.exampleTree.model().index(0, 0))
-    app.exec()
+    pg.exec()
 
 
 if __name__ == "__main__":

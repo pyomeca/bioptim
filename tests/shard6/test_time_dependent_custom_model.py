@@ -1,9 +1,5 @@
-import pytest
-
+import platform
 from typing import Callable
-import numpy as np
-import numpy.testing as npt
-from casadi import DM, MX, SX, vertcat, exp
 
 from bioptim import (
     BoundsList,
@@ -27,6 +23,12 @@ from bioptim import (
     SolutionMerge,
     VariableScaling,
 )
+from casadi import DM, MX, SX, vertcat, exp
+import numpy as np
+import numpy.testing as npt
+import pytest
+
+from ..utils import TestUtils
 
 
 class Model:
@@ -662,6 +664,33 @@ def test_time_dependent(test_index):
         pulse_event={"time_min": 0.01, "time_max": 0.1},
         use_sx=use_sx,
     )
+
+    # Check the values which will be sent to the solver
+    np.random.seed(42)
+    match test_index:
+        case 0:
+            v_len = 120
+            expected = [57.25320994195022, 32172.586744141103, 3.884658443332594e22]
+        case 1:
+            v_len = 120
+            expected = [57.25320994195022, 32172.586744141103, 3.884658443332594e22]
+        case 2:
+            v_len = 175
+            expected = [82.6544264934729, 32385.533507818545, -1.6254104960995158e19]
+        case 3:
+            v_len = 175
+            expected = [82.6544264934729, 32385.533507818545, -1.6254104960995158e19]
+        case _:
+            raise ValueError("Test not implemented")
+
+    TestUtils.compare_ocp_to_solve(
+        ocp,
+        v=np.random.rand(v_len, 1),
+        expected_v_f_g=expected,
+        decimal=6,
+    )
+    if platform.system() == "Windows":
+        return
 
     sol = ocp.solve()
 

@@ -87,7 +87,7 @@ class StochasticBioModel(BioModel):
     def reshape_to_vector(matrix):
         """
         Restore the vector form of the matrix
-        
+
         See Also
         --------
         reshape_to_matrix

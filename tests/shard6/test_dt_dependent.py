@@ -6,13 +6,6 @@ it is supposed to balance the pendulum. It is designed to show how to track mark
 Note that the final node is not tracked.
 """
 
-import os
-
-import numpy as np
-import numpy.testing as npt
-import pytest
-from casadi import MX, SX, vertcat, sin, Function, DM
-
 from bioptim import (
     BiorbdModel,
     BoundsList,
@@ -30,6 +23,12 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
 )
+from casadi import MX, SX, vertcat, sin, Function, DM
+import numpy as np
+import numpy.testing as npt
+import pytest
+
+from ..utils import TestUtils
 
 
 def custom_configure(
@@ -163,7 +162,7 @@ def test_dt_dependent_problem(minimize_time, use_sx):
 
     from bioptim.examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     # --- Solve the program --- #
     ocp = prepare_ocp_state_as_time(
