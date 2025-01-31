@@ -4,17 +4,20 @@ It tests that a model path with another type than string or biorbdmodel return a
 """
 
 import os
+
+import biorbd_casadi as biorbd
+from bioptim import BiorbdModel
 import pytest
 import numpy as np
 import numpy.testing as npt
-import biorbd_casadi as biorbd
-from bioptim import BiorbdModel
+
+from ..utils import TestUtils
 
 
 def test_biorbd_model_import():
     from bioptim.examples.getting_started import pendulum as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
     model_path = "/models/pendulum.bioMod"
     BiorbdModel(bioptim_folder + model_path)
 
@@ -53,7 +56,7 @@ def test_bounds_from_ranges(my_keys):
     x_max_qdot = [[31.41592654, 31.41592654, 31.41592654], [31.41592654, 31.41592654, 31.41592654]]
     x_max_qddot = [[314.15926536, 314.15926536, 314.15926536], [314.15926536, 314.15926536, 314.15926536]]
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
     model_path = "/models/pendulum.bioMod"
     bio_model = BiorbdModel(bioptim_folder + model_path)
 

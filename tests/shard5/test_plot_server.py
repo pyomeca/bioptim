@@ -1,5 +1,3 @@
-import os
-
 from bioptim.gui.online_callback_server import _serialize_xydata, _deserialize_xydata
 from bioptim.gui.plot import PlotOcp
 from bioptim.gui.online_callback_server import _ResponseHeader
@@ -7,12 +5,14 @@ from bioptim.optimization.optimization_vector import OptimizationVectorHelper
 from casadi import DM
 import numpy as np
 
+from ..utils import TestUtils
+
 
 def test_serialize_deserialize():
     # Prepare a set of data to serialize and deserialize
     from bioptim.examples.getting_started import pendulum as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",

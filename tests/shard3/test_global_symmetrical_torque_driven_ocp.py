@@ -2,14 +2,12 @@
 Test for file IO
 """
 
-import os
-
 import pytest
 import numpy as np
 import numpy.testing as npt
 from bioptim import OdeSolver, PhaseDynamics, SolutionMerge
 
-from tests.utils import TestUtils
+from ..utils import TestUtils
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -21,7 +19,7 @@ def test_symmetry_by_mapping(ode_solver, phase_dynamics):
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
         return
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cubeSym.bioMod",
@@ -73,7 +71,7 @@ def test_symmetry_by_constraint(ode_solver, phase_dynamics):
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
         return
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cubeSym.bioMod",

@@ -2,14 +2,12 @@
 Test for file IO
 """
 
-import os
-import pytest
-
+from bioptim import OdeSolver, BiorbdModel, SolutionMerge
 import numpy as np
 import numpy.testing as npt
-from bioptim import OdeSolver, BiorbdModel, SolutionMerge
+import pytest
 
-from tests.utils import TestUtils
+from ..utils import TestUtils
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
@@ -17,7 +15,7 @@ def test_muscle_excitation_with_torque_and_markers_tracking(ode_solver):
     # Load muscle_excitations_tracker
     from bioptim.examples.muscle_driven_ocp import muscle_excitations_tracker as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     # Define the problem
     model_path = bioptim_folder + "/models/arm26.bioMod"
@@ -153,7 +151,7 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
     # Load muscle_excitations_tracker
     from bioptim.examples.muscle_driven_ocp import muscle_excitations_tracker as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     # Define the problem
     model_path = bioptim_folder + "/models/arm26.bioMod"

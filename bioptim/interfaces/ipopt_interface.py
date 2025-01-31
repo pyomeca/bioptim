@@ -10,11 +10,11 @@ from .interface_utils import (
 )
 from .solver_interface import SolverInterface
 from ..interfaces import Solver
-from bioptim.optimization.solution.solution import Solution
-from ..optimization.non_linear_program import NonLinearProgram
 from ..misc.enums import (
     SolverType,
 )
+from ..optimization.non_linear_program import NonLinearProgram
+from ..optimization.solution.solution import Solution
 
 
 class IpoptInterface(SolverInterface):
@@ -27,9 +27,9 @@ class IpoptInterface(SolverInterface):
         Options irrelevant of a specific ocp
     opts: IPOPT
         Options of the current ocp
-    ipopt_nlp: dict
+    nlp: dict
         The declaration of the variables Ipopt-friendly
-    ipopt_limits: dict
+    limits: dict
         The declaration of the bound Ipopt-friendly
     lam_g: np.ndarray
         The lagrange multiplier of the constraints to initialize the solver
@@ -64,8 +64,8 @@ class IpoptInterface(SolverInterface):
         self.opts = Solver.IPOPT()
         self.solver_name = SolverType.IPOPT.value
 
-        self.ipopt_nlp = {}
-        self.ipopt_limits = {}
+        self.nlp = {}
+        self.limits = {}
         self.ocp_solver = None
         self.c_compile = False
 

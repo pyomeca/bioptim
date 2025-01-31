@@ -2,11 +2,6 @@
 Test for file IO
 """
 
-import os
-import pytest
-
-import numpy as np
-import numpy.testing as npt
 from bioptim import (
     BiorbdModel,
     ConstraintList,
@@ -24,8 +19,11 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
 )
+import numpy as np
+import numpy.testing as npt
+import pytest
 
-from tests.utils import TestUtils
+from ..utils import TestUtils
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -34,7 +32,7 @@ def test_pendulum_max_time_mayer_constrained(ode_solver, phase_dynamics):
     # Load pendulum_min_time_Mayer
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ns = 30
     tf = 1
@@ -98,7 +96,7 @@ def test_time_constraint(ode_solver, phase_dynamics):
     # Load time_constraint
     from bioptim.examples.optimal_time_ocp import time_constraint as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     if ode_solver == OdeSolver.IRK:
         ft = 2
@@ -196,7 +194,7 @@ def test_monophase_time_constraint(ode_solver, phase_dynamics):
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.RK8:
         return
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
@@ -261,7 +259,7 @@ def test_multiphase_time_constraint(ode_solver, phase_dynamics):
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
         return
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
@@ -332,7 +330,7 @@ def test_multiphase_time_constraint_with_phase_time_equality(ode_solver, phase_d
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
         return
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
