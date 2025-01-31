@@ -2,15 +2,14 @@
 Test for file IO
 """
 
-import os
-import pytest
 import platform
 
+from bioptim import OdeSolver, Solver, BiorbdModel, PhaseDynamics, SolutionMerge
 import numpy as np
 import numpy.testing as npt
-from bioptim import OdeSolver, Solver, BiorbdModel, PhaseDynamics, SolutionMerge
+import pytest
 
-from tests.utils import TestUtils
+from ..utils import TestUtils
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE])
@@ -20,21 +19,13 @@ def test_muscle_activations_and_states_tracking(ode_solver, n_threads, phase_dyn
     # Load muscle_activations_tracker
     from bioptim.examples.muscle_driven_ocp import muscle_activations_tracker as ocp_module
 
-    if (
-        platform.system() == "Windows"
-        and phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
-        and ode_solver == OdeSolver.RK4
-    ):
-        # This one fails on CI
-        return
-
     # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
-        return
+        pytest.skip("Redundant test")
     if n_threads > 1 and phase_dynamics == PhaseDynamics.ONE_PER_NODE:
-        return
+        pytest.skip("Redundant test")
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     # Define the problem
     model_path = bioptim_folder + "/models/arm26.bioMod"
@@ -64,6 +55,31 @@ def test_muscle_activations_and_states_tracking(ode_solver, n_threads, phase_dyn
         phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver != OdeSolver.IRK,
     )
+
+    # Check the values which will be sent to the solver
+    np.random.seed(42)
+    match ode_solver:
+        case OdeSolver.RK4:
+            v_len = 65
+            expected = [30.176497827705912, 216.82271917709082, 41.92662823234213]
+        case OdeSolver.COLLOCATION:
+            v_len = 145
+            expected = [69.45381468487611, 200.49863362309583, 1010.2302612756722]
+        case OdeSolver.IRK:
+            v_len = 65
+            expected = [30.176497827705912, 216.82271917709082, 63.204797772662936]
+        case _:
+            raise ValueError("Test not implemented")
+
+    TestUtils.compare_ocp_to_solve(
+        ocp,
+        v=np.random.rand(v_len, 1),
+        expected_v_f_g=expected,
+        decimal=6,
+    )
+    if platform.system() == "Windows":
+        return
+
     solver = Solver.IPOPT()
     # solver.set_maximum_iterations(10)
     sol = ocp.solve(solver)

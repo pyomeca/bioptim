@@ -1,10 +1,12 @@
-import os
-import pytest
+import platform
 
+from bioptim import Solver, SocpType, SolutionMerge, PenaltyHelpers, SolutionIntegrator
+from casadi import DM, vertcat
 import numpy as np
 import numpy.testing as npt
-from casadi import DM, vertcat
-from bioptim import Solver, SocpType, SolutionMerge, PenaltyHelpers, SolutionIntegrator
+import pytest
+
+from ..utils import TestUtils
 
 
 @pytest.mark.parametrize("use_sx", [False, True])
@@ -24,7 +26,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     wPqdot_magnitude = DM(np.array([wPqdot_std**2 / dt, wPqdot_std**2 / dt]))
     sensory_noise_magnitude = vertcat(wPq_magnitude, wPqdot_magnitude)
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_socp(
         biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
@@ -425,6 +427,18 @@ def test_obstacle_avoidance_direct_collocation(use_sx: bool):
     # Solver parameters
     solver = Solver.IPOPT()
     solver.set_maximum_iterations(4)
+
+    # Check the values which will be sent to the solver
+    np.random.seed(42)
+    TestUtils.compare_ocp_to_solve(
+        ocp,
+        v=np.ones([1107, 1]),  # Random values here returns nan for g
+        expected_v_f_g=[1107.0, 10.01, -170696.19805582374],
+        decimal=6,
+    )
+    if platform.system() == "Windows":
+        return
+
     sol = ocp.solve(solver)
 
     # Check objective function value

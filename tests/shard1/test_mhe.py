@@ -3,8 +3,7 @@ import os
 import shutil
 from sys import platform
 
-import numpy as np
-import numpy.testing as npt
+from bioptim.misc.enums import SolverType
 from bioptim import (
     BiorbdModel,
     Solver,
@@ -16,9 +15,10 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
 )
+import numpy as np
+import numpy.testing as npt
 
-from tests.utils import TestUtils
-from bioptim.misc.enums import SolverType
+from ..utils import TestUtils
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -34,7 +34,7 @@ def test_mhe(solver, phase_dynamics):
 
     from bioptim.examples.moving_horizon_estimation import mhe as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     bio_model = BiorbdModel(bioptim_folder + "/models/cart_pendulum.bioMod")
     nq = bio_model.nb_q

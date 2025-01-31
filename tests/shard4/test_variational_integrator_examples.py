@@ -2,11 +2,13 @@
 Tests of the examples of the variational integrator.
 """
 
-import numpy as np
-import numpy.testing as npt
 import os
-import pytest
+
+import numpy.testing as npt
 from bioptim import Solver, SolutionMerge
+import pytest
+
+from ..utils import TestUtils
 
 
 @pytest.mark.parametrize("use_sx", [False, True])
@@ -14,7 +16,7 @@ def test_variational_pendulum(use_sx):
     """Test the variational integrator pendulum example"""
     from bioptim.examples.discrete_mechanics_and_optimal_control import example_variational_integrator_pendulum
 
-    bioptim_folder = os.path.dirname(example_variational_integrator_pendulum.__file__)
+    bioptim_folder = TestUtils.module_folder(example_variational_integrator_pendulum)
 
     # --- Prepare the ocp --- #
     ocp = example_variational_integrator_pendulum.prepare_ocp(
@@ -48,7 +50,7 @@ def test_variational_pendulum_with_holonomic_constraints(use_sx):
         example_variational_integrator_with_holonomic_constraints_pendulum,
     )
 
-    bioptim_folder = os.path.dirname(example_variational_integrator_with_holonomic_constraints_pendulum.__file__)
+    bioptim_folder = TestUtils.module_folder(example_variational_integrator_with_holonomic_constraints_pendulum)
 
     # --- Prepare the ocp --- #
     ocp = example_variational_integrator_with_holonomic_constraints_pendulum.prepare_ocp(
