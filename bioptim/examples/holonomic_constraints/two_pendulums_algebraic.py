@@ -200,6 +200,7 @@ def main():
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
+    sol.graphs()
     q, qdot, qddot, lambdas = compute_all_states(sol, bio_model)
 
     viewer = "pyorerun"
@@ -217,8 +218,6 @@ def main():
         viz.add_animated_model(pyorerun.BiorbdModel(model_path), q=q)
 
         viz.rerun("double_pendulum")
-
-    sol.graphs()
 
     time = sol.decision_time(to_merge=SolutionMerge.NODES)
     plt.title("Lagrange multipliers of the holonomic constraint")
