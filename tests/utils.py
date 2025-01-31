@@ -212,6 +212,7 @@ class TestUtils:
     @staticmethod
     def initialize_numerical_timeseries(nlp, dynamics):
         numerical_timeseries = OptimizationVariableList(nlp.cx, dynamics.phase_dynamics)
+        numerical_timeseries._cx_intermediates = [nlp.cx([])]
         if dynamics.numerical_data_timeseries is not None:
             for key in dynamics.numerical_data_timeseries.keys():
                 variable_shape = dynamics.numerical_data_timeseries[key].shape
