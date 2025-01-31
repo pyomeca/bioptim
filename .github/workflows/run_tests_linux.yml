@@ -97,13 +97,6 @@ jobs:
         with:
           pattern: coverage-*
 
-      - name: Show before merging dir content
-        run: | 
-          pwd
-          ls -Al
-          ls coverage-1
-          ls coverage-2
-
       - name: Rename coverage files
         run: |
           for shard in {1,2,3,4,5,6}; do
@@ -112,9 +105,6 @@ jobs:
 
       - name: Merge coverage reports
         run: coverage combine .coverage1 .coverage2 .coverage3 .coverage4 .coverage5 .coverage6
-  
-      - name: Show after merging dir content
-        run: pwd; ls -Al
 
       - name: Generate XML report
         run: |
