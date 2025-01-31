@@ -130,6 +130,8 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     controls_sol = sol_socp.decision_controls(to_merge=SolutionMerge.ALL)
 
     algebraic_states = sol_socp.decision_algebraic_states(to_merge=SolutionMerge.NODES)
+    # TODO #907 @IPUCH: the algebraic states should be retrieve the same way as the states, ask @Eve
+
     k_sol, ref_sol, m_sol, cov_sol = (
         algebraic_states["k"],
         algebraic_states["ref"],
@@ -173,9 +175,14 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         penalty,
         0,
         lambda p_idx, n_idx, sn_idx: algebraic_sol[:, n_idx],
+        # TODO #907 @IPUCH
+        #   Shoudnt we have
+        #   lambda p_idx, n_idx, sn_idx: algebraic_sol[:, sn_idx, n_idx],
     )
     shoulder_pos_initial = 0.349065850398866
     elbow_pos_initial = 2.245867726451909
+    # TODO #907 @IPUCH: the size of algebraic_states doesnt fit the penalty function anymore.
+
     constraint_value = penalty.function[0](
         duration,
         dt,
