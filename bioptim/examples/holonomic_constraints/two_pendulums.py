@@ -25,6 +25,7 @@ from bioptim import (
     OptimalControlProgram,
     Solver,
     SolutionMerge,
+    OdeSolver,
 )
 
 
@@ -48,12 +49,13 @@ def compute_all_states(sol, bio_model: HolonomicBiorbdModel):
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
 
     n = states["q_u"].shape[1]
+    n_tau = controls["tau"].shape[1]
 
     q = np.zeros((bio_model.nb_q, n))
     qdot = np.zeros((bio_model.nb_q, n))
     qddot = np.zeros((bio_model.nb_q, n))
     lambdas = np.zeros((bio_model.nb_dependent_joints, n))
-    tau = np.zeros((bio_model.nb_tau, n))
+    tau = np.zeros((bio_model.nb_tau, n_tau))
 
     for i, independent_joint_index in enumerate(bio_model.independent_joint_index):
         tau[independent_joint_index, :-1] = controls["tau"][i, :]
@@ -182,6 +184,7 @@ def prepare_ocp(
             u_init=u_init,
             objective_functions=objective_functions,
             variable_mappings=variable_bimapping,
+            ode_solver=OdeSolver.COLLOCATION(polynomial_degree=5),
             constraints=constraints,
         ),
         bio_model,
@@ -197,7 +200,12 @@ def main():
     ocp, bio_model = prepare_ocp(biorbd_model_path=model_path)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(
+        Solver.IPOPT(
+            # show_online_optim=platform.system() == "Linux"
+        )
+    )
+    print(sol.real_time_to_optimize)
 
     # --- Show results --- #
     q, qdot, qddot, lambdas = compute_all_states(sol, bio_model)

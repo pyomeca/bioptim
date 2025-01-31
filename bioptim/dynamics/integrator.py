@@ -672,7 +672,7 @@ class COLLOCATION(Integrator):
                     states[j + 1],
                     self.get_u(controls, self._integration_time[j]),
                     params,
-                    algebraic_states[j],
+                    algebraic_states[j + 1],
                     numerical_timeseries,
                 )[:, self.ode_idx]
                 defects.append(xp_j - f_j * self.h)
@@ -684,7 +684,7 @@ class COLLOCATION(Integrator):
                         states[j + 1],
                         self.get_u(controls, self._integration_time[j]),
                         params,
-                        algebraic_states[j],
+                        algebraic_states[j + 1],
                         numerical_timeseries,
                         xp_j / self.h,
                     )
