@@ -216,6 +216,9 @@ class NonLinearProgram:
         self.states_dot.initialize_intermediate_cx(n_shooting=self.ns + 1, n_cx=self.ode_solver.n_required_cx)
         self.controls.initialize_intermediate_cx(n_shooting=self.ns + 1, n_cx=1)
         self.algebraic_states.initialize_intermediate_cx(n_shooting=self.ns + 1, n_cx=self.ode_solver.n_required_cx)
+        self.integrated_values.initialize_intermediate_cx(
+            n_shooting=self.ns + 1, n_cx=1
+        )  # TODO #907 to confirm with Eve
 
     @property
     def n_states_nodes(self) -> int:
