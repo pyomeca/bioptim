@@ -1,5 +1,5 @@
-from casadi import MX, SX, vertcat
 import numpy as np
+from casadi import MX, SX, vertcat
 
 from .fatigue.fatigue_dynamics import FatigueList, MultiFatigueInterface
 from ..gui.plot import CustomPlot
@@ -380,10 +380,11 @@ class NewVariableConfiguration:
             for node_index in range(
                 self.nlp.n_controls_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1
             ):
+                n_cx = 3
                 cx_scaled = (
                     self.ocp.nlp[self.nlp.use_controls_from_phase_idx].controls[node_index][self.name].original_cx
                     if self.copy_controls
-                    else self.define_cx_scaled(n_col=3, n_shooting=0, initial_node=node_index)
+                    else self.define_cx_scaled(n_col=n_cx, n_shooting=0, initial_node=node_index)
                 )
                 cx = (
                     self.ocp.nlp[self.nlp.use_controls_from_phase_idx].controls[node_index][self.name].original_cx
