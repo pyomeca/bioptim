@@ -1,11 +1,11 @@
 import platform
 
-from bioptim import Solver, SocpType, SolutionMerge, PenaltyHelpers, SolutionIntegrator
-from casadi import DM, vertcat
 import numpy as np
 import numpy.testing as npt
 import pytest
+from casadi import DM, vertcat
 
+from bioptim import Solver, SocpType, SolutionMerge, PenaltyHelpers, SolutionIntegrator
 from ..utils import TestUtils
 
 
@@ -439,7 +439,7 @@ def test_obstacle_avoidance_direct_collocation(use_sx: bool):
     np.random.seed(42)
     TestUtils.compare_ocp_to_solve(
         ocp,
-        v=np.ones([1107, 1]),  # Random values here returns nan for g
+        v=np.ones([1107, 1]),  # Random values here returns nan for g  # todo : CHANGE THE SIZE ACCORDING TO A
         expected_v_f_g=[1107.0, 10.01, -170696.19805582374],
         decimal=6,
     )

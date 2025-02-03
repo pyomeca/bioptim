@@ -906,7 +906,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 horzcat(controller.states_scaled.cx, horzcat(*controller.states_scaled.cx_intermediates_list)),
                 controller.controls_scaled.cx,
                 controller.parameters_scaled.cx,
-                controller.algebraic_states_scaled.cx,
+                # controller.algebraic_states_scaled.cx,
+                # todo #907 : manual duplicate of the algebraic states along 7
+                horzcat(controller.algebraic_states.cx, horzcat(*controller.algebraic_states.cx_intermediates_list)),
                 controller.numerical_timeseries.cx,
             )
 
@@ -927,7 +929,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     horzcat(*controller.states_scaled.cx_intermediates_list),
                     controller.controls_scaled.cx_start,
                     controller.parameters_scaled.cx,
-                    controller.algebraic_states_scaled.cx_start,
+                    horzcat(*controller.algebraic_states_scaled.cx_intermediates_list),
+                    # controller.algebraic_states_scaled.cx_start,
                     controller.numerical_timeseries.cx,
                 ],
                 [Fdz.T - Gdz.T @ m_matrix.T],

@@ -623,7 +623,7 @@ def main():
 
     # Solver parameters
     solver = Solver.IPOPT(show_online_optim=False, show_options=dict(show_bounds=True))
-    solver.set_linear_solver("ma57")
+    # solver.set_linear_solver("ma57")
     sol_socp = socp.solve(solver)
 
     time = sol_socp.decision_time(to_merge=SolutionMerge.NODES)
