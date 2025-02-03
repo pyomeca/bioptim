@@ -1,12 +1,11 @@
 import platform
 
-from bioptim import Solver, SolutionMerge, SolutionIntegrator
-from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
-from casadi import DM, vertcat
 import numpy as np
 import numpy.testing as npt
 import pytest
+from casadi import DM, vertcat
 
+from bioptim import Solver, SolutionMerge, SolutionIntegrator
 from ..utils import TestUtils
 
 
@@ -443,7 +442,7 @@ def test_arm_reaching_torque_driven_implicit(with_scaling, use_sx):
 
     TestUtils.compare_ocp_to_solve(
         ocp,
-        v=np.random.rand(457, 1),
+        v=np.random.rand(457, 1),  # change the size accrding to A
         expected_v_f_g=expected,
         decimal=6,
     )

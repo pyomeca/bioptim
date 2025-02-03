@@ -10,7 +10,7 @@ from matplotlib import pyplot as plt
 from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVectorHelper
 from ..dynamics.configure_problem import DynamicsList, Dynamics, ConfigureProblem
-from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
+from ..dynamics.ode_solvers import OdeSolver, OdeSolverBase
 from ..gui.check_conditioning import check_conditioning
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..gui.ipopt_output_plot import SaveIterationsInfo
@@ -144,8 +144,10 @@ class OptimalControlProgram:
         phase_time: int | float | list | tuple,
         x_bounds: BoundsList = None,
         u_bounds: BoundsList = None,
+        a_bounds: BoundsList = None,
         x_init: InitialGuessList | None = None,
         u_init: InitialGuessList | None = None,
+        a_init: InitialGuessList | None = None,
         objective_functions: Objective | ObjectiveList = None,
         constraints: Constraint | ConstraintList = None,
         parameters: ParameterList = None,
@@ -165,6 +167,7 @@ class OptimalControlProgram:
         x_scaling: VariableScalingList = None,
         xdot_scaling: VariableScalingList = None,
         u_scaling: VariableScalingList = None,
+        a_scaling: VariableScalingList = None,
         n_threads: int = 1,
         use_sx: bool = False,
         integrated_value_functions: dict[str, Callable] = None,
@@ -184,16 +187,22 @@ class OptimalControlProgram:
             The initial guesses for the states
         u_init: InitialGuess | InitialGuessList
             The initial guesses for the controls
+        a_init: InitialGuess | InitialGuessList
+            The initial guesses for the algebraic states
         x_bounds: Bounds | BoundsList
             The bounds for the states
         u_bounds: Bounds | BoundsList
             The bounds for the controls
+        a_bounds: Bounds | BoundsList
+            The bounds for the algebraic states
         x_scaling: VariableScalingList
             The scaling for the states at each phase, if only one is sent, then the scaling is copied over the phases
         xdot_scaling: VariableScalingList
             The scaling for the states derivative, if only one is sent, then the scaling is copied over the phases
         u_scaling: VariableScalingList
             The scaling for the controls, if only one is sent, then the scaling is copied over the phases
+        a_scaling: VariableScalingList
+            The scaling for the algebraic states, if only one is sent, then the scaling is copied over the phases
         objective_functions: Objective | ObjectiveList
             All the objective function of the program
         constraints: Constraint | ConstraintList
@@ -232,9 +241,6 @@ class OptimalControlProgram:
         self._check_bioptim_version()
 
         bio_model = self._initialize_model(bio_model)
-
-        # Placed here because of MHE
-        a_init, a_bounds, a_scaling = self._set_internal_algebraic_states()
 
         self._check_and_set_threads(n_threads)
         self._check_and_set_shooting_points(n_shooting)
@@ -1687,6 +1693,7 @@ class OptimalControlProgram:
         numerical_timeseries = []
         for i_phase, nlp in enumerate(self.nlp):
             numerical_timeseries += [OptimizationVariableList(self.cx, dynamics[i_phase].phase_dynamics)]
+            numerical_timeseries[-1]._cx_intermediates = [self.cx([])]
             if dynamics[i_phase].numerical_data_timeseries is not None:
                 for key in dynamics[i_phase].numerical_data_timeseries.keys():
                     variable_shape = dynamics[i_phase].numerical_data_timeseries[key].shape

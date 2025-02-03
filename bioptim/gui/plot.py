@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt, lines
 from matplotlib.ticker import FuncFormatter
 
 from .serializable_class import OcpSerializable
-from ..dynamics.ode_solver import OdeSolver
+from ..dynamics.ode_solvers import OdeSolver
 from ..limits.path_conditions import Bounds
 from ..limits.penalty_helpers import PenaltyHelpers
 from ..misc.enums import PlotType, Shooting, SolutionIntegrator, QuadratureRule, InterpolationType

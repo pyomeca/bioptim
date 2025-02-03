@@ -106,6 +106,11 @@ def generate_data(
     nlp.controls.initialize_from_shooting(n_shooting, MX)
     nlp.algebraic_states.initialize_from_shooting(n_shooting, MX)
 
+    nlp.states.initialize_intermediate_cx(n_shooting=n_shooting, n_cx=1)
+    nlp.states_dot.initialize_intermediate_cx(n_shooting=n_shooting, n_cx=1)
+    nlp.controls.initialize_intermediate_cx(n_shooting=n_shooting, n_cx=1)
+    nlp.algebraic_states.initialize_intermediate_cx(n_shooting=n_shooting, n_cx=1)
+
     for node_index in range(n_shooting):
         nlp.states.append(
             name="q",

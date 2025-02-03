@@ -6,7 +6,7 @@ from casadi import SX, MX, vertcat
 from .optimization_variable import OptimizationVariableContainer
 from ..dynamics.dynamics_evaluation import DynamicsEvaluation
 from ..dynamics.dynamics_functions import DynamicsFunctions
-from ..dynamics.ode_solver import OdeSolver
+from ..dynamics.ode_solvers import OdeSolver
 from ..limits.path_conditions import InitialGuessList, BoundsList
 from ..misc.enums import ControlType, PhaseDynamics
 from ..misc.mapping import NodeMapping
@@ -211,6 +211,14 @@ class NonLinearProgram:
         self.controls.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
         self.algebraic_states.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
         self.integrated_values.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
+
+        self.states.initialize_intermediate_cx(n_shooting=self.ns + 1, n_cx=self.ode_solver.n_required_cx)
+        self.states_dot.initialize_intermediate_cx(n_shooting=self.ns + 1, n_cx=self.ode_solver.n_required_cx)
+        self.controls.initialize_intermediate_cx(n_shooting=self.ns + 1, n_cx=1)
+        self.algebraic_states.initialize_intermediate_cx(n_shooting=self.ns + 1, n_cx=self.ode_solver.n_required_cx)
+        self.integrated_values.initialize_intermediate_cx(
+            n_shooting=self.ns + 1, n_cx=1
+        )  # TODO #907 to confirm with Eve
 
     @property
     def n_states_nodes(self) -> int:
