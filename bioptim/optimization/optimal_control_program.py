@@ -1122,6 +1122,8 @@ class OptimalControlProgram:
                 if not isinstance(a_bounds, BoundsList):
                     raise RuntimeError("a_bounds should be built from a BoundsList")
                 origin_phase = 0 if len(a_bounds) == 1 else i
+                if origin_phase + 1 > len(a_bounds):
+                    continue  # Trying to skip the phases if it doesn't have any algebraic states
                 for key in a_bounds[origin_phase].keys():
                     if key not in self.nlp[i].algebraic_states.keys() + ["None"]:
                         raise ValueError(
@@ -1210,6 +1212,8 @@ class OptimalControlProgram:
                 if not isinstance(a_init, InitialGuessList):
                     raise RuntimeError("a_init should be built from a InitialGuessList")
                 origin_phase = 0 if len(a_init) == 1 else i
+                if origin_phase + 1 > len(a_init):
+                    continue  # Trying to skip the phases if it doesn't have any algebraic states
                 for key in a_init[origin_phase].keys():
                     if key not in self.nlp[i].algebraic_states.keys() + ["None"]:
                         raise ValueError(
