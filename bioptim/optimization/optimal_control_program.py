@@ -1118,7 +1118,8 @@ class OptimalControlProgram:
             if a_bounds is not None:
                 if not isinstance(a_bounds, BoundsList):
                     raise RuntimeError("a_bounds should be built from a BoundsList")
-                for key in a_bounds.keys():
+                origin_phase = 0 if len(a_bounds) == 1 else i
+                for key in a_bounds[origin_phase].keys():
                     if key not in self.nlp[i].algebraic_states.keys() + ["None"]:
                         raise ValueError(
                             f"{key} is not an algebraic variable, please check for typos in the declaration of a_bounds"
