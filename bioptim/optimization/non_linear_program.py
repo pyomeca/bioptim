@@ -253,15 +253,27 @@ class NonLinearProgram:
             nlp_bounds.add(key, bounds[key], phase=0)
 
     def update_bounds_on_plots(self):
-        for key in self.states.keys():
-            if f"{key}_states" in self.plot and key in self.x_bounds.keys():
-                self.plot[f"{key}_states"].bounds = self.x_bounds[key]
-        for key in self.controls.keys():
-            if f"{key}_controls" in self.plot and key in self.u_bounds.keys():
-                self.plot[f"{key}_controls"].bounds = self.u_bounds[key]
-        for key in self.algebraic_states.keys():
-            if f"{key}_algebraic" in self.plot and key in self.a_bounds.keys():
-                self.plot[f"{key}_algebraic"].bounds = self.a_bounds[key]
+        self._update_plot_bounds(self.states.keys(), self.x_bounds, "_states")
+        self._update_plot_bounds(self.controls.keys(), self.u_bounds, "_controls")
+        self._update_plot_bounds(self.algebraic_states.keys(), self.a_bounds, "_algebraic")
+
+    def _update_plot_bounds(self, keys, bounds, suffix):
+        """
+        Helper method to update plot bounds for a given group.
+
+        Parameters
+        ----------
+        keys: list
+            The keys to update
+        bounds: BoundsList
+            The bounds to update
+        suffix: str
+            The suffix to add to the keys
+        """
+        for key in keys:
+            plot_key = f"{key}{suffix}"
+            if plot_key in self.plot and key in bounds.keys():
+                self.plot[plot_key].bounds = bounds[key]
 
     @property
     def n_states_nodes(self) -> int:

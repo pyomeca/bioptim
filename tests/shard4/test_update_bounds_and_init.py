@@ -1,7 +1,10 @@
-import pytest
+import re
+
 import numpy as np
 import numpy.testing as npt
+import pytest
 from casadi import MX
+
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -16,7 +19,6 @@ from bioptim import (
     PhaseDynamics,
     VariableScaling,
 )
-
 from tests.utils import TestUtils
 
 
@@ -95,13 +97,19 @@ def test_double_update_bounds_and_init(phase_dynamics):
     with pytest.raises(RuntimeError, match="u_bounds should be built from a BoundsList"):
         ocp.update_bounds(None, u_init)
     with pytest.raises(
-        ValueError, match="bad_key is not a state variable, please check for typos in the declaration of x_bounds"
+        ValueError,
+        match=re.escape(
+            "Please check for typos in the declaration of x_bounds. Here are declared keys: ['bad_key']. Available keys are: ['q', 'qdot']."
+        ),
     ):
         x_bounds = BoundsList()
         x_bounds.add("bad_key", [1, 2])
         ocp.update_bounds(x_bounds, u_bounds)
     with pytest.raises(
-        ValueError, match="bad_key is not a control variable, please check for typos in the declaration of u_bounds"
+        ValueError,
+        match=re.escape(
+            "Please check for typos in the declaration of u_bounds. Here are declared keys: ['bad_key']. Available keys are: ['tau']."
+        ),
     ):
         x_bounds = BoundsList()
         x_bounds["q"] = -np.ones((nq, 1)), np.ones((nq, 1))
