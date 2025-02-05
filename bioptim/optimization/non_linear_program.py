@@ -212,6 +212,57 @@ class NonLinearProgram:
         self.algebraic_states.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
         self.integrated_values.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
 
+    def update_bounds(self, x_bounds, u_bounds, a_bounds):
+        self._update_bound(
+            bounds=x_bounds,
+            bound_name="x_bounds",
+            allowed_keys=list(self.states.keys()),
+            nlp_bounds=self.x_bounds,
+        )
+        self._update_bound(
+            bounds=u_bounds,
+            bound_name="u_bounds",
+            allowed_keys=list(self.controls.keys()),
+            nlp_bounds=self.u_bounds,
+        )
+        self._update_bound(
+            bounds=a_bounds,
+            bound_name="a_bounds",
+            allowed_keys=list(self.algebraic_states.keys()),
+            nlp_bounds=self.a_bounds,
+        )
+
+    @staticmethod
+    def _update_bound(bounds, bound_name, allowed_keys, nlp_bounds):
+        if bounds is None:
+            return
+
+        if not isinstance(bounds, BoundsList):
+            raise RuntimeError(f"{bound_name} should be built from a BoundsList")
+
+        valid_keys = allowed_keys + ["None"]
+        if not all(key in valid_keys for key in bounds.keys()):
+            raise ValueError(
+                f"Please check for typos in the declaration of {bound_name}. "
+                f"Here are declared keys: {list(bounds.keys())}. "
+                f"Available keys are: {allowed_keys}."
+            )
+
+        # Add each bound to the target bounds collection
+        for key in bounds.keys():
+            nlp_bounds.add(key, bounds[key], phase=0)
+
+    def update_bounds_on_plots(self):
+        for key in self.states.keys():
+            if f"{key}_states" in self.plot and key in self.x_bounds.keys():
+                self.plot[f"{key}_states"].bounds = self.x_bounds[key]
+        for key in self.controls.keys():
+            if f"{key}_controls" in self.plot and key in self.u_bounds.keys():
+                self.plot[f"{key}_controls"].bounds = self.u_bounds[key]
+        for key in self.algebraic_states.keys():
+            if f"{key}_algebraic" in self.plot and key in self.a_bounds.keys():
+                self.plot[f"{key}_algebraic"].bounds = self.a_bounds[key]
+
     @property
     def n_states_nodes(self) -> int:
         """
