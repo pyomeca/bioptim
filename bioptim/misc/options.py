@@ -1,3 +1,4 @@
+from copy import deepcopy
 from typing import Any, Callable
 
 import numpy as np
@@ -339,7 +340,7 @@ class OptionDict(OptionList):
     def phase_duplication(self, n_phases: int):
         if self.nb_phase != 1:
             raise ValueError(f"phase_duplication is only available for n_phases=1. Got {self.nb_phase} instead.")
-        self.options = [self.options[0]] * n_phases
+        self.options = [deepcopy(self.options[0]) for _ in range(n_phases)]
 
 
 class UniquePerPhaseOptionList(OptionList):
