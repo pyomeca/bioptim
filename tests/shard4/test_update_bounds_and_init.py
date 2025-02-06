@@ -115,10 +115,20 @@ def test_double_update_bounds_and_init(phase_dynamics):
         ocp.update_initial_guess(x_bounds, u_bounds)
     with pytest.raises(RuntimeError, match="u_init should be built from a InitialGuessList"):
         ocp.update_initial_guess(None, u_bounds)
+    with pytest.raises(RuntimeError, match="a_init should be built from a InitialGuessList"):
+        ocp.update_initial_guess(None, None, None, x_bounds)
+    with pytest.raises(RuntimeError, match="parameter_init should be built from a InitialGuessList"):
+        ocp.update_initial_guess(None, None, x_bounds)
+    with pytest.raises(RuntimeError, match="u_init should be built from a InitialGuessList"):
+        ocp.update_initial_guess(None, u_bounds)
     with pytest.raises(RuntimeError, match="x_bounds should be built from a BoundsList"):
         ocp.update_bounds(x_init, u_init)
     with pytest.raises(RuntimeError, match="u_bounds should be built from a BoundsList"):
         ocp.update_bounds(None, u_init)
+    with pytest.raises(RuntimeError, match="parameter_bounds should be built from a BoundsList"):
+        ocp.update_bounds(None, None, x_init)
+    with pytest.raises(RuntimeError, match="a_bounds should be built from a BoundsList"):
+        ocp.update_bounds(x_bounds, u_bounds, None, u_init)
     with pytest.raises(
         ValueError,
         match=re.escape(
