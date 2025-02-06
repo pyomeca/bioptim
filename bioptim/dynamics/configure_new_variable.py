@@ -125,8 +125,6 @@ class NewVariableConfiguration:
 
         self._check_for_n_threads_compatibility()
         self._declare_auto_variable_mapping()
-        self._check_phase_mapping_of_variable()
-        self._declare_phase_copy_booleans()
 
         self._declare_initial_guess()
         self._declare_variable_scaling()
