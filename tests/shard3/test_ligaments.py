@@ -66,12 +66,6 @@ def test_torque_driven_with_ligament(with_ligament, cx, phase_dynamics):
     )
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
-    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     np.random.seed(42)
 
@@ -132,12 +126,6 @@ def test_torque_derivative_driven_with_ligament(with_ligament, cx, phase_dynamic
 
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
-    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     np.random.seed(42)
 
@@ -195,12 +183,6 @@ def test_torque_activation_driven_with_ligament(with_ligament, cx, phase_dynamic
     )
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
-    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     np.random.seed(42)
     # Prepare the dynamics
@@ -263,12 +245,6 @@ def test_muscle_driven_with_ligament(with_ligament, cx, phase_dynamics):
     )
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
-    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     np.random.seed(42)
 

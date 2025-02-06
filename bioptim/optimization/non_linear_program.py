@@ -9,7 +9,6 @@ from ..dynamics.dynamics_functions import DynamicsFunctions
 from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import InitialGuessList, BoundsList
 from ..misc.enums import ControlType, PhaseDynamics
-from ..misc.mapping import NodeMapping
 from ..misc.options import OptionList
 from ..models.protocols.biomodel import BioModel
 from ..models.protocols.holonomic_biomodel import HolonomicBioModel
@@ -159,9 +158,6 @@ class NonLinearProgram:
         self.U_scaled = None
         self.u_scaling = None
         self.U = None
-        self.use_states_from_phase_idx = NodeMapping()
-        self.use_controls_from_phase_idx = NodeMapping()
-        self.use_states_dot_from_phase_idx = NodeMapping()
         self.x_bounds = BoundsList()
         self.x_init = InitialGuessList()
         self.X_scaled = None

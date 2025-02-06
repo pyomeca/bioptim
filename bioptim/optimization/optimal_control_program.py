@@ -53,7 +53,7 @@ from ..misc.enums import (
     PenaltyType,
     Node,
 )
-from ..misc.mapping import BiMappingList, Mapping, BiMapping, NodeMappingList
+from ..misc.mapping import BiMappingList, Mapping, BiMapping
 from ..misc.options import OptionDict
 from ..models.biorbd.variational_biorbd_model import VariationalBiorbdModel
 from ..models.protocols.biomodel import BioModel
@@ -157,7 +157,6 @@ class OptimalControlProgram:
         control_type: ControlType | list = ControlType.CONSTANT,
         variable_mappings: BiMappingList = None,
         time_phase_mapping: BiMapping = None,
-        node_mappings: NodeMappingList = None,
         plot_mappings: Mapping = None,
         phase_transitions: PhaseTransitionList = None,
         multinode_constraints: MultinodeConstraintList = None,
@@ -217,8 +216,6 @@ class OptimalControlProgram:
         time_phase_mapping: BiMapping
             The mapping of the time of the phases, so some phase share the same time variable (when optimized, that is
             a constraint or an objective on the time is declared)
-        node_mappings: NodeMappingList
-            The mapping to apply between the variables associated with the nodes
         plot_mappings: Mapping
             The mapping to apply on the plots
         phase_transitions: PhaseTransitionList
@@ -305,7 +302,6 @@ class OptimalControlProgram:
 
         self._set_nlp_is_stochastic()
 
-        self._prepare_node_mapping(node_mappings)
         self._prepare_dynamics()
         self._prepare_bounds_and_init(
             x_bounds, u_bounds, parameter_bounds, a_bounds, x_init, u_init, parameter_init, a_init
@@ -607,20 +603,6 @@ class OptimalControlProgram:
             parameter_init,
         )
 
-    def _prepare_node_mapping(self, node_mappings):
-        # Prepare the node mappings
-        if node_mappings is None:
-            node_mappings = NodeMappingList()
-        (
-            use_states_from_phase_idx,
-            use_states_dot_from_phase_idx,
-            use_controls_from_phase_idx,
-        ) = node_mappings.get_variable_from_phase_idx(self)
-
-        self._check_variable_mapping_consistency_with_node_mapping(
-            use_states_from_phase_idx, use_controls_from_phase_idx
-        )
-
     def _prepare_dynamics(self):
         # Prepare the dynamics
         for i in range(self.n_phases):
@@ -789,45 +771,6 @@ class OptimalControlProgram:
 
         return cls(**data)
 
-    def _check_variable_mapping_consistency_with_node_mapping(
-        self, use_states_from_phase_idx, use_controls_from_phase_idx
-    ):
-        # TODO this feature is broken since the merge with bi_node, fix it
-        if (
-            list(set(use_states_from_phase_idx)) != use_states_from_phase_idx
-            or list(set(use_controls_from_phase_idx)) != use_controls_from_phase_idx
-        ):
-            raise NotImplementedError("Mapping over phases is broken")
-
-        for i in range(self.n_phases):
-            for j in [idx for idx, x in enumerate(use_states_from_phase_idx) if x == i]:
-                for key in self.nlp[i].variable_mappings.keys():
-                    if key in self.nlp[j].variable_mappings.keys():
-                        if (
-                            self.nlp[i].variable_mappings[key].to_first.map_idx
-                            != self.nlp[j].variable_mappings[key].to_first.map_idx
-                            or self.nlp[i].variable_mappings[key].to_second.map_idx
-                            != self.nlp[j].variable_mappings[key].to_second.map_idx
-                        ):
-                            raise RuntimeError(
-                                f"The variable mappings must be the same for the mapped phases."
-                                f"Mapping on {key} is different between phases {i} and {j}."
-                            )
-        for i in range(self.n_phases):
-            for j in [idx for idx, x in enumerate(use_controls_from_phase_idx) if x == i]:
-                for key in self.nlp[i].variable_mappings.keys():
-                    if key in self.nlp[j].variable_mappings.keys():
-                        if (
-                            self.nlp[i].variable_mappings[key].to_first.map_idx
-                            != self.nlp[j].variable_mappings[key].to_first.map_idx
-                            or self.nlp[i].variable_mappings[key].to_second.map_idx
-                            != self.nlp[j].variable_mappings[key].to_second.map_idx
-                        ):
-                            raise RuntimeError(
-                                f"The variable mappings must be the same for the mapped phases."
-                                f"Mapping on {key} is different between phases {i} and {j}."
-                            )
-        return
 
     def _set_kinematic_phase_mapping(self):
         """
