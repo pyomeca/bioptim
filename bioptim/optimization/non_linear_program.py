@@ -238,7 +238,7 @@ class NonLinearProgram:
             return
 
         if not isinstance(bounds, BoundsList):
-            raise RuntimeError(f"{bound_name} should be built from a BoundsList")
+            raise TypeError(f"{bound_name} should be built from a BoundsList.")
 
         valid_keys = allowed_keys + ["None"]
         if not all(key in valid_keys for key in bounds.keys()):
