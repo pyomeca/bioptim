@@ -69,6 +69,19 @@ def test_double_update_bounds_and_init(phase_dynamics):
     x_bounds = BoundsList()
     x_bounds["q"] = -2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1))
     x_bounds["qdot"] = -2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1))
+    assert x_bounds.nb_phase == 1
+
+    x_bounds_test = BoundsList()
+    x_bounds_test["q"] = -2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1))
+    x_bounds_test["qdot"] = -2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1))
+    x_bounds_test.phase_duplication(10)
+    assert x_bounds_test.nb_phase == 10
+    for p in range(9):
+        assert list(x_bounds_test[p].keys()) == list(x_bounds_test[p + 1].keys())
+        for key in x_bounds_test[p].keys():
+            npt.assert_almost_equal(x_bounds_test[p][key].min, x_bounds_test[p + 1][key].min)
+            npt.assert_almost_equal(x_bounds_test[p][key].max, x_bounds_test[p + 1][key].max)
+
     u_bounds = BoundsList()
     u_bounds["tau"] = -4.0 * np.ones((nq, 1)), 4.0 * np.ones((nq, 1))
     ocp.update_bounds(x_bounds=x_bounds)
@@ -82,6 +95,8 @@ def test_double_update_bounds_and_init(phase_dynamics):
     x_init = InitialGuessList()
     x_init["q"] = 0.25 * np.ones((nq, 1))
     x_init["qdot"] = 0.25 * np.ones((nq, 1))
+    assert x_init.nb_phase == 1
+
     u_init = InitialGuessList()
     u_init["tau"] = -0.25 * np.ones((nq, 1))
     ocp.update_initial_guess(x_init, u_init)
