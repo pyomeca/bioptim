@@ -771,7 +771,6 @@ class OptimalControlProgram:
 
         return cls(**data)
 
-
     def _set_kinematic_phase_mapping(self):
         """
         To add phase_mapping for different kinematic number of states in the ocp. It maps the degrees of freedom

@@ -146,7 +146,6 @@ class NewVariableConfiguration:
         if self.combine_state_control_plot and self.combine_name is not None:
             raise ValueError("combine_name and combine_state_control_plot cannot be defined simultaneously")
 
-
     def define_cx_scaled(self, n_col: int, n_shooting: int, initial_node) -> list[MX | SX]:
         """
         This function defines the decision variables, either MX or SX,
