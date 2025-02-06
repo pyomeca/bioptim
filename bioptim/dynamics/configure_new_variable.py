@@ -264,9 +264,9 @@ class NewVariableConfiguration:
                 current_legend = f"{self.name}_{name_el}"
                 for i in range(self.ocp.n_phases):
                     if self.as_states:
-                        current_legend += f"-{self.ocp.nlp[i].phase}"
+                        current_legend += f"-{i}"
                     if self.as_controls:
-                        current_legend += f"-{self.ocp.nlp[i].phase}"
+                        current_legend += f"-{i}"
                 self.legend += [current_legend]
 
     def _declare_cx_and_plot(self):
