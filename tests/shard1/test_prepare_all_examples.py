@@ -302,6 +302,18 @@ def test__getting_started__example_multiphase_different_ode_solvers():
         ode_solver=[OdeSolver.RK1(), OdeSolver.RK4(), OdeSolver.COLLOCATION()],
     )
 
+    with pytest.raises(
+        RuntimeError,
+        match="ode_solver should be built an instance of OdeSolver or a list of OdeSolver",
+    ):
+        ocp_module.prepare_ocp(
+            biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+            long_optim=True,
+            phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
+            expand_dynamics=False,
+            ode_solver=["hello", "world", "there"],
+        )
+
 
 # todo: Add example_multistart.py?
 
