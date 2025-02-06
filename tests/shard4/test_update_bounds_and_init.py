@@ -22,6 +22,25 @@ from bioptim import (
 from tests.utils import TestUtils
 
 
+def test_option_dict_method():
+    nq = 10
+    x_bounds_test = BoundsList()
+    x_bounds_test["q"] = -2.0 * np.ones((nq, 1)), 0.2 * np.ones((nq, 1))
+    x_bounds_test["qdot"] = -4 * np.ones((nq, 1)), 0.4 * np.ones((nq, 1))
+    x_bounds_test.phase_duplication(10)
+    assert x_bounds_test.nb_phase == 10
+    for p in range(9):
+        assert list(x_bounds_test[p].keys()) == list(x_bounds_test[p + 1].keys())
+        for key in x_bounds_test[p].keys():
+            npt.assert_almost_equal(x_bounds_test[p][key].min, x_bounds_test[p + 1][key].min)
+            npt.assert_almost_equal(x_bounds_test[p][key].max, x_bounds_test[p + 1][key].max)
+    with pytest.raises(
+        ValueError,
+        match="phase_duplication is only available for n_phases=1. Got 10 instead.",
+    ):
+        x_bounds_test.phase_duplication(11)
+
+
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_double_update_bounds_and_init(phase_dynamics):
     bioptim_folder = TestUtils.bioptim_folder()
@@ -70,17 +89,6 @@ def test_double_update_bounds_and_init(phase_dynamics):
     x_bounds["q"] = -2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1))
     x_bounds["qdot"] = -2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1))
     assert x_bounds.nb_phase == 1
-
-    x_bounds_test = BoundsList()
-    x_bounds_test["q"] = -2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1))
-    x_bounds_test["qdot"] = -2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1))
-    x_bounds_test.phase_duplication(10)
-    assert x_bounds_test.nb_phase == 10
-    for p in range(9):
-        assert list(x_bounds_test[p].keys()) == list(x_bounds_test[p + 1].keys())
-        for key in x_bounds_test[p].keys():
-            npt.assert_almost_equal(x_bounds_test[p][key].min, x_bounds_test[p + 1][key].min)
-            npt.assert_almost_equal(x_bounds_test[p][key].max, x_bounds_test[p + 1][key].max)
 
     u_bounds = BoundsList()
     u_bounds["tau"] = -4.0 * np.ones((nq, 1)), 4.0 * np.ones((nq, 1))
@@ -145,6 +153,10 @@ def test_double_update_bounds_and_init(phase_dynamics):
         u_init = InitialGuessList()
         u_init.add("bad_key", [1, 2])
         ocp.update_initial_guess(x_init, u_init)
+
+    with pytest.raises(TypeError, match="x_bounds should be built from a BoundsList."):
+        bound = ["nothing serious"]
+        ocp.nlp[0]._update_bound(bound, "x_bounds", ["hello", "world"], [])
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
