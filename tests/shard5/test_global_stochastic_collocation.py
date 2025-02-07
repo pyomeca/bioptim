@@ -1,11 +1,11 @@
 import platform
 
-from bioptim import Solver, SocpType, SolutionMerge, PenaltyHelpers, SolutionIntegrator
-from casadi import DM, vertcat
 import numpy as np
 import numpy.testing as npt
 import pytest
+from casadi import DM, vertcat
 
+from bioptim import Solver, SocpType, SolutionMerge, PenaltyHelpers, SolutionIntegrator
 from ..utils import TestUtils
 
 
@@ -130,6 +130,8 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     controls_sol = sol_socp.decision_controls(to_merge=SolutionMerge.ALL)
 
     algebraic_states = sol_socp.decision_algebraic_states(to_merge=SolutionMerge.NODES)
+    # TODO #907 @IPUCH: the algebraic states should be retrieve the same way as the states, ask @Eve
+
     k_sol, ref_sol, m_sol, cov_sol = (
         algebraic_states["k"],
         algebraic_states["ref"],
@@ -173,9 +175,14 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         penalty,
         0,
         lambda p_idx, n_idx, sn_idx: algebraic_sol[:, n_idx],
+        # TODO #907 @IPUCH
+        #   Shoudnt we have
+        #   lambda p_idx, n_idx, sn_idx: algebraic_sol[:, sn_idx, n_idx],
     )
     shoulder_pos_initial = 0.349065850398866
     elbow_pos_initial = 2.245867726451909
+    # TODO #907 @IPUCH: the size of algebraic_states doesnt fit the penalty function anymore.
+
     constraint_value = penalty.function[0](
         duration,
         dt,
@@ -429,11 +436,13 @@ def test_obstacle_avoidance_direct_collocation(use_sx: bool):
     solver.set_maximum_iterations(4)
 
     # Check the values which will be sent to the solver
+    v_size = 4307
+    # v_size = 1107
     np.random.seed(42)
     TestUtils.compare_ocp_to_solve(
         ocp,
-        v=np.ones([1107, 1]),  # Random values here returns nan for g
-        expected_v_f_g=[1107.0, 10.01, -170696.19805582374],
+        v=np.ones([v_size, 1]),  # Random values here returns nan for g  # todo : CHANGE THE SIZE ACCORDING TO A
+        expected_v_f_g=[v_size, 10.01, -170696.19805582374],
         decimal=6,
     )
     if platform.system() == "Windows":

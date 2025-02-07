@@ -3,7 +3,7 @@ from typing import Any
 from casadi import Function
 import numpy as np
 
-from ..dynamics.ode_solver import OdeSolver
+from ..dynamics.ode_solvers import OdeSolver
 from ..limits.penalty_option import PenaltyOption
 from ..limits.path_conditions import Bounds
 from ..misc.mapping import BiMapping
@@ -354,7 +354,7 @@ class OdeSolverSerializable:
 
     @classmethod
     def from_ode_solver(cls, ode_solver):
-        from ..dynamics.ode_solver import OdeSolver
+        from ..dynamics.ode_solvers import OdeSolver
 
         ode_solver: OdeSolver = ode_solver
 

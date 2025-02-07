@@ -293,10 +293,7 @@ class OptimizationVariableList:
         self._cx_end = vertcat(self._cx_end, cx[-1])
 
         for i, c in enumerate(cx[1:-1]):
-            if i >= len(self._cx_intermediates):
-                self._cx_intermediates.append(c)
-            else:
-                self._cx_intermediates[i] = vertcat(self._cx_intermediates[i], c)
+            self._cx_intermediates[i] = vertcat(self._cx_intermediates[i], c)
 
         self.elements.append(OptimizationVariable(name, cx, index, bimapping, parent_list=self))
 
@@ -503,6 +500,23 @@ class OptimizationVariableContainer:
             self.cx_constructor = cx
             self._scaled.append(OptimizationVariableList(cx, self.phase_dynamics))
             self._unscaled.append(OptimizationVariableList(cx, self.phase_dynamics))
+
+    def initialize_intermediate_cx(self, n_shooting: int, n_cx: int):
+        """
+        Initialize the containers so the dimensions are up to the required intermediate points,
+        especially important in collocations
+
+        Parameters
+        ----------
+        n_shooting: int
+            The number of shooting points
+        n_cx: int
+            The number of intermediate points
+        """
+
+        for node_index in range(n_shooting):
+            self._scaled[node_index]._cx_intermediates = [self.cx_constructor([]) for _ in range(n_cx)]
+            self._unscaled[node_index]._cx_intermediates = [self.cx_constructor([]) for _ in range(n_cx)]
 
     def __getitem__(self, item: int | str):
         if isinstance(item, int):
