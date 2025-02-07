@@ -901,14 +901,16 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.algebraic_states_scaled["m"].cx_start, controller.model.matrix_shape_m
             )
 
+            # Algebraic states are pre-crunshed for each interval meaning the algebraic state cx_start in enough
+            n_rep = controller.integrate_extra_dynamics(0).function.sparsity_in(4).shape[1]
+            duplicated_algebraic_states = horzcat(*[controller.algebraic_states_scaled.cx_start for _ in range(n_rep)])
+
             xf, _, defects = controller.integrate_extra_dynamics(0).function(
                 vertcat(controller.t_span.cx),
                 horzcat(controller.states_scaled.cx, horzcat(*controller.states_scaled.cx_intermediates_list)),
                 controller.controls_scaled.cx,
                 controller.parameters_scaled.cx,
-                # controller.algebraic_states_scaled.cx,
-                # todo #907 : manual duplicate of the algebraic states along 7
-                horzcat(controller.algebraic_states.cx, horzcat(*controller.algebraic_states.cx_intermediates_list)),
+                duplicated_algebraic_states,
                 controller.numerical_timeseries.cx,
             )
 
@@ -929,8 +931,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     horzcat(*controller.states_scaled.cx_intermediates_list),
                     controller.controls_scaled.cx_start,
                     controller.parameters_scaled.cx,
-                    horzcat(*controller.algebraic_states_scaled.cx_intermediates_list),
-                    # controller.algebraic_states_scaled.cx_start,
+                    controller.algebraic_states_scaled.cx_start,  # purposely cx_start because of the pre-crunching
                     controller.numerical_timeseries.cx,
                 ],
                 [Fdz.T - Gdz.T @ m_matrix.T],
