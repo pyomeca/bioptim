@@ -79,9 +79,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         _check_has_no_phase_dynamics_shared_during_the_phase(problem_type, **kwargs)
 
         self.problem_type = problem_type
-        self._a_init = a_init
-        self._a_bounds = a_bounds
-        self._a_scaling = a_scaling
 
         # Parameters
         if parameters is None:
@@ -138,8 +135,10 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             phase_time=phase_time,
             x_bounds=x_bounds,
             u_bounds=u_bounds,
+            a_bounds=a_bounds,
             x_init=x_init,
             u_init=u_init,
+            a_init=a_init,
             objective_functions=objective_functions,
             constraints=constraints,
             parameters=parameters,
@@ -159,6 +158,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             x_scaling=x_scaling,
             xdot_scaling=xdot_scaling,
             u_scaling=u_scaling,
+            a_scaling=a_scaling,
             n_threads=n_threads,
             use_sx=use_sx,
             integrated_value_functions=integrated_value_functions,
@@ -592,20 +592,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             )
         else:
             raise RuntimeError("Wrong choice of problem_type, you must choose one of the SocpType.")
-
-    def _set_internal_algebraic_states(self):
-        """
-        Set the algebraic_states variables to their internal values
-
-        Note
-        ----
-        This method overrides the method in OptimalControlProgram
-        """
-        return (
-            self._a_init,
-            self._a_bounds,
-            self._a_scaling,
-        )  # Nothing to do here as they are already set before calling super().__init__
 
     def _set_nlp_is_stochastic(self):
         """

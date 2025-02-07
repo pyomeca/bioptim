@@ -1788,15 +1788,6 @@ class OptimalControlProgram:
         """
         return OdeSolver.RK4()
 
-    def _set_internal_algebraic_states(self):
-        """
-        Set the algebraic states to their internal values
-        """
-        self._a_init = InitialGuessList()
-        self._a_bounds = BoundsList()
-        self._a_scaling = VariableScalingList()
-        return self._a_init, self._a_bounds, self._a_scaling
-
     def _set_nlp_is_stochastic(self):
         """
         Set the is_stochastic variable to False
