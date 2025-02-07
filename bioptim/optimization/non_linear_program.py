@@ -8,7 +8,7 @@ from ..dynamics.dynamics_evaluation import DynamicsEvaluation
 from ..dynamics.dynamics_functions import DynamicsFunctions
 from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import InitialGuessList, BoundsList
-from ..misc.enums import ControlType, PhaseDynamics
+from ..misc.enums import ControlType, PhaseDynamics, InterpolationType
 from ..misc.mapping import NodeMapping
 from ..misc.options import OptionList
 from ..models.protocols.biomodel import BioModel
@@ -274,6 +274,56 @@ class NonLinearProgram:
             plot_key = f"{key}{suffix}"
             if plot_key in self.plot and key in bounds.keys():
                 self.plot[plot_key].bounds = bounds[key]
+
+    def update_init(self, x_init, u_init, a_init):
+
+        if x_init is not None:
+            not_direct_collocation = not self.ode_solver.is_direct_collocation
+            init_all_point = x_init.type == InterpolationType.ALL_POINTS
+
+            if not_direct_collocation and init_all_point:
+                raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
+                # TODO @ipuch in PR #907, add algebraic states to the error message
+
+        self._update_init(
+            init=x_init,
+            init_name="x_init",
+            allowed_keys=list(self.states.keys()),
+            nlp_init=self.x_init,
+        )
+        self._update_init(
+            init=u_init,
+            init_name="u_init",
+            allowed_keys=list(self.controls.keys()),
+            nlp_init=self.u_init,
+        )
+
+        self._update_init(
+            init=a_init,
+            init_name="a_init",
+            allowed_keys=list(self.algebraic_states.keys()),
+            nlp_init=self.a_init,
+        )
+
+    @staticmethod
+    def _update_init(init, init_name, allowed_keys, nlp_init):
+        if init is None:
+            return
+
+        if not isinstance(init, InitialGuessList):
+            raise TypeError(f"{init_name} should be built from a InitialGuessList.")
+
+        valid_keys = allowed_keys + ["None"]
+        if not all(key in valid_keys for key in init.keys()):
+            raise ValueError(
+                f"Please check for typos in the declaration of {init_name}. "
+                f"Here are declared keys: {list(init.keys())}. "
+                f"Available keys are: {allowed_keys}."
+            )
+
+        # Add each initial guess to the target initial guess collection
+        for key in init.keys():
+            nlp_init.add(key, init[key], phase=0)
 
     @property
     def n_states_nodes(self) -> int:

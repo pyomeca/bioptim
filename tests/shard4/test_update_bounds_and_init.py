@@ -150,13 +150,19 @@ def test_double_update_bounds_and_init(phase_dynamics):
         u_bounds.add("bad_key", [1, 2])
         ocp.update_bounds(x_bounds, u_bounds)
     with pytest.raises(
-        ValueError, match="bad_key is not a state variable, please check for typos in the declaration of x_init"
+        ValueError,
+        match=re.escape(
+            "Please check for typos in the declaration of x_init. Here are declared keys: ['bad_key']. Available keys are: ['q', 'qdot']."
+        ),
     ):
         x_init = InitialGuessList()
         x_init.add("bad_key", [1, 2])
         ocp.update_initial_guess(x_init, u_init)
     with pytest.raises(
-        ValueError, match="bad_key is not a control variable, please check for typos in the declaration of u_init"
+        ValueError,
+        match=re.escape(
+            "Please check for typos in the declaration of u_init. Here are declared keys: ['bad_key']. Available keys are: ['tau']."
+        ),
     ):
         x_init = InitialGuessList()
         x_init["q"] = 0.5 * np.ones((nq, 1))
