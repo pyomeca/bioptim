@@ -517,7 +517,11 @@ class OptimalControlProgram:
             ode_solver = self._set_default_ode_solver()
 
         is_ode_solver = isinstance(ode_solver, OdeSolverBase)
-        is_list_ode_solver = all([isinstance(ode, OdeSolverBase) for ode in ode_solver])
+        is_list_ode_solver = (
+            all([isinstance(ode, OdeSolverBase) for ode in ode_solver])
+            if isinstance(ode_solver, list) or isinstance(ode_solver, tuple)
+            else False
+        )
         if not is_ode_solver and not is_list_ode_solver:
             raise RuntimeError("ode_solver should be built an instance of OdeSolver or a list of OdeSolver")
 
