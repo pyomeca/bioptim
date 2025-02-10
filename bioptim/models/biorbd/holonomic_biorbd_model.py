@@ -1,6 +1,7 @@
 from typing import Callable
 
 import biorbd_casadi as biorbd
+import numpy as np
 from biorbd_casadi import (
     GeneralizedCoordinates,
 )
@@ -19,9 +20,10 @@ class HolonomicBiorbdModel(BiorbdModel):
     def __init__(
         self,
         bio_model: str | biorbd.Model,
+        friction_coefficients: np.ndarray = None,
         parameters: ParameterList = None,
     ):
-        super().__init__(bio_model, parameters=parameters)
+        super().__init__(bio_model, friction_coefficients, parameters)
         self._newton_tol = 1e-10
         self._holonomic_constraints = []
         self._holonomic_constraints_jacobians = []
