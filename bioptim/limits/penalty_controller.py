@@ -2,7 +2,7 @@ from typing import Any, Callable
 
 from casadi import MX, SX, DM, vertcat
 
-from ..dynamics.ode_solver import OdeSolver
+from ..dynamics.ode_solvers import OdeSolver
 from ..misc.enums import ControlType, PhaseDynamics
 from ..misc.mapping import BiMapping
 from ..optimization.non_linear_program import NonLinearProgram

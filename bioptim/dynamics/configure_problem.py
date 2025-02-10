@@ -6,7 +6,7 @@ from casadi import vertcat, Function, DM
 from .configure_new_variable import NewVariableConfiguration
 from .dynamics_functions import DynamicsFunctions
 from .fatigue.fatigue_dynamics import FatigueList
-from .ode_solver import OdeSolver
+from .ode_solvers import OdeSolver
 from ..gui.plot import CustomPlot
 from ..limits.constraints import ImplicitConstraintFcn
 from ..misc.enums import (

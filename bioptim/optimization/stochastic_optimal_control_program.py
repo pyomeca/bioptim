@@ -6,7 +6,7 @@ from casadi import DM_eye, vertcat, Function
 from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVectorHelper
 from ..dynamics.configure_problem import DynamicsList, Dynamics
-from ..dynamics.ode_solver import OdeSolver
+from ..dynamics.ode_solvers import OdeSolver
 from ..limits.constraints import (
     ConstraintFcn,
     ConstraintList,
@@ -23,7 +23,7 @@ from ..limits.path_conditions import InitialGuessList
 from ..limits.penalty_controller import PenaltyController
 from ..limits.phase_transition import PhaseTransitionList, PhaseTransitionFcn
 from ..misc.enums import Node, ControlType, PhaseDynamics, InterpolationType
-from ..misc.mapping import BiMappingList, Mapping, NodeMappingList, BiMapping
+from ..misc.mapping import BiMappingList, Mapping, BiMapping
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
 from ..optimization.optimal_control_program import OptimalControlProgram
 from ..optimization.parameters import ParameterList
@@ -59,7 +59,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         control_type: ControlType | list = ControlType.CONSTANT,
         variable_mappings: BiMappingList = None,
         time_phase_mapping: BiMapping = None,
-        node_mappings: NodeMappingList = None,
         plot_mappings: Mapping = None,
         phase_transitions: PhaseTransitionList = None,
         multinode_constraints: MultinodeConstraintList = None,
@@ -151,7 +150,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             control_type=control_type,
             variable_mappings=variable_mappings,
             time_phase_mapping=time_phase_mapping,
-            node_mappings=node_mappings,
             plot_mappings=plot_mappings,
             phase_transitions=phase_transitions,
             multinode_constraints=multinode_constraints,
