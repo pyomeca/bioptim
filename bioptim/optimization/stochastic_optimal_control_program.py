@@ -6,7 +6,7 @@ from casadi import DM_eye, vertcat, Function
 from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVectorHelper
 from ..dynamics.configure_problem import DynamicsList, Dynamics
-from ..dynamics.ode_solver import OdeSolver
+from ..dynamics.ode_solvers import OdeSolver
 from ..limits.constraints import (
     ConstraintFcn,
     ConstraintList,
