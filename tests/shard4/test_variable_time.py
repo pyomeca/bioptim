@@ -1,7 +1,7 @@
 import numpy as np
 import numpy.testing as npt
-from casadi import MX
 import pytest
+from casadi import MX
 
 from bioptim import (
     BiorbdModel,
@@ -25,7 +25,6 @@ from bioptim import (
     VariableScaling,
 )
 from bioptim.optimization.solution.solution import Solution
-
 from tests.utils import TestUtils
 
 
@@ -82,6 +81,7 @@ def prepare_ocp(phase_time_constraint, use_parameter, phase_dynamics):
     x_bounds.add("qdot", bio_model[1].bounds_from_ranges("qdot"), phase=1)
     x_bounds.add("q", bio_model[2].bounds_from_ranges("q"), phase=2)
     x_bounds.add("qdot", bio_model[2].bounds_from_ranges("qdot"), phase=2)
+    assert x_bounds.nb_phase == n_phases
 
     for bounds in x_bounds:
         bounds["q"][1, [0, -1]] = 0

@@ -208,6 +208,69 @@ class NonLinearProgram:
         self.algebraic_states.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
         self.integrated_values.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
 
+    def update_bounds(self, x_bounds, u_bounds, a_bounds):
+        self._update_bound(
+            bounds=x_bounds,
+            bound_name="x_bounds",
+            allowed_keys=list(self.states.keys()),
+            nlp_bounds=self.x_bounds,
+        )
+        self._update_bound(
+            bounds=u_bounds,
+            bound_name="u_bounds",
+            allowed_keys=list(self.controls.keys()),
+            nlp_bounds=self.u_bounds,
+        )
+        self._update_bound(
+            bounds=a_bounds,
+            bound_name="a_bounds",
+            allowed_keys=list(self.algebraic_states.keys()),
+            nlp_bounds=self.a_bounds,
+        )
+
+    @staticmethod
+    def _update_bound(bounds, bound_name, allowed_keys, nlp_bounds):
+        if bounds is None:
+            return
+
+        if not isinstance(bounds, BoundsList):
+            raise TypeError(f"{bound_name} should be built from a BoundsList.")
+
+        valid_keys = allowed_keys + ["None"]
+        if not all(key in valid_keys for key in bounds.keys()):
+            raise ValueError(
+                f"Please check for typos in the declaration of {bound_name}. "
+                f"Here are declared keys: {list(bounds.keys())}. "
+                f"Available keys are: {allowed_keys}."
+            )
+
+        # Add each bound to the target bounds collection
+        for key in bounds.keys():
+            nlp_bounds.add(key, bounds[key], phase=0)
+
+    def update_bounds_on_plots(self):
+        self._update_plot_bounds(self.states.keys(), self.x_bounds, "_states")
+        self._update_plot_bounds(self.controls.keys(), self.u_bounds, "_controls")
+        self._update_plot_bounds(self.algebraic_states.keys(), self.a_bounds, "_algebraic")
+
+    def _update_plot_bounds(self, keys, bounds, suffix):
+        """
+        Helper method to update plot bounds for a given group.
+
+        Parameters
+        ----------
+        keys: list
+            The keys to update
+        bounds: BoundsList
+            The bounds to update
+        suffix: str
+            The suffix to add to the keys
+        """
+        for key in keys:
+            plot_key = f"{key}{suffix}"
+            if plot_key in self.plot and key in bounds.keys():
+                self.plot[plot_key].bounds = bounds[key]
+
     @property
     def n_states_nodes(self) -> int:
         """

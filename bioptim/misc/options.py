@@ -1,3 +1,4 @@
+from copy import deepcopy
 from typing import Any, Callable
 
 import numpy as np
@@ -262,6 +263,10 @@ class OptionDict(OptionList):
         self.options = [{}]
         self.sub_type = sub_type
 
+    @property
+    def nb_phase(self):
+        return len(self.options)
+
     def add(self, *args, **kwargs):
         raise NotImplementedError("This is an abstract method")
 
@@ -331,6 +336,11 @@ class OptionDict(OptionList):
 
     def keys(self, phase: int = 0):
         return self.options[phase].keys()
+
+    def phase_duplication(self, n_phases: int):
+        if self.nb_phase != 1:
+            raise ValueError(f"phase_duplication is only available for n_phases=1. Got {self.nb_phase} instead.")
+        self.options = [deepcopy(self.options[0]) for _ in range(n_phases)]
 
 
 class UniquePerPhaseOptionList(OptionList):

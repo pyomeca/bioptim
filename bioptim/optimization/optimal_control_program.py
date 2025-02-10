@@ -505,8 +505,15 @@ class OptimalControlProgram:
 
         if ode_solver is None:
             ode_solver = self._set_default_ode_solver()
-        elif not isinstance(ode_solver, OdeSolverBase):
-            raise RuntimeError("ode_solver should be built an instance of OdeSolver")
+
+        is_ode_solver = isinstance(ode_solver, OdeSolverBase)
+        is_list_ode_solver = (
+            all([isinstance(ode, OdeSolverBase) for ode in ode_solver])
+            if isinstance(ode_solver, list) or isinstance(ode_solver, tuple)
+            else False
+        )
+        if not is_ode_solver and not is_list_ode_solver:
+            raise RuntimeError("ode_solver should be built an instance of OdeSolver or a list of OdeSolver")
 
         if not isinstance(use_sx, bool):
             raise RuntimeError("use_sx should be a bool")
@@ -1015,7 +1022,7 @@ class OptimalControlProgram:
         a_bounds: BoundsList = None,
     ):
         """
-        The main user interface to add bounds in the ocp
+        The main user interface to add bounds in the ocp to nlps.
 
         Parameters
         ----------
@@ -1028,60 +1035,47 @@ class OptimalControlProgram:
         a_bounds: BoundsList
             The algebraic_states variable bounds to add
         """
-        for i in range(self.n_phases):
-            if x_bounds is not None:
-                if not isinstance(x_bounds, BoundsList):
-                    raise RuntimeError("x_bounds should be built from a BoundsList")
-                origin_phase = 0 if len(x_bounds) == 1 else i
-                for key in x_bounds[origin_phase].keys():
-                    if key not in self.nlp[i].states.keys() + ["None"]:
-                        raise ValueError(
-                            f"{key} is not a state variable, please check for typos in the declaration of x_bounds"
-                        )
-                    self.nlp[i].x_bounds.add(key, x_bounds[origin_phase][key], phase=0)
+        # Assume when only one phase is defined, the user wants to apply the same bounds to all phases
+        if x_bounds is not None:
+            if not isinstance(x_bounds, BoundsList):
+                raise RuntimeError("x_bounds should be built from a BoundsList")
+            if len(x_bounds) == 1 and self.n_phases > 1:
+                x_bounds.phase_duplication(self.n_phases)
 
-            if u_bounds is not None:
-                if not isinstance(u_bounds, BoundsList):
-                    raise RuntimeError("u_bounds should be built from a BoundsList")
-                for key in u_bounds.keys():
-                    if key not in self.nlp[i].controls.keys() + ["None"]:
-                        raise ValueError(
-                            f"{key} is not a control variable, please check for typos in the declaration of u_bounds"
-                        )
-                    origin_phase = 0 if len(u_bounds) == 1 else i
-                    self.nlp[i].u_bounds.add(key, u_bounds[origin_phase][key], phase=0)
+        if u_bounds is not None:
+            if not isinstance(u_bounds, BoundsList):
+                raise RuntimeError("u_bounds should be built from a BoundsList")
+            if len(u_bounds) == 1 and self.n_phases > 1:
+                u_bounds.phase_duplication(self.n_phases)
 
-            if a_bounds is not None:
-                if not isinstance(a_bounds, BoundsList):
-                    raise RuntimeError("a_bounds should be built from a BoundsList")
-                for key in a_bounds.keys():
-                    if key not in self.nlp[i].algebraic_states.keys() + ["None"]:
-                        raise ValueError(
-                            f"{key} is not an algebraic variable, please check for typos in the declaration of a_bounds"
-                        )
-                    origin_phase = 0 if len(a_bounds) == 1 else i
-                    self.nlp[i].a_bounds.add(key, a_bounds[origin_phase][key], phase=0)
+        if a_bounds is not None:
+            if not isinstance(a_bounds, BoundsList):
+                raise RuntimeError("a_bounds should be built from a BoundsList")
+            if len(a_bounds) == 1 and self.n_phases > 1:
+                a_bounds.phase_duplication(self.n_phases)
+
+        for p, nlp in enumerate(self.nlp):
+            x_bounds_p = x_bounds[p] if x_bounds else None
+            u_bounds_p = u_bounds[p] if u_bounds else None
+            a_bounds_p = a_bounds[p] if a_bounds else None
+            nlp.update_bounds(x_bounds_p, u_bounds_p, a_bounds_p)
 
         if parameter_bounds is not None:
             if not isinstance(parameter_bounds, BoundsList):
                 raise RuntimeError("parameter_bounds should be built from a BoundsList")
+            valid_keys = self.parameters.keys() + ["None"]
+            if not all([key in valid_keys for key in parameter_bounds.keys()]):
+                raise ValueError(
+                    f"Please check for typos in the declaration of parameter_bounds. "
+                    f"Here are declared keys: {list(parameter_bounds.keys())}. "
+                    f"Available keys are: {valid_keys}."
+                )
+
             for key in parameter_bounds.keys():
-                if key not in self.parameters.keys() + ["None"]:
-                    raise ValueError(
-                        f"{key} is not a parameter variable, please check for typos in the declaration of parameter_bounds"
-                    )
                 self.parameter_bounds.add(key, parameter_bounds[key], phase=0)
 
         for nlp in self.nlp:
-            for key in nlp.states.keys():
-                if f"{key}_states" in nlp.plot and key in nlp.x_bounds.keys():
-                    nlp.plot[f"{key}_states"].bounds = nlp.x_bounds[key]
-            for key in nlp.controls.keys():
-                if f"{key}_controls" in nlp.plot and key in nlp.u_bounds.keys():
-                    nlp.plot[f"{key}_controls"].bounds = nlp.u_bounds[key]
-            for key in nlp.algebraic_states.keys():
-                if f"{key}_algebraic" in nlp.plot and key in nlp.a_bounds.keys():
-                    nlp.plot[f"{key}_algebraic"].bounds = nlp.a_bounds[key]
+            nlp.update_bounds_on_plots()
 
     def update_initial_guess(
         self,
@@ -1142,6 +1136,8 @@ class OptimalControlProgram:
                 if not isinstance(a_init, InitialGuessList):
                     raise RuntimeError("a_init should be built from a InitialGuessList")
                 origin_phase = 0 if len(a_init) == 1 else i
+                if origin_phase + 1 > len(a_init):
+                    continue  # Trying to skip the phases if it doesn't have any algebraic states
                 for key in a_init[origin_phase].keys():
                     if key not in self.nlp[i].algebraic_states.keys() + ["None"]:
                         raise ValueError(
