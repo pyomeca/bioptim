@@ -1089,70 +1089,52 @@ class OptimalControlProgram:
 
         Parameters
         ----------
-        x_init: BoundsList
+        x_init: InitialGuessList
             The state initial guess to add
-        u_init: BoundsList
+        u_init: InitialGuessList
             The control initial guess to add
-        parameter_init: BoundsList
+        parameter_init: InitialGuessList
             The parameters initial guess to add
-        a_init: BoundsList
+        a_init: InitialGuessList
             The algebraic_states variable initial guess to add
         """
+        # Assume when only one phase is defined, the user wants to apply the same bounds to all phases
+        if x_init is not None:
+            if not isinstance(x_init, InitialGuessList):
+                raise RuntimeError("x_init should be built from a InitialGuessList")
+            if len(x_init) == 1 and self.n_phases > 1:
+                x_init.phase_duplication(self.n_phases)
 
-        for i in range(self.n_phases):
-            if x_init:
-                if not isinstance(x_init, InitialGuessList):
-                    raise RuntimeError("x_init should be built from a InitialGuessList")
-                origin_phase = 0 if len(x_init) == 1 else i
-                for key in x_init[origin_phase].keys():
-                    if key not in self.nlp[i].states.keys() + ["None"]:
-                        raise ValueError(
-                            f"{key} is not a state variable, please check for typos in the declaration of x_init"
-                        )
-                    if (
-                        not self.nlp[i].ode_solver.is_direct_collocation
-                        and x_init[origin_phase].type == InterpolationType.ALL_POINTS
-                    ):
-                        raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
-                    self.nlp[i].x_init.add(key, x_init[origin_phase][key], phase=0)
+        if u_init is not None:
+            if not isinstance(u_init, InitialGuessList):
+                raise RuntimeError("u_init should be built from a InitialGuessList")
+            if len(u_init) == 1 and self.n_phases > 1:
+                u_init.phase_duplication(self.n_phases)
 
-            if u_init:
-                if not isinstance(u_init, InitialGuessList):
-                    raise RuntimeError("u_init should be built from a InitialGuessList")
-                origin_phase = 0 if len(u_init) == 1 else i
-                for key in u_init.keys():
-                    if key not in self.nlp[i].controls.keys() + ["None"]:
-                        raise ValueError(
-                            f"{key} is not a control variable, please check for typos in the declaration of u_init"
-                        )
-                    if (
-                        not self.nlp[i].ode_solver.is_direct_collocation
-                        and x_init[origin_phase].type == InterpolationType.ALL_POINTS
-                    ):
-                        raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
-                    self.nlp[i].u_init.add(key, u_init[origin_phase][key], phase=0)
+        if a_init is not None:
+            if not isinstance(a_init, InitialGuessList):
+                raise RuntimeError("a_init should be built from a InitialGuessList")
+            if len(a_init) == 1 and self.n_phases > 1:
+                a_init.phase_duplication(self.n_phases)
 
-            if a_init:
-                if not isinstance(a_init, InitialGuessList):
-                    raise RuntimeError("a_init should be built from a InitialGuessList")
-                origin_phase = 0 if len(a_init) == 1 else i
-                if origin_phase + 1 > len(a_init):
-                    continue  # Trying to skip the phases if it doesn't have any algebraic states
-                for key in a_init[origin_phase].keys():
-                    if key not in self.nlp[i].algebraic_states.keys() + ["None"]:
-                        raise ValueError(
-                            f"{key} is not an algebraic variable, please check for typos in the declaration of a_init"
-                        )
-                    self.nlp[i].a_init.add(key, a_init[origin_phase][key], phase=0)
+        for p, nlp in enumerate(self.nlp):
+            x_init_p = x_init[p] if x_init else None
+            u_init_p = u_init[p] if u_init else None
+            a_init_p = a_init[p] if a_init else None
+            nlp.update_init(x_init_p, u_init_p, a_init_p)
 
         if parameter_init is not None:
             if not isinstance(parameter_init, InitialGuessList):
                 raise RuntimeError("parameter_init should be built from a InitialGuessList")
+            valid_keys = self.parameters.keys() + ["None"]
+            if not all([key in valid_keys for key in parameter_init.keys()]):
+                raise ValueError(
+                    f"Please check for typos in the declaration of parameter_init. "
+                    f"Here are declared keys: {list(parameter_init.keys())}. "
+                    f"Available keys are: {valid_keys}."
+                )
+
             for key in parameter_init.keys():
-                if key not in self.parameters.keys() + ["None"]:
-                    raise ValueError(
-                        f"{key} is not a parameter variable, please check for typos in the declaration of parameter_init"
-                    )
                 self.parameter_init.add(key, parameter_init[key], phase=0)
 
     def add_plot(self, fig_name: str, update_function: Callable, phase: int = -1, **parameters: Any):
