@@ -532,6 +532,7 @@ class DynamicsFunctions:
         with_contact: bool,
         with_passive_torque: bool,
         with_ligament: bool,
+        with_friction: bool,
     ) -> DynamicsEvaluation:
         """
         Forward dynamics driven by joint torques derivatives
@@ -558,6 +559,8 @@ class DynamicsFunctions:
             If the dynamic with passive torque should be used
         with_ligament: bool
             If the dynamic with ligament should be used
+        with_friction: bool
+            If the dynamic with friction should be used
 
         Returns
         ----------
@@ -571,6 +574,7 @@ class DynamicsFunctions:
         tau = DynamicsFunctions.get(nlp.states["tau"], states)
         tau = tau + nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx) if with_passive_torque else tau
         tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
+        tau = tau - nlp.model.friction_coefficients @ qdot if with_friction else tau
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         dtau = DynamicsFunctions.get(nlp.controls["taudot"], controls)

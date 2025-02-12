@@ -524,6 +524,7 @@ class ConfigureProblem:
         with_contact=False,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
+        with_friction: bool = False,
         soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
         numerical_data_timeseries: dict[str, np.ndarray] = None,
     ):
@@ -542,6 +543,8 @@ class ConfigureProblem:
             If the dynamic with passive torque should be used
         with_ligament: bool
             If the dynamic with ligament should be used
+        with_friction: bool
+            If the dynamic with joint friction should be used (friction = - coefficient * qdot)
         soft_contacts_dynamics: SoftContactDynamics
             which soft contact dynamic should be used
         numerical_data_timeseries: dict[str, np.ndarray]
@@ -570,6 +573,7 @@ class ConfigureProblem:
                 with_contact=with_contact,
                 with_passive_torque=with_passive_torque,
                 with_ligament=with_ligament,
+                with_friction=with_friction,
             )
 
         if with_contact:
