@@ -1060,6 +1060,7 @@ class ConstraintFcn(FcnEnum):
     TRACK_COM_POSITION = (PenaltyFunctionAbstract.Functions.minimize_com_position,)
     TRACK_COM_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_com_velocity,)
     TRACK_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_contact_forces,)
+    TRACK_GROUND_REACTION_FORCES = (PenaltyFunctionAbstract.Functions.minimize_ground_reaction_forces, )
     TRACK_CONTACT_FORCES_END_OF_INTERVAL = (PenaltyFunctionAbstract.Functions.minimize_contact_forces_end_of_interval,)
     TRACK_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)
     TRACK_LINEAR_MOMENTUM = (PenaltyFunctionAbstract.Functions.minimize_linear_momentum,)

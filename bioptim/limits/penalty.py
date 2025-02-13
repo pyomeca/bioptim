@@ -1,7 +1,8 @@
 import inspect
 from typing import Any
 
-from casadi import horzcat, vertcat, Function, acos, dot, norm_fro, MX_eye, SX_eye, SX, jacobian, trace
+import numpy as np
+from casadi import horzcat, vertcat, Function, MX_eye, SX_eye, SX, jacobian, trace
 from math import inf
 
 from .penalty_controller import PenaltyController
@@ -765,6 +766,55 @@ class PenaltyFunctionAbstract:
                 controller.numerical_timeseries.cx,
             )
             return contact_force
+
+        @staticmethod
+        def minimize_ground_reaction_forces(
+            penalty: PenaltyOption, controller: PenaltyController, contact_index: tuple | list | int | str = None
+        ):
+            """
+            Simulate force plate data from the contact forces computed through the dynamics with contact
+            By default this function is quadratic, meaning that it minimizes towards the target.
+            Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
+            Please note that the contact index of the appropriate foot must be specified.
+
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            controller: PenaltyController
+                The penalty node elements
+            contact_index: tuple | list
+                The index of contact to minimize, must be an int or a list.
+                penalty.cols should not be defined if contact_index is defined
+            """
+
+            if controller.get_nlp.contact_forces_func is None:
+                raise RuntimeError("minimize_contact_forces requires a contact dynamics")
+            if penalty.target.shape[0] != 3:
+                raise RuntimeError("The target for the ground reaction forces must be of size 3 x n_shooting")
+
+            # PenaltyFunctionAbstract.set_axes_rows(penalty, contact_index)
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+            forces_on_contact_points = controller.get_nlp.contact_forces_func(
+                controller.time.cx,
+                controller.states.cx_start,
+                controller.controls.cx_start,
+                controller.parameters.cx,
+                controller.algebraic_states.cx_start,
+                controller.numerical_timeseries.cx,
+            )
+
+            total_force = controller.cx.zeros(3)
+            current_index = 0
+            for contact in controller.model.model.rigidContacts():
+                available_axes = np.array(contact.availableAxesIndices())
+                contact_force_idx = range(current_index, current_index + available_axes.shape[0])
+                for i, contact_to_add in enumerate(contact_force_idx):
+                    if contact_to_add in contact_index:
+                        total_force[available_axes[i]] += forces_on_contact_points[contact_to_add]
+                current_index += available_axes.shape[0]
+
+            return total_force
 
         @staticmethod
         def minimize_contact_forces_end_of_interval(

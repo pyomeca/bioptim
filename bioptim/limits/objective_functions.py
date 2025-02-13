@@ -359,6 +359,7 @@ class ObjectiveFcn:
         )
         SUPERIMPOSE_MARKERS = (PenaltyFunctionAbstract.Functions.superimpose_markers,)
         TRACK_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_contact_forces,)
+        TRACK_GROUND_REACTION_FORCES = (PenaltyFunctionAbstract.Functions.minimize_ground_reaction_forces,)
         TRACK_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)
         TRACK_MARKER_WITH_SEGMENT_AXIS = (PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis,)
         TRACK_MARKERS = (PenaltyFunctionAbstract.Functions.minimize_markers,)
