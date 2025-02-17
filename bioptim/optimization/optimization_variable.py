@@ -534,7 +534,10 @@ class OptimizationVariableContainer:
 
     @property
     def shape(self):
-        return self._unscaled[0].shape
+        if isinstance(self._unscaled, list) and len(self._unscaled) == 0:
+            return 0
+        else:
+            return self._unscaled[0].shape
 
     @property
     def cx(self):
