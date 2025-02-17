@@ -612,6 +612,68 @@ class BiorbdModel:
         )
         return casadi_fun
 
+
+    def ground_reaction_forces_and_positions(self, with_position, associated_marker_index: list = None) -> Function:
+        """
+        TODO: remove associated_marker_names when contact position are available in biorbd
+        """
+        if with_position and associated_marker_index is None:
+            raise ValueError("You need to provide the associated marker names to compute the position of the forces")
+
+        q_biorbd = GeneralizedCoordinates(self.q)
+        qdot_biorbd = GeneralizedVelocity(self.qdot)
+        tau_biorbd = GeneralizedTorque(self.tau)
+        if self.external_force_set is None:
+            contact_forces = self.model.ContactForcesFromForwardDynamicsConstraintsDirect(
+                q_biorbd, qdot_biorbd, tau_biorbd
+            ).to_mx()
+        else:
+            contact_forces = self.model.ContactForcesFromForwardDynamicsConstraintsDirect(
+                q_biorbd, qdot_biorbd, tau_biorbd, self.biorbd_external_forces_set
+            ).to_mx()
+
+        forces_on_each_point = None
+        position_of_each_point = None
+        current_index = 0
+        for i_contact, contact in enumerate(self.model.rigidContacts()):
+            if with_position:
+                if forces_on_each_point is not None:
+                    position_of_each_point = horzcat(forces_on_each_point, self.marker(associated_marker_index[i_contact])(q_biorbd, self.parameters.cx))
+                else:
+                    position_of_each_point = self.marker(associated_marker_index[i_contact])(q_biorbd, self.parameters.cx)
+            available_axes = np.array(contact.availableAxesIndices())
+            contact_force_idx = range(current_index, current_index + available_axes.shape[0])
+            current_force = MX.zeros(3)
+            for i, contact_to_add in enumerate(contact_force_idx):
+                current_force[available_axes[i]] += contact_forces[contact_to_add]
+            current_index += available_axes.shape[0]
+            if forces_on_each_point is not None:
+                forces_on_each_point = horzcat(forces_on_each_point, current_force)
+            else:
+                forces_on_each_point = current_force
+
+        if self.external_force_set is None:
+            casadi_inputs = [self.q, self.qdot, self.tau, self.parameters]
+            casadi_input_names = ["q", "qdot", "tau", "parameters"]
+        else:
+            casadi_inputs = [self.q, self.qdot, self.tau, self.external_forces, self.parameters]
+            casadi_input_names = ["q", "qdot", "tau", "external_forces", "parameters"]
+        if with_position:
+            casadi_outputs = [forces_on_each_point, position_of_each_point]
+            casadi_output_names = ["forces_on_each_point", "position_of_each_point"]
+        else:
+            casadi_outputs = [forces_on_each_point]
+            casadi_output_names = ["forces_on_each_point"]
+
+        casadi_fun = Function(
+            "ground_reaction_forces",
+            casadi_inputs,
+            casadi_outputs,
+            casadi_input_names,
+            casadi_output_names,
+        )
+        return casadi_fun
+
     def qdot_from_impact(self) -> Function:
         q_biorbd = GeneralizedCoordinates(self.q)
         qdot_pre_impact_biorbd = GeneralizedVelocity(self.qdot)

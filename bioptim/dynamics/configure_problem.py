@@ -1138,7 +1138,7 @@ class ConfigureProblem:
                     )
 
     @staticmethod
-    def configure_contact_function(ocp, nlp, dyn_func: Callable, **extra_params):
+    def configure_contact_function(ocp, nlp, contact_func: Callable, **extra_params):
         """
         Configure the contact points
 
@@ -1148,7 +1148,7 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        dyn_func: Callable[time, states, controls, param, algebraic_states, numerical_timeseries]
+        contact_func: Callable[time, states, controls, param, algebraic_states, numerical_timeseries]
             The function to get the values of contact forces from the dynamics
         """
 
@@ -1164,7 +1164,7 @@ class ConfigureProblem:
                 nlp.numerical_timeseries.cx,
             ],
             [
-                dyn_func(
+                contact_func(
                     time_span_sym,
                     nlp.states.scaled.cx,
                     nlp.controls.scaled.cx,
@@ -1805,7 +1805,7 @@ class ConfigureProblem:
     @staticmethod
     def configure_contact_forces(ocp, nlp, as_states: bool, as_controls: bool, n_contacts: int = 1):
         """
-        Configure contact forces as optimization variables (for now only in global reference frame with a known point of application))
+        Configure contact forces as optimization variables (for now only in global reference frame with an unknown point of application))
         # TODO: Match this with ExternalForceSetTimeSeries (options: 'in_global', 'torque', ...)
 
         Parameters
@@ -1824,6 +1824,7 @@ class ConfigureProblem:
         for i in range(n_contacts):
             name_contact_forces.extend([f"Force{i}_X", f"Force{i}_Y", f"Force{i}_Z"])
         ConfigureProblem.configure_new_variable("contact_forces", name_contact_forces, ocp, nlp, as_states, as_controls)
+        ConfigureProblem.configure_new_variable("contact_positions", name_contact_forces, ocp, nlp, as_states, as_controls)
 
     @staticmethod
     def configure_rigid_contact_forces(ocp, nlp, as_states: bool, as_controls: bool):
