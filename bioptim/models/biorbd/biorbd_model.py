@@ -394,7 +394,7 @@ class BiorbdModel:
 
     @property
     def soft_contact_names(self) -> tuple[str, ...]:
-        return self.model.softContactNames()
+        return tuple(s.to_string() for s in self.model.softContactNames())
 
     def soft_contact(self, soft_contact_index, *args):
         return self.model.softContact(soft_contact_index, *args)
