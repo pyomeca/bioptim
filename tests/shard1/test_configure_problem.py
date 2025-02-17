@@ -1,23 +1,18 @@
-import numpy as np
 import numpy.testing as npt
 import pytest
-from casadi import MX, SX, vertcat
+from casadi import MX, SX
 
 from bioptim import (
-    VariableScalingList,
     ConfigureProblem,
-    DynamicsFunctions,
     BiorbdModel,
-    ControlType,
     NonLinearProgram,
-    DynamicsFcn,
-    Dynamics,
-    DynamicsEvaluation,
     ConstraintList,
     ParameterContainer,
     ParameterList,
     PhaseDynamics,
-    ExternalForceSetTimeSeries,
+    VariableScalingList,
+    FatigueList,
+    XiaFatigue,
 )
 
 from ..utils import TestUtils
@@ -36,89 +31,24 @@ class OptimalControlProgram:
         self.n_threads = 1
 
 
-N_SHOOTING = 5
-EXTERNAL_FORCE_ARRAY = np.zeros((9, N_SHOOTING))
-EXTERNAL_FORCE_ARRAY[:, 0] = [
-    0.374540118847362,
-    0.950714306409916,
-    0.731993941811405,
-    0.598658484197037,
-    0.156018640442437,
-    0.155994520336203,
-    0,
-    0,
-    0,
-]
-EXTERNAL_FORCE_ARRAY[:, 1] = [
-    0.058083612168199,
-    0.866176145774935,
-    0.601115011743209,
-    0.708072577796045,
-    0.020584494295802,
-    0.969909852161994,
-    0,
-    0,
-    0,
-]
-EXTERNAL_FORCE_ARRAY[:, 2] = [
-    0.832442640800422,
-    0.212339110678276,
-    0.181824967207101,
-    0.183404509853434,
-    0.304242242959538,
-    0.524756431632238,
-    0,
-    0,
-    0,
-]
-EXTERNAL_FORCE_ARRAY[:, 3] = [
-    0.431945018642116,
-    0.291229140198042,
-    0.611852894722379,
-    0.139493860652042,
-    0.292144648535218,
-    0.366361843293692,
-    0,
-    0,
-    0,
-]
-EXTERNAL_FORCE_ARRAY[:, 4] = [
-    0.456069984217036,
-    0.785175961393014,
-    0.19967378215836,
-    0.514234438413612,
-    0.592414568862042,
-    0.046450412719998,
-    0,
-    0,
-    0,
-]
-
-
-@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("cx", [MX, SX])
-@pytest.mark.parametrize(
-    "with_external_force",
-    [False, True],
-)
-@pytest.mark.parametrize("with_contact", [False, True])
-def test_configure_q(with_contact, with_external_force, cx, phase_dynamics):
+def test_configures(cx):
+
     # Prepare the program
-    nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
-    nlp.ns = N_SHOOTING
+    nlp = NonLinearProgram(phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE, use_sx=(cx == SX))
+    nlp.ns = 30
+    nlp.cx = MX
+    nlp.time_cx = nlp.cx.sym("time", 1, 1)
+    nlp.dt = nlp.cx.sym("dt", 1, 1)
+    nlp.initialize(nlp.cx)
+    nlp.x_scaling = VariableScalingList()
+    nlp.xdot_scaling = VariableScalingList()
+    nlp.u_scaling = VariableScalingList()
+    nlp.a_scaling = VariableScalingList()
     ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
-
-    external_forces = None
-    numerical_time_series = None
-    if with_external_force:
-
-        external_forces = ExternalForceSetTimeSeries(nb_frames=nlp.ns)
-        external_forces.add("Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :])
-        numerical_time_series = {"external_forces": external_forces.to_numerical_time_series()}
 
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod",
-        external_force_set=external_forces,
     )
 
     # Nothing in there
@@ -127,100 +57,128 @@ def test_configure_q(with_contact, with_external_force, cx, phase_dynamics):
     npt.assert_equal(nlp.parameters.shape, 0)
     npt.assert_equal(nlp.algebraic_states.shape, 0)
 
-    # q
+    # Test states
     ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
     npt.assert_equal(nlp.states.shape, 4)
     npt.assert_equal(nlp.states.keys(), ['q'])
 
+    # Test multiple states + states dot
+    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False, as_states_dot=True)
+    npt.assert_equal(nlp.states.shape, 4 + 4)
+    npt.assert_equal(nlp.states.keys(), ['q', 'qdot'])
+    npt.assert_equal(nlp.states_dot.shape, 4)
+    npt.assert_equal(nlp.states_dot.keys(), ['qdot'])
 
+    # Test controls
+    ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
+    npt.assert_equal(nlp.controls.shape, 4)
+    npt.assert_equal(nlp.controls.keys(), ['tau'])
 
-####### TODO: CHARBIE --------------------------------------
+    # Test all other configures
+    ConfigureProblem.configure_qddot(ocp, nlp, as_states=True, as_controls=False, as_states_dot=True)
+    npt.assert_equal(nlp.states.shape, 4 + 4 + 4)
+    npt.assert_equal(nlp.states.keys(), ['q', 'qdot', 'qddot'])
+    npt.assert_equal(nlp.states_dot.shape, 4 + 4)
+    npt.assert_equal(nlp.states_dot.keys(), ['qdot', 'qddot'])
 
-@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
-@pytest.mark.parametrize("with_contact", [False, True])
-def test_custom_dynamics(with_contact, phase_dynamics):
-    def custom_dynamic(
-        time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp, with_contact=False
-    ) -> DynamicsEvaluation:
-        q = DynamicsFunctions.get(nlp.states["q"], states)
-        qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-        tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
+    ConfigureProblem.configure_qdddot(ocp, nlp, as_states=True, as_controls=False)
+    npt.assert_equal(nlp.states.shape, 4 + 4 + 4 + 4)
+    npt.assert_equal(nlp.states.keys(), ['q', 'qdot', 'qddot', 'qdddot'])
 
-        dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
+    ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=4, n_references=8)
+    npt.assert_equal(nlp.algebraic_states.shape, 4*8)
+    npt.assert_equal(nlp.algebraic_states.keys(), ['k'])
 
-        return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
+    ConfigureProblem.configure_stochastic_c(ocp, nlp, n_noised_states=4, n_noise=4)
+    npt.assert_equal(nlp.algebraic_states.shape, 4*8 + 4*4)
+    npt.assert_equal(nlp.algebraic_states.keys(), ['k', 'c'])
 
-    def configure(ocp, nlp, with_contact=None, numerical_data_timeseries=None):
-        ConfigureProblem.configure_q(ocp, nlp, True, False)
-        ConfigureProblem.configure_qdot(ocp, nlp, True, False)
-        ConfigureProblem.configure_tau(ocp, nlp, False, True)
-        ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic, with_contact=with_contact)
+    ConfigureProblem.configure_stochastic_a(ocp, nlp, n_noised_states=4)
+    npt.assert_equal(nlp.algebraic_states.shape, 4*8 + 4*4 + 4*4)
+    npt.assert_equal(nlp.algebraic_states.keys(), ['k', 'c', 'a'])
 
-        if with_contact:
-            ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
+    ConfigureProblem.configure_stochastic_cov_implicit(ocp, nlp, n_noised_states=4)
+    npt.assert_equal(nlp.algebraic_states.shape, 4*8 + 4*4 + 4*4 + 4*4)
+    npt.assert_equal(nlp.algebraic_states.keys(), ['k', 'c', 'a', 'cov'])
+
+    ConfigureProblem.configure_stochastic_cholesky_cov(ocp, nlp, n_noised_states=4)
+    npt.assert_equal(nlp.algebraic_states.shape, 4*8 + 4*4 + 4*4 + 4*4 + 4+3+2+1)
+    npt.assert_equal(nlp.algebraic_states.keys(), ['k', 'c', 'a', 'cov', 'cholesky_cov'])
+
+    ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=4)
+    npt.assert_equal(nlp.algebraic_states.shape, 4*8 + 4*4 + 4*4 + 4*4 + 4+3+2+1 + 4)
+    npt.assert_equal(nlp.algebraic_states.keys(), ['k', 'c', 'a', 'cov', 'cholesky_cov', 'ref'])
+
+    ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=4)
+    npt.assert_equal(nlp.algebraic_states.shape, 4*8 + 4*4 + 4*4 + 4*4 + 4+3+2+1 + 4 + 4*4)
+    npt.assert_equal(nlp.algebraic_states.keys(), ['k', 'c', 'a', 'cov', 'cholesky_cov', 'ref', 'm'])
+
+    ConfigureProblem.configure_residual_tau(ocp, nlp, as_states=False, as_controls=True)
+    npt.assert_equal(nlp.controls.shape, 4 + 4)
+    npt.assert_equal(nlp.controls.keys(), ['tau', 'residual_tau'])
+
+    ConfigureProblem.configure_taudot(ocp, nlp, as_states=False, as_controls=True)
+    npt.assert_equal(nlp.controls.shape, 4 + 4 + 4)
+    npt.assert_equal(nlp.controls.keys(), ['tau', 'residual_tau', 'taudot'])
+
+    ConfigureProblem.configure_contact_forces(ocp, nlp, as_states=False, as_controls=True)
+    npt.assert_equal(nlp.controls.shape, 4 + 4 + 4 + 3)
+    npt.assert_equal(nlp.controls.keys(), ['tau', 'residual_tau', 'taudot',  "contact_forces"])
+
+    ConfigureProblem.configure_rigid_contact_forces(ocp, nlp, as_states=True, as_controls=False)
+    npt.assert_equal(nlp.states.shape, 4 + 4 + 4 + 4 + 3)
+    npt.assert_equal(nlp.states.keys(), ['q', 'qdot', 'qddot', 'qdddot', 'rigid_contact_forces'])
+
+@pytest.mark.parametrize("cx", [MX, SX])
+def test_configure_soft_contacts(cx):
 
     # Prepare the program
-    nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=False)
-    nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
-    )
-    nlp.ns = N_SHOOTING
+    nlp = NonLinearProgram(phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE, use_sx=(cx == SX))
+    nlp.ns = 30
     nlp.cx = MX
     nlp.time_cx = nlp.cx.sym("time", 1, 1)
     nlp.dt = nlp.cx.sym("dt", 1, 1)
     nlp.initialize(nlp.cx)
-    nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
-    nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
     nlp.x_scaling = VariableScalingList()
     nlp.xdot_scaling = VariableScalingList()
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
+    ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
 
-    ocp = OptimalControlProgram(nlp, use_sx=False)
-    nlp.control_type = ControlType.CONSTANT
-    NonLinearProgram.add(
-        ocp,
-        "dynamics_type",
-        Dynamics(
-            configure,
-            dynamic_function=custom_dynamic,
-            with_contact=with_contact,
-            expand_dynamics=True,
-            phase_dynamics=phase_dynamics,
-        ),
-        False,
+    nlp.model = BiorbdModel(
+        TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/soft_contact_sphere.bioMod",
     )
-    phase_index = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
-    nlp.numerical_timeseries = TestUtils.initialize_numerical_timeseries(nlp, dynamics=nlp.dynamics_type)
 
-    np.random.seed(42)
+    ConfigureProblem.configure_soft_contact_forces(ocp, nlp, as_states=True, as_controls=False)
+    npt.assert_equal(nlp.states.shape, 3)
+    npt.assert_equal(nlp.states.keys(), ['soft_contact_forces'])
 
-    # Prepare the dynamics
-    nlp.numerical_timeseries = TestUtils.initialize_numerical_timeseries(nlp, dynamics=nlp.dynamics_type)
-    ConfigureProblem.initialize(ocp, nlp)
 
-    # Test the results
-    states = np.random.rand(nlp.states.shape, nlp.ns)
-    controls = np.random.rand(nlp.controls.shape, nlp.ns)
-    params = np.random.rand(nlp.parameters.shape, nlp.ns)
-    algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
-    numerical_timeseries = []
-    time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states, numerical_timeseries))
+@pytest.mark.parametrize("cx", [MX, SX])
+def test_configure_muscles(cx):
 
-    if with_contact:
-        contact_out = np.array(
-            nlp.contact_forces_func(time, states, controls, params, algebraic_states, numerical_timeseries)
-        )
-        npt.assert_almost_equal(
-            x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, -0.3214905, -0.1912131, 0.6507164, -0.2359716]
-        )
-        npt.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
+    # Prepare the program
+    nlp = NonLinearProgram(phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE, use_sx=(cx == SX))
+    nlp.ns = 30
+    nlp.cx = MX
+    nlp.time_cx = nlp.cx.sym("time", 1, 1)
+    nlp.dt = nlp.cx.sym("dt", 1, 1)
+    nlp.initialize(nlp.cx)
+    nlp.x_scaling = VariableScalingList()
+    nlp.xdot_scaling = VariableScalingList()
+    nlp.u_scaling = VariableScalingList()
+    nlp.a_scaling = VariableScalingList()
+    ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
 
-    else:
-        npt.assert_almost_equal(
-            x_out[:, 0],
-            [0.61185289, 0.78517596, 0.60754485, 0.80839735, -0.30241366, -10.38503791, 1.60445173, 35.80238642],
-        )
+    nlp.model = BiorbdModel(
+        TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26.bioMod",
+    )
+
+    fatigue = FatigueList()
+    fatigue.add(XiaFatigue(LD=10, LR=10, F=0.01, R=0.002), state_only=False)
+
+    ConfigureProblem.configure_muscles(ocp, nlp, as_states=True, as_controls=True, fatigue=fatigue)
+    npt.assert_equal(nlp.states.shape, 24)
+    npt.assert_equal(nlp.states.keys(), ['muscles', 'muscles_ma', 'muscles_mr', 'muscles_mf'])
+    npt.assert_equal(nlp.controls.shape, 6)
+    npt.assert_equal(nlp.controls.keys(), ['muscles'])
