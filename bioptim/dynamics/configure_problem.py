@@ -1822,12 +1822,8 @@ class ConfigureProblem:
 
         name_contact_forces = []
         for i in range(n_contacts):
-            name_contact_forces.extend(
-                [f"Force{i}_X", f"Force{i}_Y", f"Force{i}_Z"]
-            )
-        ConfigureProblem.configure_new_variable(
-            "contact_forces", name_contact_forces, ocp, nlp, as_states, as_controls
-        )
+            name_contact_forces.extend([f"Force{i}_X", f"Force{i}_Y", f"Force{i}_Z"])
+        ConfigureProblem.configure_new_variable("contact_forces", name_contact_forces, ocp, nlp, as_states, as_controls)
 
     @staticmethod
     def configure_rigid_contact_forces(ocp, nlp, as_states: bool, as_controls: bool):
