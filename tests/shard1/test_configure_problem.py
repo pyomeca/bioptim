@@ -122,8 +122,8 @@ def test_configures(cx):
     npt.assert_equal(nlp.controls.keys(), ["tau", "residual_tau", "taudot"])
 
     ConfigureProblem.configure_contact_forces(ocp, nlp, as_states=False, as_controls=True)
-    npt.assert_equal(nlp.controls.shape, 4 + 4 + 4 + 3)
-    npt.assert_equal(nlp.controls.keys(), ["tau", "residual_tau", "taudot", "contact_forces"])
+    npt.assert_equal(nlp.controls.shape, 4 + 4 + 4 + 3*2)
+    npt.assert_equal(nlp.controls.keys(), ["tau", "residual_tau", "taudot", "contact_forces", "contact_positions"])
 
     ConfigureProblem.configure_rigid_contact_forces(ocp, nlp, as_states=True, as_controls=False)
     npt.assert_equal(nlp.states.shape, 4 + 4 + 4 + 4 + 3)
