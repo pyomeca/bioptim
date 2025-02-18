@@ -637,10 +637,11 @@ class BiorbdModel:
         current_index = 0
         for i_contact, contact in enumerate(self.model.rigidContacts()):
             if with_position:
+                marker_index = self.marker_index(associated_marker_index[i_contact])
                 if forces_on_each_point is not None:
-                    position_of_each_point = horzcat(forces_on_each_point, self.marker(associated_marker_index[i_contact])(q_biorbd, self.parameters.cx))
+                    position_of_each_point = horzcat(forces_on_each_point, self.marker(index=marker_index)(self.q, self.parameters))
                 else:
-                    position_of_each_point = self.marker(associated_marker_index[i_contact])(q_biorbd, self.parameters.cx)
+                    position_of_each_point = self.marker(index=marker_index)(self.q, self.parameters)
             available_axes = np.array(contact.availableAxesIndices())
             contact_force_idx = range(current_index, current_index + available_axes.shape[0])
             current_force = MX.zeros(3)

@@ -1,7 +1,7 @@
 import inspect
 from typing import Any
 
-from casadi import horzcat, vertcat, Function, MX_eye, SX_eye, SX, jacobian, trace
+from casadi import horzcat, vertcat, Function, MX_eye, SX_eye, SX, jacobian, trace, if_else
 from math import inf
 
 from .penalty_controller import PenaltyController
@@ -832,15 +832,13 @@ class PenaltyFunctionAbstract:
                 penalty.cols should not be defined if contact_index is defined
             """
 
-            if controller.get_nlp.contact_forces_func is None:
-                raise RuntimeError("minimize_contact_forces requires a contact dynamics")
             if penalty.target is not None and penalty.target.shape[0] != 3:
                 raise RuntimeError("The target for the center of pressure must be of size 3 x n_shooting")
 
             # PenaltyFunctionAbstract.set_axes_rows(penalty, contact_index)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            if controller.model.external_forces_func is None:
+            if controller.external_forces.shape[0] == 0:
                 forces_on_each_point, position_of_each_point = controller.model.ground_reaction_forces_and_positions(with_position=True, associated_marker_index=associated_marker_index)(controller.q,
                                                                         controller.qdot,
                                                                         controller.tau,
@@ -852,11 +850,14 @@ class PenaltyFunctionAbstract:
 
             total_force = controller.cx.zeros(3, 1)
             val = controller.cx.zeros(3, 1)
-            for i_contact, contact in enumerate(forces_on_each_point):
+            for i_contact in range(forces_on_each_point.shape[1]):
                 if i_contact in contact_index:
-                    val += contact * position_of_each_point[i_contact]
-                    total_force += contact
-            center_of_pressure = val / total_force
+                    val += forces_on_each_point[:, i_contact] * position_of_each_point[i_contact]
+                    total_force += forces_on_each_point[:, i_contact]
+
+            center_of_pressure = controller.cx.zeros(3, 1)
+            for i_component in range(3):
+                center_of_pressure[i_component] = if_else(total_force[i_component] < 1e-6, 0, val[i_component] / total_force[i_component])
 
             return center_of_pressure
 

@@ -1070,6 +1070,75 @@ def test_penalty_minimize_contact_forces_end_of_interval(penalty_origin, phase_d
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+@pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Mayer, ObjectiveFcn.Lagrange, ConstraintFcn])
+def test_penalty_minimize_ground_reaction_forces(penalty_origin, phase_dynamics):
+    ocp = prepare_test_ocp(with_contact=True, phase_dynamics=phase_dynamics)
+    t = [0]
+    phases_dt = [0.05]
+    x = [DM.ones((8, 1)) * 0.1]
+    u = [DM.ones((4, 1)) * 0.1]
+    p = []
+    a = []
+    d = []
+
+    if penalty_origin == ObjectiveFcn.Mayer:
+        penalty_type = ObjectiveFcn.Mayer.TRACK_GROUND_REACTION_FORCES
+        penalty_object = Objective
+    elif penalty_origin == ObjectiveFcn.Lagrange:
+        penalty_type = ObjectiveFcn.Lagrange.TRACK_GROUND_REACTION_FORCES
+        penalty_object = Objective
+    else:
+        penalty_type = ConstraintFcn.TRACK_CONTACT_FORCES_END_OF_INTERVAL
+        penalty_object = Constraint
+
+    penalty = penalty_object(
+        penalty_type,
+        contact_index=[0, 1],
+    )
+    res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
+
+    if penalty_object == Constraint:
+        npt.assert_almost_equal(res.T, [[-10.5199, 126.871, 5.09003]], decimal=2)
+    else:
+        npt.assert_almost_equal(res.T, [[0, -9.66801, 132.327]], decimal=2)
+
+
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+@pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Mayer, ObjectiveFcn.Lagrange, ConstraintFcn])
+def test_penalty_minimize_center_of_pressure(penalty_origin, phase_dynamics):
+    ocp = prepare_test_ocp(with_contact=True, phase_dynamics=phase_dynamics)
+    t = [0]
+    phases_dt = [0.05]
+    x = [DM.ones((8, 1)) * 0.1]
+    u = [DM.ones((4, 1)) * 0.1]
+    p = []
+    a = []
+    d = []
+
+    if penalty_origin == ObjectiveFcn.Mayer:
+        penalty_type = ObjectiveFcn.Mayer.TRACK_CENTER_OF_PRESSURE
+        penalty_object = Objective
+    elif penalty_origin == ObjectiveFcn.Lagrange:
+        penalty_type = ObjectiveFcn.Lagrange.TRACK_CENTER_OF_PRESSURE
+        penalty_object = Objective
+    else:
+        penalty_type = ConstraintFcn.TRACK_CENTER_OF_PRESSURE
+        penalty_object = Constraint
+
+    penalty = penalty_object(
+        penalty_type,
+        contact_index=[0, 1],
+        associated_marker_index=["Seg1_contact_marker1", "Seg1_contact_marker2"],
+    )
+    res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
+
+    if penalty_object == Constraint:
+        npt.assert_almost_equal(res.T, [[0, 0, -0.371928]])
+    else:
+        npt.assert_almost_equal(res.T, [[0, 0, -0.371928]])
+
+
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("value", [2])
 @pytest.mark.parametrize("threshold", [None, 15, -15])
 def test_tau_max_from_actuators(value, threshold, phase_dynamics):
