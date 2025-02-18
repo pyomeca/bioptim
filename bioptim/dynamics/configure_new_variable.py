@@ -279,7 +279,7 @@ class NewVariableConfiguration:
                         lambda t0, phases_dt, node_idx, x, u, p, a, d: (
                             x[self.nlp.states.key_index(self.name), :]
                             if x.any()
-                            else np.ndarray((cx[0][0].shape[0], 1)) * np.nan
+                            else np.ndarray((cx[0].shape[0], 1)) * np.nan
                         ),
                         plot_type=PlotType.INTEGRATED,
                         axes_idx=self.axes_idx,
@@ -307,7 +307,7 @@ class NewVariableConfiguration:
                         lambda t0, phases_dt, node_idx, x, u, p, a, d: (
                             u[self.nlp.controls.key_index(self.name), :]
                             if u.any()
-                            else np.ndarray((cx[0][0].shape[0], 1)) * np.nan
+                            else np.ndarray((cx[0].shape[0], 1)) * np.nan
                         ),
                         plot_type=plot_type,
                         axes_idx=self.axes_idx,
@@ -355,7 +355,7 @@ class NewVariableConfiguration:
                         lambda t0, phases_dt, node_idx, x, u, p, a, d: (
                             a[self.nlp.algebraic_states.key_index(self.name), :]
                             if a.any()
-                            else np.ndarray((cx[0][0].shape[0], 1)) * np.nan
+                            else np.ndarray((cx[0].shape[0], 1)) * np.nan
                         ),
                         plot_type=PlotType.STEP,
                         axes_idx=self.axes_idx,
