@@ -165,6 +165,9 @@ class NewVariableConfiguration:
         _cx: list[MX |SX]
             The scaled decision variables
         """
+        if initial_node != 0:
+            raise RuntimeError("Charbie -> This cannot be removed")
+        
         _cx = [self.nlp.cx() for _ in range(n_shooting + 1)]
         for node_index in range(n_shooting + 1):
             _cx[node_index] = [self.nlp.cx() for _ in range(n_col)]
