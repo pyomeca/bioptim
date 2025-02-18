@@ -146,7 +146,7 @@ class NewVariableConfiguration:
         if self.combine_state_control_plot and self.combine_name is not None:
             raise ValueError("combine_name and combine_state_control_plot cannot be defined simultaneously")
 
-    def define_cx_scaled(self, n_col: int, n_shooting: int, initial_node) -> list[MX | SX]:
+    def define_cx_scaled(self, n_col: int, node_index: int) -> list[MX | SX]:
         """
         This function defines the decision variables, either MX or SX,
         scaled to the physical world, they mean something according to the physical model considered.
@@ -155,31 +155,25 @@ class NewVariableConfiguration:
         ---------
         n_col: int
             The number of columns per shooting interval, useful espacially for direct collocation
-        n_shooting: int
-            The number of node shooting
-        initial_node: todo (int or str)
-            todo: complete
-
+        node_index: int
+            The index of the node
         Returns
         --------
         _cx: list[MX |SX]
             The scaled decision variables
         """
-        _cx = [self.nlp.cx() for _ in range(n_shooting + 1)]
-        for node_index in range(n_shooting + 1):
-            _cx[node_index] = [self.nlp.cx() for _ in range(n_col)]
+        _cx = [self.nlp.cx() for _ in range(n_col)]
         for idx in self.nlp.variable_mappings[self.name].to_first.map_idx:
-            for node_index in range(n_shooting + 1):
-                for j in range(n_col):
-                    sign = "-" if np.sign(idx) < 0 else ""
-                    _cx[node_index][j] = vertcat(
-                        _cx[node_index][j],
-                        self.nlp.cx.sym(
-                            f"{sign}{self.name}_{self.name_elements[abs(idx)]}_phase{self.nlp.phase_idx}_node{node_index + initial_node}.{j}",
-                            1,
-                            1,
-                        ),
-                    )
+            for j in range(n_col):
+                sign = "-" if np.sign(idx) < 0 else ""
+                _cx[j] = vertcat(
+                    _cx[j],
+                    self.nlp.cx.sym(
+                        f"{sign}{self.name}_{self.name_elements[abs(idx)]}_phase{self.nlp.phase_idx}_node{node_index}.{j}",
+                        1,
+                        1,
+                    ),
+                )
         return _cx
 
     def define_cx_unscaled(self, _cx_scaled: list[MX | SX], scaling: np.ndarray) -> list[MX | SX]:
@@ -203,12 +197,8 @@ class NewVariableConfiguration:
             The symbolic unscaled decision variables.
         """
         _cx = [self.nlp.cx() for _ in range(len(_cx_scaled))]
-        for node_index in range(len(_cx_scaled)):
-            _cx[node_index] = [self.nlp.cx() for _ in range(len(_cx_scaled[0]))]
-
-        for node_index in range(len(_cx_scaled)):
-            for j in range(len(_cx_scaled[0])):
-                _cx[node_index][j] = _cx_scaled[node_index][j] * scaling
+        for j in range(len(_cx_scaled)):
+            _cx[j] = _cx_scaled[j] * scaling
         return _cx
 
     def _declare_auto_variable_mapping(self):
@@ -275,12 +265,12 @@ class NewVariableConfiguration:
                 self.nlp.n_states_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1
             ):
                 n_cx = self.nlp.ode_solver.n_required_cx + 2
-                cx_scaled = self.define_cx_scaled(n_col=n_cx, n_shooting=0, initial_node=node_index)
+                cx_scaled = self.define_cx_scaled(n_col=n_cx, node_index=node_index)
                 cx = self.define_cx_unscaled(cx_scaled, self.nlp.x_scaling[self.name].scaling)
                 self.nlp.states.append(
                     self.name,
-                    cx[0],
-                    cx_scaled[0],
+                    cx,
+                    cx_scaled,
                     self.nlp.variable_mappings[self.name],
                     node_index,
                 )
@@ -289,7 +279,7 @@ class NewVariableConfiguration:
                         lambda t0, phases_dt, node_idx, x, u, p, a, d: (
                             x[self.nlp.states.key_index(self.name), :]
                             if x.any()
-                            else np.ndarray((cx[0][0].shape[0], 1)) * np.nan
+                            else np.ndarray((cx[0].shape[0], 1)) * np.nan
                         ),
                         plot_type=PlotType.INTEGRATED,
                         axes_idx=self.axes_idx,
@@ -301,12 +291,12 @@ class NewVariableConfiguration:
             for node_index in range(
                 self.nlp.n_controls_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1
             ):
-                cx_scaled = self.define_cx_scaled(n_col=3, n_shooting=0, initial_node=node_index)
+                cx_scaled = self.define_cx_scaled(n_col=3, node_index=node_index)
                 cx = self.define_cx_unscaled(cx_scaled, self.nlp.u_scaling[self.name].scaling)
                 self.nlp.controls.append(
                     self.name,
-                    cx[0],
-                    cx_scaled[0],
+                    cx,
+                    cx_scaled,
                     self.nlp.variable_mappings[self.name],
                     node_index,
                 )
@@ -317,7 +307,7 @@ class NewVariableConfiguration:
                         lambda t0, phases_dt, node_idx, x, u, p, a, d: (
                             u[self.nlp.controls.key_index(self.name), :]
                             if u.any()
-                            else np.ndarray((cx[0][0].shape[0], 1)) * np.nan
+                            else np.ndarray((cx[0].shape[0], 1)) * np.nan
                         ),
                         plot_type=plot_type,
                         axes_idx=self.axes_idx,
@@ -334,12 +324,12 @@ class NewVariableConfiguration:
                 self.nlp.n_states_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1
             ):
                 n_cx = self.nlp.ode_solver.n_required_cx + 2
-                cx_scaled = self.define_cx_scaled(n_col=n_cx, n_shooting=1, initial_node=node_index)
+                cx_scaled = self.define_cx_scaled(n_col=n_cx, node_index=node_index)
                 cx = self.define_cx_unscaled(cx_scaled, self.nlp.xdot_scaling[self.name].scaling)
                 self.nlp.states_dot.append(
                     self.name,
-                    cx[0],
-                    cx_scaled[0],
+                    cx,
+                    cx_scaled,
                     self.nlp.variable_mappings[self.name],
                     node_index,
                 )
@@ -349,13 +339,13 @@ class NewVariableConfiguration:
                 self.nlp.n_states_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1
             ):
                 n_cx = 2
-                cx_scaled = self.define_cx_scaled(n_col=n_cx, n_shooting=0, initial_node=node_index)
+                cx_scaled = self.define_cx_scaled(n_col=n_cx, node_index=node_index)
                 cx = self.define_cx_unscaled(cx_scaled, self.nlp.a_scaling[self.name].scaling)
 
                 self.nlp.algebraic_states.append(
                     self.name,
-                    cx[0],
-                    cx_scaled[0],
+                    cx,
+                    cx_scaled,
                     self.nlp.variable_mappings[self.name],
                     node_index,
                 )
@@ -365,7 +355,7 @@ class NewVariableConfiguration:
                         lambda t0, phases_dt, node_idx, x, u, p, a, d: (
                             a[self.nlp.algebraic_states.key_index(self.name), :]
                             if a.any()
-                            else np.ndarray((cx[0][0].shape[0], 1)) * np.nan
+                            else np.ndarray((cx[0].shape[0], 1)) * np.nan
                         ),
                         plot_type=PlotType.STEP,
                         axes_idx=self.axes_idx,
