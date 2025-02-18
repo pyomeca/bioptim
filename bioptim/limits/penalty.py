@@ -793,10 +793,9 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             if controller.external_forces.shape[0] == 0:
-                forces_on_each_point = controller.model.ground_reaction_forces_and_positions(with_position=False)(controller.q,
-                                                                        controller.qdot,
-                                                                        controller.tau,
-                                                                        controller.parameters.cx)
+                forces_on_each_point = controller.model.ground_reaction_forces_and_positions(with_position=False)(
+                    controller.q, controller.qdot, controller.tau, controller.parameters.cx
+                )
             else:
                 forces_on_each_point = controller.model.ground_reaction_forces_and_positions(with_position=False)(
                     controller.q, controller.qdot, controller.tau, controller.external_forces, controller.parameters.cx
@@ -811,7 +810,10 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def minimize_center_of_pressure(
-            penalty: PenaltyOption, controller: PenaltyController, associated_marker_index: tuple | list | int | str , contact_index: tuple | list | int | str = None
+            penalty: PenaltyOption,
+            controller: PenaltyController,
+            associated_marker_index: tuple | list | int | str,
+            contact_index: tuple | list | int | str = None,
         ):
             """
             Simulate force plate data from the contact forces computed through the dynamics with contact
@@ -839,14 +841,13 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             if controller.external_forces.shape[0] == 0:
-                forces_on_each_point, position_of_each_point = controller.model.ground_reaction_forces_and_positions(with_position=True, associated_marker_index=associated_marker_index)(controller.q,
-                                                                        controller.qdot,
-                                                                        controller.tau,
-                                                                        controller.parameters.cx)
+                forces_on_each_point, position_of_each_point = controller.model.ground_reaction_forces_and_positions(
+                    with_position=True, associated_marker_index=associated_marker_index
+                )(controller.q, controller.qdot, controller.tau, controller.parameters.cx)
             else:
-                forces_on_each_point, position_of_each_point = controller.model.ground_reaction_forces_and_positions(with_position=True, associated_marker_index=associated_marker_index)(
-                    controller.q, controller.qdot, controller.tau, controller.external_forces, controller.parameters.cx
-                )
+                forces_on_each_point, position_of_each_point = controller.model.ground_reaction_forces_and_positions(
+                    with_position=True, associated_marker_index=associated_marker_index
+                )(controller.q, controller.qdot, controller.tau, controller.external_forces, controller.parameters.cx)
 
             total_force = controller.cx.zeros(3, 1)
             val = controller.cx.zeros(3, 1)
@@ -857,7 +858,9 @@ class PenaltyFunctionAbstract:
 
             center_of_pressure = controller.cx.zeros(3, 1)
             for i_component in range(3):
-                center_of_pressure[i_component] = if_else(total_force[i_component] < 1e-6, 0, val[i_component] / total_force[i_component])
+                center_of_pressure[i_component] = if_else(
+                    total_force[i_component] < 1e-6, 0, val[i_component] / total_force[i_component]
+                )
 
             return center_of_pressure
 

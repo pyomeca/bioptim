@@ -612,7 +612,6 @@ class BiorbdModel:
         )
         return casadi_fun
 
-
     def ground_reaction_forces_and_positions(self, with_position, associated_marker_index: list = None) -> Function:
         """
         TODO: remove associated_marker_names when contact position are available in biorbd
@@ -639,7 +638,9 @@ class BiorbdModel:
             if with_position:
                 marker_index = self.marker_index(associated_marker_index[i_contact])
                 if forces_on_each_point is not None:
-                    position_of_each_point = horzcat(forces_on_each_point, self.marker(index=marker_index)(self.q, self.parameters))
+                    position_of_each_point = horzcat(
+                        forces_on_each_point, self.marker(index=marker_index)(self.q, self.parameters)
+                    )
                 else:
                     position_of_each_point = self.marker(index=marker_index)(self.q, self.parameters)
             available_axes = np.array(contact.availableAxesIndices())
