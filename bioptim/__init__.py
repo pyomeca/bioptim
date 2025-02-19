@@ -128,10 +128,6 @@ BiMapping
     Mapping of two index sets between each other
 BiMappingList
     A list of BiMapping
-NodeMapping
-    Mapping of two node sets
-NodeMappingList
-    A list of NodeMapping
 
 
 # --- Version of bioptim --- #
@@ -226,8 +222,7 @@ from .misc.enums import (
     PhaseDynamics,
     OnlineOptim,
 )
-from .misc.mapping import BiMappingList, BiMapping, Mapping, NodeMapping, NodeMappingList, SelectionMapping, Dependency
-from .misc.mapping import BiMappingList, BiMapping, Mapping, NodeMapping, NodeMappingList, SelectionMapping, Dependency
+from .misc.mapping import BiMappingList, BiMapping, Mapping, SelectionMapping, Dependency
 from .models.biorbd.biorbd_model import BiorbdModel
 from .models.biorbd.external_forces import ExternalForceSetTimeSeries
 from .models.biorbd.holonomic_biorbd_model import HolonomicBiorbdModel

@@ -1,3 +1,9 @@
+import re
+
+import numpy as np
+import numpy.testing as npt
+import pytest
+
 from bioptim import (
     InterpolationType,
     Solution,
@@ -14,11 +20,8 @@ from bioptim import (
     SolutionMerge,
 )
 from bioptim.limits.path_conditions import InitialGuess
-import numpy as np
-import numpy.testing as npt
-import pytest
-
 from ..utils import TestUtils
+
 
 # TODO: Add negative test for sizes
 
@@ -338,7 +341,10 @@ def test_initial_guess_error_messages(phase_dynamics):
         )
 
     with pytest.raises(
-        ValueError, match="bad_key is not a state variable, please check for typos in the declaration of x_init"
+        ValueError,
+        match=re.escape(
+            "Please check for typos in the declaration of x_init. Here are declared keys: ['bad_key']. Available keys are: ['q', 'qdot']."
+        ),
     ):
         x_init = InitialGuessList()
         x_init.add("bad_key", [1, 2])
@@ -354,7 +360,10 @@ def test_initial_guess_error_messages(phase_dynamics):
 
     del bio_model  # This is to fix a memory bug
     with pytest.raises(
-        ValueError, match="bad_key is not a control variable, please check for typos in the declaration of u_init"
+        ValueError,
+        match=re.escape(
+            "Please check for typos in the declaration of u_init. Here are declared keys: ['bad_key']. Available keys are: ['tau']."
+        ),
     ):
         u_init = InitialGuessList()
         u_init.add("bad_key", [1, 2])
