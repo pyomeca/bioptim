@@ -25,7 +25,7 @@ from bioptim import (
     CostType,
     OdeSolver,
 )
-from custom_dynamics import (
+from .custom_dynamics import (
     holonomic_torque_driven_with_qv,
     configure_holonomic_torque_driven,
     constraint_holonomic,
@@ -92,7 +92,7 @@ def prepare_ocp(
     n_shooting: int = 30,
     final_time: float = 1,
     expand_dynamics: bool = False,
-    ode_solver: OdeSolver = OdeSolver.COLLOCATION(polynomial_degree=5),
+    ode_solver: OdeSolver = OdeSolver.COLLOCATION(polynomial_degree=2),
 ) -> (HolonomicBiorbdModel, OptimalControlProgram):
     """
     Prepare the program
