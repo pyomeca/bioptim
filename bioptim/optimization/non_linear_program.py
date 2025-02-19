@@ -587,8 +587,8 @@ class NonLinearProgram:
         # Dictionary mapping variable types to their corresponding data
         variable_types = {
             "states": (self.states, states),
-            "controls": (self.controls, controls), 
-            "algebraic_states": (self.algebraic_states, algebraic_states)
+            "controls": (self.controls, controls),
+            "algebraic_states": (self.algebraic_states, algebraic_states),
         }
 
         # Check standard variable types
@@ -600,14 +600,14 @@ class NonLinearProgram:
         if self.numerical_timeseries is not None:
             # Count components matching the name
             matching_components = sum(1 for key in self.numerical_timeseries if name in key)
-            
+
             # Add each matching component
             for i in range(matching_components):
                 component_key = f"{name}_{i}"
                 if component_key in self.numerical_timeseries:
                     external_forces = vertcat(
                         external_forces,
-                        DynamicsFunctions.get(self.numerical_timeseries[component_key], numerical_timeseries)
+                        DynamicsFunctions.get(self.numerical_timeseries[component_key], numerical_timeseries),
                     )
 
         return external_forces
