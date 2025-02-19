@@ -292,7 +292,7 @@ class NewVariableConfiguration:
                 self.nlp.n_controls_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1
             ):
                 n_cx = 3
-                cx_scaled = self.define_cx_scaled(n_col=3, node_index=node_index)
+                cx_scaled = self.define_cx_scaled(n_col=n_cx, node_index=node_index)
                 cx = self.define_cx_unscaled(cx_scaled, self.nlp.u_scaling[self.name].scaling)
                 self.nlp.controls.append(
                     self.name,
@@ -339,18 +339,9 @@ class NewVariableConfiguration:
             for node_index in range(
                 self.nlp.n_states_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1
             ):
-                n_cx = 2
-                cx_scaled = (
-                    self.ocp.nlp[self.nlp.use_states_from_phase_idx].algebraic_states[node_index][self.name].original_cx
-                    if self.copy_algebraic_states
-                    else self.define_cx_scaled(n_col=n_cx, n_shooting=0, initial_node=node_index)
-                )
-                cx = (
-                    self.ocp.nlp[self.nlp.use_states_from_phase_idx].algebraic_states[node_index][self.name].original_cx
-                    if self.copy_algebraic_states
-                    else self.define_cx_unscaled(cx_scaled, self.nlp.a_scaling[self.name].scaling)
-                )
-
+                n_cx = self.nlp.ode_solver.n_required_cx + 2
+                cx_scaled = self.define_cx_scaled(n_col=n_cx, node_index=node_index)
+                cx = self.define_cx_unscaled(cx_scaled, self.nlp.a_scaling[self.name].scaling)
                 self.nlp.algebraic_states.append(
                     self.name,
                     cx,
