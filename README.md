@@ -1143,19 +1143,22 @@ init = init.add_noise(
 The bounds must contain all the keys defined in the init list.
 The parameters, except `MagnitudeType` must be specified for each phase unless you want the same value for every phases.
 
-
 ## The variable scaling
-The scaling applied to the optimization variables, it is what is expected by the `OptimalControlProgram` for its `x_scaling`, `xdot_scaling` and `u_init` parameters. 
 
-### Class VariableScalingList
-A VariableScalingList is a list of VariableScaling. 
-The `add()` method can be called exactly as if one was calling the `VariableScaling` constructor.  
+The scaling applied to the optimization variables determines how they are represented within the `OptimalControlProgram`. The goal is to keep all variables in the optimization problem within an order of magnitude close to 1, which improves numerical conditioning and solver performance. This applies to `x_scaling`, `xdot_scaling`, and `u_init` parameters. If the expected value of a variable is of order `0.1`, then the scaling factor should be `0.1` to bring the variable closer to `O(1)`, as `0.1 / 0.1 = 1`.
 
-So a minimal use is as follows:
+### Class `VariableScalingList`
+
+A `VariableScalingList` is a list of `VariableScaling` objects. 
+The `add()` method can be called exactly as if one were calling the `VariableScaling` constructor.
+
+#### Minimal usage example:
+
 ```python
 scaling = VariableScalingList()
 scaling.add("q", scaling=[1, 1])
 ```
+Adjusting scaling has significantly improved the convergence time of some optimization problems (`x10` or `x100`).
 
 ## The constraints
 The constraints are hard penalties of the optimization program.
