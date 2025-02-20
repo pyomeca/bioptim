@@ -617,7 +617,7 @@ class BiorbdModel:
         Returns the position of the rigid contact (contact_index) in the global reference frame.
         """
         q_biorbd = GeneralizedCoordinates(self.q)
-        biorbd_return = self.model.rigidContact(q_biorbd, index).to_mx()
+        biorbd_return = self.model.rigidContact(q_biorbd, index, True).to_mx()
         casadi_fun = Function(
             "rigid_contact_position",
             [self.q, self.parameters],
@@ -638,7 +638,7 @@ class BiorbdModel:
         # Rearrange the forces to get all 3 components for each contact point
         forces_on_each_point = None
         current_index = 0
-        for i_contact, contact in enumerate(self.contact_names):
+        for i_contact in range(self.nb_rigid_contacts):
             available_axes = np.array(self.rigid_contact_index(i_contact))
             contact_force_idx = range(current_index, current_index + available_axes.shape[0])
             current_force = MX.zeros(3)

@@ -1218,14 +1218,10 @@ def test_penalty_minimize_center_of_pressure(penalty_origin, phase_dynamics, wit
     penalty = penalty_object(
         penalty_type,
         contact_index=[0, 1],
-        associated_marker_index=["Seg1_contact_marker1", "Seg1_contact_marker2"],
     )
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
-    if penalty_object == Constraint:
-        npt.assert_almost_equal(res.T, [[0, 0, -0.371928]])
-    else:
-        npt.assert_almost_equal(res.T, [[0, 0, -0.371928]])
+    npt.assert_almost_equal(res.T, [[0, 0, -0.394827]])
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
