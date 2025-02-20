@@ -631,7 +631,9 @@ class BiorbdModel:
         """
         Returns the 3D force acting on each contact point in the global reference frame computed from the constrained forward dynamics.
         """
-        contact_forces = self.contact_forces_from_constrained_forward_dynamics()(self.q, self.qdot, self.tau, self.external_forces, self.parameters)
+        contact_forces = self.contact_forces_from_constrained_forward_dynamics()(
+            self.q, self.qdot, self.tau, self.external_forces, self.parameters
+        )
 
         # Rearrange the forces to get all 3 components for each contact point
         forces_on_each_point = None

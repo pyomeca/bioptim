@@ -796,7 +796,9 @@ class PenaltyFunctionAbstract:
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            forces_on_each_point = controller.model.forces_on_each_rigid_contact_point()(controller.q, controller.qdot, controller.tau, controller.external_forces, controller.parameters.cx)
+            forces_on_each_point = controller.model.forces_on_each_rigid_contact_point()(
+                controller.q, controller.qdot, controller.tau, controller.external_forces, controller.parameters.cx
+            )
 
             total_force = controller.cx.zeros(3, 1)
             for contact in contact_index:
@@ -837,10 +839,9 @@ class PenaltyFunctionAbstract:
             # PenaltyFunctionAbstract.set_axes_rows(penalty, contact_index)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            forces_on_each_point = controller.model.forces_on_each_rigid_contact_point()(controller.q, controller.qdot,
-                                                                                         controller.tau,
-                                                                                         controller.external_forces,
-                                                                                         controller.parameters.cx)
+            forces_on_each_point = controller.model.forces_on_each_rigid_contact_point()(
+                controller.q, controller.qdot, controller.tau, controller.external_forces, controller.parameters.cx
+            )
 
             total_force = controller.cx.zeros(3, 1)
             position_of_each_point = None
@@ -852,10 +853,14 @@ class PenaltyFunctionAbstract:
                 total_force += forces_on_each_point[:, idx]
 
                 # Get the position of all the contact points of interest
-                this_contact_position = controller.model.rigid_contact_position(idx)(controller.q,
-                                                                                     controller.parameters.cx)
-                position_of_each_point = horzcat(position_of_each_point,
-                                                 this_contact_position) if position_of_each_point is not None else this_contact_position
+                this_contact_position = controller.model.rigid_contact_position(idx)(
+                    controller.q, controller.parameters.cx
+                )
+                position_of_each_point = (
+                    horzcat(position_of_each_point, this_contact_position)
+                    if position_of_each_point is not None
+                    else this_contact_position
+                )
 
                 # Weighted sum
                 weighted_sum += forces_on_each_point[:, idx] * this_contact_position
