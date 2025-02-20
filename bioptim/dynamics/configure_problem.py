@@ -1803,7 +1803,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable(name, name_taudot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
-    def configure_contact_forces(ocp, nlp, as_states: bool, as_controls: bool, n_contacts: int = 1):
+    def configure_translational_forces(ocp, nlp, as_states: bool, as_controls: bool, n_contacts: int = 1):
         """
         Configure contact forces as optimization variables (for now only in global reference frame with an unknown point of application))
         # TODO: Match this with ExternalForceSetTimeSeries (options: 'in_global', 'torque', ...)

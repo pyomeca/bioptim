@@ -612,38 +612,32 @@ class BiorbdModel:
         )
         return casadi_fun
 
-    def ground_reaction_forces_and_positions(self, with_position, associated_marker_index: list = None) -> Function:
+    def rigid_contact_position(self, index: int) -> Function:
         """
-        TODO: remove associated_marker_names when contact position are available in biorbd
+        Returns the position of the rigid contact (contact_index) in the global reference frame.
         """
-        if with_position and associated_marker_index is None:
-            raise ValueError("You need to provide the associated marker names to compute the position of the forces")
-
         q_biorbd = GeneralizedCoordinates(self.q)
-        qdot_biorbd = GeneralizedVelocity(self.qdot)
-        tau_biorbd = GeneralizedTorque(self.tau)
-        if self.external_force_set is None:
-            contact_forces = self.model.ContactForcesFromForwardDynamicsConstraintsDirect(
-                q_biorbd, qdot_biorbd, tau_biorbd
-            ).to_mx()
-        else:
-            contact_forces = self.model.ContactForcesFromForwardDynamicsConstraintsDirect(
-                q_biorbd, qdot_biorbd, tau_biorbd, self.biorbd_external_forces_set
-            ).to_mx()
+        biorbd_return = self.model.rigidContact(q_biorbd, index).to_mx()
+        casadi_fun = Function(
+            "rigid_contact_position",
+            [self.q, self.parameters],
+            [biorbd_return],
+            ["q", "parameters"],
+            ["Rigid contact position"],
+        )
+        return casadi_fun
 
+    def forces_on_each_rigid_contact_point(self) -> Function:
+        """
+        Returns the 3D force acting on each contact point in the global reference frame computed from the constrained forward dynamics.
+        """
+        contact_forces = self.contact_forces_from_constrained_forward_dynamics()(self.q, self.qdot, self.tau, self.external_forces, self.parameters)
+
+        # Rearrange the forces to get all 3 components for each contact point
         forces_on_each_point = None
-        position_of_each_point = None
         current_index = 0
-        for i_contact, contact in enumerate(self.model.rigidContacts()):
-            if with_position:
-                marker_index = self.marker_index(associated_marker_index[i_contact])
-                if forces_on_each_point is not None:
-                    position_of_each_point = horzcat(
-                        forces_on_each_point, self.marker(index=marker_index)(self.q, self.parameters)
-                    )
-                else:
-                    position_of_each_point = self.marker(index=marker_index)(self.q, self.parameters)
-            available_axes = np.array(contact.availableAxesIndices())
+        for i_contact, contact in enumerate(self.contact_names):
+            available_axes = np.array(self.rigid_contact_index(i_contact))
             contact_force_idx = range(current_index, current_index + available_axes.shape[0])
             current_force = MX.zeros(3)
             for i, contact_to_add in enumerate(contact_force_idx):
@@ -654,25 +648,12 @@ class BiorbdModel:
             else:
                 forces_on_each_point = current_force
 
-        if self.external_force_set is None:
-            casadi_inputs = [self.q, self.qdot, self.tau, self.parameters]
-            casadi_input_names = ["q", "qdot", "tau", "parameters"]
-        else:
-            casadi_inputs = [self.q, self.qdot, self.tau, self.external_forces, self.parameters]
-            casadi_input_names = ["q", "qdot", "tau", "external_forces", "parameters"]
-        if with_position:
-            casadi_outputs = [forces_on_each_point, position_of_each_point]
-            casadi_output_names = ["forces_on_each_point", "position_of_each_point"]
-        else:
-            casadi_outputs = [forces_on_each_point]
-            casadi_output_names = ["forces_on_each_point"]
-
         casadi_fun = Function(
-            "ground_reaction_forces",
-            casadi_inputs,
-            casadi_outputs,
-            casadi_input_names,
-            casadi_output_names,
+            "reaction_forces",
+            [self.q, self.qdot, self.tau, self.external_forces, self.parameters],
+            [forces_on_each_point],
+            ["q", "qdot", "tau", "external_forces", "parameters"],
+            ["forces_on_each_point"],
         )
         return casadi_fun
 
@@ -762,6 +743,9 @@ class BiorbdModel:
 
     def marker_index(self, name):
         return biorbd.marker_index(self.model, name)
+
+    def contact_index(self, name):
+        return biorbd.contact_index(self.model, name)
 
     def marker(self, index: int, reference_segment_index: int = None) -> Function:
         q_biorbd = GeneralizedCoordinates(self.q)

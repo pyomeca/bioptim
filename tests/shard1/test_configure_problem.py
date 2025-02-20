@@ -51,11 +51,7 @@ def test_configures(cx):
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod",
     )
 
-    # Nothing in there
-    npt.assert_equal(nlp.states.shape, 0)
-    npt.assert_equal(nlp.controls.shape, 0)
-    npt.assert_equal(nlp.parameters.shape, 0)
-    npt.assert_equal(nlp.algebraic_states.shape, 0)
+    # We start with empty OptimizationVariableContainers (states, controls, algebraic states) and then fill them with the appropriate variables
 
     # Test states
     ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
@@ -121,7 +117,7 @@ def test_configures(cx):
     npt.assert_equal(nlp.controls.shape, 4 + 4 + 4)
     npt.assert_equal(nlp.controls.keys(), ["tau", "residual_tau", "taudot"])
 
-    ConfigureProblem.configure_contact_forces(ocp, nlp, as_states=False, as_controls=True)
+    ConfigureProblem.configure_translational_forces(ocp, nlp, as_states=False, as_controls=True)
     npt.assert_equal(nlp.controls.shape, 4 + 4 + 4 + 3 * 2)
     npt.assert_equal(nlp.controls.keys(), ["tau", "residual_tau", "taudot", "contact_forces", "contact_positions"])
 

@@ -767,14 +767,15 @@ class PenaltyFunctionAbstract:
             return contact_force
 
         @staticmethod
-        def minimize_ground_reaction_forces(
-            penalty: PenaltyOption, controller: PenaltyController, contact_index: tuple | list | int | str = None
+        def minimize_total_reaction_forces(
+            penalty: PenaltyOption, controller: PenaltyController, contact_index: tuple | list
         ):
             """
-            Simulate force plate data from the contact forces computed through the dynamics with contact
+            Simulate force plate data from the contact forces computed through the dynamics with contact.
+            For example, in the case of gait, it allows to match the experimental ground reaction forces.
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
-            Please note that the contact index of the appropriate foot must be specified.
+            Please note that the contact index (number of the contact point in the model) must be specified.
 
             Parameters
             ----------
@@ -790,21 +791,17 @@ class PenaltyFunctionAbstract:
             if penalty.target is not None and penalty.target.shape[0] != 3:
                 raise RuntimeError("The target for the ground reaction forces must be of size 3 x n_shooting")
 
+            if not isinstance(contact_index, (list, tuple)):
+                raise RuntimeError("contact_index must be a tuple or a list")
+
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            if controller.external_forces.shape[0] == 0:
-                forces_on_each_point = controller.model.ground_reaction_forces_and_positions(with_position=False)(
-                    controller.q, controller.qdot, controller.tau, controller.parameters.cx
-                )
-            else:
-                forces_on_each_point = controller.model.ground_reaction_forces_and_positions(with_position=False)(
-                    controller.q, controller.qdot, controller.tau, controller.external_forces, controller.parameters.cx
-                )
+            forces_on_each_point = controller.model.forces_on_each_rigid_contact_point()(controller.q, controller.qdot, controller.tau, controller.external_forces, controller.parameters.cx)
 
             total_force = controller.cx.zeros(3, 1)
-            for i_contact in range(forces_on_each_point.shape[1]):
-                if i_contact in contact_index:
-                    total_force += forces_on_each_point[:, i_contact]
+            for contact in contact_index:
+                idx = controller.model.contact_index(contact) if isinstance(contact, str) else contact
+                total_force += forces_on_each_point[:, idx]
 
             return total_force
 
@@ -812,11 +809,11 @@ class PenaltyFunctionAbstract:
         def minimize_center_of_pressure(
             penalty: PenaltyOption,
             controller: PenaltyController,
-            associated_marker_index: tuple | list | int | str,
-            contact_index: tuple | list | int | str = None,
+            contact_index: tuple | list,
         ):
             """
-            Simulate force plate data from the contact forces computed through the dynamics with contact
+            Simulate the center of pressure from force plate data from the contact forces computed through the dynamics with contact
+            It is computed as a mean position of the contact points weighted by the magnitude of the contact force (for each axis independently).
             By default this function is quadratic, meaning that it minimizes towards the target.
             Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
             Please note that the contact index of the appropriate foot must be specified.
@@ -827,40 +824,48 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             controller: PenaltyController
                 The penalty node elements
-            associated_marker_index: tuple | list
-                The index of the marker associated with the contact, must be an int or a list.
             contact_index: tuple | list
                 The index of contact to minimize, must be an int or a list.
-                penalty.cols should not be defined if contact_index is defined
             """
 
             if penalty.target is not None and penalty.target.shape[0] != 3:
                 raise RuntimeError("The target for the center of pressure must be of size 3 x n_shooting")
 
+            if not isinstance(contact_index, (tuple, list)):
+                raise RuntimeError("contact_index must be a tuple or a list")
+
             # PenaltyFunctionAbstract.set_axes_rows(penalty, contact_index)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            if controller.external_forces.shape[0] == 0:
-                forces_on_each_point, position_of_each_point = controller.model.ground_reaction_forces_and_positions(
-                    with_position=True, associated_marker_index=associated_marker_index
-                )(controller.q, controller.qdot, controller.tau, controller.parameters.cx)
-            else:
-                forces_on_each_point, position_of_each_point = controller.model.ground_reaction_forces_and_positions(
-                    with_position=True, associated_marker_index=associated_marker_index
-                )(controller.q, controller.qdot, controller.tau, controller.external_forces, controller.parameters.cx)
+            forces_on_each_point = controller.model.forces_on_each_rigid_contact_point()(controller.q, controller.qdot,
+                                                                                         controller.tau,
+                                                                                         controller.external_forces,
+                                                                                         controller.parameters.cx)
 
             total_force = controller.cx.zeros(3, 1)
-            val = controller.cx.zeros(3, 1)
-            for i_contact in range(forces_on_each_point.shape[1]):
-                if i_contact in contact_index:
-                    val += forces_on_each_point[:, i_contact] * position_of_each_point[i_contact]
-                    total_force += forces_on_each_point[:, i_contact]
+            position_of_each_point = None
+            weighted_sum = controller.cx.zeros(3, 1)
+            for contact in contact_index:
+                idx = controller.model.contact_index(contact) if isinstance(contact, str) else contact
 
+                # Compute the sum of the forces on the points of interest
+                total_force += forces_on_each_point[:, idx]
+
+                # Get the position of all the contact points of interest
+                this_contact_position = controller.model.rigid_contact_position(idx)(controller.q,
+                                                                                     controller.parameters.cx)
+                position_of_each_point = horzcat(position_of_each_point,
+                                                 this_contact_position) if position_of_each_point is not None else this_contact_position
+
+                # Weighted sum
+                weighted_sum += forces_on_each_point[:, idx] * this_contact_position
+
+            # Compute the mean position weighted by the force magnitude
             center_of_pressure = controller.cx.zeros(3, 1)
             for i_component in range(3):
-                center_of_pressure[i_component] = if_else(
-                    total_force[i_component] < 1e-6, 0, val[i_component] / total_force[i_component]
-                )
+                barycenter = weighted_sum[i_component] / total_force[i_component]
+                # Avoid division by zero if the force is too small
+                center_of_pressure[i_component] = if_else(total_force[i_component] < 1e-6, 0, barycenter)
 
             return center_of_pressure
 
@@ -1086,9 +1091,6 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             segment_index = controller.model.segment_index(segment) if isinstance(segment, str) else segment
-
-            if not isinstance(controller.model, BiorbdModel):
-                raise NotImplementedError("The minimize_segment_rotation penalty can only be called with a BiorbdModel")
 
             jcs_segment = controller.model.homogeneous_matrices_in_global(segment_index)(
                 controller.q, controller.parameters.cx

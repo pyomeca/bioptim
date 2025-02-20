@@ -101,7 +101,7 @@ def prepare_test_ocp(
 
     if with_external_forces:
         if not with_contact:
-            raise NotImplementedError("External forces must be used with contact")
+            raise NotImplementedError("with_external_forces=True is only tested for with_contact=True")
         external_forces = ExternalForceSetTimeSeries(nb_frames=N_SHOOTING)
         external_forces.add("Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :])
         numerical_time_series = {"external_forces": external_forces.to_numerical_time_series()}
@@ -1157,7 +1157,7 @@ def test_penalty_minimize_contact_forces_end_of_interval(penalty_origin, phase_d
     "with_external_forces",
     [False, True],
 )
-def test_penalty_minimize_ground_reaction_forces(penalty_origin, phase_dynamics, with_external_forces):
+def test_penalty_minimize_total_reaction_forces(penalty_origin, phase_dynamics, with_external_forces):
     ocp = prepare_test_ocp(with_contact=True, phase_dynamics=phase_dynamics, with_external_forces=with_external_forces)
     t = [0]
     phases_dt = [0.05]
@@ -1168,10 +1168,10 @@ def test_penalty_minimize_ground_reaction_forces(penalty_origin, phase_dynamics,
     d = []
 
     if penalty_origin == ObjectiveFcn.Mayer:
-        penalty_type = ObjectiveFcn.Mayer.TRACK_GROUND_REACTION_FORCES
+        penalty_type = ObjectiveFcn.Mayer.TRACK_TOTAL_REACTION_FORCES
         penalty_object = Objective
     elif penalty_origin == ObjectiveFcn.Lagrange:
-        penalty_type = ObjectiveFcn.Lagrange.TRACK_GROUND_REACTION_FORCES
+        penalty_type = ObjectiveFcn.Lagrange.TRACK_TOTAL_REACTION_FORCES
         penalty_object = Objective
     else:
         penalty_type = ConstraintFcn.TRACK_CONTACT_FORCES_END_OF_INTERVAL

@@ -535,7 +535,7 @@ class OptimizationVariableContainer:
     @property
     def shape(self):
         if isinstance(self._unscaled, list) and len(self._unscaled) == 0:
-            return 0
+            raise RuntimeError("The optimization variable container is empty. Please initialize it first.")
         else:
             return self._unscaled[0].shape
 
