@@ -352,16 +352,9 @@ class RecedingHorizonOptimization(OptimalControlProgram):
     def advance_window_initial_guess_parameters(self, sol, **advance_options):
         parameters = sol.parameters
         for key in parameters.keys():
-            if self.parameter_init[key].type != InterpolationType.EACH_FRAME:
-                # Override the previous param_init
-                self.parameter_init.add(
-                    key, np.ndarray(parameters[key].shape), interpolation=InterpolationType.CONSTANT, phase=0
-                )
-                self.parameter_init[key].check_and_adjust_dimensions(len(self.nlp[0].parameters[key]), self.nlp[0].ns)
-
-            reshaped_parameter = parameters[key][:, None]
-            self.parameter_init[key].init[:, :] = np.concatenate(
-                (reshaped_parameter[:, 1:], reshaped_parameter[:, -1][:, np.newaxis]), axis=1
+            # Override the previous param_init
+            self.parameter_init.add(
+                key, parameters[key][:, None], interpolation=InterpolationType.CONSTANT, phase=0
             )
         return True
 
