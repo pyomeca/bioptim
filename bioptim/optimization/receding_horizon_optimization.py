@@ -729,7 +729,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
 
             solution[0].cycle_parameters = final_solution_parameters_dict
 
-        final_solution = [solution[0] if isinstance(solution, tuple) else solution]
+        final_solution = [solution[0]]
 
         if get_all_iterations:
             final_solution.append(solution[1])
