@@ -827,7 +827,6 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             parameters=parameters,
             parameter_init=self.parameter_init,
             parameter_bounds=self.parameter_bounds,
-            ode_solver=self.nlp[0].ode_solver,
         )
         a_init = InitialGuessList()
         return Solution.from_initial_guess(solution_ocp, [np.array([dt]), x_init, u_init, p_init, a_init])
