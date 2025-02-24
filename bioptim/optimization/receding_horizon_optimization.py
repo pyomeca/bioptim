@@ -279,11 +279,13 @@ class RecedingHorizonOptimization(OptimalControlProgram):
 
         init_states_have_changed = self.advance_window_initial_guess_states(sol, **advance_options)
         init_controls_have_changed = self.advance_window_initial_guess_controls(sol, **advance_options)
+        init_parameter_have_changed = self.advance_window_initial_guess_parameters(sol, **advance_options)
 
         if self.ocp_solver.opts.type != SolverType.ACADOS:
             self.update_initial_guess(
                 self.nlp[0].x_init if init_states_have_changed else None,
                 self.nlp[0].u_init if init_controls_have_changed else None,
+                self.parameter_init if init_parameter_have_changed else None,
             )
 
     def advance_window_bounds_states(self, sol, **advance_options):
@@ -344,6 +346,22 @@ class RecedingHorizonOptimization(OptimalControlProgram):
                 )
             self.nlp[0].u_init[key].init[:, :] = np.concatenate(
                 (controls[key][:, 1:], controls[key][:, -1][:, np.newaxis]), axis=1
+            )
+        return True
+
+    def advance_window_initial_guess_parameters(self, sol, **advance_options):
+        parameters = sol.parameters
+        for key in parameters.keys():
+            if self.parameter_init[key].type != InterpolationType.EACH_FRAME:
+                # Override the previous param_init
+                self.parameter_init.add(
+                    key, np.ndarray(parameters[key].shape), interpolation=InterpolationType.CONSTANT, phase=0
+                )
+                self.parameter_init[key].check_and_adjust_dimensions(len(self.nlp[0].parameters[key]), self.nlp[0].ns)
+
+            reshaped_parameter = parameters[key][:, None]
+            self.parameter_init[key].init[:, :] = np.concatenate(
+                (reshaped_parameter[:, 1:], reshaped_parameter[:, -1][:, np.newaxis]), axis=1
             )
         return True
 
@@ -762,7 +780,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             controls[key] = decision_controls[key][:, window_slice]
 
         for key in self.nlp[0].parameters.keys():
-            parameters[key] = sol.parameters[key][0]
+            parameters[key] = sol.parameters[key]
 
         return states, controls, parameters
 
@@ -809,6 +827,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             parameters=parameters,
             parameter_init=self.parameter_init,
             parameter_bounds=self.parameter_bounds,
+            ode_solver=self.nlp[0].ode_solver,
         )
         a_init = InitialGuessList()
         return Solution.from_initial_guess(solution_ocp, [np.array([dt]), x_init, u_init, p_init, a_init])
