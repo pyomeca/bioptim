@@ -1,11 +1,9 @@
-import os
-
-from bioptim import HolonomicBiorbdModel, HolonomicConstraintsFcn, HolonomicConstraintsList, Solver, SolutionMerge
-from casadi import DM, MX
 import numpy as np
 import numpy.testing as npt
 import pytest
+from casadi import DM, MX
 
+from bioptim import HolonomicBiorbdModel, HolonomicConstraintsFcn, HolonomicConstraintsList, Solver, SolutionMerge
 from ..utils import TestUtils
 
 
@@ -96,6 +94,47 @@ def test_model_holonomic():
     q_dot = MX([4, 5, 6])
     q_ddot = MX([7, 8, 9])
     tau = MX([10, 11, 12])
+
+    q_u = MX(TestUtils.to_array(q[model._independent_joint_index]))
+    qdot_u = MX(TestUtils.to_array(q_dot[model._independent_joint_index]))
+    q_v = MX(TestUtils.to_array(q[model._dependent_joint_index]))
+    q_ddot_u = MX(TestUtils.to_array(q_ddot[model._independent_joint_index]))
+
+    # Test partition_coordinates
+    output = model.partition_coordinates()
+    TestUtils.assert_equal(output[0], [0])
+    TestUtils.assert_equal(output[1], [1, 2])
+    TestUtils.assert_equal(output[2], [1])
+
+    # Test partitioned_forward_dynamics_with_qv
+    TestUtils.assert_equal(
+        model.partitioned_forward_dynamics_with_qv()(q_u, q_v[0], qdot_u, tau), [-3.326526], expand=False
+    )
+
+    # Test partitioned_forward_dynamics_full
+    TestUtils.assert_equal(model.partitioned_forward_dynamics_full()(q, qdot_u, tau), [-23.937828], expand=False)
+
+    # Test error message for non-square Jacobian
+    ill_model = HolonomicBiorbdModel(biorbd_model_path)
+    ill_hconstraints = HolonomicConstraintsList()
+    ill_hconstraints.add(
+        "y",
+        HolonomicConstraintsFcn.superimpose_markers,
+        biorbd_model=model,
+        marker_1="marker_1",
+        marker_2="marker_6",
+        index=slice(1, 2),
+    )
+    with pytest.raises(
+        ValueError,
+        match=r"The shape of the dependent joint Jacobian should be square\. Got: \(1, 2\)\."
+        r"Please consider checking the dimension of the holonomic constraints Jacobian\.\n"
+        r"Here is a recommended partitioning: "
+        r"      - independent_joint_index: \[1 2\],"
+        r"      - dependent_joint_index: \[0\]\.",
+    ):
+        ill_model.set_holonomic_configuration(ill_hconstraints, [1, 2], [0])
+
     TestUtils.assert_equal(model.holonomic_constraints(q), [-0.70317549, 0.5104801])
     TestUtils.assert_equal(
         model.holonomic_constraints_jacobian(q),
@@ -123,10 +162,6 @@ def test_model_holonomic():
         [[-0.5104801, 0.02982221, -0.96017029], [-0.70317549, 0.13829549, 0.2794155]],
     )
 
-    q_u = MX(TestUtils.to_array(q[model._independent_joint_index]))
-    qdot_u = MX(TestUtils.to_array(q_dot[model._independent_joint_index]))
-    q_v = MX(TestUtils.to_array(q[model._dependent_joint_index]))
-
     TestUtils.assert_equal(model.partitioned_forward_dynamics()(q_u, qdot_u, q_v, tau), -1.101808, expand=False)
     TestUtils.assert_equal(model.coupling_matrix(q), [5.79509793, -0.35166415], expand=False)
     TestUtils.assert_equal(model.biais_vector(q, q_dot), [27.03137348, 23.97095718], expand=False)
@@ -136,6 +171,9 @@ def test_model_holonomic():
     TestUtils.assert_equal(model.compute_q()(q_u, q_v), [1.0, 2.0943951, 2.0943951], expand=False)
     TestUtils.assert_equal(model.compute_qdot_v()(q, qdot_u), [23.18039172, -1.4066566], expand=False)
     TestUtils.assert_equal(model.compute_qdot()(q, qdot_u), [4.0, 23.18039172, -1.4066566], expand=False)
+
+    TestUtils.assert_equal(model.compute_qddot_v()(q, q_dot, q_ddot_u), [67.597059, 21.509308], expand=False)
+    TestUtils.assert_equal(model.compute_qddot()(q, q_dot, q_ddot_u), [7.0, 67.597059, 21.509308], expand=False)
 
     npt.assert_almost_equal(
         model.compute_q_v()(DM([0.0]), DM([1.0, 1.0])).toarray().squeeze(),
