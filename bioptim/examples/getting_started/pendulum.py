@@ -37,7 +37,7 @@ def prepare_ocp(
     n_threads: int = 1,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
-    control_type: ControlType = ControlType.CONSTANT
+    control_type: ControlType = ControlType.CONSTANT,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
