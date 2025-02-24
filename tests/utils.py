@@ -1,11 +1,8 @@
 import importlib.util
 from pathlib import Path
+import platform
 from typing import Any
-
-import numpy as np
-import numpy.testing as npt
-import pytest
-from casadi import MX, Function
+from types import ModuleType
 
 from bioptim import (
     BiorbdModel,
@@ -22,12 +19,38 @@ from bioptim import (
     SolutionMerge,
     OptimizationVariableList,
 )
+from bioptim.interfaces.ipopt_interface import IpoptInterface
+from casadi import MX, Function
+import numpy as np
+import numpy.testing as npt
+import pytest
 
 
 class TestUtils:
     @staticmethod
     def bioptim_folder() -> str:
-        return str(Path(__file__).parent / "../bioptim")
+        return TestUtils._capitalize_folder_drive(str(Path(__file__).parent / "../bioptim"))
+
+    @staticmethod
+    def module_folder(module: ModuleType) -> str:
+        return TestUtils._capitalize_folder_drive(str(Path(module.__file__).parent))
+
+    @staticmethod
+    def compare_ocp_to_solve(ocp: OptimalControlProgram, v: np.ndarray, expected_v_f_g: list[float], decimal: int = 6):
+        interface = IpoptInterface(ocp=ocp)
+        v_cx = interface.ocp.variables_vector
+        f = interface.dispatch_obj_func()
+        g = interface.dispatch_bounds()[0]
+
+        values = Function("v", [v_cx], [v_cx, f, g])(v)
+        npt.assert_allclose([np.sum(value) for value in values], expected_v_f_g, rtol=10**-decimal)
+
+    @staticmethod
+    def _capitalize_folder_drive(folder: str) -> str:
+        if platform.system() == "Windows" and folder[1] == ":":
+            # Capitilize the drive letter if it is windows
+            folder = folder[0].upper() + folder[1:]
+        return folder
 
     @staticmethod
     def load_module(path: str) -> Any:

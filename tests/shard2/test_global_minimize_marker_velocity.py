@@ -2,9 +2,8 @@
 Test for file IO
 """
 
-import pytest
-import numpy as np
-import numpy.testing as npt
+import platform
+
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -21,6 +20,10 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
 )
+from casadi import Function
+import numpy as np
+import numpy.testing as npt
+import pytest
 
 from tests.utils import TestUtils
 
@@ -196,6 +199,18 @@ def test_track_and_minimize_marker_displacement_RT(ode_solver, phase_dynamics):
         ode_solver=ode_solver,
         phase_dynamics=phase_dynamics,
     )
+
+    # Check the values which will be sent to the solver
+    np.random.seed(42)
+    TestUtils.compare_ocp_to_solve(
+        ocp,
+        v=np.random.rand(69, 1),
+        expected_v_f_g=[31.736865760272735, 735.9774884772594, 14.88489768158775],
+        decimal=6,
+    )
+    if platform.system() == "Windows":
+        return
+
     sol = ocp.solve()
 
     # Check objective function value
@@ -242,6 +257,18 @@ def test_track_and_minimize_marker_velocity(ode_solver, phase_dynamics):
         ode_solver=ode_solver,
         phase_dynamics=phase_dynamics,
     )
+
+    # Check the values which will be sent to the solver
+    np.random.seed(42)
+    TestUtils.compare_ocp_to_solve(
+        ocp,
+        v=np.random.rand(69, 1),
+        expected_v_f_g=[31.736865760272735, 90.85915472423895, 14.88489768158775],
+        decimal=6,
+    )
+    if platform.system() == "Windows":
+        return
+
     sol = ocp.solve()
 
     # Check objective function value

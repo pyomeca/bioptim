@@ -3,15 +3,17 @@ Test for file IO
 """
 
 import io
-import matplotlib
-import numpy as np
 import os
-import pytest
 import sys
-from casadi import Function, MX
 
 from bioptim import CostType, OdeSolver, Solver, BiorbdModel, PhaseDynamics
 from bioptim.limits.penalty import PenaltyOption
+from casadi import Function, MX
+import matplotlib
+import numpy as np
+import pytest
+
+from ..utils import TestUtils
 
 matplotlib.use("Agg")
 
@@ -21,7 +23,7 @@ def test_plot_graphs_one_phase(phase_dynamics):
     # Load graphs_one_phase
     from bioptim.examples.torque_driven_ocp import track_markers_with_torque_actuators as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
@@ -40,7 +42,7 @@ def test_plot_check_conditioning(phase_dynamics):
     # Load graphs check conditioning
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
@@ -58,7 +60,7 @@ def test_plot_check_conditioning_live(phase_dynamics):
     # Load graphs check conditioning
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
@@ -73,7 +75,7 @@ def test_plot_check_conditioning_live(phase_dynamics):
 def test_plot_ipopt_output_live(phase_dynamics):
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
@@ -87,7 +89,7 @@ def test_plot_ipopt_output_live(phase_dynamics):
 def test_save_ipopt_output():
     from bioptim.examples.getting_started import pendulum as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
@@ -107,7 +109,7 @@ def test_plot_merged_graphs(phase_dynamics):
     # Load graphs_one_phase
     from bioptim.examples.muscle_driven_ocp import muscle_excitations_tracker as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     # Define the problem
     model_path = bioptim_folder + "/models/arm26.bioMod"
@@ -146,7 +148,7 @@ def test_plot_graphs_multi_phases(phase_dynamics):
     # Load graphs_one_phase
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
@@ -162,7 +164,7 @@ def test_add_new_plot(phase_dynamics):
     # Load graphs_one_phase
     from bioptim.examples.torque_driven_ocp import track_markers_with_torque_actuators as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
@@ -189,7 +191,7 @@ def test_console_objective_functions(phase_dynamics):
     # Load graphs_one_phase
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",

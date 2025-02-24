@@ -10,7 +10,7 @@ from matplotlib import pyplot as plt
 from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVectorHelper
 from ..dynamics.configure_problem import DynamicsList, Dynamics, ConfigureProblem
-from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
+from ..dynamics.ode_solvers import OdeSolver, OdeSolverBase
 from ..gui.check_conditioning import check_conditioning
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..gui.ipopt_output_plot import SaveIterationsInfo
@@ -53,7 +53,7 @@ from ..misc.enums import (
     PenaltyType,
     Node,
 )
-from ..misc.mapping import BiMappingList, Mapping, BiMapping, NodeMappingList
+from ..misc.mapping import BiMappingList, Mapping, BiMapping
 from ..misc.options import OptionDict
 from ..models.biorbd.variational_biorbd_model import VariationalBiorbdModel
 from ..models.protocols.biomodel import BioModel
@@ -157,7 +157,6 @@ class OptimalControlProgram:
         control_type: ControlType | list = ControlType.CONSTANT,
         variable_mappings: BiMappingList = None,
         time_phase_mapping: BiMapping = None,
-        node_mappings: NodeMappingList = None,
         plot_mappings: Mapping = None,
         phase_transitions: PhaseTransitionList = None,
         multinode_constraints: MultinodeConstraintList = None,
@@ -217,8 +216,6 @@ class OptimalControlProgram:
         time_phase_mapping: BiMapping
             The mapping of the time of the phases, so some phase share the same time variable (when optimized, that is
             a constraint or an objective on the time is declared)
-        node_mappings: NodeMappingList
-            The mapping to apply between the variables associated with the nodes
         plot_mappings: Mapping
             The mapping to apply on the plots
         phase_transitions: PhaseTransitionList
@@ -305,7 +302,6 @@ class OptimalControlProgram:
 
         self._set_nlp_is_stochastic()
 
-        self._prepare_node_mapping(node_mappings)
         self._prepare_dynamics()
         self._prepare_bounds_and_init(
             x_bounds, u_bounds, parameter_bounds, a_bounds, x_init, u_init, parameter_init, a_init
@@ -509,8 +505,15 @@ class OptimalControlProgram:
 
         if ode_solver is None:
             ode_solver = self._set_default_ode_solver()
-        elif not isinstance(ode_solver, OdeSolverBase):
-            raise RuntimeError("ode_solver should be built an instance of OdeSolver")
+
+        is_ode_solver = isinstance(ode_solver, OdeSolverBase)
+        is_list_ode_solver = (
+            all([isinstance(ode, OdeSolverBase) for ode in ode_solver])
+            if isinstance(ode_solver, list) or isinstance(ode_solver, tuple)
+            else False
+        )
+        if not is_ode_solver and not is_list_ode_solver:
+            raise RuntimeError("ode_solver should be built an instance of OdeSolver or a list of OdeSolver")
 
         if not isinstance(use_sx, bool):
             raise RuntimeError("use_sx should be a bool")
@@ -605,20 +608,6 @@ class OptimalControlProgram:
             phase_transitions,
             parameter_bounds,
             parameter_init,
-        )
-
-    def _prepare_node_mapping(self, node_mappings):
-        # Prepare the node mappings
-        if node_mappings is None:
-            node_mappings = NodeMappingList()
-        (
-            use_states_from_phase_idx,
-            use_states_dot_from_phase_idx,
-            use_controls_from_phase_idx,
-        ) = node_mappings.get_variable_from_phase_idx(self)
-
-        self._check_variable_mapping_consistency_with_node_mapping(
-            use_states_from_phase_idx, use_controls_from_phase_idx
         )
 
     def _prepare_dynamics(self):
@@ -788,46 +777,6 @@ class OptimalControlProgram:
             data["bio_model"][i] = model_class(**model_initializer)
 
         return cls(**data)
-
-    def _check_variable_mapping_consistency_with_node_mapping(
-        self, use_states_from_phase_idx, use_controls_from_phase_idx
-    ):
-        # TODO this feature is broken since the merge with bi_node, fix it
-        if (
-            list(set(use_states_from_phase_idx)) != use_states_from_phase_idx
-            or list(set(use_controls_from_phase_idx)) != use_controls_from_phase_idx
-        ):
-            raise NotImplementedError("Mapping over phases is broken")
-
-        for i in range(self.n_phases):
-            for j in [idx for idx, x in enumerate(use_states_from_phase_idx) if x == i]:
-                for key in self.nlp[i].variable_mappings.keys():
-                    if key in self.nlp[j].variable_mappings.keys():
-                        if (
-                            self.nlp[i].variable_mappings[key].to_first.map_idx
-                            != self.nlp[j].variable_mappings[key].to_first.map_idx
-                            or self.nlp[i].variable_mappings[key].to_second.map_idx
-                            != self.nlp[j].variable_mappings[key].to_second.map_idx
-                        ):
-                            raise RuntimeError(
-                                f"The variable mappings must be the same for the mapped phases."
-                                f"Mapping on {key} is different between phases {i} and {j}."
-                            )
-        for i in range(self.n_phases):
-            for j in [idx for idx, x in enumerate(use_controls_from_phase_idx) if x == i]:
-                for key in self.nlp[i].variable_mappings.keys():
-                    if key in self.nlp[j].variable_mappings.keys():
-                        if (
-                            self.nlp[i].variable_mappings[key].to_first.map_idx
-                            != self.nlp[j].variable_mappings[key].to_first.map_idx
-                            or self.nlp[i].variable_mappings[key].to_second.map_idx
-                            != self.nlp[j].variable_mappings[key].to_second.map_idx
-                        ):
-                            raise RuntimeError(
-                                f"The variable mappings must be the same for the mapped phases."
-                                f"Mapping on {key} is different between phases {i} and {j}."
-                            )
-        return
 
     def _set_kinematic_phase_mapping(self):
         """
@@ -1073,7 +1022,7 @@ class OptimalControlProgram:
         a_bounds: BoundsList = None,
     ):
         """
-        The main user interface to add bounds in the ocp
+        The main user interface to add bounds in the ocp to nlps.
 
         Parameters
         ----------
@@ -1086,60 +1035,47 @@ class OptimalControlProgram:
         a_bounds: BoundsList
             The algebraic_states variable bounds to add
         """
-        for i in range(self.n_phases):
-            if x_bounds is not None:
-                if not isinstance(x_bounds, BoundsList):
-                    raise RuntimeError("x_bounds should be built from a BoundsList")
-                origin_phase = 0 if len(x_bounds) == 1 else i
-                for key in x_bounds[origin_phase].keys():
-                    if key not in self.nlp[i].states.keys() + ["None"]:
-                        raise ValueError(
-                            f"{key} is not a state variable, please check for typos in the declaration of x_bounds"
-                        )
-                    self.nlp[i].x_bounds.add(key, x_bounds[origin_phase][key], phase=0)
+        # Assume when only one phase is defined, the user wants to apply the same bounds to all phases
+        if x_bounds is not None:
+            if not isinstance(x_bounds, BoundsList):
+                raise RuntimeError("x_bounds should be built from a BoundsList")
+            if len(x_bounds) == 1 and self.n_phases > 1:
+                x_bounds.phase_duplication(self.n_phases)
 
-            if u_bounds is not None:
-                if not isinstance(u_bounds, BoundsList):
-                    raise RuntimeError("u_bounds should be built from a BoundsList")
-                for key in u_bounds.keys():
-                    if key not in self.nlp[i].controls.keys() + ["None"]:
-                        raise ValueError(
-                            f"{key} is not a control variable, please check for typos in the declaration of u_bounds"
-                        )
-                    origin_phase = 0 if len(u_bounds) == 1 else i
-                    self.nlp[i].u_bounds.add(key, u_bounds[origin_phase][key], phase=0)
+        if u_bounds is not None:
+            if not isinstance(u_bounds, BoundsList):
+                raise RuntimeError("u_bounds should be built from a BoundsList")
+            if len(u_bounds) == 1 and self.n_phases > 1:
+                u_bounds.phase_duplication(self.n_phases)
 
-            if a_bounds is not None:
-                if not isinstance(a_bounds, BoundsList):
-                    raise RuntimeError("a_bounds should be built from a BoundsList")
-                for key in a_bounds.keys():
-                    if key not in self.nlp[i].algebraic_states.keys() + ["None"]:
-                        raise ValueError(
-                            f"{key} is not an algebraic variable, please check for typos in the declaration of a_bounds"
-                        )
-                    origin_phase = 0 if len(a_bounds) == 1 else i
-                    self.nlp[i].a_bounds.add(key, a_bounds[origin_phase][key], phase=0)
+        if a_bounds is not None:
+            if not isinstance(a_bounds, BoundsList):
+                raise RuntimeError("a_bounds should be built from a BoundsList")
+            if len(a_bounds) == 1 and self.n_phases > 1:
+                a_bounds.phase_duplication(self.n_phases)
+
+        for p, nlp in enumerate(self.nlp):
+            x_bounds_p = x_bounds[p] if x_bounds else None
+            u_bounds_p = u_bounds[p] if u_bounds else None
+            a_bounds_p = a_bounds[p] if a_bounds else None
+            nlp.update_bounds(x_bounds_p, u_bounds_p, a_bounds_p)
 
         if parameter_bounds is not None:
             if not isinstance(parameter_bounds, BoundsList):
                 raise RuntimeError("parameter_bounds should be built from a BoundsList")
+            valid_keys = self.parameters.keys() + ["None"]
+            if not all([key in valid_keys for key in parameter_bounds.keys()]):
+                raise ValueError(
+                    f"Please check for typos in the declaration of parameter_bounds. "
+                    f"Here are declared keys: {list(parameter_bounds.keys())}. "
+                    f"Available keys are: {valid_keys}."
+                )
+
             for key in parameter_bounds.keys():
-                if key not in self.parameters.keys() + ["None"]:
-                    raise ValueError(
-                        f"{key} is not a parameter variable, please check for typos in the declaration of parameter_bounds"
-                    )
                 self.parameter_bounds.add(key, parameter_bounds[key], phase=0)
 
         for nlp in self.nlp:
-            for key in nlp.states.keys():
-                if f"{key}_states" in nlp.plot and key in nlp.x_bounds.keys():
-                    nlp.plot[f"{key}_states"].bounds = nlp.x_bounds[key]
-            for key in nlp.controls.keys():
-                if f"{key}_controls" in nlp.plot and key in nlp.u_bounds.keys():
-                    nlp.plot[f"{key}_controls"].bounds = nlp.u_bounds[key]
-            for key in nlp.algebraic_states.keys():
-                if f"{key}_algebraic" in nlp.plot and key in nlp.a_bounds.keys():
-                    nlp.plot[f"{key}_algebraic"].bounds = nlp.a_bounds[key]
+            nlp.update_bounds_on_plots()
 
     def update_initial_guess(
         self,
@@ -1153,68 +1089,52 @@ class OptimalControlProgram:
 
         Parameters
         ----------
-        x_init: BoundsList
+        x_init: InitialGuessList
             The state initial guess to add
-        u_init: BoundsList
+        u_init: InitialGuessList
             The control initial guess to add
-        parameter_init: BoundsList
+        parameter_init: InitialGuessList
             The parameters initial guess to add
-        a_init: BoundsList
+        a_init: InitialGuessList
             The algebraic_states variable initial guess to add
         """
+        # Assume when only one phase is defined, the user wants to apply the same bounds to all phases
+        if x_init is not None:
+            if not isinstance(x_init, InitialGuessList):
+                raise RuntimeError("x_init should be built from a InitialGuessList")
+            if len(x_init) == 1 and self.n_phases > 1:
+                x_init.phase_duplication(self.n_phases)
 
-        for i in range(self.n_phases):
-            if x_init:
-                if not isinstance(x_init, InitialGuessList):
-                    raise RuntimeError("x_init should be built from a InitialGuessList")
-                origin_phase = 0 if len(x_init) == 1 else i
-                for key in x_init[origin_phase].keys():
-                    if key not in self.nlp[i].states.keys() + ["None"]:
-                        raise ValueError(
-                            f"{key} is not a state variable, please check for typos in the declaration of x_init"
-                        )
-                    if (
-                        not self.nlp[i].ode_solver.is_direct_collocation
-                        and x_init[origin_phase].type == InterpolationType.ALL_POINTS
-                    ):
-                        raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
-                    self.nlp[i].x_init.add(key, x_init[origin_phase][key], phase=0)
+        if u_init is not None:
+            if not isinstance(u_init, InitialGuessList):
+                raise RuntimeError("u_init should be built from a InitialGuessList")
+            if len(u_init) == 1 and self.n_phases > 1:
+                u_init.phase_duplication(self.n_phases)
 
-            if u_init:
-                if not isinstance(u_init, InitialGuessList):
-                    raise RuntimeError("u_init should be built from a InitialGuessList")
-                origin_phase = 0 if len(u_init) == 1 else i
-                for key in u_init.keys():
-                    if key not in self.nlp[i].controls.keys() + ["None"]:
-                        raise ValueError(
-                            f"{key} is not a control variable, please check for typos in the declaration of u_init"
-                        )
-                    if (
-                        not self.nlp[i].ode_solver.is_direct_collocation
-                        and x_init[origin_phase].type == InterpolationType.ALL_POINTS
-                    ):
-                        raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
-                    self.nlp[i].u_init.add(key, u_init[origin_phase][key], phase=0)
+        if a_init is not None:
+            if not isinstance(a_init, InitialGuessList):
+                raise RuntimeError("a_init should be built from a InitialGuessList")
+            if len(a_init) == 1 and self.n_phases > 1:
+                a_init.phase_duplication(self.n_phases)
 
-            if a_init:
-                if not isinstance(a_init, InitialGuessList):
-                    raise RuntimeError("a_init should be built from a InitialGuessList")
-                origin_phase = 0 if len(a_init) == 1 else i
-                for key in a_init[origin_phase].keys():
-                    if key not in self.nlp[i].algebraic_states.keys() + ["None"]:
-                        raise ValueError(
-                            f"{key} is not an algebraic variable, please check for typos in the declaration of a_init"
-                        )
-                    self.nlp[i].a_init.add(key, a_init[origin_phase][key], phase=0)
+        for p, nlp in enumerate(self.nlp):
+            x_init_p = x_init[p] if x_init else None
+            u_init_p = u_init[p] if u_init else None
+            a_init_p = a_init[p] if a_init else None
+            nlp.update_init(x_init_p, u_init_p, a_init_p)
 
         if parameter_init is not None:
             if not isinstance(parameter_init, InitialGuessList):
                 raise RuntimeError("parameter_init should be built from a InitialGuessList")
+            valid_keys = self.parameters.keys() + ["None"]
+            if not all([key in valid_keys for key in parameter_init.keys()]):
+                raise ValueError(
+                    f"Please check for typos in the declaration of parameter_init. "
+                    f"Here are declared keys: {list(parameter_init.keys())}. "
+                    f"Available keys are: {valid_keys}."
+                )
+
             for key in parameter_init.keys():
-                if key not in self.parameters.keys() + ["None"]:
-                    raise ValueError(
-                        f"{key} is not a parameter variable, please check for typos in the declaration of parameter_init"
-                    )
                 self.parameter_init.add(key, parameter_init[key], phase=0)
 
     def add_plot(self, fig_name: str, update_function: Callable, phase: int = -1, **parameters: Any):

@@ -1,8 +1,9 @@
-import os
-import pytest
+import re
 
 import numpy as np
 import numpy.testing as npt
+import pytest
+
 from bioptim import (
     InterpolationType,
     Solution,
@@ -19,6 +20,8 @@ from bioptim import (
     SolutionMerge,
 )
 from bioptim.limits.path_conditions import InitialGuess
+from ..utils import TestUtils
+
 
 # TODO: Add negative test for sizes
 
@@ -141,7 +144,7 @@ def test_initial_guess_update(phase_dynamics):
     # Load pendulum
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
@@ -207,7 +210,7 @@ def test_initial_guess_custom():
 def test_simulate_from_initial_multiple_shoot(phase_dynamics):
     from bioptim.examples.getting_started import pendulum as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
     final_time = 2
     n_shooting = 10
 
@@ -255,7 +258,7 @@ def test_simulate_from_initial_single_shoot(phase_dynamics):
     # Load pendulum
     from bioptim.examples.getting_started import pendulum as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
     final_time = 2
     n_shooting = 10
 
@@ -305,7 +308,7 @@ def test_initial_guess_error_messages(phase_dynamics):
     """
     from bioptim.examples.getting_started import pendulum as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
     biorbd_model_path = bioptim_folder + "/models/pendulum.bioMod"
 
     # Add objective functions
@@ -338,7 +341,10 @@ def test_initial_guess_error_messages(phase_dynamics):
         )
 
     with pytest.raises(
-        ValueError, match="bad_key is not a state variable, please check for typos in the declaration of x_init"
+        ValueError,
+        match=re.escape(
+            "Please check for typos in the declaration of x_init. Here are declared keys: ['bad_key']. Available keys are: ['q', 'qdot']."
+        ),
     ):
         x_init = InitialGuessList()
         x_init.add("bad_key", [1, 2])
@@ -354,7 +360,10 @@ def test_initial_guess_error_messages(phase_dynamics):
 
     del bio_model  # This is to fix a memory bug
     with pytest.raises(
-        ValueError, match="bad_key is not a control variable, please check for typos in the declaration of u_init"
+        ValueError,
+        match=re.escape(
+            "Please check for typos in the declaration of u_init. Here are declared keys: ['bad_key']. Available keys are: ['tau']."
+        ),
     ):
         u_init = InitialGuessList()
         u_init.add("bad_key", [1, 2])

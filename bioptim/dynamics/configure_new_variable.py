@@ -116,10 +116,6 @@ class NewVariableConfiguration:
         self.skip_plot = skip_plot
         self.axes_idx = axes_idx
 
-        self.copy_states = False
-        self.copy_states_dot = False
-        self.copy_controls = False
-
         self._check_combine_state_control_plot()
 
         if _manage_fatigue_to_new_variable(name, name_elements, ocp, nlp, as_states, as_controls, fatigue):
@@ -129,8 +125,6 @@ class NewVariableConfiguration:
 
         self._check_for_n_threads_compatibility()
         self._declare_auto_variable_mapping()
-        self._check_phase_mapping_of_variable()
-        self._declare_phase_copy_booleans()
 
         self._declare_initial_guess()
         self._declare_variable_scaling()
@@ -152,72 +146,7 @@ class NewVariableConfiguration:
         if self.combine_state_control_plot and self.combine_name is not None:
             raise ValueError("combine_name and combine_state_control_plot cannot be defined simultaneously")
 
-    def _check_phase_mapping_of_variable(self):
-        """Check if the use of states from another phases is compatible with nlp.phase_dynamics"""
-        if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE and (
-            self.nlp.use_states_from_phase_idx != self.nlp.phase_idx
-            or self.nlp.use_states_dot_from_phase_idx != self.nlp.phase_idx
-            or self.nlp.use_controls_from_phase_idx != self.nlp.phase_idx
-        ):
-            # This check allows to use states[0], controls[0] in the following copy
-            raise ValueError(
-                "map_state=True must be used alongside with nlp.phase_dynamics = PhaseDynamics.SHARED_DURING_THE_PHASE"
-            )
-
-    def _declare_phase_copy_booleans(self):
-        """Use of states[0] and controls[0] is permitted since nlp.phase_dynamics
-        is PhaseDynamics.SHARED_DURING_THE_PHASE"""
-        nlp = self.ocp.nlp
-        phase_idx = self.nlp.phase_idx
-
-        self.copy_states = self.check_variable_copy_condition(
-            nlp, phase_idx, self.nlp.use_states_from_phase_idx, self.name, "states"
-        )
-
-        self.copy_controls = self.check_variable_copy_condition(
-            nlp, phase_idx, self.nlp.use_controls_from_phase_idx, self.name, "controls"
-        )
-
-        self.copy_states_dot = self.check_variable_copy_condition(
-            nlp, phase_idx, self.nlp.use_states_dot_from_phase_idx, self.name, "states_dot"
-        )
-
-        self.copy_algebraic_states = self.check_variable_copy_condition(
-            nlp, phase_idx, self.nlp.use_states_from_phase_idx, self.name, "algebraic_states"
-        )
-
-    @staticmethod
-    def check_variable_copy_condition(
-        nlp, phase_idx: int, use_from_phase_idx: int, name: str, decision_variable_attribute: str
-    ):
-        """
-        Check if the copy condition is met, if a NodeMapping exists.
-
-        Parameters
-        ----------
-        nlp: NonLinearProgram
-            The non linear program of the phase of the ocp
-        phase_idx:
-            The index of the phase
-        use_from_phase_idx: int
-            The index of the phase from which the variable should be copied
-        name: str
-            The name of the variable to copy
-        decision_variable_attribute: str
-            refers to one property of the nlp, e.g. "states", "states_dot", "controls", ...
-
-        Returns
-        -------
-        bool
-            True if the copy condition is met, False otherwise
-        """
-        return (
-            use_from_phase_idx is not None
-            and use_from_phase_idx < phase_idx
-            and name in getattr(nlp[use_from_phase_idx], decision_variable_attribute)
-        )
-
-    def define_cx_scaled(self, n_col: int, n_shooting: int, initial_node) -> list[MX | SX]:
+    def define_cx_scaled(self, n_col: int, node_index: int) -> list[MX | SX]:
         """
         This function defines the decision variables, either MX or SX,
         scaled to the physical world, they mean something according to the physical model considered.
@@ -226,31 +155,25 @@ class NewVariableConfiguration:
         ---------
         n_col: int
             The number of columns per shooting interval, useful espacially for direct collocation
-        n_shooting: int
-            The number of node shooting
-        initial_node: todo (int or str)
-            todo: complete
-
+        node_index: int
+            The index of the node
         Returns
         --------
         _cx: list[MX |SX]
             The scaled decision variables
         """
-        _cx = [self.nlp.cx() for _ in range(n_shooting + 1)]
-        for node_index in range(n_shooting + 1):
-            _cx[node_index] = [self.nlp.cx() for _ in range(n_col)]
+        _cx = [self.nlp.cx() for _ in range(n_col)]
         for idx in self.nlp.variable_mappings[self.name].to_first.map_idx:
-            for node_index in range(n_shooting + 1):
-                for j in range(n_col):
-                    sign = "-" if np.sign(idx) < 0 else ""
-                    _cx[node_index][j] = vertcat(
-                        _cx[node_index][j],
-                        self.nlp.cx.sym(
-                            f"{sign}{self.name}_{self.name_elements[abs(idx)]}_phase{self.nlp.phase_idx}_node{node_index + initial_node}.{j}",
-                            1,
-                            1,
-                        ),
-                    )
+            for j in range(n_col):
+                sign = "-" if np.sign(idx) < 0 else ""
+                _cx[j] = vertcat(
+                    _cx[j],
+                    self.nlp.cx.sym(
+                        f"{sign}{self.name}_{self.name_elements[abs(idx)]}_phase{self.nlp.phase_idx}_node{node_index}.{j}",
+                        1,
+                        1,
+                    ),
+                )
         return _cx
 
     def define_cx_unscaled(self, _cx_scaled: list[MX | SX], scaling: np.ndarray) -> list[MX | SX]:
@@ -274,12 +197,8 @@ class NewVariableConfiguration:
             The symbolic unscaled decision variables.
         """
         _cx = [self.nlp.cx() for _ in range(len(_cx_scaled))]
-        for node_index in range(len(_cx_scaled)):
-            _cx[node_index] = [self.nlp.cx() for _ in range(len(_cx_scaled[0]))]
-
-        for node_index in range(len(_cx_scaled)):
-            for j in range(len(_cx_scaled[0])):
-                _cx[node_index][j] = _cx_scaled[node_index][j] * scaling
+        for j in range(len(_cx_scaled)):
+            _cx[j] = _cx_scaled[j] * scaling
         return _cx
 
     def _declare_auto_variable_mapping(self):
@@ -335,9 +254,9 @@ class NewVariableConfiguration:
                 current_legend = f"{self.name}_{name_el}"
                 for i in range(self.ocp.n_phases):
                     if self.as_states:
-                        current_legend += f"-{self.ocp.nlp[i].use_states_from_phase_idx}"
+                        current_legend += f"-{i}"
                     if self.as_controls:
-                        current_legend += f"-{self.ocp.nlp[i].use_controls_from_phase_idx}"
+                        current_legend += f"-{i}"
                 self.legend += [current_legend]
 
     def _declare_cx_and_plot(self):
@@ -346,20 +265,12 @@ class NewVariableConfiguration:
                 self.nlp.n_states_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1
             ):
                 n_cx = self.nlp.ode_solver.n_required_cx + 2
-                cx_scaled = (
-                    self.ocp.nlp[self.nlp.use_states_from_phase_idx].states[node_index][self.name].original_cx
-                    if self.copy_states
-                    else self.define_cx_scaled(n_col=n_cx, n_shooting=0, initial_node=node_index)
-                )
-                cx = (
-                    self.ocp.nlp[self.nlp.use_states_from_phase_idx].states[node_index][self.name].original_cx
-                    if self.copy_states
-                    else self.define_cx_unscaled(cx_scaled, self.nlp.x_scaling[self.name].scaling)
-                )
+                cx_scaled = self.define_cx_scaled(n_col=n_cx, node_index=node_index)
+                cx = self.define_cx_unscaled(cx_scaled, self.nlp.x_scaling[self.name].scaling)
                 self.nlp.states.append(
                     self.name,
-                    cx[0],
-                    cx_scaled[0],
+                    cx,
+                    cx_scaled,
                     self.nlp.variable_mappings[self.name],
                     node_index,
                 )
@@ -368,7 +279,7 @@ class NewVariableConfiguration:
                         lambda t0, phases_dt, node_idx, x, u, p, a, d: (
                             x[self.nlp.states.key_index(self.name), :]
                             if x.any()
-                            else np.ndarray((cx[0][0].shape[0], 1)) * np.nan
+                            else np.ndarray((cx[0].shape[0], 1)) * np.nan
                         ),
                         plot_type=PlotType.INTEGRATED,
                         axes_idx=self.axes_idx,
@@ -380,20 +291,12 @@ class NewVariableConfiguration:
             for node_index in range(
                 self.nlp.n_controls_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1
             ):
-                cx_scaled = (
-                    self.ocp.nlp[self.nlp.use_controls_from_phase_idx].controls[node_index][self.name].original_cx
-                    if self.copy_controls
-                    else self.define_cx_scaled(n_col=3, n_shooting=0, initial_node=node_index)
-                )
-                cx = (
-                    self.ocp.nlp[self.nlp.use_controls_from_phase_idx].controls[node_index][self.name].original_cx
-                    if self.copy_controls
-                    else self.define_cx_unscaled(cx_scaled, self.nlp.u_scaling[self.name].scaling)
-                )
+                cx_scaled = self.define_cx_scaled(n_col=3, node_index=node_index)
+                cx = self.define_cx_unscaled(cx_scaled, self.nlp.u_scaling[self.name].scaling)
                 self.nlp.controls.append(
                     self.name,
-                    cx[0],
-                    cx_scaled[0],
+                    cx,
+                    cx_scaled,
                     self.nlp.variable_mappings[self.name],
                     node_index,
                 )
@@ -404,7 +307,7 @@ class NewVariableConfiguration:
                         lambda t0, phases_dt, node_idx, x, u, p, a, d: (
                             u[self.nlp.controls.key_index(self.name), :]
                             if u.any()
-                            else np.ndarray((cx[0][0].shape[0], 1)) * np.nan
+                            else np.ndarray((cx[0].shape[0], 1)) * np.nan
                         ),
                         plot_type=plot_type,
                         axes_idx=self.axes_idx,
@@ -421,20 +324,12 @@ class NewVariableConfiguration:
                 self.nlp.n_states_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1
             ):
                 n_cx = self.nlp.ode_solver.n_required_cx + 2
-                cx_scaled = (
-                    self.ocp.nlp[self.nlp.use_states_dot_from_phase_idx].states_dot[node_index][self.name].original_cx
-                    if self.copy_states_dot
-                    else self.define_cx_scaled(n_col=n_cx, n_shooting=1, initial_node=node_index)
-                )
-                cx = (
-                    self.ocp.nlp[self.nlp.use_states_dot_from_phase_idx].states_dot[node_index][self.name].original_cx
-                    if self.copy_states_dot
-                    else self.define_cx_unscaled(cx_scaled, self.nlp.xdot_scaling[self.name].scaling)
-                )
+                cx_scaled = self.define_cx_scaled(n_col=n_cx, node_index=node_index)
+                cx = self.define_cx_unscaled(cx_scaled, self.nlp.xdot_scaling[self.name].scaling)
                 self.nlp.states_dot.append(
                     self.name,
-                    cx[0],
-                    cx_scaled[0],
+                    cx,
+                    cx_scaled,
                     self.nlp.variable_mappings[self.name],
                     node_index,
                 )
@@ -444,21 +339,13 @@ class NewVariableConfiguration:
                 self.nlp.n_states_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1
             ):
                 n_cx = 2
-                cx_scaled = (
-                    self.ocp.nlp[self.nlp.use_states_from_phase_idx].algebraic_states[node_index][self.name].original_cx
-                    if self.copy_algebraic_states
-                    else self.define_cx_scaled(n_col=n_cx, n_shooting=0, initial_node=node_index)
-                )
-                cx = (
-                    self.ocp.nlp[self.nlp.use_states_from_phase_idx].algebraic_states[node_index][self.name].original_cx
-                    if self.copy_algebraic_states
-                    else self.define_cx_unscaled(cx_scaled, self.nlp.a_scaling[self.name].scaling)
-                )
+                cx_scaled = self.define_cx_scaled(n_col=n_cx, node_index=node_index)
+                cx = self.define_cx_unscaled(cx_scaled, self.nlp.a_scaling[self.name].scaling)
 
                 self.nlp.algebraic_states.append(
                     self.name,
-                    cx[0],
-                    cx_scaled[0],
+                    cx,
+                    cx_scaled,
                     self.nlp.variable_mappings[self.name],
                     node_index,
                 )
@@ -468,7 +355,7 @@ class NewVariableConfiguration:
                         lambda t0, phases_dt, node_idx, x, u, p, a, d: (
                             a[self.nlp.algebraic_states.key_index(self.name), :]
                             if a.any()
-                            else np.ndarray((cx[0][0].shape[0], 1)) * np.nan
+                            else np.ndarray((cx[0].shape[0], 1)) * np.nan
                         ),
                         plot_type=PlotType.STEP,
                         axes_idx=self.axes_idx,

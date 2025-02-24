@@ -1,6 +1,7 @@
 import numpy as np
-from casadi import Function, vertcat, horzcat, collocation_points, tangent, rootfinder, DM, MX, SX, linspace
+from casadi import Function, vertcat, horzcat, collocation_points, rootfinder, DM, MX, SX, linspace
 
+from .lagrange_interpolation import LagrangeInterpolation
 from ..misc.enums import ControlType, DefectType
 from ..models.protocols.biomodel import BioModel
 
@@ -578,46 +579,7 @@ class COLLOCATION(Integrator):
         """
         self.method = ode_opt["method"]
         self.degree = ode_opt["irk_polynomial_interpolation_degree"]
-
-        # Coefficients of the collocation equation
-        self._c = self.cx.zeros((self.degree + 1, self.degree + 1))
-
-        # Coefficients of the continuity equation
-        self._d = self.cx.zeros(self.degree + 1)
-
-        # Dimensionless time inside one control interval
-        time_control_interval = self.cx.sym("time_control_interval")
-
-        # For all collocation points
-        for j in range(self.degree + 1):
-            # Construct Lagrange polynomials to get the polynomial basis at the collocation point
-            _l = 1
-            for r in range(self.degree + 1):
-                if r != j:
-                    _l *= (time_control_interval - self._integration_time[r]) / (
-                        self._integration_time[j] - self._integration_time[r]
-                    )
-
-            # Evaluate the polynomial at the final time to get the coefficients of the continuity equation
-            if self.method == "radau":
-                self._d[j] = 1 if j == self.degree else 0
-            else:
-                lfcn = Function("lfcn", [time_control_interval], [_l])
-                self._d[j] = lfcn(1.0)
-
-            # Construct Lagrange polynomials to get the polynomial basis at the collocation point
-            _l = 1
-            for r in range(self.degree + 1):
-                if r != j:
-                    _l *= (time_control_interval - self._integration_time[r]) / (
-                        self._integration_time[j] - self._integration_time[r]
-                    )
-
-            # Evaluate the time derivative of the polynomial at all collocation points to get
-            # the coefficients of the continuity equation
-            tfcn = Function("tfcn", [time_control_interval], [tangent(_l, time_control_interval)])
-            for r in range(self.degree + 1):
-                self._c[j, r] = tfcn(self._integration_time[r])
+        self.lagrange_interpolation = LagrangeInterpolation(time_grid=self._integration_time)
 
     @property
     def _x_sym_modified(self):
@@ -680,19 +642,21 @@ class COLLOCATION(Integrator):
         algebraic_states: MX | SX,
         numerical_timeseries: MX | SX,
     ) -> tuple:
-        # Total number of variables for one finite element
-        states_end = self._d[0] * states[1]
+
+        if self.method == "radau":
+            # For Radau, the last collocation point is the same as the final point of the interval
+            states_end = states[-1]
+        else:
+            # For Legendre, the final point is obtained by interpolation
+            states_end = self.lagrange_interpolation.interpolate(states[1:], 1.0)
+
         defects = []
         for j in range(1, self.degree + 1):
             t = vertcat(self.t_span_sym[0] + self._integration_time[j] * self.h, self.h)
 
-            # Expression for the state derivative at the collocation point
-            xp_j = 0
-            for r in range(self.degree + 2):
-                if r == 1:
-                    # We skip r=1 because this collocation point is the same as the initial point
-                    continue
-                xp_j += self._c[r - 1 if r > 0 else r, j] * states[r]
+            xp_j = self.lagrange_interpolation.interpolate_first_derivative(
+                states[0:1] + states[2:], self._integration_time[j]
+            )
 
             if self.defects_type == DefectType.EXPLICIT:
                 f_j = self.fun(
@@ -704,6 +668,7 @@ class COLLOCATION(Integrator):
                     numerical_timeseries,
                 )[:, self.ode_idx]
                 defects.append(xp_j - f_j * self.h)
+
             elif self.defects_type == DefectType.IMPLICIT:
                 defects.append(
                     self.implicit_fun(
@@ -718,9 +683,6 @@ class COLLOCATION(Integrator):
                 )
             else:
                 raise ValueError("Unknown defects type. Please use 'explicit' or 'implicit'")
-
-            # Add contribution to the end state
-            states_end += self._d[j] * states[j + 1]
 
         # Concatenate constraints
         defects = vertcat(*defects)
@@ -791,12 +753,18 @@ class IRK(COLLOCATION):
         x_irk_points = ifcn(self.cx(), t, states[0], controls, params, algebraic_states, numerical_timeseries)
         x = [states[0] if r == 0 else x_irk_points[(r - 1) * nx : r * nx] for r in range(self.degree + 1)]
 
-        # Get an expression for the state at the end of the finite element
-        xf = self.cx.zeros(nx, self.degree + 1)  # 0 #
+        xf = self.cx.zeros(nx, self.degree + 1)
         for r in range(self.degree + 1):
-            xf[:, r] = xf[:, r - 1] + self._d[r] * x[r]
+            xf[:, r] = self.lagrange_interpolation.interpolate(x, self._integration_time[r])
 
-        return xf[:, -1], horzcat(states[0], xf[:, -1])
+        if self.method == "radau":
+            # For Radau, the last collocation point is the same as the final point of the interval
+            states_end = x[-1]
+        else:
+            # For Legendre, the final point is obtained by interpolation
+            states_end = self.lagrange_interpolation.interpolate(x, 1.0)
+
+        return states_end, horzcat(states[0], states_end)
 
 
 class CVODES(Integrator):

@@ -8,7 +8,7 @@ from biorbd_casadi import (
     GeneralizedTorque,
     GeneralizedAcceleration,
 )
-from casadi import SX, MX, vertcat, horzcat, norm_fro, Function
+from casadi import SX, MX, vertcat, horzcat, norm_fro, Function, DM
 
 from bioptim.models.biorbd.external_forces import (
     ExternalForceSetTimeSeries,
@@ -89,7 +89,7 @@ class BiorbdModel:
 
     @property
     def path(self) -> str:
-        return self.model.path().relativePath().to_string()
+        return self.model.path().absolutePath().to_string()
 
     def copy(self):
         return BiorbdModel(self.path)
@@ -102,9 +102,9 @@ class BiorbdModel:
         return self._friction_coefficients
 
     def set_friction_coefficients(self, new_friction_coefficients) -> None:
-        if np.any(new_friction_coefficients < 0):
+        if isinstance(new_friction_coefficients, (DM, np.ndarray)) and np.any(new_friction_coefficients < 0):
             raise ValueError("Friction coefficients must be positive")
-        return self._friction_coefficients
+        self._friction_coefficients = new_friction_coefficients
 
     @property
     def gravity(self) -> Function:

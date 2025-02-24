@@ -1,10 +1,3 @@
-import os
-
-import numpy as np
-import numpy.testing as npt
-import pytest
-from casadi import MX, SX
-
 from bioptim import (
     ConfigureProblem,
     ControlType,
@@ -20,7 +13,12 @@ from bioptim import (
     SolutionMerge,
     ParameterContainer,
 )
-from tests.utils import TestUtils
+from casadi import MX, SX
+import numpy as np
+import numpy.testing as npt
+import pytest
+
+from ..utils import TestUtils
 
 
 class OptimalControlProgram:
@@ -70,13 +68,6 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, phase_dynami
     )
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
-    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
-
     np.random.seed(42)
 
     # Prepare the dynamics
@@ -140,12 +131,6 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx, p
 
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
-    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     np.random.seed(42)
 
@@ -234,12 +219,6 @@ def test_torque_activation_driven_with_passive_torque(with_passive_torque, with_
     )
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
-    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     np.random.seed(42)
 
@@ -353,12 +332,6 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, cx, phase_dynami
     )
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
-    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
-    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
-    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     np.random.seed(42)
 
@@ -401,7 +374,7 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, cx, phase_dynami
 def test_pendulum_passive_torque(with_passive_torque, phase_dynamics):
     from bioptim.examples.torque_driven_ocp import pendulum_with_passive_torque as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     # Define the problem
     biorbd_model_path = bioptim_folder + "/models/pendulum_with_passive_torque.bioMod"

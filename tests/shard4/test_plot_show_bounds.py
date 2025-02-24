@@ -1,7 +1,7 @@
-import os
-
 from bioptim import PhaseDynamics
 from bioptim.limits.path_conditions import Bounds
+
+from ..utils import TestUtils
 
 
 def test_pendulum_show_bounds():
@@ -11,7 +11,7 @@ def test_pendulum_show_bounds():
     """
     from bioptim.examples.sqp_method import pendulum as ocp_module
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",

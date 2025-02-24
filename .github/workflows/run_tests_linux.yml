@@ -28,7 +28,6 @@ jobs:
       - name: Setup environment
         uses: conda-incubator/setup-miniconda@v2
         with:
-          miniforge-variant: Mambaforge
           miniforge-version: latest
           use-mamba: true
           activate-environment: bioptim
@@ -36,12 +35,12 @@ jobs:
 
       - name: Print mamba info
         run: |
-          mamba info
-          mamba list
+          conda info
+          conda list
 
       - name: Install extra dependencies
         run: | 
-          mamba install pytest-cov black pytest pytest-cov codecov packaging -cconda-forge
+          conda install pytest-cov black pytest pytest-cov codecov packaging -cconda-forge
           sudo apt install -y librhash-dev
 
       - name: Install ACADOS on Linux
@@ -60,18 +59,17 @@ jobs:
         if: matrix.shard == 1
 
       - name: Run tests with code coverage
-        run: pytest -v --color=yes --cov-report term-missing --cov=bioptim --cov-report=xml:coverage.xml tests/shard${{ matrix.shard }}
+        run: pytest -v --color=yes --cov-report term-missing --cov=bioptim tests/shard${{ matrix.shard }}
         if: matrix.os == 'ubuntu-latest'
-
+      
       - name: Archive coverage report
         id: archive
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: coverage${{ matrix.shard }}
-          path: |
-            coverage.xml
-            .coverage
-
+          name: coverage-${{ matrix.shard }}
+          path: .coverage
+          if-no-files-found: error
+          include-hidden-files: true
 
   merge-coverage:
     needs: build
@@ -85,60 +83,37 @@ jobs:
         run:
             echo "PREFIX=${{ env.PREFIX_LINUX }}" >> $GITHUB_ENV
 
-
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Setup environment
-        uses: conda-incubator/setup-miniconda@v2
-        with:
-          miniforge-variant: Mambaforge
-          miniforge-version: latest
-          use-mamba: true
-          activate-environment: bioptim
-          environment-file: environment.yml
-
-      - name: Print mamba info
-        run: |
-          mamba info
-#          mamba list
-
       - name: Install extra dependencies
         run: |
-          sudo apt-get install -y python3-pip
+          sudo apt install -y python3-pip
           pip3 install coverage
 
       - name: Download all workflow run artifacts
         id: download
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-*
 
       - name: Rename coverage files
         run: |
           for shard in {1,2,3,4,5,6}; do
-            mv coverage${shard}/coverage.xml coverage${shard}.xml
-            mv coverage${shard}/.coverage* .coverage${shard}
+            mv coverage-${shard}/.coverage .coverage${shard}
           done
 
-      - name: Show current dir content
-        run: pwd; ls -a -l
-
       - name: Merge coverage reports
-        run: coverage combine .coverage1 .coverage2 .coverage3 .coverage4
-
-      - name: Show current dir content with new .coverage file
-        run: pwd; ls -a
+        run: coverage combine .coverage1 .coverage2 .coverage3 .coverage4 .coverage5 .coverage6
 
       - name: Generate XML report
         run: |
           coverage xml
           coverage report -m
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v2
+      - uses: codecov/codecov-action@v5
         with:
-          #token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage.xml
-          #files: ./coverage1.xml, ./coverage2.xml, ./coverage3.xml, ./coverage4.xml
+          files: ./coverage.xml
           flags: unittests
           fail_ci_if_error: true
           verbose: true
