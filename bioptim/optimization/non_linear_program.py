@@ -6,10 +6,9 @@ from casadi import SX, MX, vertcat
 from .optimization_variable import OptimizationVariableContainer
 from ..dynamics.dynamics_evaluation import DynamicsEvaluation
 from ..dynamics.dynamics_functions import DynamicsFunctions
-from ..dynamics.ode_solver import OdeSolver
+from ..dynamics.ode_solvers import OdeSolver
 from ..limits.path_conditions import InitialGuessList, BoundsList
-from ..misc.enums import ControlType, PhaseDynamics
-from ..misc.mapping import NodeMapping
+from ..misc.enums import ControlType, PhaseDynamics, InterpolationType
 from ..misc.options import OptionList
 from ..models.protocols.biomodel import BioModel
 from ..models.protocols.holonomic_biomodel import HolonomicBioModel
@@ -159,9 +158,6 @@ class NonLinearProgram:
         self.U_scaled = None
         self.u_scaling = None
         self.U = None
-        self.use_states_from_phase_idx = NodeMapping()
-        self.use_controls_from_phase_idx = NodeMapping()
-        self.use_states_dot_from_phase_idx = NodeMapping()
         self.x_bounds = BoundsList()
         self.x_init = InitialGuessList()
         self.X_scaled = None
@@ -211,6 +207,119 @@ class NonLinearProgram:
         self.controls.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
         self.algebraic_states.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
         self.integrated_values.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
+
+    def update_bounds(self, x_bounds, u_bounds, a_bounds):
+        self._update_bound(
+            bounds=x_bounds,
+            bound_name="x_bounds",
+            allowed_keys=list(self.states.keys()),
+            nlp_bounds=self.x_bounds,
+        )
+        self._update_bound(
+            bounds=u_bounds,
+            bound_name="u_bounds",
+            allowed_keys=list(self.controls.keys()),
+            nlp_bounds=self.u_bounds,
+        )
+        self._update_bound(
+            bounds=a_bounds,
+            bound_name="a_bounds",
+            allowed_keys=list(self.algebraic_states.keys()),
+            nlp_bounds=self.a_bounds,
+        )
+
+    @staticmethod
+    def _update_bound(bounds, bound_name, allowed_keys, nlp_bounds):
+        if bounds is None:
+            return
+
+        if not isinstance(bounds, BoundsList):
+            raise TypeError(f"{bound_name} should be built from a BoundsList.")
+
+        valid_keys = allowed_keys + ["None"]
+        if not all(key in valid_keys for key in bounds.keys()):
+            raise ValueError(
+                f"Please check for typos in the declaration of {bound_name}. "
+                f"Here are declared keys: {list(bounds.keys())}. "
+                f"Available keys are: {allowed_keys}."
+            )
+
+        # Add each bound to the target bounds collection
+        for key in bounds.keys():
+            nlp_bounds.add(key, bounds[key], phase=0)
+
+    def update_bounds_on_plots(self):
+        self._update_plot_bounds(self.states.keys(), self.x_bounds, "_states")
+        self._update_plot_bounds(self.controls.keys(), self.u_bounds, "_controls")
+        self._update_plot_bounds(self.algebraic_states.keys(), self.a_bounds, "_algebraic")
+
+    def _update_plot_bounds(self, keys, bounds, suffix):
+        """
+        Helper method to update plot bounds for a given group.
+
+        Parameters
+        ----------
+        keys: list
+            The keys to update
+        bounds: BoundsList
+            The bounds to update
+        suffix: str
+            The suffix to add to the keys
+        """
+        for key in keys:
+            plot_key = f"{key}{suffix}"
+            if plot_key in self.plot and key in bounds.keys():
+                self.plot[plot_key].bounds = bounds[key]
+
+    def update_init(self, x_init, u_init, a_init):
+
+        if x_init is not None:
+            not_direct_collocation = not self.ode_solver.is_direct_collocation
+            init_all_point = x_init.type == InterpolationType.ALL_POINTS
+
+            if not_direct_collocation and init_all_point:
+                raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
+                # TODO @ipuch in PR #907, add algebraic states to the error message
+
+        self._update_init(
+            init=x_init,
+            init_name="x_init",
+            allowed_keys=list(self.states.keys()),
+            nlp_init=self.x_init,
+        )
+        self._update_init(
+            init=u_init,
+            init_name="u_init",
+            allowed_keys=list(self.controls.keys()),
+            nlp_init=self.u_init,
+        )
+
+        self._update_init(
+            init=a_init,
+            init_name="a_init",
+            allowed_keys=list(self.algebraic_states.keys()),
+            nlp_init=self.a_init,
+        )
+
+    @staticmethod
+    def _update_init(init, init_name, allowed_keys, nlp_init):
+        if init is None:
+            return
+
+        if not isinstance(init, InitialGuessList):
+            raise TypeError(f"{init_name} should be built from a InitialGuessList.")
+
+        valid_keys = allowed_keys + ["None"]
+        if not all(key in valid_keys for key in init.keys()):
+            raise ValueError(
+                f"Please check for typos in the declaration of {init_name}. "
+                f"Here are declared keys: {list(init.keys())}. "
+                f"Available keys are: {allowed_keys}."
+            )
+
+        # Add each initial guess to the target initial guess collection
+        for key in init.keys():
+            nlp_init.add(key, init[key], phase=0)
 
     @property
     def n_states_nodes(self) -> int:
@@ -475,23 +584,30 @@ class NonLinearProgram:
         This function retrieves the external forces whether they are in
         states, controls, algebraic_states or numerical_timeseries
         """
-        if name in self.states:
-            external_forces = vertcat(external_forces, DynamicsFunctions.get(self.states[name], states))
-        if name in self.controls:
-            external_forces = vertcat(external_forces, DynamicsFunctions.get(self.controls[name], controls))
-        if name in self.algebraic_states:
-            external_forces = vertcat(
-                external_forces, DynamicsFunctions.get(self.algebraic_states[name], algebraic_states)
-            )
+        # Dictionary mapping variable types to their corresponding data
+        variable_types = {
+            "states": (self.states, states),
+            "controls": (self.controls, controls),
+            "algebraic_states": (self.algebraic_states, algebraic_states),
+        }
+
+        # Check standard variable types
+        for var_dict, var_data in variable_types.values():
+            if name in var_dict:
+                external_forces = vertcat(external_forces, DynamicsFunctions.get(var_dict[name], var_data))
+
+        # Handle numerical timeseries separately
         if self.numerical_timeseries is not None:
-            component_numerical_timeseries = 0
-            for key in self.numerical_timeseries.keys():
-                if name in key:
-                    component_numerical_timeseries += 1
-            if component_numerical_timeseries > 0:
-                for i_component in range(component_numerical_timeseries):
+            # Count components matching the name
+            matching_components = sum(1 for key in self.numerical_timeseries if name in key)
+
+            # Add each matching component
+            for i in range(matching_components):
+                component_key = f"{name}_{i}"
+                if component_key in self.numerical_timeseries:
                     external_forces = vertcat(
                         external_forces,
-                        DynamicsFunctions.get(self.numerical_timeseries[f"{name}_{i_component}"], numerical_timeseries),
+                        DynamicsFunctions.get(self.numerical_timeseries[component_key], numerical_timeseries),
                     )
+
         return external_forces

@@ -1,7 +1,10 @@
-import pytest
+import re
+
 import numpy as np
 import numpy.testing as npt
+import pytest
 from casadi import MX
+
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -16,8 +19,26 @@ from bioptim import (
     PhaseDynamics,
     VariableScaling,
 )
-
 from tests.utils import TestUtils
+
+
+def test_option_dict_method():
+    nq = 10
+    x_bounds_test = BoundsList()
+    x_bounds_test["q"] = -2.0 * np.ones((nq, 1)), 0.2 * np.ones((nq, 1))
+    x_bounds_test["qdot"] = -4 * np.ones((nq, 1)), 0.4 * np.ones((nq, 1))
+    x_bounds_test.phase_duplication(10)
+    assert x_bounds_test.nb_phase == 10
+    for p in range(9):
+        assert list(x_bounds_test[p].keys()) == list(x_bounds_test[p + 1].keys())
+        for key in x_bounds_test[p].keys():
+            npt.assert_almost_equal(x_bounds_test[p][key].min, x_bounds_test[p + 1][key].min)
+            npt.assert_almost_equal(x_bounds_test[p][key].max, x_bounds_test[p + 1][key].max)
+    with pytest.raises(
+        ValueError,
+        match="phase_duplication is only available for n_phases=1. Got 10 instead.",
+    ):
+        x_bounds_test.phase_duplication(11)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -67,6 +88,8 @@ def test_double_update_bounds_and_init(phase_dynamics):
     x_bounds = BoundsList()
     x_bounds["q"] = -2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1))
     x_bounds["qdot"] = -2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1))
+    assert x_bounds.nb_phase == 1
+
     u_bounds = BoundsList()
     u_bounds["tau"] = -4.0 * np.ones((nq, 1)), 4.0 * np.ones((nq, 1))
     ocp.update_bounds(x_bounds=x_bounds)
@@ -80,6 +103,8 @@ def test_double_update_bounds_and_init(phase_dynamics):
     x_init = InitialGuessList()
     x_init["q"] = 0.25 * np.ones((nq, 1))
     x_init["qdot"] = 0.25 * np.ones((nq, 1))
+    assert x_init.nb_phase == 1
+
     u_init = InitialGuessList()
     u_init["tau"] = -0.25 * np.ones((nq, 1))
     ocp.update_initial_guess(x_init, u_init)
@@ -90,18 +115,34 @@ def test_double_update_bounds_and_init(phase_dynamics):
         ocp.update_initial_guess(x_bounds, u_bounds)
     with pytest.raises(RuntimeError, match="u_init should be built from a InitialGuessList"):
         ocp.update_initial_guess(None, u_bounds)
+    with pytest.raises(RuntimeError, match="a_init should be built from a InitialGuessList"):
+        ocp.update_initial_guess(None, None, None, x_bounds)
+    with pytest.raises(RuntimeError, match="parameter_init should be built from a InitialGuessList"):
+        ocp.update_initial_guess(None, None, x_bounds)
+    with pytest.raises(RuntimeError, match="u_init should be built from a InitialGuessList"):
+        ocp.update_initial_guess(None, u_bounds)
     with pytest.raises(RuntimeError, match="x_bounds should be built from a BoundsList"):
         ocp.update_bounds(x_init, u_init)
     with pytest.raises(RuntimeError, match="u_bounds should be built from a BoundsList"):
         ocp.update_bounds(None, u_init)
+    with pytest.raises(RuntimeError, match="parameter_bounds should be built from a BoundsList"):
+        ocp.update_bounds(None, None, x_init)
+    with pytest.raises(RuntimeError, match="a_bounds should be built from a BoundsList"):
+        ocp.update_bounds(x_bounds, u_bounds, None, u_init)
     with pytest.raises(
-        ValueError, match="bad_key is not a state variable, please check for typos in the declaration of x_bounds"
+        ValueError,
+        match=re.escape(
+            "Please check for typos in the declaration of x_bounds. Here are declared keys: ['bad_key']. Available keys are: ['q', 'qdot']."
+        ),
     ):
         x_bounds = BoundsList()
         x_bounds.add("bad_key", [1, 2])
         ocp.update_bounds(x_bounds, u_bounds)
     with pytest.raises(
-        ValueError, match="bad_key is not a control variable, please check for typos in the declaration of u_bounds"
+        ValueError,
+        match=re.escape(
+            "Please check for typos in the declaration of u_bounds. Here are declared keys: ['bad_key']. Available keys are: ['tau']."
+        ),
     ):
         x_bounds = BoundsList()
         x_bounds["q"] = -np.ones((nq, 1)), np.ones((nq, 1))
@@ -109,19 +150,29 @@ def test_double_update_bounds_and_init(phase_dynamics):
         u_bounds.add("bad_key", [1, 2])
         ocp.update_bounds(x_bounds, u_bounds)
     with pytest.raises(
-        ValueError, match="bad_key is not a state variable, please check for typos in the declaration of x_init"
+        ValueError,
+        match=re.escape(
+            "Please check for typos in the declaration of x_init. Here are declared keys: ['bad_key']. Available keys are: ['q', 'qdot']."
+        ),
     ):
         x_init = InitialGuessList()
         x_init.add("bad_key", [1, 2])
         ocp.update_initial_guess(x_init, u_init)
     with pytest.raises(
-        ValueError, match="bad_key is not a control variable, please check for typos in the declaration of u_init"
+        ValueError,
+        match=re.escape(
+            "Please check for typos in the declaration of u_init. Here are declared keys: ['bad_key']. Available keys are: ['tau']."
+        ),
     ):
         x_init = InitialGuessList()
         x_init["q"] = 0.5 * np.ones((nq, 1))
         u_init = InitialGuessList()
         u_init.add("bad_key", [1, 2])
         ocp.update_initial_guess(x_init, u_init)
+
+    with pytest.raises(TypeError, match="x_bounds should be built from a BoundsList."):
+        bound = ["nothing serious"]
+        ocp.nlp[0]._update_bound(bound, "x_bounds", ["hello", "world"], [])
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])

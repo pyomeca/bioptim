@@ -291,6 +291,32 @@ def test__getting_started__example_multiphase():
     )
 
 
+def test__getting_started__example_multiphase_different_ode_solvers():
+    from bioptim.examples.getting_started import example_multiphase as ocp_module
+
+    bioptim_folder = TestUtils.module_folder(ocp_module)
+
+    ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        long_optim=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
+        expand_dynamics=False,
+        ode_solver=[OdeSolver.RK1(), OdeSolver.RK4(), OdeSolver.COLLOCATION()],
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="ode_solver should be built an instance of OdeSolver or a list of OdeSolver",
+    ):
+        ocp_module.prepare_ocp(
+            biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+            long_optim=True,
+            phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
+            expand_dynamics=False,
+            ode_solver=["hello", "world", "there"],
+        )
+
+
 # todo: Add example_multistart.py?
 
 

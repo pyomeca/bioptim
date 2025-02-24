@@ -59,37 +59,29 @@ class OptimizationVectorHelper:
 
             for k in range(nlp.ns + 1):
                 _set_node_index(nlp, k)
-                if nlp.phase_idx == nlp.use_states_from_phase_idx:
-                    n_col = nlp.n_states_decision_steps(k)
-                    x_scaled[nlp.phase_idx].append(
-                        nlp.cx.sym(f"X_scaled_{nlp.phase_idx}_{k}", nlp.states.scaled.shape, n_col)
-                    )
+                n_col = nlp.n_states_decision_steps(k)
+                x_scaled[nlp.phase_idx].append(
+                    nlp.cx.sym(f"X_scaled_{nlp.phase_idx}_{k}", nlp.states.scaled.shape, n_col)
+                )
 
-                    x[nlp.phase_idx].append(
-                        x_scaled[nlp.phase_idx][k]
-                        * np.repeat(
-                            np.concatenate([nlp.x_scaling[key].scaling for key in nlp.states.keys()]), n_col, axis=1
-                        )
+                x[nlp.phase_idx].append(
+                    x_scaled[nlp.phase_idx][k]
+                    * np.repeat(
+                        np.concatenate([nlp.x_scaling[key].scaling for key in nlp.states.keys()]), n_col, axis=1
                     )
-                else:
-                    x_scaled[nlp.phase_idx] = x_scaled[nlp.use_states_from_phase_idx]
-                    x[nlp.phase_idx] = x[nlp.use_states_from_phase_idx]
+                )
 
-                if nlp.phase_idx == nlp.use_controls_from_phase_idx:
-                    if nlp.control_type != ControlType.CONSTANT or (
-                        nlp.control_type == ControlType.CONSTANT and k != nlp.ns
-                    ):
-                        u_scaled[nlp.phase_idx].append(
-                            nlp.cx.sym("U_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.controls.scaled.shape, 1)
+                if nlp.control_type != ControlType.CONSTANT or (
+                    nlp.control_type == ControlType.CONSTANT and k != nlp.ns
+                ):
+                    u_scaled[nlp.phase_idx].append(
+                        nlp.cx.sym("U_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.controls.scaled.shape, 1)
+                    )
+                    if nlp.controls.keys():
+                        u[nlp.phase_idx].append(
+                            u_scaled[nlp.phase_idx][0]
+                            * np.concatenate([nlp.u_scaling[key].scaling for key in nlp.controls.keys()])
                         )
-                        if nlp.controls.keys():
-                            u[nlp.phase_idx].append(
-                                u_scaled[nlp.phase_idx][0]
-                                * np.concatenate([nlp.u_scaling[key].scaling for key in nlp.controls.keys()])
-                            )
-                else:
-                    u_scaled[nlp.phase_idx] = u_scaled[nlp.use_controls_from_phase_idx]
-                    u[nlp.phase_idx] = u[nlp.use_controls_from_phase_idx]
 
                 n_col = nlp.n_algebraic_states_decision_steps(k)
                 a_scaled[nlp.phase_idx].append(
@@ -157,10 +149,7 @@ class OptimizationVectorHelper:
         v_bounds_max = np.concatenate((v_bounds_max, ocp.dt_parameter_bounds.max))
 
         # For states
-        for i_phase in range(ocp.n_phases):
-            current_nlp = ocp.nlp[i_phase]
-
-            nlp = ocp.nlp[current_nlp.use_states_from_phase_idx]
+        for nlp in ocp.nlp:
             min_bounds, max_bounds = _dispatch_state_bounds(
                 nlp, nlp.states, nlp.x_bounds, nlp.x_scaling, lambda n: nlp.n_states_decision_steps(n)
             )
@@ -169,9 +158,7 @@ class OptimizationVectorHelper:
             v_bounds_max = np.concatenate((v_bounds_max, max_bounds))
 
         # For controls
-        for i_phase in range(ocp.n_phases):
-            current_nlp = ocp.nlp[i_phase]
-            nlp = ocp.nlp[current_nlp.use_controls_from_phase_idx]
+        for nlp in ocp.nlp:
             _set_node_index(nlp, 0)
             if nlp.control_type in (ControlType.CONSTANT,):
                 ns = nlp.ns
@@ -225,10 +212,7 @@ class OptimizationVectorHelper:
         v_bounds_max = np.concatenate((v_bounds_max, np.reshape(collapsed_values_max.T, (-1, 1))))
 
         # For algebraic_states variables
-        for i_phase in range(ocp.n_phases):
-            current_nlp = ocp.nlp[i_phase]
-
-            nlp = ocp.nlp[current_nlp.use_states_from_phase_idx]
+        for nlp in ocp.nlp:
             min_bounds, max_bounds = _dispatch_state_bounds(
                 nlp,
                 nlp.algebraic_states,
@@ -257,20 +241,14 @@ class OptimizationVectorHelper:
         v_init = np.concatenate((v_init, ocp.dt_parameter_initial_guess.init))
 
         # For states
-        for i_phase in range(len(ocp.nlp)):
-            current_nlp = ocp.nlp[i_phase]
-
-            nlp = ocp.nlp[current_nlp.use_states_from_phase_idx]
+        for nlp in ocp.nlp:
             init = _dispatch_state_initial_guess(
                 nlp, nlp.states, nlp.x_init, nlp.x_scaling, lambda n: nlp.n_states_decision_steps(n)
             )
             v_init = np.concatenate((v_init, init))
 
         # For controls
-        for i_phase in range(len(ocp.nlp)):
-            current_nlp = ocp.nlp[i_phase]
-
-            nlp = ocp.nlp[current_nlp.use_controls_from_phase_idx]
+        for nlp in ocp.nlp:
             _set_node_index(nlp, 0)
             if nlp.control_type in (ControlType.CONSTANT,):
                 ns = nlp.ns - 1
@@ -313,10 +291,7 @@ class OptimizationVectorHelper:
         v_init = np.concatenate((v_init, np.reshape(collapsed_values.T, (-1, 1))))
 
         # For algebraic_states variables
-        for i_phase in range(len(ocp.nlp)):
-            current_nlp = ocp.nlp[i_phase]
-
-            nlp = ocp.nlp[current_nlp.use_states_from_phase_idx]
+        for nlp in ocp.nlp:
             init = _dispatch_state_initial_guess(
                 nlp, nlp.algebraic_states, nlp.a_init, nlp.a_scaling, lambda n: nlp.n_algebraic_states_decision_steps(n)
             )
@@ -406,10 +381,6 @@ class OptimizationVectorHelper:
         for p in range(ocp.n_phases):
             nlp = ocp.nlp[p]
             nx = nlp.states.shape
-
-            if nlp.use_states_from_phase_idx != nlp.phase_idx:
-                data_states[p] = data_states[nlp.use_states_from_phase_idx]
-                continue
             for node in range(nlp.n_states_nodes):
                 nlp.states.node_index = node
                 n_cols = nlp.n_states_decision_steps(node)
@@ -423,9 +394,6 @@ class OptimizationVectorHelper:
             nlp = ocp.nlp[p]
             nu = nlp.controls.shape
 
-            if nlp.use_controls_from_phase_idx != nlp.phase_idx:
-                data_controls[p] = data_controls[nlp.use_controls_from_phase_idx]
-                continue
             for node in range(nlp.n_controls_nodes):  # Using n_states_nodes on purpose see higher
                 n_cols = nlp.n_controls_steps(node)
 
@@ -450,9 +418,6 @@ class OptimizationVectorHelper:
             nlp = ocp.nlp[p]
             na = nlp.algebraic_states.shape
 
-            if nlp.use_states_from_phase_idx != nlp.phase_idx:
-                data_algebraic_states[p] = data_algebraic_states[nlp.use_states_from_phase_idx]
-                continue
             for node in range(nlp.n_states_nodes):
                 nlp.algebraic_states.node_index = node
                 n_cols = nlp.n_algebraic_states_decision_steps(node)

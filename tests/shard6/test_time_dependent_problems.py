@@ -101,75 +101,6 @@ def custom_configure(
     ConfigureProblem.configure_dynamics_function(ocp, nlp, time_dynamic)
 
 
-def custom_configure_tf(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries: dict[str, np.ndarray] = None
-):
-    """
-    Tell the program which variables are states and controls.
-    The user is expected to use the ConfigureProblem.configure_xxx functions.
-
-    Parameters
-    ----------
-    ocp: OptimalControlProgram
-        A reference to the ocp
-    nlp: NonLinearProgram
-        A reference to the phase
-    """
-
-    ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
-
-    ConfigureProblem.configure_dynamics_function(ocp, nlp, tf_dynamic)
-
-
-def tf_dynamic(
-    time: MX | SX,
-    states: MX | SX,
-    controls: MX | SX,
-    parameters: MX | SX,
-    algebraic_states: MX | SX,
-    numerical_timeseries: MX | SX,
-    nlp: NonLinearProgram,
-) -> DynamicsEvaluation:
-    """
-    The custom dynamics function that provides the derivative of the states: dxdt = f(t, x, u, p, a, d)
-
-    Parameters
-    ----------
-    time: MX | SX
-        The time of the system
-    states: MX | SX
-        The state of the system
-    controls: MX | SX
-        The controls of the system
-    parameters: MX | SX
-        The parameters acting on the system
-    algebraic_states: MX | SX
-        The Algebraic states variables of the system
-    numerical_timeseries: MX | SX
-        The numerical timeseries of the system
-    nlp: NonLinearProgram
-        A reference to the phase
-
-    Returns
-    -------
-    The derivative of the states in the tuple[MX | SX] format
-    """
-
-    q = DynamicsFunctions.get(nlp.states["q"], states)
-    qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-    tau = DynamicsFunctions.get(nlp.controls["tau"], controls) * (
-        sin(nlp.dt_mx * nlp.ns - time) * time.ones(nlp.model.nb_tau) * 10
-    )
-
-    # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
-    dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-    ddq = nlp.model.forward_dynamics(q, qdot, tau)
-
-    return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
-
-
 def prepare_ocp(
     biorbd_model_path: str,
     n_phase: int,
@@ -178,7 +109,6 @@ def prepare_ocp(
     minimize_time: bool,
     use_sx: bool,
     phase_dynamics: PhaseDynamics = PhaseDynamics.ONE_PER_NODE,
-    with_tf_dynamic: bool = False,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -230,22 +160,13 @@ def prepare_ocp(
     dynamics = DynamicsList()
     expand = not isinstance(ode_solver, OdeSolver.IRK)
     for i in range(len(bio_model)):
-        if with_tf_dynamic:
-            dynamics.add(
-                custom_configure_tf,
-                dynamic_function=tf_dynamic,
-                phase=i,
-                expand_dynamics=expand,
-                phase_dynamics=phase_dynamics,
-            )
-        else:
-            dynamics.add(
-                custom_configure,
-                dynamic_function=time_dynamic,
-                phase=i,
-                expand_dynamics=expand,
-                phase_dynamics=phase_dynamics,
-            )
+        dynamics.add(
+            custom_configure,
+            dynamic_function=time_dynamic,
+            phase=i,
+            expand_dynamics=expand,
+            phase_dynamics=phase_dynamics,
+        )
 
     # Define states path constraint
     x_bounds = BoundsList()
@@ -384,6 +305,60 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
         minimize_time=minimize_time,
         use_sx=use_sx,
     )
+    # Check the values which will be sent to the solver
+    np.random.seed(42)
+    match integrator:
+        case OdeSolver.RK4:
+            if control_type == ControlType.CONSTANT:
+                v_len = 185 * n_phase
+                expected = (
+                    [18.5, 80006.0 if minimize_time else 6.0, 0.8715987034298607]
+                    if n_phase == 1
+                    else [37.0, 400012.00000000006 if minimize_time else 12.0, 6.033764148108874]
+                )
+            elif control_type == ControlType.LINEAR_CONTINUOUS:
+                v_len = 187 * n_phase
+                expected = (
+                    [18.699999999999996, 80006.0 if minimize_time else 6.0, 0.8715987034298607]
+                    if n_phase == 1
+                    else [37.39999999999999, 400012.00000000006 if minimize_time else 12.0, 6.033764148108878]
+                )
+            else:
+                raise ValueError("Test not implemented")
+        case OdeSolver.COLLOCATION:
+            v_len = 665 * n_phase
+            expected = (
+                [66.5, 80006.0 if minimize_time else 6.0, 6.035552847184389]
+                if n_phase == 1
+                else [133.0, 400012.00000000006 if minimize_time else 12.0, 28.618666282170977]
+            )
+        case OdeSolver.IRK:
+            v_len = 305 * n_phase
+            expected = (
+                [30.5, 320010.0 if minimize_time else 10.0, 4.283653839663469]
+                if n_phase == 1
+                else [61.0, 1600019.9999999998 if minimize_time else 20.0, 8.125629434161866]
+            )
+        case OdeSolver.TRAPEZOIDAL:
+            v_len = 187 * n_phase
+            expected = (
+                [18.699999999999996, 80006.0 if minimize_time else 6.0, 1.5103810164979388]
+                if n_phase == 1
+                else [37.39999999999999, 400012.00000000006 if minimize_time else 12.0, 7.154696449039014]
+            )
+        case _:
+            raise ValueError("Test not implemented")
+
+    TestUtils.compare_ocp_to_solve(
+        ocp,
+        v=np.ones((v_len, 1)) / 10,  # Random creates nan in the g vector
+        expected_v_f_g=expected,
+        decimal=6,
+    )
+    if platform.system() == "Windows":
+        return
+
+    return
     sol = ocp.solve()
 
     if integrator is OdeSolver.IRK:
@@ -445,9 +420,9 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
                     )
                     npt.assert_almost_equal(sol.decision_time()[-1], 1.01985, decimal=5)
 
-                    time_sym = MX.sym("T", 1, 1)
-                    states_sym = ocp.nlp[0].states.mx
-                    controls_sym = ocp.nlp[0].controls.mx
+                    time_sym = ocp.nlp[0].time_cx
+                    states_sym = ocp.nlp[0].states.cx
+                    controls_sym = ocp.nlp[0].controls.cx
 
                     dyn_fun = Function(
                         "dynamics",

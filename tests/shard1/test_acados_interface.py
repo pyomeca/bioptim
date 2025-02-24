@@ -6,11 +6,12 @@ It tests the results of an optimal control problem with acados regarding the pro
 
 import os
 import shutil
-import pytest
 from sys import platform
 
 import numpy as np
 import numpy.testing as npt
+import pytest
+
 from bioptim import (
     BiorbdModel,
     Axis,
@@ -23,14 +24,12 @@ from bioptim import (
     MovingHorizonEstimator,
     Dynamics,
     DynamicsFcn,
-    InitialGuessList,
     InterpolationType,
     Solver,
     BoundsList,
     PhaseDynamics,
     SolutionMerge,
 )
-
 from tests.utils import TestUtils
 
 

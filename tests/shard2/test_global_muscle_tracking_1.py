@@ -18,14 +18,10 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver, p
     # Load muscle_activations_tracker
     from bioptim.examples.muscle_driven_ocp import muscle_activations_tracker as ocp_module
 
-    if platform.system() == "Windows" and phase_dynamics == PhaseDynamics.ONE_PER_NODE:
-        # This is a long test and CI is already long for Windows
-        return
-
     # For reducing time phase_dynamics=False is skipped for redundant tests
     # and because test fails on CI
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver in (OdeSolver.RK4, OdeSolver.COLLOCATION):
-        return
+        pytest.skip("Redundant test")
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -56,6 +52,31 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver, p
         phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver != OdeSolver.IRK,
     )
+
+    # Check the values which will be sent to the solver
+    np.random.seed(42)
+    match ode_solver:
+        case OdeSolver.RK4:
+            v_len = 55
+            expected = [26.473138941541652, 215.04636610774946, 10.574774769800726]
+        case OdeSolver.COLLOCATION:
+            v_len = 135
+            expected = [64.27619358626245, 199.0608093817752, -497.2117949234156]
+        case OdeSolver.IRK:
+            v_len = 55
+            expected = [26.473138941541652, 215.04636610774946, -35.9551582488577]
+        case _:
+            raise ValueError("Test not implemented")
+
+    TestUtils.compare_ocp_to_solve(
+        ocp,
+        v=np.random.rand(v_len, 1),
+        expected_v_f_g=expected,
+        decimal=6,
+    )
+    if platform.system() == "Windows":
+        return
+
     sol = ocp.solve()
 
     # Check objective function value

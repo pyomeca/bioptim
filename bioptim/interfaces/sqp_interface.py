@@ -1,5 +1,6 @@
 import numpy as np
 
+from bioptim.optimization.solution.solution import Solution
 from .interface_utils import (
     generic_online_optim,
     generic_solve,
@@ -9,11 +10,10 @@ from .interface_utils import (
 )
 from .solver_interface import SolverInterface
 from ..interfaces import Solver
-from bioptim.optimization.solution.solution import Solution
-from ..optimization.non_linear_program import NonLinearProgram
 from ..misc.enums import (
     SolverType,
 )
+from ..optimization.non_linear_program import NonLinearProgram
 
 
 class SQPInterface(SolverInterface):
@@ -26,9 +26,9 @@ class SQPInterface(SolverInterface):
         Options irrelevant of a specific ocp
     opts: SQP
         Options of the current ocp
-    sqp_nlp: dict
+    nlp: dict
         The declaration of the variables SQP-friendly
-    sqp_limits: dict
+    limits: dict
         The declaration of the bound SQP-friendly
     lam_g: np.ndarray
         The lagrange multiplier of the constraints to initialize the solver
@@ -63,8 +63,8 @@ class SQPInterface(SolverInterface):
         self.opts = Solver.SQP_METHOD()
         self.solver_name = SolverType.SQP.value
 
-        self.sqp_nlp = {}
-        self.sqp_limits = {}
+        self.nlp = {}
+        self.limits = {}
         self.ocp_solver = None
         self.c_compile = False
 
