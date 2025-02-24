@@ -353,9 +353,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         parameters = sol.parameters
         for key in parameters.keys():
             # Override the previous param_init
-            self.parameter_init.add(
-                key, parameters[key][:, None], interpolation=InterpolationType.CONSTANT, phase=0
-            )
+            self.parameter_init.add(key, parameters[key][:, None], interpolation=InterpolationType.CONSTANT, phase=0)
         return True
 
     def export_data(self, sol) -> tuple:
