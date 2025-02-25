@@ -908,10 +908,10 @@ class PlotOcp:
         """Helper method to compute plot values at each node"""
         all_y = []
         map_idx = custom_plot.phase_mappings.to_first.map_idx
-        
+
         for idx in range(len(custom_plot.node_idx)):
             node_idx = custom_plot.node_idx[idx]
-            
+
             # Get node data (either from penalty or directly)
             if "penalty" in custom_plot.parameters:
                 t0, x_node, u_node, p_node, a_node, d_node = self._get_penalty_node_data(
@@ -932,15 +932,15 @@ class PlotOcp:
             for ctr, axe_index in enumerate(map_idx):
                 y_tp[axe_index, :] = tp[ctr, :]
             all_y.append(y_tp)
-            
+
         return all_y
 
     def _get_penalty_node_data(self, custom_plot, idx, time_stepwise, x, u, p, a, get_numerical_timeseries):
         """Extract data for penalty-based plots"""
         penalty = custom_plot.parameters["penalty"]
-        
+
         t0 = PenaltyHelpers.t0(penalty, idx, lambda p_idx, n_idx: time_stepwise[p_idx][n_idx][0])
-        
+
         x_node = PenaltyHelpers.states(
             penalty,
             idx,
@@ -964,7 +964,7 @@ class PlotOcp:
         )
         if d_node.shape == (0, 0):
             d_node = DM(0, 1)
-            
+
         return t0, x_node, u_node, p_node, a_node, d_node
 
     def _get_direct_node_data(self, phase_idx, node_idx, time_stepwise, x, u, p, a, d):
@@ -975,20 +975,20 @@ class PlotOcp:
         p_node = p
         a_node = a[node_idx]
         d_node = d[node_idx]
-        
+
         return t0, x_node, u_node, p_node, a_node, d_node
 
     def _format_integrated_plot_data(self, custom_plot, all_y):
         """Format data for integrated plots"""
         map_idx = custom_plot.phase_mappings.to_first.map_idx
         out = [[] for _ in range(max(np.abs(map_idx)) + 1)]
-        
+
         for idx in map_idx:
             y_tp = []
             for y in all_y:
                 y_tp.append(y[map_idx.index(idx), :])
             out[idx] = y_tp
-            
+
         return out
 
     def _format_standard_plot_data(self, custom_plot, all_y):
@@ -996,10 +996,10 @@ class PlotOcp:
         map_idx = custom_plot.phase_mappings.to_first.map_idx
         all_y = np.concatenate([tp[:, 0:1] for tp in all_y], axis=1)
         out = [[] for _ in range(max(np.abs(map_idx)) + 1)]
-        
+
         for idx in map_idx:
             out[idx] = all_y[idx, :]
-            
+
         return out
 
     def _update_xdata(self, phase_times):
