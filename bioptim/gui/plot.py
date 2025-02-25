@@ -234,7 +234,42 @@ class PlotOcp:
             on the server side and on the client side)
         """
         self.ocp = ocp
-        self.plot_options = {
+        self.plot_options = self._initialize_plot_options()
+        self.n_nodes = 0
+        self.t = []
+        self.t_integrated = []
+        self.integrator = integrator
+        self.axes = {}
+        self.plots = []
+        self.plots_vertical_lines = []
+        self.plots_bounds = []
+        self.all_figures = []
+        self.automatically_organize = automatically_organize
+        self.n_vertical_windows = None
+        self.n_horizontal_windows = None
+        self.top_margin = None
+        self.height_step = None
+        self.width_step = None
+        self.custom_plots = {}
+        self.variable_sizes = []
+        self.show_bounds = show_bounds
+        self.shooting_type = shooting_type
+
+        # Initialize the plot
+        self._update_time_vector(dummy_phase_times)
+        
+        if not only_initialize_variables:
+            self._organize_windows(len(self.ocp.nlp[0].states) + len(self.ocp.nlp[0].controls))
+        
+        self._create_plots(only_initialize_variables)
+        
+        if not only_initialize_variables:
+            self._spread_figures_on_screen()
+            self._initialize_additional_plots()
+
+    def _initialize_plot_options(self):
+        """Initialize the plot options dictionary"""
+        return {
             "general_options": {"use_tight_layout": False},
             "non_integrated_plots": {"linestyle": "-", "markersize": 3, "linewidth": 1.1},
             "integrated_plots": {"linestyle": "-", "markersize": 3, "linewidth": 1.1},
@@ -244,61 +279,27 @@ class PlotOcp:
             "vertical_lines": {"color": "k", "linestyle": "--", "linewidth": 1.2},
         }
 
-        self.n_nodes = 0
-
-        self.t = []
-        self.t_integrated = []
-        self.integrator = integrator
-
-        # Emulate the time from Solution.time, this is just to give the size anyway
-        self._update_time_vector(dummy_phase_times)
-
-        self.axes = {}
-        self.plots = []
-        self.plots_vertical_lines = []
-        self.plots_bounds = []
-        self.all_figures = []
-
-        self.automatically_organize = automatically_organize
-        self.n_vertical_windows: int | None = None
-        self.n_horizontal_windows: int | None = None
-        self.top_margin: int | None = None
-        self.height_step: int | None = None
-        self.width_step: int | None = None
-        if not only_initialize_variables:
-            self._organize_windows(len(self.ocp.nlp[0].states) + len(self.ocp.nlp[0].controls))
-
-        self.custom_plots = {}
-        self.variable_sizes = []
-        self.show_bounds = show_bounds
-        self._create_plots(only_initialize_variables)
-        self.shooting_type = shooting_type
-
-        if not only_initialize_variables:
-            self._spread_figures_on_screen()
-
+    def _initialize_additional_plots(self):
+        """Initialize additional plots if needed"""
         if self.ocp.plot_ipopt_outputs:
             from ..gui.ipopt_output_plot import create_ipopt_output_plot
             from ..interfaces.ipopt_interface import IpoptInterface
 
             interface = IpoptInterface(self.ocp)
-            create_ipopt_output_plot(ocp, interface)
+            create_ipopt_output_plot(self.ocp, interface)
 
         if self.ocp.plot_check_conditioning:
             from ..gui.check_conditioning import create_conditioning_plots
-
-            create_conditioning_plots(ocp)
+            create_conditioning_plots(self.ocp)
 
     def _update_time_vector(self, phase_times):
         """
         Setup the time and time integrated vector, which is the x-axes of the graphs
         """
-
         self.t = []
         self.t_integrated = []
         for nlp, time in zip(self.ocp.nlp, phase_times):
             self.n_nodes += nlp.n_states_nodes
-
             self.t_integrated.append(time)
             self.t.append(np.linspace(float(time[0][0]), float(time[-1][-1]), nlp.n_states_nodes))
 
@@ -312,18 +313,27 @@ class PlotOcp:
             If the plots should be initialized but not shown (this is useful for the online plot which must be declared
             on the server side and on the client side)
         """
+        variable_sizes = self._initialize_variable_sizes()
+        self.variable_sizes = variable_sizes
+        
+        if not variable_sizes:
+            # No graph was setup in problem_type
+            return
 
-        def legend_without_duplicate_labels(ax):
-            handles, labels = ax.get_legend_handles_labels()
-            unique = [(h, l) for i, (h, l) in enumerate(zip(handles, labels)) if l not in labels[:i]]
-            if unique:
-                ax.legend(*zip(*unique))
+        all_keys_across_phases = self._collect_all_keys_across_phases()
+        y_min_all = [None for _ in all_keys_across_phases]
+        y_max_all = [None for _ in all_keys_across_phases]
 
-        variable_sizes = []
-
-        self.ocp.finalize_plot_phase_mappings()
+        self.custom_plots = {}
         for i, nlp in enumerate(self.ocp.nlp):
+            self._process_plots_for_nlp(i, nlp, all_keys_across_phases, y_min_all, y_max_all, only_initialize_variables)
 
+    def _initialize_variable_sizes(self):
+        """Initialize variable sizes for all phases and plots"""
+        variable_sizes = []
+        self.ocp.finalize_plot_phase_mappings()
+        
+        for i, nlp in enumerate(self.ocp.nlp):
             variable_sizes.append({})
             if nlp.plot:
                 for key in nlp.plot:
@@ -340,237 +350,317 @@ class PlotOcp:
                         variable_sizes[i][key] = n_subplots
                     else:
                         variable_sizes[i][key] = max(variable_sizes[i][key], n_subplots)
+                        
+        return variable_sizes
 
-        self.variable_sizes = variable_sizes
-        if not variable_sizes:
-            # No graph was setup in problem_type
-            return
-
+    def _collect_all_keys_across_phases(self):
+        """Collect all unique keys across all phases"""
         all_keys_across_phases = []
         for variable_sizes in self.variable_sizes:
             keys_not_in_previous_phases = [
                 key for key in list(variable_sizes.keys()) if key not in all_keys_across_phases
             ]
             all_keys_across_phases += keys_not_in_previous_phases
+        return all_keys_across_phases
 
-        y_min_all = [None for _ in all_keys_across_phases]
-        y_max_all = [None for _ in all_keys_across_phases]
+    def _process_plots_for_nlp(self, i, nlp, all_keys_across_phases, y_min_all, y_max_all, only_initialize_variables):
+        """Process plots for a specific NLP"""
+        for variable in self.variable_sizes[i]:
+            y_range_var_idx = all_keys_across_phases.index(variable)
+            
+            axes = None
+            nb_subplots = 0
+            
+            if not only_initialize_variables:
+                axes, nb_subplots = self._setup_axes_for_variable(i, nlp, variable)
+                
+                if not y_min_all[y_range_var_idx]:
+                    y_min_all[y_range_var_idx] = [np.inf] * nb_subplots
+                    y_max_all[y_range_var_idx] = [-np.inf] * nb_subplots
 
-        self.custom_plots = {}
-        for i, nlp in enumerate(self.ocp.nlp):
+            self._initialize_custom_plot(i, variable)
+            
+            if not self.custom_plots[variable][i] or only_initialize_variables:
+                continue
+                
+            self._create_plots_for_variable(i, nlp, variable, axes, y_min_all, y_max_all, y_range_var_idx)
 
-            for var_idx, variable in enumerate(self.variable_sizes[i]):
-                y_range_var_idx = all_keys_across_phases.index(variable)
+    def _setup_axes_for_variable(self, i, nlp, variable):
+        """Setup axes for a specific variable"""
+        if nlp.plot[variable].combine_to:
+            self.axes[variable] = self.axes[nlp.plot[variable].combine_to]
+            axes = self.axes[variable][1]
+            nb_subplots = len(axes)
+        elif i > 0 and variable in self.axes:
+            axes = self.axes[variable][1]
+            nb_subplots = len(axes)
+        else:
+            nb_subplots = self._calculate_max_subplots(variable)
+            
+            if not nlp.plot[variable].all_variables_in_one_subplot:
+                n_cols, n_rows = PlotOcp._generate_windows_size(nb_subplots)
+            else:
+                n_cols, n_rows = 1, 1
+                
+            axes = self._add_new_axis(variable, nb_subplots, n_rows, n_cols)
+            self.axes[variable] = [nlp.plot[variable], axes]
+            
+        return axes, nb_subplots
 
-                if not only_initialize_variables:
-                    if nlp.plot[variable].combine_to:
-                        self.axes[variable] = self.axes[nlp.plot[variable].combine_to]
-                        axes = self.axes[variable][1]
-                    elif i > 0 and variable in self.axes:
-                        axes = self.axes[variable][1]
-                    else:
-                        nb_subplots = max(
-                            [
-                                (
-                                    max(
-                                        len(nlp.plot[variable].phase_mappings.to_first.map_idx),
-                                        max(nlp.plot[variable].phase_mappings.to_first.map_idx) + 1,
-                                    )
-                                    if variable in nlp.plot
-                                    else 0
-                                )
-                                for nlp in self.ocp.nlp
-                            ]
-                        )
-
-                        # TODO: get rid of all_variables_in_one_subplot by fixing the mapping appropriately
-                        if not nlp.plot[variable].all_variables_in_one_subplot:
-                            n_cols, n_rows = PlotOcp._generate_windows_size(nb_subplots)
-                        else:
-                            n_cols = 1
-                            n_rows = 1
-                        axes = self._add_new_axis(variable, nb_subplots, n_rows, n_cols)
-                        self.axes[variable] = [nlp.plot[variable], axes]
-
-                    if not y_min_all[y_range_var_idx]:
-                        y_min_all[y_range_var_idx] = [np.inf] * nb_subplots
-                        y_max_all[y_range_var_idx] = [-np.inf] * nb_subplots
-
-                if variable not in self.custom_plots:
-                    self.custom_plots[variable] = [
-                        nlp_tp.plot[variable] if variable in nlp_tp.plot else None for nlp_tp in self.ocp.nlp
-                    ]
-                if not self.custom_plots[variable][i] or only_initialize_variables:
-                    continue
-
-                mapping_to_first_index = nlp.plot[variable].phase_mappings.to_first.map_idx
-                for ctr in mapping_to_first_index:
-                    if not nlp.plot[variable].all_variables_in_one_subplot:
-                        ax = axes[ctr]
-                        if ctr in mapping_to_first_index:
-                            index_legend = mapping_to_first_index.index(ctr)
-                            if len(nlp.plot[variable].legend) > index_legend:
-                                ax.set_title(nlp.plot[variable].legend[index_legend])
-                    else:
-                        ax = axes[0]
-                    ax.grid(**self.plot_options["grid"])
-                    ax.set_xlim(self.t[-1][[0, -1]])
-
-                    if nlp.plot[variable].ylim:
-                        ax.set_ylim(nlp.plot[variable].ylim)
-                    elif (
-                        self.show_bounds
-                        and nlp.plot[variable].bounds
-                        and not nlp.plot[variable].all_variables_in_one_subplot
-                    ):
-                        if nlp.plot[variable].bounds.type != InterpolationType.CUSTOM:
-                            y_min = nlp.plot[variable].bounds.min[mapping_to_first_index.index(ctr), :].min()
-                            y_max = nlp.plot[variable].bounds.max[mapping_to_first_index.index(ctr), :].max()
-                        else:
-                            repeat = 1
-                            if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
-                                repeat = nlp.ode_solver.polynomial_degree + 1
-                            nlp.plot[variable].bounds.check_and_adjust_dimensions(len(mapping_to_first_index), nlp.ns)
-                            y_min = min(
-                                [
-                                    nlp.plot[variable].bounds.min.evaluate_at(j)[mapping_to_first_index.index(ctr)]
-                                    for j in range(nlp.ns * repeat)
-                                ]
-                            )
-                            y_max = max(
-                                [
-                                    nlp.plot[variable].bounds.max.evaluate_at(j)[mapping_to_first_index.index(ctr)]
-                                    for j in range(nlp.ns * repeat)
-                                ]
-                            )
-
-                        if y_min.__array__()[0] < y_min_all[y_range_var_idx][mapping_to_first_index.index(ctr)]:
-                            y_min_all[y_range_var_idx][mapping_to_first_index.index(ctr)] = y_min
-
-                        if y_max.__array__()[0] > y_max_all[y_range_var_idx][mapping_to_first_index.index(ctr)]:
-                            y_max_all[y_range_var_idx][mapping_to_first_index.index(ctr)] = y_max
-
-                        y_range = self._compute_ylim(
-                            y_min_all[y_range_var_idx][mapping_to_first_index.index(ctr)],
-                            y_max_all[y_range_var_idx][mapping_to_first_index.index(ctr)],
-                            1.25,
-                        )
-                        ax.set_ylim(y_range)
-
-                    plot_type = self.custom_plots[variable][i].type
-                    t = self.t[i][nlp.plot[variable].node_idx] if plot_type == PlotType.POINT else self.t[i]
-                    if self.custom_plots[variable][i].label:
-                        label = self.custom_plots[variable][i].label
-                    else:
-                        label = None
-
-                    color = (
-                        self.custom_plots[variable][i].color
-                        if self.custom_plots[variable][i].color
-                        else DEFAULT_COLORS[plot_type]
+    def _calculate_max_subplots(self, variable):
+        """Calculate the maximum number of subplots needed for a variable across all NLPs"""
+        return max(
+            [
+                (
+                    max(
+                        len(nlp.plot[variable].phase_mappings.to_first.map_idx),
+                        max(nlp.plot[variable].phase_mappings.to_first.map_idx) + 1,
                     )
+                    if variable in nlp.plot
+                    else 0
+                )
+                for nlp in self.ocp.nlp
+            ]
+        )
 
-                    if plot_type == PlotType.PLOT:
-                        zero = np.zeros((t.shape[0], 1))
-                        self.plots.append(
-                            [
-                                plot_type,
-                                i,
-                                ax.plot(
-                                    t,
-                                    zero,
-                                    color=color,
-                                    zorder=0,
-                                    label=label,
-                                    **self.plot_options["non_integrated_plots"],
-                                )[0],
-                            ]
-                        )
-                    elif plot_type == PlotType.INTEGRATED:
-                        plots_integrated = []
-                        for cmp in range(nlp.ns):
-                            plots_integrated.append(
-                                ax.plot(
-                                    self.t_integrated[i][cmp],
-                                    np.zeros((self.t_integrated[i][cmp].shape[0], 1)),
-                                    color=color,
-                                    label=label,
-                                    **self.plot_options["integrated_plots"],
-                                )[0]
-                            )
-                        self.plots.append([plot_type, i, plots_integrated])
+    def _initialize_custom_plot(self, i, variable):
+        """Initialize custom plot for a variable"""
+        if variable not in self.custom_plots:
+            self.custom_plots[variable] = [
+                nlp_tp.plot[variable] if variable in nlp_tp.plot else None for nlp_tp in self.ocp.nlp
+            ]
 
-                    elif plot_type == PlotType.STEP:
-                        zero = np.zeros((t.shape[0], 1))
-                        linestyle = (
-                            self.custom_plots[variable][i].linestyle
-                            if self.custom_plots[variable][i].linestyle
-                            else "-"
-                        )
-                        self.plots.append(
-                            [
-                                plot_type,
-                                i,
-                                ax.step(t, zero, linestyle, where="post", color=color, zorder=0, label=label)[0],
-                            ]
-                        )
-                    elif plot_type == PlotType.POINT:
-                        zero = np.zeros((t.shape[0], 1))
-                        self.plots.append(
-                            [
-                                plot_type,
-                                i,
-                                ax.plot(
-                                    t, zero, color=color, zorder=0, label=label, **self.plot_options["point_plots"]
-                                )[0],
-                                variable,
-                            ]
-                        )
-                    else:
-                        raise RuntimeError(f"{plot_type} is not implemented yet")
+    def _create_plots_for_variable(self, i, nlp, variable, axes, y_min_all, y_max_all, y_range_var_idx):
+        """Create plots for a specific variable"""
+        mapping_to_first_index = nlp.plot[variable].phase_mappings.to_first.map_idx
+        
+        for ctr in mapping_to_first_index:
+            ax = self._get_axis_for_plot(nlp, variable, axes, ctr, mapping_to_first_index)
+            self._setup_axis_properties(ax)
+            
+            if nlp.plot[variable].ylim:
+                ax.set_ylim(nlp.plot[variable].ylim)
+            elif self._should_set_bounds(nlp, variable):
+                y_range = self._set_bounds_for_axis(nlp, variable, ctr, mapping_to_first_index, y_min_all, y_max_all, y_range_var_idx)
+                ax.set_ylim(y_range)
+                
+            self._create_plot_for_axis(i, nlp, variable, ax)
+            
+        self._add_legend_to_axes(axes)
+        self._add_vertical_lines_and_bounds(i, nlp, variable, axes, mapping_to_first_index)
 
-                legend_without_duplicate_labels(ax)
+    def _get_axis_for_plot(self, nlp, variable, axes, ctr, mapping_to_first_index):
+        """Get the appropriate axis for a plot"""
+        if not nlp.plot[variable].all_variables_in_one_subplot:
+            ax = axes[ctr]
+            if ctr in mapping_to_first_index:
+                index_legend = mapping_to_first_index.index(ctr)
+                if len(nlp.plot[variable].legend) > index_legend:
+                    ax.set_title(nlp.plot[variable].legend[index_legend])
+        else:
+            ax = axes[0]
+        return ax
 
-                for ctr, ax in enumerate(axes):
-                    if ctr in mapping_to_first_index:
-                        intersections_time = self.find_phases_intersections()
-                        for time in intersections_time:
-                            self.plots_vertical_lines.append(
-                                ax.axvline(float(time), **self.plot_options["vertical_lines"])
-                            )
+    def _setup_axis_properties(self, ax):
+        """Setup basic properties for an axis"""
+        ax.grid(**self.plot_options["grid"])
+        ax.set_xlim(self.t[-1][[0, -1]])
 
-                        if nlp.plot[variable].bounds and self.show_bounds:
-                            if nlp.plot[variable].bounds.type == InterpolationType.EACH_FRAME:
-                                ns = nlp.plot[variable].bounds.min.shape[1] - 1
-                            else:
-                                ns = nlp.ns
+    def _should_set_bounds(self, nlp, variable):
+        """Check if bounds should be set for a variable"""
+        return (
+            self.show_bounds
+            and nlp.plot[variable].bounds
+            and not nlp.plot[variable].all_variables_in_one_subplot
+        )
 
-                            # TODO: introduce repeat for the COLLOCATIONS min/max_bounds only for states graphs.
-                            # For now the plots in COLLOCATIONS with LINEAR are not giving the right values
-                            nlp.plot[variable].bounds.check_and_adjust_dimensions(
-                                n_elements=len(mapping_to_first_index), n_shooting=ns
-                            )
-                            bounds_min = np.array(
-                                [
-                                    nlp.plot[variable].bounds.min.evaluate_at(k)[mapping_to_first_index.index(ctr)]
-                                    for k in range(ns + 1)
-                                ]
-                            )
-                            bounds_max = np.array(
-                                [
-                                    nlp.plot[variable].bounds.max.evaluate_at(k)[mapping_to_first_index.index(ctr)]
-                                    for k in range(ns + 1)
-                                ]
-                            )
-                            if bounds_min.shape[0] == nlp.ns:
-                                bounds_min = np.concatenate((bounds_min, [bounds_min[-1]]))
-                                bounds_max = np.concatenate((bounds_max, [bounds_max[-1]]))
-                            self.plots_bounds.append(
-                                [ax.step(self.t[i], bounds_min, where="post", **self.plot_options["bounds"]), i]
-                            )
-                            self.plots_bounds.append(
-                                [ax.step(self.t[i], bounds_max, where="post", **self.plot_options["bounds"]), i]
-                            )
+    def _set_bounds_for_axis(self, nlp, variable, ctr, mapping_to_first_index, y_min_all, y_max_all, y_range_var_idx):
+        """Set bounds for an axis"""
+        idx = mapping_to_first_index.index(ctr)
+        
+        if nlp.plot[variable].bounds.type != InterpolationType.CUSTOM:
+            y_min = nlp.plot[variable].bounds.min[idx, :].min()
+            y_max = nlp.plot[variable].bounds.max[idx, :].max()
+        else:
+            y_min, y_max = self._get_custom_bounds(nlp, variable, ctr, mapping_to_first_index)
+
+        if y_min.__array__()[0] < y_min_all[y_range_var_idx][idx]:
+            y_min_all[y_range_var_idx][idx] = y_min
+
+        if y_max.__array__()[0] > y_max_all[y_range_var_idx][idx]:
+            y_max_all[y_range_var_idx][idx] = y_max
+
+        return self._compute_ylim(
+            y_min_all[y_range_var_idx][idx],
+            y_max_all[y_range_var_idx][idx],
+            1.25,
+        )
+
+    def _get_custom_bounds(self, nlp, variable, ctr, mapping_to_first_index):
+        """Get custom bounds for a variable"""
+        repeat = 1
+        if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
+            repeat = nlp.ode_solver.polynomial_degree + 1
+        nlp.plot[variable].bounds.check_and_adjust_dimensions(len(mapping_to_first_index), nlp.ns)
+        
+        idx = mapping_to_first_index.index(ctr)
+        y_min = min([nlp.plot[variable].bounds.min.evaluate_at(j)[idx] for j in range(nlp.ns * repeat)])
+        y_max = max([nlp.plot[variable].bounds.max.evaluate_at(j)[idx] for j in range(nlp.ns * repeat)])
+        
+        return y_min, y_max
+
+    def _create_plot_for_axis(self, i, nlp, variable, ax):
+        """Create the actual plot for an axis"""
+        plot_type = self.custom_plots[variable][i].type
+        t = self.t[i][nlp.plot[variable].node_idx] if plot_type == PlotType.POINT else self.t[i]
+        
+        label = self.custom_plots[variable][i].label if self.custom_plots[variable][i].label else None
+        color = self._get_plot_color(variable, i, plot_type)
+        
+        if plot_type == PlotType.PLOT:
+            self._create_plot_type_plot(i, t, ax, color, label)
+        elif plot_type == PlotType.INTEGRATED:
+            self._create_plot_type_integrated(i, ax, color, label)
+        elif plot_type == PlotType.STEP:
+            self._create_plot_type_step(i, t, ax, variable, color, label)
+        elif plot_type == PlotType.POINT:
+            self._create_plot_type_point(i, t, ax, color, label, variable)
+        else:
+            raise RuntimeError(f"{plot_type} is not implemented yet")
+
+    def _get_plot_color(self, variable, i, plot_type):
+        """Get the color for a plot"""
+        return (
+            self.custom_plots[variable][i].color
+            if self.custom_plots[variable][i].color
+            else DEFAULT_COLORS[plot_type]
+        )
+
+    def _create_plot_type_plot(self, i, t, ax, color, label):
+        """Create a standard line plot"""
+        zero = np.zeros((t.shape[0], 1))
+        self.plots.append(
+            [
+                PlotType.PLOT,
+                i,
+                ax.plot(
+                    t,
+                    zero,
+                    color=color,
+                    zorder=0,
+                    label=label,
+                    **self.plot_options["non_integrated_plots"],
+                )[0],
+            ]
+        )
+
+    def _create_plot_type_integrated(self, i, ax, color, label):
+        """Create an integrated plot"""
+        plots_integrated = []
+        for cmp in range(self.ocp.nlp[i].ns):
+            plots_integrated.append(
+                ax.plot(
+                    self.t_integrated[i][cmp],
+                    np.zeros((self.t_integrated[i][cmp].shape[0], 1)),
+                    color=color,
+                    label=label,
+                    **self.plot_options["integrated_plots"],
+                )[0]
+            )
+        self.plots.append([PlotType.INTEGRATED, i, plots_integrated])
+
+    def _create_plot_type_step(self, i, t, ax, variable, color, label):
+        """Create a step plot"""
+        zero = np.zeros((t.shape[0], 1))
+        linestyle = (
+            self.custom_plots[variable][i].linestyle
+            if self.custom_plots[variable][i].linestyle
+            else "-"
+        )
+        self.plots.append(
+            [
+                PlotType.STEP,
+                i,
+                ax.step(t, zero, linestyle, where="post", color=color, zorder=0, label=label)[0],
+            ]
+        )
+
+    def _create_plot_type_point(self, i, t, ax, color, label, variable):
+        """Create a point plot"""
+        zero = np.zeros((t.shape[0], 1))
+        self.plots.append(
+            [
+                PlotType.POINT,
+                i,
+                ax.plot(
+                    t, zero, color=color, zorder=0, label=label, **self.plot_options["point_plots"]
+                )[0],
+                variable,
+            ]
+        )
+
+    def _add_legend_to_axes(self, axes):
+        """Add legend to all axes"""
+        for ax in axes:
+            self._legend_without_duplicate_labels(ax)
+
+    def _legend_without_duplicate_labels(self, ax):
+        """Add legend to axis without duplicate labels"""
+        handles, labels = ax.get_legend_handles_labels()
+        unique = [(h, l) for i, (h, l) in enumerate(zip(handles, labels)) if l not in labels[:i]]
+        if unique:
+            ax.legend(*zip(*unique))
+
+    def _add_vertical_lines_and_bounds(self, i, nlp, variable, axes, mapping_to_first_index):
+        """Add vertical lines for phase intersections and bounds if needed"""
+        for ctr, ax in enumerate(axes):
+            if ctr in mapping_to_first_index:
+                self._add_vertical_lines(ax)
+                
+                if nlp.plot[variable].bounds and self.show_bounds:
+                    self._add_bounds_to_plot(i, nlp, variable, ctr, ax, mapping_to_first_index)
+
+    def _add_vertical_lines(self, ax):
+        """Add vertical lines for phase intersections"""
+        intersections_time = self.find_phases_intersections()
+        for time in intersections_time:
+            self.plots_vertical_lines.append(
+                ax.axvline(float(time), **self.plot_options["vertical_lines"])
+            )
+
+    def _add_bounds_to_plot(self, i, nlp, variable, ctr, ax, mapping_to_first_index):
+        """Add bounds to a specific plot"""
+        if nlp.plot[variable].bounds.type == InterpolationType.EACH_FRAME:
+            ns = nlp.plot[variable].bounds.min.shape[1] - 1
+        else:
+            ns = nlp.ns
+
+        # TODO: introduce repeat for the COLLOCATIONS min/max_bounds only for states graphs.
+        # For now the plots in COLLOCATIONS with LINEAR are not giving the right values
+        nlp.plot[variable].bounds.check_and_adjust_dimensions(
+            n_elements=len(mapping_to_first_index), n_shooting=ns
+        )
+        
+        idx = mapping_to_first_index.index(ctr)
+        bounds_min = np.array([
+            nlp.plot[variable].bounds.min.evaluate_at(k)[idx]
+            for k in range(ns + 1)
+        ])
+        bounds_max = np.array([
+            nlp.plot[variable].bounds.max.evaluate_at(k)[idx]
+            for k in range(ns + 1)
+        ])
+        
+        if bounds_min.shape[0] == nlp.ns:
+            bounds_min = np.concatenate((bounds_min, [bounds_min[-1]]))
+            bounds_max = np.concatenate((bounds_max, [bounds_max[-1]]))
+            
+        self.plots_bounds.append(
+            [ax.step(self.t[i], bounds_min, where="post", **self.plot_options["bounds"]), i]
+        )
+        self.plots_bounds.append(
+            [ax.step(self.t[i], bounds_max, where="post", **self.plot_options["bounds"]), i]
+        )
 
     def _add_new_axis(self, variable: str, nb: int, n_rows: int, n_cols: int):
         """
@@ -587,11 +677,11 @@ class PlotOcp:
         n_cols: int
             The number of columns for the subplots
         """
-
         if self.automatically_organize:
             self.all_figures.append(plt.figure(variable, figsize=(self.width_step / 100, self.height_step / 131)))
         else:
             self.all_figures.append(plt.figure(variable))
+            
         axes = self.all_figures[-1].subplots(n_rows, n_cols)
         if isinstance(axes, np.ndarray):
             axes = axes.flatten()
