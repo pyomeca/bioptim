@@ -1820,11 +1820,7 @@ class ConfigureProblem:
             The number of contacts to consider (There will be 3 components for each contact)
         """
 
-        name_contact_forces = [
-            f"Force{i}_{axis}"
-            for i in range(n_contacts)
-            for axis in ("X", "Y", "Z")
-        ]
+        name_contact_forces = [f"Force{i}_{axis}" for i in range(n_contacts) for axis in ("X", "Y", "Z")]
         ConfigureProblem.configure_new_variable("contact_forces", name_contact_forces, ocp, nlp, as_states, as_controls)
         ConfigureProblem.configure_new_variable(
             "contact_positions", name_contact_forces, ocp, nlp, as_states, as_controls
@@ -1865,9 +1861,7 @@ class ConfigureProblem:
             If the generalized force derivatives should be a control
         """
         name_soft_contact_forces = [
-            f"{name}_{axis}"
-            for name in nlp.model.soft_contact_names
-            for axis in ("X", "Y", "Z")
+            f"{name}_{axis}" for name in nlp.model.soft_contact_names for axis in ("X", "Y", "Z")
         ]
         ConfigureProblem.configure_new_variable(
             "soft_contact_forces", name_soft_contact_forces, ocp, nlp, as_states, as_controls

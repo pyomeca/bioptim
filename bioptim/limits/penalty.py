@@ -873,7 +873,9 @@ class PenaltyFunctionAbstract:
             center_of_pressure = controller.cx.zeros(3, 1)
             for i_component in range(3):
                 # Avoid division by zero if the force is too small
-                center_of_pressure[i_component] = if_else(total_force[i_component]**2 < 1e-8, 0, weighted_sum[i_component] / total_force[i_component])
+                center_of_pressure[i_component] = if_else(
+                    total_force[i_component] ** 2 < 1e-8, 0, weighted_sum[i_component] / total_force[i_component]
+                )
 
             return center_of_pressure
 
