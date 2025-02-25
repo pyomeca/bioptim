@@ -14,6 +14,7 @@ import numpy as np
 from .online_callback_abstract import OnlineCallbackAbstract
 from .plot import PlotOcp, OcpSerializable
 from ..optimization.optimization_vector import OptimizationVectorHelper
+from ..misc.parameters_types import StrOptional, IntOptional, AnyIterable, AnyDictOptional, AnyTuple
 
 
 _DEFAULT_HOST = "localhost"
@@ -66,7 +67,7 @@ class _ResponseHeader(StrEnum):
 
 
 class PlottingServer:
-    def __init__(self, host: str = None, port: int = None, log_level: int | None = logging.INFO):
+    def __init__(self, host: StrOptional = None, port: IntOptional = None, log_level: IntOptional = logging.INFO):
         """
         Initializes the server
 
@@ -427,7 +428,7 @@ class PlottingServer:
             timer_get_data = threading.Timer(self._get_data_interval, self._wait_for_new_data_to_plot, (client_socket,))
             timer_get_data.start()
 
-    def _update_plot(self, serialized_raw_data: list) -> None:
+    def _update_plot(self, serialized_raw_data: AnyIterable) -> None:
         """
         This method parses the data from the client
 
@@ -444,7 +445,7 @@ class PlottingServer:
 
 
 class OnlineCallbackServer(OnlineCallbackAbstract):
-    def __init__(self, ocp, opts: dict = None, host: str = None, port: int = None, **show_options):
+    def __init__(self, ocp, opts: AnyDictOptional = None, host: StrOptional = None, port: IntOptional = None, **show_options):
         """
         Initializes the client. This is not supposed to be called directly by the user, but by the solver. During the
         initialization, we need to perform some tasks that are not possible to do in server side. Then the results of
@@ -564,7 +565,7 @@ class OnlineCallbackServer(OnlineCallbackAbstract):
         self._socket.sendall(f"{_ServerMessages.CLOSE_CONNEXION.value}\nGoodbye from client!".encode())
         self._socket.close()
 
-    def eval(self, arg: list | tuple, enforce: bool = False) -> list[int]:
+    def eval(self, arg: AnyIterable, enforce: bool = False) -> list[int]:
         """
         Sends the current data to the plotter, this method is automatically called by the solver
 
@@ -616,7 +617,7 @@ class OnlineCallbackServer(OnlineCallbackAbstract):
         return [0]
 
 
-def _serialize_xydata(xdata: list, ydata: list) -> tuple:
+def _serialize_xydata(xdata: AnyIterable, ydata: AnyIterable) -> tuple:
     """
     Serialize the data to send to the server, it will be deserialized by `_deserialize_xydata`
 
@@ -658,7 +659,7 @@ def _serialize_xydata(xdata: list, ydata: list) -> tuple:
     return header, data_serialized
 
 
-def _deserialize_xydata(serialized_raw_data: list) -> tuple:
+def _deserialize_xydata(serialized_raw_data: AnyIterable) -> AnyTuple:
     """
     Deserialize the data from the client, based on the serialization used in _serialize_xydata`
 

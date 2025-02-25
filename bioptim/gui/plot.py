@@ -14,6 +14,7 @@ from ..misc.enums import PlotType, Shooting, SolutionIntegrator, QuadratureRule,
 from ..misc.mapping import Mapping, BiMapping
 from ..optimization.solution.solution import Solution
 from ..optimization.solution.solution_data import SolutionMerge
+from ..misc.parameters_types import StrIterableOptional, AnyIterable, AnyDict, AnyListOrNpArray
 
 
 DEFAULT_COLORS = {
@@ -60,12 +61,12 @@ class CustomPlot:
         self,
         update_function: Callable,
         plot_type: PlotType = PlotType.PLOT,
-        axes_idx: BiMapping | tuple | list = None,
-        legend: tuple | list = None,
+        axes_idx: BiMapping | AnyIterable = None,
+        legend: StrIterableOptional = None,
         combine_to: str = None,
         color: str = None,
         linestyle: str = None,
-        ylim: tuple | list = None,
+        ylim: AnyIterable = None,
         bounds: Bounds = None,
         node_idx: list | slice | range = None,
         label: list = None,
@@ -745,9 +746,9 @@ class PlotOcp:
 
     def update_data(
         self,
-        xdata: list,
-        ydata: list,
-        **args: dict,
+        xdata: AnyIterable,
+        ydata: AnyIterable,
+        **args: AnyDict,
     ):
         """
         Update xdata and ydata. The input are the output of the parse_data method
@@ -782,8 +783,8 @@ class PlotOcp:
             update_conditioning_plots(args["x"], self.ocp)
 
     def _compute_y_from_plot_func(
-        self, custom_plot: CustomPlot, phase_idx, time_stepwise, dt, x_decision, x_stepwise, u, p, a, d
-    ) -> list[np.ndarray | list]:
+        self, custom_plot: CustomPlot, phase_idx: int, time_stepwise, dt, x_decision, x_stepwise, u, p, a, d
+    ) -> list[AnyListOrNpArray]:
         """
         Compute the y data from the plot function
 
@@ -924,7 +925,7 @@ class PlotOcp:
                 for i, time in enumerate(intersections_time):
                     self.plots_vertical_lines[p * n + i].set_xdata([float(time), float(time)])
 
-    def _update_ydata(self, ydata):
+    def _update_ydata(self, ydata: AnyIterable):
         """
         Update the plotted data from ydata
         """

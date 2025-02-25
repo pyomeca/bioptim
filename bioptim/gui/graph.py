@@ -4,6 +4,7 @@ from ..limits.constraints import Constraint
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from ..limits.path_conditions import Bounds
 from ..misc.enums import Node, InterpolationType
+from ..misc.parameters_types import AnyListOrNpArray, StrIterable
 
 
 class GraphAbstract:
@@ -47,7 +48,7 @@ class GraphAbstract:
 
         self.ocp = ocp
 
-    def _vector_layout_structure(self, vector: list | np.ndarray, decimal: int):
+    def _vector_layout_structure(self, vector: AnyListOrNpArray, decimal: int):
         """
         Main structure of the next method _vector_layout(self, vector: list | np.ndarray, size: int, param: bool)
 
@@ -354,7 +355,7 @@ class OcpToConsole(GraphAbstract):
                         print(f"*** Implicit Constraint: {constraint.name}")
                 print("")
 
-    def print_bounds(self, bounds: Bounds, col_name: list[str]):
+    def print_bounds(self, bounds: Bounds, col_name: StrIterable):
         """
         Print ocp bounds in the console
 
@@ -381,7 +382,7 @@ class OcpToConsole(GraphAbstract):
         self.print_bounds_table(bounds, col_name, title)
 
     @staticmethod
-    def print_bounds_table(bounds: Bounds, col_name: list[str], title: list[str]):
+    def print_bounds_table(bounds: Bounds, col_name: StrIterable, title: StrIterable):
         """
         Print bounds table
 
