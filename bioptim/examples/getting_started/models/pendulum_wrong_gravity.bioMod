@@ -1,5 +1,5 @@
 version 4
-gravity 1.0 1.0 -20.0
+gravity 0.0 1.0 -20.0
 
 segment Seg1
     translations	y

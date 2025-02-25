@@ -175,8 +175,10 @@ def prepare_ocp(
     parameter_bounds = BoundsList()
     parameter_init = InitialGuessList()
 
-    g_scaling = VariableScaling("gravity_xyz", np.array([1, 1, 1/10]))
-    g_scaling = VariableScaling("gravity_xyz", np.array([1, 1, 1/10]))
+    g_scaling = VariableScaling("gravity_xyz", np.array([1, 1, 1])) # Works fine (output: 0.0,   1.0, -20.0)
+    # g_scaling = VariableScaling("gravity_xyz", np.array([1, 1, 10])) # Does not converge to the right place
+    #  "Optimal parameters unscaled: {'gravity_xyz': array([ 0.        ,  5.00000002, -4.9999999 ])}"
+    #  "Optimal parameters scaled: {'gravity_xyz': array([ 0.        ,  5.00000002, -0.49999999])}"
     parameters.add(
         "gravity_xyz",  # The name of the parameter
         my_parameter_function,  # The function that modifies the biorbd model
@@ -186,7 +188,7 @@ def prepare_ocp(
 
     # Give the parameter some min and max bounds and initial conditions
     parameter_bounds.add("gravity_xyz", min_bound=min_g, max_bound=max_g, interpolation=InterpolationType.CONSTANT)
-    parameter_init["gravity_xyz"] = np.array([0.5, 0.5, -15])
+    parameter_init["gravity_xyz"] = np.array([0.0, 0.5, -15])
 
     # --- Options --- #
     bio_model = BiorbdModel(biorbd_model_path, parameters=parameters)
@@ -257,8 +259,8 @@ def main():
         biorbd_model_path="models/pendulum.bioMod",
         final_time=final_time,
         n_shooting=n_shooting,
-        min_g=np.array([-5, -5, -50]),
-        max_g=np.array([5, 5, -5]),
+        min_g=np.array([0, -5, -50]),
+        max_g=np.array([0, 5, -5]),
         q_to_track=q_to_track,
         qdot_to_track=qdot_to_track,
         tau_to_track=tau_to_track,
