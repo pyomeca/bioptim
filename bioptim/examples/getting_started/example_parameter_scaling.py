@@ -34,14 +34,15 @@ from bioptim import (
 )
 
 
-def generate_dat_to_track(biorbd_model_path: str,
-            final_time: float,
-            n_shooting: int,
-            ode_solver: OdeSolverBase = OdeSolver.RK4(),
-            use_sx: bool = False,
-            phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
-            expand_dynamics: bool = True,
-    ) -> OptimalControlProgram:
+def generate_dat_to_track(
+    biorbd_model_path: str,
+    final_time: float,
+    n_shooting: int,
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
+    use_sx: bool = False,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
+    expand_dynamics: bool = True,
+) -> OptimalControlProgram:
     """
     Prepare the program
 
@@ -109,11 +110,14 @@ def generate_dat_to_track(biorbd_model_path: str,
         use_sx=use_sx,
     )
 
+
 def my_parameter_function(bio_model: BiorbdModel, value: MX):
     bio_model.set_gravity(value)
 
+
 def my_target_function(controller: PenaltyController, key: str) -> MX:
     return controller.parameters[key].cx
+
 
 def prepare_ocp(
     biorbd_model_path: str,
@@ -175,7 +179,7 @@ def prepare_ocp(
     parameter_bounds = BoundsList()
     parameter_init = InitialGuessList()
 
-    g_scaling = VariableScaling("gravity_xyz", np.array([1, 1, 1])) # Works fine (output: 0.0,   1.0, -20.0)
+    g_scaling = VariableScaling("gravity_xyz", np.array([1, 1, 1]))  # Works fine (output: 0.0,   1.0, -20.0)
     # g_scaling = VariableScaling("gravity_xyz", np.array([1, 1, 10])) # Does not converge to the right place
     #  "Optimal parameters unscaled: {'gravity_xyz': array([ 0.        ,  5.00000002, -4.9999999 ])}"
     #  "Optimal parameters scaled: {'gravity_xyz': array([ 0.        ,  5.00000002, -0.49999999])}"
@@ -198,10 +202,12 @@ def prepare_ocp(
     objective_functions = ObjectiveList()
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN,
-                        state_continuity_weight=100,
-                        expand_dynamics=expand_dynamics,
-                        phase_dynamics=phase_dynamics)
+    dynamics = Dynamics(
+        DynamicsFcn.TORQUE_DRIVEN,
+        state_continuity_weight=100,
+        expand_dynamics=expand_dynamics,
+        phase_dynamics=phase_dynamics,
+    )
 
     # Path constraint
     x_bounds = BoundsList()
@@ -246,14 +252,13 @@ def main():
     final_time = 1
     n_shooting = 100
 
-    ocp_to_track = generate_dat_to_track(biorbd_model_path="models/pendulum_wrong_gravity.bioMod",
-            final_time=final_time,
-            n_shooting=n_shooting)
+    ocp_to_track = generate_dat_to_track(
+        biorbd_model_path="models/pendulum_wrong_gravity.bioMod", final_time=final_time, n_shooting=n_shooting
+    )
     sol_to_track = ocp_to_track.solve(Solver.IPOPT(show_online_optim=False))
     q_to_track = sol_to_track.decision_states(to_merge=SolutionMerge.NODES)["q"]
     qdot_to_track = sol_to_track.decision_states(to_merge=SolutionMerge.NODES)["qdot"]
     tau_to_track = sol_to_track.decision_controls(to_merge=SolutionMerge.NODES)["tau"]
-
 
     ocp = prepare_ocp(
         biorbd_model_path="models/pendulum.bioMod",
