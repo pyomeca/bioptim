@@ -7,10 +7,9 @@ It is designed to show how one can define its own parameter objective functions 
 sufficient.
 """
 
-from typing import Any
-
 import numpy as np
 from casadi import MX
+
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -29,7 +28,6 @@ from bioptim import (
     ObjectiveList,
     PhaseDynamics,
     VariableScaling,
-    VariableScalingList,
     SolutionMerge,
 )
 
@@ -38,7 +36,7 @@ def generate_dat_to_track(
     biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
-    ode_solver: OdeSolverBase = OdeSolver.RK4(),
+    ode_solver: OdeSolverBase = OdeSolver.RK2(),
     use_sx: bool = False,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
@@ -128,7 +126,7 @@ def prepare_ocp(
     q_to_track: np.ndarray,
     qdot_to_track: np.ndarray,
     tau_to_track: np.ndarray,
-    ode_solver: OdeSolverBase = OdeSolver.RK4(),
+    ode_solver: OdeSolverBase = OdeSolver.RK2(),
     use_sx: bool = False,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
@@ -194,6 +192,14 @@ def prepare_ocp(
     parameter_bounds.add("gravity_xyz", min_bound=min_g, max_bound=max_g, interpolation=InterpolationType.CONSTANT)
     parameter_init["gravity_xyz"] = np.array([0.0, 0.5, -15])
 
+    parameter_objectives.add(
+        my_target_function,  # The function that returns the target value
+        key="gravity_xyz",  # The name of the parameter
+        weight=1000,  # The weight of the objective function
+        # quadratic=True,  # If the objective function is quadratic
+        custom_type=ObjectiveFcn.Parameter,
+    )
+
     # --- Options --- #
     bio_model = BiorbdModel(biorbd_model_path, parameters=parameters)
     n_tau = bio_model.nb_tau
@@ -204,7 +210,7 @@ def prepare_ocp(
     # Dynamics
     dynamics = Dynamics(
         DynamicsFcn.TORQUE_DRIVEN,
-        state_continuity_weight=100,
+        # state_continuity_weight=100,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
     )
