@@ -767,8 +767,8 @@ class PenaltyFunctionAbstract:
             return contact_force
 
         @staticmethod
-        def minimize_total_reaction_forces(
-            penalty: PenaltyOption, controller: PenaltyController, contact_index: tuple | list
+        def minimize_sum_reaction_forces(
+            penalty: PenaltyOption, controller: PenaltyController, contact_index: tuple[str | int] | list[str | int]
         ):
             """
             Simulate force plate data from the contact forces computed through the dynamics with contact.
@@ -783,7 +783,7 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             controller: PenaltyController
                 The penalty node elements
-            contact_index: tuple | list
+            contact_index: tuple[str | int] | list[str | int]
                 The index of contact to minimize, must be an int or a list.
                 penalty.cols should not be defined if contact_index is defined
             """
@@ -791,8 +791,10 @@ class PenaltyFunctionAbstract:
             if penalty.target is not None and penalty.target.shape[0] != 3:
                 raise RuntimeError("The target for the ground reaction forces must be of size 3 x n_shooting")
 
-            if not isinstance(contact_index, (list, tuple)):
+            if not isinstance(contact_index, (tuple, list)):
                 raise RuntimeError("contact_index must be a tuple or a list")
+            if not all(isinstance(contact, (str, int)) for contact in contact_index):
+                raise RuntimeError("contact_index must be a tuple or a list of str or int")
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
@@ -811,7 +813,7 @@ class PenaltyFunctionAbstract:
         def minimize_center_of_pressure(
             penalty: PenaltyOption,
             controller: PenaltyController,
-            contact_index: tuple | list,
+            contact_index: tuple[str | int] | list[str | int],
         ):
             """
             Simulate the center of pressure from force plate data from the contact forces computed through the dynamics with contact
@@ -826,7 +828,7 @@ class PenaltyFunctionAbstract:
                 The actual penalty to declare
             controller: PenaltyController
                 The penalty node elements
-            contact_index: tuple | list
+            contact_index: tuple[str | int] | list[str | int]
                 The index of contact to minimize, must be an int or a list.
             """
 
@@ -835,6 +837,8 @@ class PenaltyFunctionAbstract:
 
             if not isinstance(contact_index, (tuple, list)):
                 raise RuntimeError("contact_index must be a tuple or a list")
+            if not all(isinstance(contact, (str, int)) for contact in contact_index):
+                raise RuntimeError("contact_index must be a tuple or a list of str or int")
 
             # PenaltyFunctionAbstract.set_axes_rows(penalty, contact_index)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
@@ -868,9 +872,8 @@ class PenaltyFunctionAbstract:
             # Compute the mean position weighted by the force magnitude
             center_of_pressure = controller.cx.zeros(3, 1)
             for i_component in range(3):
-                barycenter = weighted_sum[i_component] / total_force[i_component]
                 # Avoid division by zero if the force is too small
-                center_of_pressure[i_component] = if_else(total_force[i_component] < 1e-6, 0, barycenter)
+                center_of_pressure[i_component] = if_else(total_force[i_component]**2 < 1e-8, 0, weighted_sum[i_component] / total_force[i_component])
 
             return center_of_pressure
 
