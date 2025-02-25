@@ -8,9 +8,8 @@ import numpy as np
 from .plot import PlotOcp, OcpSerializable
 from ..optimization.optimization_vector import OptimizationVectorHelper
 from .online_callback_abstract import OnlineCallbackAbstract
+from ..misc.parameters_types import IntIterable, AnyDictOptional
 
-MaybeDict = dict | None
-ListOrTuple = list | tuple
 
 class OnlineCallbackMultiprocess(OnlineCallbackAbstract):
     """
@@ -37,7 +36,7 @@ class OnlineCallbackMultiprocess(OnlineCallbackAbstract):
     def close(self):
         self.plot_process.kill()
 
-    def eval(self, arg: ListOrTuple, enforce: bool = False) -> list[int]:
+    def eval(self, arg: IntIterable, enforce: bool = False) -> list[int]:
         # Dequeuing the data by removing previous not useful data
         while not self.queue.empty():
             self.queue.get_nowait()
@@ -79,7 +78,7 @@ class OnlineCallbackMultiprocess(OnlineCallbackAbstract):
             self._plotter: PlotOcp = None
             self._update_time = 0.001
 
-        def __call__(self, pipe: mp.Queue, show_options: MaybeDict):
+        def __call__(self, pipe: mp.Queue, show_options: AnyDictOptional):
             """
             Parameters
             ----------
