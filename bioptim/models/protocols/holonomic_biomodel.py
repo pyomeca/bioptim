@@ -397,3 +397,55 @@ class HolonomicBioModel(BioModel, Protocol):
         https://doi.org/10.5194/ms-4-199-2013, 2013.
         Equation (17) in the paper.
         """
+
+    def check_state_u_size(self, state_u: MX):
+        """
+        Check if the size of the independent state vector matches the number of independent joints
+
+        Parameters
+        ----------
+        state_u: MX
+            The independent state vector to check
+        """
+
+    def check_state_v_size(self, state_v: MX):
+        """
+        Check if the size of the dependent state vector matches the number of dependent joints
+
+        Parameters
+        ----------
+        state_v: MX
+            The dependent state vector to check
+        """
+
+    def holonomic_forward_dynamics(self) -> Function:
+        """
+        Compute the forward dynamics while respecting holonomic constraints.
+        This combines the regular forward dynamics with constraint forces.
+
+        Returns
+        -------
+        Function
+            The holonomic forward dynamics function
+        """
+
+    def holonomic_inverse_dynamics(self) -> Function:
+        """
+        Compute the inverse dynamics while respecting holonomic constraints.
+        This combines the regular inverse dynamics with constraint forces.
+
+        Returns
+        -------
+        Function
+            The holonomic inverse dynamics function
+        """
+
+    def constraint_forces(self) -> Function:
+        """
+        Compute the forces required to maintain the holonomic constraints.
+
+        Returns
+        -------
+        Function
+            The constraint forces function
+        """

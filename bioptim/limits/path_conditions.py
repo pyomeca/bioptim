@@ -241,16 +241,10 @@ class PathCondition(np.ndarray):
         if val_size != n_elements:
             raise RuntimeError(f"Invalid number of {element_name} ({val_size}), the expected size is {n_elements}")
 
-        if self.type == InterpolationType.EACH_FRAME:
+        if self.type in (InterpolationType.EACH_FRAME, InterpolationType.ALL_POINTS):
             if self.shape[1] != self.n_shooting:
                 raise RuntimeError(
-                    f"Invalid number of column for InterpolationType.EACH_FRAME (ncols = {self.shape[1]}), "
-                    f"the expected number of column is {self.n_shooting}"
-                )
-        elif self.type == InterpolationType.ALL_POINTS:
-            if self.shape[1] != self.n_shooting:
-                raise RuntimeError(
-                    f"Invalid number of column for InterpolationType.ALL_POINTS (ncols = {self.shape[1]}), "
+                    f"Invalid number of column for {self.type} (ncols = {self.shape[1]}), "
                     f"the expected number of column is {self.n_shooting}"
                 )
 
