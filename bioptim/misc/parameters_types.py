@@ -1,5 +1,7 @@
 from typing import Any
 
+
+AnyIterable = list[Any] | tuple[Any]
 AnyDict = dict[str, Any]
 AnyDictOptional = dict[str, Any] | None
 IntDict = dict[str, int]
@@ -10,4 +12,7 @@ IntListOptional = list[int] | None
 
 IntIterable = list[int] | tuple[int]
 
-StrOrListOfStr = str | list[str]
+StrOrIterable = str | list[str]
+
+IntOptional = int | None
+StrOptional = str | None

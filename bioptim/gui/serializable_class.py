@@ -8,7 +8,7 @@ from ..limits.penalty_option import PenaltyOption
 from ..limits.path_conditions import Bounds
 from ..misc.mapping import BiMapping
 from ..misc.enums import PlotType, QuadratureRule, InterpolationType
-from ..misc.parameters_types import IntDict, IntList, AnyList, AnyDict, IntListOptional, StrOrListOfStr
+from ..misc.parameters_types import IntDict, IntList, AnyList, AnyDict, IntOptional, StrOrIterable
 
 
 class CasadiFunctionSerializable:
@@ -344,11 +344,11 @@ class OptimizationVariableContainerSerializable:
 
 class OdeSolverSerializable:
     # TODO There are probably more parameters to serialize here, if the GUI fails, this is probably the reason
-    polynomial_degree: IntListOptional
-    n_integration_steps: IntListOptional
+    polynomial_degree: IntOptional
+    n_integration_steps: IntOptional
     type: OdeSolver
 
-    def __init__(self, polynomial_degree: IntListOptional, n_integration_steps: IntListOptional, type: OdeSolver):
+    def __init__(self, polynomial_degree: IntOptional, n_integration_steps: IntOptional, type: OdeSolver):
         self.polynomial_degree = polynomial_degree
         self.n_integration_steps = n_integration_steps
         self.type = type
@@ -383,7 +383,7 @@ class OdeSolverSerializable:
 
 class SaveIterationsInfoSerializable:
     path_to_results: str
-    result_file_name: StrOrListOfStr
+    result_file_name: StrOrIterable
     nb_iter_save: int
     current_iter: int
     f_list: IntList
