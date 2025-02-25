@@ -886,76 +886,121 @@ class PlotOcp:
         if not custom_plot:
             return None
 
+        # Choose state representation based on plot type
         x = x_stepwise if custom_plot.type == PlotType.INTEGRATED else x_decision
 
-        # Compute the values of the plot at each node
+        # Compute values at each node
+        all_y = self._compute_values_at_nodes(
+            custom_plot, phase_idx, time_stepwise, dt, x, u, p, a, d, get_numerical_timeseries
+        )
+
+        # Format output based on plot type
+        if custom_plot.type == PlotType.INTEGRATED:
+            return self._format_integrated_plot_data(custom_plot, all_y)
+        elif custom_plot.type in (PlotType.PLOT, PlotType.STEP, PlotType.POINT):
+            return self._format_standard_plot_data(custom_plot, all_y)
+        else:
+            raise RuntimeError(f"Plot type {custom_plot.type} not implemented yet")
+
+    def _compute_values_at_nodes(
+        self, custom_plot, phase_idx, time_stepwise, dt, x, u, p, a, d, get_numerical_timeseries
+    ):
+        """Helper method to compute plot values at each node"""
         all_y = []
+        map_idx = custom_plot.phase_mappings.to_first.map_idx
+        
         for idx in range(len(custom_plot.node_idx)):
             node_idx = custom_plot.node_idx[idx]
+            
+            # Get node data (either from penalty or directly)
             if "penalty" in custom_plot.parameters:
-                penalty = custom_plot.parameters["penalty"]
-                t0 = PenaltyHelpers.t0(penalty, idx, lambda p_idx, n_idx: time_stepwise[p_idx][n_idx][0])
-
-                x_node = PenaltyHelpers.states(
-                    penalty,
-                    idx,
-                    lambda p_idx, n_idx, sn_idx: x[n_idx][:, sn_idx] if n_idx < len(x) else np.ndarray((0, 1)),
+                t0, x_node, u_node, p_node, a_node, d_node = self._get_penalty_node_data(
+                    custom_plot, idx, time_stepwise, x, u, p, a, get_numerical_timeseries
                 )
-                u_node = PenaltyHelpers.controls(
-                    penalty,
-                    idx,
-                    lambda p_idx, n_idx, sn_idx: u[n_idx][:, sn_idx] if n_idx < len(u) else np.ndarray((0, 1)),
-                )
-                p_node = PenaltyHelpers.parameters(penalty, 0, lambda p_idx, n_idx, sn_idx: np.array(p))
-                a_node = PenaltyHelpers.states(
-                    penalty,
-                    idx,
-                    lambda p_idx, n_idx, sn_idx: a[n_idx][:, sn_idx] if n_idx < len(a) else np.ndarray((0, 1)),
-                )
-                d_node = PenaltyHelpers.numerical_timeseries(
-                    penalty,
-                    idx,
-                    lambda p_idx, n_idx, sn_idx: get_numerical_timeseries(self.ocp, p_idx, n_idx, sn_idx),
-                )
-                if d_node.shape == (0, 0):
-                    d_node = DM(0, 1)
             else:
-                t0 = time_stepwise[phase_idx][node_idx][0]
+                t0, x_node, u_node, p_node, a_node, d_node = self._get_direct_node_data(
+                    phase_idx, node_idx, time_stepwise, x, u, p, a, d
+                )
 
-                x_node = x[node_idx]
-                u_node = u[node_idx] if node_idx < len(u) else np.ndarray((0, 1))
-                p_node = p
-                a_node = a[node_idx]
-                d_node = d[node_idx]
-
+            # Compute plot values using the function
             tp = custom_plot.function(
                 t0, dt, node_idx, x_node, u_node, p_node, a_node, d_node, **custom_plot.parameters
             )
 
-            map_idx = custom_plot.phase_mappings.to_first.map_idx
+            # Map values to correct axes
             y_tp = np.ndarray((max(map_idx) + 1, tp.shape[1])) * np.nan
             for ctr, axe_index in enumerate(map_idx):
                 y_tp[axe_index, :] = tp[ctr, :]
             all_y.append(y_tp)
+            
+        return all_y
 
-        # Dispatch the values so they will by properly dispatched to the correct axes later
-        if custom_plot.type == PlotType.INTEGRATED:
-            out = [[] for _ in range(max(np.abs(custom_plot.phase_mappings.to_first.map_idx)) + 1)]
-            for idx in custom_plot.phase_mappings.to_first.map_idx:
-                y_tp = []
-                for y in all_y:
-                    y_tp.append(y[custom_plot.phase_mappings.to_first.map_idx.index(idx), :])
-                out[idx] = y_tp
-            return out
+    def _get_penalty_node_data(self, custom_plot, idx, time_stepwise, x, u, p, a, get_numerical_timeseries):
+        """Extract data for penalty-based plots"""
+        penalty = custom_plot.parameters["penalty"]
+        
+        t0 = PenaltyHelpers.t0(penalty, idx, lambda p_idx, n_idx: time_stepwise[p_idx][n_idx][0])
+        
+        x_node = PenaltyHelpers.states(
+            penalty,
+            idx,
+            lambda p_idx, n_idx, sn_idx: x[n_idx][:, sn_idx] if n_idx < len(x) else np.ndarray((0, 1)),
+        )
+        u_node = PenaltyHelpers.controls(
+            penalty,
+            idx,
+            lambda p_idx, n_idx, sn_idx: u[n_idx][:, sn_idx] if n_idx < len(u) else np.ndarray((0, 1)),
+        )
+        p_node = PenaltyHelpers.parameters(penalty, 0, lambda p_idx, n_idx, sn_idx: np.array(p))
+        a_node = PenaltyHelpers.states(
+            penalty,
+            idx,
+            lambda p_idx, n_idx, sn_idx: a[n_idx][:, sn_idx] if n_idx < len(a) else np.ndarray((0, 1)),
+        )
+        d_node = PenaltyHelpers.numerical_timeseries(
+            penalty,
+            idx,
+            lambda p_idx, n_idx, sn_idx: get_numerical_timeseries(self.ocp, p_idx, n_idx, sn_idx),
+        )
+        if d_node.shape == (0, 0):
+            d_node = DM(0, 1)
+            
+        return t0, x_node, u_node, p_node, a_node, d_node
 
-        elif custom_plot.type in (PlotType.PLOT, PlotType.STEP, PlotType.POINT):
-            all_y = np.concatenate([tp[:, 0:1] for tp in all_y], axis=1)
-            out = [[] for _ in range(max(np.abs(custom_plot.phase_mappings.to_first.map_idx)) + 1)]
-            for idx in custom_plot.phase_mappings.to_first.map_idx:
-                out[idx] = all_y[idx, :]
-            return out
-        else:
-            raise RuntimeError(f"Plot type {custom_plot.type} not implemented yet")
+    def _get_direct_node_data(self, phase_idx, node_idx, time_stepwise, x, u, p, a, d):
+        """Extract data directly from the provided arrays"""
+        t0 = time_stepwise[phase_idx][node_idx][0]
+        x_node = x[node_idx]
+        u_node = u[node_idx] if node_idx < len(u) else np.ndarray((0, 1))
+        p_node = p
+        a_node = a[node_idx]
+        d_node = d[node_idx]
+        
+        return t0, x_node, u_node, p_node, a_node, d_node
+
+    def _format_integrated_plot_data(self, custom_plot, all_y):
+        """Format data for integrated plots"""
+        map_idx = custom_plot.phase_mappings.to_first.map_idx
+        out = [[] for _ in range(max(np.abs(map_idx)) + 1)]
+        
+        for idx in map_idx:
+            y_tp = []
+            for y in all_y:
+                y_tp.append(y[map_idx.index(idx), :])
+            out[idx] = y_tp
+            
+        return out
+
+    def _format_standard_plot_data(self, custom_plot, all_y):
+        """Format data for standard plots (PLOT, STEP, POINT)"""
+        map_idx = custom_plot.phase_mappings.to_first.map_idx
+        all_y = np.concatenate([tp[:, 0:1] for tp in all_y], axis=1)
+        out = [[] for _ in range(max(np.abs(map_idx)) + 1)]
+        
+        for idx in map_idx:
+            out[idx] = all_y[idx, :]
+            
+        return out
 
     def _update_xdata(self, phase_times):
         """
