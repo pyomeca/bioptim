@@ -4,7 +4,7 @@ from ..limits.constraints import Constraint
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from ..limits.path_conditions import Bounds
 from ..misc.enums import Node, InterpolationType
-from ..misc.parameters_types import FloatIterableOrNpArray, StrIterable
+from ..misc.parameters_types import FloatIterableOrNpArray, StrIterable, Int, Str, AnyDict
 
 
 class GraphAbstract:
@@ -48,7 +48,7 @@ class GraphAbstract:
 
         self.ocp = ocp
 
-    def _vector_layout_structure(self, vector: FloatIterableOrNpArray, decimal: int):
+    def _vector_layout_structure(self, vector: FloatIterableOrNpArray, decimal: Int):
         """
         Main structure of the next method _vector_layout(self, vector: list | np.ndarray, size: int, param: bool)
 
@@ -98,7 +98,7 @@ class GraphAbstract:
 
         return condensed_vector
 
-    def _add_dict_to_str(self, _dict: dict):
+    def _add_dict_to_str(self, _dict: AnyDict):
         """
         Convert information contained in a dict to string
 
@@ -113,7 +113,7 @@ class GraphAbstract:
             str_to_add += f"<b>{d}</b>: {_dict[d]}{self._return_line}"
         return str_to_add
 
-    def _add_extra_parameters_to_str(self, objective: Objective, string: str):
+    def _add_extra_parameters_to_str(self, objective: Objective, string: Str):
         """
         Simple method to add extra-parameters to a string
 
@@ -214,7 +214,7 @@ class GraphAbstract:
                         list_mayer_objectives.append(mayer_objective)
         return list_mayer_objectives
 
-    def _scaling_parameter(self, key: str):
+    def _scaling_parameter(self, key: Str):
         """
         Take scaling into account for display task
 
@@ -234,7 +234,7 @@ class GraphAbstract:
 
         return parameter, initial_guess_str, min_bound_str, max_bound_str, scaling_str
 
-    def _analyze_nodes(self, phase_idx: int, constraint: Constraint):
+    def _analyze_nodes(self, phase_idx: Int, constraint: Constraint):
         """
         Determine node index
 
@@ -533,7 +533,7 @@ class OcpToGraph(GraphAbstract):
                 global_objectives += f"<b>Quadratic</b>: {objective.quadratic} <br/><br/>"
         return global_objectives, global_objectives_names
 
-    def _draw_parameter_node(self, g, phase_idx: int, param_idx: int, key: str):
+    def _draw_parameter_node(self, g, phase_idx: Int, param_idx: Int, key: Str):
         """
         Draw the node which contains the information related to the parameters
 
@@ -559,7 +559,7 @@ class OcpToGraph(GraphAbstract):
         node_str += f"<b>Max bound</b>: {max_bound} <br/><br/>"
         g.node(f"param_{phase_idx}{param_idx}", f"""<{node_str}>""")
 
-    def _draw_nlp_node(self, g, phase_idx: int):
+    def _draw_nlp_node(self, g, phase_idx: Int):
         """
         Draw the node which contains the information related to one of the phases (ie. the name of the model,
         the phase duration, the number of shooting nodes, the dynamics, the ODE)
@@ -583,7 +583,7 @@ class OcpToGraph(GraphAbstract):
         node_str += f"<b>Control type</b>: {self.ocp.nlp[phase_idx].control_type.name}"
         g.node(f"nlp_node_{phase_idx}", f"""<{node_str}>""")
 
-    def _draw_lagrange_node(self, g, phase_idx: int):
+    def _draw_lagrange_node(self, g, phase_idx: Int):
         """
         Draw the node which contains the information related to the Lagrange objectives
 
@@ -599,7 +599,7 @@ class OcpToGraph(GraphAbstract):
         node_str = f"<u><b>Lagrange</b></u><br/>{lagrange_str}"
         g.node(f"lagrange_{phase_idx}", f"""<{node_str}>""")
 
-    def _draw_mayer_node(self, g, phase_idx: int):
+    def _draw_mayer_node(self, g, phase_idx: Int):
         """
         Draw the node which contains the information related to the Mayer objectives
 
@@ -621,7 +621,7 @@ class OcpToGraph(GraphAbstract):
             all_mayer_str += "No Mayer set"
         g.node(f"mayer_node_{phase_idx}", f"""<{all_mayer_str}>""")
 
-    def _draw_constraints_node(self, g, phase_idx: int):
+    def _draw_constraints_node(self, g, phase_idx: Int):
         """
         Draw the node which contains the information related to the constraints
 
@@ -652,7 +652,7 @@ class OcpToGraph(GraphAbstract):
             all_constraints_str += "No constraint set"
         g.node(f"constraints_node_{phase_idx}", f"""<{all_constraints_str}>""")
 
-    def _draw_nlp_cluster(self, g, phase_idx: int):
+    def _draw_nlp_cluster(self, g, phase_idx: Int):
         """
         Draw clusters for each nlp
 
@@ -698,7 +698,7 @@ class OcpToGraph(GraphAbstract):
             self._draw_constraints_node(g, phase_idx)
 
     @staticmethod
-    def _draw_lagrange_to_mayer_edge(g, phase_idx: int):
+    def _draw_lagrange_to_mayer_edge(g, phase_idx: Int):
         """
         Draw edge between Lagrange node and Mayer node
 
@@ -713,7 +713,7 @@ class OcpToGraph(GraphAbstract):
         g.edge(f"lagrange_{phase_idx}", f"mayer_node_{phase_idx}", color="lightgrey")
 
     @staticmethod
-    def _draw_mayer_to_constraints_edge(g, phase_idx: int):
+    def _draw_mayer_to_constraints_edge(g, phase_idx: Int):
         """
         Draw edge between Mayer node and constraints node
 
@@ -726,7 +726,7 @@ class OcpToGraph(GraphAbstract):
         """
         g.edge(f"mayer_node_{phase_idx}", f"constraints_node_{phase_idx}", color="lightgrey")
 
-    def _draw_nlp_to_parameters_edges(self, g, phase_idx: int):
+    def _draw_nlp_to_parameters_edges(self, g, phase_idx: Int):
         """
         Draw edges between nlp node and parameters
 
@@ -749,7 +749,7 @@ class OcpToGraph(GraphAbstract):
             g.edge(f"param_{phase_idx}0", f"lagrange_{phase_idx}", color="lightgrey")
 
     @staticmethod
-    def _draw_phase_trans_to_phaseless_edge(g, phaseless_objectives: str, nb_phase: int):
+    def _draw_phase_trans_to_phaseless_edge(g, phaseless_objectives: Str, nb_phase: Int):
         """
         Draw edge between phaseless objectives and phase transitions
 
@@ -766,7 +766,7 @@ class OcpToGraph(GraphAbstract):
         if nb_phase > 1 and phaseless_objectives != "":
             g.edge(f"phaseless_objectives", f"Phase #0", color="invis")
 
-    def _draw_edges(self, g, phase_idx: int):
+    def _draw_edges(self, g, phase_idx: Int):
         """
         Draw edges between each node of a cluster
 

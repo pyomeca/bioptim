@@ -7,6 +7,7 @@ Int: TypeAlias = int
 Str: TypeAlias = str
 Float: TypeAlias = float
 Bool: TypeAlias = bool
+Bytes: TypeAlias = bytes
 
 
 AnyIterable: TypeAlias = list[Any] | tuple[Any, ...]

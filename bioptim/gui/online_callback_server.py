@@ -14,7 +14,19 @@ import numpy as np
 from .online_callback_abstract import OnlineCallbackAbstract
 from .plot import PlotOcp, OcpSerializable
 from ..optimization.optimization_vector import OptimizationVectorHelper
-from ..misc.parameters_types import StrOptional, IntOptional, AnyIterable, AnyDictOptional, AnyTuple
+from ..misc.parameters_types import (
+    StrOptional,
+    IntOptional,
+    AnyIterable,
+    AnyDictOptional,
+    AnyTuple,
+    Bool,
+    Int,
+    Str,
+    AnyDict,
+    Bytes,
+    IntIterable,
+)
 
 
 _DEFAULT_HOST = "localhost"
@@ -22,11 +34,11 @@ _DEFAULT_PORT = 3050
 _HEADER_GENERIC_LEN = 1024
 
 
-def _serialize_show_options(show_options: dict) -> bytes:
+def _serialize_show_options(show_options: AnyDict) -> Bytes:
     return json.dumps(show_options).encode()
 
 
-def _deserialize_show_options(show_options: bytes) -> dict:
+def _deserialize_show_options(show_options: bytes) -> Bytes:
     return json.loads(show_options.decode())
 
 
@@ -46,23 +58,23 @@ class _ResponseHeader(StrEnum):
     READY_FOR_NEXT_DATA = "READY_FOR_NEXT_DATA"
 
     @staticmethod
-    def longest() -> int:
+    def longest() -> Int:
         return max(len(v) for v in _ResponseHeader.__members__)
 
-    def encode(self) -> str:
+    def encode(self) -> Str:
         return self.ljust(len(self), "\0").encode()
 
     @staticmethod
-    def response_len() -> int:
+    def response_len() -> Int:
         return _ResponseHeader.longest() + 1
 
-    def __len__(self) -> int:
+    def __len__(self) -> Int:
         return _ResponseHeader.response_len()
 
-    def __eq__(self, value: object) -> bool:
+    def __eq__(self, value: object) -> Bool:
         return self.split("\0")[0] == value.split("\0")[0] or super().__eq__(value)
 
-    def __ne__(self, value: object) -> bool:
+    def __ne__(self, value: object) -> Bool:
         return not self.__eq__(value)
 
 
@@ -99,7 +111,7 @@ class PlottingServer:
 
         self._run()
 
-    def _prepare_logger(self, log_level: int) -> None:
+    def _prepare_logger(self, log_level: Int) -> None:
         """
         Prepares the logger
 
@@ -161,7 +173,7 @@ class PlottingServer:
             self._logger.debug(f"Received hand shake from client")
             self._initialize_plotter(client_socket, data)
 
-    def _recv_data(self, client_socket: socket.socket, send_confirmation: bool) -> tuple[_ServerMessages, list]:
+    def _recv_data(self, client_socket: socket.socket, send_confirmation: Bool) -> tuple[_ServerMessages, list]:
         """
         Waits for data from the client
 
@@ -186,7 +198,7 @@ class PlottingServer:
         return message_type, data
 
     def _recv_message_type_and_data_len(
-        self, client_socket: socket.socket, send_confirmation: bool
+        self, client_socket: socket.socket, send_confirmation: Bool
     ) -> tuple[_ServerMessages, list]:
         """
         Waits for data len from the client (first part of the protocol)
@@ -246,7 +258,9 @@ class PlottingServer:
 
         return message_type, len_all_data
 
-    def _recv_serialize_data(self, client_socket: socket.socket, send_confirmation: bool, len_all_data: list) -> tuple:
+    def _recv_serialize_data(
+        self, client_socket: socket.socket, send_confirmation: Bool, len_all_data: AnyIterable
+    ) -> AnyTuple:
         """
         Receives the data from the client (second part of the protocol)
 
@@ -288,7 +302,7 @@ class PlottingServer:
         self._logger.debug(f"Received data from client: {[len(d) for d in data_out]} bytes")
         return data_out
 
-    def _initialize_plotter(self, client_socket: socket.socket, ocp_raw: list) -> None:
+    def _initialize_plotter(self, client_socket: socket.socket, ocp_raw: AnyIterable) -> None:
         """
         Initializes the plotter
 
@@ -359,7 +373,7 @@ class PlottingServer:
         plt.show()
 
     @property
-    def has_at_least_one_active_figure(self) -> bool:
+    def has_at_least_one_active_figure(self) -> Bool:
         """
         If at least one figure is active
 
@@ -445,7 +459,9 @@ class PlottingServer:
 
 
 class OnlineCallbackServer(OnlineCallbackAbstract):
-    def __init__(self, ocp, opts: AnyDictOptional = None, host: StrOptional = None, port: IntOptional = None, **show_options):
+    def __init__(
+        self, ocp, opts: AnyDictOptional = None, host: StrOptional = None, port: IntOptional = None, **show_options
+    ):
         """
         Initializes the client. This is not supposed to be called directly by the user, but by the solver. During the
         initialization, we need to perform some tasks that are not possible to do in server side. Then the results of
@@ -486,7 +502,7 @@ class OnlineCallbackServer(OnlineCallbackAbstract):
 
         self._initialize_connexion(**show_options)
 
-    def _initialize_connexion(self, retries: int = 0, **show_options) -> None:
+    def _initialize_connexion(self, retries: Int = 0, **show_options) -> None:
         """
         Initializes the connexion to the server
 
@@ -565,7 +581,7 @@ class OnlineCallbackServer(OnlineCallbackAbstract):
         self._socket.sendall(f"{_ServerMessages.CLOSE_CONNEXION.value}\nGoodbye from client!".encode())
         self._socket.close()
 
-    def eval(self, arg: AnyIterable, enforce: bool = False) -> list[int]:
+    def eval(self, arg: AnyIterable, enforce: Bool = False) -> IntIterable:
         """
         Sends the current data to the plotter, this method is automatically called by the solver
 
@@ -617,7 +633,7 @@ class OnlineCallbackServer(OnlineCallbackAbstract):
         return [0]
 
 
-def _serialize_xydata(xdata: AnyIterable, ydata: AnyIterable) -> tuple:
+def _serialize_xydata(xdata: AnyIterable, ydata: AnyIterable) -> AnyTuple:
     """
     Serialize the data to send to the server, it will be deserialized by `_deserialize_xydata`
 

@@ -8,7 +8,7 @@ import numpy as np
 from .plot import PlotOcp, OcpSerializable
 from ..optimization.optimization_vector import OptimizationVectorHelper
 from .online_callback_abstract import OnlineCallbackAbstract
-from ..misc.parameters_types import AnyIterable, AnyDictOptional
+from ..misc.parameters_types import AnyIterable, AnyDictOptional, Bool
 
 
 class OnlineCallbackMultiprocess(OnlineCallbackAbstract):
@@ -25,7 +25,7 @@ class OnlineCallbackMultiprocess(OnlineCallbackAbstract):
         The multiprocessing placeholder
     """
 
-    def __init__(self, ocp, opts: dict = None, **show_options):
+    def __init__(self, ocp, opts: AnyDictOptional = None, **show_options):
         super(OnlineCallbackMultiprocess, self).__init__(ocp, opts, **show_options)
 
         self.queue = mp.Queue()
@@ -36,7 +36,7 @@ class OnlineCallbackMultiprocess(OnlineCallbackAbstract):
     def close(self):
         self.plot_process.kill()
 
-    def eval(self, arg: AnyIterable, enforce: bool = False) -> list[int]:
+    def eval(self, arg: AnyIterable, enforce: Bool = False) -> list[int]:
         # Dequeuing the data by removing previous not useful data
         while not self.queue.empty():
             self.queue.get_nowait()
@@ -109,7 +109,7 @@ class OnlineCallbackMultiprocess(OnlineCallbackAbstract):
 
             return [plt.fignum_exists(fig.number) for fig in self._plotter.all_figures].count(True) > 0
 
-        def plot_update(self) -> bool:
+        def plot_update(self) -> Bool:
             """
             The callback to update the graphs
 

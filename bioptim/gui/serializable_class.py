@@ -8,11 +8,11 @@ from ..limits.penalty_option import PenaltyOption
 from ..limits.path_conditions import Bounds
 from ..misc.mapping import BiMapping
 from ..misc.enums import PlotType, QuadratureRule, InterpolationType
-from ..misc.parameters_types import IntDict, IntList, AnyList, AnyDict, IntOptional, StrOrIterable
+from ..misc.parameters_types import IntDict, IntList, AnyDict, IntOptional, StrOrIterable, AnyIterable, Bool, Str, Int
 
 
 class CasadiFunctionSerializable:
-    _size_in: dict[str, int]
+    _size_in: IntDict
 
     def __init__(self, size_in: IntDict):
         self._size_in = size_in
@@ -197,33 +197,33 @@ class BoundsSerializable:
 class CustomPlotSerializable:
     type: PlotType
     phase_mappings: BiMappingSerializable
-    legend: tuple | list
-    combine_to: str
-    color: str
+    legend: AnyIterable
+    combine_to: Str
+    color: Str
     linestyle: str
-    ylim: tuple | list
+    ylim: AnyIterable
     bounds: BoundsSerializable
     node_idx: list | slice | range
     label: list
-    compute_derivative: bool
+    compute_derivative: Bool
     integration_rule: QuadratureRule
-    all_variables_in_one_subplot: bool
+    all_variables_in_one_subplot: Bool
 
     def __init__(
         self,
         plot_type: PlotType,
         phase_mappings: BiMapping,
-        legend: tuple | list,
-        combine_to: str,
-        color: str,
-        linestyle: str,
-        ylim: tuple | list,
+        legend: AnyIterable,
+        combine_to: Str,
+        color: Str,
+        linestyle: Str,
+        ylim: AnyIterable,
         bounds: BoundsSerializable,
         node_idx: list | slice | range,
         label: list,
-        compute_derivative: bool,
+        compute_derivative: Bool,
         integration_rule: QuadratureRule,
-        all_variables_in_one_subplot: bool,
+        all_variables_in_one_subplot: Bool,
     ):
         self.type = plot_type
         self.phase_mappings = phase_mappings
@@ -303,10 +303,10 @@ class CustomPlotSerializable:
 
 
 class OptimizationVariableContainerSerializable:
-    node_index: int
+    node_index: Int
     shape: tuple[int, int]
 
-    def __init__(self, node_index: int, shape: tuple[int, int], len: int):
+    def __init__(self, node_index: Int, shape: tuple[int, int], len: Int):
         self.node_index = node_index
         self.shape = shape
         self._len = len
@@ -382,14 +382,14 @@ class OdeSolverSerializable:
 
 
 class SaveIterationsInfoSerializable:
-    path_to_results: str
+    path_to_results: Str
     result_file_name: StrOrIterable
-    nb_iter_save: int
-    current_iter: int
+    nb_iter_save: Int
+    current_iter: Int
     f_list: IntList
 
     def __init__(
-        self, path_to_results: str, result_file_name: str, nb_iter_save: int, current_iter: int, f_list: IntList
+        self, path_to_results: Str, result_file_name: Str, nb_iter_save: Int, current_iter: Int, f_list: IntList
     ):
         self.path_to_results = path_to_results
         self.result_file_name = result_file_name
@@ -435,10 +435,10 @@ class SaveIterationsInfoSerializable:
 
 
 class NlpSerializable:
-    ns: int
-    phase_idx: int
+    ns: Int
+    phase_idx: Int
 
-    n_states_nodes: int
+    n_states_nodes: Int
     states: OptimizationVariableContainerSerializable
     states_dot: OptimizationVariableContainerSerializable
     controls: OptimizationVariableContainerSerializable
@@ -451,9 +451,9 @@ class NlpSerializable:
 
     def __init__(
         self,
-        ns: int,
-        phase_idx: int,
-        n_states_nodes: int,
+        ns: Int,
+        phase_idx: Int,
+        n_states_nodes: Int,
         states: OptimizationVariableContainerSerializable,
         states_dot: OptimizationVariableContainerSerializable,
         controls: OptimizationVariableContainerSerializable,
@@ -526,22 +526,22 @@ class NlpSerializable:
 
 
 class OcpSerializable:
-    n_phases: int
+    n_phases: Int
     nlp: list[NlpSerializable]
 
     time_phase_mapping: BiMappingSerializable
 
-    plot_ipopt_outputs: bool
-    plot_check_conditioning: bool
+    plot_ipopt_outputs: Bool
+    plot_check_conditioning: Bool
     save_ipopt_iterations_info: SaveIterationsInfoSerializable
 
     def __init__(
         self,
-        n_phases: int,
+        n_phases: Int,
         nlp: list[NlpSerializable],
         time_phase_mapping: BiMappingSerializable,
-        plot_ipopt_outputs: bool,
-        plot_check_conditioning: bool,
+        plot_ipopt_outputs: Bool,
+        plot_check_conditioning: Bool,
         save_ipopt_iterations_info: SaveIterationsInfoSerializable,
     ):
         self.n_phases = n_phases

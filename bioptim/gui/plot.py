@@ -14,7 +14,18 @@ from ..misc.enums import PlotType, Shooting, SolutionIntegrator, QuadratureRule,
 from ..misc.mapping import Mapping, BiMapping, BiMappingOrIterableOptional
 from ..optimization.solution.solution import Solution
 from ..optimization.solution.solution_data import SolutionMerge
-from ..misc.parameters_types import StrIterableOptional, AnyIterable, AnyDict, Str, Int, StrOptional, BoolOptional, Bool, Float, AnyTuple
+from ..misc.parameters_types import (
+    StrIterableOptional,
+    AnyIterable,
+    AnyDict,
+    Str,
+    Int,
+    StrOptional,
+    BoolOptional,
+    Bool,
+    Float,
+    AnyTuple,
+)
 
 
 DEFAULT_COLORS = {
