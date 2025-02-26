@@ -114,7 +114,7 @@ def my_parameter_function(bio_model: BiorbdModel, value: MX):
 
 
 def my_target_function(controller: PenaltyController, key: str) -> MX:
-    return controller.parameters[key].cx
+    return controller.parameters[key].cx * controller.parameters[key].scaling.scaling
 
 
 def prepare_ocp(
@@ -177,8 +177,8 @@ def prepare_ocp(
     parameter_bounds = BoundsList()
     parameter_init = InitialGuessList()
 
-    g_scaling = VariableScaling("gravity_xyz", np.array([1, 1, 1]))  # Works fine (output: 0.0,   1.0, -20.0)
-    # g_scaling = VariableScaling("gravity_xyz", np.array([1, 1, 10])) # Does not converge to the right place
+    # g_scaling = VariableScaling("gravity_xyz", np.array([1, 1, 1]))  # Works fine (output: 0.0,   1.0, -20.0)
+    g_scaling = VariableScaling("gravity_xyz", np.array([1, 1, 10]))  # Does not converge to the right place
     #  "Optimal parameters unscaled: {'gravity_xyz': array([ 0.        ,  5.00000002, -4.9999999 ])}"
     #  "Optimal parameters scaled: {'gravity_xyz': array([ 0.        ,  5.00000002, -0.49999999])}"
     parameters.add(
