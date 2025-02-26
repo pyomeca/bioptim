@@ -1,28 +1,38 @@
 from typing import Any
 import numpy as np
+from typing import TypeAlias
 
 
-AnyIterable = list[Any] | tuple[Any]
-IntIterable = list[int] | tuple[int]
-StrIterable = list[str] | tuple[str]
+Int: TypeAlias = int
+Str: TypeAlias = str
+Float: TypeAlias = float
+Bool: TypeAlias = bool
 
-StrIterableOptional = list[str] | tuple[str] | None
 
-AnyDict = dict[str, Any]
-IntDict = dict[str, int]
+AnyIterable: TypeAlias = list[Any] | tuple[Any, ...]
+IntIterable: TypeAlias = list[int] | tuple[int]
+StrIterable: TypeAlias = list[str] | tuple[str, ...]
 
-AnyDictOptional = dict[str, Any] | None
+StrIterableOptional: TypeAlias = list[str] | tuple[str, ...] | None
 
-AnyList = list[Any]
-IntList = list[int]
-AnyListOrNpArray = list[Any] | np.ndarray
+AnyDict: TypeAlias = dict[str, Any]
+IntDict: TypeAlias = dict[str, int]
 
-IntListOptional = list[int] | None
+AnyDictOptional: TypeAlias = dict[str, Any] | None
 
-StrOrIterable = str | list[str]
+AnyList: TypeAlias = list[Any]
+IntList: TypeAlias = list[int]
+AnyListOrNpArray: TypeAlias = list[Any] | np.ndarray
+FloatIterableOrNpArray: TypeAlias = list[float] | tuple[float, ...] | np.ndarray
 
-IntOptional = int | None
+IntListOptional: TypeAlias = list[int] | None
 
-StrOptional = str | None
+StrOrIterable: TypeAlias = str | list[str]
 
-AnyTuple = tuple[Any]
+IntOptional: TypeAlias = int | None
+
+StrOptional: TypeAlias = str | None
+
+BoolOptional: TypeAlias = bool | None
+
+AnyTuple: TypeAlias = tuple[Any, ...]
