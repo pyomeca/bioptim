@@ -76,17 +76,16 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Setup environment
-        uses: conda-incubator/setup-miniconda@v2
+        uses: conda-incubator/setup-miniconda@v3
         with:
           miniforge-version: latest
-          use-mamba: true
           activate-environment: bioptim
           environment-file: environment.yml
 
-      - name: Print mamba info
+      - name: Print conda info
         run: |
           conda info
-#          mamba list
+          conda list
 
       - name: Install extra dependencies
         run: |
