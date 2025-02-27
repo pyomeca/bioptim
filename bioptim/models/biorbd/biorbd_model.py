@@ -95,7 +95,7 @@ class BiorbdModel:
         return BiorbdModel(self.path)
 
     def serialize(self) -> tuple[Callable, dict]:
-        return BiorbdModel, dict(bio_model=self.path)
+        return BiorbdModel, dict(bio_model=self.path, external_force_set=self.external_force_set)
 
     @property
     def friction_coefficients(self) -> MX | SX | np.ndarray:
