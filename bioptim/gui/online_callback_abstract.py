@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 
 from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity
 
+from ..misc.parameters_types import AnyDictOptional, AnyIterable, Str, Int, Bool, AnyTuple, IntIterable
+
 
 class OnlineCallbackAbstract(Callback, ABC):
     """
@@ -32,7 +34,7 @@ class OnlineCallbackAbstract(Callback, ABC):
         Send the current data to the plotter
     """
 
-    def __init__(self, ocp, opts: dict = None, **show_options):
+    def __init__(self, ocp, opts: AnyDictOptional = None, **show_options):
         """
         Parameters
         ----------
@@ -107,7 +109,7 @@ class OnlineCallbackAbstract(Callback, ABC):
         return nlpsol_out(i)
 
     @staticmethod
-    def get_name_out(_) -> str:
+    def get_name_out(_) -> Str:
         """
         Get the name of the output variable
 
@@ -118,7 +120,7 @@ class OnlineCallbackAbstract(Callback, ABC):
 
         return "ret"
 
-    def get_sparsity_in(self, i: int) -> tuple:
+    def get_sparsity_in(self, i: Int) -> AnyTuple:
         """
         Get the sparsity of a specific variable
 
@@ -143,7 +145,7 @@ class OnlineCallbackAbstract(Callback, ABC):
             return Sparsity(0, 0)
 
     @abstractmethod
-    def eval(self, arg: list | tuple, enforce: bool = False) -> list[int]:
+    def eval(self, arg: AnyIterable, enforce: Bool = False) -> IntIterable:
         """
         Send the current data to the plotter
 

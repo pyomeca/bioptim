@@ -5,6 +5,8 @@ from casadi import jacobian, gradient, sum1, Function
 from matplotlib import pyplot as plt
 from matplotlib.cm import get_cmap
 
+from ..misc.parameters_types import Str, Int
+
 
 def create_ipopt_output_plot(ocp, interface):
     """
@@ -172,7 +174,7 @@ class SaveIterationsInfo:
     This class is used to store the ipopt outputs save info.
     """
 
-    def __init__(self, path_to_results: str, result_file_name: str, nb_iter_save: int):
+    def __init__(self, path_to_results: Str, result_file_name: Str, nb_iter_save: Int):
 
         if not isinstance(path_to_results, str) or len(path_to_results) == 0:
             raise ValueError("path_to_results should be a non-empty string")
