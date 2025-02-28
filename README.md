@@ -1152,6 +1152,7 @@ If the expected value of a variable is of order `0.1`, then the scaling factor s
 to `O(1)`, as `0.1 / 0.1 = 1`. Bioptim will apply the scaling to all initial guesses and bounds entered by the user automatically.
 However, the target in objectives and constraints should be scaled by the user (see Issue Scaling of targets #848 ).
 
+**Important note**:
 To summarize, the user treat with what we call the "scaled" variables, i.e. the variables with physical dimensions, 
 but the optimization problem is solved with the "unscaled" decision variables, i.e. the variables without physical meaning. 
 

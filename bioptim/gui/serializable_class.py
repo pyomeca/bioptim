@@ -8,12 +8,13 @@ from ..limits.penalty_option import PenaltyOption
 from ..limits.path_conditions import Bounds
 from ..misc.mapping import BiMapping
 from ..misc.enums import PlotType, QuadratureRule, InterpolationType
+from ..misc.parameters_types import IntDict, IntList, AnyDict, IntOptional, StrOrIterable, AnyIterable, Bool, Str, Int
 
 
 class CasadiFunctionSerializable:
-    _size_in: dict[str, int]
+    _size_in: IntDict
 
-    def __init__(self, size_in: dict[str, int]):
+    def __init__(self, size_in: IntDict):
         self._size_in = size_in
 
     @classmethod
@@ -75,10 +76,10 @@ class PenaltySerializable:
 
 
 class MappingSerializable:
-    map_idx: list[int]
-    oppose: list[int]
+    map_idx: IntList
+    oppose: IntList
 
-    def __init__(self, map_idx: list, oppose: list):
+    def __init__(self, map_idx: IntList, oppose: IntList):
         self.map_idx = map_idx
         self.oppose = oppose
 
@@ -101,7 +102,7 @@ class MappingSerializable:
         }
 
     @classmethod
-    def deserialize(cls, data):
+    def deserialize(cls, data: AnyDict):
         return cls(
             map_idx=data["map_idx"],
             oppose=data["oppose"],
@@ -130,7 +131,7 @@ class BiMappingSerializable:
         }
 
     @classmethod
-    def deserialize(cls, data):
+    def deserialize(cls, data: AnyDict):
         return cls(
             to_first=MappingSerializable.deserialize(data["to_first"]),
             to_second=MappingSerializable.deserialize(data["to_second"]),
@@ -163,7 +164,7 @@ class BoundsSerializable:
         }
 
     @classmethod
-    def deserialize(cls, data):
+    def deserialize(cls, data: AnyDict):
         return cls(
             bounds=Bounds(
                 key=data["key"],
@@ -196,33 +197,33 @@ class BoundsSerializable:
 class CustomPlotSerializable:
     type: PlotType
     phase_mappings: BiMappingSerializable
-    legend: tuple | list
-    combine_to: str
-    color: str
+    legend: AnyIterable
+    combine_to: Str
+    color: Str
     linestyle: str
-    ylim: tuple | list
+    ylim: AnyIterable
     bounds: BoundsSerializable
     node_idx: list | slice | range
     label: list
-    compute_derivative: bool
+    compute_derivative: Bool
     integration_rule: QuadratureRule
-    all_variables_in_one_subplot: bool
+    all_variables_in_one_subplot: Bool
 
     def __init__(
         self,
         plot_type: PlotType,
         phase_mappings: BiMapping,
-        legend: tuple | list,
-        combine_to: str,
-        color: str,
-        linestyle: str,
-        ylim: tuple | list,
+        legend: AnyIterable,
+        combine_to: Str,
+        color: Str,
+        linestyle: Str,
+        ylim: AnyIterable,
         bounds: BoundsSerializable,
         node_idx: list | slice | range,
         label: list,
-        compute_derivative: bool,
+        compute_derivative: Bool,
         integration_rule: QuadratureRule,
-        all_variables_in_one_subplot: bool,
+        all_variables_in_one_subplot: Bool,
     ):
         self.type = plot_type
         self.phase_mappings = phase_mappings
@@ -278,7 +279,7 @@ class CustomPlotSerializable:
         }
 
     @classmethod
-    def deserialize(cls, data):
+    def deserialize(cls, data: AnyDict):
         return cls(
             plot_type=PlotType(data["type"]),
             phase_mappings=BiMappingSerializable.deserialize(data["phase_mappings"]),
@@ -302,10 +303,10 @@ class CustomPlotSerializable:
 
 
 class OptimizationVariableContainerSerializable:
-    node_index: int
+    node_index: Int
     shape: tuple[int, int]
 
-    def __init__(self, node_index: int, shape: tuple[int, int], len: int):
+    def __init__(self, node_index: Int, shape: tuple[int, int], len: Int):
         self.node_index = node_index
         self.shape = shape
         self._len = len
@@ -343,11 +344,11 @@ class OptimizationVariableContainerSerializable:
 
 class OdeSolverSerializable:
     # TODO There are probably more parameters to serialize here, if the GUI fails, this is probably the reason
-    polynomial_degree: int | None
-    n_integration_steps: int | None
+    polynomial_degree: IntOptional
+    n_integration_steps: IntOptional
     type: OdeSolver
 
-    def __init__(self, polynomial_degree: int | None, n_integration_steps: int | None, type: OdeSolver):
+    def __init__(self, polynomial_degree: IntOptional, n_integration_steps: IntOptional, type: OdeSolver):
         self.polynomial_degree = polynomial_degree
         self.n_integration_steps = n_integration_steps
         self.type = type
@@ -372,7 +373,7 @@ class OdeSolverSerializable:
         }
 
     @classmethod
-    def deserialize(cls, data):
+    def deserialize(cls, data: AnyDict):
         return cls(
             polynomial_degree=data["polynomial_degree"],
             n_integration_steps=data["n_integration_steps"],
@@ -381,14 +382,14 @@ class OdeSolverSerializable:
 
 
 class SaveIterationsInfoSerializable:
-    path_to_results: str
-    result_file_name: str | list[str]
-    nb_iter_save: int
-    current_iter: int
-    f_list: list[int]
+    path_to_results: Str
+    result_file_name: StrOrIterable
+    nb_iter_save: Int
+    current_iter: Int
+    f_list: IntList
 
     def __init__(
-        self, path_to_results: str, result_file_name: str, nb_iter_save: int, current_iter: int, f_list: list[int]
+        self, path_to_results: Str, result_file_name: Str, nb_iter_save: Int, current_iter: Int, f_list: IntList
     ):
         self.path_to_results = path_to_results
         self.result_file_name = result_file_name
@@ -423,7 +424,7 @@ class SaveIterationsInfoSerializable:
         }
 
     @classmethod
-    def deserialize(cls, data):
+    def deserialize(cls, data: AnyDict):
         return cls(
             path_to_results=data["path_to_results"],
             result_file_name=data["result_file_name"],
@@ -434,10 +435,10 @@ class SaveIterationsInfoSerializable:
 
 
 class NlpSerializable:
-    ns: int
-    phase_idx: int
+    ns: Int
+    phase_idx: Int
 
-    n_states_nodes: int
+    n_states_nodes: Int
     states: OptimizationVariableContainerSerializable
     states_dot: OptimizationVariableContainerSerializable
     controls: OptimizationVariableContainerSerializable
@@ -450,9 +451,9 @@ class NlpSerializable:
 
     def __init__(
         self,
-        ns: int,
-        phase_idx: int,
-        n_states_nodes: int,
+        ns: Int,
+        phase_idx: Int,
+        n_states_nodes: Int,
         states: OptimizationVariableContainerSerializable,
         states_dot: OptimizationVariableContainerSerializable,
         controls: OptimizationVariableContainerSerializable,
@@ -508,7 +509,7 @@ class NlpSerializable:
         }
 
     @classmethod
-    def deserialize(cls, data):
+    def deserialize(cls, data: AnyDict):
         return cls(
             ns=data["ns"],
             phase_idx=data["phase_idx"],
@@ -525,22 +526,22 @@ class NlpSerializable:
 
 
 class OcpSerializable:
-    n_phases: int
+    n_phases: Int
     nlp: list[NlpSerializable]
 
     time_phase_mapping: BiMappingSerializable
 
-    plot_ipopt_outputs: bool
-    plot_check_conditioning: bool
+    plot_ipopt_outputs: Bool
+    plot_check_conditioning: Bool
     save_ipopt_iterations_info: SaveIterationsInfoSerializable
 
     def __init__(
         self,
-        n_phases: int,
+        n_phases: Int,
         nlp: list[NlpSerializable],
         time_phase_mapping: BiMappingSerializable,
-        plot_ipopt_outputs: bool,
-        plot_check_conditioning: bool,
+        plot_ipopt_outputs: Bool,
+        plot_check_conditioning: Bool,
         save_ipopt_iterations_info: SaveIterationsInfoSerializable,
     ):
         self.n_phases = n_phases
@@ -583,7 +584,7 @@ class OcpSerializable:
         }
 
     @classmethod
-    def deserialize(cls, data):
+    def deserialize(cls, data: AnyDict):
         return cls(
             n_phases=data["n_phases"],
             nlp=[NlpSerializable.deserialize(nlp) for nlp in data["nlp"]],
