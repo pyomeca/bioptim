@@ -123,22 +123,15 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     states_sol = np.zeros((4, 5, 5))
     for i in range(4):
         states_sol[:, :, i] = sol_socp.decision_states(to_merge=SolutionMerge.KEYS)[i]
-    states_sol[:, 0, 4] = np.reshape(sol_socp.decision_states(to_merge=SolutionMerge.KEYS)[4], (4,))
+    states_sol[:, 0, 4] = np.reshape(sol_socp.decision_states(to_merge=SolutionMerge.KEYS)[-1], (-1,))
 
-    controls = sol_socp.decision_controls(to_merge=SolutionMerge.NODES)
-    tau_sol = controls["tau"]
     controls_sol = sol_socp.decision_controls(to_merge=SolutionMerge.ALL)
 
-    algebraic_states = sol_socp.decision_algebraic_states(to_merge=SolutionMerge.NODES)
-    # TODO #907 @IPUCH: the algebraic states should be retrieve the same way as the states, ask @Eve
-
-    k_sol, ref_sol, m_sol, cov_sol = (
-        algebraic_states["k"],
-        algebraic_states["ref"],
-        algebraic_states["m"],
-        algebraic_states["cov"],
-    )
-    algebraic_sol = sol_socp.decision_algebraic_states(to_merge=SolutionMerge.ALL)
+    # algebraic_states = sol_socp.decision_algebraic_states(to_merge=SolutionMerge.NODES)
+    algebraic_sol = np.zeros((92, 5, 5))
+    for i in range(4):
+        algebraic_sol[:, :, i] = sol_socp.decision_algebraic_states(to_merge=SolutionMerge.KEYS)[i]
+    algebraic_sol[:, 0, 4] = np.reshape(sol_socp.decision_algebraic_states(to_merge=SolutionMerge.KEYS)[-1], (-1,))
 
     duration = sol_socp.decision_time()[-1]
     dt = duration / n_shooting
@@ -150,7 +143,6 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     x_sol = np.zeros((x_opt.shape[0], polynomial_degree + 2, socp.n_shooting))
     for i_node in range(socp.n_shooting):
         x_sol[:, :, i_node] = x_opt[:, i_node * (polynomial_degree + 2) : (i_node + 1) * (polynomial_degree + 2)]
-    a_sol = vertcat(k_sol, ref_sol, m_sol, cov_sol)
 
     x_multi_thread = np.zeros((socp.nlp[0].states.shape * (polynomial_degree + 3), socp.nlp[0].ns))
     for i_node in range(socp.nlp[0].ns):
@@ -174,14 +166,10 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     a = PenaltyHelpers.states(
         penalty,
         0,
-        lambda p_idx, n_idx, sn_idx: algebraic_sol[:, n_idx],
-        # TODO #907 @IPUCH
-        #   Shoudnt we have
-        #   lambda p_idx, n_idx, sn_idx: algebraic_sol[:, sn_idx, n_idx],
+        lambda p_idx, n_idx, sn_idx: algebraic_sol[:, sn_idx, n_idx],
     )
     shoulder_pos_initial = 0.349065850398866
     elbow_pos_initial = 2.245867726451909
-    # TODO #907 @IPUCH: the size of algebraic_states doesnt fit the penalty function anymore.
 
     constraint_value = penalty.function[0](
         duration,
@@ -210,7 +198,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     a = PenaltyHelpers.states(
         penalty,
         0,
-        lambda p_idx, n_idx, sn_idx: algebraic_sol[:, n_idx],
+        lambda p_idx, n_idx, sn_idx: algebraic_sol[:, sn_idx, n_idx],
     )
     constraint_value = penalty.function[0](
         duration,
@@ -227,7 +215,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     penalty = socp.nlp[0].g[2]
     x = states_sol[:, 0, -1]
     u = controls_sol[:, -1]
-    a = algebraic_sol[:, -1]
+    a = algebraic_sol[:, 0, -1]
     constraint_value = penalty.function[-1](
         duration,
         dt,
@@ -244,7 +232,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     penalty = socp.nlp[0].g[4]
     x = states_sol[:, 0, -1]
     u = controls_sol[:, -1]
-    a = algebraic_sol[:, -1]
+    a = algebraic_sol[:, 0, -1]
     constraint_value = penalty.function[-1](
         duration,
         dt,
@@ -273,7 +261,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         a = PenaltyHelpers.states(
             penalty,
             0,
-            lambda p_idx, n_idx, sn_idx: algebraic_sol[:, n_idx],
+            lambda p_idx, n_idx, sn_idx: algebraic_sol[:, sn_idx, n_idx],
         )
         constraint_value = penalty.function[i_node](
             duration,
@@ -302,7 +290,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         a = PenaltyHelpers.states(
             penalty,
             i_node,
-            lambda p_idx, n_idx, sn_idx: algebraic_sol[:, n_idx],
+            lambda p_idx, n_idx, sn_idx: algebraic_sol[:, sn_idx, n_idx],
         )
         constraint_value = penalty.function[i_node](
             duration,
@@ -331,7 +319,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         a = PenaltyHelpers.states(
             penalty,
             i_node,
-            lambda p_idx, n_idx, sn_idx: algebraic_sol[:, n_idx],
+            lambda p_idx, n_idx, sn_idx: algebraic_sol[:, sn_idx, n_idx],
         )
 
         constraint_value = penalty.function[0](
@@ -361,7 +349,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         a = PenaltyHelpers.states(
             penalty,
             i_node,
-            lambda p_idx, n_idx, sn_idx: algebraic_sol[:, n_idx],
+            lambda p_idx, n_idx, sn_idx: algebraic_sol[:, sn_idx, n_idx],
         )
         constraint_value = penalty.function[0](
             duration,
@@ -390,7 +378,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         a = PenaltyHelpers.states(
             penalty,
             i_node,
-            lambda p_idx, n_idx, sn_idx: algebraic_sol[:, n_idx],
+            lambda p_idx, n_idx, sn_idx: algebraic_sol[:, sn_idx, n_idx],
         )
         constraint_value = penalty.function[i_node](
             duration,

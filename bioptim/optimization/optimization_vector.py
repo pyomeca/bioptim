@@ -83,8 +83,6 @@ class OptimizationVectorHelper:
                             * np.concatenate([nlp.u_scaling[key].scaling for key in nlp.controls.keys()])
                         )
 
-                # n_col = nlp.n_algebraic_states_decision_steps(k)
-                n_col = nlp.n_states_decision_steps(k)
                 a_scaled[nlp.phase_idx].append(
                     nlp.cx.sym(f"A_scaled_{nlp.phase_idx}_{k}", nlp.algebraic_states.scaled.shape, n_col)
                 )
@@ -219,7 +217,6 @@ class OptimizationVectorHelper:
                 nlp.algebraic_states,
                 nlp.a_bounds,
                 nlp.a_scaling,
-                # lambda n: nlp.n_algebraic_states_decision_steps(n),
                 lambda n: nlp.n_states_decision_steps(n),
             )
 
@@ -295,7 +292,6 @@ class OptimizationVectorHelper:
         # For algebraic_states variables
         for nlp in ocp.nlp:
             init = _dispatch_state_initial_guess(
-                # nlp, nlp.algebraic_states, nlp.a_init, nlp.a_scaling, lambda n: nlp.n_algebraic_states_decision_steps(n)
                 nlp,
                 nlp.algebraic_states,
                 nlp.a_init,
@@ -385,8 +381,7 @@ class OptimizationVectorHelper:
 
         # For states
         offset = len(ocp.time_phase_mapping.to_first.map_idx)
-        for p in range(ocp.n_phases):
-            nlp = ocp.nlp[p]
+        for p, nlp in enumerate(ocp.nlp):
             nx = nlp.states.shape
             for node in range(nlp.n_states_nodes):
                 nlp.states.node_index = node
@@ -397,8 +392,7 @@ class OptimizationVectorHelper:
                 offset += nx * n_cols
 
         # For controls
-        for p in range(ocp.n_phases):
-            nlp = ocp.nlp[p]
+        for p, nlp in enumerate(ocp.nlp):
             nu = nlp.controls.shape
 
             for node in range(nlp.n_controls_nodes):  # Using n_states_nodes on purpose see higher
@@ -421,13 +415,11 @@ class OptimizationVectorHelper:
         offset += sum([ocp.parameters[key].shape for key in ocp.parameters.keys()])
 
         # For algebraic_states variables
-        for p in range(ocp.n_phases):
-            nlp = ocp.nlp[p]
+        for p, nlp in enumerate(ocp.nlp):
             na = nlp.algebraic_states.shape
 
             for node in range(nlp.n_states_nodes):
                 nlp.algebraic_states.node_index = node
-                # n_cols = nlp.n_algebraic_states_decision_steps(node)
                 n_cols = nlp.n_states_decision_steps(node)
 
                 if na == 0:
