@@ -435,6 +435,12 @@ class PenaltyController:
         elif "tau_joints" in self.controls:
             return self.controls["tau_joints"].mapping.to_second.map(self.controls["tau_joints"].cx)
 
+    @property
+    def external_forces(self) -> MX | SX:
+        return self._nlp.get_external_forces(
+            self.states.cx, self.controls.cx, self.algebraic_states.cx, self.numerical_timeseries.cx
+        )
+
     def copy(self):
         return PenaltyController(
             self.ocp,
