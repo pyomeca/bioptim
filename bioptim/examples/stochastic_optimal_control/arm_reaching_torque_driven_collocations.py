@@ -233,8 +233,8 @@ def prepare_socp(
     n_cov = 4 * 4
 
     if q_opt is None:
-        a_init.add("k", initial_guess=[0.01] * n_k, interpolation=InterpolationType.CONSTANT)
-        a_init.add("ref", initial_guess=[0.01] * n_ref, interpolation=InterpolationType.CONSTANT)
+        u_init.add("k", initial_guess=[0.01] * n_k, interpolation=InterpolationType.CONSTANT)
+        u_init.add("ref", initial_guess=[0.01] * n_ref, interpolation=InterpolationType.CONSTANT)
         a_init.add("m", initial_guess=[0.01] * n_m, interpolation=InterpolationType.CONSTANT)
 
         idx = 0
@@ -242,14 +242,14 @@ def prepare_socp(
         for i in range(n_states):
             for j in range(n_states):
                 cov_init_vector[idx] = initial_cov[i, j]
-        a_init.add("cov", initial_guess=cov_init_vector, interpolation=InterpolationType.CONSTANT)
+        u_init.add("cov", initial_guess=cov_init_vector, interpolation=InterpolationType.CONSTANT)
 
-    a_bounds.add("k", min_bound=[-cas.inf] * n_k, max_bound=[cas.inf] * n_k, interpolation=InterpolationType.CONSTANT)
-    a_bounds.add(
+    u_bounds.add("k", min_bound=[-cas.inf] * n_k, max_bound=[cas.inf] * n_k, interpolation=InterpolationType.CONSTANT)
+    u_bounds.add(
         "ref", min_bound=[-cas.inf] * n_ref, max_bound=[cas.inf] * n_ref, interpolation=InterpolationType.CONSTANT
     )
     a_bounds.add("m", min_bound=[-cas.inf] * n_m, max_bound=[cas.inf] * n_m, interpolation=InterpolationType.CONSTANT)
-    a_bounds.add(
+    u_bounds.add(
         "cov", min_bound=[-cas.inf] * n_cov, max_bound=[cas.inf] * n_cov, interpolation=InterpolationType.CONSTANT
     )
 

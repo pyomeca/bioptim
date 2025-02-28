@@ -469,12 +469,12 @@ def test_arm_reaching_torque_driven_implicit(with_scaling, use_sx):
 
     # Check some of the results
     k, ref, m, cov, a, c = (
-        algebraic_states["k"],
-        algebraic_states["ref"],
+        controls["k"],
+        controls["ref"],
         algebraic_states["m"],
-        algebraic_states["cov"],
-        algebraic_states["a"],
-        algebraic_states["c"],
+        controls["cov"],
+        controls["a"],
+        controls["c"],
     )
     if not with_scaling:
         # Check objective function value

@@ -317,14 +317,14 @@ class PenaltyOption(OptionGeneric):
         n_root = controller.model.nb_root
         n_joints = nx - n_root
 
-        if "cholesky_cov" in controller.algebraic_states.keys():
+        if "cholesky_cov" in controller.controls.keys():
             l_cov_matrix = StochasticBioModel.reshape_to_cholesky_matrix(
-                controller.algebraic_states["cholesky_cov"].cx_start, controller.model.matrix_shape_cov_cholesky
+                controller.controls["cholesky_cov"].cx_start, controller.model.matrix_shape_cov_cholesky
             )
             cov_matrix = l_cov_matrix @ l_cov_matrix.T
         else:
             cov_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.algebraic_states["cov"].cx_start, controller.model.matrix_shape_cov
+                controller.controls["cov"].cx_start, controller.model.matrix_shape_cov
             )
 
         jac_fcn_states = jacobian(fcn, state_cx_scaled)
