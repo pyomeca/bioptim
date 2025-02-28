@@ -156,7 +156,6 @@ def prepare_ocp(
     parameter_init = InitialGuessList()
 
     if optim_gravity:
-        # WATCH OUT, it seems parameters scaling are broken
         g_scaling = VariableScaling("gravity_xyz", np.array([1, 1, 10.0]))
         parameters.add(
             "gravity_xyz",  # The name of the parameter

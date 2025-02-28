@@ -39,6 +39,20 @@ class BiorbdModel:
         parameters: ParameterList = None,
         external_force_set: ExternalForceSetTimeSeries = None,
     ):
+        """
+        Parameters
+        ----------
+        bio_model: str | biorbd.Model
+            The path to the bioMod file or the biorbd.Model
+        friction_coefficients: np.ndarray
+            The friction coefficients
+        parameters: ParameterList
+            The parameters to add to the model. The function will call the callback with the unscaled version of the
+            parameters. The user can use this callback to modify the model.
+        external_force_set: ExternalForceSetTimeSeries
+            The external forces to add to the model
+        """
+
         if not isinstance(bio_model, str) and not isinstance(bio_model, biorbd.Model):
             raise ValueError("The model should be of type 'str' or 'biorbd.Model'")
 
