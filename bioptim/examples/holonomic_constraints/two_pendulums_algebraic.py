@@ -235,9 +235,7 @@ def main():
     ocp.add_plot_penalty(CostType.ALL)
 
     # --- Solve the program --- #
-    sol = ocp.solve(
-        Solver.IPOPT(show_online_optim=platform.system() == "Linux")
-    )
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
     print(sol.real_time_to_optimize)
 
     stepwise_q_u = sol.stepwise_states(to_merge=SolutionMerge.NODES)["q_u"]

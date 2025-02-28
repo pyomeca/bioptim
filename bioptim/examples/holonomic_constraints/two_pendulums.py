@@ -198,9 +198,7 @@ def main():
     ocp, bio_model = prepare_ocp(biorbd_model_path=model_path)
 
     # --- Solve the program --- #
-    sol = ocp.solve(
-        Solver.IPOPT(show_online_optim=platform.system() == "Linux")
-    )
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
     print(sol.real_time_to_optimize)
 
     # --- Show results --- #
