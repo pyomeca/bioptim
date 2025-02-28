@@ -4,6 +4,7 @@ The simulation is two single pendulum that are forced to be coherent with a holo
 pendulum simulation.
 """
 
+import platform
 import numpy as np
 from casadi import DM
 
@@ -198,9 +199,7 @@ def main():
 
     # --- Solve the program --- #
     sol = ocp.solve(
-        Solver.IPOPT(
-            # show_online_optim=platform.system() == "Linux"
-        )
+        Solver.IPOPT(show_online_optim=platform.system() == "Linux")
     )
     print(sol.real_time_to_optimize)
 

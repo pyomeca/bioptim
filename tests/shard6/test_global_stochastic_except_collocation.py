@@ -442,7 +442,7 @@ def test_arm_reaching_torque_driven_implicit(with_scaling, use_sx):
 
     TestUtils.compare_ocp_to_solve(
         ocp,
-        v=np.random.rand(457, 1),  # change the size accrding to A
+        v=np.random.rand(457, 1),
         expected_v_f_g=expected,
         decimal=6,
     )

@@ -413,21 +413,6 @@ class NonLinearProgram:
         return self.n_states_nodes
 
     @staticmethod
-    def n_algebraic_states_decision_steps(node_idx) -> int:
-        """
-        Parameters
-        ----------
-        node_idx: int
-            The index of the node
-
-        Returns
-        -------
-        The number of states
-        """
-
-        return 1
-
-    @staticmethod
     def add(ocp, param_name: str, param: Any, duplicate_singleton: bool, _type: Any = None, name: str = None):
         """
         Set a parameter to their respective nlp

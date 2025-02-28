@@ -166,9 +166,6 @@ class OdeSolver:
         def p_ode(self, nlp):
             return nlp.controls.scaled.cx_start
 
-        # def a_ode(self, nlp):
-        #     return nlp.algebraic_states.scaled.cx_start
-
         def a_ode(self, nlp):
             out = [nlp.algebraic_states.scaled.cx_start]
             if not self.duplicate_starting_point:

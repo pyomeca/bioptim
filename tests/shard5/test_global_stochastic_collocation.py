@@ -127,7 +127,6 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
 
     controls_sol = sol_socp.decision_controls(to_merge=SolutionMerge.ALL)
 
-    # algebraic_states = sol_socp.decision_algebraic_states(to_merge=SolutionMerge.NODES)
     algebraic_sol = np.zeros((92, 5, 5))
     for i in range(4):
         algebraic_sol[:, :, i] = sol_socp.decision_algebraic_states(to_merge=SolutionMerge.KEYS)[i]
@@ -425,11 +424,10 @@ def test_obstacle_avoidance_direct_collocation(use_sx: bool):
 
     # Check the values which will be sent to the solver
     v_size = 4307
-    # v_size = 1107
     np.random.seed(42)
     TestUtils.compare_ocp_to_solve(
         ocp,
-        v=np.ones([v_size, 1]),  # Random values here returns nan for g  # todo : CHANGE THE SIZE ACCORDING TO A
+        v=np.ones([v_size, 1]),  # Random values here returns nan for g
         expected_v_f_g=[v_size, 10.01, -170696.19805582374],
         decimal=6,
     )
