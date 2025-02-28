@@ -25,7 +25,7 @@ from ..misc.parameters_types import (
     Bool,
     Float,
     AnyTuple,
-    AnyListOrNpArray,
+    FloatIterableOrNpArray,
 )
 
 
@@ -796,7 +796,7 @@ class PlotOcp:
 
     def _compute_y_from_plot_func(
         self, custom_plot: CustomPlot, phase_idx: Int, time_stepwise, dt, x_decision, x_stepwise, u, p, a, d
-    ) -> list[AnyListOrNpArray]:
+    ) -> list[FloatIterableOrNpArray]:
         """
         Compute the y data from the plot function
 
