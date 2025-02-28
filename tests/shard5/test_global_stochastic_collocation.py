@@ -75,7 +75,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     npt.assert_almost_equal(ref[:, 0], np.array([2.81907786e-02, 2.84412560e-01, 0, 0]))
 
     npt.assert_almost_equal(
-        m[:10, 0],
+        m[:10, 1],
         np.array(
             [
                 1.00000000e00,
@@ -127,7 +127,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
 
     controls_sol = sol_socp.decision_controls(to_merge=SolutionMerge.ALL)
 
-    algebraic_sol = np.zeros((92, 5, 5))
+    algebraic_sol = np.zeros((16, 5, 5))
     for i in range(4):
         algebraic_sol[:, :, i] = sol_socp.decision_algebraic_states(to_merge=SolutionMerge.KEYS)[i]
     algebraic_sol[:, 0, 4] = np.reshape(sol_socp.decision_algebraic_states(to_merge=SolutionMerge.KEYS)[-1], (-1,))
