@@ -849,7 +849,7 @@ class Solution:
 
         t_spans, x, u, params, a = self._prepare_integrate(integrator=integrator)
 
-        cov_index = self.ocp.nlp[0].algebraic_states["cov"].index
+        cov_index = self.ocp.nlp[0].controls["cov"].index
         n_sub_nodes = x[0][0].shape[1]
         motor_noise_index = self.ocp.nlp[0].parameters["motor_noise"].index
         sensory_noise_index = (
