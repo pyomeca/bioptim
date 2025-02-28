@@ -769,7 +769,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 horzcat(*(controller.states.cx_intermediates_list)),
                 controller.controls.cx_start,
                 parameters,
-                controller.algebraic_states.cx_start,  # TODO: Charbie
+                horzcat(*(controller.algebraic_states.cx_intermediates_list)),
                 controller.numerical_timeseries.cx,
             )
 
@@ -808,7 +808,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 horzcat(*(controller.states.cx_intermediates_list)),
                 controller.controls.cx_start,
                 parameters,
-                controller.algebraic_states.cx_start,  # TODO: Charbie
+                horzcat(*(controller.algebraic_states.cx_intermediates_list)),
                 controller.numerical_timeseries.cx,
             )
 
@@ -896,24 +896,23 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             sensory_noise = controller.parameters["sensory_noise"].cx
             sigma_ww = diag(vertcat(motor_noise, sensory_noise))
 
-            # TODO: Charbie
             cov_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.algebraic_states_scaled["cov"].cx_start, controller.model.matrix_shape_cov
+                controller.controls_scaled["cov"].cx_start, controller.model.matrix_shape_cov
             )
-            m_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.algebraic_states_scaled["m"].cx_start, controller.model.matrix_shape_m
-            )
-
-            # Algebraic states are pre-crunshed for each interval meaning the algebraic state cx_start in enough
-            n_rep = controller.integrate_extra_dynamics(0).function.sparsity_in(4).shape[1]
-            duplicated_algebraic_states = horzcat(*[controller.algebraic_states_scaled.cx_start for _ in range(n_rep)])
+            mi_list = [StochasticBioModel.reshape_to_matrix(
+                mi, controller.model.matrix_shape_cov
+            ) for mi in controller.algebraic_states_scaled["m"].cx_intermediates_list]
+            m_matrix = horzcat(*mi_list)
+            # m_matrix = StochasticBioModel.reshape_to_matrix(
+            #     controller.algebraic_states_scaled["m"].cx_start, controller.model.matrix_shape_m
+            # )
 
             xf, _, defects = controller.integrate_extra_dynamics(0).function(
                 vertcat(controller.t_span.cx),
                 horzcat(controller.states_scaled.cx, horzcat(*controller.states_scaled.cx_intermediates_list)),
                 controller.controls_scaled.cx,
                 controller.parameters_scaled.cx,
-                duplicated_algebraic_states,
+                horzcat(controller.algebraic_states_scaled.cx, horzcat(*controller.algebraic_states_scaled.cx_intermediates_list)),
                 controller.numerical_timeseries.cx,
             )
 
@@ -934,7 +933,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     horzcat(*controller.states_scaled.cx_intermediates_list),
                     controller.controls_scaled.cx_start,
                     controller.parameters_scaled.cx,
-                    controller.algebraic_states_scaled.cx_start,  # purposely cx_start because of the pre-crunching
+                    horzcat(*controller.algebraic_states_scaled.cx_intermediates_list),
                     controller.numerical_timeseries.cx,
                 ],
                 [Fdz.T - Gdz.T @ m_matrix.T],
@@ -951,7 +950,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     horzcat(*controller.states_scaled.cx_intermediates_list),
                     controller.controls_scaled.cx_start,
                     controller.parameters_scaled.cx,
-                    controller.algebraic_states_scaled.cx_start,  # TODO: Charbie
+                    horzcat(*controller.algebraic_states_scaled.cx_intermediates_list),
                     controller.numerical_timeseries.cx,
                 ],
                 [m_matrix @ (Gdx @ cov_matrix @ Gdx.T + Gdw @ sigma_ww @ Gdw.T) @ m_matrix.T],
@@ -967,7 +966,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     horzcat(*controller.states_scaled.cx_intermediates_list),
                     controller.controls_scaled.cx_start,
                     controller.parameters_scaled.cx,
-                    controller.algebraic_states_scaled.cx_start,
+                    horzcat(*controller.algebraic_states_scaled.cx_intermediates_list),
                     controller.numerical_timeseries.cx,
                 ],
                 [Gdx],
@@ -981,7 +980,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     horzcat(*controller.states_scaled.cx_intermediates_list),
                     controller.controls_scaled.cx_start,
                     controller.parameters_scaled.cx,
-                    controller.algebraic_states_scaled.cx_start,
+                    horzcat(*controller.algebraic_states_scaled.cx_intermediates_list),
                     controller.numerical_timeseries.cx,
                 ],
                 [Gdz],
@@ -995,7 +994,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     horzcat(*controller.states_scaled.cx_intermediates_list),
                     controller.controls_scaled.cx_start,
                     controller.parameters_scaled.cx,
-                    controller.algebraic_states_scaled.cx_start,
+                    horzcat(*controller.algebraic_states_scaled.cx_intermediates_list),
                     controller.numerical_timeseries.cx,
                 ],
                 [Gdw],
@@ -1009,7 +1008,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     horzcat(*controller.states_scaled.cx_intermediates_list),
                     controller.controls_scaled.cx_start,
                     controller.parameters_scaled.cx,
-                    controller.algebraic_states_scaled.cx_start,
+                    horzcat(*controller.algebraic_states_scaled.cx_intermediates_list),
                     controller.numerical_timeseries.cx,
                 ],
                 [Fdz],

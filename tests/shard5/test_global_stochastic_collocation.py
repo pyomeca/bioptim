@@ -61,7 +61,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
 
     q, qdot = states["q"], states["qdot"]
     tau = controls["tau"]
-    k, ref, m, cov = algebraic_states["k"], algebraic_states["ref"], algebraic_states["m"], algebraic_states["cov"]
+    k, ref, m, cov = controls["k"], controls["ref"], algebraic_states["m"], controls["cov"]
 
     # initial and final position
     npt.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
