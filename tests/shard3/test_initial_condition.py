@@ -1,9 +1,5 @@
 import re
 
-import numpy as np
-import numpy.testing as npt
-import pytest
-
 from bioptim import (
     InterpolationType,
     Solution,
@@ -20,6 +16,10 @@ from bioptim import (
     SolutionMerge,
 )
 from bioptim.limits.path_conditions import InitialGuess
+import numpy as np
+import numpy.testing as npt
+import pytest
+
 from ..utils import TestUtils
 
 

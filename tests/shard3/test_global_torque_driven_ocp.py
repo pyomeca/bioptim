@@ -4,17 +4,7 @@ Test for file IO
 
 import platform
 
-from bioptim import (
-    OdeSolver,
-    ConstraintList,
-    ConstraintFcn,
-    Node,
-    DefectType,
-    Solver,
-    BiorbdModel,
-    PhaseDynamics,
-    SolutionMerge,
-)
+from bioptim import OdeSolver, ConstraintList, ConstraintFcn, Node, Solver, BiorbdModel, PhaseDynamics, SolutionMerge
 from bioptim.models.biorbd.viewer_utils import _prepare_tracked_markers_for_animation
 import numpy.testing as npt
 import numpy as np
@@ -291,6 +281,35 @@ def test_track_marker_2D_pendulum(ode_solver, phase_dynamics):
     if platform.system() == "Windows":
         return
 
+    bioptim_folder = TestUtils.module_folder(ocp_module)
+
+    ode_solver_orig = ode_solver
+    ode_solver = ode_solver()
+
+    # Define the problem
+    model_path = bioptim_folder + "/models/pendulum.bioMod"
+    bio_model = BiorbdModel(model_path)
+
+    final_time = 2
+    n_shooting = 30
+
+    # Generate data to fit
+    np.random.seed(42)
+    markers_ref = np.random.rand(3, 2, n_shooting + 1)
+    tau_ref = np.random.rand(2, n_shooting)
+
+    if isinstance(ode_solver, OdeSolver.IRK):
+        tau_ref = tau_ref * 5
+
+    ocp = ocp_module.prepare_ocp(
+        bio_model,
+        final_time,
+        n_shooting,
+        markers_ref,
+        tau_ref,
+        ode_solver=ode_solver,
+        expand_dynamics=ode_solver_orig != OdeSolver.IRK,
+    )
     sol = ocp.solve()
 
     # Check constraints

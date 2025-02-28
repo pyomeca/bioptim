@@ -1,9 +1,9 @@
+from bioptim import HolonomicBiorbdModel, HolonomicConstraintsFcn, HolonomicConstraintsList, Solver, SolutionMerge
+from casadi import DM, MX
 import numpy as np
 import numpy.testing as npt
 import pytest
-from casadi import DM, MX
 
-from bioptim import HolonomicBiorbdModel, HolonomicConstraintsFcn, HolonomicConstraintsList, Solver, SolutionMerge
 from ..utils import TestUtils
 
 
