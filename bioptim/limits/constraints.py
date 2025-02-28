@@ -903,9 +903,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 mi, controller.model.matrix_shape_cov
             ) for mi in controller.algebraic_states_scaled["m"].cx_intermediates_list]
             m_matrix = horzcat(*mi_list)
-            # m_matrix = StochasticBioModel.reshape_to_matrix(
-            #     controller.algebraic_states_scaled["m"].cx_start, controller.model.matrix_shape_m
-            # )
 
             xf, _, defects = controller.integrate_extra_dynamics(0).function(
                 vertcat(controller.t_span.cx),
