@@ -502,12 +502,23 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             MultinodePenaltyFunctions.Functions._prepare_controller_cx(penalty, controllers)
 
-            cov_matrix = StochasticBioModel.reshape_to_matrix(
-                controllers[0].controls["cov"].cx, controllers[0].model.matrix_shape_cov
-            )
-            cov_matrix_next = StochasticBioModel.reshape_to_matrix(
-                controllers[1].controls["cov"].cx, controllers[1].model.matrix_shape_cov
-            )
+            if "cholesky_cov" in controllers[0].controls.keys():
+                l_cov_matrix = StochasticBioModel.reshape_to_cholesky_matrix(
+                    controllers[0].controls["cholesky_cov"].cx, controllers[0].model.matrix_shape_cov_cholesky
+                )
+                cov_matrix = l_cov_matrix @ l_cov_matrix.T
+                l_cov_matrix_next = StochasticBioModel.reshape_to_cholesky_matrix(
+                    controllers[1].controls["cholesky_cov"].cx, controllers[1].model.matrix_shape_cov_cholesky
+                )
+                cov_matrix_next = l_cov_matrix_next @ l_cov_matrix_next.T
+            else:
+                cov_matrix = StochasticBioModel.reshape_to_matrix(
+                    controllers[0].controls["cov"].cx, controllers[0].model.matrix_shape_cov
+                )
+                cov_matrix_next = StochasticBioModel.reshape_to_matrix(
+                    controllers[1].controls["cov"].cx, controllers[1].model.matrix_shape_cov
+                )
+
             a_matrix = StochasticBioModel.reshape_to_matrix(
                 controllers[0].controls["a"].cx, controllers[0].model.matrix_shape_a
             )
@@ -518,14 +529,18 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[0].algebraic_states["m"].cx, controllers[0].model.matrix_shape_m
             )
 
-            sigma_w = vertcat(controllers[0].model.sensory_noise_magnitude, controllers[0].model.motor_noise_magnitude)
-            dt = controllers[0].tf / controllers[0].ns
+            CX_eye = SX_eye if controllers[0].ocp.cx == SX else MX_eye
+            sigma_w = vertcat(
+                controllers[0].model.sensory_noise_magnitude, controllers[0].model.motor_noise_magnitude
+            ) * CX_eye(controllers[0].model.n_noise)
+            dt = controllers[0].dt.cx
             dg_dw = -dt * c_matrix
-            CX_eye = SX_eye if controllers[0].cx == SX else MX_eye
             dg_dx = -CX_eye(a_matrix.shape[0]) - dt / 2 * a_matrix
 
-            cov_next_computed = m_matrix @ (dg_dx @ cov_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ m_matrix.T
-            cov_implicit_deffect = cov_next_computed - cov_matrix_next
+            cov_next = m_matrix @ (dg_dx @ cov_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ m_matrix.T
+            cov_implicit_deffect = cov_next - cov_matrix_next
+
+            penalty.expand = controllers[0].get_nlp.dynamics_type.expand_dynamics
 
             out_vector = StochasticBioModel.reshape_to_vector(cov_implicit_deffect)
             return out_vector

@@ -252,12 +252,13 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
 
         # Constraints for P
         for i_phase, nlp in enumerate(self.nlp):
-            constraints.add(
-                ConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT,
-                node=Node.ALL,
-                phase=i_phase,
-                # penalty_type=PenaltyType.INTERNAL,  #TODO: waiting for the bug on ConstraintList to be fixed
-            )
+            for i_node in range(nlp.ns):
+                multi_node_penalties.add(
+                    MultinodeConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT,
+                    nodes_phase=(i_phase, i_phase),
+                    nodes=(i_node, i_node + 1),
+                    # penalty_type=PenaltyType.INTERNAL,  #TODO: waiting for the bug on ConstraintList to be fixed
+                )
 
         # Constraints for A
         for i_phase, nlp in enumerate(self.nlp):
