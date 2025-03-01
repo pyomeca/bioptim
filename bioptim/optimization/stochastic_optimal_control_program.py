@@ -1,7 +1,7 @@
 from typing import Callable
 
 import numpy as np
-from casadi import DM_eye, vertcat, Function
+from casadi import DM_eye, vertcat, Function, horzcat
 
 from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVectorHelper
@@ -372,7 +372,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 ref_init = ref_init_this_time if i == 0 else np.hstack((ref_init, ref_init_this_time))
             return ref_init
 
-        def get_m_init(time_vector, x_guess, u_guess, p_guess, fake_m, nlp, Fdz, Gdz):
+        def get_m_init(time_vector, x_guess, u_guess, p_guess, nlp, Fdz, Gdz):
             m_init = np.zeros((n_m, (self.problem_type.polynomial_degree+2) * nlp.ns + 1))
             for i in range(nlp.ns):
                 index_this_time = [
@@ -397,10 +397,12 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     [],
                     [],
                 )
-
                 m_this_time = df_dz @ np.linalg.inv(dg_dz)
-                m_init[:, index_this_time[1:]] = m_this_time.T
-                m_init[:, index_this_time[0]] = m_init[:, index_this_time[1]]
+
+                for i_col, idx in enumerate(index_this_time[1:]):
+                    m_init[:, idx] = np.reshape(StochasticBioModel.reshape_to_vector(
+                        m_this_time[:, i_col*nlp.model.matrix_shape_m[0]:(i_col+1)*nlp.model.matrix_shape_m[0]]
+                    ), (-1, ))
 
             m_init[:, -1] = m_init[
                 :, -2
@@ -448,7 +450,12 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     [],
                 )
                 cov_matrix = StochasticBioModel.reshape_to_matrix(cov_init[:, i], nlp.model.matrix_shape_cov)
-                cov_this_time = m_init[:, index_this_time[1:]].T @ (dg_dx @ cov_matrix @ dg_dx.T + dg_dw @ sigma_w_dm @ dg_dw.T) @ m_init[:, index_this_time[1:]]
+                mi_list = [StochasticBioModel.reshape_to_matrix(
+                    m_init[:, idx], nlp.model.matrix_shape_cov
+                ) for idx in index_this_time[1:]]
+                m_matrix = horzcat(*mi_list)
+
+                cov_this_time = m_matrix @ (dg_dx @ cov_matrix @ dg_dx.T + dg_dw @ sigma_w_dm @ dg_dw.T) @ m_matrix.T
                 cov_init[:, i + 1] = np.reshape(StochasticBioModel.reshape_to_vector(cov_this_time), (-1))
             return cov_init
 
@@ -534,7 +541,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             _, _, Gdx, Gdz, Gdw, Fdz = ConstraintFunction.Functions.collocation_jacobians(penalty, penalty_controller)
 
             m_init = get_m_init(
-                time_vector, x_guess, u_guess, p_guess, fake_m, nlp, Fdz, Gdz
+                time_vector, x_guess, u_guess, p_guess, nlp, Fdz, Gdz
             )
             replace_initial_guess("m", n_m, m_init, a_init, i_phase, interpolation=InterpolationType.ALL_POINTS)
 
