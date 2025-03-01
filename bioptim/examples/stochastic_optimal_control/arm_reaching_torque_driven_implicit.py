@@ -213,9 +213,6 @@ def prepare_socp(
         interpolation=InterpolationType.CONSTANT,
     )
 
-    controls_min = np.ones((n_tau, 3)) * -cas.inf
-    controls_max = np.ones((n_tau, 3)) * cas.inf
-
     u_bounds = BoundsList()
     u_bounds.add(
         "tau",

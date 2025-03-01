@@ -649,8 +649,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             cov_implicit_deffect = cov_next - cov_matrix
 
             penalty.expand = controller.get_nlp.dynamics_type.expand_dynamics
-            penalty.explicit_derivative = True
-            penalty.multi_thread = True
+            # TODO: This could be reintegrated when controls are allowed to have different ControlType
+            # penalty.explicit_derivative = True
+            # penalty.multi_thread = True
 
             out_vector = StochasticBioModel.reshape_to_vector(cov_implicit_deffect)
             return out_vector
@@ -833,7 +834,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             Get the error between the hand position and the reference.
             """
 
-            ref = controller.controls["ref"].cx_start
+            ref = controller.controls["ref"].cx
             sensory_input = controller.model.sensory_reference(
                 time=controller.time.cx,
                 states=controller.states.cx,
