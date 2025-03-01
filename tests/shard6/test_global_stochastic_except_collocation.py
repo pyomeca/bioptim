@@ -437,11 +437,7 @@ def test_arm_reaching_torque_driven_implicit(with_scaling, use_sx):
 
     # Check the values which will be sent to the solver
     np.random.seed(42)
-    expected = (
-        [2.262656e+02, 6.982128e+10, 2.695483e+03]
-        if with_scaling
-        else [226.265556, 1064.856593,  377.623933]
-    )
+    expected = [2.262656e02, 6.982128e10, 2.695483e03] if with_scaling else [226.265556, 1064.856593, 377.623933]
 
     TestUtils.compare_ocp_to_solve(
         ocp,
@@ -497,7 +493,6 @@ def test_arm_reaching_torque_driven_implicit(with_scaling, use_sx):
         npt.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
 
         npt.assert_almost_equal(tau[:, 0], np.array([0.4160923, -0.2730973]))
-        npt.assert_almost_equal(tau[:, -2], np.array([-0.4087628,  0.3192567]))
+        npt.assert_almost_equal(tau[:, -2], np.array([-0.4087628, 0.3192567]))
 
         npt.assert_almost_equal(ref[:, 0], np.array([2.8105910e-02, 2.8313229e-01, 4.6654784e-05, 4.6654784e-05]))
-
