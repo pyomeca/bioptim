@@ -682,7 +682,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             qdot_roots = controller.cx.sym("qdot_roots", nb_root, 1)
             qdot_joints = controller.cx.sym("qdot_joints", nu, 1)
             tau_joints = controller.cx.sym("tau_joints", nu, 1)
-            stochastic_variables = controller.cx.sym("stochastic_variables", controller.controls.shape-nb_root-nu, 1)
+            stochastic_variables = controller.cx.sym(
+                "stochastic_variables", controller.controls.shape - nb_root - nu, 1
+            )
             numerical_timeseries_sym = controller.cx.sym(
                 "numerical_timeseries_sym", controller.numerical_timeseries.shape, 1
             )
@@ -726,8 +728,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.q[nb_root:],
                 controller.qdot[:nb_root],
                 controller.qdot[nb_root:],
-                controller.controls.cx[nb_root:nb_root+nu],  # Tau
-                controller.controls.cx[nb_root+nu:],  # Stochastic variables
+                controller.controls.cx[nb_root : nb_root + nu],  # Tau
+                controller.controls.cx[nb_root + nu :],  # Stochastic variables
                 parameters,
                 controller.algebraic_states.cx,
                 controller.numerical_timeseries.cx,
@@ -899,9 +901,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             cov_matrix = StochasticBioModel.reshape_to_matrix(
                 controller.controls_scaled["cov"].cx_start, controller.model.matrix_shape_cov
             )
-            mi_list = [StochasticBioModel.reshape_to_matrix(
-                mi, controller.model.matrix_shape_cov
-            ) for mi in controller.algebraic_states_scaled["m"].cx_intermediates_list]
+            mi_list = [
+                StochasticBioModel.reshape_to_matrix(mi, controller.model.matrix_shape_cov)
+                for mi in controller.algebraic_states_scaled["m"].cx_intermediates_list
+            ]
             m_matrix = horzcat(*mi_list)
 
             xf, _, defects = controller.integrate_extra_dynamics(0).function(
@@ -909,7 +912,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 horzcat(controller.states_scaled.cx, horzcat(*controller.states_scaled.cx_intermediates_list)),
                 controller.controls_scaled.cx,
                 controller.parameters_scaled.cx,
-                horzcat(controller.algebraic_states_scaled.cx, horzcat(*controller.algebraic_states_scaled.cx_intermediates_list)),
+                horzcat(
+                    controller.algebraic_states_scaled.cx,
+                    horzcat(*controller.algebraic_states_scaled.cx_intermediates_list),
+                ),
                 controller.numerical_timeseries.cx,
             )
 

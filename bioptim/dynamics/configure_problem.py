@@ -401,9 +401,7 @@ class ConfigureProblem:
             ocp, nlp, n_noised_controls=n_noised_tau, n_references=nlp.model.n_references
         )
         ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=nlp.model.n_references)
-        ConfigureProblem.configure_stochastic_m(
-            ocp, nlp, n_noised_states=n_noised_states
-        )
+        ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=n_noised_states)
 
         if isinstance(problem_type, SocpType.TRAPEZOIDAL_EXPLICIT):
             if initial_matrix is None:
@@ -476,9 +474,7 @@ class ConfigureProblem:
             ocp, nlp, n_noised_controls=n_noised_tau, n_references=nlp.model.n_references
         )
         ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=nlp.model.n_references)
-        ConfigureProblem.configure_stochastic_m(
-            ocp, nlp, n_noised_states=n_noised_states
-        )
+        ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=n_noised_states)
 
         if isinstance(problem_type, SocpType.TRAPEZOIDAL_EXPLICIT):
             if initial_matrix is None:

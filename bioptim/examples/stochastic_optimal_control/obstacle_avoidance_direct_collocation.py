@@ -349,9 +349,7 @@ def configure_stochastic_optimal_control_problem(
     ConfigureProblem.configure_new_variable("u", nlp.model.name_u, ocp, nlp, as_states=False, as_controls=True)
 
     # Algebraic states variables
-    ConfigureProblem.configure_stochastic_m(
-        ocp, nlp, n_noised_states=4
-    )
+    ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=4)
     ConfigureProblem.configure_stochastic_cov_implicit(ocp, nlp, n_noised_states=4)
     ConfigureProblem.configure_dynamics_function(
         ocp,
@@ -392,9 +390,7 @@ def path_constraint(controller: PenaltyController, super_elipse_index: int, is_r
     if is_robustified:
         gamma = 1
         dh_dx = cas.jacobian(h, controller.states.cx)
-        cov = StochasticBioModel.reshape_to_matrix(
-            controller.controls["cov"].cx, controller.model.matrix_shape_cov
-        )
+        cov = StochasticBioModel.reshape_to_matrix(controller.controls["cov"].cx, controller.model.matrix_shape_cov)
         safe_guard = gamma * cas.sqrt(dh_dx @ cov @ dh_dx.T)
         out -= safe_guard
 
@@ -485,9 +481,9 @@ def prepare_socp(
 
     control_bounds = BoundsList()
     if is_stochastic:
-        u_min = np.ones((nb_u, n_shooting+1)) * -20
+        u_min = np.ones((nb_u, n_shooting + 1)) * -20
         u_min[:, -1] = 0
-        u_max = np.ones((nb_u, n_shooting+1)) * 20
+        u_max = np.ones((nb_u, n_shooting + 1)) * 20
         u_max[:, -1] = 0
         control_bounds.add("u", min_bound=u_min, max_bound=u_max, interpolation=InterpolationType.EACH_FRAME)
     else:
@@ -496,9 +492,10 @@ def prepare_socp(
     a_bounds = BoundsList()
     a_bounds.add(
         "m",
-        min_bound=np.ones((bio_model.matrix_shape_cov[0] * bio_model.matrix_shape_cov[0], )) * -cas.inf,
-        max_bound=np.ones((bio_model.matrix_shape_cov[0] * bio_model.matrix_shape_cov[0], )) * cas.inf,
-        interpolation=InterpolationType.CONSTANT)
+        min_bound=np.ones((bio_model.matrix_shape_cov[0] * bio_model.matrix_shape_cov[0],)) * -cas.inf,
+        max_bound=np.ones((bio_model.matrix_shape_cov[0] * bio_model.matrix_shape_cov[0],)) * cas.inf,
+        interpolation=InterpolationType.CONSTANT,
+    )
 
     # Dynamics
     dynamics = DynamicsList()
