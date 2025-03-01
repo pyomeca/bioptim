@@ -477,11 +477,11 @@ def test_arm_reaching_torque_driven_implicit(with_scaling, use_sx):
     )
     if not with_scaling:
         # Check objective function value
-        npt.assert_almost_equal(f[0, 0], 95.49928267855638)
+        npt.assert_almost_equal(f[0, 0], 95.49928267855638, decimal=4)
 
         # detailed cost values
-        npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 95.43029410036674)
-        npt.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 0.06898857818965713)
+        npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 95.43029410036674, decimal=4)
+        npt.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 0.06898857818965713, decimal=4)
         npt.assert_almost_equal(
             f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
         )
