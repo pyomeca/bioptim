@@ -59,9 +59,7 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
     ConfigureProblem.configure_new_variable("u", nlp.model.name_u, ocp, nlp, as_states=False, as_controls=True)
 
     # Algebraic states variables
-    ConfigureProblem.configure_stochastic_m(
-        ocp, nlp, n_noised_states=2
-    )
+    ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=2)
     ConfigureProblem.configure_stochastic_cov_implicit(ocp, nlp, n_noised_states=2)
     ConfigureProblem.configure_dynamics_function(
         ocp,

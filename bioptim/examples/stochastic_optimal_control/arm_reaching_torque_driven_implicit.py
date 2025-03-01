@@ -202,15 +202,15 @@ def prepare_socp(
     x_bounds = BoundsList()
     x_bounds.add(
         "q",
-        min_bound=np.ones((n_q, )) * -cas.inf,
-        max_bound=np.ones((n_q, )) * cas.inf,
-        interpolation=InterpolationType.CONSTANT
+        min_bound=np.ones((n_q,)) * -cas.inf,
+        max_bound=np.ones((n_q,)) * cas.inf,
+        interpolation=InterpolationType.CONSTANT,
     )
     x_bounds.add(
         "qdot",
         min_bound=np.ones((n_qdot,)) * -cas.inf,
         max_bound=np.ones((n_qdot,)) * cas.inf,
-        interpolation=InterpolationType.CONSTANT
+        interpolation=InterpolationType.CONSTANT,
     )
 
     controls_min = np.ones((n_tau, 3)) * -cas.inf
@@ -221,26 +221,26 @@ def prepare_socp(
         "tau",
         min_bound=np.ones((n_tau,)) * -cas.inf,
         max_bound=np.ones((n_tau,)) * cas.inf,
-        interpolation=InterpolationType.CONSTANT
+        interpolation=InterpolationType.CONSTANT,
     )
     u_bounds.add(
         "k",
-        min_bound=np.ones((n_tau * (n_q + n_qdot), )) * -cas.inf,
-        max_bound=np.ones((n_tau * (n_q + n_qdot), )) * cas.inf,
+        min_bound=np.ones((n_tau * (n_q + n_qdot),)) * -cas.inf,
+        max_bound=np.ones((n_tau * (n_q + n_qdot),)) * cas.inf,
         interpolation=InterpolationType.CONSTANT,
     )
     u_bounds.add(
         "ref",
-        min_bound=np.ones((n_q + n_qdot, )) * -cas.inf,
-        max_bound=np.ones((n_q + n_qdot, )) * cas.inf,
+        min_bound=np.ones((n_q + n_qdot,)) * -cas.inf,
+        max_bound=np.ones((n_q + n_qdot,)) * cas.inf,
         interpolation=InterpolationType.CONSTANT,
     )
 
     a_bounds = BoundsList()
     a_bounds.add(
         "m",
-        min_bound=np.ones((n_states * n_states, )) * -cas.inf,
-        max_bound=np.ones((n_states * n_states, )) * cas.inf,
+        min_bound=np.ones((n_states * n_states,)) * -cas.inf,
+        max_bound=np.ones((n_states * n_states,)) * cas.inf,
         interpolation=InterpolationType.CONSTANT,
     )
 
@@ -258,19 +258,15 @@ def prepare_socp(
 
     u_init = InitialGuessList()
     u_init.add("tau", initial_guess=controls_init, interpolation=InterpolationType.EACH_FRAME)
-    u_init.add(
-        "k",
-        initial_guess=np.ones((n_tau * (n_q + n_qdot), )) * 0.01,
-        interpolation=InterpolationType.CONSTANT
-    )
+    u_init.add("k", initial_guess=np.ones((n_tau * (n_q + n_qdot),)) * 0.01, interpolation=InterpolationType.CONSTANT)
     u_init.add(
         "ref",
-        initial_guess=np.ones((n_q + n_qdot, )) * 0.01,
+        initial_guess=np.ones((n_q + n_qdot,)) * 0.01,
         interpolation=InterpolationType.CONSTANT,
     )
 
     if not with_cholesky:
-        cov_init_flat = np.ones((n_states * n_states, )) * 0.01
+        cov_init_flat = np.ones((n_states * n_states,)) * 0.01
         cov_init = cas.DM_eye(n_states) * np.array([1e-4, 1e-4, 1e-7, 1e-7])
         idx = 0
         for i in range(n_states):
@@ -283,11 +279,11 @@ def prepare_socp(
         )
         u_bounds.add(
             "cov",
-            min_bound=np.ones((n_states * n_states, )) * -cas.inf,
-            max_bound=np.ones((n_states * n_states, )) * cas.inf,
+            min_bound=np.ones((n_states * n_states,)) * -cas.inf,
+            max_bound=np.ones((n_states * n_states,)) * cas.inf,
         )
     else:
-        cov_init_flat = np.ones((n_cholesky_cov, )) * 0.01  # cov
+        cov_init_flat = np.ones((n_cholesky_cov,)) * 0.01  # cov
         cov_init = cas.DM_eye(n_states) * np.array([1e-4, 1e-4, 1e-7, 1e-7])
         idx = 0
         for i in range(n_states):
@@ -300,15 +296,15 @@ def prepare_socp(
         )
         u_bounds.add(
             "cholesky_cov",
-            min_bound=np.ones((n_cholesky_cov, )) * -cas.inf,
-            max_bound=np.ones((n_cholesky_cov, )) * cas.inf,
+            min_bound=np.ones((n_cholesky_cov,)) * -cas.inf,
+            max_bound=np.ones((n_cholesky_cov,)) * cas.inf,
             interpolation=InterpolationType.CONSTANT,
         )
 
     a_init = InitialGuessList()
     a_init.add(
         "m",
-        initial_guess=np.ones((n_states * n_states, )) * 0.01,
+        initial_guess=np.ones((n_states * n_states,)) * 0.01,
         interpolation=InterpolationType.CONSTANT,
     )
 

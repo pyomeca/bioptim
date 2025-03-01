@@ -524,28 +524,30 @@ def prepare_socp(
     )
 
     u_bounds = BoundsList()
-    u_bounds.add("muscles",
-                 min_bound=np.ones((n_muscles, )) * -cas.inf,
-                 max_bound=np.ones((n_muscles, )) * cas.inf,
-                 interpolation=InterpolationType.CONSTANT)
+    u_bounds.add(
+        "muscles",
+        min_bound=np.ones((n_muscles,)) * -cas.inf,
+        max_bound=np.ones((n_muscles,)) * cas.inf,
+        interpolation=InterpolationType.CONSTANT,
+    )
     u_bounds.add(
         "k",
-        min_bound=np.ones((n_muscles * (n_q + n_qdot), )) * -cas.inf,
-        max_bound=np.ones((n_muscles * (n_q + n_qdot), )) * cas.inf,
+        min_bound=np.ones((n_muscles * (n_q + n_qdot),)) * -cas.inf,
+        max_bound=np.ones((n_muscles * (n_q + n_qdot),)) * cas.inf,
         interpolation=InterpolationType.CONSTANT,
     )
     u_bounds.add(
         "ref",
-        min_bound=np.ones((n_q + n_qdot, )) * -cas.inf,
-        max_bound=np.ones((n_q + n_qdot, )) * cas.inf,
+        min_bound=np.ones((n_q + n_qdot,)) * -cas.inf,
+        max_bound=np.ones((n_q + n_qdot,)) * cas.inf,
         interpolation=InterpolationType.CONSTANT,
     )
 
     a_bounds = BoundsList()
     a_bounds.add(
         "m",
-        min_bound=np.ones((n_states * n_states, )) * -cas.inf,
-        max_bound=np.ones((n_states * n_states, )) * cas.inf,
+        min_bound=np.ones((n_states * n_states,)) * -cas.inf,
+        max_bound=np.ones((n_states * n_states,)) * cas.inf,
         interpolation=InterpolationType.CONSTANT,
     )
 
@@ -561,24 +563,22 @@ def prepare_socp(
     x_init.add("muscles", initial_guess=states_init[n_q + n_qdot :, :], interpolation=InterpolationType.EACH_FRAME)
 
     u_init = InitialGuessList()
-    u_init.add("muscles",
-               initial_guess=np.ones((n_muscles, )) * 0.01,
-               interpolation=InterpolationType.CONSTANT)
+    u_init.add("muscles", initial_guess=np.ones((n_muscles,)) * 0.01, interpolation=InterpolationType.CONSTANT)
     u_init.add(
         "k",
-        initial_guess=np.ones((n_muscles * (n_q + n_qdot), )) * 0.01,
+        initial_guess=np.ones((n_muscles * (n_q + n_qdot),)) * 0.01,
         interpolation=InterpolationType.CONSTANT,
     )
     u_init.add(
         "ref",
-        initial_guess=np.ones((n_q + n_qdot, )) * 0.01,
+        initial_guess=np.ones((n_q + n_qdot,)) * 0.01,
         interpolation=InterpolationType.CONSTANT,
     )
 
     a_init = InitialGuessList()
     a_init.add(
         "m",
-        initial_guess=np.ones((n_states * n_states, )) * 0.01,
+        initial_guess=np.ones((n_states * n_states,)) * 0.01,
         interpolation=InterpolationType.CONSTANT,
     )
 

@@ -483,22 +483,22 @@ def prepare_socp(
     u_bounds.add("tau", min_bound=controls_min[n_q:, :], max_bound=controls_max[n_q:, :])
     u_bounds.add(
         "k",
-        min_bound=np.ones((n_tau * (n_q + n_qdot), )) * -cas.inf,
-        max_bound=np.ones((n_tau * (n_q + n_qdot), )) * cas.inf,
+        min_bound=np.ones((n_tau * (n_q + n_qdot),)) * -cas.inf,
+        max_bound=np.ones((n_tau * (n_q + n_qdot),)) * cas.inf,
         interpolation=InterpolationType.CONSTANT,
     )
     u_bounds.add(
         "ref",
-        min_bound=np.ones((n_q + n_qdot, )) * -cas.inf,
-        max_bound=np.ones((n_q + n_qdot, )) * cas.inf,
+        min_bound=np.ones((n_q + n_qdot,)) * -cas.inf,
+        max_bound=np.ones((n_q + n_qdot,)) * cas.inf,
         interpolation=InterpolationType.CONSTANT,
     )
 
     a_bounds = BoundsList()
     a_bounds.add(
         "m",
-        min_bound=np.ones((n_states * n_states, )) * -cas.inf,
-        max_bound=np.ones((n_states * n_states, )) * cas.inf,
+        min_bound=np.ones((n_states * n_states,)) * -cas.inf,
+        max_bound=np.ones((n_states * n_states,)) * cas.inf,
         interpolation=InterpolationType.CONSTANT,
     )
 
@@ -524,19 +524,19 @@ def prepare_socp(
     u_init.add("tau", initial_guess=controls_init[n_q:, :], interpolation=InterpolationType.EACH_FRAME)
     u_init.add(
         "k",
-        initial_guess=np.ones((n_tau * (n_q + n_qdot), )) * 0.01,
+        initial_guess=np.ones((n_tau * (n_q + n_qdot),)) * 0.01,
         interpolation=InterpolationType.CONSTANT,
     )
     u_init.add(
         "ref",
-        initial_guess=np.ones((n_q + n_qdot, )) * 0.01,
+        initial_guess=np.ones((n_q + n_qdot,)) * 0.01,
         interpolation=InterpolationType.CONSTANT,
     )
 
     a_init = InitialGuessList()
     a_init.add(
         "m",
-        initial_guess=np.ones((n_states * n_states, )) * 0.01,
+        initial_guess=np.ones((n_states * n_states,)) * 0.01,
         interpolation=InterpolationType.CONSTANT,
     )
 
