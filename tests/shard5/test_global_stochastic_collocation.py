@@ -3,9 +3,9 @@ import platform
 import numpy as np
 import numpy.testing as npt
 import pytest
-from casadi import DM, vertcat
+from casadi import DM, vertcat, horzcat
 
-from bioptim import Solver, SocpType, SolutionMerge, PenaltyHelpers, SolutionIntegrator
+from bioptim import Solver, SocpType, SolutionMerge, PenaltyHelpers, SolutionIntegrator, StochasticBioModel
 from ..utils import TestUtils
 
 
@@ -423,7 +423,7 @@ def test_obstacle_avoidance_direct_collocation(use_sx: bool):
     solver.set_maximum_iterations(4)
 
     # Check the values which will be sent to the solver
-    v_size = 4307
+    v_size = 1221
     np.random.seed(42)
     TestUtils.compare_ocp_to_solve(
         ocp,
@@ -452,7 +452,7 @@ def test_obstacle_avoidance_direct_collocation(use_sx: bool):
 
     q, qdot = states["q"], states["qdot"]
     u = controls["u"]
-    m, cov = algebraic_states["m"], algebraic_states["cov"]
+    m, cov = algebraic_states["m"], controls["cov"]
 
     # initial and final position
     npt.assert_almost_equal(q[:, 0], np.array([-1.07999204e-27, 2.94926475e00]))
@@ -461,10 +461,12 @@ def test_obstacle_avoidance_direct_collocation(use_sx: bool):
     npt.assert_almost_equal(qdot[:, -1], np.array([3.59388215, 0.49607651]))
 
     npt.assert_almost_equal(u[:, 0], np.array([2.2568354, 1.69720657]))
-    npt.assert_almost_equal(u[:, -1], np.array([0.82746288, 2.89042815]))
+    npt.assert_almost_equal(u[:, -2], np.array([0.82746288, 2.89042815]))
+    npt.assert_almost_equal(u[:, -1], np.array([0.0, 0.0]))
 
+    m_vector = StochasticBioModel.reshape_to_vector(m[:, [1, 2, 3, 4]])
     npt.assert_almost_equal(
-        m[:, 0],
+        m_vector,
         np.array(
             [
                 1.00000000e00,
