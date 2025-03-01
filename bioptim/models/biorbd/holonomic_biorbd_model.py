@@ -481,9 +481,11 @@ class HolonomicBiorbdModel(BiorbdModel):
         q = MX() if isinstance(state_u, MX) else DM()
         for i in range(self.nb_q):
             if i in self._independent_joint_index:
-                q = vertcat(q, state_u[self._independent_joint_index.index(i)])
+                slicing = slice(self._independent_joint_index.index(i), self._independent_joint_index.index(i) + 1)
+                q = vertcat(q, state_u[slicing, :])
             else:
-                q = vertcat(q, state_v[self._dependent_joint_index.index(i)])
+                slicing = slice(self._dependent_joint_index.index(i), self._dependent_joint_index.index(i) + 1)
+                q = vertcat(q, state_v[slicing, :])
 
         return q
 

@@ -208,6 +208,14 @@ class NonLinearProgram:
         self.algebraic_states.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
         self.integrated_values.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
 
+        self.states.initialize_intermediate_cx(n_shooting=self.ns + 1, n_cx=self.ode_solver.n_required_cx)
+        self.states_dot.initialize_intermediate_cx(n_shooting=self.ns + 1, n_cx=self.ode_solver.n_required_cx)
+        self.controls.initialize_intermediate_cx(n_shooting=self.ns + 1, n_cx=1)
+        self.algebraic_states.initialize_intermediate_cx(n_shooting=self.ns + 1, n_cx=self.ode_solver.n_required_cx)
+        self.integrated_values.initialize_intermediate_cx(
+            n_shooting=self.ns + 1, n_cx=1
+        )  # TODO #907 to confirm with Eve
+
     def update_bounds(self, x_bounds, u_bounds, a_bounds):
         self._update_bound(
             bounds=x_bounds,
@@ -403,21 +411,6 @@ class NonLinearProgram:
         """
 
         return self.n_states_nodes
-
-    @staticmethod
-    def n_algebraic_states_decision_steps(node_idx) -> int:
-        """
-        Parameters
-        ----------
-        node_idx: int
-            The index of the node
-
-        Returns
-        -------
-        The number of states
-        """
-
-        return 1
 
     @staticmethod
     def add(ocp, param_name: str, param: Any, duplicate_singleton: bool, _type: Any = None, name: str = None):

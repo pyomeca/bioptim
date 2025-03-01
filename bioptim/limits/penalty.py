@@ -173,22 +173,22 @@ class PenaltyFunctionAbstract:
 
             # create the casadi function to be evaluated
             # Get the symbolic variables
-            if "cholesky_cov" in controller.algebraic_states.keys():
+            if "cholesky_cov" in controller.controls.keys():
                 l_cov_matrix = StochasticBioModel.reshape_to_cholesky_matrix(
-                    controller.algebraic_states["cholesky_cov"].cx_start, controller.model.matrix_shape_cov_cholesky
+                    controller.controls["cholesky_cov"].cx_start, controller.model.matrix_shape_cov_cholesky
                 )
                 cov_matrix = l_cov_matrix @ l_cov_matrix.T
-            elif "cov" in controller.algebraic_states.keys():
+            elif "cov" in controller.controls.keys():
                 cov_matrix = StochasticBioModel.reshape_to_matrix(
-                    controller.algebraic_states["cov"].cx_start, controller.model.matrix_shape_cov
+                    controller.controls["cov"].cx_start, controller.model.matrix_shape_cov
                 )
             else:
                 raise RuntimeError(
-                    "The covariance matrix must be provided in the algebraic_states to compute the expected efforts."
+                    "The covariance matrix must be provided in the controls to compute the expected efforts."
                 )
 
             k_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.algebraic_states["k"].cx_start, controller.model.matrix_shape_k
+                controller.controls["k"].cx_start, controller.model.matrix_shape_k
             )
 
             # Compute the expected effort

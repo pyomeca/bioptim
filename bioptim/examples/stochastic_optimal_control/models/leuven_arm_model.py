@@ -14,8 +14,8 @@ def _compute_torques_from_noise_and_feedback_default(
 ):
     tau_nominal = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
-    ref = DynamicsFunctions.get(nlp.algebraic_states["ref"], algebraic_states)
-    k = DynamicsFunctions.get(nlp.algebraic_states["k"], algebraic_states)
+    ref = DynamicsFunctions.get(nlp.controls["ref"], controls)
+    k = DynamicsFunctions.get(nlp.controls["k"], controls)
     k_matrix = StochasticBioModel.reshape_to_matrix(k, nlp.model.matrix_shape_k)
 
     sensory_input = nlp.model.sensory_reference(time, states, controls, parameters, algebraic_states, nlp)

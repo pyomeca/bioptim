@@ -27,7 +27,6 @@ class MassPointModel:
         n_noised_states = 4
         self.polynomial_degree = polynomial_degree
         self.matrix_shape_cov = (n_noised_states, n_noised_states)
-        self.matrix_shape_m = (n_noised_states, n_noised_states * (polynomial_degree + 1))
 
         self.kapa = 10
         self.c = 1

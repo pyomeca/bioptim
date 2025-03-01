@@ -616,20 +616,20 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             if not controller.get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
 
-            if "cholesky_cov" in controller.algebraic_states.keys():
+            if "cholesky_cov" in controller.controls.keys():
                 l_cov_matrix = StochasticBioModel.reshape_to_cholesky_matrix(
-                    controller.algebraic_states["cholesky_cov"].cx_start, controller.model.matrix_shape_cov_cholesky
+                    controller.controls["cholesky_cov"].cx_start, controller.model.matrix_shape_cov_cholesky
                 )
                 cov_matrix = l_cov_matrix @ l_cov_matrix.T
             else:
                 cov_matrix = StochasticBioModel.reshape_to_matrix(
-                    controller.algebraic_states["cov"].cx_start, controller.model.matrix_shape_cov
+                    controller.controls["cov"].cx_start, controller.model.matrix_shape_cov
                 )
             a_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.algebraic_states["a"].cx_start, controller.model.matrix_shape_a
+                controller.controls["a"].cx_start, controller.model.matrix_shape_a
             )
             c_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.algebraic_states["c"].cx_start, controller.model.matrix_shape_c
+                controller.controls["c"].cx_start, controller.model.matrix_shape_c
             )
             m_matrix = StochasticBioModel.reshape_to_matrix(
                 controller.algebraic_states["m"].cx_start, controller.model.matrix_shape_m
@@ -649,8 +649,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             cov_implicit_deffect = cov_next - cov_matrix
 
             penalty.expand = controller.get_nlp.dynamics_type.expand_dynamics
-            penalty.explicit_derivative = True
-            penalty.multi_thread = True
+            # TODO: This could be reintegrated when controls are allowed to have different ControlType
+            # penalty.explicit_derivative = True
+            # penalty.multi_thread = True
 
             out_vector = StochasticBioModel.reshape_to_vector(cov_implicit_deffect)
             return out_vector
@@ -674,7 +675,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             nu = controller.model.nb_q - controller.model.nb_root
 
             a_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.algebraic_states["a"].cx, controller.model.matrix_shape_a
+                controller.controls["a"].cx, controller.model.matrix_shape_a
             )
 
             q_roots = controller.cx.sym("q_roots", nb_root, 1)
@@ -682,7 +683,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             qdot_roots = controller.cx.sym("qdot_roots", nb_root, 1)
             qdot_joints = controller.cx.sym("qdot_joints", nu, 1)
             tau_joints = controller.cx.sym("tau_joints", nu, 1)
-            algebraic_states_sym = controller.cx.sym("algebraic_states_sym", controller.algebraic_states.shape, 1)
+            stochastic_variables = controller.cx.sym(
+                "stochastic_variables", controller.controls.shape - nb_root - nu, 1
+            )
             numerical_timeseries_sym = controller.cx.sym(
                 "numerical_timeseries_sym", controller.numerical_timeseries.shape, 1
             )
@@ -690,9 +693,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             dx = controller.extra_dynamics(0)(
                 controller.t_span.cx,
                 vertcat(q_roots, q_joints, qdot_roots, qdot_joints),  # States
-                tau_joints,
+                vertcat(tau_joints, stochastic_variables),  # Controls
                 controller.parameters.cx,
-                algebraic_states_sym,
+                controller.algebraic_states.cx,
                 numerical_timeseries_sym,
             )
 
@@ -708,8 +711,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     qdot_roots,
                     qdot_joints,
                     tau_joints,
+                    stochastic_variables,
                     controller.parameters.cx,
-                    algebraic_states_sym,
+                    controller.algebraic_states.cx,
                     numerical_timeseries_sym,
                 ],
                 [jacobian(dx[non_root_index], vertcat(q_joints, qdot_joints))],
@@ -725,7 +729,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.q[nb_root:],
                 controller.qdot[:nb_root],
                 controller.qdot[nb_root:],
-                controller.controls.cx,
+                controller.controls.cx[nb_root : nb_root + nu],  # Tau
+                controller.controls.cx[nb_root + nu :],  # Stochastic variables
                 parameters,
                 controller.algebraic_states.cx,
                 controller.numerical_timeseries.cx,
@@ -767,7 +772,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 horzcat(*(controller.states.cx_intermediates_list)),
                 controller.controls.cx_start,
                 parameters,
-                controller.algebraic_states.cx_start,
+                horzcat(*(controller.algebraic_states.cx_intermediates_list)),
                 controller.numerical_timeseries.cx,
             )
 
@@ -793,7 +798,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             )
 
             cov_matrix_next = StochasticBioModel.reshape_to_matrix(
-                controller.algebraic_states["cov"].cx_end, controller.model.matrix_shape_cov
+                controller.controls["cov"].cx_end, controller.model.matrix_shape_cov
             )
 
             parameters = controller.parameters.cx
@@ -806,7 +811,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 horzcat(*(controller.states.cx_intermediates_list)),
                 controller.controls.cx_start,
                 parameters,
-                controller.algebraic_states.cx_start,
+                horzcat(*(controller.algebraic_states.cx_intermediates_list)),
                 controller.numerical_timeseries.cx,
             )
 
@@ -829,7 +834,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             Get the error between the hand position and the reference.
             """
 
-            ref = controller.algebraic_states["ref"].cx_start
+            ref = controller.controls["ref"].cx
             sensory_input = controller.model.sensory_reference(
                 time=controller.time.cx,
                 states=controller.states.cx,
@@ -851,7 +856,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
             This function constrains a matrix to be symmetric
             """
-            variable = controller.algebraic_states[key].cx_start
+            variable = controller.controls[key].cx_start
             if np.sqrt(variable.shape[0]) % 1 != 0:
                 raise RuntimeError(f"The matrix {key} is not square")
             else:
@@ -869,7 +874,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
             This function constrains a matrix to be semi-definite positive.
             """
-            variable = controller.algebraic_states[key].cx_start
+            variable = controller.controls[key].cx_start
             if np.sqrt(variable.shape[0]) % 1 != 0:
                 raise RuntimeError(f"The matrix {key} is not square")
             else:
@@ -895,18 +900,23 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             sigma_ww = diag(vertcat(motor_noise, sensory_noise))
 
             cov_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.algebraic_states_scaled["cov"].cx_start, controller.model.matrix_shape_cov
+                controller.controls_scaled["cov"].cx_start, controller.model.matrix_shape_cov
             )
-            m_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.algebraic_states_scaled["m"].cx_start, controller.model.matrix_shape_m
-            )
+            mi_list = [
+                StochasticBioModel.reshape_to_matrix(mi, controller.model.matrix_shape_cov)
+                for mi in controller.algebraic_states_scaled["m"].cx_intermediates_list
+            ]
+            m_matrix = horzcat(*mi_list)
 
             xf, _, defects = controller.integrate_extra_dynamics(0).function(
                 vertcat(controller.t_span.cx),
                 horzcat(controller.states_scaled.cx, horzcat(*controller.states_scaled.cx_intermediates_list)),
                 controller.controls_scaled.cx,
                 controller.parameters_scaled.cx,
-                controller.algebraic_states_scaled.cx,
+                horzcat(
+                    controller.algebraic_states_scaled.cx,
+                    horzcat(*controller.algebraic_states_scaled.cx_intermediates_list),
+                ),
                 controller.numerical_timeseries.cx,
             )
 
@@ -927,7 +937,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     horzcat(*controller.states_scaled.cx_intermediates_list),
                     controller.controls_scaled.cx_start,
                     controller.parameters_scaled.cx,
-                    controller.algebraic_states_scaled.cx_start,
+                    horzcat(*controller.algebraic_states_scaled.cx_intermediates_list),
                     controller.numerical_timeseries.cx,
                 ],
                 [Fdz.T - Gdz.T @ m_matrix.T],
@@ -944,7 +954,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     horzcat(*controller.states_scaled.cx_intermediates_list),
                     controller.controls_scaled.cx_start,
                     controller.parameters_scaled.cx,
-                    controller.algebraic_states_scaled.cx_start,
+                    horzcat(*controller.algebraic_states_scaled.cx_intermediates_list),
                     controller.numerical_timeseries.cx,
                 ],
                 [m_matrix @ (Gdx @ cov_matrix @ Gdx.T + Gdw @ sigma_ww @ Gdw.T) @ m_matrix.T],
@@ -960,7 +970,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     horzcat(*controller.states_scaled.cx_intermediates_list),
                     controller.controls_scaled.cx_start,
                     controller.parameters_scaled.cx,
-                    controller.algebraic_states_scaled.cx_start,
+                    horzcat(*controller.algebraic_states_scaled.cx_intermediates_list),
                     controller.numerical_timeseries.cx,
                 ],
                 [Gdx],
@@ -974,7 +984,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     horzcat(*controller.states_scaled.cx_intermediates_list),
                     controller.controls_scaled.cx_start,
                     controller.parameters_scaled.cx,
-                    controller.algebraic_states_scaled.cx_start,
+                    horzcat(*controller.algebraic_states_scaled.cx_intermediates_list),
                     controller.numerical_timeseries.cx,
                 ],
                 [Gdz],
@@ -988,7 +998,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     horzcat(*controller.states_scaled.cx_intermediates_list),
                     controller.controls_scaled.cx_start,
                     controller.parameters_scaled.cx,
-                    controller.algebraic_states_scaled.cx_start,
+                    horzcat(*controller.algebraic_states_scaled.cx_intermediates_list),
                     controller.numerical_timeseries.cx,
                 ],
                 [Gdw],
@@ -1002,7 +1012,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     horzcat(*controller.states_scaled.cx_intermediates_list),
                     controller.controls_scaled.cx_start,
                     controller.parameters_scaled.cx,
-                    controller.algebraic_states_scaled.cx_start,
+                    horzcat(*controller.algebraic_states_scaled.cx_intermediates_list),
                     controller.numerical_timeseries.cx,
                 ],
                 [Fdz],

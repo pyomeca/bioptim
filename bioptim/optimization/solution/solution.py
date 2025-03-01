@@ -849,7 +849,7 @@ class Solution:
 
         t_spans, x, u, params, a = self._prepare_integrate(integrator=integrator)
 
-        cov_index = self.ocp.nlp[0].algebraic_states["cov"].index
+        cov_index = self.ocp.nlp[0].controls["cov"].index
         n_sub_nodes = x[0][0].shape[1]
         motor_noise_index = self.ocp.nlp[0].parameters["motor_noise"].index
         sensory_noise_index = (
@@ -868,7 +868,7 @@ class Solution:
                     out[p][key][i_node] = np.zeros((len(nlp.states[key].index), n_sub_nodes, size))
                 out[p][key][nlp.ns] = np.zeros((len(nlp.states[key].index), 1, size))
 
-        cov_matrix = StochasticBioModel.reshape_to_matrix(a[0][0][cov_index, :], self.ocp.nlp[0].model.matrix_shape_cov)
+        cov_matrix = StochasticBioModel.reshape_to_matrix(u[0][0][cov_index, 0], self.ocp.nlp[0].model.matrix_shape_cov)
         first_x = np.random.multivariate_normal(x[0][0][:, 0], cov_matrix, size=size).T
         for p, nlp in enumerate(self.ocp.nlp):
             d = []
