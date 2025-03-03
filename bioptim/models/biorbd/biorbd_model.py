@@ -531,13 +531,13 @@ class BiorbdModel:
             return self.model.marker(self.marker_index(force["point_of_application"]))
         return None
 
-    def forward_dynamics(self, with_contact: bool = False) -> Function:
+    def forward_dynamics(self, with_rigid_contact: bool = False) -> Function:
 
         q_biorbd = GeneralizedCoordinates(self.q)
         qdot_biorbd = GeneralizedVelocity(self.qdot)
         tau_biorbd = GeneralizedTorque(self.tau)
 
-        if with_contact:
+        if with_rigid_contact:
             if self.external_force_set is None:
                 biorbd_return = self.model.ForwardDynamicsConstraintsDirect(q_biorbd, qdot_biorbd, tau_biorbd).to_mx()
             else:
@@ -567,27 +567,27 @@ class BiorbdModel:
             )
         return casadi_fun
 
-    def inverse_dynamics(self, with_contact: bool = False) -> Function:
+    def inverse_dynamics(self, with_rigid_contact: bool = False) -> Function:
 
-        if with_contact:
+        if with_rigid_contact:
             raise NotImplementedError("Inverse dynamics with contact is not implemented yet")
-
-        q_biorbd = GeneralizedCoordinates(self.q)
-        qdot_biorbd = GeneralizedVelocity(self.qdot)
-        qddot_biorbd = GeneralizedAcceleration(self.qddot)
-        if self.external_force_set is None:
-            biorbd_return = self.model.InverseDynamics(q_biorbd, qdot_biorbd, qddot_biorbd).to_mx()
         else:
-            biorbd_return = self.model.InverseDynamics(
-                q_biorbd, qdot_biorbd, qddot_biorbd, self.biorbd_external_forces_set
-            ).to_mx()
-        casadi_fun = Function(
-            "inverse_dynamics",
-            [self.q, self.qdot, self.qddot, self.external_forces, self.parameters],
-            [biorbd_return],
-            ["q", "qdot", "qddot", "external_forces", "parameters"],
-            ["tau"],
-        )
+            q_biorbd = GeneralizedCoordinates(self.q)
+            qdot_biorbd = GeneralizedVelocity(self.qdot)
+            qddot_biorbd = GeneralizedAcceleration(self.qddot)
+            if self.external_force_set is None:
+                biorbd_return = self.model.InverseDynamics(q_biorbd, qdot_biorbd, qddot_biorbd).to_mx()
+            else:
+                biorbd_return = self.model.InverseDynamics(
+                    q_biorbd, qdot_biorbd, qddot_biorbd, self.biorbd_external_forces_set
+                ).to_mx()
+            casadi_fun = Function(
+                "inverse_dynamics",
+                [self.q, self.qdot, self.qddot, self.external_forces, self.parameters],
+                [biorbd_return],
+                ["q", "qdot", "qddot", "external_forces", "parameters"],
+                ["tau"],
+            )
         return casadi_fun
 
     def contact_forces_from_constrained_forward_dynamics(self) -> Function:

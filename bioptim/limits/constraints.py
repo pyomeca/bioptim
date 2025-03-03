@@ -381,7 +381,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         def qddot_equals_forward_dynamics(
             _: Constraint,
             controller: PenaltyController,
-            with_contact: bool,
+            with_rigid_contact: bool,
             with_passive_torque: bool,
             with_ligament: bool,
             **unused_param,
@@ -396,7 +396,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 The actual constraint to declare
             controller: PenaltyController
                 The penalty node elements
-            with_contact: bool
+            with_rigid_contact: bool
                 True if the contact dynamics is handled
             with_passive_torque: bool
                 True if the passive torque dynamics is handled
@@ -419,7 +419,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             qddot = controller.controls["qddot"].cx if "qddot" in controller.controls else controller.states["qddot"].cx
             # TODO: add external_forces
-            qddot_fd = controller.model.forward_dynamics(with_contact=with_contact)(
+            qddot_fd = controller.model.forward_dynamics(with_rigid_contact=with_rigid_contact)(
                 controller.q, controller.qdot, tau, [], controller.parameters.cx
             )
             return qddot - qddot_fd
@@ -428,7 +428,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         def tau_equals_inverse_dynamics(
             _: Constraint,
             controller: PenaltyController,
-            with_contact: bool,
+            with_rigid_contact: bool,
             with_passive_torque: bool,
             with_ligament: bool,
             **unused_param,
@@ -443,7 +443,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 The actual constraint to declare
             controller: PenaltyController
                 The penalty node elements
-            with_contact: bool
+            with_rigid_contact: bool
                 True if the contact dynamics is handled
             with_passive_torque: bool
                 True if the passive torque dynamics is handled
@@ -467,7 +467,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 )
                 # Todo: add forces_in_global tau_id = nlp.model.inverse_dynamics()(q, qdot, qddot, forces_in_global)
 
-            if with_contact:
+            if with_rigid_contact:
                 # todo: this should be done internally in BiorbdModel
                 f_contact_vec = (
                     controller.controls["translational_forces"].cx
@@ -476,7 +476,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 )
             else:
                 f_contact_vec = []
-            tau_id = controller.model.inverse_dynamics(with_contact=with_contact)(
+            tau_id = controller.model.inverse_dynamics(with_rigid_contact=with_rigid_contact)(
                 controller.q, controller.qdot, qddot, f_contact_vec, controller.parameters.cx
             )
 

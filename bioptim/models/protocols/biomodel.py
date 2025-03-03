@@ -176,7 +176,7 @@ class BioModel(Protocol):
         args: qddot_root, qddot_joints
         """
 
-    def forward_dynamics(self, with_contact=False) -> Function:
+    def forward_dynamics(self, with_rigid_contact=False) -> Function:
         """
         compute the forward dynamics
         args: q, qdot, tau, external_forces

@@ -103,8 +103,8 @@ EXTERNAL_FORCE_ARRAY[:, 4] = [
     "with_external_force",
     [False, True],
 )
-@pytest.mark.parametrize("with_contact", [False, True])
-def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
+@pytest.mark.parametrize("with_rigid_contact", [False, True])
+def test_torque_driven(with_rigid_contact, with_external_force, cx, phase_dynamics):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.ns = N_SHOOTING
@@ -141,7 +141,7 @@ def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
         "dynamics_type",
         Dynamics(
             DynamicsFcn.TORQUE_DRIVEN,
-            with_contact=with_contact,
+            with_rigid_contact=with_rigid_contact,
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
             numerical_data_timeseries=numerical_time_series,
@@ -170,7 +170,7 @@ def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
             time, states[:, 0], controls[:, 0], params[:, 0], algebraic_states[:, 0], numerical_timeseries
         )
     )
-    if with_contact:
+    if with_rigid_contact:
         contact_out = np.array(
             nlp.contact_forces_func(time, states, controls, params, algebraic_states, numerical_timeseries)
         )
@@ -212,9 +212,9 @@ def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("cx", [MX, SX])
-@pytest.mark.parametrize("with_contact", [False, True])
+@pytest.mark.parametrize("with_rigid_contact", [False, True])
 @pytest.mark.parametrize("implicit_contact", [False, True])
-def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact, phase_dynamics):
+def test_torque_driven_soft_contacts_dynamics(with_rigid_contact, cx, implicit_contact, phase_dynamics):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = BiorbdModel(
@@ -241,7 +241,7 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
         "dynamics_type",
         Dynamics(
             DynamicsFcn.TORQUE_DRIVEN,
-            with_contact=with_contact,
+            with_rigid_contact=with_rigid_contact,
             soft_contacts_dynamics=implicit_contact,
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
@@ -266,7 +266,7 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
     time = np.random.rand(2)
     x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states, numerical_timeseries))
 
-    if with_contact:
+    if with_rigid_contact:
         contact_out = np.array(
             nlp.contact_forces_func(time, states, controls, params, algebraic_states, numerical_timeseries)
         )
@@ -286,8 +286,8 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_external_force", [True])
-@pytest.mark.parametrize("with_contact", [False, True])
-def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_dynamics):
+@pytest.mark.parametrize("with_rigid_contact", [False, True])
+def test_torque_derivative_driven(with_rigid_contact, with_external_force, cx, phase_dynamics):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.ns = N_SHOOTING
@@ -322,7 +322,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
         "dynamics_type",
         Dynamics(
             DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
-            with_contact=with_contact,
+            with_rigid_contact=with_rigid_contact,
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
             numerical_data_timeseries=numerical_timeseries,
@@ -353,7 +353,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
         )
     )
 
-    if with_contact:
+    if with_rigid_contact:
         contact_out = np.array(
             nlp.contact_forces_func(time, states, controls, params, algebraic_states, numerical_timeseries)
         )
@@ -437,9 +437,9 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("cx", [MX, SX])
-@pytest.mark.parametrize("with_contact", [False, True])
+@pytest.mark.parametrize("with_rigid_contact", [False, True])
 @pytest.mark.parametrize("implicit_contact", [False, True])
-def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact, phase_dynamics):
+def test_torque_derivative_driven_soft_contacts_dynamics(with_rigid_contact, cx, implicit_contact, phase_dynamics):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = BiorbdModel(
@@ -465,7 +465,7 @@ def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, impli
         "dynamics_type",
         Dynamics(
             DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
-            with_contact=with_contact,
+            with_rigid_contact=with_rigid_contact,
             soft_contacts_dynamics=implicit_contact,
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
@@ -490,7 +490,7 @@ def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, impli
     time = np.random.rand(2)
     x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states, numerical_timeseries))
 
-    if with_contact:
+    if with_rigid_contact:
         contact_out = np.array(
             nlp.contact_forces_func(time, states, controls, params, algebraic_states, numerical_timeseries)
         )
@@ -572,8 +572,8 @@ def test_soft_contacts_dynamics_errors(dynamics, phase_dynamics):
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_external_force", [False, True])
-@pytest.mark.parametrize("with_contact", [False, True])
-def test_torque_activation_driven(with_contact, with_external_force, cx, phase_dynamics):
+@pytest.mark.parametrize("with_rigid_contact", [False, True])
+def test_torque_activation_driven(with_rigid_contact, with_external_force, cx, phase_dynamics):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.ns = N_SHOOTING
@@ -608,7 +608,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
         "dynamics_type",
         Dynamics(
             DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
-            with_contact=with_contact,
+            with_rigid_contact=with_rigid_contact,
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
             numerical_data_timeseries=numerical_timeseries,

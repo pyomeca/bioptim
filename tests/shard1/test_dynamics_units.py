@@ -67,7 +67,7 @@ def test_check_soft_contacts_dynamics_no_soft_contacts():
 
 
 # Tests for _check_contacts_in_biorbd_model
-def test_check_contacts_in_biorbd_model_with_contact():
+def test_check_contacts_in_biorbd_model_with_rigid_contact():
     _check_contacts_in_biorbd_model(True, 1, 0)
 
 

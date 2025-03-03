@@ -33,16 +33,16 @@ class ConfigureProblem:
         Call the dynamics a first time
     custom(ocp, nlp, **extra_params)
         Call the user-defined dynamics configuration function
-    torque_driven(ocp, nlp, with_contact=False)
+    torque_driven(ocp, nlp, with_rigid_contact=False)
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
-    torque_derivative_driven(ocp, nlp, with_contact=False)
+    torque_derivative_driven(ocp, nlp, with_rigid_contact=False)
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
-    torque_activations_driven(ocp, nlp, with_contact=False)
+    torque_activations_driven(ocp, nlp, with_rigid_contact=False)
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau activations).
         The tau activations are bounded between -1 and 1 and actual tau is computed from torque-position-velocity
         relationship
     muscle_driven(
-        ocp, nlp, with_excitations: bool = False, with_residual_torque: bool = False, with_contact: bool = False
+        ocp, nlp, with_excitations: bool = False, with_residual_torque: bool = False, with_rigid_contact: bool = False
     )
         Configure the dynamics for a muscle driven program.
         If with_excitations is set to True, then the muscle muscle activations are computed from the muscle dynamics.
@@ -156,11 +156,11 @@ class ConfigureProblem:
     def torque_driven(
         ocp,
         nlp,
-        with_contact: bool = False,
+        with_rigid_contact: bool = False,
+        with_soft_contact: bool = False,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
         with_friction: bool = False,
-        soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
         fatigue: FatigueList = None,
         numerical_data_timeseries: dict[str, np.ndarray] = None,
     ):
@@ -173,7 +173,7 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        with_contact: bool
+        with_rigid_contact: bool
             If the dynamic with contact should be used
         with_passive_torque: bool
             If the dynamic with passive torque should be used
@@ -189,7 +189,7 @@ class ConfigureProblem:
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
 
-        _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
+        _check_contacts_in_biorbd_model(with_rigid_contact, nlp.model.nb_contacts, nlp.phase_idx)
         _check_soft_contacts_dynamics(soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx)
 
         # Declared rigidbody states and controls
@@ -210,7 +210,7 @@ class ConfigureProblem:
                 ocp,
                 nlp,
                 DynamicsFunctions.torque_driven,
-                with_contact=with_contact,
+                with_rigid_contact=with_rigid_contact,
                 fatigue=fatigue,
                 with_passive_torque=with_passive_torque,
                 with_ligament=with_ligament,
@@ -218,7 +218,7 @@ class ConfigureProblem:
             )
 
         # Configure the contact forces
-        if with_contact:
+        if with_rigid_contact:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
 
         # Configure the soft contact forces
@@ -362,7 +362,7 @@ class ConfigureProblem:
         ocp,
         nlp,
         problem_type,
-        with_contact: bool = False,
+        with_rigid_contact: bool = False,
         with_friction: bool = False,
         with_cholesky: bool = False,
         initial_matrix: DM = None,
@@ -377,7 +377,7 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        with_contact: bool
+        with_rigid_contact: bool
             If the dynamic with contact should be used
         with_friction: bool
             If the dynamic with joint friction should be used (friction = coefficient * qdot)
@@ -424,7 +424,7 @@ class ConfigureProblem:
         ConfigureProblem.torque_driven(
             ocp=ocp,
             nlp=nlp,
-            with_contact=with_contact,
+            with_rigid_contact=with_contact,
             with_friction=with_friction,
         )
 

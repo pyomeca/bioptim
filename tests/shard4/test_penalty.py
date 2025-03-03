@@ -92,7 +92,7 @@ EXTERNAL_FORCE_ARRAY[:, 4] = [
 def prepare_test_ocp(
     phase_dynamics,
     with_muscles=False,
-    with_contact=False,
+    with_rigid_contact=False,
     with_actuator=False,
     use_sx=True,
     with_external_forces=False,
@@ -100,13 +100,13 @@ def prepare_test_ocp(
     bioptim_folder = TestUtils.bioptim_folder()
 
     if with_external_forces:
-        if not with_contact:
-            raise NotImplementedError("with_external_forces=True is only tested for with_contact=True")
+        if not with_rigid_contact:
+            raise NotImplementedError("with_external_forces=True is only tested for with_rigid_contact=True")
         external_forces = ExternalForceSetTimeSeries(nb_frames=N_SHOOTING)
         external_forces.add("Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :])
         numerical_time_series = {"external_forces": external_forces.to_numerical_time_series()}
 
-    if with_muscles and with_contact or with_muscles and with_actuator or with_contact and with_actuator:
+    if with_muscles and with_rigid_contact or with_muscles and with_actuator or with_rigid_contact and with_actuator:
         raise RuntimeError("With muscles and with contact and with_actuator together is not defined")
     elif with_muscles:
         bio_model = BiorbdModel(bioptim_folder + "/examples/muscle_driven_ocp/models/arm26.bioMod")
@@ -114,7 +114,7 @@ def prepare_test_ocp(
         dynamics.add(
             DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, expand_dynamics=True, phase_dynamics=phase_dynamics
         )
-    elif with_contact:
+    elif with_rigid_contact:
         dynamics = DynamicsList()
         if with_external_forces:
             bio_model = BiorbdModel(
@@ -123,7 +123,7 @@ def prepare_test_ocp(
             )
             dynamics.add(
                 DynamicsFcn.TORQUE_DRIVEN,
-                with_contact=True,
+                with_rigid_contact=True,
                 expand_dynamics=True,
                 phase_dynamics=phase_dynamics,
                 numerical_data_timeseries=numerical_time_series,
@@ -134,7 +134,7 @@ def prepare_test_ocp(
             )
             dynamics.add(
                 DynamicsFcn.TORQUE_DRIVEN,
-                with_contact=True,
+                with_rigid_contact=True,
                 expand_dynamics=True,
                 phase_dynamics=phase_dynamics,
             )
@@ -791,7 +791,7 @@ def test_penalty_minimize_muscles_control(penalty_origin, value, phase_dynamics)
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange])
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_minimize_contact_forces(penalty_origin, value, phase_dynamics):
-    ocp = prepare_test_ocp(with_contact=True, phase_dynamics=phase_dynamics)
+    ocp = prepare_test_ocp(with_rigid_contact=True, phase_dynamics=phase_dynamics)
     t = [0]
     phases_dt = [0.05]
     x = [DM.ones((8, 1)) * value]
@@ -814,7 +814,7 @@ def test_penalty_minimize_contact_forces(penalty_origin, value, phase_dynamics):
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_track_contact_forces(penalty_origin, value, phase_dynamics):
-    ocp = prepare_test_ocp(with_contact=True, phase_dynamics=phase_dynamics)
+    ocp = prepare_test_ocp(with_rigid_contact=True, phase_dynamics=phase_dynamics)
     t = [0]
     phases_dt = [0.05]
     x = [DM.ones((8, 1)) * value]
@@ -949,7 +949,7 @@ def test_penalty_minimize_linear_momentum(value, penalty_origin, use_sx, phase_d
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer])
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_minimize_comddot(value, penalty_origin, phase_dynamics):
-    ocp = prepare_test_ocp(with_contact=True, phase_dynamics=phase_dynamics)
+    ocp = prepare_test_ocp(with_rigid_contact=True, phase_dynamics=phase_dynamics)
     t = [0]
     phases_dt = [0.05]
     x = [DM.ones((8, 1)) * value]
@@ -1081,7 +1081,7 @@ def test_penalty_minimize_segment_velocity(penalty_origin, value, phase_dynamics
 @pytest.mark.parametrize("penalty_origin", [ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_contact_force_inequality(penalty_origin, value, phase_dynamics):
-    ocp = prepare_test_ocp(with_contact=True, phase_dynamics=phase_dynamics)
+    ocp = prepare_test_ocp(with_rigid_contact=True, phase_dynamics=phase_dynamics)
     t = [0]
     phases_dt = [0.05]
     x = [DM.ones((8, 1)) * value]
@@ -1101,7 +1101,7 @@ def test_penalty_contact_force_inequality(penalty_origin, value, phase_dynamics)
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_non_slipping(value, phase_dynamics):
-    ocp = prepare_test_ocp(with_contact=True, phase_dynamics=phase_dynamics)
+    ocp = prepare_test_ocp(with_rigid_contact=True, phase_dynamics=phase_dynamics)
     t = [0]
     phases_dt = [0.05]
     x = [DM.ones((8, 1)) * value]
@@ -1123,7 +1123,7 @@ def test_penalty_non_slipping(value, phase_dynamics):
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Mayer, ConstraintFcn])
 def test_penalty_minimize_contact_forces_end_of_interval(penalty_origin, phase_dynamics):
-    ocp = prepare_test_ocp(with_contact=True, phase_dynamics=phase_dynamics)
+    ocp = prepare_test_ocp(with_rigid_contact=True, phase_dynamics=phase_dynamics)
     t = [0]
     phases_dt = [0.05]
     x = [DM.ones((8, 1)) * 0.1]
@@ -1158,7 +1158,7 @@ def test_penalty_minimize_contact_forces_end_of_interval(penalty_origin, phase_d
     [False, True],
 )
 def test_penalty_minimize_sum_reaction_forces(penalty_origin, phase_dynamics, with_external_forces):
-    ocp = prepare_test_ocp(with_contact=True, phase_dynamics=phase_dynamics, with_external_forces=with_external_forces)
+    ocp = prepare_test_ocp(with_rigid_contact=True, phase_dynamics=phase_dynamics, with_external_forces=with_external_forces)
     t = [0]
     phases_dt = [0.05]
     x = [DM.ones((8, 1)) * 0.1]

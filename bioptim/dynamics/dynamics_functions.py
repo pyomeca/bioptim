@@ -15,15 +15,15 @@ class DynamicsFunctions:
     -------
     custom(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp: NonLinearProgram) -> MX
         Interface to custom dynamic function provided by the user
-    torque_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact: bool)
+    torque_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_rigid_contact: bool)
         Forward dynamics driven by joint torques
-    torque_activations_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact) -> MX:
+    torque_activations_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_rigid_contact) -> MX:
         Forward dynamics driven by joint torques activations.
-    torque_derivative_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact: bool) -> MX:
+    torque_derivative_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_rigid_contact: bool) -> MX:
         Forward dynamics driven by joint torques derivatives
     forces_from_torque_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:
         Contact forces of a forward dynamics driven by joint torques with contact constraints.
-    muscles_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_contact: bool) -> MX:
+    muscles_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp, with_rigid_contact: bool) -> MX:
         Forward dynamics driven by muscle.
     forces_from_muscle_driven(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> MX:
         Contact forces of a forward dynamics driven by muscles activations and joint torques with contact constraints.
@@ -31,7 +31,7 @@ class DynamicsFunctions:
         Main accessor to a variable in states or controls (cx)
     reshape_qdot(nlp: NonLinearProgram, q: MX | SX, qdot: MX | SX):
         Easy accessor to derivative of q
-    forward_dynamics(nlp: NonLinearProgram, q: MX | SX, qdot: MX | SX, tau: MX | SX, with_contact: bool):
+    forward_dynamics(nlp: NonLinearProgram, q: MX | SX, qdot: MX | SX, tau: MX | SX, with_rigid_contact: bool):
         Easy accessor to derivative of qdot
     compute_muscle_dot(nlp: NonLinearProgram, muscle_excitations: MX | SX, muscle_activations: MX | SX):
         Easy accessor to derivative of muscle activations
@@ -90,7 +90,7 @@ class DynamicsFunctions:
         algebraic_states,
         numerical_timeseries,
         nlp,
-        with_contact: bool,
+        with_rigid_contact: bool,
         with_passive_torque: bool,
         with_ligament: bool,
         with_friction: bool,
@@ -115,7 +115,7 @@ class DynamicsFunctions:
             The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
-        with_contact: bool
+        with_rigid_contact: bool
             If the dynamic with contact should be used
         with_passive_torque: bool
             If the dynamic with passive torque should be used
@@ -144,7 +144,7 @@ class DynamicsFunctions:
 
         external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
 
-        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
+        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_rigid_contact, external_forces)
         dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
         dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
         dxdt[nlp.states["qdot"].index, :] = ddq
@@ -244,7 +244,7 @@ class DynamicsFunctions:
         tau_full = vertcat(nlp.cx.zeros(nlp.model.nb_root), tau_joints)
 
         ddq = DynamicsFunctions.forward_dynamics(
-            nlp, q_full, qdot_full, tau_full, with_contact=False, external_forces=None
+            nlp, q_full, qdot_full, tau_full, with_rigid_contact=False, external_forces=None
         )
         dxdt = nlp.cx(n_q + n_qdot, ddq.shape[1])
         dxdt[:n_q, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
@@ -261,7 +261,7 @@ class DynamicsFunctions:
         algebraic_states,
         numerical_timeseries,
         nlp,
-        with_contact: bool,
+        with_rigid_contact: bool,
         with_friction: bool,
     ) -> DynamicsEvaluation:
         """
@@ -283,7 +283,7 @@ class DynamicsFunctions:
             The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
-        with_contact: bool
+        with_rigid_contact: bool
             If the dynamic with contact should be used
         with_friction: bool
             If the dynamic with friction should be used
@@ -314,7 +314,7 @@ class DynamicsFunctions:
         tau = tau - nlp.model.friction_coefficients @ qdot if with_friction else tau
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces=None)
+        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_rigid_contact, external_forces=None)
         dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
         dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
         dxdt[nlp.states["qdot"].index, :] = ddq
@@ -388,7 +388,7 @@ class DynamicsFunctions:
 
         dq = DynamicsFunctions.compute_qdot(nlp, q_full, qdot_full)
         ddq = DynamicsFunctions.forward_dynamics(
-            nlp, q_full, qdot_full, tau_full, with_contact=False, external_forces=None
+            nlp, q_full, qdot_full, tau_full, with_rigid_contact=False, external_forces=None
         )
         dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
         dxdt[:n_q, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
@@ -460,7 +460,7 @@ class DynamicsFunctions:
         algebraic_states,
         numerical_timeseries,
         nlp,
-        with_contact: bool,
+        with_rigid_contact: bool,
         with_passive_torque: bool,
         with_residual_torque: bool,
         with_ligament: bool,

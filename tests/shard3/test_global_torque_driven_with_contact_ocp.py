@@ -1,6 +1,6 @@
 """
 Test for file IO.
-It tests the results of an optimal control problem with torque_driven_with_contact problem type regarding the proper functioning of :
+It tests the results of an optimal control problem with torque_driven_with_rigid_contact problem type regarding the proper functioning of :
 - the maximize/minimize_predicted_height_CoM objective
 - the contact_forces_inequality constraint
 - the non_slipping constraint

@@ -577,7 +577,7 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
-    def forward_dynamics(self, with_contact) -> Function:
+    def forward_dynamics(self, with_rigid_contact) -> Function:
         """External forces and contact forces are not implemented yet for MultiBiorbdModel."""
 
         biorbd_return = MX()
@@ -587,7 +587,7 @@ class MultiBiorbdModel:
             tau_model = self.tau[self.variable_index("tau", i)]
             biorbd_return = vertcat(
                 biorbd_return,
-                model.forward_dynamics(with_contact=with_contact)(
+                model.forward_dynamics(with_rigid_contact=with_rigid_contact)(
                     q_model,
                     qdot_model,
                     tau_model,
