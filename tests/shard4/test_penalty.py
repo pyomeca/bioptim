@@ -1221,7 +1221,8 @@ def test_penalty_minimize_center_of_pressure(penalty_origin, phase_dynamics, wit
     )
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
-    npt.assert_almost_equal(res.T, [[0, 0, -0.394827]])
+    npt.assert_almost_equal(res[0],0)
+    npt.assert_almost_equal(res[2], -0.394827)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])

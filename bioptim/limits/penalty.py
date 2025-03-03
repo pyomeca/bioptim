@@ -768,7 +768,7 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def minimize_sum_reaction_forces(
-            penalty: PenaltyOption, controller: PenaltyController, contact_index: tuple[str | int] | list[str | int]
+            penalty: PenaltyOption, controller: PenaltyController, contact_index: tuple[str, ...] | tuple[int, ...] | list[str | int]
         ):
             """
             Simulate force plate data from the contact forces computed through the dynamics with contact.
@@ -813,7 +813,7 @@ class PenaltyFunctionAbstract:
         def minimize_center_of_pressure(
             penalty: PenaltyOption,
             controller: PenaltyController,
-            contact_index: tuple[str | int] | list[str | int],
+            contact_index: tuple[str, ...] | tuple[int, ...] | list[str | int],
         ):
             """
             Simulate the center of pressure from force plate data from the contact forces computed through the dynamics with contact
