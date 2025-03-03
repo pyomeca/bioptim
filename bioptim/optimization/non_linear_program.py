@@ -288,7 +288,6 @@ class NonLinearProgram:
             if not_direct_collocation and init_all_point:
                 raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
                 # TODO @ipuch in PR #907, add algebraic states to the error message
-                # @ipuch: Did you want to add algebraic for ERK ?
 
         self._update_init(
             init=x_init,
