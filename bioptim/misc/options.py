@@ -1,5 +1,13 @@
 from copy import deepcopy
 from typing import Any, Callable
+from .parameters_types import (
+    Int, 
+    Str, 
+    Bool,
+    AnyList, 
+    AnyDict,
+    IntStrOrIterable
+)
 
 import numpy as np
 
@@ -27,7 +35,7 @@ class OptionGeneric:
         Get the size of the OptionGeneric (abstract)
     """
 
-    def __init__(self, phase: int = -1, list_index: int = -1, name: str = None, type: Any = None, **extra_parameters):
+    def __init__(self, phase: Int = -1, list_index: Int = -1, name: Str = None, type: Any = None, **extra_parameters):
         """
         Parameters
         ----------
@@ -56,7 +64,7 @@ class OptionGeneric:
         self.extra_parameters = extra_parameters
 
     @property
-    def param_when_copying(self) -> dict:
+    def param_when_copying(self) -> AnyDict:
         raise NotImplementedError("param_when_copying must be implemented to index this class")
 
     @property
@@ -152,7 +160,7 @@ class OptionList:
             raise StopIteration
         return self.options[self._iter_idx - 1]
 
-    def __getitem__(self, i) -> list:
+    def __getitem__(self, i) -> AnyList:
         """
         Get the ith phase list of the option list
 
@@ -167,7 +175,7 @@ class OptionList:
         """
         return self.options[i]
 
-    def _add(self, option_type: Callable = OptionGeneric, phase: int = 0, list_index: int = -1, **extra_arguments: Any):
+    def _add(self, option_type: Callable = OptionGeneric, phase: Int = 0, list_index: Int = -1, **extra_arguments: Any):
         """
         Add a new option to the list
 
@@ -188,7 +196,7 @@ class OptionList:
         self.options[phase][list_index] = option_type(phase=phase, list_index=list_index, **extra_arguments)
 
     @property
-    def param_when_copying(self) -> dict:
+    def param_when_copying(self) -> AnyDict:
         raise NotImplementedError("param_when_copying must be implemented to index this class")
 
     def copy(self, option: OptionGeneric):
@@ -204,7 +212,7 @@ class OptionList:
         self.__prepare_option_list(option.phase, option.list_index)
         self.options[option.phase][option.list_index] = option
 
-    def __prepare_option_list(self, phase: int, list_index: int) -> int:
+    def __prepare_option_list(self, phase: Int, list_index: Int) -> Int:
         """
         Reshape the option according to the requested phase and index
 
@@ -234,7 +242,7 @@ class OptionList:
             self.options[phase].append(None)
         return list_index
 
-    def __bool__(self) -> bool:
+    def __bool__(self) -> Bool:
         """
         Check if the list is empty
 
@@ -270,15 +278,15 @@ class OptionDict(OptionList):
     def add(self, *args, **kwargs):
         raise NotImplementedError("This is an abstract method")
 
-    def _add(self, key: str, phase: int = -1, **extra_arguments: Any):
+    def _add(self, key: Str, phase: Int = -1, **extra_arguments: Any):
         self.__prepare_option_list(phase, key)
         self.options[phase][key] = self.sub_type(key=key, phase=phase, **extra_arguments)
 
-    def copy(self, option: OptionGeneric, key: str):
+    def copy(self, option: OptionGeneric, key: Str):
         self.__prepare_option_list(option.phase, key)
         self.options[option.phase][key] = option
 
-    def __prepare_option_list(self, phase: int, key: str):
+    def __prepare_option_list(self, phase: Int, key: Str):
         for i in range(len(self.options), phase + 1):
             self.options.append({})
         return
@@ -294,7 +302,7 @@ class OptionDict(OptionList):
                 )
             self.add(key, value)
 
-    def __getitem__(self, item: int | str | list | tuple) -> dict | Any:
+    def __getitem__(self, item: IntStrOrIterable) -> AnyDict | Any:
         if isinstance(item, str):
             if len(self.options) != 1:
                 raise TypeError(
@@ -334,10 +342,10 @@ class OptionDict(OptionList):
 
         raise ValueError("Wrong type in getting scaling")
 
-    def keys(self, phase: int = 0):
+    def keys(self, phase: Int = 0):
         return self.options[phase].keys()
 
-    def phase_duplication(self, n_phases: int):
+    def phase_duplication(self, n_phases: Int):
         if self.nb_phase != 1:
             raise ValueError(f"phase_duplication is only available for n_phases=1. Got {self.nb_phase} instead.")
         self.options = [deepcopy(self.options[0]) for _ in range(n_phases)]
@@ -348,7 +356,7 @@ class UniquePerPhaseOptionList(OptionList):
     OptionList that does not allow for more than one element per phase
     """
 
-    def _add(self, phase: int = -1, **extra_arguments: Any):
+    def _add(self, phase: Int = -1, **extra_arguments: Any):
         if phase == -1:
             phase = len(self)
         super(UniquePerPhaseOptionList, self)._add(phase=phase, list_index=0, **extra_arguments)
@@ -361,7 +369,7 @@ class UniquePerPhaseOptionList(OptionList):
     def __getitem__(self, i_phase) -> Any:
         return super(UniquePerPhaseOptionList, self).__getitem__(i_phase)[0]
 
-    def __next__(self) -> int:
+    def __next__(self) -> Int:
         self._iter_idx += 1
         if self._iter_idx > len(self):
             raise StopIteration
@@ -376,7 +384,7 @@ class UniquePerProblemOptionList(OptionList):
     OptionList that cannot change throughout phases (e.g., parameters)
     """
 
-    def _add(self, list_index: int = -1, **extra_arguments: Any):
+    def _add(self, list_index: Int = -1, **extra_arguments: Any):
         super(UniquePerProblemOptionList, self)._add(phase=0, list_index=list_index, **extra_arguments)
 
     def copy(self, option: OptionGeneric):
@@ -398,7 +406,7 @@ class UniquePerProblemOptionList(OptionList):
         else:
             raise RuntimeError(f"The parameter index must be an int | str | list, here the type is {type(index)}.")
 
-    def __next__(self) -> int:
+    def __next__(self) -> Int:
         self._iter_idx += 1
         if self._iter_idx > len(self):
             raise StopIteration
@@ -419,7 +427,7 @@ class UniquePerPhaseOptionDict(OptionDict):
     OptionList that does not allow for more than one element per phase
     """
 
-    def _add(self, phase: int = -1, **extra_arguments: Any):
+    def _add(self, phase: Int = -1, **extra_arguments: Any):
         if phase == -1:
             phase = len(self)
         super(UniquePerPhaseOptionDict, self)._add(phase=phase, list_index=0, **extra_arguments)
@@ -432,7 +440,7 @@ class UniquePerPhaseOptionDict(OptionDict):
     def __getitem__(self, i_phase) -> Any:
         return super(UniquePerPhaseOptionDict, self).__getitem__(i_phase)[0]
 
-    def __next__(self) -> int:
+    def __next__(self) -> Int:
         self._iter_idx += 1
         if self._iter_idx > len(self):
             raise StopIteration
