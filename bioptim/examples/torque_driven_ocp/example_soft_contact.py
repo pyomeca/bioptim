@@ -27,6 +27,7 @@ from bioptim import (
     SolutionIntegrator,
     PhaseDynamics,
     SolutionMerge,
+    DefectType,
 )
 
 
@@ -51,7 +52,8 @@ def prepare_single_shooting(
     # Dynamics
     dynamics = Dynamics(
         DynamicsFcn.TORQUE_DRIVEN,
-        soft_contacts_dynamics=SoftContactDynamics.ODE,
+        with_soft_contact=True,
+        defects_type=DefectType.EXPLICIT,
     )
 
     return OptimalControlProgram(
@@ -149,8 +151,9 @@ def prepare_ocp(
     # Dynamics
     dynamics = Dynamics(
         DynamicsFcn.TORQUE_DRIVEN,
-        soft_contacts_dynamics=SoftContactDynamics.ODE,
+        with_soft_contact=True,
         phase_dynamics=phase_dynamics,
+        defects_type=DefectType.EXPLICIT,
     )
 
     # Constraints

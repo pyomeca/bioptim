@@ -214,7 +214,7 @@ class NonLinearProgram:
         self.algebraic_states.initialize_intermediate_cx(n_shooting=self.ns + 1, n_cx=self.ode_solver.n_required_cx)
         self.integrated_values.initialize_intermediate_cx(
             n_shooting=self.ns + 1, n_cx=1
-        )  # TODO #907 to confirm with Eve
+        )
 
     def update_bounds(self, x_bounds, u_bounds, a_bounds):
         self._update_bound(
@@ -288,6 +288,7 @@ class NonLinearProgram:
             if not_direct_collocation and init_all_point:
                 raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
                 # TODO @ipuch in PR #907, add algebraic states to the error message
+                # @ipuch: Did you want to add algebraic for ERK ?
 
         self._update_init(
             init=x_init,

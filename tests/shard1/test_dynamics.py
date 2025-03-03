@@ -1141,7 +1141,7 @@ def test_custom_dynamics(with_rigid_contact, phase_dynamics):
         ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic, with_rigid_contact=with_rigid_contact)
 
         if with_rigid_contact:
-            ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
+            ConfigureProblem.configure_rigid_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
 
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=False)

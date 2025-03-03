@@ -173,7 +173,7 @@ class ConstraintType(Enum):
     """
     Selection of constraint types
     """
-
+    # TODO: Charbie -> delete
     IMPLICIT = "implicit"
 
 
@@ -191,6 +191,7 @@ class QuadratureRule(Enum):
 
 
 class SoftContactDynamics(Enum):
+    # TODO: Charbie -> Delete !
     ODE = "ode"
     CONSTRAINT = "constraint"
 

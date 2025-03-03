@@ -155,9 +155,29 @@ class DynamicsFunctions:
         defects = None
         # TODO: contacts and fatigue to be handled with implicit dynamics
         if nlp.ode_solver.defects_type == DefectType.IMPLICIT:
-            if not with_contact and fatigue is None:
+            if fatigue:
+                raise NotImplementedError("Fatigue is not implemented with implicit dynamics yet.")
+            elif with_rigid_contact:
                 qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
-                tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact, external_forces)
+                tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_rigid_contact, external_forces)
+                defects = nlp.cx(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
+
+                dq_defects = []
+                for _ in range(tau_id.shape[1]):
+                    dq_defects.append(
+                        dq
+                        - DynamicsFunctions.compute_qdot(
+                            nlp,
+                            q,
+                            DynamicsFunctions.get(nlp.states_dot.scaled["qdot"], nlp.states_dot.scaled.cx),
+                        )
+                    )
+                defects[: dq.shape[0], :] = horzcat(*dq_defects)
+                # We modified on purpose the size of the tau to keep the zero in the defects in order to respect the dynamics
+                defects[dq.shape[0] :, :] = tau - tau_id
+            else:
+                qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
+                tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_rigid_contact, external_forces)
                 defects = nlp.cx(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
 
                 dq_defects = []
@@ -484,7 +504,7 @@ class DynamicsFunctions:
             The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
-        with_contact: bool
+        with_rigid_contact: bool
             If the dynamic with contact should be used
         with_passive_torque: bool
             If the dynamic with passive torque should be used
@@ -514,7 +534,7 @@ class DynamicsFunctions:
         external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
+        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_rigid_contact, external_forces)
 
         dq = horzcat(*[dq for _ in range(ddq.shape[1])])
 
@@ -529,7 +549,7 @@ class DynamicsFunctions:
         algebraic_states,
         numerical_timeseries,
         nlp,
-        with_contact: bool,
+        with_rigid_contact: bool,
         with_passive_torque: bool,
         with_ligament: bool,
         with_friction: bool,
@@ -553,7 +573,7 @@ class DynamicsFunctions:
             The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
-        with_contact: bool
+        with_rigid_contact: bool
             If the dynamic with contact should be used
         with_passive_torque: bool
             If the dynamic with passive torque should be used
@@ -580,7 +600,7 @@ class DynamicsFunctions:
         dtau = DynamicsFunctions.get(nlp.controls["taudot"], controls)
 
         external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
-        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
+        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_rigid_contact, external_forces)
         dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
         dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
         dxdt[nlp.states["qdot"].index, :] = ddq
@@ -700,7 +720,7 @@ class DynamicsFunctions:
         algebraic_states,
         numerical_timeseries,
         nlp,
-        with_contact: bool,
+        with_rigid_contact: bool,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
         with_friction: bool = False,
@@ -726,7 +746,7 @@ class DynamicsFunctions:
             The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
-        with_contact: bool
+        with_rigid_contact: bool
             If the dynamic with contact should be used
         with_passive_torque: bool
             If the dynamic with passive torque should be used
@@ -793,7 +813,7 @@ class DynamicsFunctions:
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
 
         external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
-        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
+        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_rigid_contact, external_forces)
         dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
         dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
         dxdt[nlp.states["qdot"].index, :] = ddq
@@ -970,7 +990,7 @@ class DynamicsFunctions:
         q: MX | SX,
         qdot: MX | SX,
         tau: MX | SX,
-        with_contact: bool,
+        with_rigid_contact: bool,
         external_forces: list = None,
     ):
         """
@@ -986,7 +1006,7 @@ class DynamicsFunctions:
             The value of qdot from "get"
         tau: MX | SX
             The value of tau from "get"
-        with_contact: bool
+        with_rigid_contact: bool
             If the dynamics with contact should be used
         external_forces: list[]
             The external forces
@@ -1003,7 +1023,7 @@ class DynamicsFunctions:
             qdot_var_mapping = BiMapping([i for i in range(qdot.shape[0])], [i for i in range(qdot.shape[0])]).to_first
 
         external_forces = [] if external_forces is None else external_forces
-        qddot = nlp.model.forward_dynamics(with_contact=with_contact)(
+        qddot = nlp.model.forward_dynamics(with_rigid_contact=with_rigid_contact)(
             q,
             qdot,
             tau,
@@ -1018,7 +1038,7 @@ class DynamicsFunctions:
         q: MX | SX,
         qdot: MX | SX,
         qddot: MX | SX,
-        with_contact: bool,
+        with_rigid_contact: bool,
         external_forces: MX = None,
     ):
         """
@@ -1034,7 +1054,7 @@ class DynamicsFunctions:
             The value of qdot from "get"
         qddot: MX | SX
             The value of qddot from "get"
-        with_contact: bool
+        with_rigid_contact: bool
             If the dynamics with contact should be used
         external_forces: MX
             The external forces
@@ -1044,9 +1064,9 @@ class DynamicsFunctions:
         Torques in tau
         """
         if external_forces is None:
-            tau = nlp.model.inverse_dynamics(with_contact=with_contact)(q, qdot, qddot, [], nlp.parameters.cx)
+            tau = nlp.model.inverse_dynamics(with_rigid_contact=with_rigid_contact)(q, qdot, qddot, [], nlp.parameters.cx)
         else:
-            tau = nlp.model.inverse_dynamics(with_contact=with_contact)(
+            tau = nlp.model.inverse_dynamics(with_rigid_contact=with_rigid_contact)(
                 q, qdot, qddot, external_forces, nlp.parameters.cx
             )
         return tau  # We ignore on purpose the mapping to keep zeros in the defects of the dynamic.
