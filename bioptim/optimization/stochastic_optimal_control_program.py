@@ -205,6 +205,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             ConstraintFcn.STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE,
             node=Node.ALL,
             # penalty_type=PenaltyType.INTERNAL,  #TODO: waiting for the bug on ConstraintList to be fixed
+            # @pariterre: did we have a solution for this ? (I find this dangerous :/)
         )
 
         penalty_m_dg_dz_list = MultinodeConstraintList()

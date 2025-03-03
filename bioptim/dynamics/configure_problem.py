@@ -199,9 +199,13 @@ class ConfigureProblem:
         ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True, fatigue=fatigue)
         ConfigureProblem.configure_qddot(ocp, nlp, False, False, True)
 
+        # Declared rigid contacts controls
+        if with_rigid_contact and defects_type == DefectType.IMPLICIT:
+            ConfigureProblem.configure_rigid_contact_forces(ocp, nlp, as_states=False, as_algebraic_states=True, as_controls=False)
+
         # Declared soft contacts controls
         if with_soft_contact and defects_type == DefectType.IMPLICIT:
-            ConfigureProblem.configure_soft_contact_forces(ocp, nlp, False, True)
+            ConfigureProblem.configure_soft_contact_forces(ocp, nlp, as_states=False, as_algebraic_states=True, as_controls=False)
 
         # Configure the actual ODE of the dynamics
         if nlp.dynamics_type.dynamic_function:
@@ -227,21 +231,28 @@ class ConfigureProblem:
                     DynamicsFunctions.forces_from_torque_driven,
                 )
             elif defects_type == DefectType.IMPLICIT:
-                ConfigureProblem.configure
+                ocp.implicit_constraints.add(
+                    ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS,
+                    node=Node.ALL_SHOOTING,
+                    penalty_type=ConstraintType.IMPLICIT,
+                    phase=nlp.phase_idx,
+                )
             else:
-                raise ValueError("defects_type must be either DefectType.EXPLICIT or DefectType.IMPLICIT if with_rigid_contact is True")
+                raise ValueError("defect_type must be either EXPLICIT or IMPLICIT when with_rigid_contact is True")
 
         # Configure the soft contact forces
-        ConfigureProblem.configure_soft_contact_function(ocp, nlp)
-
-        # # Algebraic constraints of soft contact forces if needed
-        # if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
-        #     ocp.implicit_constraints.add(
-        #         ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
-        #         node=Node.ALL_SHOOTING,
-        #         penalty_type=ConstraintType.IMPLICIT,
-        #         phase=nlp.phase_idx,
-        #     )
+        if with_soft_contact:
+            if defects_type == DefectType.EXPLICIT:
+                ConfigureProblem.configure_soft_contact_function(ocp, nlp)
+            elif defects_type == DefectType.IMPLICIT:
+                ocp.implicit_constraints.add(
+                    ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
+                    node=Node.ALL_SHOOTING,
+                    penalty_type=ConstraintType.IMPLICIT,
+                    phase=nlp.phase_idx,
+                )
+            else:
+                raise ValueError("defect_type must be either EXPLICIT or IMPLICIT when with_soft_contact is True")
 
     @staticmethod
     def torque_driven_free_floating_base(
@@ -1825,7 +1836,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_rigid_contact_forces(ocp, nlp, as_states: bool, as_controls: bool):
+    def configure_rigid_contact_forces(ocp, nlp, as_states: bool, as_algebraic_states: bool, as_controls: bool):
         """
         Configure the generalized forces derivative
 
@@ -1834,18 +1845,20 @@ class ConfigureProblem:
         nlp: NonLinearProgram
             A reference to the phase
         as_states: bool
-            If the generalized force derivatives should be a state
+            If the generalized forces should be a state
+        as_algebraic_states: bool
+            If the generalized forces should be an algebraic state
         as_controls: bool
-            If the generalized force derivatives should be a control
+            If the generalized forces should be a control
         """
 
         name_contact_forces = [name for name in nlp.model.contact_names]
         ConfigureProblem.configure_new_variable(
-            "rigid_contact_forces", name_contact_forces, ocp, nlp, as_states, as_controls
+            "rigid_contact_forces", name_contact_forces, ocp, nlp, as_states=as_states, as_algebraic_states=as_algebraic_states, as_controls=as_controls
         )
 
     @staticmethod
-    def configure_soft_contact_forces(ocp, nlp, as_states: bool, as_controls: bool):
+    def configure_soft_contact_forces(ocp, nlp, as_states: bool, as_algebraic_states: bool, as_controls: bool):
         """
         Configure the generalized forces derivative
 
@@ -1854,15 +1867,17 @@ class ConfigureProblem:
         nlp: NonLinearProgram
             A reference to the phase
         as_states: bool
-            If the generalized force derivatives should be a state
+            If the generalized forces should be a state
+        as_algebraic_states: bool
+            If the generalized forces should be an algebraic state
         as_controls: bool
-            If the generalized force derivatives should be a control
+            If the generalized forces should be a control
         """
         name_soft_contact_forces = [
             f"{name}_{axis}" for name in nlp.model.soft_contact_names for axis in ("X", "Y", "Z")
         ]
         ConfigureProblem.configure_new_variable(
-            "soft_contact_forces", name_soft_contact_forces, ocp, nlp, as_states, as_controls
+            "soft_contact_forces", name_soft_contact_forces, ocp, nlp, as_states=as_states, as_algebraic_states=as_algebraic_states, as_controls=as_controls
         )
 
     @staticmethod

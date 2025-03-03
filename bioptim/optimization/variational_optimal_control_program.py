@@ -301,7 +301,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             ],
         )
 
-        nlp.implicit_dynamics_func_first_node = Function(
+        nlp.implicit_dynamics_func_first_node = Function(  # @Ipuch: Does this confirm that it should be a list ?
             "TwoFirstNodesIntegration",
             two_first_nodes_input,
             [

@@ -135,7 +135,7 @@ class NonLinearProgram:
         self.dynamics_evaluation = DynamicsEvaluation()
         self.dynamics_func = None
         self.extra_dynamics_func: list = []
-        self.implicit_dynamics_func = None
+        self.implicit_dynamics_func = None  # ImplicitConstraintPool
         self.dynamics_type = None
         self.g = []
         self.g_internal = []
