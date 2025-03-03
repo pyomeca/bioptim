@@ -1128,7 +1128,7 @@ class ConfigureProblem:
                     )
 
     @staticmethod
-    def configure_contact_function(ocp, nlp, dyn_func: Callable, **extra_params):
+    def configure_contact_function(ocp, nlp, contact_func: Callable, **extra_params):
         """
         Configure the contact points
 
@@ -1138,7 +1138,7 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        dyn_func: Callable[time, states, controls, param, algebraic_states, numerical_timeseries]
+        contact_func: Callable[time, states, controls, param, algebraic_states, numerical_timeseries]
             The function to get the values of contact forces from the dynamics
         """
 
@@ -1154,7 +1154,7 @@ class ConfigureProblem:
                 nlp.numerical_timeseries.cx,
             ],
             [
-                dyn_func(
+                contact_func(
                     time_span_sym,
                     nlp.states.scaled.cx,
                     nlp.controls.scaled.cx,
@@ -1793,7 +1793,31 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable(name, name_taudot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
-    def configure_contact_forces(ocp, nlp, as_states: bool, as_controls: bool):
+    def configure_translational_forces(ocp, nlp, as_states: bool, as_controls: bool, n_contacts: int = 1):
+        """
+        Configure contact forces as optimization variables (for now only in global reference frame with an unknown point of application))
+        # TODO: Match this with ExternalForceSetTimeSeries (options: 'in_global', 'torque', ...)
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        as_states: bool
+            If the contact force should be a state
+        as_controls: bool
+            If the contact force should be a control
+        n_contacts: int
+            The number of contacts to consider (There will be 3 components for each contact)
+        """
+
+        name_contact_forces = [f"Force{i}_{axis}" for i in range(n_contacts) for axis in ("X", "Y", "Z")]
+        ConfigureProblem.configure_new_variable("contact_forces", name_contact_forces, ocp, nlp, as_states, as_controls)
+        ConfigureProblem.configure_new_variable(
+            "contact_positions", name_contact_forces, ocp, nlp, as_states, as_controls
+        )
+
+    @staticmethod
+    def configure_rigid_contact_forces(ocp, nlp, as_states: bool, as_controls: bool):
         """
         Configure the generalized forces derivative
 
@@ -1807,13 +1831,9 @@ class ConfigureProblem:
             If the generalized force derivatives should be a control
         """
 
-        name_contact_forces = []
-        for i in range(nlp.model.nb_rigid_contacts):
-            name_contact_forces.extend(
-                [f"Seg{i}_FX", f"Seg{i}_FY", f"Seg{i}_FZ", f"Seg{i}_CX", f"Seg{i}_CY", f"Seg{i}_CZ"]
-            )
+        name_contact_forces = [name for name in nlp.model.contact_names]
         ConfigureProblem.configure_new_variable(
-            "translational_forces", name_contact_forces, ocp, nlp, as_states, as_controls
+            "rigid_contact_forces", name_contact_forces, ocp, nlp, as_states, as_controls
         )
 
     @staticmethod
@@ -1830,18 +1850,11 @@ class ConfigureProblem:
         as_controls: bool
             If the generalized force derivatives should be a control
         """
-        name_soft_contact_forces = []
-        component_list = ["fx", "fy", "fz"]  # TODO: find a better place to hold this or define it in biorbd ?
-        for ii in range(nlp.model.nb_soft_contacts):
-            name_soft_contact_forces.extend(
-                [
-                    f"{nlp.model.soft_contact_name(ii)}_{name}"
-                    for name in component_list
-                    if nlp.model.soft_contact_name(ii) not in name_soft_contact_forces
-                ]
-            )
+        name_soft_contact_forces = [
+            f"{name}_{axis}" for name in nlp.model.soft_contact_names for axis in ("X", "Y", "Z")
+        ]
         ConfigureProblem.configure_new_variable(
-            "forces_in_global", name_soft_contact_forces, ocp, nlp, as_states, as_controls
+            "soft_contact_forces", name_soft_contact_forces, ocp, nlp, as_states, as_controls
         )
 
     @staticmethod

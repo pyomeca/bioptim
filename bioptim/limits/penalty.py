@@ -1,7 +1,7 @@
 import inspect
 from typing import Any
 
-from casadi import horzcat, vertcat, Function, acos, dot, norm_fro, MX_eye, SX_eye, SX, jacobian, trace
+from casadi import horzcat, vertcat, Function, MX_eye, SX_eye, SX, jacobian, trace, if_else
 from math import inf
 
 from .penalty_controller import PenaltyController
@@ -767,6 +767,119 @@ class PenaltyFunctionAbstract:
             return contact_force
 
         @staticmethod
+        def minimize_sum_reaction_forces(
+            penalty: PenaltyOption, controller: PenaltyController, contact_index: tuple[str | int] | list[str | int]
+        ):
+            """
+            Simulate force plate data from the contact forces computed through the dynamics with contact.
+            For example, in the case of gait, it allows to match the experimental ground reaction forces.
+            By default this function is quadratic, meaning that it minimizes towards the target.
+            Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
+            Please note that the contact index (number of the contact point in the model) must be specified.
+
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            controller: PenaltyController
+                The penalty node elements
+            contact_index: tuple[str | int] | list[str | int]
+                The index of contact to minimize, must be an int or a list.
+                penalty.cols should not be defined if contact_index is defined
+            """
+
+            if penalty.target is not None and penalty.target.shape[0] != 3:
+                raise RuntimeError("The target for the ground reaction forces must be of size 3 x n_shooting")
+
+            if not isinstance(contact_index, (tuple, list)):
+                raise RuntimeError("contact_index must be a tuple or a list")
+            if not all(isinstance(contact, (str, int)) for contact in contact_index):
+                raise RuntimeError("contact_index must be a tuple or a list of str or int")
+
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+
+            forces_on_each_point = controller.model.forces_on_each_rigid_contact_point()(
+                controller.q, controller.qdot, controller.tau, controller.external_forces, controller.parameters.cx
+            )
+
+            total_force = controller.cx.zeros(3, 1)
+            for contact in contact_index:
+                idx = controller.model.contact_index(contact) if isinstance(contact, str) else contact
+                total_force += forces_on_each_point[:, idx]
+
+            return total_force
+
+        @staticmethod
+        def minimize_center_of_pressure(
+            penalty: PenaltyOption,
+            controller: PenaltyController,
+            contact_index: tuple[str | int] | list[str | int],
+        ):
+            """
+            Simulate the center of pressure from force plate data from the contact forces computed through the dynamics with contact
+            It is computed as a mean position of the contact points weighted by the magnitude of the contact force (for each axis independently).
+            By default this function is quadratic, meaning that it minimizes towards the target.
+            Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
+            Please note that the contact index of the appropriate foot must be specified.
+
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            controller: PenaltyController
+                The penalty node elements
+            contact_index: tuple[str | int] | list[str | int]
+                The index of contact to minimize, must be an int or a list.
+            """
+
+            if penalty.target is not None and penalty.target.shape[0] != 3:
+                raise RuntimeError("The target for the center of pressure must be of size 3 x n_shooting")
+
+            if not isinstance(contact_index, (tuple, list)):
+                raise RuntimeError("contact_index must be a tuple or a list")
+            if not all(isinstance(contact, (str, int)) for contact in contact_index):
+                raise RuntimeError("contact_index must be a tuple or a list of str or int")
+
+            # PenaltyFunctionAbstract.set_axes_rows(penalty, contact_index)
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+
+            forces_on_each_point = controller.model.forces_on_each_rigid_contact_point()(
+                controller.q, controller.qdot, controller.tau, controller.external_forces, controller.parameters.cx
+            )
+
+            total_force = controller.cx.zeros(3, 1)
+            position_of_each_point = None
+            weighted_sum = controller.cx.zeros(3, 1)
+            for contact in contact_index:
+                idx = controller.model.contact_index(contact) if isinstance(contact, str) else contact
+
+                # Compute the sum of the forces on the points of interest
+                total_force += forces_on_each_point[:, idx]
+
+                # Get the position of all the contact points of interest
+                this_contact_position = controller.model.rigid_contact_position(idx)(
+                    controller.q, controller.parameters.cx
+                )
+                position_of_each_point = (
+                    horzcat(position_of_each_point, this_contact_position)
+                    if position_of_each_point is not None
+                    else this_contact_position
+                )
+
+                # Weighted sum
+                weighted_sum += forces_on_each_point[:, idx] * this_contact_position
+
+            # Compute the mean position weighted by the force magnitude
+            center_of_pressure = controller.cx.zeros(3, 1)
+            for i_component in range(3):
+                # Avoid division by zero if the force is too small
+                center_of_pressure[i_component] = if_else(
+                    total_force[i_component] ** 2 < 1e-8, 0, weighted_sum[i_component] / total_force[i_component]
+                )
+
+            return center_of_pressure
+
+        @staticmethod
         def minimize_contact_forces_end_of_interval(
             penalty: PenaltyOption, controller: PenaltyController, contact_index: tuple | list | int | str = None
         ):
@@ -988,9 +1101,6 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             segment_index = controller.model.segment_index(segment) if isinstance(segment, str) else segment
-
-            if not isinstance(controller.model, BiorbdModel):
-                raise NotImplementedError("The minimize_segment_rotation penalty can only be called with a BiorbdModel")
 
             jcs_segment = controller.model.homogeneous_matrices_in_global(segment_index)(
                 controller.q, controller.parameters.cx

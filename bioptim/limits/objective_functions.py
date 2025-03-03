@@ -359,6 +359,8 @@ class ObjectiveFcn:
         )
         SUPERIMPOSE_MARKERS = (PenaltyFunctionAbstract.Functions.superimpose_markers,)
         TRACK_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_contact_forces,)
+        TRACK_SUM_REACTION_FORCES = (PenaltyFunctionAbstract.Functions.minimize_sum_reaction_forces,)
+        TRACK_CENTER_OF_PRESSURE = (PenaltyFunctionAbstract.Functions.minimize_center_of_pressure,)
         TRACK_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)
         TRACK_MARKER_WITH_SEGMENT_AXIS = (PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis,)
         TRACK_MARKERS = (PenaltyFunctionAbstract.Functions.minimize_markers,)
@@ -420,6 +422,8 @@ class ObjectiveFcn:
         MINIMIZE_CONTACT_FORCES_END_OF_INTERVAL = (
             PenaltyFunctionAbstract.Functions.minimize_contact_forces_end_of_interval,
         )
+        TRACK_SUM_REACTION_FORCES = (PenaltyFunctionAbstract.Functions.minimize_sum_reaction_forces,)
+        TRACK_CENTER_OF_PRESSURE = (PenaltyFunctionAbstract.Functions.minimize_center_of_pressure,)
 
         @staticmethod
         def get_type() -> Callable:
