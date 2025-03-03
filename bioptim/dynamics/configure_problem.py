@@ -1221,7 +1221,7 @@ class ConfigureProblem:
             nlp.states["q"].mapping.to_second.map(nlp.states["q"].cx_start),
             nlp.states["qdot"].mapping.to_second.map(nlp.states["qdot"].cx_start),
             nlp.parameters.cx,
-        ).expand()
+        )
 
         component_list = ["Mx", "My", "Mz", "Fx", "Fy", "Fz"]
         for i_sc in range(nlp.model.nb_soft_contacts):
