@@ -1221,7 +1221,7 @@ def test_penalty_minimize_center_of_pressure(penalty_origin, phase_dynamics, wit
     )
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
-    npt.assert_almost_equal(res[0],0)
+    npt.assert_almost_equal(res[0], 0)
     npt.assert_almost_equal(res[2], -0.394827)
 
 
