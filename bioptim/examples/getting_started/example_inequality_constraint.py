@@ -93,7 +93,7 @@ def prepare_ocp(
     # Dynamics
     dynamics = DynamicsList()
     dynamics.add(
-        DynamicsFcn.TORQUE_DRIVEN, with_contact=True, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
+        DynamicsFcn.TORQUE_DRIVEN, with_rigid_contact=True, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
     )
 
     # Constraints

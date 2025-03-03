@@ -150,7 +150,7 @@ def custom_dynamic(
     stiffness = 100
     tau -= sign(q[0]) * stiffness * q[0]  # damping
 
-    qddot = nlp.model.forward_dynamics(with_contact=False)(q, qdot, tau, [], [])
+    qddot = nlp.model.forward_dynamics(with_rigid_contact=False)(q, qdot, tau, [], [])
 
     return DynamicsEvaluation(dxdt=vertcat(qdot, qddot), defects=None)
 

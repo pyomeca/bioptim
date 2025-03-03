@@ -60,7 +60,7 @@ class MyModel:
     def name_dof(self):
         return ["rotx"]
 
-    def forward_dynamics(self, with_contact=False) -> Function:
+    def forward_dynamics(self, with_rigid_contact=False) -> Function:
         # This is where you can implement your own forward dynamics
         # with casadi it your are dealing with mechanical systems
         d = 0  # damping

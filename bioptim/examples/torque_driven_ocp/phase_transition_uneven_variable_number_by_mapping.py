@@ -58,10 +58,10 @@ def prepare_ocp(
     # Dynamics
     dynamics = DynamicsList()
     dynamics.add(
-        DynamicsFcn.TORQUE_DRIVEN, with_contact=False, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
+        DynamicsFcn.TORQUE_DRIVEN, with_rigid_contact=False, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
     )
     dynamics.add(
-        DynamicsFcn.TORQUE_DRIVEN, with_contact=False, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
+        DynamicsFcn.TORQUE_DRIVEN, with_rigid_contact=False, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
     )
 
     # Path constraint

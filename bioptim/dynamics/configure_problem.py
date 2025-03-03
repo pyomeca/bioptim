@@ -424,7 +424,7 @@ class ConfigureProblem:
         ConfigureProblem.torque_driven(
             ocp=ocp,
             nlp=nlp,
-            with_rigid_contact=with_contact,
+            with_rigid_contact=with_rigid_contact,
             with_friction=with_friction,
         )
 
@@ -432,7 +432,7 @@ class ConfigureProblem:
             ocp,
             nlp,
             DynamicsFunctions.stochastic_torque_driven,
-            with_contact=with_contact,
+            with_rigid_contact=with_rigid_contact,
             with_friction=with_friction,
         )
 
@@ -511,7 +511,7 @@ class ConfigureProblem:
     def torque_derivative_driven(
         ocp,
         nlp,
-        with_contact=False,
+        with_rigid_contact=False,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
         with_friction: bool = False,
@@ -527,7 +527,7 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        with_contact: bool
+        with_rigid_contact: bool
             If the dynamic with contact should be used
         with_passive_torque: bool
             If the dynamic with passive torque should be used
@@ -566,7 +566,7 @@ class ConfigureProblem:
                 with_friction=with_friction,
             )
 
-        if with_contact:
+        if with_rigid_contact:
             ConfigureProblem.configure_contact_function(
                 ocp,
                 nlp,
@@ -586,7 +586,7 @@ class ConfigureProblem:
     def torque_activations_driven(
         ocp,
         nlp,
-        with_contact: bool = False,
+        with_rigid_contact: bool = False,
         with_passive_torque: bool = False,
         with_residual_torque: bool = False,
         with_ligament: bool = False,
@@ -603,7 +603,7 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        with_contact: bool
+        with_rigid_contact: bool
             If the dynamic with contact should be used
         with_passive_torque: bool
             If the dynamic with passive torque should be used
@@ -631,13 +631,13 @@ class ConfigureProblem:
                 ocp,
                 nlp,
                 DynamicsFunctions.torque_activations_driven,
-                with_contact=with_contact,
+                with_rigid_contact=with_rigid_contact,
                 with_passive_torque=with_passive_torque,
                 with_residual_torque=with_residual_torque,
                 with_ligament=with_ligament,
             )
 
-        if with_contact:
+        if with_rigid_contact:
             ConfigureProblem.configure_contact_function(
                 ocp, nlp, DynamicsFunctions.forces_from_torque_activation_driven
             )
@@ -700,7 +700,7 @@ class ConfigureProblem:
         with_excitations: bool = False,
         fatigue: FatigueList = None,
         with_residual_torque: bool = False,
-        with_contact: bool = False,
+        with_rigid_contact: bool = False,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
         with_friction: bool = False,
@@ -725,7 +725,7 @@ class ConfigureProblem:
             The list of fatigue parameters
         with_residual_torque: bool
             If the dynamic should be added with residual torques
-        with_contact: bool
+        with_rigid_contact: bool
             If the dynamic with contact should be used
         with_passive_torque: bool
             If the dynamic with passive torque should be used
@@ -756,7 +756,7 @@ class ConfigureProblem:
                 ocp,
                 nlp,
                 DynamicsFunctions.muscles_driven,
-                with_contact=with_contact,
+                with_rigid_contact=with_rigid_contact,
                 fatigue=fatigue,
                 with_residual_torque=with_residual_torque,
                 with_passive_torque=with_passive_torque,
@@ -764,7 +764,7 @@ class ConfigureProblem:
                 with_friction=with_friction,
             )
 
-        if with_contact:
+        if with_rigid_contact:
             ConfigureProblem.configure_contact_function(
                 ocp,
                 nlp,

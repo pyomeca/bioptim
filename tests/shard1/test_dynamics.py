@@ -638,7 +638,7 @@ def test_torque_activation_driven(with_rigid_contact, with_external_force, cx, p
         )
     )
 
-    if with_contact:
+    if with_rigid_contact:
         contact_out = np.array(
             nlp.contact_forces_func(time, states, controls, params, algebraic_states, numerical_timeseries)
         )
@@ -874,10 +874,10 @@ def test_torque_driven_free_floating_base(cx, phase_dynamics):
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_external_force", [False, True])
-@pytest.mark.parametrize("with_contact", [False, True])
+@pytest.mark.parametrize("with_rigid_contact", [False, True])
 @pytest.mark.parametrize("with_residual_torque", [False, True])
 @pytest.mark.parametrize("with_excitations", [False, True])
-def test_muscle_driven(with_excitations, with_contact, with_residual_torque, with_external_force, cx, phase_dynamics):
+def test_muscle_driven(with_excitations, with_rigid_contact, with_residual_torque, with_external_force, cx, phase_dynamics):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.ns = N_SHOOTING
@@ -920,7 +920,7 @@ def test_muscle_driven(with_excitations, with_contact, with_residual_torque, wit
             DynamicsFcn.MUSCLE_DRIVEN,
             with_residual_torque=with_residual_torque,
             with_excitations=with_excitations,
-            with_contact=with_contact,
+            with_rigid_contact=with_rigid_contact,
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
             numerical_data_timeseries=numerical_timeseries,
@@ -951,7 +951,7 @@ def test_muscle_driven(with_excitations, with_contact, with_residual_torque, wit
         )
     )
 
-    if with_contact:  # Warning this test is a bit bogus, there since the model does not have contacts
+    if with_rigid_contact:  # Warning this test is a bit bogus, there since the model does not have contacts
         if with_residual_torque:
             if with_excitations:
                 if with_external_force:
@@ -1120,27 +1120,27 @@ def test_joints_acceleration_driven(cx, phase_dynamics):
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
-@pytest.mark.parametrize("with_contact", [False, True])
-def test_custom_dynamics(with_contact, phase_dynamics):
+@pytest.mark.parametrize("with_rigid_contact", [False, True])
+def test_custom_dynamics(with_rigid_contact, phase_dynamics):
     def custom_dynamic(
-        time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp, with_contact=False
+        time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp, with_rigid_contact=False
     ) -> DynamicsEvaluation:
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
         tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
+        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_rigid_contact)
 
         return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
 
-    def configure(ocp, nlp, with_contact=None, numerical_data_timeseries=None):
+    def configure(ocp, nlp, with_rigid_contact=None, numerical_data_timeseries=None):
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False)
         ConfigureProblem.configure_tau(ocp, nlp, False, True)
-        ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic, with_contact=with_contact)
+        ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic, with_rigid_contact=with_rigid_contact)
 
-        if with_contact:
+        if with_rigid_contact:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
 
     # Prepare the program
@@ -1168,7 +1168,7 @@ def test_custom_dynamics(with_contact, phase_dynamics):
         Dynamics(
             configure,
             dynamic_function=custom_dynamic,
-            with_contact=with_contact,
+            with_rigid_contact=with_rigid_contact,
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
         ),

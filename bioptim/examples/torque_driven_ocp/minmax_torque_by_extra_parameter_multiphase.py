@@ -65,8 +65,8 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=False)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=False)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_rigid_contact=False)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_rigid_contact=False)
 
     # Mapping
     tau_mappings = BiMappingList()

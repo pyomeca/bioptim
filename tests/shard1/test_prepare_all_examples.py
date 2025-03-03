@@ -387,7 +387,7 @@ def test__muscle_driven_ocp__static_arm():
     )
 
 
-def test__muscle_driven_with_contact__muscle_activations_contacts_tracker():
+def test__muscle_driven_with_rigid_contact__muscle_activations_contacts_tracker():
     pass
 
 

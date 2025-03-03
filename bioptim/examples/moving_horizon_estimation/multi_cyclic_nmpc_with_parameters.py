@@ -104,7 +104,7 @@ def parameter_dependent_dynamic(
 
     # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
     dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-    ddq = nlp.model.forward_dynamics(with_contact=False)(q, qdot, tau, [], [])
+    ddq = nlp.model.forward_dynamics(with_rigid_contact=False)(q, qdot, tau, [], [])
 
     return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
 

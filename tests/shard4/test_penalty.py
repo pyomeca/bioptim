@@ -1196,7 +1196,7 @@ def test_penalty_minimize_sum_reaction_forces(penalty_origin, phase_dynamics, wi
     [False, True],
 )
 def test_penalty_minimize_center_of_pressure(penalty_origin, phase_dynamics, with_external_forces):
-    ocp = prepare_test_ocp(with_contact=True, phase_dynamics=phase_dynamics, with_external_forces=with_external_forces)
+    ocp = prepare_test_ocp(with_rigid_contact=True, phase_dynamics=phase_dynamics, with_external_forces=with_external_forces)
     t = [0]
     phases_dt = [0.05]
     x = [DM.ones((8, 1)) * 0.1]
