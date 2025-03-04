@@ -302,6 +302,13 @@ class ParameterContainer(OptimizationVariableContainer):
     def unscaled(self):
         """
         This method allows to intercept the scaled item and return the current node_index
+
+        Notes
+        -----
+        The return parameters is actually the scaled version of it.
+        But for internal reasons, it is expected.
+        This can be confusing for the user who expects an unscaled version though.
+        Therefore, `.unscaled` method should only be call by the programmer who KNOWS what there are doing.
         """
         return self._parameters
 
