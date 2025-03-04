@@ -83,6 +83,7 @@ class OptimizationVectorHelper:
                             * np.concatenate([nlp.u_scaling[key].scaling for key in nlp.controls.keys()])
                         )
 
+                n_col = nlp.n_algebraic_states_decision_steps(k)
                 a_scaled[nlp.phase_idx].append(
                     nlp.cx.sym(f"A_scaled_{nlp.phase_idx}_{k}", nlp.algebraic_states.scaled.shape, n_col)
                 )
@@ -217,7 +218,7 @@ class OptimizationVectorHelper:
                 nlp.algebraic_states,
                 nlp.a_bounds,
                 nlp.a_scaling,
-                lambda n: nlp.n_states_decision_steps(n),
+                lambda n: nlp.n_algebraic_states_decision_steps(n),
             )
 
             v_bounds_min = np.concatenate((v_bounds_min, min_bounds))
@@ -296,7 +297,7 @@ class OptimizationVectorHelper:
                 nlp.algebraic_states,
                 nlp.a_init,
                 nlp.a_scaling,
-                lambda n: nlp.n_states_decision_steps(n),
+                lambda n: nlp.n_algebraic_states_decision_steps(n),
             )
 
             v_init = np.concatenate((v_init, init))
@@ -420,7 +421,7 @@ class OptimizationVectorHelper:
 
             for node in range(nlp.n_states_nodes):
                 nlp.algebraic_states.node_index = node
-                n_cols = nlp.n_states_decision_steps(node)
+                n_cols = nlp.n_algebraic_states_decision_steps(node)
 
                 if na == 0:
                     a_array = np.ndarray((0, 1))
