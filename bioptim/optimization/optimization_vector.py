@@ -33,81 +33,8 @@ class OptimizationVectorHelper:
         """
         Declare all the casadi variables with the right size to be used during a specific phase
         """
-        # states
-        x = []
-        x_scaled = []
-        # controls
-        u = []
-        u_scaled = []
-        # algebraic states
-        a = []
-        a_scaled = []
-
         for nlp in ocp.nlp:
-            x.append([])
-            x_scaled.append([])
-            u.append([])
-            u_scaled.append([])
-            a.append([])
-            a_scaled.append([])
-            if nlp.control_type not in (
-                ControlType.CONSTANT,
-                ControlType.CONSTANT_WITH_LAST_NODE,
-                ControlType.LINEAR_CONTINUOUS,
-            ):
-                raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
-
-            for k in range(nlp.ns + 1):
-                _set_node_index(nlp, k)
-                n_col = nlp.n_states_decision_steps(k)
-                x_scaled[nlp.phase_idx].append(
-                    nlp.cx.sym(f"X_scaled_{nlp.phase_idx}_{k}", nlp.states.scaled.shape, n_col)
-                )
-
-                x[nlp.phase_idx].append(
-                    x_scaled[nlp.phase_idx][k]
-                    * np.repeat(
-                        np.concatenate([nlp.x_scaling[key].scaling for key in nlp.states.keys()]), n_col, axis=1
-                    )
-                )
-
-                if nlp.control_type != ControlType.CONSTANT or (
-                    nlp.control_type == ControlType.CONSTANT and k != nlp.ns
-                ):
-                    u_scaled[nlp.phase_idx].append(
-                        nlp.cx.sym("U_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.controls.scaled.shape, 1)
-                    )
-                    if nlp.controls.keys():
-                        u[nlp.phase_idx].append(
-                            u_scaled[nlp.phase_idx][0]
-                            * np.concatenate([nlp.u_scaling[key].scaling for key in nlp.controls.keys()])
-                        )
-
-                n_col = nlp.n_algebraic_states_decision_steps(k)
-                a_scaled[nlp.phase_idx].append(
-                    nlp.cx.sym(f"A_scaled_{nlp.phase_idx}_{k}", nlp.algebraic_states.scaled.shape, n_col)
-                )
-
-                if nlp.algebraic_states.keys():
-                    a[nlp.phase_idx].append(
-                        a_scaled[nlp.phase_idx][k]
-                        * np.repeat(
-                            np.concatenate([nlp.a_scaling[key].scaling for key in nlp.algebraic_states.keys()]),
-                            n_col,
-                            axis=1,
-                        )
-                    )
-
-            _set_node_index(nlp, 0)
-
-            nlp.X_scaled = x_scaled[nlp.phase_idx]
-            nlp.X = x[nlp.phase_idx]
-
-            nlp.U_scaled = u_scaled[nlp.phase_idx]
-            nlp.U = u[nlp.phase_idx]
-
-            nlp.A_scaled = a_scaled[nlp.phase_idx]
-            nlp.A = a[nlp.phase_idx]
+            nlp.declare_shooting_points()
 
     @staticmethod
     def vector(ocp):
