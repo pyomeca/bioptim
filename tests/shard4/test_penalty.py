@@ -1,7 +1,8 @@
-import pytest
-from casadi import DM, MX, vertcat, horzcat, Function
 import numpy as np
 import numpy.testing as npt
+import pytest
+from casadi import DM, MX, vertcat, horzcat, Function
+
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -21,8 +22,8 @@ from bioptim import (
     PhaseDynamics,
     ConstraintList,
 )
-from bioptim.limits.penalty_controller import PenaltyController
 from bioptim.limits.penalty import PenaltyOption
+from bioptim.limits.penalty_controller import PenaltyController
 from bioptim.misc.mapping import BiMapping
 from bioptim.optimization.non_linear_program import NonLinearProgram as NLP
 from bioptim.optimization.optimization_variable import OptimizationVariableList
@@ -1321,7 +1322,6 @@ def test_PenaltyFunctionAbstract_get_node(node, ns, phase_dynamics):
     nlp.A = np.linspace(0, 0, ns + 1)
     nlp.A_scaled = nlp.A
     tp = OptimizationVariableList(MX, phase_dynamics=phase_dynamics)
-    tp._cx_intermediates = [MX()]
     tp.append(name="param", cx=[MX(), MX(), MX()], bimapping=BiMapping([], []))
     nlp.parameters = tp["param"]
 

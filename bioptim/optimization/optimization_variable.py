@@ -3,8 +3,8 @@ from typing import Callable
 import numpy as np
 from casadi import MX, SX, vertcat
 
-from ..misc.mapping import BiMapping
 from ..misc.enums import PhaseDynamics
+from ..misc.mapping import BiMapping
 
 
 class OptimizationVariable:
@@ -182,7 +182,7 @@ class OptimizationVariableList:
         self._cx_start: MX | SX | np.ndarray = np.array([])
         self._cx_mid: MX | SX | np.ndarray = np.array([])
         self._cx_end: MX | SX | np.ndarray = np.array([])
-        self._cx_intermediates: list = []
+        self._cx_intermediates: list = [cx_constructor([])]
         self.cx_constructor = cx_constructor
         self._current_cx_to_get = 0
         self.phase_dynamics = phase_dynamics
