@@ -361,6 +361,7 @@ class OptimizationVectorHelper:
 
         return data_states, data_controls, data_parameters, data_algebraic_states
 
+
 def _dispatch_state_bounds(nlp, states, states_bounds, states_scaling, n_steps_callback):
     states.node_index = 0
     repeat = n_steps_callback(0)
