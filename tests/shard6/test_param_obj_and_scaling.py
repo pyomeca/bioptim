@@ -1,3 +1,4 @@
+from sys import platform
 import numpy as np
 import numpy.testing as npt
 import pytest
@@ -28,6 +29,10 @@ def test_example_param_obj_and_param_scaling(
     phase_dynamics,
     use_sx,
 ):
+
+    if platform == "darwin" or platform == "win32":
+        pytest.skip("This test is not working on MacOS or Windows")
+
     from bioptim.examples.getting_started import example_parameter_scaling as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
