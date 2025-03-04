@@ -1216,6 +1216,10 @@ class Solution:
         if show_now:
             plt.show()
 
+        # Returning the figures for the tests
+        fig_list = [plt.figure(i_fig + 1) for i_fig in range(len(plt.get_figlabels()))]
+        return fig_list
+
     def animate(
         self,
         n_frames: int = 0,

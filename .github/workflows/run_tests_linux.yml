@@ -40,7 +40,7 @@ jobs:
 
       - name: Install extra dependencies
         run: | 
-          conda install pytest-cov black pytest pytest-cov codecov packaging -cconda-forge
+          conda install pytest-cov black pytest pytest-cov codecov packaging pytest-mpl -cconda-forge
           sudo apt install -y librhash-dev
 
       - name: Install ACADOS on Linux
@@ -59,7 +59,7 @@ jobs:
         if: matrix.shard == 1
 
       - name: Run tests with code coverage
-        run: pytest -v --color=yes --cov-report term-missing --cov=bioptim tests/shard${{ matrix.shard }}
+        run: pytest -v --color=yes --cov-report term-missing --cov=bioptim tests/shard${{ matrix.shard }} --mpl
         if: matrix.os == 'ubuntu-latest'
       
       - name: Archive coverage report
