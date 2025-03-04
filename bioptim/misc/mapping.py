@@ -160,6 +160,9 @@ class BiMapping(OptionGeneric):
         self.to_first = to_first
 
 
+BiMappingOrIterableOptional = BiMapping | list["BiMapping"] | None
+
+
 class BiMappingList(OptionDict):
     def add(
         self,

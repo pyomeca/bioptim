@@ -14,6 +14,7 @@ from bioptim import (
     FatigueList,
     XiaFatigue,
 )
+
 from ..utils import TestUtils
 
 
@@ -177,4 +178,5 @@ def test_configure_muscles(cx):
     npt.assert_equal(nlp.states.shape, 24)
     npt.assert_equal(nlp.states.keys(), ["muscles", "muscles_ma", "muscles_mr", "muscles_mf"])
     npt.assert_equal(nlp.controls.shape, 6)
+    npt.assert_equal(nlp.controls.keys(), ["muscles"])
     npt.assert_equal(nlp.controls.keys(), ["muscles"])

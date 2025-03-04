@@ -11,9 +11,22 @@ from ..dynamics.ode_solvers import OdeSolver
 from ..limits.path_conditions import Bounds
 from ..limits.penalty_helpers import PenaltyHelpers
 from ..misc.enums import PlotType, Shooting, SolutionIntegrator, QuadratureRule, InterpolationType
-from ..misc.mapping import Mapping, BiMapping
+from ..misc.mapping import Mapping, BiMapping, BiMappingOrIterableOptional
 from ..optimization.solution.solution import Solution
 from ..optimization.solution.solution_data import SolutionMerge
+from ..misc.parameters_types import (
+    StrIterableOptional,
+    AnyIterable,
+    AnyDict,
+    Str,
+    Int,
+    StrOptional,
+    BoolOptional,
+    Bool,
+    Float,
+    AnyTuple,
+    FloatIterableOrNpArray,
+)
 
 
 DEFAULT_COLORS = {
@@ -60,18 +73,18 @@ class CustomPlot:
         self,
         update_function: Callable,
         plot_type: PlotType = PlotType.PLOT,
-        axes_idx: BiMapping | tuple | list = None,
-        legend: tuple | list = None,
-        combine_to: str = None,
-        color: str = None,
-        linestyle: str = None,
-        ylim: tuple | list = None,
+        axes_idx: BiMappingOrIterableOptional = None,
+        legend: StrIterableOptional = None,
+        combine_to: StrOptional = None,
+        color: StrOptional = None,
+        linestyle: StrOptional = None,
+        ylim: AnyIterable = None,
         bounds: Bounds = None,
         node_idx: list | slice | range = None,
-        label: list = None,
-        compute_derivative: bool = False,
+        label: AnyIterable = None,
+        compute_derivative: BoolOptional = False,
         integration_rule: QuadratureRule = QuadratureRule.RECTANGLE_LEFT,
-        all_variables_in_one_subplot: bool = False,
+        all_variables_in_one_subplot: Bool = False,
         **parameters: Any,
     ):
         """
@@ -205,12 +218,12 @@ class PlotOcp:
     def __init__(
         self,
         ocp: OcpSerializable,
-        automatically_organize: bool = True,
-        show_bounds: bool = False,
+        automatically_organize: Bool = True,
+        show_bounds: Bool = False,
         shooting_type: Shooting = Shooting.MULTIPLE,
         integrator: SolutionIntegrator = SolutionIntegrator.OCP,
         dummy_phase_times: list[list[float]] = None,
-        only_initialize_variables: bool = False,
+        only_initialize_variables: Bool = False,
     ):
         """
         Prepares the figures during the simulation
@@ -302,7 +315,7 @@ class PlotOcp:
             self.t_integrated.append(time)
             self.t.append(np.linspace(float(time[0][0]), float(time[-1][-1]), nlp.n_states_nodes))
 
-    def _create_plots(self, only_initialize_variables: bool):
+    def _create_plots(self, only_initialize_variables: Bool):
         """
         Setup the plots
 
@@ -573,7 +586,7 @@ class PlotOcp:
                                 [ax.step(self.t[i], bounds_max, where="post", **self.plot_options["bounds"]), i]
                             )
 
-    def _add_new_axis(self, variable: str, nb: int, n_rows: int, n_cols: int):
+    def _add_new_axis(self, variable: Str, nb: Int, n_rows: Int, n_cols: Int):
         """
         Add a new axis to the axes pool
 
@@ -614,7 +627,7 @@ class PlotOcp:
 
         return axes
 
-    def _organize_windows(self, n_windows: int):
+    def _organize_windows(self, n_windows: Int):
         """
         Automatically organize the figure across the screen.
 
@@ -746,9 +759,9 @@ class PlotOcp:
 
     def update_data(
         self,
-        xdata: list,
-        ydata: list,
-        **args: dict,
+        xdata: AnyIterable,
+        ydata: AnyIterable,
+        **args: AnyDict,
     ):
         """
         Update xdata and ydata. The input are the output of the parse_data method
@@ -783,8 +796,8 @@ class PlotOcp:
             update_conditioning_plots(args["x"], self.ocp)
 
     def _compute_y_from_plot_func(
-        self, custom_plot: CustomPlot, phase_idx, time_stepwise, dt, x_decision, x_stepwise, u, p, a, d
-    ) -> list[np.ndarray | list]:
+        self, custom_plot: CustomPlot, phase_idx: Int, time_stepwise, dt, x_decision, x_stepwise, u, p, a, d
+    ) -> list[FloatIterableOrNpArray]:
         """
         Compute the y data from the plot function
 
@@ -925,7 +938,7 @@ class PlotOcp:
                 for i, time in enumerate(intersections_time):
                     self.plots_vertical_lines[p * n + i].set_xdata([float(time), float(time)])
 
-    def _update_ydata(self, ydata):
+    def _update_ydata(self, ydata: AnyIterable):
         """
         Update the plotted data from ydata
         """
@@ -966,7 +979,7 @@ class PlotOcp:
             # TODO:  set_tight_layout function will be deprecated. Use set_layout_engine instead.
 
     @staticmethod
-    def _compute_ylim(min_val: np.ndarray | DM, max_val: np.ndarray | DM, factor: float) -> tuple:
+    def _compute_ylim(min_val: np.ndarray | DM, max_val: np.ndarray | DM, factor: Float) -> AnyTuple:
         """
         Dynamically find the ylim
 
@@ -996,7 +1009,7 @@ class PlotOcp:
         return data_mean - y_range, data_mean + y_range
 
     @staticmethod
-    def _generate_windows_size(nb: int) -> tuple:
+    def _generate_windows_size(nb: Int) -> tuple:
         """
         Defines the number of column and rows of subplots from the number of variables to plot.
 
