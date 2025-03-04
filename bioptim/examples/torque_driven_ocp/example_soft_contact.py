@@ -151,6 +151,7 @@ def prepare_ocp(
     # Dynamics
     # dynamics_constraints = ConstraintList()
     # dynamics_constraints.add(DynamicsConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS)
+    defect_list = DefectList()
     dynamics = Dynamics(
         DynamicsFcn.TORQUE_DRIVEN,
         contact_type=ContactType.SOFT,
