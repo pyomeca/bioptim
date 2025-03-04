@@ -86,7 +86,7 @@ class OptimizationVectorHelper:
 
         # For controls
         for nlp in ocp.nlp:
-            _set_node_index(nlp, 0)
+            nlp._set_node_index(0)
             if nlp.control_type in (ControlType.CONSTANT,):
                 ns = nlp.ns
             elif nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
@@ -99,7 +99,7 @@ class OptimizationVectorHelper:
                     nlp.u_bounds[key].check_and_adjust_dimensions(nlp.controls[key].cx.shape[0], ns - 1)
 
             for k in range(ns):
-                _set_node_index(nlp, k)
+                nlp._set_node_index(k)
                 collapsed_values_min = np.ndarray((nlp.controls.shape, 1))
                 collapsed_values_max = np.ndarray((nlp.controls.shape, 1))
                 for key in nlp.controls:
@@ -176,7 +176,7 @@ class OptimizationVectorHelper:
 
         # For controls
         for nlp in ocp.nlp:
-            _set_node_index(nlp, 0)
+            nlp._set_node_index(0)
             if nlp.control_type in (ControlType.CONSTANT,):
                 ns = nlp.ns - 1
             elif nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
@@ -189,7 +189,7 @@ class OptimizationVectorHelper:
                     nlp.u_init[key].check_and_adjust_dimensions(nlp.controls[key].cx.shape[0], ns)
 
             for k in range(ns + 1):
-                _set_node_index(nlp, k)
+                nlp._set_node_index(k)
                 collapsed_values = np.ndarray((nlp.controls.shape, 1))
                 for key in nlp.controls:
                     if key in nlp.u_init.keys():
@@ -360,14 +360,6 @@ class OptimizationVectorHelper:
                 offset += na * n_cols
 
         return data_states, data_controls, data_parameters, data_algebraic_states
-
-
-def _set_node_index(nlp, node):
-    nlp.states.node_index = node
-    nlp.states_dot.node_index = node
-    nlp.controls.node_index = node
-    nlp.algebraic_states.node_index = node
-
 
 def _dispatch_state_bounds(nlp, states, states_bounds, states_scaling, n_steps_callback):
     states.node_index = 0
