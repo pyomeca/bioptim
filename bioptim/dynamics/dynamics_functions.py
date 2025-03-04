@@ -142,7 +142,7 @@ class DynamicsFunctions:
         tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
         tau = tau - nlp.model.friction_coefficients @ qdot if with_friction else tau
 
-        external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
+        external_forces = nlp.get_external_forces("external_forces", states, controls, algebraic_states, numerical_timeseries)
 
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
         dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
@@ -153,9 +153,10 @@ class DynamicsFunctions:
             dxdt = fatigue["tau"].dynamics(dxdt, nlp, states, controls)
 
         defects = None
-        # TODO: contacts and fatigue to be handled with implicit dynamics
         if nlp.ode_solver.defects_type == DefectType.IMPLICIT:
-            if not with_contact and fatigue is None:
+            if fatigue is not None:
+                raise NotImplementedError("Fatigue with implicit dynamics is not implemented yet")
+            else:
                 qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
                 tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact, external_forces)
                 defects = nlp.cx(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])

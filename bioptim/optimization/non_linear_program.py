@@ -561,12 +561,12 @@ class NonLinearProgram:
         return out
 
     def get_external_forces(
-        self, states: MX.sym, controls: MX.sym, algebraic_states: MX.sym, numerical_timeseries: MX.sym
+        self, name: str, states: MX.sym, controls: MX.sym, algebraic_states: MX.sym, numerical_timeseries: MX.sym
     ):
 
         external_forces = self.cx(0, 1)
         external_forces = self.retrieve_forces(
-            "external_forces", external_forces, states, controls, algebraic_states, numerical_timeseries
+            name, external_forces, states, controls, algebraic_states, numerical_timeseries
         )
 
         return external_forces
