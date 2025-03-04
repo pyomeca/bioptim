@@ -350,9 +350,6 @@ class NewVariableConfiguration:
                     node_index,
                 )
                 if not self.skip_plot:
-                    all_variables_in_one_subplot = (
-                        True if self.name in ["m", "cov", "k"] else False
-                    )  # To Eve: This should not be there.
                     self.nlp.plot[f"{self.name}_algebraic"] = CustomPlot(
                         lambda t0, phases_dt, node_idx, x, u, p, a, d: (
                             a[self.nlp.algebraic_states.key_index(self.name), :]
@@ -363,7 +360,6 @@ class NewVariableConfiguration:
                         axes_idx=self.axes_idx,
                         legend=self.legend,
                         combine_to=self.combine_name,
-                        all_variables_in_one_subplot=all_variables_in_one_subplot,
                     )
 
 
