@@ -8,6 +8,8 @@ class OptimizationVectorHelper:
     """
     Methods
     -------
+    declare_ocp_shooting_points(self)
+        Declare all the casadi variables with the right size to be used during a specific phase
     vector(self)
         Format the x, u, p and s so they are in one nice (and useful) vector
     bounds(self)
