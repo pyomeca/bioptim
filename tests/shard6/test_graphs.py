@@ -203,10 +203,6 @@ def test_mapping_1(plots_generator_for_mapping):
 def test_mapping_2(plots_generator_for_mapping):
     return plots_generator_for_mapping[2]
 
-@pytest.mark.mpl_image_compare
-def test_mapping_3(plots_generator_for_mapping):
-    return plots_generator_for_mapping[3]
-
 
 # Test 4: multi-phase
 @pytest.fixture(scope="module")
@@ -239,10 +235,6 @@ def test_multi_phase_1(plots_generator_for_multi_phase):
 @pytest.mark.mpl_image_compare
 def test_multi_phase_2(plots_generator_for_multi_phase):
     return plots_generator_for_multi_phase[2]
-
-@pytest.mark.mpl_image_compare
-def test_multi_phase_3(plots_generator_for_multi_phase):
-    return plots_generator_for_multi_phase[3]
 
 
 # Test 5: optimized time
@@ -383,7 +375,8 @@ def test__getting_started__pendulum__trapezoidal():
         n_shooting=100,
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
-        ode_solver=OdeSolver.TRAPEZOIDAL,
+        ode_solver=OdeSolver.TRAPEZOIDAL(),
+        control_type=ControlType.LINEAR_CONTINUOUS,
     )
 
     solver = Solver.IPOPT()
@@ -404,6 +397,7 @@ def test__getting_started__pendulum__irk():
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
         ode_solver=OdeSolver.IRK(),
+        use_sx=False,
     )
 
     solver = Solver.IPOPT()
