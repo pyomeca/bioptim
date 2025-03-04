@@ -666,7 +666,9 @@ class COLLOCATION(Integrator):
                 states[0:1] + states[2:], self._integration_time[j]
             )
 
+            # TODO: Charbie: loop over all constraints (and add an if start, intermediates, end)
             if self.defects_type == DefectType.EXPLICIT:
+                # TODO : Charbie -> send self.h and xp_j to the function
                 f_j = self.fun(
                     t,
                     states[j + 1],

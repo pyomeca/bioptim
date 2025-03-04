@@ -190,16 +190,15 @@ class QuadratureRule(Enum):
     TRAPEZOIDAL = "trapezoidal"
 
 
-class SoftContactDynamics(Enum):
-    # TODO: Charbie -> Delete !
-    ODE = "ode"
-    CONSTRAINT = "constraint"
+class ContactType(Enum):
+    RIGID = "digid"
+    SOFT = "soft"
+    NONE = "none"
 
 
 class DefectType(Enum):
-    EXPLICIT = "explicit"
-    IMPLICIT = "implicit"
-    NOT_APPLICABLE = "not_applicable"
+    FORWARD_DYNAMICS = "forward_dynamics"
+    INVERSE_DYNAMICS = "inverse_dynamics"
 
 
 class MagnitudeType(Enum):

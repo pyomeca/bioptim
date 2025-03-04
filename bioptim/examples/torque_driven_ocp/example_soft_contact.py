@@ -23,10 +23,11 @@ from bioptim import (
     Solver,
     Shooting,
     Solution,
-    SoftContactDynamics,
+    DynamicsConstraintFcn,
     SolutionIntegrator,
     PhaseDynamics,
     SolutionMerge,
+    ContactType,
     DefectType,
 )
 
@@ -52,8 +53,7 @@ def prepare_single_shooting(
     # Dynamics
     dynamics = Dynamics(
         DynamicsFcn.TORQUE_DRIVEN,
-        with_soft_contact=True,
-        defects_type=DefectType.EXPLICIT,
+        contact_type=ContactType.SOFT,
     )
 
     return OptimalControlProgram(
@@ -149,11 +149,13 @@ def prepare_ocp(
     )
 
     # Dynamics
+    # dynamics_constraints = ConstraintList()
+    # dynamics_constraints.add(DynamicsConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS)
     dynamics = Dynamics(
         DynamicsFcn.TORQUE_DRIVEN,
-        with_soft_contact=True,
+        contact_type=ContactType.SOFT,
         phase_dynamics=phase_dynamics,
-        defects_type=DefectType.EXPLICIT,
+        defect_type=[DefectType.FORWARD_DYNAMICS],
     )
 
     # Constraints

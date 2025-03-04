@@ -53,7 +53,7 @@ class Constraint(PenaltyOption):
             Generic parameters for options
         """
         custom_function = None
-        if not isinstance(constraint, (ConstraintFcn, ImplicitConstraintFcn)):
+        if not isinstance(constraint, (ConstraintFcn, DynamicsConstraintFcn)):
             custom_function = constraint
             constraint = ConstraintFcn.CUSTOM
 
@@ -66,7 +66,7 @@ class Constraint(PenaltyOption):
             **extra_parameters,
         )
 
-        if isinstance(constraint, ImplicitConstraintFcn):
+        if isinstance(constraint, DynamicsConstraintFcn):
             self.penalty_type = ConstraintType.IMPLICIT  # doing this puts the relevance of this enum in question
 
         self.min_bound = min_bound
@@ -1096,7 +1096,7 @@ class ConstraintFcn(FcnEnum):
         return ConstraintFunction
 
 
-class ImplicitConstraintFcn(FcnEnum):
+class DynamicsConstraintFcn(FcnEnum):
     """
     Selection of valid constraint functions
 
@@ -1105,10 +1105,9 @@ class ImplicitConstraintFcn(FcnEnum):
     def get_type() -> Callable
         Returns the type of the penalty
     """
+    FORWARD_DYNAMICS = (ConstraintFunction.Functions.forward_dynamics,)
 
-    # @Ipuch: isn't this the usual explicit in COLLOCATION ? -> It is not presently used nor tested in Bioptim
-    QDDOT_EQUALS_FORWARD_DYNAMICS = (ConstraintFunction.Functions.qddot_equals_forward_dynamics,)
-
+    # TODO: Charbie
     TAU_EQUALS_INVERSE_DYNAMICS = (ConstraintFunction.Functions.tau_equals_inverse_dynamics,)
     SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS = (ConstraintFunction.Functions.implicit_soft_contact_forces,)
     TAU_FROM_MUSCLE_EQUAL_INVERSE_DYNAMICS = (ConstraintFunction.Functions.tau_from_muscle_equal_inverse_dynamics,)
@@ -1157,7 +1156,7 @@ class ParameterConstraint(PenaltyOption):
             Generic parameters for options
         """
         custom_function = None
-        if not isinstance(parameter_constraint, (ConstraintFcn, ImplicitConstraintFcn)):
+        if not isinstance(parameter_constraint, (ConstraintFcn, DynamicsConstraintFcn)):
             custom_function = parameter_constraint
             parameter_constraint = ConstraintFcn.CUSTOM
 
@@ -1165,7 +1164,7 @@ class ParameterConstraint(PenaltyOption):
             penalty=parameter_constraint, quadratic=quadratic, custom_function=custom_function, **extra_parameters
         )
 
-        if isinstance(parameter_constraint, ImplicitConstraintFcn):
+        if isinstance(parameter_constraint, DynamicsConstraintFcn):
             self.penalty_type = ConstraintType.IMPLICIT  # doing this puts the relevance of this enum in question
 
         self.min_bound = min_bound
