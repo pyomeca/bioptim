@@ -177,10 +177,7 @@ def prepare_ocp(
     parameter_bounds = BoundsList()
     parameter_init = InitialGuessList()
 
-    # g_scaling = VariableScaling("gravity_xyz", np.array([1, 1, 1]))  # Works fine (output: 0.0,   1.0, -20.0)
     g_scaling = VariableScaling("gravity_xyz", np.array([1, 1, 10]))  # Does not converge to the right place
-    #  "Optimal parameters unscaled: {'gravity_xyz': array([ 0.        ,  5.00000002, -4.9999999 ])}"
-    #  "Optimal parameters scaled: {'gravity_xyz': array([ 0.        ,  5.00000002, -0.49999999])}"
     parameters.add(
         "gravity_xyz",  # The name of the parameter
         my_parameter_function,  # The function that modifies the biorbd model
@@ -196,13 +193,12 @@ def prepare_ocp(
         my_target_function,  # The function that returns the target value
         key="gravity_xyz",  # The name of the parameter
         weight=1000,  # The weight of the objective function
-        # quadratic=True,  # If the objective function is quadratic
+        quadratic=True,  # If the objective function is quadratic
         custom_type=ObjectiveFcn.Parameter,
     )
 
     # --- Options --- #
     bio_model = BiorbdModel(biorbd_model_path, parameters=parameters)
-    n_tau = bio_model.nb_tau
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -210,7 +206,7 @@ def prepare_ocp(
     # Dynamics
     dynamics = Dynamics(
         DynamicsFcn.TORQUE_DRIVEN,
-        # state_continuity_weight=100,
+        state_continuity_weight=100,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
     )
@@ -285,7 +281,6 @@ def main():
     print(f"Optimal parameters scaled: {sol.decision_parameters(scaled=True)}")
 
     # --- Show results --- #
-    # sol.graphs()
     sol.animate(n_frames=200, viewer="pyorerun")
 
 
