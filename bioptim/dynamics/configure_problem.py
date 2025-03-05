@@ -1217,13 +1217,8 @@ class ConfigureProblem:
         nlp: NonLinearProgram
             A reference to the phase
         """
-        nlp.global_soft_contact_force_func = nlp.model.soft_contact_forces()(
-            nlp.states["q"].mapping.to_second.map(nlp.states["q"].cx_start),
-            nlp.states["qdot"].mapping.to_second.map(nlp.states["qdot"].cx_start),
-            nlp.parameters.cx,
-        )
-
         component_list = ["Mx", "My", "Mz", "Fx", "Fy", "Fz"]
+
         for i_sc in range(nlp.model.nb_soft_contacts):
             all_soft_contact_names = []
             all_soft_contact_names.extend(

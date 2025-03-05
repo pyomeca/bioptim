@@ -848,8 +848,8 @@ class PenaltyFunctionAbstract:
                 penalty.cols should not be defined if contact_index is defined
             """
 
-            if controller.get_nlp.soft_contact_forces_func is None:
-                raise RuntimeError("minimize_contact_forces requires a soft contact dynamics")
+            if controller.get_nlp.model.nb_soft_contacts == 0:
+                raise RuntimeError("minimize_contact_forces requires a soft contact")
 
             PenaltyFunctionAbstract.set_axes_rows(penalty, contact_index)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
@@ -859,12 +859,15 @@ class PenaltyFunctionAbstract:
                 force_idx.append(3 + (6 * i_sc))
                 force_idx.append(4 + (6 * i_sc))
                 force_idx.append(5 + (6 * i_sc))
-            soft_contact_force = controller.get_nlp.soft_contact_forces_func(
-                controller.time.cx,
-                controller.states.cx_start,
-                controller.controls.cx_start,
+
+            # Note to the developers: the .expand() should be an option in the future
+            # But for now, removing it breaks the tests as it introduces NaNs in the NLP
+            soft_contact_force = controller.get_nlp.model.soft_contact_forces().expand()(
+                controller.states["q"].cx,
+                controller.states["qdot"].cx,
                 controller.parameters.cx,
             )
+
             return soft_contact_force[force_idx]
 
         @staticmethod
