@@ -27,8 +27,8 @@ from bioptim import (
     ConfigureProblem,
     DynamicsEvaluation,
     DynamicsFunctions,
+    ExternalForceSetVariables,
 )
-
 
 def custom_configure(
     ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None
@@ -66,8 +66,11 @@ def custom_dynamics(
     mus_activations = nlp.get_var_from_states_or_controls("muscles", states, controls)
 
     # Get external forces from algebraic states
-    external_forces = nlp.get_external_forces("rigid_contact_forces", states, controls, algebraic_states,
+    rigid_contact_forces = nlp.get_external_forces("rigid_contact_forces", states, controls, algebraic_states,
                                               numerical_timeseries)
+    # Map to external forces
+    external_forces = nlp.model.map_rigid_contact_forces_to_global_forces(rigid_contact_forces, q, parameters)
+
 
     # Compute joint torques
     muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations)
@@ -78,7 +81,7 @@ def custom_dynamics(
     slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
     tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, slope_q, slope_qdot, with_contact=False,
                                                 external_forces=external_forces)
-    defects = horzcat(qdot - slope_q, tau - tau_id)
+    defects = vertcat(qdot - slope_q, tau - tau_id)
 
     return DynamicsEvaluation(dxdt=None, defects=defects)
 
@@ -95,22 +98,22 @@ def contact_velocity(controller):
 
 def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True):
 
+    # Indicate to the model creator that there will be two rigid contacts in the form of optimization variables
+    external_force_set = ExternalForceSetVariables()
+    external_force_set.add("Seg1", use_point_of_application=True)
+    external_force_set.add("Seg1", use_point_of_application=True)
+
     # BioModel
-    bio_model = BiorbdModel(biorbd_model_path)
-    tau_min, tau_max, tau_init = -500.0, 500.0, 0.0
-    activation_min, activation_max, activation_init = 0.0, 1.0, 0.5
+    bio_model = BiorbdModel(biorbd_model_path, external_force_set=external_force_set)
     dof_mapping = BiMappingList()
     dof_mapping.add("tau", bimapping=None, to_second=[None, None, None, 0], to_first=[3])
+
+    tau_min, tau_max, tau_init = -500.0, 500.0, 0.0
+    activation_min, activation_max, activation_init = 0.0, 1.0, 0.5
 
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT)
-    objective_functions.add(
-        ObjectiveFcn.Mayer.MINIMIZE_CONTACT_FORCES_END_OF_INTERVAL,
-        node=Node.PENULTIMATE,
-        contact_index=2,
-        quadratic=True,
-    )
 
     # Dynamics
     dynamics = DynamicsList()

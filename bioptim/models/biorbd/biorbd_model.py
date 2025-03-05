@@ -12,11 +12,7 @@ from casadi import SX, MX, vertcat, horzcat, norm_fro, Function, DM
 
 from bioptim.models.biorbd.external_forces import (
     ExternalForceSetTimeSeries,
-    _add_global_force,
-    _add_torque_global,
-    _add_translational_global,
-    _add_local_force,
-    _add_torque_local,
+    ExternalForceSetVariables,
 )
 from ..utils import _var_mapping, bounds_from_ranges
 from ...limits.path_conditions import Bounds
@@ -37,7 +33,7 @@ class BiorbdModel:
         bio_model: str | biorbd.Model,
         friction_coefficients: np.ndarray = None,
         parameters: ParameterList = None,
-        external_force_set: ExternalForceSetTimeSeries = None,
+        external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None,
     ):
         if not isinstance(bio_model, str) and not isinstance(bio_model, biorbd.Model):
             raise ValueError("The model should be of type 'str' or 'biorbd.Model'")
@@ -76,9 +72,9 @@ class BiorbdModel:
         """
         It checks the external forces and binds them to the model.
         """
-        external_force_set._check_segment_names(tuple([s.name().to_string() for s in self.model.segments()]))
-        external_force_set._check_all_string_points_of_application(self.marker_names)
-        external_force_set._bind()
+        external_force_set.check_segment_names(tuple([s.name().to_string() for s in self.model.segments()]))
+        external_force_set.check_all_string_points_of_application(self.marker_names)
+        external_force_set.bind()
 
         return external_force_set
 
@@ -449,11 +445,11 @@ class BiorbdModel:
 
         # "type of external force": (function to call, number of force components)
         force_mapping = {
-            "in_global": (_add_global_force, 6),
-            "torque_in_global": (_add_torque_global, 3),
-            "translational_in_global": (_add_translational_global, 3),
-            "in_local": (_add_local_force, 6),
-            "torque_in_local": (_add_torque_local, 3),
+            "in_global": (self.external_force_set.add_global_force, 6),
+            "torque_in_global": (self.external_force_set.add_torque_global, 3),
+            "translational_in_global": (self.external_force_set.add_translational_global, 3),
+            "in_local": (self.external_force_set.add_local_force, 6),
+            "torque_in_local": (self.external_force_set.add_torque_local, 3),
         }
 
         symbolic_counter = 0
@@ -527,9 +523,41 @@ class BiorbdModel:
         """
         if isinstance(force["point_of_application"], np.ndarray):
             return self.external_forces[slice(stop_index, stop_index + 3)]
+        if isinstance(force["point_of_application"], MX):
+            return self.external_forces[slice(stop_index, stop_index + 3)]
         elif isinstance(force["point_of_application"], str):
             return self.model.marker(self.marker_index(force["point_of_application"]))
-        return None
+        else:
+            return None
+
+    def map_rigid_contact_forces_to_global_forces(self,
+                                                  rigid_contact_forces: MX | SX,
+                                                  q: MX | SX,
+                                                  parameters: MX | SX) -> MX | SX:
+        """
+        Takes the rigid contact forces and dispatch is to match the external forces.
+        """
+        external_forces = MX.zeros(self.external_force_set.nb_external_forces_components)
+
+        current_index = 0
+        contacts_to_add = 0
+        for i_contact in range(self.nb_rigid_contacts):
+            # Skip the moments
+            contacts_to_add += 3
+
+            # Add the forces to the right place
+            available_axes = np.array(self.rigid_contact_index(i_contact))
+            contact_force_idx = range(current_index, current_index + available_axes.shape[0])
+            for i, idx in enumerate(contact_force_idx):
+                external_forces[contacts_to_add + available_axes[i]] += rigid_contact_forces[idx]
+            current_index += available_axes.shape[0]
+            contacts_to_add += 3
+
+            # Add the point of application to the right place
+            external_forces[contacts_to_add : contacts_to_add + 3] = self.rigid_contact_position(i_contact)(q, parameters)
+            contacts_to_add += 3
+
+        return external_forces
 
     def forward_dynamics(self, with_contact: bool = False) -> Function:
 

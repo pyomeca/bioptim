@@ -92,7 +92,7 @@ def test_bind_prevents_modification(external_forces, force_array):
     """Test that binding prevents further modifications."""
     segment_name = "segment1"
     external_forces.add(segment_name, force_array)
-    external_forces._bind()
+    external_forces.bind()
 
     with pytest.raises(RuntimeError, match="External forces have been binded"):
         external_forces.add(segment_name, force_array)

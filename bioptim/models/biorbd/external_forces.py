@@ -2,7 +2,100 @@ import numpy as np
 from casadi import MX, vertcat
 
 
-class ExternalForceSetTimeSeries:
+class ExternalForceSet:
+
+    @property
+    def nb_external_forces(self) -> int:
+        attributes = ["in_global", "torque_in_global", "translational_in_global", "in_local", "torque_in_local"]
+        return sum([len(values) for attr in attributes for values in getattr(self, attr).values()])
+
+    @property
+    def nb_external_forces_components(self) -> int:
+        """Return the number of vertical components of the external forces if concatenated in a unique vector"""
+        attributes_no_point_of_application = ["torque_in_global", "torque_in_local"]
+        attributes_six_components = ["in_global", "in_local"]
+
+        components = 0
+        for attr in attributes_no_point_of_application:
+            for values in getattr(self, attr).values():
+                components += 3 * len(values)
+
+        for values in self.translational_in_global.values():
+            nb_point_of_application_as_str = sum([isinstance(force["point_of_application"], str) for force in values])
+            components += 6 * len(values) - 3 * nb_point_of_application_as_str
+
+        for attr in attributes_six_components:
+            for values in getattr(self, attr).values():
+                nb_point_of_application_as_str = sum(
+                    [isinstance(force["point_of_application"], str) for force in values]
+                )
+                components += 9 * len(values) - 3 * nb_point_of_application_as_str
+
+        return components
+
+
+    def check_segment_names(self, segment_names: tuple[str, ...]) -> None:
+        attributes = ["in_global", "torque_in_global", "translational_in_global", "in_local", "torque_in_local"]
+        wrong_segments = []
+        for attr in attributes:
+            for segment, _ in getattr(self, attr).items():
+                if segment not in segment_names:
+                    wrong_segments.append(segment)
+
+        if wrong_segments:
+            raise ValueError(
+                f"Segments {wrong_segments} specified in the external forces are not in the model."
+                f" Available segments are {segment_names}."
+            )
+
+    def check_all_string_points_of_application(self, model_points_of_application) -> None:
+        attributes = ["in_global", "translational_in_global", "in_local"]
+        wrong_points_of_application = []
+        for attr in attributes:
+            for segment, forces in getattr(self, attr).items():
+                for force in forces:
+                    if (
+                        isinstance(force["point_of_application"], str)
+                        and force["point_of_application"] not in model_points_of_application
+                    ):
+                        wrong_points_of_application.append(force["point_of_application"])
+
+        if wrong_points_of_application:
+            raise ValueError(
+                f"Points of application {wrong_points_of_application} specified in the external forces are not in the model."
+                f" Available points of application are {model_points_of_application}."
+            )
+
+    @staticmethod
+    def ensure_list(data, key) -> dict[str, list]:
+        """Ensure that the key exists in the data and the value is a list"""
+        if data.get(key) is None:
+            data[key] = []
+        return data
+
+    # Specific functions for adding each force type to improve readability
+    @staticmethod
+    def add_global_force(biorbd_external_forces, segment, force, point_of_application):
+        biorbd_external_forces.add(segment, force, point_of_application)
+
+    @staticmethod
+    def add_torque_global(biorbd_external_forces, segment, torque, _):
+        biorbd_external_forces.add(segment, vertcat(torque, MX([0, 0, 0])), MX([0, 0, 0]))
+
+    @staticmethod
+    def add_translational_global(biorbd_external_forces, segment, force, point_of_application):
+        biorbd_external_forces.addTranslationalForce(force, segment, point_of_application)
+
+    @staticmethod
+    def add_local_force(biorbd_external_forces, segment, force, point_of_application):
+        biorbd_external_forces.addInSegmentReferenceFrame(segment, force, point_of_application)
+
+    @staticmethod
+    def add_torque_local(biorbd_external_forces, segment, torque, _):
+        biorbd_external_forces.addInSegmentReferenceFrame(segment, vertcat(torque, MX([0, 0, 0])), MX([0, 0, 0]))
+
+
+class ExternalForceSetTimeSeries(ExternalForceSet):
     """
     A class to manage external forces applied to a set of segments over a series of frames.
 
@@ -51,6 +144,10 @@ class ExternalForceSetTimeSeries:
         if not self._can_be_modified:
             raise RuntimeError("External forces have been binded and cannot be modified anymore.")
 
+    def bind(self):
+        """prevent further modification of the external forces"""
+        self._bind_flag = True
+
     @property
     def nb_frames(self) -> int:
         return self._nb_frames
@@ -71,7 +168,7 @@ class ExternalForceSetTimeSeries:
         point_of_application = np.zeros((3, self._nb_frames)) if point_of_application is None else point_of_application
         self._check_point_of_application(point_of_application)
 
-        self.in_global = ensure_list(self.in_global, segment)
+        self.in_global = self.ensure_list(self.in_global, segment)
         self.in_global[segment].append({"values": values, "point_of_application": point_of_application})
 
     def add_torque(self, segment: str, values: np.ndarray):
@@ -80,7 +177,7 @@ class ExternalForceSetTimeSeries:
             raise ValueError(f"External torques must have 3 rows, got {values.shape[0]}")
         self._check_values_frame_shape(values)
 
-        self.torque_in_global = ensure_list(self.torque_in_global, segment)
+        self.torque_in_global = self.ensure_list(self.torque_in_global, segment)
         self.torque_in_global[segment].append({"values": values, "point_of_application": None})
 
     def add_translational_force(
@@ -95,7 +192,7 @@ class ExternalForceSetTimeSeries:
             np.zeros((3, self._nb_frames)) if point_of_application_in_local is None else point_of_application_in_local
         )
         self._check_point_of_application(point_of_application_in_local)
-        self.translational_in_global = ensure_list(self.translational_in_global, segment)
+        self.translational_in_global = self.ensure_list(self.translational_in_global, segment)
         self.translational_in_global[segment].append(
             {"values": values, "point_of_application": point_of_application_in_local}
         )
@@ -124,7 +221,7 @@ class ExternalForceSetTimeSeries:
             np.zeros((3, self._nb_frames)) if point_of_application_in_local is None else point_of_application_in_local
         )
         self._check_point_of_application(point_of_application_in_local)
-        self.in_local = ensure_list(self.in_local, segment)
+        self.in_local = self.ensure_list(self.in_local, segment)
         self.in_local[segment].append({"values": values, "point_of_application": point_of_application_in_local})
 
     def add_torque_in_segment_frame(self, segment: str, values: np.ndarray):
@@ -133,37 +230,8 @@ class ExternalForceSetTimeSeries:
             raise ValueError(f"External torques must have 3 rows, got {values.shape[0]}")
         self._check_values_frame_shape(values)
 
-        self.torque_in_local = ensure_list(self.torque_in_local, segment)
+        self.torque_in_local = self.ensure_list(self.torque_in_local, segment)
         self.torque_in_local[segment].append({"values": values, "point_of_application": None})
-
-    @property
-    def nb_external_forces(self) -> int:
-        attributes = ["in_global", "torque_in_global", "translational_in_global", "in_local", "torque_in_local"]
-        return sum([len(values) for attr in attributes for values in getattr(self, attr).values()])
-
-    @property
-    def nb_external_forces_components(self) -> int:
-        """Return the number of vertical components of the external forces if concatenated in a unique vector"""
-        attributes_no_point_of_application = ["torque_in_global", "torque_in_local"]
-        attributes_six_components = ["in_global", "in_local"]
-
-        components = 0
-        for attr in attributes_no_point_of_application:
-            for values in getattr(self, attr).values():
-                components += 3 * len(values)
-
-        for values in self.translational_in_global.values():
-            nb_point_of_application_as_str = sum([isinstance(force["point_of_application"], str) for force in values])
-            components += 6 * len(values) - 3 * nb_point_of_application_as_str
-
-        for attr in attributes_six_components:
-            for values in getattr(self, attr).values():
-                nb_point_of_application_as_str = sum(
-                    [isinstance(force["point_of_application"], str) for force in values]
-                )
-                components += 9 * len(values) - 3 * nb_point_of_application_as_str
-
-        return components
 
     def _check_point_of_application(self, point_of_application: np.ndarray | str) -> None:
         if isinstance(point_of_application, str):
@@ -178,42 +246,6 @@ class ExternalForceSetTimeSeries:
             )
 
         return
-
-    def _check_segment_names(self, segment_names: tuple[str, ...]) -> None:
-        attributes = ["in_global", "torque_in_global", "translational_in_global", "in_local", "torque_in_local"]
-        wrong_segments = []
-        for attr in attributes:
-            for segment, _ in getattr(self, attr).items():
-                if segment not in segment_names:
-                    wrong_segments.append(segment)
-
-        if wrong_segments:
-            raise ValueError(
-                f"Segments {wrong_segments} specified in the external forces are not in the model."
-                f" Available segments are {segment_names}."
-            )
-
-    def _check_all_string_points_of_application(self, model_points_of_application) -> None:
-        attributes = ["in_global", "translational_in_global", "in_local"]
-        wrong_points_of_application = []
-        for attr in attributes:
-            for segment, forces in getattr(self, attr).items():
-                for force in forces:
-                    if (
-                        isinstance(force["point_of_application"], str)
-                        and force["point_of_application"] not in model_points_of_application
-                    ):
-                        wrong_points_of_application.append(force["point_of_application"])
-
-        if wrong_points_of_application:
-            raise ValueError(
-                f"Points of application {wrong_points_of_application} specified in the external forces are not in the model."
-                f" Available points of application are {model_points_of_application}."
-            )
-
-    def _bind(self):
-        """prevent further modification of the external forces"""
-        self._bind_flag = True
 
     def to_numerical_time_series(self):
         """Convert the external forces to a numerical time series"""
@@ -248,29 +280,126 @@ class ExternalForceSetTimeSeries:
         return fext_numerical_time_series
 
 
-def ensure_list(data, key) -> dict[str, list]:
-    """Ensure that the key exists in the data and the value is a list"""
-    if data.get(key) is None:
-        data[key] = []
-    return data
 
+class ExternalForceSetVariables(ExternalForceSet):
+    """
+    A class to manage optimized external forces applied to a set of segments.
 
-# Specific functions for adding each force type to improve readability
-def _add_global_force(biorbd_external_forces, segment, force, point_of_application):
-    biorbd_external_forces.add(segment, force, point_of_application)
+    Attributes
+    ----------
+    in_global : dict[str, {}]
+        Dictionary to store global external forces for each segment.
+    torque_in_global : dict[str, {}]
+        Dictionary to store global torques for each segment.
+    translational_in_global : dict[str, {}]
+        Dictionary to store global translational forces for each segment.
+    in_local : dict[str, {}]
+        Dictionary to store local external forces for each segment.
+    torque_in_local : dict[str, {}]
+        Dictionary to store local torques for each segment.
+    """
 
+    def __init__(self):
+        """
+        Initialize the ExternalForceSetVariables with the appropriate variables.
+        """
+        self.in_global: dict[str, {}] = {}
+        self.torque_in_global: dict[str, {}] = {}
+        self.translational_in_global: dict[str, {}] = {}
+        self.in_local: dict[str, {}] = {}
+        self.torque_in_local: dict[str, {}] = {}
 
-def _add_torque_global(biorbd_external_forces, segment, torque, _):
-    biorbd_external_forces.add(segment, vertcat(torque, MX([0, 0, 0])), MX([0, 0, 0]))
+        self._bind_flag = False
 
+    @property
+    def _can_be_modified(self) -> bool:
+        return not self._bind_flag
 
-def _add_translational_global(biorbd_external_forces, segment, force, point_of_application):
-    biorbd_external_forces.addTranslationalForce(force, segment, point_of_application)
+    def _check_if_can_be_modified(self) -> None:
+        if not self._can_be_modified:
+            raise RuntimeError("External forces have been binded and cannot be modified anymore.")
 
+    def bind(self):
+        """prevent further modification of the external forces"""
+        self._bind_flag = True
 
-def _add_local_force(biorbd_external_forces, segment, force, point_of_application):
-    biorbd_external_forces.addInSegmentReferenceFrame(segment, force, point_of_application)
+    def add(self, segment: str, use_point_of_application: bool = False):
+        """
+        Add moments XYZ, forces XYZ (and the point of application if requested) in the global reference frame.
+        """
+        point_of_application = MX.sym(f"point_of_application_{segment}", 3, 1) if use_point_of_application else np.zeros((3, 1))
+        moments_forces = MX.sym(f"moments_forces_{segment}", 6, 1)
+        self.in_global = self.ensure_list(self.in_global, segment)
+        self.in_global[segment].append({"force": moments_forces, "point_of_application": point_of_application})
 
+    def add_torque(self, segment: str):
+        """
+        Add moments XYZ in the global reference frame.
+        """
+        moments = MX.sym(f"moments_{segment}", 3, 1)
+        self.torque_in_global = self.ensure_list(self.torque_in_global, segment)
+        self.torque_in_global[segment].append({"force": moments, "point_of_application": None})
 
-def _add_torque_local(biorbd_external_forces, segment, torque, _):
-    biorbd_external_forces.addInSegmentReferenceFrame(segment, vertcat(torque, MX([0, 0, 0])), MX([0, 0, 0]))
+    def add_translational_force(
+        self, segment: str, use_point_of_application_in_local: bool = False
+    ):
+        """
+        Add forces XYZ (and the point of application if requested) in the local reference frame.
+        """
+        point_of_application_in_local = MX.sym(f"point_of_application_in_local_{segment}", 3, 1) if use_point_of_application_in_local else np.zeros((3, 1))
+        forces = MX.sym(f"forces_{segment}", 3, 1)
+        self.translational_in_global = self.ensure_list(self.translational_in_global, segment)
+        self.translational_in_global[segment].append(
+            {"force": forces, "point_of_application": point_of_application_in_local}
+        )
+
+    def add_in_segment_frame(
+        self, segment: str, use_point_of_application_in_local: bool = False
+    ):
+        """
+        Add moments XYZ, forces XYZ (and the point of application if requested) in the local reference frame.
+        """
+        point_of_application_in_local = MX.sym(f"point_of_application_in_local_{segment}", 3, 1) if use_point_of_application_in_local else np.zeros((3, 1))
+        moments_forces = MX.sym(f"moments_forces_{segment}", 6, 1)
+        self.in_local = self.ensure_list(self.in_local, segment)
+        self.in_local[segment].append({"force": moments_forces, "point_of_application": point_of_application_in_local})
+
+    def add_torque_in_segment_frame(self, segment: str):
+        """
+        Add moments XYZ in the local reference frame.
+        """
+        moments = MX.sym(f"moments_{segment}", 3, 1)
+        self.torque_in_local = self.ensure_list(self.torque_in_local, segment)
+        self.torque_in_local[segment].append({"force": moments, "point_of_application": None})
+
+    def to_mx(self):
+        """Convert the external forces to an MX vector"""
+        fext_numerical_time_series = MX.zeros((self.nb_external_forces_components, 1))
+
+        # "type of external force": (function to call, number of force components, number of point of application components)
+        bioptim_to_vector_map = {
+            "in_global": 6,
+            "torque_in_global": 3,
+            "translational_in_global": 3,
+            "in_local": 6,
+            "torque_in_local": 3,
+        }
+
+        symbolic_counter = 0
+        for attr in bioptim_to_vector_map.keys():
+            for segment, forces in getattr(self, attr).items():
+                for force in forces:
+                    array_point_of_application = not isinstance(force["point_of_application"], np.ndarray)
+
+                    start = symbolic_counter
+                    stop = symbolic_counter + bioptim_to_vector_map[attr]
+                    force_slicer = slice(start, stop)
+                    fext_numerical_time_series[force_slicer, 0, :-1] = force["values"]
+
+                    if array_point_of_application:
+                        poa_slicer = slice(stop, stop + 3)
+                        fext_numerical_time_series[poa_slicer, 0, :-1] = force["point_of_application"]
+
+                    symbolic_counter = stop + 3 if array_point_of_application else stop
+
+        return fext_numerical_time_series
