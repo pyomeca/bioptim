@@ -122,6 +122,12 @@ def prepare_socp(
     n_qdot = bio_model.nb_qdot
     n_states = n_q * 2
 
+    n_cholesky_cov = 0
+    if with_cholesky:
+        for i in range(n_states):
+            for j in range(i + 1):
+                n_cholesky_cov += 1
+
     shoulder_pos_initial = 0.349065850398866
     shoulder_pos_final = 0.959931088596881
     elbow_pos_initial = 2.245867726451909  # Optimized in Tom's version
@@ -193,25 +199,47 @@ def prepare_socp(
         numerical_data_timeseries=None,
     )
 
-    states_min = np.ones((n_states, n_shooting + 1)) * -cas.inf
-    states_max = np.ones((n_states, n_shooting + 1)) * cas.inf
-
     x_bounds = BoundsList()
     x_bounds.add(
-        "q", min_bound=states_min[:n_q, :], max_bound=states_max[:n_q, :], interpolation=InterpolationType.EACH_FRAME
+        "q",
+        min_bound=np.ones((n_q,)) * -cas.inf,
+        max_bound=np.ones((n_q,)) * cas.inf,
+        interpolation=InterpolationType.CONSTANT,
     )
     x_bounds.add(
         "qdot",
-        min_bound=states_min[n_q : n_q + n_qdot, :],
-        max_bound=states_max[n_q : n_q + n_qdot, :],
-        interpolation=InterpolationType.EACH_FRAME,
+        min_bound=np.ones((n_qdot,)) * -cas.inf,
+        max_bound=np.ones((n_qdot,)) * cas.inf,
+        interpolation=InterpolationType.CONSTANT,
     )
 
-    controls_min = np.ones((n_tau, 3)) * -cas.inf
-    controls_max = np.ones((n_tau, 3)) * cas.inf
-
     u_bounds = BoundsList()
-    u_bounds.add("tau", min_bound=controls_min, max_bound=controls_max)
+    u_bounds.add(
+        "tau",
+        min_bound=np.ones((n_tau,)) * -cas.inf,
+        max_bound=np.ones((n_tau,)) * cas.inf,
+        interpolation=InterpolationType.CONSTANT,
+    )
+    u_bounds.add(
+        "k",
+        min_bound=np.ones((n_tau * (n_q + n_qdot),)) * -cas.inf,
+        max_bound=np.ones((n_tau * (n_q + n_qdot),)) * cas.inf,
+        interpolation=InterpolationType.CONSTANT,
+    )
+    u_bounds.add(
+        "ref",
+        min_bound=np.ones((n_q + n_qdot,)) * -cas.inf,
+        max_bound=np.ones((n_q + n_qdot,)) * cas.inf,
+        interpolation=InterpolationType.CONSTANT,
+    )
+
+    a_bounds = BoundsList()
+    a_bounds.add(
+        "m",
+        min_bound=np.ones((n_states * n_states,)) * -cas.inf,
+        max_bound=np.ones((n_states * n_states,)) * cas.inf,
+        interpolation=InterpolationType.CONSTANT,
+    )
 
     # Initial guesses
     states_init = np.zeros((n_states, n_shooting + 1))
@@ -227,91 +255,55 @@ def prepare_socp(
 
     u_init = InitialGuessList()
     u_init.add("tau", initial_guess=controls_init, interpolation=InterpolationType.EACH_FRAME)
+    u_init.add("k", initial_guess=np.ones((n_tau * (n_q + n_qdot),)) * 0.01, interpolation=InterpolationType.CONSTANT)
+    u_init.add(
+        "ref",
+        initial_guess=np.ones((n_q + n_qdot,)) * 0.01,
+        interpolation=InterpolationType.CONSTANT,
+    )
 
-    a_init = InitialGuessList()
-    a_bounds = BoundsList()
-    # K(2x4) + ref(4x1) + M(4x4)
-    n_stochastic = n_tau * (n_q + n_qdot) + n_q + n_qdot + n_states * n_states
-    n_cholesky_cov = 0
     if not with_cholesky:
-        n_stochastic += n_states * n_states  # + cov(4, 4)
-    else:
-        for i in range(n_states):
-            for j in range(i + 1):
-                n_cholesky_cov += 1
-        n_stochastic += n_cholesky_cov  # + cholesky_cov(10)
-    stochastic_init = np.zeros((n_stochastic, n_shooting + 1))
-    stochastic_min = np.ones((n_stochastic, 3)) * -cas.inf
-    stochastic_max = np.ones((n_stochastic, 3)) * cas.inf
-    curent_index = 0
-    stochastic_init[: n_tau * (n_q + n_qdot), :] = 0.01  # K
-    a_init.add(
-        "k", initial_guess=stochastic_init[: n_tau * (n_q + n_qdot), :], interpolation=InterpolationType.EACH_FRAME
-    )
-    a_bounds.add(
-        "k",
-        min_bound=stochastic_min[: n_tau * (n_q + n_qdot), :],
-        max_bound=stochastic_max[: n_tau * (n_q + n_qdot), :],
-    )
-    curent_index += n_tau * (n_q + n_qdot)
-    stochastic_init[curent_index : curent_index + n_q + n_qdot, :] = 0.01  # ref
-    a_init.add(
-        "ref",
-        initial_guess=stochastic_init[curent_index : curent_index + n_q + n_qdot, :],
-        interpolation=InterpolationType.EACH_FRAME,
-    )
-    a_bounds.add(
-        "ref",
-        min_bound=stochastic_min[curent_index : curent_index + n_q + n_qdot, :],
-        max_bound=stochastic_max[curent_index : curent_index + n_q + n_qdot, :],
-    )
-    curent_index += n_q + n_qdot
-    stochastic_init[curent_index : curent_index + n_states * n_states, :] = 0.01  # M
-    a_init.add(
-        "m",
-        initial_guess=stochastic_init[curent_index : curent_index + n_states * n_states, :],
-        interpolation=InterpolationType.EACH_FRAME,
-    )
-    a_bounds.add(
-        "m",
-        min_bound=stochastic_min[curent_index : curent_index + n_states * n_states, :],
-        max_bound=stochastic_max[curent_index : curent_index + n_states * n_states, :],
-    )
-    curent_index += n_states * n_states
-    if not with_cholesky:
-        stochastic_init[curent_index : curent_index + n_states * n_states, :] = 0.01  # cov
+        cov_init_flat = np.ones((n_states * n_states,)) * 0.01
         cov_init = cas.DM_eye(n_states) * np.array([1e-4, 1e-4, 1e-7, 1e-7])
         idx = 0
         for i in range(n_states):
             for j in range(n_states):
-                stochastic_init[idx, 0] = cov_init[i, j]
-        a_init.add(
+                cov_init_flat[idx] = cov_init[i, j]
+        u_init.add(
             "cov",
-            initial_guess=stochastic_init[curent_index : curent_index + n_states * n_states, :],
-            interpolation=InterpolationType.EACH_FRAME,
+            initial_guess=cov_init_flat,
+            interpolation=InterpolationType.CONSTANT,
         )
-        a_bounds.add(
+        u_bounds.add(
             "cov",
-            min_bound=stochastic_min[curent_index : curent_index + n_states * n_states, :],
-            max_bound=stochastic_max[curent_index : curent_index + n_states * n_states, :],
+            min_bound=np.ones((n_states * n_states,)) * -cas.inf,
+            max_bound=np.ones((n_states * n_states,)) * cas.inf,
         )
     else:
-        stochastic_init[curent_index : curent_index + n_cholesky_cov, :] = 0.01  # cholsky cov
+        cov_init_flat = np.ones((n_cholesky_cov,)) * 0.01  # cov
         cov_init = cas.DM_eye(n_states) * np.array([1e-4, 1e-4, 1e-7, 1e-7])
         idx = 0
         for i in range(n_states):
             for j in range(i + 1):
-                stochastic_init[idx, 0] = cov_init[i, j]
-        a_init.add(
+                cov_init_flat[idx] = cov_init[i, j]
+        u_init.add(
             "cholesky_cov",
-            initial_guess=stochastic_init[curent_index : curent_index + n_cholesky_cov, :],
-            interpolation=InterpolationType.EACH_FRAME,
+            initial_guess=cov_init_flat,
+            interpolation=InterpolationType.CONSTANT,
         )
-        a_bounds.add(
+        u_bounds.add(
             "cholesky_cov",
-            min_bound=stochastic_min[curent_index : curent_index + n_cholesky_cov, :],
-            max_bound=stochastic_max[curent_index : curent_index + n_cholesky_cov, :],
+            min_bound=np.ones((n_cholesky_cov,)) * -cas.inf,
+            max_bound=np.ones((n_cholesky_cov,)) * cas.inf,
+            interpolation=InterpolationType.CONSTANT,
         )
+
+    a_init = InitialGuessList()
+    a_init.add(
+        "m",
+        initial_guess=np.ones((n_states * n_states,)) * 0.01,
+        interpolation=InterpolationType.CONSTANT,
+    )
 
     # Vaiables scaling
     u_scaling = VariableScalingList()
@@ -320,8 +312,8 @@ def prepare_socp(
 
     a_scaling = VariableScalingList()
     if with_scaling:
-        a_scaling["k"] = [100] * (n_tau * (n_q + n_qdot))
-        a_scaling["ref"] = [1] * (n_q + n_qdot)
+        u_scaling["k"] = [100] * (n_tau * (n_q + n_qdot))
+        u_scaling["ref"] = [1] * (n_q + n_qdot)
         a_scaling["m"] = [1] * (n_states * n_states)
 
     return StochasticOptimalControlProgram(
@@ -402,18 +394,18 @@ def main():
     q_sol = sol_socp.states["q"]
     qdot_sol = sol_socp.states["qdot"]
     tau_sol = sol_socp.controls["tau"]
-    k_sol = sol_socp.algebraic_states["k"]
-    ref_sol = sol_socp.algebraic_states["ref"]
+    k_sol = sol_socp.controls["k"]
+    ref_sol = sol_socp.controls["ref"]
     m_sol = sol_socp.algebraic_states["m"]
     if with_cholesky:
         cov_sol = None
-        cholesky_cov_sol = sol_socp.algebraic_states["cholesky_cov"]
+        cholesky_cov_sol = sol_socp.controls["cholesky_cov"]
     else:
-        cov_sol = sol_socp.algebraic_states["cov"]
+        cov_sol = sol_socp.controls["cov"]
         cholesky_cov_sol = None
-    a_sol = sol_socp.algebraic_states["a"]
-    c_sol = sol_socp.algebraic_states["c"]
-    algebraic_states_sol = np.vstack((k_sol, ref_sol, m_sol, cov_sol, cholesky_cov_sol, a_sol, c_sol))
+    a_sol = sol_socp.controls["a"]
+    c_sol = sol_socp.controls["c"]
+    stochastic_variables_sol = np.vstack((k_sol, ref_sol, m_sol, cov_sol, cholesky_cov_sol, a_sol, c_sol))
     data = {
         "q_sol": q_sol,
         "qdot_sol": qdot_sol,
@@ -425,7 +417,7 @@ def main():
         "cholesky_cov_sol": cholesky_cov_sol,
         "a_sol": a_sol,
         "c_sol": c_sol,
-        "algebraic_states_sol": algebraic_states_sol,
+        "stochastic_variables_sol": stochastic_variables_sol,
     }
 
     # --- Save the results --- #

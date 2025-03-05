@@ -89,8 +89,8 @@ def stochastic_forward_dynamics(
     mus_excitations_fb = mus_excitations
     noise_torque = np.zeros(nlp.model.motor_noise_magnitude.shape)
     if with_noise:
-        ref = DynamicsFunctions.get(nlp.algebraic_states["ref"], algebraic_states)
-        k = DynamicsFunctions.get(nlp.algebraic_states["k"], algebraic_states)
+        ref = DynamicsFunctions.get(nlp.controls["ref"], controls)
+        k = DynamicsFunctions.get(nlp.controls["k"], controls)
         k_matrix = StochasticBioModel.reshape_to_matrix(k, nlp.model.matrix_shape_k)
 
         hand_pos_velo = nlp.model.sensory_reference(
@@ -301,11 +301,11 @@ def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise
 
     # create the casadi function to be evaluated
     # Get the symbolic variables
-    ref = controllers[0].algebraic_states["ref"].cx
+    ref = controllers[0].controls["ref"].cx
     cov_sym = controllers[0].cx.sym("cov", controllers[0].integrated_values.cx.shape[0])
     cov_matrix = StochasticBioModel.reshape_to_matrix(cov_sym, controllers[0].model.matrix_shape_cov)
 
-    k = controllers[0].algebraic_states["k"].cx
+    k = controllers[0].controls["k"].cx
     k_matrix = StochasticBioModel.reshape_to_matrix(k, controllers[0].model.matrix_shape_k)
 
     # Compute the expected effort
@@ -325,14 +325,14 @@ def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise
     expectedEffort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
     func = cas.Function(
         "f_expectedEffort_fb",
-        [controllers[0].states.cx, controllers[0].algebraic_states.cx, cov_sym],
+        [controllers[0].states.cx, controllers[0].controls.cx, cov_sym],
         [expectedEffort_fb_mx],
     )
 
     f_expectedEffort_fb = 0
-    for i, ctrl in enumerate(controllers):
-        P_vector = ctrl.integrated_values.cx
-        out = func(ctrl.states.cx, ctrl.algebraic_states.cx, P_vector)
+    for i, controller in enumerate(controllers):
+        P_vector = controller.integrated_values.cx
+        out = func(controller.states.cx, controller.controls.cx, P_vector)
         f_expectedEffort_fb += out * dt
 
     return f_expectedEffort_fb
@@ -524,9 +524,32 @@ def prepare_socp(
     )
 
     u_bounds = BoundsList()
-    controls_min = np.ones((n_muscles, 3)) * -cas.inf
-    controls_max = np.ones((n_muscles, 3)) * cas.inf
-    u_bounds.add("muscles", min_bound=controls_min, max_bound=controls_max)
+    u_bounds.add(
+        "muscles",
+        min_bound=np.ones((n_muscles,)) * -cas.inf,
+        max_bound=np.ones((n_muscles,)) * cas.inf,
+        interpolation=InterpolationType.CONSTANT,
+    )
+    u_bounds.add(
+        "k",
+        min_bound=np.ones((n_muscles * (n_q + n_qdot),)) * -cas.inf,
+        max_bound=np.ones((n_muscles * (n_q + n_qdot),)) * cas.inf,
+        interpolation=InterpolationType.CONSTANT,
+    )
+    u_bounds.add(
+        "ref",
+        min_bound=np.ones((n_q + n_qdot,)) * -cas.inf,
+        max_bound=np.ones((n_q + n_qdot,)) * cas.inf,
+        interpolation=InterpolationType.CONSTANT,
+    )
+
+    a_bounds = BoundsList()
+    a_bounds.add(
+        "m",
+        min_bound=np.ones((n_states * n_states,)) * -cas.inf,
+        max_bound=np.ones((n_states * n_states,)) * cas.inf,
+        interpolation=InterpolationType.CONSTANT,
+    )
 
     # Initial guesses
     states_init = np.zeros((n_states, n_shooting + 1))
@@ -539,53 +562,24 @@ def prepare_socp(
     x_init.add("qdot", initial_guess=states_init[n_q : n_q + n_qdot, :], interpolation=InterpolationType.EACH_FRAME)
     x_init.add("muscles", initial_guess=states_init[n_q + n_qdot :, :], interpolation=InterpolationType.EACH_FRAME)
 
-    controls_init = np.ones((n_muscles, n_shooting + 1)) * 0.01
-
     u_init = InitialGuessList()
-    u_init.add("muscles", initial_guess=controls_init, interpolation=InterpolationType.EACH_FRAME)
+    u_init.add("muscles", initial_guess=np.ones((n_muscles,)) * 0.01, interpolation=InterpolationType.CONSTANT)
+    u_init.add(
+        "k",
+        initial_guess=np.ones((n_muscles * (n_q + n_qdot),)) * 0.01,
+        interpolation=InterpolationType.CONSTANT,
+    )
+    u_init.add(
+        "ref",
+        initial_guess=np.ones((n_q + n_qdot,)) * 0.01,
+        interpolation=InterpolationType.CONSTANT,
+    )
 
-    n_stochastic = n_muscles * (n_q + n_qdot) + n_q + n_qdot + n_states * n_states  # K(6x4) + ref(4x1) + M(10x10)
     a_init = InitialGuessList()
-    a_bounds = BoundsList()
-    stochastic_min = np.ones((n_stochastic, 3)) * -cas.inf
-    stochastic_max = np.ones((n_stochastic, 3)) * cas.inf
-
-    stochastic_init = np.zeros((n_stochastic, n_shooting + 1))
-    curent_index = 0
-    stochastic_init[: n_muscles * (n_q + n_qdot), :] = 0.01  # K
-    a_init.add(
-        "k",
-        initial_guess=stochastic_init[: n_muscles * (n_q + n_qdot), :],
-        interpolation=InterpolationType.EACH_FRAME,
-    )
-    a_bounds.add(
-        "k",
-        min_bound=stochastic_min[: n_muscles * (n_q + n_qdot), :],
-        max_bound=stochastic_max[: n_muscles * (n_q + n_qdot), :],
-    )
-    curent_index += n_muscles * (n_q + n_qdot)
-    stochastic_init[curent_index : curent_index + n_q + n_qdot, :] = 0.01  # ref
-    a_init.add(
-        "ref",
-        initial_guess=stochastic_init[curent_index : curent_index + n_q + n_qdot, :],
-        interpolation=InterpolationType.EACH_FRAME,
-    )
-    a_bounds.add(
-        "ref",
-        min_bound=stochastic_min[curent_index : curent_index + n_q + n_qdot, :],
-        max_bound=stochastic_max[curent_index : curent_index + n_q + n_qdot, :],
-    )
-    curent_index += n_q + n_qdot
-    stochastic_init[curent_index : curent_index + n_states * n_states, :] = 0.01  # M
     a_init.add(
         "m",
-        initial_guess=stochastic_init[curent_index : curent_index + n_states * n_states, :],
-        interpolation=InterpolationType.EACH_FRAME,
-    )
-    a_bounds.add(
-        "m",
-        min_bound=stochastic_min[curent_index : curent_index + n_states * n_states, :],
-        max_bound=stochastic_max[curent_index : curent_index + n_states * n_states, :],
+        initial_guess=np.ones((n_states * n_states,)) * 0.01,
+        interpolation=InterpolationType.CONSTANT,
     )
 
     integrated_value_functions = {"cov": get_cov_mat}
@@ -663,29 +657,24 @@ def main():
     )
 
     sol_socp = socp.solve(solver)
-    from bioptim import Shooting, SolutionIntegrator
+    from bioptim import SolutionIntegrator, SolutionMerge
 
-    sol_socp.noisy_integrate(
-        shooting_type=Shooting.SINGLE,
-        keep_intermediate_points=False,
-        integrator=SolutionIntegrator.SCIPY_RK45,
-        n_random=30,
-    )
+    sol_socp.noisy_integrate(integrator=SolutionIntegrator.SCIPY_RK45, to_merge=SolutionMerge.NODES)
 
     q_sol = sol_socp.states["q"]
     qdot_sol = sol_socp.states["qdot"]
     activations_sol = sol_socp.states["muscles"]
     excitations_sol = sol_socp.controls["muscles"]
-    k_sol = sol_socp.algebraic_states["k"]
-    ref_sol = sol_socp.algebraic_states["ref"]
-    m_sol = sol_socp.algebraic_states["m"]
+    k_sol = sol_socp.controls["k"]
+    ref_sol = sol_socp.controls["ref"]
+    m_sol = sol_socp.controls["m"]
     cov_sol_vect = sol_socp.integrated_values["cov"]
     cov_sol = np.zeros((10, 10, n_shooting))
     for i in range(n_shooting):
         for j in range(10):
             for k in range(10):
                 cov_sol[j, k, i] = cov_sol_vect[j * 10 + k, i]
-    algebraic_states_sol = np.vstack((k_sol, ref_sol, m_sol))
+    stochastic_variables_sol = np.vstack((k_sol, ref_sol, m_sol))
     data = {
         "q_sol": q_sol,
         "qdot_sol": qdot_sol,
@@ -695,7 +684,7 @@ def main():
         "ref_sol": ref_sol,
         "m_sol": m_sol,
         "cov_sol": cov_sol,
-        "algebraic_states_sol": algebraic_states_sol,
+        "stochastic_variables_sol": stochastic_variables_sol,
     }
 
     # --- Save the results --- #
@@ -768,7 +757,7 @@ def main():
                     hand_vel_fcn(x_prev[:2], x_prev[2:4])[:2], (2,)
                 )
                 u = excitations_sol[:, i_node]
-                s = algebraic_states_sol[:, i_node]
+                s = stochastic_variables_sol[:, i_node]
                 k1 = dyn_fun(
                     cas.vertcat(dt_actual * i_node, dt_actual),
                     x_prev,

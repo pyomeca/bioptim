@@ -1,7 +1,8 @@
-import pytest
-from casadi import DM, MX, vertcat, horzcat, Function
 import numpy as np
 import numpy.testing as npt
+import pytest
+from casadi import DM, MX, vertcat, horzcat, Function
+
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -22,8 +23,8 @@ from bioptim import (
     ConstraintList,
     ExternalForceSetTimeSeries,
 )
-from bioptim.limits.penalty_controller import PenaltyController
 from bioptim.limits.penalty import PenaltyOption
+from bioptim.limits.penalty_controller import PenaltyController
 from bioptim.misc.mapping import BiMapping
 from bioptim.optimization.non_linear_program import NonLinearProgram as NLP
 from bioptim.optimization.optimization_variable import OptimizationVariableList

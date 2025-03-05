@@ -222,3 +222,162 @@ def test_example_two_pendulums():
         ],
         decimal=6,
     )
+
+
+def test_example_two_pendulums_algebraic():
+    """Test the holonomic_constraints/two_pendulums_algebraic example"""
+    from bioptim.examples.holonomic_constraints import two_pendulums_algebraic
+
+    bioptim_folder = TestUtils.module_folder(two_pendulums_algebraic)
+
+    # --- Prepare the ocp --- #
+    ocp, model = two_pendulums_algebraic.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/two_pendulums.bioMod",
+        n_shooting=5,
+        final_time=1,
+        expand_dynamics=False,
+    )
+
+    # --- Solve the ocp --- #
+    sol = ocp.solve(Solver.IPOPT())
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    algebraic_states = sol.decision_algebraic_states(to_merge=SolutionMerge.NODES)
+
+    qu = states["q_u"]
+    qdot_u = states["qdot_u"]
+    qv = algebraic_states["q_v"]
+
+    npt.assert_almost_equal(
+        qu,
+        np.array(
+            [
+                [
+                    1.54,
+                    1.53147122,
+                    1.41845956,
+                    1.34425805,
+                    1.25630081,
+                    0.98624955,
+                    0.87651554,
+                    0.76604885,
+                    0.4498159,
+                    0.32878399,
+                    0.21276672,
+                    -0.19326641,
+                    -0.37448602,
+                    -0.58527414,
+                    -1.25818395,
+                    -1.54,
+                ],
+                [
+                    1.54,
+                    1.54181016,
+                    1.55158498,
+                    1.55693049,
+                    1.55510653,
+                    1.44104916,
+                    1.35937733,
+                    1.25005648,
+                    0.83921773,
+                    0.64778373,
+                    0.41571636,
+                    -0.12210508,
+                    -0.28375032,
+                    -0.347894,
+                    -0.18407068,
+                    0.0,
+                ],
+            ]
+        ),
+        decimal=6,
+    )
+
+    npt.assert_almost_equal(
+        qv,
+        np.array(
+            [
+                [
+                    0.99952583,
+                    0.99922687,
+                    0.98841918,
+                    0.97444976,
+                    0.95095256,
+                    0.83396227,
+                    0.76851408,
+                    0.69329324,
+                    0.43479975,
+                    0.32289239,
+                    0.21116504,
+                    -0.19206551,
+                    -0.36579422,
+                    -0.55242792,
+                    -0.95153339,
+                    -0.99952583,
+                ],
+                [
+                    -0.03079146,
+                    -0.03931497,
+                    -0.15174825,
+                    -0.2246056,
+                    -0.30933677,
+                    -0.55182147,
+                    -0.63983288,
+                    -0.72065559,
+                    -0.90052717,
+                    -0.94643568,
+                    -0.97745042,
+                    -0.98138211,
+                    -0.93069576,
+                    -0.83356067,
+                    -0.30754544,
+                    -0.03079146,
+                ],
+            ]
+        ),
+        decimal=6,
+    )
+
+    npt.assert_almost_equal(
+        qdot_u,
+        np.array(
+            [
+                [
+                    0.0,
+                    -0.68327871,
+                    -2.57908681,
+                    -3.28363595,
+                    -3.58353342,
+                    -4.21217445,
+                    -4.37247415,
+                    -4.41193342,
+                    -4.71692498,
+                    -4.90073503,
+                    -4.91946837,
+                    -6.80169755,
+                    -8.1608516,
+                    -8.68741596,
+                    -10.73781539,
+                    -11.7122476,
+                ],
+                [
+                    0.0,
+                    0.09005906,
+                    0.1921158,
+                    0.17676746,
+                    -0.49377154,
+                    -2.79878086,
+                    -3.8156258,
+                    -4.74474516,
+                    -7.11514715,
+                    -7.92128247,
+                    -8.77923903,
+                    -6.74632722,
+                    -4.40017592,
+                    -1.21807955,
+                    5.94725113,
+                    8.01054089,
+                ],
+            ]
+        ),
+        decimal=6,
+    )

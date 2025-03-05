@@ -397,6 +397,7 @@ class PlotOcp:
                         )
 
                         # TODO: get rid of all_variables_in_one_subplot by fixing the mapping appropriately
+                        # Not to the developers: This feature is not used anymore, but it is still very useful to see all variables in one subplot when there are too many variables. So ideally we would repair it rather than delete it.
                         if not nlp.plot[variable].all_variables_in_one_subplot:
                             n_cols, n_rows = PlotOcp._generate_windows_size(nb_subplots)
                         else:
