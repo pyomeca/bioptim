@@ -47,7 +47,7 @@ def test_soft_contact(phase_dynamics):
 
     # initial and final position
     npt.assert_almost_equal(q[:, 0], np.array((0, 0, 0)), decimal=1)
-    npt.assert_almost_equal(q[:, -1], np.array([0.05     ,  0.0933177, -0.6262446]))
+    npt.assert_almost_equal(q[:, -1], np.array([0.05, 0.0933177, -0.6262446]))
 
     # initial and final velocities
     npt.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0)), decimal=4)
