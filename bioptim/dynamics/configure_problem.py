@@ -1171,16 +1171,16 @@ class ConfigureProblem:
 
         all_contact_names = []
         for elt in ocp.nlp:
-            all_contact_names.extend([name for name in elt.model.contact_names if name not in all_contact_names])
+            all_contact_names.extend([name for name in elt.model.rigid_contact_names if name not in all_contact_names])
 
         if "contact_forces" in nlp.plot_mapping:
-            contact_names_in_phase = [name for name in nlp.model.contact_names]
+            contact_names_in_phase = [name for name in nlp.model.rigid_contact_names]
             axes_idx = BiMapping(
                 to_first=nlp.plot_mapping["contact_forces"].map_idx,
                 to_second=[i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase],
             )
         else:
-            contact_names_in_phase = [name for name in nlp.model.contact_names]
+            contact_names_in_phase = [name for name in nlp.model.rigid_contact_names]
             axes_idx = BiMapping(
                 to_first=[i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase],
                 to_second=[i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase],
@@ -1833,7 +1833,7 @@ class ConfigureProblem:
             If the generalized forces should be a control
         """
 
-        name_contact_forces = [name for name in nlp.model.contact_names]
+        name_contact_forces = [name for name in nlp.model.rigid_contact_names]
         ConfigureProblem.configure_new_variable(
             "rigid_contact_forces", name_contact_forces, ocp, nlp, as_states=as_states, as_algebraic_states=as_algebraic_states, as_controls=as_controls
         )

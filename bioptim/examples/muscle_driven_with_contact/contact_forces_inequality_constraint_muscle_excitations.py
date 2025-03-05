@@ -147,7 +147,7 @@ def main():
             np.array(nlp.contact_forces_func([dt * i_node, dt * (i_node + 1)], x[:, i_node], u[:, i_node], [], [], [])),
             (3,))
 
-    names_contact_forces = ocp.nlp[0].model.contact_names
+    names_contact_forces = ocp.nlp[0].model.rigid_contact_names
     for i, elt in enumerate(contact_forces):
         plt.plot(np.linspace(0, t, ns + 1)[:-1], elt, ".-", label=f"{names_contact_forces[i]}")
     plt.legend()
