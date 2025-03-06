@@ -60,6 +60,7 @@ class PhaseTransition(MultinodePenalty):
                 else (phase_pre_idx, phase_pre_idx + 1)
             ),
             nodes=(Node.END, Node.START),
+            sub_nodes=(-1, 0),
             multinode_penalty=transition,
             custom_function=custom_function,
             **extra_parameters,
