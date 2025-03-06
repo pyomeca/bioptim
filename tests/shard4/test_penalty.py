@@ -168,7 +168,8 @@ def get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d):
     if isinstance(penalty, MultinodeConstraint) or isinstance(penalty, MultinodeObjective):
         sub_nodes = [i for i in penalty.sub_nodes]
         controller = [
-            PenaltyController(ocp, ocp.nlp[0], t, sub_nodes, x, u, [], [], p, a, [], d, 0) for i in range(len(penalty.nodes_phase))
+            PenaltyController(ocp, ocp.nlp[0], t, sub_nodes, x, u, [], [], p, a, [], d, 0)
+            for i in range(len(penalty.nodes_phase))
         ]
     else:
         controller = PenaltyController(ocp, ocp.nlp[0], t, [0], x, u, [], [], p, a, [], d, 0)
