@@ -6,6 +6,7 @@ import numpy as np
 from casadi import Function, vertcat
 
 from .optimal_control_program import OptimalControlProgram
+from .. import PhaseDynamics
 from ..dynamics.configure_problem import ConfigureProblem, DynamicsList
 from ..dynamics.dynamics_evaluation import DynamicsEvaluation
 from ..limits.constraints import ParameterConstraintList
@@ -87,6 +88,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         expand = True
         dynamics.add(
             self.configure_torque_driven,
+            phase_dynamics=PhaseDynamics.ONE_PER_NODE,
             expand_dynamics=expand,
             skip_continuity=True,
         )

@@ -1438,7 +1438,7 @@ def test_penalty_custom_with_bounds_failing_min_bound(value, phase_dynamics):
     penalty.custom_function = custom_with_bounds
 
     with pytest.raises(RuntimeError):
-        penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, [], [], [], p, a, [], [], 0))
+        penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], t, [], x, [], [], [], p, a, [], [], 0))
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
