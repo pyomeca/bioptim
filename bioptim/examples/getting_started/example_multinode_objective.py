@@ -84,6 +84,7 @@ def prepare_ocp(
         multinode_min_controls,
         nodes_phase=[0 for _ in range(n_shooting)],
         nodes=[i for i in range(n_shooting)],
+        sub_nodes=[0 for _ in range(n_shooting)],
         weight=10,
         quadratic=False,
         expand=False,

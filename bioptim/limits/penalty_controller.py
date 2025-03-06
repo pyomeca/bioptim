@@ -23,6 +23,7 @@ class PenaltyController:
         ocp,
         nlp: NonLinearProgram,
         t: list,
+        sn_idx: list,
         x: list,
         u: list,
         x_scaled: list,
@@ -66,6 +67,7 @@ class PenaltyController:
         self._ocp: Any = ocp
         self._nlp: NonLinearProgram = nlp
         self.t = t
+        self.sn_idx = sn_idx
         self.x = x
         self.u = u
         self.x_scaled = x_scaled

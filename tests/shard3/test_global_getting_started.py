@@ -1153,11 +1153,19 @@ def test_multinode_constraints_wrong_nodes(node):
 
     if node in (Node.START, Node.MID, Node.PENULTIMATE, Node.END) or isinstance(node, int):
         multinode_constraints.add(
-            MultinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 0), nodes=(Node.START, node), key="all"
+            MultinodeConstraintFcn.STATES_EQUALITY,
+            nodes_phase=(0, 0),
+            nodes=(Node.START, node),
+            sub_nodes=(0, 0),
+            key="all"
         )
         with pytest.raises(ValueError, match=re.escape("Each of the nodes must have a corresponding nodes_phase")):
             multinode_constraints.add(
-                MultinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0,), nodes=(Node.START, node), key="all"
+                MultinodeConstraintFcn.STATES_EQUALITY,
+                nodes_phase=(0,),
+                nodes=(Node.START, node),
+                sub_nodes=(0, 0),
+                key="all"
             )
     else:
         with pytest.raises(
@@ -1168,7 +1176,11 @@ def test_multinode_constraints_wrong_nodes(node):
             ),
         ):
             multinode_constraints.add(
-                MultinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 0), nodes=(Node.START, node), key="all"
+                MultinodeConstraintFcn.STATES_EQUALITY,
+                nodes_phase=(0, 0),
+                nodes=(Node.START, node),
+                sub_nodes=(0, 0),
+                key="all"
             )
 
 

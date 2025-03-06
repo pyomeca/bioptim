@@ -40,16 +40,19 @@ def prepare_ocp(biorbd_model_path, phase_1, phase_2, phase_dynamics) -> OptimalC
         MultinodeConstraintFcn.STATES_EQUALITY,
         nodes_phase=(phase_1, phase_2),
         nodes=(Node.START, Node.START),
+        sub_nodes=(0, 0),
     )
     multinode_constraints.add(
         MultinodeConstraintFcn.COM_EQUALITY,
         nodes_phase=(phase_1, phase_2),
         nodes=(Node.START, Node.START),
+        sub_nodes=(0, 0),
     )
     multinode_constraints.add(
         MultinodeConstraintFcn.COM_VELOCITY_EQUALITY,
         nodes_phase=(phase_1, phase_2),
         nodes=(Node.START, Node.START),
+        sub_nodes=(0, 0),
     )
 
     # Path constraint
@@ -96,6 +99,7 @@ def test_multinode_fail_first_node(node):
             MultinodeConstraintFcn.STATES_EQUALITY,
             nodes_phase=(0, 2),
             nodes=(node, Node.START),
+            sub_nodes=(0, 0),
         )
     else:
         with pytest.raises(
@@ -108,6 +112,7 @@ def test_multinode_fail_first_node(node):
                 MultinodeConstraintFcn.STATES_EQUALITY,
                 nodes_phase=(0, 2),
                 nodes=(node, Node.START),
+                sub_nodes=(0, 0),
             )
 
 
@@ -121,6 +126,7 @@ def test_multinode_fail_second_node(node):
             MultinodeConstraintFcn.STATES_EQUALITY,
             nodes_phase=(0, 2),
             nodes=(node, Node.START),
+            sub_nodes=(0, 0),
         )
     else:
         with pytest.raises(
@@ -133,6 +139,7 @@ def test_multinode_fail_second_node(node):
                 MultinodeConstraintFcn.STATES_EQUALITY,
                 nodes_phase=(0, 2),
                 nodes=(Node.START, node),
+                sub_nodes=(0, 0),
             )
 
 

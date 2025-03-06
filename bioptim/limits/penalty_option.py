@@ -4,7 +4,7 @@ import numpy as np
 from casadi import vertcat, Function, MX, SX, jacobian, diag
 
 from .penalty_controller import PenaltyController
-from ..limits.penalty_helpers import PenaltyHelpers
+from ..limits.penalty_helpers import PenaltyHelpers, _get_multinode_indices
 from ..misc.enums import Node, PlotType, ControlType, PenaltyType, QuadratureRule, PhaseDynamics
 from ..misc.mapping import BiMapping
 from ..misc.options import OptionGeneric
@@ -199,6 +199,7 @@ class PenaltyOption(OptionGeneric):
         self.multinode_penalty = False
         self.nodes_phase = None  # This is relevant for multinodes
         self.nodes = None  # This is relevant for multinodes
+        self.sub_nodes = None  # This is relevant for multinodes
         if self.derivative and self.explicit_derivative:
             raise ValueError("derivative and explicit_derivative cannot be both True")
         self.subnodes_are_decision_states = []  # This is set by _set_subnodes_are_decision_states
@@ -729,7 +730,7 @@ class PenaltyOption(OptionGeneric):
                     # performing some kind of integration or derivative and this last node does not exist
                     if nlp.control_type in (ControlType.CONSTANT_WITH_LAST_NODE,):
                         return vertcat(u, controls.scaled.cx_end)
-                    if self.integrate or self.derivative or self.explicit_derivative:
+                    if self.integrate or self.derivative or self.explicit_derivative or self.multinode_penalty:
                         return u
                     else:
                         return vertcat(u, controls.scaled.cx_end)
@@ -870,11 +871,11 @@ class PenaltyOption(OptionGeneric):
 
             controllers = []
             self.multinode_idx = []
-            for node, phase_idx in zip(self.nodes, self.nodes_phase):
+            for node, phase_idx, subnode in zip(self.nodes, self.nodes_phase, self.sub_nodes):
                 self.node = node
                 nlp = ocp.nlp[phase_idx % ocp.n_phases]  # this is to allow using -1 to refer to the last phase
 
-                controllers.append(self.get_penalty_controller(ocp, nlp))
+                controllers.append(self.get_penalty_controller(ocp, nlp, subnode))
                 if (self.node[0] == Node.END or self.node[0] == nlp.ns) and nlp.U != []:
                     # Make an exception to the fact that U is not available for the last node
                     controllers[-1].u = [nlp.U[-1]]
@@ -888,7 +889,7 @@ class PenaltyOption(OptionGeneric):
             self.ensure_penalty_sanity(ocp, controllers[0].get_nlp)
 
         else:
-            controllers = [self.get_penalty_controller(ocp, nlp)]
+            controllers = [self.get_penalty_controller(ocp, nlp, 0)]
             penalty_type.validate_penalty_time_index(self, controllers[0])
             self.ensure_penalty_sanity(ocp, nlp)
             self.dt = penalty_type.get_dt(nlp)
@@ -904,9 +905,9 @@ class PenaltyOption(OptionGeneric):
                 if node not in self.node_idx:
                     continue
 
-            for controller in controllers:
+            for i_controller, controller in enumerate(controllers):
                 controller.node_index = controller.t[node]
-                controller.cx_index_to_get = 0
+                controller.cx_index_to_get = controller.sn_idx[node]
 
             penalty_function = self.type(
                 self, controllers if len(controllers) > 1 else controllers[0], **self.extra_parameters
@@ -940,7 +941,7 @@ class PenaltyOption(OptionGeneric):
 
         raise RuntimeError("_reset_penalty cannot be called from an abstract class")
 
-    def get_penalty_controller(self, ocp, nlp) -> PenaltyController:
+    def get_penalty_controller(self, ocp, nlp, subnode) -> PenaltyController:
         """
         Get the actual node (time, X and U) specified in the penalty
 
@@ -986,6 +987,10 @@ class PenaltyOption(OptionGeneric):
             else:
                 raise RuntimeError(f"{node} is not a valid node")
 
+        if not isinstance(subnode, int):
+            raise RuntimeError("subnode must be an int")
+        sn_idx = [nlp.X_scaled[0].shape[1] if subnode == -1 else subnode for idx in t_idx]
+
         x = [nlp.X[idx] for idx in t_idx]
         x_scaled = [nlp.X_scaled[idx] for idx in t_idx]
         u, u_scaled = [], []
@@ -997,4 +1002,4 @@ class PenaltyOption(OptionGeneric):
             a = [nlp.A[idx] for idx in t_idx]
             a_scaled = [nlp.A_scaled[idx] for idx in t_idx]
         d = [nlp.numerical_timeseries for idx in t_idx]
-        return PenaltyController(ocp, nlp, t_idx, x, u, x_scaled, u_scaled, nlp.parameters.cx, a, a_scaled, d)
+        return PenaltyController(ocp, nlp, t_idx, sn_idx, x, u, x_scaled, u_scaled, nlp.parameters.cx, a, a_scaled, d)

@@ -1293,6 +1293,7 @@ def test_penalty_constraint_total_time(value, phase_dynamics):
         max_bound=20,
         nodes_phase=(0, 1),
         nodes=(Node.END, Node.END),
+        sub_nodes=(0, 0),
     )
     penalty[0].multinode_idx = (ocp.nlp[0].ns, ocp.nlp[0].ns)
 
@@ -1487,26 +1488,26 @@ def test_PenaltyFunctionAbstract_get_node(node, ns, phase_dynamics):
 
     if node == Node.MID and ns % 2 != 0:
         with pytest.raises(ValueError, match="Number of shooting points must be even to use MID"):
-            _ = penalty.get_penalty_controller([], nlp)
+            _ = penalty.get_penalty_controller([], nlp, 0)
         return
     elif node == Node.TRANSITION:
         with pytest.raises(RuntimeError, match="Node.TRANSITION is not a valid node"):
-            _ = penalty.get_penalty_controller([], nlp)
+            _ = penalty.get_penalty_controller([], nlp, 0)
         return
     elif node == Node.MULTINODES:
         with pytest.raises(RuntimeError, match="Node.MULTINODES is not a valid node"):
-            _ = penalty.get_penalty_controller([], nlp)
+            _ = penalty.get_penalty_controller([], nlp, 0)
         return
     elif node == Node.DEFAULT:
         with pytest.raises(RuntimeError, match="Node.DEFAULT is not a valid node"):
-            _ = penalty.get_penalty_controller([], nlp)
+            _ = penalty.get_penalty_controller([], nlp, 0)
         return
     elif ns == 1 and node == Node.PENULTIMATE:
         with pytest.raises(ValueError, match="Number of shooting points must be greater than 1"):
-            _ = penalty.get_penalty_controller([], nlp)
+            _ = penalty.get_penalty_controller([], nlp, 0)
         return
     else:
-        controller = penalty.get_penalty_controller([], nlp)
+        controller = penalty.get_penalty_controller([], nlp, 0)
 
     x_expected = nlp.X
     u_expected = nlp.U

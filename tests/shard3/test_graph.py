@@ -88,6 +88,7 @@ def prepare_ocp_phase_transitions(
             weight=100,
             nodes_phase=(1, 2),
             nodes=(Node.PENULTIMATE, Node.START),
+            sub_nodes=(0, 0),
             quadratic=True,
         )
 

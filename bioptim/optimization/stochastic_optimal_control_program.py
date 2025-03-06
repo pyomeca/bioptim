@@ -214,6 +214,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_EXPLICIT,
                     nodes_phase=(i_phase, i_phase),
                     nodes=(i_node, i_node + 1),
+                    sub_nodes=(0, 0),
                     # penalty_type=PenaltyType.INTERNAL,  #TODO: waiting for the bug on ConstraintList to be fixed
                 )
             if i_phase > 0:
@@ -221,6 +222,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_EXPLICIT,
                     nodes_phase=(i_phase - 1, i_phase),
                     nodes=(-1, 0),
+                    sub_nodes=(0, 0),
                     # penalty_type=PenaltyType.INTERNAL,  #TODO: waiting for the bug on ConstraintList to be fixed
                 )
         penalty_m_dg_dz_list.add_or_replace_to_penalty_pool(self)
@@ -240,6 +242,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_IMPLICIT,
                     nodes_phase=(i_phase, i_phase),
                     nodes=(i_node, i_node + 1),
+                    sub_nodes=(0, 0),
                     # penalty_type=PenaltyType.INTERNAL,  #TODO: waiting for the bug on ConstraintList to be fixed
                 )
             if i_phase > 0 and i_phase < len(self.nlp) - 1:
@@ -247,6 +250,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_IMPLICIT,
                     nodes_phase=(i_phase - 1, i_phase),
                     nodes=(-1, 0),
+                    sub_nodes=(0, 0),
                     # penalty_type=PenaltyType.INTERNAL,  #TODO: waiting for the bug on ConstraintList to be fixed
                 )
 
@@ -257,6 +261,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     MultinodeConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT,
                     nodes_phase=(i_phase, i_phase),
                     nodes=(i_node, i_node + 1),
+                    sub_nodes=(0, 0),
                     # penalty_type=PenaltyType.INTERNAL,  #TODO: waiting for the bug on ConstraintList to be fixed
                 )
 
@@ -276,6 +281,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     MultinodeConstraintFcn.STOCHASTIC_DF_DW_IMPLICIT,
                     nodes_phase=(i_phase, i_phase),
                     nodes=(i_node, i_node + 1),
+                    sub_nodes=(0, 0),
                     # penalty_type=PenaltyType.INTERNAL,  #TODO: waiting for the bug on ConstraintList to be fixed
                 )
             if i_phase > 0 and i_phase < len(self.nlp) - 1:
@@ -283,6 +289,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     MultinodeConstraintFcn.STOCHASTIC_DF_DW_IMPLICIT,
                     nodes_phase=(i_phase, i_phase + 1),
                     nodes=(-1, 0),
+                    sub_nodes=(0, 0),
                     # penalty_type=PenaltyType.INTERNAL,  #TODO: waiting for the bug on ConstraintList to be fixed
                 )
 

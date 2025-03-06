@@ -515,12 +515,14 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                 self.variational_integrator_three_nodes,
                 nodes_phase=(0, 0, 0),
                 nodes=(i, i + 1, i + 2),
+                sub_nodes=(0, 0, 0),
             )
         # add initial and final constraints
         multinode_constraints.add(
             self.variational_integrator_initial,
             nodes_phase=(0, 0),
             nodes=(0, 1),
+            sub_nodes=(0, 0),
             n_qdot=n_qdot,
         )
 
@@ -528,6 +530,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             self.variational_integrator_final,
             nodes_phase=(0, 0),
             nodes=(n_shooting - 1, n_shooting),
+            sub_nodes=(0, 0),
             n_qdot=n_qdot,
         )
         return multinode_constraints

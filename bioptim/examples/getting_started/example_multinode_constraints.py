@@ -134,20 +134,36 @@ def prepare_ocp(
         MultinodeConstraintFcn.STATES_EQUALITY,
         nodes_phase=(0, 2, 2),
         nodes=(Node.START, Node.START, Node.MID),
+        sub_nodes=(0, 0, 0),
         key="all",
     )
     # Objectives with the weight as an argument
     multinode_objectives = MultinodeObjectiveList()
     multinode_objectives.add(
-        MultinodeObjectiveFcn.STATES_EQUALITY, nodes_phase=(0, 2), nodes=(2, Node.MID), weight=2, key="all"
+        MultinodeObjectiveFcn.STATES_EQUALITY,
+        nodes_phase=(0, 2),
+        nodes=(2, Node.MID),
+        sub_nodes=(0, 0),
+        weight=2,
+        key="all"
     )
     # Objectives with the weight as an argument
     multinode_objectives.add(
-        MultinodeObjectiveFcn.STATES_EQUALITY, nodes_phase=(0, 1), nodes=(Node.MID, Node.END), weight=0.1, key="all"
+        MultinodeObjectiveFcn.STATES_EQUALITY,
+        nodes_phase=(0, 1),
+        nodes=(Node.MID, Node.END),
+        sub_nodes=(0, 0),
+        weight=0.1,
+        key="all"
     )
     # Objectives with the weight as an argument
     multinode_objectives.add(
-        custom_multinode_constraint, nodes_phase=(0, 1), nodes=(Node.MID, Node.PENULTIMATE), weight=0.1, coef=2
+        custom_multinode_constraint,
+        nodes_phase=(0, 1),
+        nodes=(Node.MID, Node.PENULTIMATE),
+        sub_nodes=(0, 0),
+        weight=0.1,
+        coef=2
     )
 
     # This is a useless constraint (as it already does that anyway) to show how to add three constraints on the same
@@ -156,13 +172,18 @@ def prepare_ocp(
         MultinodeConstraintFcn.CONTROLS_EQUALITY,
         nodes_phase=(1, 1, 1),
         nodes=(Node.START, Node.MID, Node.PENULTIMATE),
+        sub_nodes=(0, 0, 0),
         index=2,
     )
     # This constraint is for documentation purposes. Up to 3 nodes, it will work, but it won't for more than 3 if
     # phase_dynamics is set to PhaseDynamics.SHARED_DURING_THE_PHASE
     if with_too_much_constraints:
         multinode_constraints.add(
-            MultinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 0, 0, 0), nodes=(0, 1, 2, 3), key="all"
+            MultinodeConstraintFcn.STATES_EQUALITY,
+            nodes_phase=(0, 0, 0, 0),
+            nodes=(0, 1, 2, 3),
+            sub_nodes=(0, 0, 0, 0),
+            key="all"
         )
 
     # Path constraint

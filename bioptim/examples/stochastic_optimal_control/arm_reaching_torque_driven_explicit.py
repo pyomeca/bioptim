@@ -401,6 +401,7 @@ def prepare_socp(
         minimize_uncertainty,
         nodes_phase=[0 for _ in range(n_shooting + 1)],
         nodes=[i for i in range(n_shooting + 1)],
+        sub_nodes=[0 for _ in range(n_shooting + 1)],
         key="qddot",
         weight=1e3 / 2,
         quadratic=False,
@@ -409,6 +410,7 @@ def prepare_socp(
         expected_feedback_effort,
         nodes_phase=[0 for _ in range(n_shooting + 1)],
         nodes=[i for i in range(n_shooting + 1)],
+        sub_nodes=[0 for _ in range(n_shooting + 1)],
         weight=1e3 / 2,
         quadratic=False,
     )
@@ -441,6 +443,7 @@ def prepare_socp(
         reach_target_consistently,
         nodes_phase=[0 for _ in range(n_shooting + 1)],
         nodes=[i for i in range(n_shooting + 1)],
+        sub_nodes=[0 for _ in range(n_shooting + 1)],
         min_bound=np.array([-cas.inf, -cas.inf, -cas.inf, -cas.inf]),
         max_bound=np.array([max_bounds_lateral_variation**2, 0.004**2, 0.05**2, 0.05**2]),
     )

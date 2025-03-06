@@ -29,7 +29,7 @@ from bioptim import (
     DynamicsFunctions,
     ExternalForceSetVariables,
     OdeSolver,
-    DefectType,
+    DefectType, MultinodeConstraintList, MultinodeConstraintFcn,
 )
 
 def custom_configure(
@@ -58,8 +58,10 @@ def custom_dynamics(
     algebraic_states: MX | SX,
     numerical_timeseries: MX | SX,
     nlp: NonLinearProgram,
-    my_additional_factor=1,
 ) -> DynamicsEvaluation:
+    """
+    The defects are only evaluated at the collocation nodes, but not at the first node.
+    """
 
     # Variables
     q = nlp.get_var_from_states_or_controls("q", states, controls)
@@ -87,13 +89,42 @@ def custom_dynamics(
 
     return DynamicsEvaluation(dxdt=None, defects=defects)
 
+def custom_first_defect(controller):
+    """
+    The defect at the first node.
+    """
+
+    # Variables
+    q = controller.states["q"].cx_start
+    qdot = controller.states["qdot"].cx_start
+    residual_tau = controller.controls["tau"].cx_start
+    mus_activations = controller.controls["muscles"].cx_start
+
+    # Get external forces from algebraic states
+    rigid_contact_forces = controller.get_nlp.get_external_forces("rigid_contact_forces", controller.states.cx, controller.controls.cx, controller.algebraic_states.cx,
+                                              controller.numerical_timeseries.cx)
+    # Map to external forces
+    external_forces = controller.model.map_rigid_contact_forces_to_global_forces(rigid_contact_forces, q, controller.parameters.cx)
+
+    # Compute joint torques
+    muscles_tau = DynamicsFunctions.compute_tau_from_muscle(controller.get_nlp, q, qdot, mus_activations)
+    tau = muscles_tau + residual_tau
+
+    # Defects
+    slope_q = controller.states_dot["qdot"].cx_start
+    slope_qdot = controller.states_dot["qddot"].cx_start
+    tau_id = DynamicsFunctions.inverse_dynamics(controller.get_nlp, q, slope_q, slope_qdot, with_contact=False,
+                                                external_forces=external_forces)
+    defects = vertcat(qdot - slope_q, tau - tau_id)
+
+    return defects
+
 def contact_velocity(controller):
     contact_velocities = []
     for i_contact in range(2):
         qs = [controller.states["q"].cx_start] + controller.states["q"].cx_intermediates_list
         qdots = [controller.states["qdot"].cx_start] + controller.states["qdot"].cx_intermediates_list
-        # No need to constrain the last one since there is a continuity constraint imposing that the states at the end of the interval must be the same as the beginning of the next interval.
-        for i_sn in range(len(qs)-1):
+        for i_sn in range(len(qs)):
             contact_axis = controller.model.rigid_contact_axes_index(contact_index=i_contact)
             contact_velocities += [controller.model.rigid_contact_velocity(contact_index=i_contact, contact_axis=contact_axis)(qs[i_sn], qdots[i_sn], controller.parameters.cx)]
     return vertcat(*contact_velocities)
@@ -113,7 +144,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_CONTROL, key="tau", weight=1)
     # objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MARKERS, weight=10, index=, target=, node=Node.ALL_SHOOTING)
 
     # Dynamics
@@ -131,6 +162,19 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
         contact_velocity,
         node=Node.ALL_SHOOTING,
     )
+    constraints.add(
+        custom_first_defect,
+        node=Node.ALL_SHOOTING,
+    )
+    multinode_constraints = MultinodeConstraintList()
+    for i_node in range(n_shooting):
+        multinode_constraints.add(
+            MultinodeConstraintFcn.ALGEBRAIC_STATES_CONTINUITY,
+            nodes_phase=(0, 0),
+            nodes=(i_node, i_node+1),
+            sub_nodes=(-1, 0),
+            key="rigid_contact_forces",
+        )
 
     # Path constraint
     n_q = bio_model.nb_q
@@ -180,6 +224,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
         variable_mappings=dof_mapping,
         objective_functions=objective_functions,
         constraints=constraints,
+        multinode_constraints=multinode_constraints,
         ode_solver=OdeSolver.COLLOCATION(polynomial_degree=3, defects_type=DefectType.IMPLICIT)
     )
 
@@ -204,20 +249,31 @@ def main():
     algebraic_states = sol.decision_algebraic_states(to_merge=SolutionMerge.NODES)
     q, qdot, tau_residual, mus, contact_forces = states["q"], states["qdot"], controls["tau"], controls["muscles"], algebraic_states["rigid_contact_forces"]
 
+    # --- Get contact position --- #
+    contact_positions = np.zeros((2, 3, time.shape[0]))
+    for i_node in range(time.shape[0]):
+        for i_contact in range(2):
+            contact_positions[i_contact, : , i_node] = np.reshape(nlp.model.rigid_contact_position(i_contact)(q[:, i_node], []), (3, ))
+
     # --- Plots --- #
-    fig, axs = plt.subplots(2, 2, figsize=(10, 10))
-    names_contact_points = [name for name in ocp.nlp[0].model.rigid_contact_name]
-    for i, elt in enumerate(contact_forces):
-        axs[0].plot(time, elt, ".-", label=f"{names_contact_forces[i]}")
+    fig, axs = plt.subplots(2, 1, figsize=(10, 10))
+    names_contact_points = ["Seg1_contact1", "Seg1_contact2"]
+    colors = ["tab:red", "tab:blue"]
+    for i_contact in range(len(names_contact_points)):
+        axs[0].plot(time, contact_positions[i_contact, 0, :], ".-", color=colors[i_contact], label=f"{names_contact_points[i_contact]} - x")
+        axs[0].plot(time, contact_positions[i_contact, 1, :], "--", color=colors[i_contact], label=f"{names_contact_points[i_contact]} - y")
+        axs[0].plot(time, contact_positions[i_contact, 2, :], ":", color=colors[i_contact], label=f"{names_contact_points[i_contact]} - z")
     axs[0].legend()
     axs[0].grid()
     axs[0].set_title("Contact position [m]")
 
-    for i, elt in enumerate(contact_forces):
-        axs[1].plot(time, elt, ".-", label=f"{names_contact_forces[i]}")
+    names_contact_forces = ocp.nlp[0].model.rigid_contact_names
+    for i_ax, elt in enumerate(contact_forces):
+        axs[1].plot(time, elt, ".-", label=f"{names_contact_forces[i_ax]}")
     axs[1].legend()
     axs[1].grid()
     axs[1].set_title("Contact forces [N]")
+    plt.savefig("test.png")
     plt.show()
 
     # --- Show results --- #
