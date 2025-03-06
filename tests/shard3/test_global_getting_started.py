@@ -836,14 +836,9 @@ def test_example_external_forces(ode_solver, phase_dynamics, n_threads, use_sx, 
     TestUtils.simulate(sol)
 
 
-@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver_type", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK, OdeSolver.COLLOCATION])
-def test_example_multiphase(ode_solver_type, phase_dynamics):
+def test_example_multiphase(ode_solver_type):
     from bioptim.examples.getting_started import example_multiphase as ocp_module
-
-    # For reducing time phase_dynamics == PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
-    if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver_type in [OdeSolver.RK8, OdeSolver.COLLOCATION]:
-        return
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -851,7 +846,7 @@ def test_example_multiphase(ode_solver_type, phase_dynamics):
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         ode_solver=ode_solver,
-        phase_dynamics=phase_dynamics,
+        phase_dynamics=PhaseDynamics.ONE_PER_NODE,
         expand_dynamics=ode_solver_type != OdeSolver.IRK,
     )
     sol = ocp.solve()

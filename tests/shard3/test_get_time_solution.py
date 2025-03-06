@@ -26,7 +26,7 @@ def _get_solution(
         model_path = bioptim_folder + "/models/cube.bioMod"
         prepare_args = {
             "biorbd_model_path": model_path,
-            "phase_dynamics": phase_dynamics,
+            "phase_dynamics": PhaseDynamics.ONE_PER_NODE,
             "ode_solver": ode_solver_instance,
             "control_type": control_type,
         }

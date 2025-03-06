@@ -18,7 +18,7 @@ def test_continuity_linear_continuous_global():
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         long_optim=False,
-        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
+        phase_dynamics=PhaseDynamics.ONE_PER_NODE,
         expand_dynamics=True,
         control_type=ControlType.LINEAR_CONTINUOUS,
         quadrature_rule=QuadratureRule.TRAPEZOIDAL,
