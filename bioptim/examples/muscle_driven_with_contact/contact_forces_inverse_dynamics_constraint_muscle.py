@@ -28,6 +28,8 @@ from bioptim import (
     DynamicsEvaluation,
     DynamicsFunctions,
     ExternalForceSetVariables,
+    OdeSolver,
+    DefectType,
 )
 
 def custom_configure(
@@ -88,11 +90,12 @@ def custom_dynamics(
 def contact_velocity(controller):
     contact_velocities = []
     for i_contact in range(2):
-        qs = horzcat(*([controller.states["q"].cx_start] + controller.states["q"].cx_intermediates))
-        qdots = horzcat(*([controller.states["qdot"].cx_start] + controller.states["qdot"].cx_intermediates))
-        for i_sn in range(len(qs)):
-            contact_velocity = controller.model.contact_velocity(i_contact)(qs[i_sn], qdots[i_sn])
-            contact_velocities += [contact_velocity]
+        qs = [controller.states["q"].cx_start] + controller.states["q"].cx_intermediates_list
+        qdots = [controller.states["qdot"].cx_start] + controller.states["qdot"].cx_intermediates_list
+        # No need to constrain the last one since there is a continuity constraint imposing that the states at the end of the interval must be the same as the beginning of the next interval.
+        for i_sn in range(len(qs)-1):
+            contact_axis = controller.model.rigid_contact_axes_index(contact_index=i_contact)
+            contact_velocities += [controller.model.rigid_contact_velocity(contact_index=i_contact, contact_axis=contact_axis)(qs[i_sn], qdots[i_sn], controller.parameters.cx)]
     return vertcat(*contact_velocities)
 
 
@@ -108,12 +111,10 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
     dof_mapping = BiMappingList()
     dof_mapping.add("tau", bimapping=None, to_second=[None, None, None, 0], to_first=[3])
 
-    tau_min, tau_max, tau_init = -500.0, 500.0, 0.0
-    activation_min, activation_max, activation_init = 0.0, 1.0, 0.5
-
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT)
+    # objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MARKERS, weight=10, index=, target=, node=Node.ALL_SHOOTING)
 
     # Dynamics
     dynamics = DynamicsList()
@@ -134,7 +135,6 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
     # Path constraint
     n_q = bio_model.nb_q
     n_qdot = n_q
-    n_contacts = 3
     pose_at_first_node = [0, 0, -0.75, 0.75]
 
     # Initialize x_bounds
@@ -151,12 +151,12 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds["tau"] = [tau_min] * len(dof_mapping["tau"].to_first), [tau_max] * len(dof_mapping["tau"].to_first)
-    u_bounds["muscles"] = [activation_min] * bio_model.nb_muscles, [activation_max] * bio_model.nb_muscles
+    u_bounds["tau"] = [-500.0], [500.0]
+    u_bounds["muscles"] = [0.0] * bio_model.nb_muscles, [1.0] * bio_model.nb_muscles
 
     u_init = InitialGuessList()
-    u_init["tau"] = [tau_init] * len(dof_mapping["tau"].to_first)
-    u_init["muscles"] = [activation_init] * bio_model.nb_muscles
+    u_init["tau"] = [1.0]
+    u_init["muscles"] = [0.5] * bio_model.nb_muscles
 
     # Define algebraic states path constraint
     a_bounds = BoundsList()
@@ -164,7 +164,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
     a_bounds["rigid_contact_forces"] = [-200.0, 0.0, 0.0], [200.0, 200.0, 200.0]
 
     a_init = InitialGuessList()
-    a_init["tau"] = [0.0, 0.0, 0.0]
+    a_init["rigid_contact_forces"] = [1.0, 1.0, 1.0]
 
     return OptimalControlProgram(
         bio_model,
@@ -177,9 +177,10 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
         x_init=x_init,
         u_init=u_init,
         a_init=a_init,
+        variable_mappings=dof_mapping,
         objective_functions=objective_functions,
         constraints=constraints,
-        variable_mappings=dof_mapping,
+        ode_solver=OdeSolver.COLLOCATION(polynomial_degree=3, defects_type=DefectType.IMPLICIT)
     )
 
 
@@ -187,7 +188,6 @@ def main():
     biorbd_model_path = "models/2segments_4dof_2contacts_1muscle.bioMod"
     t = 0.3
     ns = 10
-    dt = t/ns
     ocp = prepare_ocp(
         biorbd_model_path=biorbd_model_path,
         phase_time=t,
@@ -196,26 +196,28 @@ def main():
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
-
     nlp = ocp.nlp[0]
-    nlp.model = BiorbdModel(biorbd_model_path)
 
+    time = np.reshape(sol.decision_time(to_merge=SolutionMerge.NODES), (-1, ))
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
-    q, qdot, tau, mus = states["q"], states["qdot"], controls["tau"], controls["muscles"]
+    algebraic_states = sol.decision_algebraic_states(to_merge=SolutionMerge.NODES)
+    q, qdot, tau_residual, mus, contact_forces = states["q"], states["qdot"], controls["tau"], controls["muscles"], algebraic_states["rigid_contact_forces"]
 
-    x = np.concatenate((q, qdot))
-    u = np.concatenate((tau, mus))
-    contact_forces = np.zeros((3, nlp.ns))
-    for i_node in range(nlp.ns):
-        contact_forces[:, i_node] = np.reshape(np.array(nlp.contact_forces_func([dt*i_node, dt*(i_node+1)], x[:, i_node], u[:, i_node], [], [], [])), (3, ))
-
-    names_contact_forces = ocp.nlp[0].model.rigid_contact_names
+    # --- Plots --- #
+    fig, axs = plt.subplots(2, 2, figsize=(10, 10))
+    names_contact_points = [name for name in ocp.nlp[0].model.rigid_contact_name]
     for i, elt in enumerate(contact_forces):
-        plt.plot(np.linspace(0, t, ns + 1)[:-1], elt, ".-", label=f"{names_contact_forces[i]}")
-    plt.legend()
-    plt.grid()
-    plt.title("Contact forces")
+        axs[0].plot(time, elt, ".-", label=f"{names_contact_forces[i]}")
+    axs[0].legend()
+    axs[0].grid()
+    axs[0].set_title("Contact position [m]")
+
+    for i, elt in enumerate(contact_forces):
+        axs[1].plot(time, elt, ".-", label=f"{names_contact_forces[i]}")
+    axs[1].legend()
+    axs[1].grid()
+    axs[1].set_title("Contact forces [N]")
     plt.show()
 
     # --- Show results --- #
