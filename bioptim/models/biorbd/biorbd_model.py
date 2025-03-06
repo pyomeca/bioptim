@@ -546,7 +546,7 @@ class BiorbdModel:
             contacts_to_add += 3
 
             # Add the forces to the right place
-            available_axes = np.array(self.rigid_contact_index(i_contact))
+            available_axes = np.array(self.rigid_contact_axes_index(i_contact))
             contact_force_idx = range(current_index, current_index + available_axes.shape[0])
             for i, idx in enumerate(contact_force_idx):
                 external_forces[contacts_to_add + available_axes[i]] += rigid_contact_forces[idx]
@@ -655,6 +655,39 @@ class BiorbdModel:
         )
         return casadi_fun
 
+    def rigid_contact_velocity(self, contact_index: int, contact_axis: list[int, ...] = None) -> Function:
+        contact_axis = [0, 1, 2] if contact_axis is None else contact_axis
+        q_biorbd = GeneralizedCoordinates(self.q)
+        qdot_biorbd = GeneralizedVelocity(self.qdot)
+        biorbd_return = self.model.rigidContactVelocity(
+            q_biorbd, qdot_biorbd, contact_index, True
+        ).to_mx()[contact_axis]
+        casadi_fun = Function(
+            "rigid_contact_velocity",
+            [self.q, self.qdot, self.parameters],
+            [biorbd_return],
+            ["q", "qdot", "parameters"],
+            ["rigid_contact_velocity"],
+        )
+        return casadi_fun
+
+    def rigid_contact_acceleration(self, contact_index: int, contact_axis: list[int] = None) -> Function:
+        contact_axis = [0, 1, 2] if contact_axis is None else contact_axis
+        q_biorbd = GeneralizedCoordinates(self.q)
+        qdot_biorbd = GeneralizedVelocity(self.qdot)
+        qddot_biorbd = GeneralizedAcceleration(self.qddot)
+        biorbd_return = self.model.rigidContactAcceleration(
+            q_biorbd, qdot_biorbd, qddot_biorbd, contact_index, True
+        ).to_mx()[contact_axis]
+        casadi_fun = Function(
+            "rigid_contact_acceleration",
+            [self.q, self.qdot, self.qddot, self.parameters],
+            [biorbd_return],
+            ["q", "qdot", "qddot", "parameters"],
+            ["rigid_contact_acceleration"],
+        )
+        return casadi_fun
+
     def forces_on_each_rigid_contact_point(self) -> Function:
         """
         Returns the 3D force acting on each contact point in the global reference frame computed from the constrained forward dynamics.
@@ -667,7 +700,7 @@ class BiorbdModel:
         forces_on_each_point = None
         current_index = 0
         for i_contact in range(self.nb_rigid_contacts):
-            available_axes = np.array(self.rigid_contact_index(i_contact))
+            available_axes = np.array(self.rigid_contact_axes_index(i_contact))
             contact_force_idx = range(current_index, current_index + available_axes.shape[0])
             current_force = MX.zeros(3)
             for i, contact_to_add in enumerate(contact_force_idx):
@@ -817,15 +850,15 @@ class BiorbdModel:
         """
         return self.model.nbContacts()
 
-    def rigid_contact_index(self, contact_index) -> tuple:
+    def rigid_contact_axes_index(self, contact_index) -> list:
         """
         Returns the axis index of this specific rigid contact.
         Example:
             First contact with axis YZ
             Second contact with axis Z
-            rigid_contact_index(0) = (1, 2)
+            rigid_contact_axes_index(0) = (1, 2)
         """
-        return self.model.rigidContacts()[contact_index].availableAxesIndices()
+        return list(self.model.rigidContacts()[contact_index].availableAxesIndices())
 
     def markers_velocities(self, reference_index=None) -> list[MX]:
         if reference_index is None:
@@ -941,22 +974,6 @@ class BiorbdModel:
             [torque_max.to_mx(), torque_min.to_mx()],
             ["q", "qdot", "parameters"],
             ["tau_max", "tau_min"],
-        )
-        return casadi_fun
-
-    def rigid_contact_acceleration(self, contact_index, contact_axis) -> Function:
-        q_biorbd = GeneralizedCoordinates(self.q)
-        qdot_biorbd = GeneralizedVelocity(self.qdot)
-        qddot_biorbd = GeneralizedAcceleration(self.qddot)
-        biorbd_return = self.model.rigidContactAcceleration(
-            q_biorbd, qdot_biorbd, qddot_biorbd, contact_index, True
-        ).to_mx()[contact_axis]
-        casadi_fun = Function(
-            "rigid_contact_acceleration",
-            [self.q, self.qdot, self.qddot, self.parameters],
-            [biorbd_return],
-            ["q", "qdot", "qddot", "parameters"],
-            ["rigid_contact_acceleration"],
         )
         return casadi_fun
 
