@@ -1172,30 +1172,25 @@ def test_multinode_constraints_wrong_nodes(node):
                 key="all",
             )
 
-
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
-@pytest.mark.parametrize("too_much_constraints", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK])
-def test_multinode_constraints_too_much_constraints(ode_solver, too_much_constraints, phase_dynamics):
+def test_multinode_constraints_too_much_constraints(ode_solver, phase_dynamics):
     from bioptim.examples.getting_started import example_multinode_constraints as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ode_solver_obj = ode_solver
     ode_solver = ode_solver()
-    if phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and too_much_constraints:
+    if phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
         with pytest.raises(
-            ValueError,
-            match="Valid values for setting the cx is 0, 1 or 2. If you reach this error message, you probably tried to "
-            "add more penalties than available in a multinode constraint. You can try to split the constraints "
-            "into more penalties or use phase_dynamics=PhaseDynamics.ONE_PER_NODE",
+            RuntimeError,
+            match="Multinode penalties cannot be used with PhaseDynamics.SHARED_DURING_THE_PHASE"
         ):
             ocp_module.prepare_ocp(
                 biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
                 n_shootings=(8, 8, 8),
                 ode_solver=ode_solver,
                 phase_dynamics=phase_dynamics,
-                with_too_much_constraints=too_much_constraints,
                 expand_dynamics=ode_solver_obj != OdeSolver.IRK,
             )
     else:
@@ -1204,19 +1199,13 @@ def test_multinode_constraints_too_much_constraints(ode_solver, too_much_constra
             n_shootings=(8, 8, 8),
             ode_solver=ode_solver,
             phase_dynamics=phase_dynamics,
-            with_too_much_constraints=too_much_constraints,
             expand_dynamics=ode_solver_obj != OdeSolver.IRK,
         )
 
 
-@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_multinode_constraints(ode_solver, phase_dynamics):
+def test_multinode_constraints(ode_solver):
     from bioptim.examples.getting_started import example_multinode_constraints as ocp_module
-
-    # For reducing time phase_dynamics == PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
-    if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.RK8:
-        return
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -1227,7 +1216,7 @@ def test_multinode_constraints(ode_solver, phase_dynamics):
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         n_shootings=(8, 10, 8),
         ode_solver=ode_solver,
-        phase_dynamics=phase_dynamics,
+        phase_dynamics=PhaseDynamics.ONE_PER_NODE,
         expand_dynamics=ode_solver_orig != OdeSolver.IRK,
     )
     sol = ocp.solve()
