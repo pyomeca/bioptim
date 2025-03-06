@@ -145,7 +145,7 @@ def prepare_ocp(
         nodes=(2, Node.MID),
         sub_nodes=(0, 0),
         weight=2,
-        key="all"
+        key="all",
     )
     # Objectives with the weight as an argument
     multinode_objectives.add(
@@ -154,7 +154,7 @@ def prepare_ocp(
         nodes=(Node.MID, Node.END),
         sub_nodes=(0, 0),
         weight=0.1,
-        key="all"
+        key="all",
     )
     # Objectives with the weight as an argument
     multinode_objectives.add(
@@ -163,7 +163,7 @@ def prepare_ocp(
         nodes=(Node.MID, Node.PENULTIMATE),
         sub_nodes=(0, 0),
         weight=0.1,
-        coef=2
+        coef=2,
     )
 
     # This is a useless constraint (as it already does that anyway) to show how to add three constraints on the same
@@ -183,7 +183,7 @@ def prepare_ocp(
             nodes_phase=(0, 0, 0, 0),
             nodes=(0, 1, 2, 3),
             sub_nodes=(0, 0, 0, 0),
-            key="all"
+            key="all",
         )
 
     # Path constraint

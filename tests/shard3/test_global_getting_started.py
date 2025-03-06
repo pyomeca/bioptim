@@ -1157,7 +1157,7 @@ def test_multinode_constraints_wrong_nodes(node):
             nodes_phase=(0, 0),
             nodes=(Node.START, node),
             sub_nodes=(0, 0),
-            key="all"
+            key="all",
         )
         with pytest.raises(ValueError, match=re.escape("Each of the nodes must have a corresponding nodes_phase")):
             multinode_constraints.add(
@@ -1165,7 +1165,7 @@ def test_multinode_constraints_wrong_nodes(node):
                 nodes_phase=(0,),
                 nodes=(Node.START, node),
                 sub_nodes=(0, 0),
-                key="all"
+                key="all",
             )
     else:
         with pytest.raises(
@@ -1180,7 +1180,7 @@ def test_multinode_constraints_wrong_nodes(node):
                 nodes_phase=(0, 0),
                 nodes=(Node.START, node),
                 sub_nodes=(0, 0),
-                key="all"
+                key="all",
             )
 
 

@@ -176,9 +176,10 @@ def _get_multinode_indices(penalty, is_constructing_penalty: bool):
         if subnode == -1:
             sub_nodes.append(slice(-1, None))
         else:
-            sub_nodes.append(slice(subnode, subnode+1))
+            sub_nodes.append(slice(subnode, subnode + 1))
 
     return phases, nodes, sub_nodes
+
 
 def _reshape_to_vector(m):
     """

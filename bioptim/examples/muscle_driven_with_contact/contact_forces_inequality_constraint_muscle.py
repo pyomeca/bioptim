@@ -137,7 +137,10 @@ def main():
     u = np.concatenate((tau, mus))
     contact_forces = np.zeros((3, nlp.ns))
     for i_node in range(nlp.ns):
-        contact_forces[:, i_node] = np.reshape(np.array(nlp.contact_forces_func([dt*i_node, dt*(i_node+1)], x[:, i_node], u[:, i_node], [], [], [])), (3, ))
+        contact_forces[:, i_node] = np.reshape(
+            np.array(nlp.contact_forces_func([dt * i_node, dt * (i_node + 1)], x[:, i_node], u[:, i_node], [], [], [])),
+            (3,),
+        )
 
     names_contact_forces = ocp.nlp[0].model.rigid_contact_names
     for i, elt in enumerate(contact_forces):
@@ -149,6 +152,7 @@ def main():
 
     # --- Show results --- #
     sol.animate()
+
 
 if __name__ == "__main__":
     main()
