@@ -1038,8 +1038,13 @@ class ConfigureProblem:
         if isinstance(dynamics_dxdt, (list, tuple)):
             dynamics_dxdt = vertcat(*dynamics_dxdt)
 
+        dynamics_defects = dynamics_eval.defects
+        if isinstance(dynamics_defects, (list, tuple)):
+            dynamics_defects = vertcat(*dynamics_defects)
+
         time_span_sym = vertcat(nlp.time_cx, nlp.dt)
         if nlp.dynamics_func is None:
+            dxdt_for_casadi = dynamics_dxdt if dynamics_dxdt is not None else nlp.cx()
             nlp.dynamics_func = Function(
                 "ForwardDyn",
                 [
@@ -1050,7 +1055,7 @@ class ConfigureProblem:
                     nlp.algebraic_states.scaled.cx,
                     nlp.numerical_timeseries.cx,
                 ],
-                [dynamics_dxdt],
+                [dxdt_for_casadi],
                 ["t_span", "x", "u", "p", "a", "d"],
                 ["xdot"],
             )
@@ -1068,7 +1073,7 @@ class ConfigureProblem:
                         f"{me}"
                     )
 
-            if dynamics_eval.defects is not None:
+            if dynamics_defects is not None:
                 nlp.implicit_dynamics_func = Function(
                     "DynamicsDefects",
                     [
@@ -1080,7 +1085,7 @@ class ConfigureProblem:
                         nlp.numerical_timeseries.cx,
                         nlp.states_dot.scaled.cx,
                     ],
-                    [dynamics_eval.defects],
+                    [dynamics_defects],
                     ["t_span", "x", "u", "p", "a", "d", "xdot"],
                     ["defects"],
                 )
@@ -1097,6 +1102,7 @@ class ConfigureProblem:
                             f"{me}"
                         )
         else:
+            dxdt_for_casadi = dynamics_dxdt if dynamics_dxdt is not None else nlp.cx()
             nlp.extra_dynamics_func.append(
                 Function(
                     "ForwardDyn",
@@ -1108,7 +1114,7 @@ class ConfigureProblem:
                         nlp.algebraic_states.scaled.cx,
                         nlp.numerical_timeseries.cx,
                     ],
-                    [dynamics_dxdt],
+                    [dxdt_for_casadi],
                     ["t_span", "x", "u", "p", "a", "d"],
                     ["xdot"],
                 ),
