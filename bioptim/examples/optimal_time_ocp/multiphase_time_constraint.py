@@ -59,8 +59,7 @@ def prepare_ocp(
     phase_dynamics: PhaseDynamics
         If the dynamics equation within a phase is unique or changes at each node.
         PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
-        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
-        are applied at each node
+        a phase. PhaseDynamics.ONE_PER_NODE should alos be used when multi-node penalties are added to the OCP.
     with_phase_time_equality: bool
         If the phase time equality should be applied, this is ignored if len(n_shooting) = 1 (instead of 3)
     expand_dynamics: bool
