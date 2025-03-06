@@ -241,10 +241,21 @@ def test__getting_started__example_multinode_constraints():
 
     ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
-        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
+        phase_dynamics=PhaseDynamics.ONE_PER_NODE,  # This is necessary since there are multi-nodes
         n_shootings=(8, 8, 8),
         expand_dynamics=False,
     )
+
+    with pytest.raises(
+        RuntimeError,
+        match="Multinode penalties cannot be used with PhaseDynamics.SHARED_DURING_THE_PHASE",
+    ):
+        ocp_module.prepare_ocp(
+            biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+            phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
+            n_shootings=(8, 8, 8),
+            expand_dynamics=False,
+        )
 
 
 def test__getting_started__example_multinode_objective():
@@ -259,13 +270,12 @@ def test__getting_started__example_multinode_objective():
         final_time=1,
         n_shooting=10,
         expand_dynamics=False,
+        phase_dynamics=PhaseDynamics.ONE_PER_NODE,  # This is necessary since there are multi-nodes
     )
 
     with pytest.raises(
-        ValueError,
-        match="Valid values for setting the cx is 0, 1 or 2. If you reach this error message, you probably tried to "
-        "add more penalties than available in a multinode constraint. You can try to split the constraints "
-        "into more penalties or use phase_dynamics=PhaseDynamics.ONE_PER_NODE",
+        RuntimeError,
+        match="Multinode penalties cannot be used with PhaseDynamics.SHARED_DURING_THE_PHASE",
     ):
         ocp_module.prepare_ocp(
             biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",

@@ -52,6 +52,7 @@ from ..misc.enums import (
     InterpolationType,
     PenaltyType,
     Node,
+    PhaseDynamics,
 )
 from ..misc.mapping import BiMappingList, Mapping, BiMapping
 from ..misc.options import OptionDict
@@ -655,6 +656,23 @@ class OptimalControlProgram:
         ----
         This function is overriden in StochasticOptimalControlProgram
         """
+
+        if len(multinode_constraints) > 0:
+            for penalty in multinode_constraints:
+                phases = penalty.nodes_phase
+                for phase in phases:
+                    if self.nlp[phase].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
+                        raise RuntimeError(
+                            "Multinode penalties cannot be used with PhaseDynamics.SHARED_DURING_THE_PHASE")
+
+        if len(multinode_objectives) > 0:
+            for penalty in multinode_objectives:
+                phases = penalty.nodes_phase
+                for phase in phases:
+                    if self.nlp[phase].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
+                        raise RuntimeError(
+                            "Multinode penalties cannot be used with PhaseDynamics.SHARED_DURING_THE_PHASE")
+
         multinode_constraints.add_or_replace_to_penalty_pool(self)
         multinode_objectives.add_or_replace_to_penalty_pool(self)
 

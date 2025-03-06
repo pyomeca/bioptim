@@ -166,11 +166,12 @@ def prepare_test_ocp(
 
 def get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d):
     if isinstance(penalty, MultinodeConstraint) or isinstance(penalty, MultinodeObjective):
+        sub_nodes = [i for i in penalty.sub_nodes]
         controller = [
-            PenaltyController(ocp, ocp.nlp[0], t, x, u, [], [], p, a, [], d, 0) for i in range(len(penalty.nodes_phase))
+            PenaltyController(ocp, ocp.nlp[0], t, sub_nodes, x, u, [], [], p, a, [], d, 0) for i in range(len(penalty.nodes_phase))
         ]
     else:
-        controller = PenaltyController(ocp, ocp.nlp[0], t, x, u, [], [], p, a, [], d, 0)
+        controller = PenaltyController(ocp, ocp.nlp[0], t, [0], x, u, [], [], p, a, [], d, 0)
     val = penalty.type(penalty, controller, **penalty.extra_parameters)
     # changed only this one
     if isinstance(val, float):
@@ -219,7 +220,7 @@ def test_penalty_minimize_time(penalty_origin, value, phase_dynamics):
 
     penalty_type = penalty_origin.MINIMIZE_TIME
     penalty = Objective(penalty_type)
-    penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], [], [], [], [], [], p, a, [], d, 0))
+    penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], [], [], [], [], [], [], p, a, [], d, 0))
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
     if penalty_origin == ObjectiveFcn.Lagrange:
@@ -1300,8 +1301,8 @@ def test_penalty_constraint_total_time(value, phase_dynamics):
     penalty_type(
         penalty[0],
         [
-            PenaltyController(ocp, ocp.nlp[0], [], [], [], [], [], p, a, [], d, 0),
-            PenaltyController(ocp, ocp.nlp[0], [], [], [], [], [], p, a, [], d, 0),
+            PenaltyController(ocp, ocp.nlp[0], [], [], [], [], [], [], p, a, [], d, 0),
+            PenaltyController(ocp, ocp.nlp[0], [], [], [], [], [], [], p, a, [], d, 0),
         ],
     )
     res = get_penalty_value(ocp, penalty[0], t, phases_dt, x, u, p, a, d)

@@ -1053,13 +1053,7 @@ def test_multinode_objective(ode_solver, phase_dynamics):
     n_shooting = 20
     if phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
         with pytest.raises(
-            ValueError,
-            match=(
-                "Valid values for setting the cx is 0, 1 or 2. If you reach this error message, "
-                "you probably tried to add more penalties than available in a multinode constraint. "
-                "You can try to split the constraints into more penalties or use "
-                "phase_dynamics=PhaseDynamics.ONE_PER_NODE"
-            ),
+            RuntimeError,
         ):
             ocp = ocp_module.prepare_ocp(
                 biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",

@@ -546,6 +546,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 ocp=self,
                 nlp=nlp,
                 t=time_vector,
+                sn_idx=[0],
                 x=x_guess,
                 u=u_guess,
                 x_scaled=[],
