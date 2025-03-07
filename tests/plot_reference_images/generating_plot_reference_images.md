@@ -4,7 +4,7 @@
 conda install pytest-mpl -c conda-forge
 ```
 
-2) Navigate to shard6 where the test_graphs.py file is located
+2) Navigate to shard6 where the test_plots.py file is located
 
 
 3) Generate the reference images by running:
