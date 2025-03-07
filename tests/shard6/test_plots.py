@@ -12,6 +12,7 @@ if platform.system() != "Linux":
 
 np.random.seed(0)
 
+
 # Test 1: custom plots
 @pytest.fixture(scope="module")
 def plots_generator_for_custom_plotting():
@@ -30,29 +31,33 @@ def plots_generator_for_custom_plotting():
     return sol.graphs(show_now=False, automatically_organize=False)
 
 
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test_custom_plotting_0(plots_generator_for_custom_plotting):
     return plots_generator_for_custom_plotting[0]
 
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test_custom_plotting_1(plots_generator_for_custom_plotting):
     return plots_generator_for_custom_plotting[1]
 
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test_custom_plotting_2(plots_generator_for_custom_plotting):
     return plots_generator_for_custom_plotting[2]
 
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test_custom_plotting_3(plots_generator_for_custom_plotting):
     return plots_generator_for_custom_plotting[3]
 
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test_custom_plotting_4(plots_generator_for_custom_plotting):
     return plots_generator_for_custom_plotting[4]
 
 
 # Test 2 : bounds
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__getting_started__custom_constraints__constant():
     from bioptim.examples.getting_started import custom_bounds as ocp_module
 
@@ -72,7 +77,8 @@ def test__getting_started__custom_constraints__constant():
     sol = ocp.solve(solver)
     return sol.graphs(show_now=False, show_bounds=True, automatically_organize=False)[0]
 
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__getting_started__custom_constraints__constant_with_first_and_last():
     from bioptim.examples.getting_started import custom_bounds as ocp_module
 
@@ -92,7 +98,8 @@ def test__getting_started__custom_constraints__constant_with_first_and_last():
     sol = ocp.solve(solver)
     return sol.graphs(show_now=False, show_bounds=True, automatically_organize=False)[0]
 
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__getting_started__custom_constraints__linear():
     from bioptim.examples.getting_started import custom_bounds as ocp_module
 
@@ -112,7 +119,8 @@ def test__getting_started__custom_constraints__linear():
     sol = ocp.solve(solver)
     return sol.graphs(show_now=False, show_bounds=True, automatically_organize=False)[0]
 
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__getting_started__custom_constraints__each_frame():
     from bioptim.examples.getting_started import custom_bounds as ocp_module
 
@@ -132,7 +140,8 @@ def test__getting_started__custom_constraints__each_frame():
     sol = ocp.solve(solver)
     return sol.graphs(show_now=False, show_bounds=True, automatically_organize=False)[0]
 
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__getting_started__custom_constraints__spline():
     from bioptim.examples.getting_started import custom_bounds as ocp_module
 
@@ -152,7 +161,8 @@ def test__getting_started__custom_constraints__spline():
     sol = ocp.solve(solver)
     return sol.graphs(show_now=False, show_bounds=True, automatically_organize=False)[0]
 
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__getting_started__custom_constraints__custom():
     from bioptim.examples.getting_started import custom_bounds as ocp_module
 
@@ -192,15 +202,17 @@ def plots_generator_for_mapping():
     return sol.graphs(show_now=False, show_bounds=True, automatically_organize=False)
 
 
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test_mapping_0(plots_generator_for_mapping):
     return plots_generator_for_mapping[0]
 
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test_mapping_1(plots_generator_for_mapping):
     return plots_generator_for_mapping[1]
 
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test_mapping_2(plots_generator_for_mapping):
     return plots_generator_for_mapping[2]
 
@@ -225,21 +237,23 @@ def plots_generator_for_multi_phase():
     return sol.graphs(show_now=False, show_bounds=True, automatically_organize=False)
 
 
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test_multi_phase_0(plots_generator_for_multi_phase):
     return plots_generator_for_multi_phase[0]
 
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test_multi_phase_1(plots_generator_for_multi_phase):
     return plots_generator_for_multi_phase[1]
 
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test_multi_phase_2(plots_generator_for_multi_phase):
     return plots_generator_for_multi_phase[2]
 
 
 # Test 5: optimized time
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__optimal_time_ocp__min_time_mayer__constant():
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
@@ -259,7 +273,8 @@ def test__optimal_time_ocp__min_time_mayer__constant():
     sol = ocp.solve(solver)
     return sol.graphs(show_now=False, show_bounds=True, automatically_organize=False)[0]
 
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__optimal_time_ocp__min_time_mayer__constant_with_last():
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
@@ -279,7 +294,8 @@ def test__optimal_time_ocp__min_time_mayer__constant_with_last():
     sol = ocp.solve(solver)
     return sol.graphs(show_now=False, show_bounds=True, automatically_organize=False)[0]
 
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__optimal_time_ocp__min_time_mayer__linear_continuous():
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
@@ -304,7 +320,7 @@ def test__optimal_time_ocp__min_time_mayer__linear_continuous():
 
 
 # Test 6: solvers
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__getting_started__pendulum__rk1():
     from bioptim.examples.getting_started import pendulum as ocp_module
 
@@ -324,7 +340,8 @@ def test__getting_started__pendulum__rk1():
     sol = ocp.solve(solver)
     return sol.graphs(show_now=False, show_bounds=True, automatically_organize=False)[0]
 
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__getting_started__pendulum__rk2():
     from bioptim.examples.getting_started import pendulum as ocp_module
 
@@ -344,7 +361,8 @@ def test__getting_started__pendulum__rk2():
     sol = ocp.solve(solver)
     return sol.graphs(show_now=False, show_bounds=True, automatically_organize=False)[0]
 
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__getting_started__pendulum__rk4():
     from bioptim.examples.getting_started import pendulum as ocp_module
 
@@ -364,7 +382,8 @@ def test__getting_started__pendulum__rk4():
     sol = ocp.solve(solver)
     return sol.graphs(show_now=False, show_bounds=True, automatically_organize=False)[0]
 
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__getting_started__pendulum__trapezoidal():
     from bioptim.examples.getting_started import pendulum as ocp_module
 
@@ -385,7 +404,8 @@ def test__getting_started__pendulum__trapezoidal():
     sol = ocp.solve(solver)
     return sol.graphs(show_now=False, show_bounds=True, automatically_organize=False)[0]
 
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__getting_started__pendulum__irk():
     from bioptim.examples.getting_started import pendulum as ocp_module
 
@@ -406,7 +426,8 @@ def test__getting_started__pendulum__irk():
     sol = ocp.solve(solver)
     return sol.graphs(show_now=False, show_bounds=True, automatically_organize=False)[0]
 
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__getting_started__pendulum__collocation_legendre():
     from bioptim.examples.getting_started import pendulum as ocp_module
 
@@ -426,7 +447,8 @@ def test__getting_started__pendulum__collocation_legendre():
     sol = ocp.solve(solver)
     return sol.graphs(show_now=False, show_bounds=True, automatically_organize=False)[0]
 
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__getting_started__pendulum__collocation_radau():
     from bioptim.examples.getting_started import pendulum as ocp_module
 
@@ -449,8 +471,9 @@ def test__getting_started__pendulum__collocation_radau():
 
 # TODO: add multi-biorbd model when the plots are fixed for this case
 
+
 # Test 7: phase transition with different number of variables
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_mapping():
     from bioptim.examples.torque_driven_ocp import (
         phase_transition_uneven_variable_number_by_mapping as ocp_module,
@@ -473,7 +496,7 @@ def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_mapping(
 
 
 # Test 8: track markers
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__torque_driven_ocp__track_markers_2D_pendulum():
     from bioptim.examples.torque_driven_ocp import track_markers_2D_pendulum as ocp_module
 
@@ -495,8 +518,9 @@ def test__torque_driven_ocp__track_markers_2D_pendulum():
     sol = ocp.solve(solver)
     return sol.graphs(show_now=False, show_bounds=True, automatically_organize=False)[0]
 
+
 # Test 9: quaternion
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__torque_driven_ocp__example_quaternions():
     from bioptim.examples.torque_driven_ocp import example_quaternions as ocp_module
 
@@ -539,22 +563,26 @@ def plots_generator_for_muscle_driven_with_contact():
     return sol.graphs(show_now=False, show_bounds=True, automatically_organize=False)
 
 
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test_muscle_with_contact_0(plots_generator_for_muscle_driven_with_contact):
     return plots_generator_for_muscle_driven_with_contact[0]
 
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test_muscle_with_contact_1(plots_generator_for_muscle_driven_with_contact):
     return plots_generator_for_muscle_driven_with_contact[1]
 
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test_muscle_with_contact_2(plots_generator_for_muscle_driven_with_contact):
     return plots_generator_for_muscle_driven_with_contact[2]
 
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test_muscle_with_contact_3(plots_generator_for_muscle_driven_with_contact):
     return plots_generator_for_muscle_driven_with_contact[3]
 
-@pytest.mark.mpl_image_compare(savefig_kwargs={'dpi':100})
+
+@pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test_muscle_with_contact_4(plots_generator_for_muscle_driven_with_contact):
     return plots_generator_for_muscle_driven_with_contact[4]
