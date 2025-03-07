@@ -282,11 +282,11 @@ class NonLinearProgram:
 
         if x_init is not None:
             not_direct_collocation = not self.ode_solver.is_direct_collocation
-            init_all_point = x_init.type == InterpolationType.ALL_POINTS
+            x_init_all_point = x_init.type == InterpolationType.ALL_POINTS
+            a_init_all_point = a_init.type == InterpolationType.ALL_POINTS
 
-            if not_direct_collocation and init_all_point:
+            if not_direct_collocation and (x_init_all_point or a_init_all_point):
                 raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
-                # TODO @ipuch in PR #907, add algebraic states to the error message
 
         self._update_init(
             init=x_init,
