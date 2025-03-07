@@ -59,7 +59,7 @@ jobs:
         if: matrix.shard == 1
 
       - name: Run tests with code coverage
-        run: pytest -v --color=yes --cov-report term-missing --cov=bioptim tests/shard${{ matrix.shard }} --mpl
+        run: pytest -v --color=yes --cov-report term-missing --cov=bioptim tests/shard${{ matrix.shard }} --mpl-baseline-path=bioptim/tests/plot_reference_images
         if: matrix.os == 'ubuntu-latest'
       
       - name: Archive coverage report
