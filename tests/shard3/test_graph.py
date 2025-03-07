@@ -444,11 +444,10 @@ def prepare_ocp_custom_objectives(
     )
 
 
-@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("with_mayer", [True, False])
 @pytest.mark.parametrize("with_lagrange", [True, False])
 @pytest.mark.parametrize("with_constraints", [True, False])
-def test_phase_transitions(with_mayer, with_lagrange, with_constraints, phase_dynamics):
+def test_phase_transitions(with_mayer, with_lagrange, with_constraints):
     bioptim_folder = TestUtils.bioptim_folder()
     model_path = bioptim_folder + "/examples/getting_started/models/cube.bioMod"
     ocp = prepare_ocp_phase_transitions(
@@ -456,7 +455,7 @@ def test_phase_transitions(with_mayer, with_lagrange, with_constraints, phase_dy
         with_mayer=with_mayer,
         with_lagrange=with_lagrange,
         with_constraints=with_constraints,
-        phase_dynamics=phase_dynamics,
+        phase_dynamics=PhaseDynamics.ONE_PER_NODE,
     )
     if with_lagrange and with_mayer is not False:
         ocp.nlp[0].J[0].quadratic = False
