@@ -1172,6 +1172,7 @@ def test_multinode_constraints_wrong_nodes(node):
                 key="all",
             )
 
+
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK])
 def test_multinode_constraints_too_much_constraints(ode_solver, phase_dynamics):
@@ -1183,8 +1184,7 @@ def test_multinode_constraints_too_much_constraints(ode_solver, phase_dynamics):
     ode_solver = ode_solver()
     if phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
         with pytest.raises(
-            RuntimeError,
-            match="Multinode penalties cannot be used with PhaseDynamics.SHARED_DURING_THE_PHASE"
+            RuntimeError, match="Multinode penalties cannot be used with PhaseDynamics.SHARED_DURING_THE_PHASE"
         ):
             ocp_module.prepare_ocp(
                 biorbd_model_path=bioptim_folder + "/models/cube.bioMod",

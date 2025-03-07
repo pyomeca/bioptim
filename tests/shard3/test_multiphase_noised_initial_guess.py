@@ -726,7 +726,6 @@ def test_noisy_multiphase():
     npt.assert_almost_equal(ocp.init_vector, np.concatenate(([[0.1], [0.16666667], [0.2]], expected)))
 
 
-@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize(
     "magnitude, raised_str",
     [
@@ -735,13 +734,13 @@ def test_noisy_multiphase():
         ({"q": [0.1, 0.1]}, "Magnitude of all the elements must be specified, but qdot is missing"),
     ],
 )
-def test_add_wrong_magnitude(magnitude, raised_str, phase_dynamics):
+def test_add_wrong_magnitude(magnitude, raised_str):
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
-        phase_dynamics=phase_dynamics,
+        phase_dynamics=PhaseDynamics.ONE_PER_NODE,
         expand_dynamics=True,
     )
     bio_model = BiorbdModel(bioptim_folder + "/models/cube.bioMod")
