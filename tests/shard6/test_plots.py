@@ -10,6 +10,7 @@ from ..utils import TestUtils
 if platform.system() != "Linux":
     pytest.skip("Skipping tests on non-Linux platforms", allow_module_level=True)
 
+np.random.seed(0)
 
 # Test 1: custom plots
 @pytest.fixture(scope="module")
