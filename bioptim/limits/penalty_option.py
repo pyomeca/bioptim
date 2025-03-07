@@ -729,7 +729,7 @@ class PenaltyOption(OptionGeneric):
                     # performing some kind of integration or derivative and this last node does not exist
                     if nlp.control_type in (ControlType.CONSTANT_WITH_LAST_NODE,):
                         return vertcat(u, controls.scaled.cx_end)
-                    if self.integrate or self.derivative or self.explicit_derivative:
+                    if self.integrate or self.derivative or self.explicit_derivative or self.multinode_penalty:
                         return u
                     else:
                         return vertcat(u, controls.scaled.cx_end)
