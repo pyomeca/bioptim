@@ -354,7 +354,7 @@ def test_pendulum_collocation(control_type, integration_rule, objective, phase_d
 )
 @pytest.mark.parametrize(
     "integration_rule",
-    [QuadratureRule.APPROXIMATE_TRAPEZOIDAL, QuadratureRule.TRAPEZOIDAL],
+    [QuadratureRule.RECTANGLE_LEFT, QuadratureRule.APPROXIMATE_TRAPEZOIDAL, QuadratureRule.TRAPEZOIDAL],
 )
 def test_pendulum_target(control_type, integration_rule, objective, phase_dynamics):
     from bioptim.examples.getting_started import pendulum as ocp_module
