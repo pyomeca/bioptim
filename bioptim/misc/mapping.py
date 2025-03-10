@@ -4,7 +4,7 @@ from typing import TypeAlias
 from .options import OptionDict, OptionGeneric
 from .enums import Node
 from .parameters_types import (
-    Int, 
+    Int,
     Str,
     IntIterableOrNpArray,
     IntIterableOrNpArrayOrInt,
@@ -13,8 +13,9 @@ from .parameters_types import (
     AnyDict,
     IntTuple,
     AnyList,
-    AnyTuple
+    AnyTuple,
 )
+
 
 class Mapping(OptionGeneric):
     """
@@ -103,8 +104,12 @@ class Mapping(OptionGeneric):
             elif v is not None and self.oppose[i] < 0:
                 index_minus_in_origin.append(v)
                 index_minus_in_new.append(i)
-        mapped_obj[index_plus_in_new, :] = obj[index_plus_in_origin, :]  # Fill the non zeros values
-        mapped_obj[index_minus_in_new, :] = -obj[index_minus_in_origin, :]  # Fill the non zeros values
+        mapped_obj[index_plus_in_new, :] = obj[
+            index_plus_in_origin, :
+        ]  # Fill the non zeros values
+        mapped_obj[index_minus_in_new, :] = -obj[
+            index_minus_in_origin, :
+        ]  # Fill the non zeros values
 
         return mapped_obj
 
@@ -119,7 +124,9 @@ class Mapping(OptionGeneric):
 
         return len(self.map_idx)
 
+
 MappingOrIterable: TypeAlias = Mapping | int | list | tuple | range
+
 
 class BiMapping(OptionGeneric):
     """
@@ -175,6 +182,7 @@ class BiMapping(OptionGeneric):
 BiMappingOrIterableOptional = BiMapping | list["BiMapping"] | None
 DictOrBiMapping: TypeAlias = AnyDict | BiMapping
 
+
 class BiMappingList(OptionDict):
     def add(
         self,
@@ -206,7 +214,9 @@ class BiMappingList(OptionDict):
         # Here `type` is used instead of `isinstance` because of the `SelectionMapping` inherits from `BiMapping`
         if type(bimapping) is BiMapping:
             if to_second is not None or to_first is not None:
-                raise ValueError("BiMappingList should either be a to_second/to_first or an actual BiMapping")
+                raise ValueError(
+                    "BiMappingList should either be a to_second/to_first or an actual BiMapping"
+                )
             self.add(
                 name,
                 phase=phase,
@@ -218,7 +228,9 @@ class BiMappingList(OptionDict):
         # Here `type` is used instead of `isinstance` because of the `SelectionMapping` inherits from `BiMapping`
         elif type(bimapping) is SelectionMapping:
             if to_second is not None or to_first is not None:
-                raise ValueError("BiMappingList should either be a to_second/to_first or an actual BiMapping")
+                raise ValueError(
+                    "BiMappingList should either be a to_second/to_first or an actual BiMapping"
+                )
             self.add(
                 name,
                 phase=phase,
@@ -229,7 +241,9 @@ class BiMappingList(OptionDict):
             )
         else:
             if to_second is None or to_first is None:
-                raise ValueError("BiMappingList should either be a to_second/to_first or an actual BiMapping")
+                raise ValueError(
+                    "BiMappingList should either be a to_second/to_first or an actual BiMapping"
+                )
             super(BiMappingList, self)._add(
                 key=name,
                 phase=phase,
@@ -275,7 +289,12 @@ class Dependency:
         The factor that multiplies the dependent element
     """
 
-    def __init__(self, dependent_index: Int = None, reference_index: Int = None, factor: Int = None):
+    def __init__(
+        self,
+        dependent_index: Int = None,
+        reference_index: Int = None,
+        factor: Int = None,
+    ):
         """
         Parameters
         ----------
@@ -303,7 +322,9 @@ class Dependency:
         self.reference_index = reference_index
         self.factor = factor
 
+
 DependencyTuple: TypeAlias = tuple[Dependency, ...]
+
 
 class SelectionMapping(BiMapping):
     """
@@ -376,7 +397,9 @@ class SelectionMapping(BiMapping):
                     raise ValueError("dependencies cant depend on others")
 
         if len(independent_indices) > nb_elements:
-            raise ValueError("independent_indices must not contain more elements than nb_elements")
+            raise ValueError(
+                "independent_indices must not contain more elements than nb_elements"
+            )
 
         self.nb_elements = nb_elements
         self.independent_indices = independent_indices
@@ -391,9 +414,13 @@ class SelectionMapping(BiMapping):
                 selection_matrix[element][element] = 1
         if dependencies is not None:
             for dependency in dependencies:
-                selection_matrix[dependency.dependent_index][dependency.reference_index] = 1
+                selection_matrix[dependency.dependent_index][
+                    dependency.reference_index
+                ] = 1
                 if dependency.factor is not None:
-                    selection_matrix[dependency.dependent_index][dependency.reference_index] *= dependency.factor
+                    selection_matrix[dependency.dependent_index][
+                        dependency.reference_index
+                    ] *= dependency.factor
 
         first = selection_matrix @ index_dof
         dependency_matrix: list = [None for _ in range(len(first))]
@@ -428,11 +455,15 @@ class SelectionMapping(BiMapping):
                         dependency_matrix[i] = j
             return dependency_matrix
 
-        to_second = _build_to_second(dependency_matrix=dependency_matrix, independent_indices=independent_indices)
+        to_second = _build_to_second(
+            dependency_matrix=dependency_matrix, independent_indices=independent_indices
+        )
         to_first = list(independent_indices)
         self.to_second = to_second
         self.to_first = to_first
         self.oppose_to_second = oppose
         self.oppose_to_first = None
 
-        super().__init__(to_second=to_second, to_first=to_first, oppose_to_second=oppose)
+        super().__init__(
+            to_second=to_second, to_first=to_first, oppose_to_second=oppose
+        )

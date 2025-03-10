@@ -41,7 +41,9 @@ class Node(Enum):
     END = "end"  # The last node of the phase
     ALL = "all"  # All the nodes
     ALL_SHOOTING = "all_shooting"  # All the shooting nodes
-    TRANSITION = "transition"  # The last node of a phase and the first node of the next phase
+    TRANSITION = (
+        "transition"  # The last node of a phase and the first node of the next phase
+    )
     MULTINODES = "multinodes"  # Constraint an arbitrary number of node to be equal
     DEFAULT = "default"
 
@@ -52,7 +54,9 @@ class InterpolationType(Enum):
     """
 
     CONSTANT = 0  # All values are set (time independent)
-    CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT = 1  # All values are set, with the first and last defined to another one
+    CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT = (
+        1  # All values are set, with the first and last defined to another one
+    )
     LINEAR = 2  # Linear interpolation between first and last
     EACH_FRAME = 3  # Each value is provided by the user
     ALL_POINTS = 4  # If in direct collocation, it is at all collocation points, otherwise it acts as EACH_FRAME
@@ -131,9 +135,13 @@ class ControlType(Enum):
     """
 
     NONE = 0  # Undeclared control type
-    CONSTANT = 1  # Constant over the integration step, the last node is a NaN (=1 column)
+    CONSTANT = (
+        1  # Constant over the integration step, the last node is a NaN (=1 column)
+    )
     LINEAR_CONTINUOUS = 2  # Linear interpolation between integration steps (=2 columns)
-    CONSTANT_WITH_LAST_NODE = 3  # Constant over the integration step, the last node exists (=1 columns)
+    CONSTANT_WITH_LAST_NODE = (
+        3  # Constant over the integration step, the last node exists (=1 columns)
+    )
 
 
 class VariableType(Enum):
