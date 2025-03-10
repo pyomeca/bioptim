@@ -1,6 +1,6 @@
 import numpy as np
 from casadi import MX, SX, DM
-
+from typing import TypeAlias
 from .options import OptionDict, OptionGeneric
 from .enums import Node
 from .parameters_types import (
@@ -10,13 +10,12 @@ from .parameters_types import (
     IntIterableOrNpArrayOrInt,
     FloatIterableOrCasadiMatrix,
     NpArrayOrCasadiMatrix,
-    MappingOrIterable,
-    DictOrBiMapping,
+    AnyDict,
     IntTuple,
-    DependencyTuple,
     AnyList,
     AnyTuple
 )
+
 class Mapping(OptionGeneric):
     """
     Mapping of index set to a different index set
@@ -120,6 +119,7 @@ class Mapping(OptionGeneric):
 
         return len(self.map_idx)
 
+MappingOrIterable: TypeAlias = Mapping | int | list | tuple | range
 
 class BiMapping(OptionGeneric):
     """
@@ -173,7 +173,7 @@ class BiMapping(OptionGeneric):
 
 
 BiMappingOrIterableOptional = BiMapping | list["BiMapping"] | None
-
+DictOrBiMapping: TypeAlias = AnyDict | BiMapping
 
 class BiMappingList(OptionDict):
     def add(
@@ -303,6 +303,7 @@ class Dependency:
         self.reference_index = reference_index
         self.factor = factor
 
+DependencyTuple: TypeAlias = tuple[Dependency, ...]
 
 class SelectionMapping(BiMapping):
     """
