@@ -6,6 +6,8 @@ import pickle
 import platform
 import re
 import shutil
+from memory_profiler import memory_usage
+import time
 
 from bioptim import (
     InterpolationType,
@@ -23,6 +25,12 @@ import numpy.testing as npt
 import pytest
 
 from ..utils import TestUtils
+
+
+# Store results for all tests
+global test_counter, test_memory
+test_memory = {}
+test_counter = 0
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -47,6 +55,9 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics):
     if platform.system() == "Windows":
         # These tests fail on CI for Windows
         return
+
+    start_time = time.time()
+    mem_usage_before = memory_usage()[0]
 
     # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
     if n_threads > 1 and phase_dynamics == PhaseDynamics.ONE_PER_NODE:
@@ -243,8 +254,16 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics):
 
     # simulate
     TestUtils.simulate(sol)
-    return
 
+    duration = time.time() - start_time
+    mem_usage_after = memory_usage()[0]
+    mem_used = mem_usage_after - mem_usage_before
+
+    global test_memory, test_counter
+    test_counter += 1
+    test_memory[f"test-{test_counter}"] = (duration, mem_used)
+
+    return
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
@@ -1487,3 +1506,12 @@ def test_example_variable_scaling(phase_dynamics):
     # initial and final controls
     npt.assert_almost_equal(tau[:, 0], np.array([-1000.00000999, 0.0]))
     npt.assert_almost_equal(tau[:, -1], np.array([-1000.00000999, 0.0]))
+
+
+def test_memory_and_execution_time():
+
+    npt.assert_array_less(test_memory["test-1"][0], 2.5283684730529785*2)
+    npt.assert_array_less(test_memory["test-1"][1], 43.625*2)
+
+    npt.assert_array_less(test_memory["test-2"][0], 2.4246599674224854*2)
+    npt.assert_array_less(test_memory["test-2"][1], 11.5*2)

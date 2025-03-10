@@ -40,7 +40,7 @@ jobs:
 
       - name: Install extra dependencies
         run: | 
-          conda install pytest-cov black pytest pytest-cov codecov packaging -cconda-forge
+          conda install pytest-cov black pytest pytest-cov codecov packaging memory_profiler -cconda-forge
           sudo apt install -y librhash-dev
 
       - name: Install ACADOS on Linux
