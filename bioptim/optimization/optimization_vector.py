@@ -88,7 +88,7 @@ class OptimizationVectorHelper:
 
         # For controls
         for nlp in ocp.nlp:
-            nlp._set_node_index(0)
+            nlp.set_node_index(0)
             if nlp.control_type in (ControlType.CONSTANT,):
                 ns = nlp.ns
             elif nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
@@ -101,7 +101,7 @@ class OptimizationVectorHelper:
                     nlp.u_bounds[key].check_and_adjust_dimensions(nlp.controls[key].cx.shape[0], ns - 1)
 
             for k in range(ns):
-                nlp._set_node_index(k)
+                nlp.set_node_index(k)
                 collapsed_values_min = np.ndarray((nlp.controls.shape, 1))
                 collapsed_values_max = np.ndarray((nlp.controls.shape, 1))
                 for key in nlp.controls:
@@ -178,7 +178,7 @@ class OptimizationVectorHelper:
 
         # For controls
         for nlp in ocp.nlp:
-            nlp._set_node_index(0)
+            nlp.set_node_index(0)
             if nlp.control_type in (ControlType.CONSTANT,):
                 ns = nlp.ns - 1
             elif nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
@@ -191,7 +191,7 @@ class OptimizationVectorHelper:
                     nlp.u_init[key].check_and_adjust_dimensions(nlp.controls[key].cx.shape[0], ns)
 
             for k in range(ns + 1):
-                nlp._set_node_index(k)
+                nlp.set_node_index(k)
                 collapsed_values = np.ndarray((nlp.controls.shape, 1))
                 for key in nlp.controls:
                     if key in nlp.u_init.keys():

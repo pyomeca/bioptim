@@ -335,16 +335,16 @@ class NonLinearProgram:
         if self.control_type not in ControlType:
             raise NotImplementedError(f"Multiple shooting problem not implemented yet for {self.control_type}")
 
-        self.declare_states_shooting_points()
-        self.declare_controls_shooting_points()
-        self.declare_algebraic_states_shooting_points()
+        self._declare_states_shooting_points()
+        self._declare_controls_shooting_points()
+        self._declare_algebraic_states_shooting_points()
 
-    def declare_states_shooting_points(self):
+    def _declare_states_shooting_points(self):
         p = self.phase_idx
         x = []
         x_scaled = []
         for k in range(self.ns + 1):
-            self._set_node_index(k)
+            self.set_node_index(k)
             n_col = self.n_states_decision_steps(k)
             x_scaled.append(self.cx.sym(f"X_scaled_{p}_{k}", self.states.scaled.shape, n_col))
 
@@ -353,31 +353,31 @@ class NonLinearProgram:
                 * np.repeat(np.concatenate([self.x_scaling[key].scaling for key in self.states.keys()]), n_col, axis=1)
             )
 
-        self._set_node_index(0)
+        self.set_node_index(0)
         self.X_scaled = x_scaled
         self.X = x
 
-    def declare_controls_shooting_points(self):
+    def _declare_controls_shooting_points(self):
         p = self.phase_idx
         u = []
         u_scaled = []
         range_stop = self.ns if self.control_type == ControlType.CONSTANT else self.ns + 1
         for k in range(range_stop):
-            self._set_node_index(k)
+            self.set_node_index(k)
             u_scaled.append(self.cx.sym(f"U_scaled_{p}_{k}", self.controls.scaled.shape, 1))
             if self.controls.keys():
                 u.append(u_scaled[0] * np.concatenate([self.u_scaling[key].scaling for key in self.controls.keys()]))
 
-        self._set_node_index(0)
+        self.set_node_index(0)
         self.U_scaled = u_scaled
         self.U = u
 
-    def declare_algebraic_states_shooting_points(self):
+    def _declare_algebraic_states_shooting_points(self):
         p = self.phase_idx
         a = []
         a_scaled = []
         for k in range(self.ns + 1):
-            self._set_node_index(k)
+            self.set_node_index(k)
             n_col = self.n_algebraic_states_decision_steps(k)
             a_scaled.append(self.cx.sym(f"A_scaled_{p}_{k}", self.algebraic_states.scaled.shape, n_col))
 
@@ -391,7 +391,7 @@ class NonLinearProgram:
                     )
                 )
 
-        self._set_node_index(0)
+        self.set_node_index(0)
         self.A_scaled = a_scaled
         self.A = a
 
@@ -684,7 +684,7 @@ class NonLinearProgram:
 
         return external_forces
 
-    def _set_node_index(self, node):
+    def set_node_index(self, node):
         self.states.node_index = node
         self.states_dot.node_index = node
         self.controls.node_index = node
