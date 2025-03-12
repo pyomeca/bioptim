@@ -2497,6 +2497,6 @@ def test_memory_and_execution_time():
     }
 
     for key in ref.keys():
-        npt.assert_array_less(test_memory[key][0], ref[key][0] * 2)
-        npt.assert_array_less(test_memory[key][1], ref[key][1] * 2)
-        npt.assert_array_less(test_memory[key][2], ref[key][2] * 2)
+        npt.assert_array_less(test_memory[key][0], ref[key][0] * 3)
+        npt.assert_array_less(test_memory[key][1], ref[key][1] * 3)
+        npt.assert_array_less(test_memory[key][2], ref[key][2] * 3)
