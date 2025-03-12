@@ -896,13 +896,6 @@ class PenaltyOption(OptionGeneric):
 
         # The active controller is always the last one, and they all should be the same length anyway
         for node in range(len(controllers[-1])):
-            # TODO
-            # TODO WARNING THE NEXT IF STATEMENT IS A BUG DELIBERATELY INTRODUCED TO FIT THE PREVIOUS RESULTS.
-            # IT SHOULD BE REMOVED AS SOON AS THE MERGE IS DONE (AND VALUES OF THE TESTS ADJUSTED)
-            if self.integrate and self.target is not None:
-                self.node_idx = controllers[0].t[:-1]
-                if node not in self.node_idx:
-                    continue
 
             for controller in controllers:
                 controller.node_index = controller.t[node]
