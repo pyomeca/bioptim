@@ -667,7 +667,7 @@ class COLLOCATION(Integrator):
                     algebraic_states,
                     numerical_timeseries,
                 )[:, self.ode_idx]
-                defects.append(xp_j / self.h - f_j)
+                defects.append(f_j - xp_j / self.h)
 
             elif self.defects_type == DefectType.IMPLICIT:
                 defects.append(
