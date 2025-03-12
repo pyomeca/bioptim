@@ -8,8 +8,8 @@ from .parameters_types import (
     Str,
     IntIterableOrNpArray,
     IntIterableOrNpArrayOrInt,
-    FloatIterableOrCasadiMatrix,
-    NpArrayOrCasadiMatrix,
+    CXOrDMOrFloatIterable,
+    CXOrDMOrNpArray,
     AnyDict,
     IntTuple,
     AnyList,
@@ -61,7 +61,7 @@ class Mapping(OptionGeneric):
             for i in oppose:
                 self.oppose[i] = -1
 
-    def map(self, obj: FloatIterableOrCasadiMatrix) -> NpArrayOrCasadiMatrix:
+    def map(self, obj: CXOrDMOrFloatIterable) -> CXOrDMOrNpArray:
         """
         Apply the mapping to an matrix object. The rows are mapped while the columns are preserved as is
 

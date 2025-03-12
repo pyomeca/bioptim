@@ -1,31 +1,31 @@
 from casadi import MX, SX, DM, tanh
-from .parameters_types import Int, CasadiMatrixOrFloat
+from .parameters_types import Int, CXOrDM
 
 
-def lt(x: CasadiMatrixOrFloat, y: CasadiMatrixOrFloat):
+def lt(x: CXOrDM, y: CXOrDM):
     return x - y
 
 
-def le(x: CasadiMatrixOrFloat, y: CasadiMatrixOrFloat):
+def le(x: CXOrDM, y: CXOrDM):
     return lt(x, y)
 
 
-def gt(x: CasadiMatrixOrFloat, y: CasadiMatrixOrFloat):
+def gt(x: CXOrDM, y: CXOrDM):
     return lt(y, x)
 
 
-def ge(x: CasadiMatrixOrFloat, y: CasadiMatrixOrFloat):
+def ge(x: CXOrDM, y: CXOrDM):
     return le(y, x)
 
 
 def if_else(
-    cond: CasadiMatrixOrFloat,
-    if_true: CasadiMatrixOrFloat,
-    if_false: CasadiMatrixOrFloat,
+    cond: CXOrDM,
+    if_true: CXOrDM,
+    if_false: CXOrDM,
     b: int = 10000,
 ):
     return if_true + (if_false - if_true) * (0.5 + 0.5 * tanh(b * cond))
 
 
-def if_else_zero(cond: CasadiMatrixOrFloat, if_true: CasadiMatrixOrFloat, b: Int = 10000):
+def if_else_zero(cond: CXOrDM, if_true: CXOrDM, b: Int = 10000):
     return if_else(cond, if_true, 0, b)

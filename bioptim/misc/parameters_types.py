@@ -42,7 +42,6 @@ IntTuple: TypeAlias = tuple[int, ...]
 
 IntStrOrIterable: TypeAlias = int | str | AnyIterable
 
-CasadiMatrix: TypeAlias = MX | SX | DM
-CasadiMatrixOrFloat: TypeAlias = CasadiMatrix | float
-FloatIterableOrCasadiMatrix: TypeAlias = FloatIterableOrNpArray | CasadiMatrix
-NpArrayOrCasadiMatrix: TypeAlias = np.ndarray | CasadiMatrix
+CXOrDM: TypeAlias = MX | SX | DM | float
+CXOrDMOrFloatIterable: TypeAlias = FloatIterableOrNpArray | MX | SX | DM
+CXOrDMOrNpArray: TypeAlias = np.ndarray | MX | SX | DM
