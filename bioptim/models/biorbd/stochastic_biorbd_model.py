@@ -14,8 +14,8 @@ def _compute_torques_from_noise_and_feedback_default(
 ):
     tau_nominal = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
-    ref = DynamicsFunctions.get(nlp.algebraic_states["ref"], algebraic_states)
-    k = DynamicsFunctions.get(nlp.algebraic_states["k"], algebraic_states)
+    ref = DynamicsFunctions.get(nlp.controls["ref"], controls)
+    k = DynamicsFunctions.get(nlp.controls["k"], controls)
     from bioptim import StochasticBioModel
 
     k_matrix = StochasticBioModel.reshape_to_matrix(k, nlp.model.matrix_shape_k)
@@ -49,7 +49,6 @@ class StochasticBiorbdModel(BiorbdModel):
         sensory_reference: Callable,
         compute_torques_from_noise_and_feedback: Callable = _compute_torques_from_noise_and_feedback_default,
         motor_noise_mapping: BiMappingList = BiMappingList(),
-        n_collocation_points: int = 1,
         use_sx: bool = False,
         parameters: ParameterList = None,
         **kwargs,
@@ -89,11 +88,10 @@ class StochasticBiorbdModel(BiorbdModel):
         if motor_noise_mapping is not None and "tau" in motor_noise_mapping:
             if self.n_noised_controls != len(motor_noise_mapping["tau"].to_first.map_idx):
                 raise RuntimeError("The number of noised controls must be equal to the number of tau mapping.")
-        self.n_collocation_points = n_collocation_points
 
         self.matrix_shape_k = (self.n_noised_controls, self.n_references)
         self.matrix_shape_c = (self.n_noised_states, self.n_noise)
         self.matrix_shape_a = (self.n_noised_states, self.n_noised_states)
         self.matrix_shape_cov = (self.n_noised_states, self.n_noised_states)
         self.matrix_shape_cov_cholesky = (self.n_noised_states, self.n_noised_states)
-        self.matrix_shape_m = (self.n_noised_states, self.n_noised_states * self.n_collocation_points)
+        self.matrix_shape_m = (self.n_noised_states, self.n_noised_states)

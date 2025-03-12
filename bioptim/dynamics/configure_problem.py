@@ -401,12 +401,7 @@ class ConfigureProblem:
             ocp, nlp, n_noised_controls=n_noised_tau, n_references=nlp.model.n_references
         )
         ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=nlp.model.n_references)
-        n_collocation_points = 1
-        if isinstance(problem_type, SocpType.COLLOCATION):
-            n_collocation_points += problem_type.polynomial_degree
-        ConfigureProblem.configure_stochastic_m(
-            ocp, nlp, n_noised_states=n_noised_states, n_collocation_points=n_collocation_points
-        )
+        ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=n_noised_states)
 
         if isinstance(problem_type, SocpType.TRAPEZOIDAL_EXPLICIT):
             if initial_matrix is None:
@@ -479,12 +474,7 @@ class ConfigureProblem:
             ocp, nlp, n_noised_controls=n_noised_tau, n_references=nlp.model.n_references
         )
         ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=nlp.model.n_references)
-        n_collocation_points = 1
-        if isinstance(problem_type, SocpType.COLLOCATION):
-            n_collocation_points += problem_type.polynomial_degree
-        ConfigureProblem.configure_stochastic_m(
-            ocp, nlp, n_noised_states=n_noised_states, n_collocation_points=n_collocation_points
-        )
+        ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=n_noised_states)
 
         if isinstance(problem_type, SocpType.TRAPEZOIDAL_EXPLICIT):
             if initial_matrix is None:
@@ -1495,9 +1485,9 @@ class ConfigureProblem:
             ocp,
             nlp,
             as_states=False,
-            as_controls=False,
+            as_controls=True,
             as_states_dot=False,
-            as_algebraic_states=True,
+            as_algebraic_states=False,
         )
 
     @staticmethod
@@ -1528,9 +1518,9 @@ class ConfigureProblem:
             ocp,
             nlp,
             as_states=False,
-            as_controls=False,
+            as_controls=True,
             as_states_dot=False,
-            as_algebraic_states=True,
+            as_algebraic_states=False,
             skip_plot=True,
         )
 
@@ -1560,9 +1550,9 @@ class ConfigureProblem:
             ocp,
             nlp,
             as_states=False,
-            as_controls=False,
+            as_controls=True,
             as_states_dot=False,
-            as_algebraic_states=True,
+            as_algebraic_states=False,
             skip_plot=True,
         )
 
@@ -1618,9 +1608,9 @@ class ConfigureProblem:
             ocp,
             nlp,
             as_states=False,
-            as_controls=False,
+            as_controls=True,
             as_states_dot=False,
-            as_algebraic_states=True,
+            as_algebraic_states=False,
         )
 
     @staticmethod
@@ -1649,9 +1639,9 @@ class ConfigureProblem:
             ocp,
             nlp,
             as_states=False,
-            as_controls=False,
+            as_controls=True,
             as_states_dot=False,
-            as_algebraic_states=True,
+            as_algebraic_states=False,
         )
 
     @staticmethod
@@ -1677,13 +1667,13 @@ class ConfigureProblem:
             ocp,
             nlp,
             as_states=False,
-            as_controls=False,
+            as_controls=True,
             as_states_dot=False,
-            as_algebraic_states=True,
+            as_algebraic_states=False,
         )
 
     @staticmethod
-    def configure_stochastic_m(ocp, nlp, n_noised_states: int, n_collocation_points: int = 1):
+    def configure_stochastic_m(ocp, nlp, n_noised_states: int):
         """
         Configure the helper matrix M (from Gillis 2013 : https://doi.org/10.1109/CDC.2013.6761121).
 
@@ -1699,11 +1689,11 @@ class ConfigureProblem:
 
         name_m = []
         for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
-            for name_2 in [f"X_{i}" for i in range(n_noised_states * n_collocation_points)]:
+            for name_2 in [f"X_{i}" for i in range(n_noised_states)]:
                 name_m += [name_1 + "_&_" + name_2]
         nlp.variable_mappings[name] = BiMapping(
-            list(range(n_noised_states * n_noised_states * n_collocation_points)),
-            list(range(n_noised_states * n_noised_states * n_collocation_points)),
+            list(range(n_noised_states * n_noised_states)),
+            list(range(n_noised_states * n_noised_states)),
         )
         ConfigureProblem.configure_new_variable(
             name,

@@ -1,8 +1,13 @@
 import importlib.util
-from pathlib import Path
 import platform
-from typing import Any
+from pathlib import Path
 from types import ModuleType
+from typing import Any
+
+import numpy as np
+import numpy.testing as npt
+import pytest
+from casadi import MX, Function
 
 from bioptim import (
     BiorbdModel,
@@ -20,10 +25,6 @@ from bioptim import (
     OptimizationVariableList,
 )
 from bioptim.interfaces.ipopt_interface import IpoptInterface
-from casadi import MX, Function
-import numpy as np
-import numpy.testing as npt
-import pytest
 
 
 class TestUtils:

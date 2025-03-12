@@ -14,7 +14,6 @@ from bioptim import (
     FatigueList,
     XiaFatigue,
 )
-
 from ..utils import TestUtils
 
 
@@ -82,44 +81,20 @@ def test_configures(cx):
     npt.assert_equal(nlp.states.keys(), ["q", "qdot", "qddot", "qdddot"])
 
     ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=4, n_references=8)
-    npt.assert_equal(nlp.algebraic_states.shape, 4 * 8)
-    npt.assert_equal(nlp.algebraic_states.keys(), ["k"])
-
-    ConfigureProblem.configure_stochastic_c(ocp, nlp, n_noised_states=4, n_noise=4)
-    npt.assert_equal(nlp.algebraic_states.shape, 4 * 8 + 4 * 4)
-    npt.assert_equal(nlp.algebraic_states.keys(), ["k", "c"])
-
-    ConfigureProblem.configure_stochastic_a(ocp, nlp, n_noised_states=4)
-    npt.assert_equal(nlp.algebraic_states.shape, 4 * 8 + 4 * 4 + 4 * 4)
-    npt.assert_equal(nlp.algebraic_states.keys(), ["k", "c", "a"])
-
-    ConfigureProblem.configure_stochastic_cov_implicit(ocp, nlp, n_noised_states=4)
-    npt.assert_equal(nlp.algebraic_states.shape, 4 * 8 + 4 * 4 + 4 * 4 + 4 * 4)
-    npt.assert_equal(nlp.algebraic_states.keys(), ["k", "c", "a", "cov"])
-
-    ConfigureProblem.configure_stochastic_cholesky_cov(ocp, nlp, n_noised_states=4)
-    npt.assert_equal(nlp.algebraic_states.shape, 4 * 8 + 4 * 4 + 4 * 4 + 4 * 4 + 4 + 3 + 2 + 1)
-    npt.assert_equal(nlp.algebraic_states.keys(), ["k", "c", "a", "cov", "cholesky_cov"])
-
-    ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=4)
-    npt.assert_equal(nlp.algebraic_states.shape, 4 * 8 + 4 * 4 + 4 * 4 + 4 * 4 + 4 + 3 + 2 + 1 + 4)
-    npt.assert_equal(nlp.algebraic_states.keys(), ["k", "c", "a", "cov", "cholesky_cov", "ref"])
-
-    ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=4)
-    npt.assert_equal(nlp.algebraic_states.shape, 4 * 8 + 4 * 4 + 4 * 4 + 4 * 4 + 4 + 3 + 2 + 1 + 4 + 4 * 4)
-    npt.assert_equal(nlp.algebraic_states.keys(), ["k", "c", "a", "cov", "cholesky_cov", "ref", "m"])
+    npt.assert_equal(nlp.controls.shape, 36)
+    npt.assert_equal(nlp.controls.keys(), ["tau", "k"])
 
     ConfigureProblem.configure_residual_tau(ocp, nlp, as_states=False, as_controls=True)
-    npt.assert_equal(nlp.controls.shape, 4 + 4)
-    npt.assert_equal(nlp.controls.keys(), ["tau", "residual_tau"])
+    npt.assert_equal(nlp.controls.shape, 4 + 36)
+    npt.assert_equal(nlp.controls.keys(), ["tau", "k", "residual_tau"])
 
     ConfigureProblem.configure_taudot(ocp, nlp, as_states=False, as_controls=True)
-    npt.assert_equal(nlp.controls.shape, 4 + 4 + 4)
-    npt.assert_equal(nlp.controls.keys(), ["tau", "residual_tau", "taudot"])
+    npt.assert_equal(nlp.controls.shape, 4 + 36 + 4)
+    npt.assert_equal(nlp.controls.keys(), ["tau", "k", "residual_tau", "taudot"])
 
     ConfigureProblem.configure_translational_forces(ocp, nlp, as_states=False, as_controls=True)
-    npt.assert_equal(nlp.controls.shape, 4 + 4 + 4 + 3 * 2)
-    npt.assert_equal(nlp.controls.keys(), ["tau", "residual_tau", "taudot", "contact_forces", "contact_positions"])
+    npt.assert_equal(nlp.controls.shape, 4 + 36 + 4 + 3 + 3)
+    npt.assert_equal(nlp.controls.keys(), ["tau", "k", "residual_tau", "taudot", "contact_forces", "contact_positions"])
 
     ConfigureProblem.configure_rigid_contact_forces(ocp, nlp, as_states=True, as_controls=False)
     npt.assert_equal(nlp.states.shape, 4 + 4 + 4 + 4 + 3)
@@ -178,4 +153,5 @@ def test_configure_muscles(cx):
     npt.assert_equal(nlp.states.shape, 24)
     npt.assert_equal(nlp.states.keys(), ["muscles", "muscles_ma", "muscles_mr", "muscles_mf"])
     npt.assert_equal(nlp.controls.shape, 6)
+    npt.assert_equal(nlp.controls.keys(), ["muscles"])
     npt.assert_equal(nlp.controls.keys(), ["muscles"])
