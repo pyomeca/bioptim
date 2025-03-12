@@ -1854,6 +1854,9 @@ def test_example_variable_scaling(phase_dynamics):
 
 def test_memory_and_execution_time():
 
+    if platform.system() == "Windows":
+        pytest.skip("Tests are slower on Windows")
+
     ref = {
         "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.RK1'>-False-1-PhaseDynamics.SHARED_DURING_THE_PHASE": [
             9.1513352394104,
