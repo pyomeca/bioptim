@@ -23,7 +23,7 @@ class Parameter(OptimizationVariable):
         name: str,
         mx: MX,
         cx_start: list | None,
-        index: [range, list],
+        index: range | list,
         mapping: BiMapping = None,
         parent_list=None,
         function: Callable = None,
@@ -202,29 +202,18 @@ class ParameterList(OptimizationVariableList):
             )
         )
 
-    def to_unscaled(
-        self,
-    ):
+    def copy(self):
         """
-        Add a new variable to the list
-
-        Parameters
-        ----------
-        name: str
-            The name of the variable
-        cx: list
-            The list of SX or MX variable associated with this variable
-        scaled_parameter: OptimizationVariable
-            The scaled optimization variable associated with this variable
+        Copy a parameters list to new one
         """
 
-        unscaled_parameter = ParameterList(use_sx=(True if self.cx_type == SX else False))
+        parameters_copy = ParameterList(use_sx=(True if self.cx_type == SX else False))
         for element in self.elements:
-            unscaled_parameter.elements.append(
+            parameters_copy.elements.append(
                 Parameter(
                     name=element.name,
-                    mx=element.mx * element.scaling.scaling,
-                    cx_start=element.cx_start * element.scaling.scaling,
+                    mx=element.mx,
+                    cx_start=element.cx_start,
                     index=element.index,
                     mapping=element.mapping,
                     parent_list=element.parent_list,
@@ -235,11 +224,9 @@ class ParameterList(OptimizationVariableList):
                     **element.kwargs,
                 )
             )
-            unscaled_parameter._cx_start = vertcat(
-                unscaled_parameter._cx_start, element.cx_start * element.scaling.scaling
-            )
+            parameters_copy._cx_start = vertcat(parameters_copy._cx_start, element.cx_start)
 
-        return unscaled_parameter
+        return parameters_copy
 
     def cx_mid(self):
         raise RuntimeError("cx_mid is not available for parameters, only cx_start is accepted.")
@@ -276,8 +263,7 @@ class ParameterContainer(OptimizationVariableContainer):
 
     def __init__(self, use_sx: bool):
         super(ParameterContainer, self).__init__(phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE)
-        self._scaled: ParameterList = ParameterList(use_sx=use_sx)
-        self._unscaled: ParameterList = ParameterList(use_sx=use_sx)
+        self._parameters: ParameterList = ParameterList(use_sx=use_sx)
 
     @property
     def node_index(self):
@@ -291,40 +277,57 @@ class ParameterContainer(OptimizationVariableContainer):
         """
         Initialize the Container so the dimensions are correct.
 
+        Since the parameters are used in the model and outside of the model, we need to have a symbolic version of the CX
+        for both of the scaled and the unscaled parameters. Therefore, one must explicitly scale or unscale the parameters
+        when using .cx (contrary to the states and controls, which are done automatically).
+
         Parameters
         ----------
 
         """
-        self._scaled = parameters
-        self._unscaled = parameters.to_unscaled()
+        self._parameters = parameters.copy()
         return
 
     def initialize_from_shooting(self, n_shooting: int, cx: Callable):
         raise RuntimeError("initialize_from_shooting is not available for parameters, only initialize is accepted.")
 
     @property
-    def unscaled(self):
+    def parameters(self):
         """
         This method allows to intercept the scaled item and return the current node_index
         """
-        return self._unscaled
+        return self._parameters
+
+    @property
+    def unscaled(self):
+        """
+        This method allows to intercept the scaled item and return the current node_index
+
+        Notes
+        -----
+        The return parameters is actually the scaled version of it.
+        But for internal reasons, it is expected.
+        This can be confusing for the user who expects an unscaled version though.
+        Therefore, `.unscaled` method should only be call by the programmer who KNOWS what there are doing.
+        """
+        return self._parameters
 
     @property
     def scaled(self):
         """
         This method allows to intercept the scaled item and return the current node_index
         """
-        return self._scaled
+        return self._parameters
 
     def keys(self):
-        return self._unscaled.keys()
+        return self._parameters.keys()
 
     def key_index(self, key):
-        return self._unscaled[key].index
+        return self._parameters[key].index
 
     @property
     def shape(self):
-        return self._unscaled.shape
+        return self._parameters.shape
 
     @property
     def cx_intermediates_list(self):
@@ -340,4 +343,4 @@ class ParameterContainer(OptimizationVariableContainer):
 
     @property
     def mx(self):
-        return self.unscaled.mx
+        return self.parameters.mx

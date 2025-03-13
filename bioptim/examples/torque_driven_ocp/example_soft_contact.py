@@ -165,7 +165,7 @@ def prepare_ocp(
     x_bounds["q"] = bio_model.bounds_from_ranges("q")
     x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
 
-    init = initial_states_from_single_shooting(biorbd_model_path, 100, 1, ode_solver)
+    init = initial_states_from_single_shooting(biorbd_model_path, ns=n_shooting, tf=final_time, ode_solver=ode_solver)
     x_bounds["q"].min[:, 0] = (init["q"].init - slack)[:, 0]
     x_bounds["q"].max[:, 0] = (init["q"].init + slack)[:, 0]
 
@@ -205,7 +205,7 @@ def main():
     ode_solver = OdeSolver.RK8()
 
     # Prepare OCP to reach the second marker
-    ocp = prepare_ocp(model, 37, 0.37, ode_solver, slack=1e-4)
+    ocp = prepare_ocp(model, 37, 0.3, ode_solver, slack=1e-4)
     # ocp.add_plot_penalty(CostType.ALL)
     # ocp.print(to_graph=True)
 
