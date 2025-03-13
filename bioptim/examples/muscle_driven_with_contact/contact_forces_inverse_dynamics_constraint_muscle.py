@@ -294,8 +294,11 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux", show_options={"show_bounds": True}))
+    solver = Solver.IPOPT(show_online_optim=platform.system() == "Linux", show_options={"show_bounds": True})
+    solver.set_maximum_iterations(10000)
+    sol = ocp.solve(solver)
     nlp = ocp.nlp[0]
+    sol.graphs()
 
     time = np.reshape(sol.decision_time(to_merge=SolutionMerge.NODES), (-1,))
     states = sol.decision_states(to_merge=SolutionMerge.NODES)

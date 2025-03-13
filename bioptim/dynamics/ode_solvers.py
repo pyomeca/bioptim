@@ -164,7 +164,13 @@ class OdeSolver:
             return out
 
         def p_ode(self, nlp):
-            return nlp.controls.scaled.cx_start
+            if nlp.control_type in (
+                    ControlType.CONSTANT,
+                    ControlType.CONSTANT_WITH_LAST_NODE,
+            ):
+                return nlp.controls.scaled.cx_start
+            else:
+                return horzcat(nlp.controls.scaled.cx_start, nlp.controls.scaled.cx_end)
 
         def a_ode(self, nlp):
             out = [nlp.algebraic_states.scaled.cx_start]

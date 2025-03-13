@@ -621,27 +621,6 @@ class COLLOCATION(Integrator):
     def _time_xall_from_dt_func(self) -> Function:
         return Function("step_time", [self.t_span_sym], [self.t_span_sym[0] + (self._integration_time + [1]) * self.h])
 
-    def get_u(self, u: np.ndarray, t: float | MX | SX) -> np.ndarray:
-        """
-        Get the control at a given time
-
-        Parameters
-        ----------
-        u: np.ndarray
-            The control matrix
-        t: float | MX | SX
-            The time a which control should be computed
-
-        Returns
-        -------
-        The control at a given time
-        """
-
-        if self.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
-            return super(COLLOCATION, self).get_u(u, t)
-        else:
-            raise NotImplementedError(f"{self.control_type} ControlType not implemented yet with COLLOCATION")
-
     def get_states_end(
         self,
         states: MX | SX,
