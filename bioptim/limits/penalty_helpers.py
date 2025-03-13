@@ -132,6 +132,7 @@ class PenaltyHelpers:
     def numerical_timeseries(penalty, index, get_numerical_timeseries: Callable):
         node = penalty.node_idx[index]
         if penalty.multinode_penalty:
+            # numerical timeseries are expected to be provided only at the shooting node.
             for i_phase in penalty.nodes_phase:
                 d = get_numerical_timeseries(i_phase, node, 0)  # cx_start
                 if d.shape[0] != 0:

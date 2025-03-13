@@ -659,20 +659,20 @@ class COLLOCATION(Integrator):
             states_end = self.lagrange_interpolation.interpolate(states[1:], 1.0)
 
         defects = []
-        for j in range(1, self.degree + 1):
+        for j in range(0, self.degree + 1):
             t = vertcat(self.t_span_sym[0] + self._integration_time[j] * self.h, self.h)
 
             xp_j = self.lagrange_interpolation.interpolate_first_derivative(
                 states[0:1] + states[2:], self._integration_time[j]
             )
 
-            if self.defects_type == DefectType.EXPLICIT:
+            if j != 0 and self.defects_type == DefectType.EXPLICIT:
                 f_j = self.fun(
                     t,
-                    states[j + 1],
+                    states[j + 1],  # +1 instead of 0 since the first subnode is duplicated
                     self.get_u(controls, self._integration_time[j]),
                     params,
-                    algebraic_states[j + 1],
+                    algebraic_states[j + 1],  # +1 instead of 0 since the first subnode is duplicated
                     numerical_timeseries,
                 )[:, self.ode_idx]
                 defects.append(xp_j - f_j * self.h)
@@ -681,10 +681,10 @@ class COLLOCATION(Integrator):
                 defects.append(
                     self.implicit_fun(
                         t,
-                        states[j + 1],
+                        states[j + 1],  # +1 instead of 0 since the first subnode is duplicated
                         self.get_u(controls, self._integration_time[j]),
                         params,
-                        algebraic_states[j + 1],
+                        algebraic_states[j + 1],  # +1 instead of 0 since the first subnode is duplicated
                         numerical_timeseries,
                         xp_j / self.h,
                     )
