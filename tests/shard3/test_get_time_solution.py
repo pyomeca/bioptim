@@ -55,7 +55,7 @@ def _get_solution(
     elif is_multi_phase and ode_solver == OdeSolver.COLLOCATION and duplicate_first and phase_dynamics:
         with pytest.raises(RuntimeError):
             # There is currently a bug with the duplicate_first option which creates a Casadi free variable
-            # When solve, this pytest.raises should be removed
+            # When solved, this pytest.raises should be removed
             ocp_module.prepare_ocp(**prepare_args)
         return None
 
