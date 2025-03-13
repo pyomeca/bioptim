@@ -32,6 +32,7 @@ from bioptim import (
     DefectType,
     MultinodeConstraintList,
     MultinodeConstraintFcn,
+    PhaseDynamics,
 )
 
 
@@ -170,6 +171,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
         custom_configure,
         dynamic_function=custom_dynamics,
         expand_dynamics=expand_dynamics,
+        phase_dynamics=PhaseDynamics.ONE_PER_NODE,
     )
 
     # Constraints
