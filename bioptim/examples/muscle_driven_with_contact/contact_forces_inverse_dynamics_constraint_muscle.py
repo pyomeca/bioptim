@@ -233,7 +233,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds["tau"] = [-500.0] * bio_model.nb_tau, [500.0] * bio_model.nb_tau
+    u_bounds["tau"] = [-200.0] * bio_model.nb_tau, [200.0] * bio_model.nb_tau
     u_bounds["muscles"] = [0.0] * bio_model.nb_muscles, [1.0] * bio_model.nb_muscles
 
     u_init = InitialGuessList()

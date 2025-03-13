@@ -645,16 +645,17 @@ class COLLOCATION(Integrator):
                 states[0:1] + states[2:], self._integration_time[j]
             )
 
-            if j != 0 and self.defects_type == DefectType.EXPLICIT:
-                f_j = self.fun(
-                    t,
-                    states[j + 1],  # +1 instead of 0 since the first subnode is duplicated
-                    self.get_u(controls, self._integration_time[j]),
-                    params,
-                    algebraic_states[j + 1],  # +1 instead of 0 since the first subnode is duplicated
-                    numerical_timeseries,
-                )[:, self.ode_idx]
-                defects.append(xp_j - f_j * self.h)
+            if self.defects_type == DefectType.EXPLICIT:
+                if j != 0:
+                    f_j = self.fun(
+                        t,
+                        states[j + 1],  # +1 instead of 0 since the first subnode is duplicated
+                        self.get_u(controls, self._integration_time[j]),
+                        params,
+                        algebraic_states[j + 1],  # +1 instead of 0 since the first subnode is duplicated
+                        numerical_timeseries,
+                    )[:, self.ode_idx]
+                    defects.append(xp_j - f_j * self.h)
 
             elif self.defects_type == DefectType.IMPLICIT:
                 defects.append(
