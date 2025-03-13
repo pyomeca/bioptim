@@ -1185,7 +1185,7 @@ class Solution:
         shooting_type: Shooting = Shooting.MULTIPLE,
         integrator: SolutionIntegrator = SolutionIntegrator.OCP,
         save_name: str = None,
-    ):
+    ) -> list[plt.figure]:
         """
         Show the graphs of the simulation
 

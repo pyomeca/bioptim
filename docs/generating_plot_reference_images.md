@@ -1,4 +1,6 @@
 # Generating references images for plot tests
+** The reference images must be generated on a Linux computer**
+
 1) Install the required dependency:
 ```bash
 conda install pytest-mpl -c conda-forge
