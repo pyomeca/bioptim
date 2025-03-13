@@ -544,10 +544,9 @@ class BiorbdModel:
         else:
             return None
 
-    def map_rigid_contact_forces_to_global_forces(self,
-                                                  rigid_contact_forces: MX | SX,
-                                                  q: MX | SX,
-                                                  parameters: MX | SX) -> MX | SX:
+    def map_rigid_contact_forces_to_global_forces(
+        self, rigid_contact_forces: MX | SX, q: MX | SX, parameters: MX | SX
+    ) -> MX | SX:
         """
         Takes the rigid contact forces and dispatch is to match the external forces.
         """
@@ -568,7 +567,9 @@ class BiorbdModel:
             contacts_to_add += 3
 
             # Add the point of application to the right place
-            external_forces[contacts_to_add : contacts_to_add + 3] = self.rigid_contact_position(i_contact)(q, parameters)
+            external_forces[contacts_to_add : contacts_to_add + 3] = self.rigid_contact_position(i_contact)(
+                q, parameters
+            )
             contacts_to_add += 3
 
         return external_forces
@@ -673,9 +674,9 @@ class BiorbdModel:
         contact_axis = [0, 1, 2] if contact_axis is None else contact_axis
         q_biorbd = GeneralizedCoordinates(self.q)
         qdot_biorbd = GeneralizedVelocity(self.qdot)
-        biorbd_return = self.model.rigidContactVelocity(
-            q_biorbd, qdot_biorbd, contact_index, True
-        ).to_mx()[contact_axis]
+        biorbd_return = self.model.rigidContactVelocity(q_biorbd, qdot_biorbd, contact_index, True).to_mx()[
+            contact_axis
+        ]
         casadi_fun = Function(
             "rigid_contact_velocity",
             [self.q, self.qdot, self.parameters],

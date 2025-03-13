@@ -400,8 +400,10 @@ def _get_x(ocp, phase_idx, node_idx, subnodes_idx, scaled):
     values = ocp.nlp[phase_idx].X_scaled if scaled else ocp.nlp[phase_idx].X
     if subnodes_idx.stop == -1:
         if subnodes_idx.start == 0:
-            x = horzcat(values[node_idx] if node_idx < len(values) else ocp.cx(),
-                        values[node_idx + 1][:, 0] if node_idx + 1 < len(values) else ocp.cx())
+            x = horzcat(
+                values[node_idx] if node_idx < len(values) else ocp.cx(),
+                values[node_idx + 1][:, 0] if node_idx + 1 < len(values) else ocp.cx(),
+            )
         else:
             raise RuntimeError("only subnodes_idx.start == 0 is supported for subnodes_idx.stop == -1")
     else:
@@ -413,8 +415,10 @@ def _get_u(ocp, phase_idx, node_idx, subnodes_idx, scaled):
     values = ocp.nlp[phase_idx].U_scaled if scaled else ocp.nlp[phase_idx].U
     if subnodes_idx.stop == -1:
         if subnodes_idx.start == 0:
-            u = horzcat(values[node_idx] if node_idx < len(values) else ocp.cx(),
-                        values[node_idx + 1][:, 0] if node_idx + 1 < len(values) else ocp.cx())
+            u = horzcat(
+                values[node_idx] if node_idx < len(values) else ocp.cx(),
+                values[node_idx + 1][:, 0] if node_idx + 1 < len(values) else ocp.cx(),
+            )
         else:
             raise RuntimeError("only subnodes_idx.start == 0 is supported for subnodes_idx.stop == -1")
     else:
@@ -430,8 +434,10 @@ def _get_a(ocp, phase_idx, node_idx, subnodes_idx, scaled):
     values = ocp.nlp[phase_idx].A_scaled if scaled else ocp.nlp[phase_idx].A
     if subnodes_idx.stop == -1:
         if subnodes_idx.start == 0:
-            a = horzcat(values[node_idx] if node_idx < len(values) else ocp.cx(),
-                        values[node_idx + 1][:, 0] if node_idx + 1 < len(values) else ocp.cx())
+            a = horzcat(
+                values[node_idx] if node_idx < len(values) else ocp.cx(),
+                values[node_idx + 1][:, 0] if node_idx + 1 < len(values) else ocp.cx(),
+            )
         else:
             raise RuntimeError("only subnodes_idx.start == 0 is supported for subnodes_idx.stop == -1")
     else:

@@ -142,7 +142,9 @@ class DynamicsFunctions:
         tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
         tau = tau - nlp.model.friction_coefficients @ qdot if with_friction else tau
 
-        external_forces = nlp.get_external_forces("external_forces", states, controls, algebraic_states, numerical_timeseries)
+        external_forces = nlp.get_external_forces(
+            "external_forces", states, controls, algebraic_states, numerical_timeseries
+        )
 
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
         dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
@@ -512,7 +514,9 @@ class DynamicsFunctions:
         if with_ligament:
             tau += nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx)
 
-        external_forces = nlp.get_external_forces("external_forces", states, controls, algebraic_states, numerical_timeseries)
+        external_forces = nlp.get_external_forces(
+            "external_forces", states, controls, algebraic_states, numerical_timeseries
+        )
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
@@ -580,7 +584,9 @@ class DynamicsFunctions:
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         dtau = DynamicsFunctions.get(nlp.controls["taudot"], controls)
 
-        external_forces = nlp.get_external_forces("external_forces", states, controls, algebraic_states, numerical_timeseries)
+        external_forces = nlp.get_external_forces(
+            "external_forces", states, controls, algebraic_states, numerical_timeseries
+        )
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
         dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
         dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
@@ -637,7 +643,9 @@ class DynamicsFunctions:
         tau = tau + nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx) if with_passive_torque else tau
         tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
 
-        external_forces = nlp.get_external_forces("external_forces", states, controls, algebraic_states, numerical_timeseries)
+        external_forces = nlp.get_external_forces(
+            "external_forces", states, controls, algebraic_states, numerical_timeseries
+        )
 
         return nlp.model.contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
 
@@ -689,7 +697,9 @@ class DynamicsFunctions:
         tau = tau + nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx) if with_passive_torque else tau
         tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
 
-        external_forces = nlp.get_external_forces("external_forces", states, controls, algebraic_states, numerical_timeseries)
+        external_forces = nlp.get_external_forces(
+            "external_forces", states, controls, algebraic_states, numerical_timeseries
+        )
         return nlp.model.contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
 
     @staticmethod
@@ -793,7 +803,9 @@ class DynamicsFunctions:
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
 
-        external_forces = nlp.get_external_forces("external_forces", states, controls, algebraic_states, numerical_timeseries)
+        external_forces = nlp.get_external_forces(
+            "external_forces", states, controls, algebraic_states, numerical_timeseries
+        )
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
         dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
         dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
@@ -862,7 +874,9 @@ class DynamicsFunctions:
         tau = tau + nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx) if with_passive_torque else tau
         tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
 
-        external_forces = nlp.get_external_forces("external_forces", states, controls, algebraic_states, numerical_timeseries)
+        external_forces = nlp.get_external_forces(
+            "external_forces", states, controls, algebraic_states, numerical_timeseries
+        )
         return nlp.model.contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
 
     @staticmethod

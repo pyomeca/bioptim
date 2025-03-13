@@ -218,7 +218,9 @@ def _get_multinode_indices(penalty, is_constructing_penalty: bool):
 
     if not (all(penalty.subnodes_are_decision_states) or sum(penalty.subnodes_are_decision_states) == 0):
         # This check allows to test only for penalty.subnodes_are_decision_states[0] below
-        raise NotImplementedError("All controllers must be of the same type (either all or none should have subnodes_are_decision_states)")
+        raise NotImplementedError(
+            "All controllers must be of the same type (either all or none should have subnodes_are_decision_states)"
+        )
 
     phases = penalty.nodes_phase
     nodes = penalty.multinode_idx

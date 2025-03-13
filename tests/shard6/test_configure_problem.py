@@ -118,7 +118,6 @@ def test_configures(cx):
     npt.assert_equal(nlp.algebraic_states.keys(), ["rigid_contact_forces"])
 
 
-
 @pytest.mark.parametrize("cx", [MX, SX])
 def test_configure_soft_contacts(cx):
 
