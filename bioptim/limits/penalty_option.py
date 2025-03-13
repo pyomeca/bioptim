@@ -687,6 +687,8 @@ class PenaltyOption(OptionGeneric):
                 pass
             elif sn_idx.stop is None:
                 x = vertcat(x, vertcat(*states.scaled.cx_intermediates_list))
+            elif sn_idx.stop == -1:
+                x = vertcat(vertcat(x, vertcat(*states.scaled.cx_intermediates_list)), states.scaled.cx_end)
             else:
                 raise ValueError("The sn_idx.stop should be 1 or None if sn_idx.start == 0")
 
@@ -744,10 +746,10 @@ class PenaltyOption(OptionGeneric):
             u = vertcat(u, controls.scaled.cx_start)
             if sn_idx.stop == 1:
                 pass
-            elif sn_idx.stop is None:
+            elif sn_idx.stop is None or sn_idx.stop == -1:
                 u = vertcat_cx_end()
             else:
-                raise ValueError("The sn_idx.stop should be 1 or None if sn_idx.start == 0")
+                raise ValueError("The sn_idx.stop should be 1, -1 or None if sn_idx.start == 0")
 
         elif sn_idx.start == 1:
             if sn_idx.stop == 2:
