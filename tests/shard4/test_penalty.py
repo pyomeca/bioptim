@@ -1,7 +1,8 @@
-import pytest
-from casadi import DM, MX, vertcat, horzcat, Function
 import numpy as np
 import numpy.testing as npt
+import pytest
+from casadi import DM, MX, vertcat, horzcat, Function
+
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -20,13 +21,73 @@ from bioptim import (
     ControlType,
     PhaseDynamics,
     ConstraintList,
+    ExternalForceSetTimeSeries,
 )
-from bioptim.limits.penalty_controller import PenaltyController
 from bioptim.limits.penalty import PenaltyOption
+from bioptim.limits.penalty_controller import PenaltyController
 from bioptim.misc.mapping import BiMapping
 from bioptim.optimization.non_linear_program import NonLinearProgram as NLP
 from bioptim.optimization.optimization_variable import OptimizationVariableList
 from tests.utils import TestUtils
+
+
+N_SHOOTING = 10
+EXTERNAL_FORCE_ARRAY = np.zeros((9, N_SHOOTING))
+EXTERNAL_FORCE_ARRAY[:, 0] = [
+    0.374540118847362,
+    0.950714306409916,
+    0.731993941811405,
+    0.598658484197037,
+    0.156018640442437,
+    0.155994520336203,
+    0,
+    0,
+    0,
+]
+EXTERNAL_FORCE_ARRAY[:, 1] = [
+    0.058083612168199,
+    0.866176145774935,
+    0.601115011743209,
+    0.708072577796045,
+    0.020584494295802,
+    0.969909852161994,
+    0,
+    0,
+    0,
+]
+EXTERNAL_FORCE_ARRAY[:, 2] = [
+    0.832442640800422,
+    0.212339110678276,
+    0.181824967207101,
+    0.183404509853434,
+    0.304242242959538,
+    0.524756431632238,
+    0,
+    0,
+    0,
+]
+EXTERNAL_FORCE_ARRAY[:, 3] = [
+    0.431945018642116,
+    0.291229140198042,
+    0.611852894722379,
+    0.139493860652042,
+    0.292144648535218,
+    0.366361843293692,
+    0,
+    0,
+    0,
+]
+EXTERNAL_FORCE_ARRAY[:, 4] = [
+    0.456069984217036,
+    0.785175961393014,
+    0.19967378215836,
+    0.514234438413612,
+    0.592414568862042,
+    0.046450412719998,
+    0,
+    0,
+    0,
+]
 
 
 def prepare_test_ocp(
@@ -35,8 +96,17 @@ def prepare_test_ocp(
     with_contact=False,
     with_actuator=False,
     use_sx=True,
+    with_external_forces=False,
 ):
     bioptim_folder = TestUtils.bioptim_folder()
+
+    if with_external_forces:
+        if not with_contact:
+            raise NotImplementedError("with_external_forces=True is only tested for with_contact=True")
+        external_forces = ExternalForceSetTimeSeries(nb_frames=N_SHOOTING)
+        external_forces.add("Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :])
+        numerical_time_series = {"external_forces": external_forces.to_numerical_time_series()}
+
     if with_muscles and with_contact or with_muscles and with_actuator or with_contact and with_actuator:
         raise RuntimeError("With muscles and with contact and with_actuator together is not defined")
     elif with_muscles:
@@ -46,16 +116,29 @@ def prepare_test_ocp(
             DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, expand_dynamics=True, phase_dynamics=phase_dynamics
         )
     elif with_contact:
-        bio_model = BiorbdModel(
-            bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod",
-        )
         dynamics = DynamicsList()
-        dynamics.add(
-            DynamicsFcn.TORQUE_DRIVEN,
-            with_contact=True,
-            expand_dynamics=True,
-            phase_dynamics=phase_dynamics,
-        )
+        if with_external_forces:
+            bio_model = BiorbdModel(
+                bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod",
+                external_force_set=external_forces,
+            )
+            dynamics.add(
+                DynamicsFcn.TORQUE_DRIVEN,
+                with_contact=True,
+                expand_dynamics=True,
+                phase_dynamics=phase_dynamics,
+                numerical_data_timeseries=numerical_time_series,
+            )
+        else:
+            bio_model = BiorbdModel(
+                bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod",
+            )
+            dynamics.add(
+                DynamicsFcn.TORQUE_DRIVEN,
+                with_contact=True,
+                expand_dynamics=True,
+                phase_dynamics=phase_dynamics,
+            )
     elif with_actuator:
         bio_model = BiorbdModel(bioptim_folder + "/examples/torque_driven_ocp/models/cube.bioMod")
         dynamics = DynamicsList()
@@ -70,7 +153,7 @@ def prepare_test_ocp(
     ocp = OptimalControlProgram(
         bio_model,
         dynamics,
-        10,
+        N_SHOOTING,
         1.0,
         objective_functions=objective_functions,
         use_sx=use_sx,
@@ -1067,6 +1150,80 @@ def test_penalty_minimize_contact_forces_end_of_interval(penalty_origin, phase_d
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
     npt.assert_almost_equal(res.T, [[-10.5199265, 126.8712299, 5.0900292]])
+
+
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+@pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Mayer, ObjectiveFcn.Lagrange, ConstraintFcn])
+@pytest.mark.parametrize(
+    "with_external_forces",
+    [False, True],
+)
+def test_penalty_minimize_sum_reaction_forces(penalty_origin, phase_dynamics, with_external_forces):
+    ocp = prepare_test_ocp(with_contact=True, phase_dynamics=phase_dynamics, with_external_forces=with_external_forces)
+    t = [0]
+    phases_dt = [0.05]
+    x = [DM.ones((8, 1)) * 0.1]
+    u = [DM.ones((4, 1)) * 0.1]
+    p = []
+    a = []
+    d = []
+
+    if penalty_origin == ObjectiveFcn.Mayer:
+        penalty_type = ObjectiveFcn.Mayer.TRACK_SUM_REACTION_FORCES
+        penalty_object = Objective
+    elif penalty_origin == ObjectiveFcn.Lagrange:
+        penalty_type = ObjectiveFcn.Lagrange.TRACK_SUM_REACTION_FORCES
+        penalty_object = Objective
+    else:
+        penalty_type = ConstraintFcn.TRACK_CONTACT_FORCES_END_OF_INTERVAL
+        penalty_object = Constraint
+
+    penalty = penalty_object(
+        penalty_type,
+        contact_index=[0, 1],
+    )
+    res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
+
+    if penalty_object == Constraint:
+        npt.assert_almost_equal(res.T, [[-10.5199, 126.871, 5.09003]], decimal=2)
+    else:
+        npt.assert_almost_equal(res.T, [[0, -9.66801, 132.327]], decimal=2)
+
+
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+@pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Mayer, ObjectiveFcn.Lagrange, ConstraintFcn])
+@pytest.mark.parametrize(
+    "with_external_forces",
+    [False, True],
+)
+def test_penalty_minimize_center_of_pressure(penalty_origin, phase_dynamics, with_external_forces):
+    ocp = prepare_test_ocp(with_contact=True, phase_dynamics=phase_dynamics, with_external_forces=with_external_forces)
+    t = [0]
+    phases_dt = [0.05]
+    x = [DM.ones((8, 1)) * 0.1]
+    u = [DM.ones((4, 1)) * 0.1]
+    p = []
+    a = []
+    d = []
+
+    if penalty_origin == ObjectiveFcn.Mayer:
+        penalty_type = ObjectiveFcn.Mayer.TRACK_CENTER_OF_PRESSURE
+        penalty_object = Objective
+    elif penalty_origin == ObjectiveFcn.Lagrange:
+        penalty_type = ObjectiveFcn.Lagrange.TRACK_CENTER_OF_PRESSURE
+        penalty_object = Objective
+    else:
+        penalty_type = ConstraintFcn.TRACK_CENTER_OF_PRESSURE
+        penalty_object = Constraint
+
+    penalty = penalty_object(
+        penalty_type,
+        contact_index=[0, 1],
+    )
+    res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
+
+    npt.assert_almost_equal(res[0], 0)
+    npt.assert_almost_equal(res[2], -0.394827)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])

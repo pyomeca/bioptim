@@ -401,12 +401,7 @@ class ConfigureProblem:
             ocp, nlp, n_noised_controls=n_noised_tau, n_references=nlp.model.n_references
         )
         ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=nlp.model.n_references)
-        n_collocation_points = 1
-        if isinstance(problem_type, SocpType.COLLOCATION):
-            n_collocation_points += problem_type.polynomial_degree
-        ConfigureProblem.configure_stochastic_m(
-            ocp, nlp, n_noised_states=n_noised_states, n_collocation_points=n_collocation_points
-        )
+        ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=n_noised_states)
 
         if isinstance(problem_type, SocpType.TRAPEZOIDAL_EXPLICIT):
             if initial_matrix is None:
@@ -479,12 +474,7 @@ class ConfigureProblem:
             ocp, nlp, n_noised_controls=n_noised_tau, n_references=nlp.model.n_references
         )
         ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=nlp.model.n_references)
-        n_collocation_points = 1
-        if isinstance(problem_type, SocpType.COLLOCATION):
-            n_collocation_points += problem_type.polynomial_degree
-        ConfigureProblem.configure_stochastic_m(
-            ocp, nlp, n_noised_states=n_noised_states, n_collocation_points=n_collocation_points
-        )
+        ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=n_noised_states)
 
         if isinstance(problem_type, SocpType.TRAPEZOIDAL_EXPLICIT):
             if initial_matrix is None:
@@ -1138,7 +1128,7 @@ class ConfigureProblem:
                     )
 
     @staticmethod
-    def configure_contact_function(ocp, nlp, dyn_func: Callable, **extra_params):
+    def configure_contact_function(ocp, nlp, contact_func: Callable, **extra_params):
         """
         Configure the contact points
 
@@ -1148,7 +1138,7 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        dyn_func: Callable[time, states, controls, param, algebraic_states, numerical_timeseries]
+        contact_func: Callable[time, states, controls, param, algebraic_states, numerical_timeseries]
             The function to get the values of contact forces from the dynamics
         """
 
@@ -1164,7 +1154,7 @@ class ConfigureProblem:
                 nlp.numerical_timeseries.cx,
             ],
             [
-                dyn_func(
+                contact_func(
                     time_span_sym,
                     nlp.states.scaled.cx,
                     nlp.controls.scaled.cx,
@@ -1218,26 +1208,6 @@ class ConfigureProblem:
             A reference to the phase
         """
         component_list = ["Mx", "My", "Mz", "Fx", "Fy", "Fz"]
-
-        # TODO: this intermediary function is necessary for the tests (probably because really sensitive)
-        # but it should ideally be removed sometime
-        global_soft_contact_force_func = nlp.model.soft_contact_forces()(
-            nlp.states["q"].mapping.to_second.map(nlp.states["q"].cx_start),
-            nlp.states["qdot"].mapping.to_second.map(nlp.states["qdot"].cx_start),
-            nlp.parameters.cx,
-        )
-        nlp.soft_contact_forces_func = Function(
-            "soft_contact_forces_func",
-            [
-                nlp.time_cx,
-                nlp.states.scaled.cx_start,
-                nlp.controls.scaled.cx_start,
-                nlp.parameters.scaled.cx_start,
-            ],
-            [global_soft_contact_force_func],
-            ["t", "x", "u", "p"],
-            ["soft_contact_forces"],
-        ).expand()
 
         for i_sc in range(nlp.model.nb_soft_contacts):
             all_soft_contact_names = []
@@ -1515,9 +1485,9 @@ class ConfigureProblem:
             ocp,
             nlp,
             as_states=False,
-            as_controls=False,
+            as_controls=True,
             as_states_dot=False,
-            as_algebraic_states=True,
+            as_algebraic_states=False,
         )
 
     @staticmethod
@@ -1548,9 +1518,9 @@ class ConfigureProblem:
             ocp,
             nlp,
             as_states=False,
-            as_controls=False,
+            as_controls=True,
             as_states_dot=False,
-            as_algebraic_states=True,
+            as_algebraic_states=False,
             skip_plot=True,
         )
 
@@ -1580,9 +1550,9 @@ class ConfigureProblem:
             ocp,
             nlp,
             as_states=False,
-            as_controls=False,
+            as_controls=True,
             as_states_dot=False,
-            as_algebraic_states=True,
+            as_algebraic_states=False,
             skip_plot=True,
         )
 
@@ -1638,9 +1608,9 @@ class ConfigureProblem:
             ocp,
             nlp,
             as_states=False,
-            as_controls=False,
+            as_controls=True,
             as_states_dot=False,
-            as_algebraic_states=True,
+            as_algebraic_states=False,
         )
 
     @staticmethod
@@ -1669,9 +1639,9 @@ class ConfigureProblem:
             ocp,
             nlp,
             as_states=False,
-            as_controls=False,
+            as_controls=True,
             as_states_dot=False,
-            as_algebraic_states=True,
+            as_algebraic_states=False,
         )
 
     @staticmethod
@@ -1697,13 +1667,13 @@ class ConfigureProblem:
             ocp,
             nlp,
             as_states=False,
-            as_controls=False,
+            as_controls=True,
             as_states_dot=False,
-            as_algebraic_states=True,
+            as_algebraic_states=False,
         )
 
     @staticmethod
-    def configure_stochastic_m(ocp, nlp, n_noised_states: int, n_collocation_points: int = 1):
+    def configure_stochastic_m(ocp, nlp, n_noised_states: int):
         """
         Configure the helper matrix M (from Gillis 2013 : https://doi.org/10.1109/CDC.2013.6761121).
 
@@ -1719,11 +1689,11 @@ class ConfigureProblem:
 
         name_m = []
         for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
-            for name_2 in [f"X_{i}" for i in range(n_noised_states * n_collocation_points)]:
+            for name_2 in [f"X_{i}" for i in range(n_noised_states)]:
                 name_m += [name_1 + "_&_" + name_2]
         nlp.variable_mappings[name] = BiMapping(
-            list(range(n_noised_states * n_noised_states * n_collocation_points)),
-            list(range(n_noised_states * n_noised_states * n_collocation_points)),
+            list(range(n_noised_states * n_noised_states)),
+            list(range(n_noised_states * n_noised_states)),
         )
         ConfigureProblem.configure_new_variable(
             name,
@@ -1803,7 +1773,31 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable(name, name_taudot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
-    def configure_contact_forces(ocp, nlp, as_states: bool, as_controls: bool):
+    def configure_translational_forces(ocp, nlp, as_states: bool, as_controls: bool, n_contacts: int = 1):
+        """
+        Configure contact forces as optimization variables (for now only in global reference frame with an unknown point of application))
+        # TODO: Match this with ExternalForceSetTimeSeries (options: 'in_global', 'torque', ...)
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        as_states: bool
+            If the contact force should be a state
+        as_controls: bool
+            If the contact force should be a control
+        n_contacts: int
+            The number of contacts to consider (There will be 3 components for each contact)
+        """
+
+        name_contact_forces = [f"Force{i}_{axis}" for i in range(n_contacts) for axis in ("X", "Y", "Z")]
+        ConfigureProblem.configure_new_variable("contact_forces", name_contact_forces, ocp, nlp, as_states, as_controls)
+        ConfigureProblem.configure_new_variable(
+            "contact_positions", name_contact_forces, ocp, nlp, as_states, as_controls
+        )
+
+    @staticmethod
+    def configure_rigid_contact_forces(ocp, nlp, as_states: bool, as_controls: bool):
         """
         Configure the generalized forces derivative
 
@@ -1817,13 +1811,9 @@ class ConfigureProblem:
             If the generalized force derivatives should be a control
         """
 
-        name_contact_forces = []
-        for i in range(nlp.model.nb_rigid_contacts):
-            name_contact_forces.extend(
-                [f"Seg{i}_FX", f"Seg{i}_FY", f"Seg{i}_FZ", f"Seg{i}_CX", f"Seg{i}_CY", f"Seg{i}_CZ"]
-            )
+        name_contact_forces = [name for name in nlp.model.contact_names]
         ConfigureProblem.configure_new_variable(
-            "translational_forces", name_contact_forces, ocp, nlp, as_states, as_controls
+            "rigid_contact_forces", name_contact_forces, ocp, nlp, as_states, as_controls
         )
 
     @staticmethod
@@ -1840,18 +1830,11 @@ class ConfigureProblem:
         as_controls: bool
             If the generalized force derivatives should be a control
         """
-        name_soft_contact_forces = []
-        component_list = ["fx", "fy", "fz"]  # TODO: find a better place to hold this or define it in biorbd ?
-        for ii in range(nlp.model.nb_soft_contacts):
-            name_soft_contact_forces.extend(
-                [
-                    f"{nlp.model.soft_contact_name(ii)}_{name}"
-                    for name in component_list
-                    if nlp.model.soft_contact_name(ii) not in name_soft_contact_forces
-                ]
-            )
+        name_soft_contact_forces = [
+            f"{name}_{axis}" for name in nlp.model.soft_contact_names for axis in ("X", "Y", "Z")
+        ]
         ConfigureProblem.configure_new_variable(
-            "forces_in_global", name_soft_contact_forces, ocp, nlp, as_states, as_controls
+            "soft_contact_forces", name_soft_contact_forces, ocp, nlp, as_states, as_controls
         )
 
     @staticmethod

@@ -475,7 +475,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[0].algebraic_states["m"].cx, controllers[0].model.matrix_shape_m
             )
             a_plus_matrix = StochasticBioModel.reshape_to_matrix(
-                controllers[1].algebraic_states["a"].cx, controllers[1].model.matrix_shape_a
+                controllers[1].controls["a"].cx, controllers[1].model.matrix_shape_a
             )
 
             CX_eye = SX_eye if controllers[0].cx == SX else MX_eye
@@ -502,30 +502,45 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             MultinodePenaltyFunctions.Functions._prepare_controller_cx(penalty, controllers)
 
-            cov_matrix = StochasticBioModel.reshape_to_matrix(
-                controllers[0].algebraic_states["cov"].cx, controllers[0].model.matrix_shape_cov
-            )
-            cov_matrix_next = StochasticBioModel.reshape_to_matrix(
-                controllers[1].algebraic_states["cov"].cx, controllers[1].model.matrix_shape_cov
-            )
+            if "cholesky_cov" in controllers[0].controls.keys():
+                l_cov_matrix = StochasticBioModel.reshape_to_cholesky_matrix(
+                    controllers[0].controls["cholesky_cov"].cx, controllers[0].model.matrix_shape_cov_cholesky
+                )
+                cov_matrix = l_cov_matrix @ l_cov_matrix.T
+                l_cov_matrix_next = StochasticBioModel.reshape_to_cholesky_matrix(
+                    controllers[1].controls["cholesky_cov"].cx, controllers[1].model.matrix_shape_cov_cholesky
+                )
+                cov_matrix_next = l_cov_matrix_next @ l_cov_matrix_next.T
+            else:
+                cov_matrix = StochasticBioModel.reshape_to_matrix(
+                    controllers[0].controls["cov"].cx, controllers[0].model.matrix_shape_cov
+                )
+                cov_matrix_next = StochasticBioModel.reshape_to_matrix(
+                    controllers[1].controls["cov"].cx, controllers[1].model.matrix_shape_cov
+                )
+
             a_matrix = StochasticBioModel.reshape_to_matrix(
-                controllers[0].algebraic_states["a"].cx, controllers[0].model.matrix_shape_a
+                controllers[0].controls["a"].cx, controllers[0].model.matrix_shape_a
             )
             c_matrix = StochasticBioModel.reshape_to_matrix(
-                controllers[0].algebraic_states["c"].cx, controllers[0].model.matrix_shape_c
+                controllers[0].controls["c"].cx, controllers[0].model.matrix_shape_c
             )
             m_matrix = StochasticBioModel.reshape_to_matrix(
                 controllers[0].algebraic_states["m"].cx, controllers[0].model.matrix_shape_m
             )
 
-            sigma_w = vertcat(controllers[0].model.sensory_noise_magnitude, controllers[0].model.motor_noise_magnitude)
-            dt = controllers[0].tf / controllers[0].ns
+            CX_eye = SX_eye if controllers[0].ocp.cx == SX else MX_eye
+            sigma_w = vertcat(
+                controllers[0].model.sensory_noise_magnitude, controllers[0].model.motor_noise_magnitude
+            ) * CX_eye(controllers[0].model.n_noise)
+            dt = controllers[0].dt.cx
             dg_dw = -dt * c_matrix
-            CX_eye = SX_eye if controllers[0].cx == SX else MX_eye
             dg_dx = -CX_eye(a_matrix.shape[0]) - dt / 2 * a_matrix
 
-            cov_next_computed = m_matrix @ (dg_dx @ cov_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ m_matrix.T
-            cov_implicit_deffect = cov_next_computed - cov_matrix_next
+            cov_next = m_matrix @ (dg_dx @ cov_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ m_matrix.T
+            cov_implicit_deffect = cov_next - cov_matrix_next
+
+            penalty.expand = controllers[0].get_nlp.dynamics_type.expand_dynamics
 
             out_vector = StochasticBioModel.reshape_to_vector(cov_implicit_deffect)
             return out_vector
@@ -552,7 +567,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             nu = controllers[0].model.nb_q - controllers[0].model.nb_root
 
             c_matrix = StochasticBioModel.reshape_to_matrix(
-                controllers[0].algebraic_states["c"].cx, controllers[0].model.matrix_shape_c
+                controllers[0].controls["c"].cx, controllers[0].model.matrix_shape_c
             )
 
             q_root = controllers[0].cx.sym("q_root", nb_root, 1)
@@ -560,8 +575,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             qdot_root = controllers[0].cx.sym("qdot_root", nb_root, 1)
             qdot_joints = controllers[0].cx.sym("qdot_joints", nu, 1)
             tau_joints = controllers[0].cx.sym("tau_joints", nu, 1)
-            algebraic_states_sym = controllers[0].cx.sym(
-                "algebraic_states_sym", controllers[0].algebraic_states.shape, 1
+            stochastic_variables = controllers[0].cx.sym(
+                "stochastic_variables", controllers[0].controls.cx.shape[0] - nu - nb_root, 1
             )
             numerical_timeseries_sym = controllers[0].cx.sym(
                 "numerical_timeseries_sym", controllers[0].numerical_timeseries.shape, 1
@@ -570,9 +585,9 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             dx = controllers[0].extra_dynamics(0)(
                 controllers[0].time.cx,
                 vertcat(q_root, q_joints, qdot_root, qdot_joints),  # States
-                tau_joints,
+                vertcat(tau_joints, stochastic_variables),  # Controls
                 controllers[0].parameters.cx,
-                algebraic_states_sym,
+                controllers[0].algebraic_states.cx,
                 numerical_timeseries_sym,
             )
 
@@ -589,8 +604,9 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                     qdot_root,
                     qdot_joints,
                     tau_joints,
+                    stochastic_variables,
                     controllers[0].parameters.cx,
-                    algebraic_states_sym,
+                    controllers[0].algebraic_states.cx,
                     numerical_timeseries_sym,
                 ],
                 [
@@ -614,6 +630,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[0].states["qdot"].cx[:nb_root],
                 controllers[0].states["qdot"].cx[nb_root:],
                 controllers[0].controls["tau"].cx,
+                controllers[0].controls.cx[nb_root + nu :],
                 parameters,
                 controllers[0].algebraic_states.cx,
                 controllers[0].numerical_timeseries.cx,
@@ -629,7 +646,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[1].states["q"].cx[nb_root:],
                 controllers[1].states["qdot"].cx[:nb_root],
                 controllers[1].states["qdot"].cx[nb_root:],
-                controllers[1].controls.cx,
+                controllers[1].controls["tau"].cx,
+                controllers[1].controls.cx[nb_root + nu :],
                 parameters,
                 controllers[1].algebraic_states.cx,
                 controllers[1].numerical_timeseries.cx,

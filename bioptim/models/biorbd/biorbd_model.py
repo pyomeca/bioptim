@@ -39,6 +39,20 @@ class BiorbdModel:
         parameters: ParameterList = None,
         external_force_set: ExternalForceSetTimeSeries = None,
     ):
+        """
+        Parameters
+        ----------
+        bio_model: str | biorbd.Model
+            The path to the bioMod file or the biorbd.Model
+        friction_coefficients: np.ndarray
+            The friction coefficients
+        parameters: ParameterList
+            The parameters to add to the model. The function will call the callback with the unscaled version of the
+            parameters. The user can use this callback to modify the model.
+        external_force_set: ExternalForceSetTimeSeries
+            The external forces to add to the model
+        """
+
         if not isinstance(bio_model, str) and not isinstance(bio_model, biorbd.Model):
             raise ValueError("The model should be of type 'str' or 'biorbd.Model'")
 
@@ -394,7 +408,7 @@ class BiorbdModel:
 
     @property
     def soft_contact_names(self) -> tuple[str, ...]:
-        return self.model.softContactNames()
+        return tuple(s.to_string() for s in self.model.softContactNames())
 
     def soft_contact(self, soft_contact_index, *args):
         return self.model.softContact(soft_contact_index, *args)
@@ -612,6 +626,53 @@ class BiorbdModel:
         )
         return casadi_fun
 
+    def rigid_contact_position(self, index: int) -> Function:
+        """
+        Returns the position of the rigid contact (contact_index) in the global reference frame.
+        """
+        q_biorbd = GeneralizedCoordinates(self.q)
+        biorbd_return = self.model.rigidContact(q_biorbd, index, True).to_mx()
+        casadi_fun = Function(
+            "rigid_contact_position",
+            [self.q, self.parameters],
+            [biorbd_return],
+            ["q", "parameters"],
+            ["Rigid contact position"],
+        )
+        return casadi_fun
+
+    def forces_on_each_rigid_contact_point(self) -> Function:
+        """
+        Returns the 3D force acting on each contact point in the global reference frame computed from the constrained forward dynamics.
+        """
+        contact_forces = self.contact_forces_from_constrained_forward_dynamics()(
+            self.q, self.qdot, self.tau, self.external_forces, self.parameters
+        )
+
+        # Rearrange the forces to get all 3 components for each contact point
+        forces_on_each_point = None
+        current_index = 0
+        for i_contact in range(self.nb_rigid_contacts):
+            available_axes = np.array(self.rigid_contact_index(i_contact))
+            contact_force_idx = range(current_index, current_index + available_axes.shape[0])
+            current_force = MX.zeros(3)
+            for i, contact_to_add in enumerate(contact_force_idx):
+                current_force[available_axes[i]] += contact_forces[contact_to_add]
+            current_index += available_axes.shape[0]
+            if forces_on_each_point is not None:
+                forces_on_each_point = horzcat(forces_on_each_point, current_force)
+            else:
+                forces_on_each_point = current_force
+
+        casadi_fun = Function(
+            "reaction_forces",
+            [self.q, self.qdot, self.tau, self.external_forces, self.parameters],
+            [forces_on_each_point],
+            ["q", "qdot", "tau", "external_forces", "parameters"],
+            ["forces_on_each_point"],
+        )
+        return casadi_fun
+
     def qdot_from_impact(self) -> Function:
         q_biorbd = GeneralizedCoordinates(self.q)
         qdot_pre_impact_biorbd = GeneralizedVelocity(self.qdot)
@@ -698,6 +759,9 @@ class BiorbdModel:
 
     def marker_index(self, name):
         return biorbd.marker_index(self.model, name)
+
+    def contact_index(self, name):
+        return biorbd.contact_index(self.model, name)
 
     def marker(self, index: int, reference_segment_index: int = None) -> Function:
         q_biorbd = GeneralizedCoordinates(self.q)

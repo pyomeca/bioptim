@@ -113,7 +113,6 @@ def prepare_socp(
         n_feedbacks=4,
         n_noised_states=4,
         n_noised_controls=2,
-        n_collocation_points=polynomial_degree + 1,
         friction_coefficients=np.array([[0.05, 0.025], [0.025, 0.05]]),
         use_sx=use_sx,
     )
@@ -229,12 +228,12 @@ def prepare_socp(
     a_bounds = BoundsList()
     n_k = 2 * 4
     n_ref = 4
-    n_m = 4 * 4 * (3 + 1)
+    n_m = 4 * 4
     n_cov = 4 * 4
 
     if q_opt is None:
-        a_init.add("k", initial_guess=[0.01] * n_k, interpolation=InterpolationType.CONSTANT)
-        a_init.add("ref", initial_guess=[0.01] * n_ref, interpolation=InterpolationType.CONSTANT)
+        u_init.add("k", initial_guess=[0.01] * n_k, interpolation=InterpolationType.CONSTANT)
+        u_init.add("ref", initial_guess=[0.01] * n_ref, interpolation=InterpolationType.CONSTANT)
         a_init.add("m", initial_guess=[0.01] * n_m, interpolation=InterpolationType.CONSTANT)
 
         idx = 0
@@ -242,14 +241,14 @@ def prepare_socp(
         for i in range(n_states):
             for j in range(n_states):
                 cov_init_vector[idx] = initial_cov[i, j]
-        a_init.add("cov", initial_guess=cov_init_vector, interpolation=InterpolationType.CONSTANT)
+        u_init.add("cov", initial_guess=cov_init_vector, interpolation=InterpolationType.CONSTANT)
 
-    a_bounds.add("k", min_bound=[-cas.inf] * n_k, max_bound=[cas.inf] * n_k, interpolation=InterpolationType.CONSTANT)
-    a_bounds.add(
+    u_bounds.add("k", min_bound=[-cas.inf] * n_k, max_bound=[cas.inf] * n_k, interpolation=InterpolationType.CONSTANT)
+    u_bounds.add(
         "ref", min_bound=[-cas.inf] * n_ref, max_bound=[cas.inf] * n_ref, interpolation=InterpolationType.CONSTANT
     )
     a_bounds.add("m", min_bound=[-cas.inf] * n_m, max_bound=[cas.inf] * n_m, interpolation=InterpolationType.CONSTANT)
-    a_bounds.add(
+    u_bounds.add(
         "cov", min_bound=[-cas.inf] * n_cov, max_bound=[cas.inf] * n_cov, interpolation=InterpolationType.CONSTANT
     )
 
@@ -333,11 +332,10 @@ def main():
     q_sol = states["q"]
     qdot_sol = states["qdot"]
     tau_sol = controls["tau"]
-    k_sol = algebraic_states["k"]
-    ref_sol = algebraic_states["ref"]
+    k_sol = controls["k"]
+    ref_sol = controls["ref"]
     m_sol = algebraic_states["m"]
-    cov_sol = algebraic_states["cov"]
-    algebraic_states_sol = np.vstack((k_sol, ref_sol, m_sol, cov_sol))
+    cov_sol = controls["cov"]
     data = {
         "q_sol": q_sol,
         "qdot_sol": qdot_sol,
@@ -346,7 +344,6 @@ def main():
         "ref_sol": ref_sol,
         "m_sol": m_sol,
         "cov_sol": cov_sol,
-        "algebraic_states_sol": algebraic_states_sol,
     }
 
     # --- Save the results --- #
