@@ -3,21 +3,15 @@ This example shows how to impose the dynamics through an inverse dynamics defect
 It also shows how to impose the contact forces as an implicit constraints.
 """
 
-import platform
-
 from matplotlib import pyplot as plt
 import numpy as np
 from casadi import MX, SX, vertcat
 from bioptim import (
     BiorbdModel,
-    Node,
     OptimalControlProgram,
-    ConstraintList,
-    ConstraintFcn,
     ObjectiveList,
     ObjectiveFcn,
     DynamicsList,
-    DynamicsFcn,
     BoundsList,
     InitialGuessList,
     Solver,
@@ -34,7 +28,8 @@ from bioptim import (
     MultinodeConstraintList,
     MultinodeConstraintFcn,
     ControlType,
-    OnlineOptim,
+    Shooting,
+    SolutionIntegrator,
 )
 
 
@@ -74,16 +69,12 @@ def custom_dynamics(
     mus_activations = nlp.get_var_from_states_or_controls("muscles", states, controls)
 
     # Get external forces from algebraic states
-    soft_contact_forces = nlp.get_external_forces(
-        "soft_contact_forces", states, controls, algebraic_states, numerical_timeseries
-    )
+    soft_contact_forces = nlp.algebraic_states["soft_contact_forces"].cx
+
     # Map to external forces
     external_forces = MX.zeros(9 * 2)
     external_forces[0:6] = soft_contact_forces[0:6]
     external_forces[9:15] = soft_contact_forces[6:12]
-    # external_forces[6:9] = nlp.model.marker("Seg1_contact_marker1")(q, parameters)
-    # external_forces[12:15] = soft_contact_forces[3:6]
-    # external_forces[15:18] = nlp.model.marker("Seg2_contact_marker1")(q, parameters)
 
     # Compute joint torques
     muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations)
@@ -105,26 +96,11 @@ def custom_dynamics(
     contact_defect = soft_contact_forces - contact_forces
     return DynamicsEvaluation(dxdt=None, defects=vertcat(qdot_defect, tau_defect, contact_defect))
 
-# def contact_velocity_all_points(controller):
-#     contact_velocities = []
-#     for i_contact in range(2):
-#         qs = [controller.states["q"].cx_start] + controller.states["q"].cx_intermediates_list
-#         qdots = [controller.states["qdot"].cx_start] + controller.states["qdot"].cx_intermediates_list
-#         for i_sn in range(len(qs)):
-#             contact_axis = controller.model.rigid_contact_axes_index(contact_index=i_contact)
-#             contact_velocities += [
-#                 controller.model.rigid_contact_velocity(contact_index=i_contact, contact_axis=contact_axis)(
-#                     qs[i_sn], qdots[i_sn], controller.parameters.cx
-#                 )
-#             ]
-#     return vertcat(*contact_velocities)
-
 
 def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True):
 
     # Indicate to the model creator that there will be two rigid contacts in the form of optimization variables
     external_force_set = ExternalForceSetVariables()
-    # TODO: Make sure they are independent !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     external_force_set.add(force_name="Seg1_contact1", segment="Seg1", use_point_of_application=False)
     external_force_set.add(force_name="Seg1_contact2", segment="Seg1", use_point_of_application=False)
 
@@ -136,6 +112,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=1)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, index=[1, 2, 3])
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_COM_POSITION,  weight=100)
 
     # Dynamics
     dynamics = DynamicsList()
@@ -146,37 +123,19 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
         phase_dynamics=PhaseDynamics.ONE_PER_NODE,
     )
 
-    # Constraints
-    constraints = ConstraintList()
-    # This constraint is necessary to prevent the contacts from drifting
-    # constraints.add(
-    #     ConstraintFcn.TRACK_MARKERS_VELOCITY,
-    #     node=Node.ALL_SHOOTING,
-    #     marker_index=0,
-    # )
-    # constraints.add(
-    #     ConstraintFcn.TRACK_MARKERS_VELOCITY,
-    #     node=Node.ALL_SHOOTING,
-    #     marker_index=1,
-    # )
-    # constraints.add(
-    #     contact_velocity_all_points,
-    #     node=Node.ALL_SHOOTING,
-    # )
-
     multinode_constraints = MultinodeConstraintList()
-    # for i_node in range(n_shooting):
-    #     multinode_constraints.add(
-    #         MultinodeConstraintFcn.ALGEBRAIC_STATES_CONTINUITY,
-    #         nodes_phase=(0, 0),
-    #         nodes=(i_node, i_node + 1),
-    #         key="rigid_contact_forces",
-    #     )
+    for i_node in range(n_shooting):
+        multinode_constraints.add(
+            MultinodeConstraintFcn.ALGEBRAIC_STATES_CONTINUITY,
+            nodes_phase=(0, 0),
+            nodes=(i_node, i_node + 1),
+            key="soft_contact_forces",
+        )
 
     # Path constraint
     n_q = bio_model.nb_q
     n_qdot = n_q
-    pose_at_first_node = [0, 0, -0.75, 0.75]
+    pose_at_first_node = [0, 1, -0.75, 0.75]
 
     # Initialize x_bounds
     x_bounds = BoundsList()
@@ -199,17 +158,15 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
     u_init["tau"] = [1.0] * bio_model.nb_tau
     u_init["muscles"] = [0.5] * bio_model.nb_muscles
 
-    # Define algebraic states path constraint
+    # # Define algebraic states path constraint
     a_bounds = BoundsList()
-    a_bounds.add(
-        "soft_contact_forces",
-        min_bound=[-200, -200, -200, -10, -200, 0, -200, -200, -200, -10, -200, 0],
-        max_bound=[200, 200, 200, 10, 200, 200, 200, 200, 200, 10, 200, 200],
-        interpolation=InterpolationType.CONSTANT,
-    )
+    a_bounds.add("soft_contact_forces",
+                 min_bound=[-200, -200, -200, -10, -200, 0, -200, -200, -200, -10, -200, 0],
+                 max_bound=[200, 200, 200, 10, 200, 200, 200, 200, 200, 10, 200, 200],
+                 interpolation=InterpolationType.CONSTANT)
 
     a_init = InitialGuessList()
-    a_init["soft_contact_forces"] = [1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1]
+    a_init["soft_contact_forces"] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 
     return OptimalControlProgram(
         bio_model,
@@ -224,26 +181,22 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
         a_init=a_init,
         control_type=ControlType.LINEAR_CONTINUOUS,
         objective_functions=objective_functions,
-        constraints=constraints,
         multinode_constraints=multinode_constraints,
         ode_solver=OdeSolver.COLLOCATION(polynomial_degree=3, defects_type=DefectType.IMPLICIT),
-        # ode_solver=OdeSolver.COLLOCATION(polynomial_degree=3, defects_type=DefectType.EXPLICIT),
     )
 
 
 def main():
     biorbd_model_path = "models/2segments_4dof_2soft_contacts_1muscle.bioMod"
-    t = 0.3
-    ns = 10
+    t = 1
+    ns = 100
     ocp = prepare_ocp(
         biorbd_model_path=biorbd_model_path,
         phase_time=t,
         n_shooting=ns,
     )
-    # ocp.add_plot_penalty()
 
     # --- Solve the program --- #
-    # solver = Solver.IPOPT(online_optim=OnlineOptim.DEFAULT, show_options={"show_bounds": True})
     solver = Solver.IPOPT()
     solver.set_maximum_iterations(1000)
     sol = ocp.solve(solver)
@@ -319,8 +272,33 @@ def main():
     plt.savefig("test.png")
     plt.show()
 
+
+    # --- Reintegrate solution --- #
+    # TODO: Charbie -> This is not working yet
+    sol.integrate(shooting_type=Shooting.SINGLE,
+                    integrator=SolutionIntegrator.SCIPY_DOP853,
+                    to_merge=SolutionMerge.NODES,
+                    return_time=True
+                  )
+
+
     # --- Show results --- #
-    sol.animate(viewer="pyorerun")
+    viewer = "pyorerun"
+    if viewer == "pyorerun":
+        from pyorerun import BiorbdModel, PhaseRerun
+
+        # Model
+        model = BiorbdModel(biorbd_model_path)
+        model.options.transparent_mesh = False
+        model.options.show_gravity = True
+        model.options.show_floor = True
+
+        # Visualization
+        viz = PhaseRerun(time)
+        viz.add_animated_model(model, q)
+        viz.rerun_by_frame("Optimal solution")
+    else:
+        sol.animate()
 
 
 if __name__ == "__main__":

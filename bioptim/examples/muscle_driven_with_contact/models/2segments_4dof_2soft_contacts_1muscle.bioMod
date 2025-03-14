@@ -39,7 +39,7 @@ endsegment
         type sphere
         position 0 0 0
         radius 0.08
-        stiffness 1e9
+        stiffness 1e5
         damping 2
         muStatic 1
         muDynamic 1
@@ -48,9 +48,9 @@ endsegment
     softcontact    Seg1_contact2
         parent    Seg1
         type sphere
-        position 0 0 0
+        position 0 0.35 0
         radius 0.08
-        stiffness 1e9
+        stiffness 1e5
         damping 2
         muStatic 1
         muDynamic 1

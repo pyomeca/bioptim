@@ -276,7 +276,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             if len(controllers) != 2:
                 raise RuntimeError("This continuity function is only valid for 2 nodes")
 
-            algebraic_states_end_interval = controllers[0].algebraic_states[key].cx_end
+            algebraic_states_end_interval = controllers[0].algebraic_states[key].cx_intermediates_list[-1]
             algebraic_states_next_interval = controllers[1].algebraic_states[key].cx_start
 
             return algebraic_states_next_interval - algebraic_states_end_interval
