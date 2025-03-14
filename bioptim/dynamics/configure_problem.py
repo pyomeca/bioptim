@@ -1847,7 +1847,7 @@ class ConfigureProblem:
             If the generalized forces should be a control
         """
         name_soft_contact_forces = [
-            f"{name}_{axis}" for name in nlp.model.soft_contact_names for axis in ("X", "Y", "Z")
+            f"{name}_{axis}" for name in nlp.model.soft_contact_names for axis in ("MX", "MY", "MZ", "FX", "FY", "FZ")
         ]
         ConfigureProblem.configure_new_variable(
             "soft_contact_forces",

@@ -504,14 +504,14 @@ class BiorbdModel:
         int
             The updated symbolic counter.
         """
-        for segment, forces_on_segment in getattr(self.external_force_set, force_type).items():
+        for force_name, forces_on_segment in getattr(self.external_force_set, force_type).items():
             for force in forces_on_segment:
                 force_slicer = slice(symbolic_counter, symbolic_counter + num_force_components)
 
                 point_of_application_mx = self._get_point_of_application(force, force_slicer.stop)
 
                 add_force_func(
-                    biorbd_external_forces, segment, self.external_forces[force_slicer], point_of_application_mx
+                    biorbd_external_forces, force["segment"], self.external_forces[force_slicer], point_of_application_mx
                 )
                 symbolic_counter = force_slicer.stop + (
                     3 if isinstance(force["point_of_application"], np.ndarray) else 0
