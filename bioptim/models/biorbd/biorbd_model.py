@@ -511,7 +511,10 @@ class BiorbdModel:
                 point_of_application_mx = self._get_point_of_application(force, force_slicer.stop)
 
                 add_force_func(
-                    biorbd_external_forces, force["segment"], self.external_forces[force_slicer], point_of_application_mx
+                    biorbd_external_forces,
+                    force["segment"],
+                    self.external_forces[force_slicer],
+                    point_of_application_mx,
                 )
                 symbolic_counter = force_slicer.stop + (
                     3 if isinstance(force["point_of_application"], np.ndarray) else 0

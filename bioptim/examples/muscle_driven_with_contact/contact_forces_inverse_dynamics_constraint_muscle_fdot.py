@@ -48,12 +48,9 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, numerica
         ocp, nlp, as_states=True, as_states_dot=True, as_algebraic_states=False, as_controls=True
     )
     name_contact_forces = [name for name in nlp.model.rigid_contact_names]
-    ConfigureProblem.configure_new_variable("rigid_contact_forces_derivatives",
-                                            name_contact_forces,
-                                            ocp,
-                                            nlp,
-                                            as_states=False,
-                                            as_controls=True)
+    ConfigureProblem.configure_new_variable(
+        "rigid_contact_forces_derivatives", name_contact_forces, ocp, nlp, as_states=False, as_controls=True
+    )
 
     # Dynamics
     ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamics)
@@ -77,7 +74,9 @@ def custom_dynamics(
     rigid_contact_forces = DynamicsFunctions.get(nlp.controls["rigid_contact_forces"], nlp.states.scaled.cx)
     residual_tau = DynamicsFunctions.get(nlp.controls["tau"], nlp.controls.scaled.cx)
     mus_activations = DynamicsFunctions.get(nlp.controls["muscles"], nlp.controls.scaled.cx)
-    rigid_contact_forces_derivatives = DynamicsFunctions.get(nlp.controls["rigid_contact_forces_derivatives"], nlp.controls.scaled.cx)
+    rigid_contact_forces_derivatives = DynamicsFunctions.get(
+        nlp.controls["rigid_contact_forces_derivatives"], nlp.controls.scaled.cx
+    )
 
     # Map to external forces
     external_forces = nlp.model.map_rigid_contact_forces_to_global_forces(rigid_contact_forces, q, parameters)
@@ -141,8 +140,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=1)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, index=[1, 2, 3])
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_COM_POSITION,  weight=100)
-
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_COM_POSITION, weight=100)
 
     # Dynamics
     dynamics = DynamicsList()
@@ -172,10 +170,12 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
     x_bounds["q"][:, 0] = pose_at_first_node
     x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
     x_bounds["qdot"][:, 0] = 0
-    x_bounds.add("rigid_contact_forces",
-                 min_bound=[-200.0, 0.0, 0.0],
-                 max_bound=[200.0, 200.0, 200.0],
-                 interpolation=InterpolationType.CONSTANT)
+    x_bounds.add(
+        "rigid_contact_forces",
+        min_bound=[-200.0, 0.0, 0.0],
+        max_bound=[200.0, 200.0, 200.0],
+        interpolation=InterpolationType.CONSTANT,
+    )
 
     # Initial guess
     x_init = InitialGuessList()
@@ -187,10 +187,12 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
     u_bounds = BoundsList()
     u_bounds["tau"] = [-200.0] * bio_model.nb_tau, [200.0] * bio_model.nb_tau
     u_bounds["muscles"] = [0.0] * bio_model.nb_muscles, [1.0] * bio_model.nb_muscles
-    u_bounds.add("rigid_contact_forces_derivatives",
-                 min_bound=[-200.0, -200.0, -200.0],
-                 max_bound=[200.0, 200.0, 200.0],
-                 interpolation=InterpolationType.CONSTANT)
+    u_bounds.add(
+        "rigid_contact_forces_derivatives",
+        min_bound=[-200.0, -200.0, -200.0],
+        max_bound=[200.0, 200.0, 200.0],
+        interpolation=InterpolationType.CONSTANT,
+    )
 
     u_init = InitialGuessList()
     u_init["tau"] = [1.0] * bio_model.nb_tau

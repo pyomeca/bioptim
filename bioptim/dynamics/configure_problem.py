@@ -1803,7 +1803,9 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_rigid_contact_forces(ocp, nlp, as_states: bool, as_states_dot: bool, as_algebraic_states: bool, as_controls: bool):
+    def configure_rigid_contact_forces(
+        ocp, nlp, as_states: bool, as_states_dot: bool, as_algebraic_states: bool, as_controls: bool
+    ):
         """
         Configure the generalized forces derivative
 

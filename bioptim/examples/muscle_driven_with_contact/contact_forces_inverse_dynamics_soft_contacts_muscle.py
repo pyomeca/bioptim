@@ -112,7 +112,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=1)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, index=[1, 2, 3])
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_COM_POSITION,  weight=100)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_COM_POSITION, weight=100)
 
     # Dynamics
     dynamics = DynamicsList()
@@ -160,10 +160,12 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
 
     # # Define algebraic states path constraint
     a_bounds = BoundsList()
-    a_bounds.add("soft_contact_forces",
-                 min_bound=[-200, -200, -200, -10, -200, 0, -200, -200, -200, -10, -200, 0],
-                 max_bound=[200, 200, 200, 10, 200, 200, 200, 200, 200, 10, 200, 200],
-                 interpolation=InterpolationType.CONSTANT)
+    a_bounds.add(
+        "soft_contact_forces",
+        min_bound=[-200, -200, -200, -10, -200, 0, -200, -200, -200, -10, -200, 0],
+        max_bound=[200, 200, 200, 10, 200, 200, 200, 200, 200, 10, 200, 200],
+        interpolation=InterpolationType.CONSTANT,
+    )
 
     a_init = InitialGuessList()
     a_init["soft_contact_forces"] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -219,9 +221,7 @@ def main():
     contact_positions = np.zeros((2, 3, time.shape[0]))
     for i_node in range(time.shape[0]):
         for i_contact in range(2):
-            contact_positions[i_contact, :, i_node] = np.reshape(
-                nlp.model.marker(i_contact)(q[:, i_node], []), (3,)
-            )
+            contact_positions[i_contact, :, i_node] = np.reshape(nlp.model.marker(i_contact)(q[:, i_node], []), (3,))
 
     # --- Plots --- #
     fig, axs = plt.subplots(2, 1, figsize=(10, 10))
@@ -272,15 +272,14 @@ def main():
     plt.savefig("test.png")
     plt.show()
 
-
     # --- Reintegrate solution --- #
     # TODO: Charbie -> This is not working yet
-    sol.integrate(shooting_type=Shooting.SINGLE,
-                    integrator=SolutionIntegrator.SCIPY_DOP853,
-                    to_merge=SolutionMerge.NODES,
-                    return_time=True
-                  )
-
+    sol.integrate(
+        shooting_type=Shooting.SINGLE,
+        integrator=SolutionIntegrator.SCIPY_DOP853,
+        to_merge=SolutionMerge.NODES,
+        return_time=True,
+    )
 
     # --- Show results --- #
     viewer = "pyorerun"

@@ -138,8 +138,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=1)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, index=[1, 2, 3])
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_COM_POSITION,  weight=100)
-
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_COM_POSITION, weight=100)
 
     # Dynamics
     dynamics = DynamicsList()
@@ -194,10 +193,12 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
 
     # Define algebraic states path constraint
     a_bounds = BoundsList()
-    a_bounds.add("rigid_contact_forces",
-                 min_bound=[-200.0, 0.0, 0.0],
-                 max_bound=[200.0, 200.0, 200.0],
-                 interpolation=InterpolationType.CONSTANT)
+    a_bounds.add(
+        "rigid_contact_forces",
+        min_bound=[-200.0, 0.0, 0.0],
+        max_bound=[200.0, 200.0, 200.0],
+        interpolation=InterpolationType.CONSTANT,
+    )
     # min_bound = np.zeros((3, 41))
     # max_bound = np.zeros((3, 41))
     # for i_frame in range(41):
