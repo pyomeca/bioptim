@@ -1803,7 +1803,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_rigid_contact_forces(ocp, nlp, as_states: bool, as_algebraic_states: bool, as_controls: bool):
+    def configure_rigid_contact_forces(ocp, nlp, as_states: bool, as_states_dot: bool, as_algebraic_states: bool, as_controls: bool):
         """
         Configure the generalized forces derivative
 
@@ -1813,6 +1813,8 @@ class ConfigureProblem:
             A reference to the phase
         as_states: bool
             If the generalized forces should be a state
+        as_states_dot: bool
+            If the generalized forces should be a state_dot
         as_algebraic_states: bool
             If the generalized forces should be an algebraic state
         as_controls: bool
@@ -1826,6 +1828,7 @@ class ConfigureProblem:
             ocp,
             nlp,
             as_states=as_states,
+            as_states_dot=as_states_dot,
             as_algebraic_states=as_algebraic_states,
             as_controls=as_controls,
         )

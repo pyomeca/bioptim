@@ -94,20 +94,6 @@ def custom_dynamics(
     return DynamicsEvaluation(dxdt=None, defects=defects)
 
 
-    # qddot_fd = DynamicsFunctions.forward_dynamics(
-    #     nlp, q, qdot, tau, with_contact=False, external_forces=external_forces
-    # )
-    # defects = vertcat(qdot - slope_q, qddot_fd - slope_qdot)
-
-    # return DynamicsEvaluation(dxdt=None, defects=defects)
-
-
-    # qddot_fd = DynamicsFunctions.forward_dynamics(
-    #     nlp, q, qdot, tau, with_contact=False, external_forces=external_forces
-    # )
-    # return DynamicsEvaluation(dxdt=vertcat(qdot, qddot_fd), defects=None)
-
-
 def contact_velocity_all_points(controller):
     contact_velocities = []
     for i_contact in range(2):
@@ -142,7 +128,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
     # Indicate to the model creator that there will be two rigid contacts in the form of optimization variables
     external_force_set = ExternalForceSetVariables()
     external_force_set.add(force_name="Seg1_contact1", segment="Seg1", use_point_of_application=True)
-    external_force_set.add(force_name="Seg1_contact1", segment="Seg1", use_point_of_application=True)
+    external_force_set.add(force_name="Seg1_contact2", segment="Seg1", use_point_of_application=True)
 
     # BioModel
     bio_model = BiorbdModel(biorbd_model_path, external_force_set=external_force_set)
@@ -171,14 +157,6 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
         contact_velocity_all_points,
         node=Node.ALL_SHOOTING,
     )
-    # constraints.add(
-    #     custom_first_defect,
-    #     node=Node.ALL_SHOOTING,
-    # )
-    # constraints.add(
-    #     contact_velocity_start,
-    #     node=Node.ALL_SHOOTING,
-    # )
     multinode_constraints = MultinodeConstraintList()
     for i_node in range(n_shooting):
         multinode_constraints.add(
