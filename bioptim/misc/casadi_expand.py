@@ -22,7 +22,7 @@ def if_else(
     cond: CXOrDM,
     if_true: CXOrDM,
     if_false: CXOrDM,
-    b: int = 10000,
+    b: Int = 10000,
 ):
     return if_true + (if_false - if_true) * (0.5 + 0.5 * tanh(b * cond))
 
