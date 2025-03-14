@@ -1,30 +1,31 @@
 from casadi import MX, SX, DM, tanh
+from .parameters_types import Int, CXOrDM
 
 
-def lt(x: MX | SX | DM | float, y: MX | SX | DM | float):
+def lt(x: CXOrDM, y: CXOrDM):
     return x - y
 
 
-def le(x: MX | SX | DM | float, y: MX | SX | DM | float):
+def le(x: CXOrDM, y: CXOrDM):
     return lt(x, y)
 
 
-def gt(x: MX | SX | DM | float, y: MX | SX | DM | float):
+def gt(x: CXOrDM, y: CXOrDM):
     return lt(y, x)
 
 
-def ge(x: MX | SX | DM | float, y: MX | SX | DM | float):
+def ge(x: CXOrDM, y: CXOrDM):
     return le(y, x)
 
 
 def if_else(
-    cond: MX | SX | DM | float,
-    if_true: MX | SX | DM | float,
-    if_false: MX | SX | DM | float,
-    b: int = 10000,
+    cond: CXOrDM,
+    if_true: CXOrDM,
+    if_false: CXOrDM,
+    b: Int = 10000,
 ):
     return if_true + (if_false - if_true) * (0.5 + 0.5 * tanh(b * cond))
 
 
-def if_else_zero(cond: MX | SX | DM | float, if_true: MX | SX | DM | float, b: int = 10000):
+def if_else_zero(cond: CXOrDM, if_true: CXOrDM, b: Int = 10000):
     return if_else(cond, if_true, 0, b)

@@ -1,8 +1,10 @@
 from typing import Any
 from packaging.version import parse as parse_version
 
+from .parameters_types import Bool, Str
 
-def check_version(tool_to_compare: Any, min_version: str, max_version: str, exclude_max: bool = True):
+
+def check_version(tool_to_compare: Any, min_version: Str, max_version: Str, exclude_max: Bool = True):
     """
     Check if the version of a certain module is okay. If the function exits, then everything is okay
 
