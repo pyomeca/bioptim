@@ -96,9 +96,26 @@ def test_configures(cx):
     npt.assert_equal(nlp.controls.shape, 4 + 36 + 4 + 3 + 3)
     npt.assert_equal(nlp.controls.keys(), ["tau", "k", "residual_tau", "taudot", "contact_forces", "contact_positions"])
 
-    ConfigureProblem.configure_rigid_contact_forces(ocp, nlp, as_states=True, as_controls=False)
+    ConfigureProblem.configure_rigid_contact_forces(
+        ocp, nlp, as_states=True, as_controls=False, as_algebraic_states=False
+    )
     npt.assert_equal(nlp.states.shape, 4 + 4 + 4 + 4 + 3)
     npt.assert_equal(nlp.states.keys(), ["q", "qdot", "qddot", "qdddot", "rigid_contact_forces"])
+
+    ConfigureProblem.configure_rigid_contact_forces(
+        ocp, nlp, as_states=False, as_controls=True, as_algebraic_states=False
+    )
+    npt.assert_equal(nlp.controls.shape, 4 + 36 + 4 + 3 + 3 + 3)
+    npt.assert_equal(
+        nlp.controls.keys(),
+        ["tau", "k", "residual_tau", "taudot", "contact_forces", "contact_positions", "rigid_contact_forces"],
+    )
+
+    ConfigureProblem.configure_rigid_contact_forces(
+        ocp, nlp, as_states=False, as_controls=False, as_algebraic_states=True
+    )
+    npt.assert_equal(nlp.algebraic_states.shape, 3)
+    npt.assert_equal(nlp.algebraic_states.keys(), ["rigid_contact_forces"])
 
 
 @pytest.mark.parametrize("cx", [MX, SX])

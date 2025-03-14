@@ -85,8 +85,8 @@ def prepare_ocp(
     phase_dynamics: PhaseDynamics
         If the dynamics equation within a phase is unique or changes at each node.
         PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
-        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
-        are applied at each node
+        a phase. PhaseDynamics.ONE_PER_NODE should also be used when multi-node penalties with more than 3 nodes or with COLLOCATION (cx_intermediate_list) are added to the OCP.
+
     with_too_much_constraints: bool
         This is to show what happens in the case too many constraints are declared in the multinode constraints (that
         is more than three in the same phase). It will raise ValueError if phase_dynamics is

@@ -132,6 +132,7 @@ class PenaltyHelpers:
     def numerical_timeseries(penalty, index, get_numerical_timeseries: Callable):
         node = penalty.node_idx[index]
         if penalty.multinode_penalty:
+            # numerical timeseries are expected to be provided only at the shooting node.
             for i_phase in penalty.nodes_phase:
                 d = get_numerical_timeseries(i_phase, node, 0)  # cx_start
                 if d.shape[0] != 0:
@@ -216,21 +217,42 @@ def _get_multinode_indices(penalty, is_constructing_penalty: bool):
     if not penalty.multinode_penalty:
         raise RuntimeError("This function should only be called for multinode penalties")
 
+    if not (all(penalty.subnodes_are_decision_states) or sum(penalty.subnodes_are_decision_states) == 0):
+        # This check allows to test only for penalty.subnodes_are_decision_states[0] below
+        raise NotImplementedError(
+            "All controllers must be of the same type (either all or none should have subnodes_are_decision_states)"
+        )
+
     phases = penalty.nodes_phase
     nodes = penalty.multinode_idx
 
     if is_constructing_penalty:
         startings = PenaltyHelpers.get_multinode_penalty_subnodes_starting_index(penalty)
         subnodes = []
-        for starting in startings:
-            if starting < 0:
+        for i_starting, starting in enumerate(startings):
+            if penalty.subnodes_are_decision_states[0]:
+                if nodes[i_starting] == penalty.ns[phases[i_starting]]:
+                    subnodes.append(slice(0, 1))
+                else:
+                    subnodes.append(slice(0, -1))
+            elif starting < 0:
                 subnodes.append(slice(-1, None))
             else:
                 subnodes.append(slice(starting, starting + 1))
 
     else:
-        # No need to test for wrong sizes as it will have failed during the constructing phase already
-        subnodes = [slice(0, 1)] * len(penalty.multinode_idx)
+        if penalty.subnodes_are_decision_states[0]:
+            # OK to check only the first one since all controllers should be of the same type
+            startings = PenaltyHelpers.get_multinode_penalty_subnodes_starting_index(penalty)
+            subnodes = []
+            for i_starting in range(len(startings)):
+                if nodes[i_starting] == penalty.ns[phases[i_starting]] + 1:
+                    subnodes.append(slice(0, 1))
+                else:
+                    subnodes.append(slice(0, -1))
+        else:
+            # No need to test for wrong sizes as it will have failed during the constructing phase already
+            subnodes = [slice(0, 1)] * len(penalty.multinode_idx)
 
     return phases, nodes, subnodes
 

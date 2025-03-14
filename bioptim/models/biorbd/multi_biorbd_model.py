@@ -479,8 +479,8 @@ class MultiBiorbdModel:
         return tuple([dof for model in self.models for dof in model.name_dof])
 
     @property
-    def contact_names(self) -> tuple[str, ...]:
-        return tuple([contact for model in self.models for contact in model.contact_names])
+    def rigid_contact_names(self) -> tuple[str, ...]:
+        return tuple([contact for model in self.models for contact in model.rigid_contact_names])
 
     @property
     def nb_soft_contacts(self) -> int:
@@ -773,13 +773,13 @@ class MultiBiorbdModel:
         """
         return sum(model.nb_contacts for model in self.models)
 
-    def rigid_contact_index(self, contact_index) -> tuple:
+    def rigid_contact_axes_index(self, contact_index) -> tuple:
         """
         Returns the axis index of this specific rigid contact.
         Example:
             First contact with axis YZ
             Second contact with axis Z
-            rigid_contact_index(0) = (1, 2)
+            rigid_contact_axes_index(0) = (1, 2)
         """
 
         model_selected = None
@@ -787,7 +787,7 @@ class MultiBiorbdModel:
             if contact_index in self.variable_index("contact", i):
                 model_selected = model
             # Note: may not work if the contact_index is not in the first model
-        return model_selected.rigid_contact_index(contact_index)
+        return model_selected.rigid_contact_axes_index(contact_index)
 
     def markers_velocities(self, reference_index=None) -> Function:
         if reference_index is not None:
