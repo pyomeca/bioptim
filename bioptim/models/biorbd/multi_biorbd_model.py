@@ -262,14 +262,14 @@ class MultiBiorbdModel:
         for i, model in enumerate(self.models):
             if i == 0:
                 if self.parameters.shape[0] == 0:
-                    biorbd_return = model.gravity()["gravity"]
+                    biorbd_return = model.gravity()()["gravity"]
                 else:
-                    biorbd_return = model.gravity()(self.parameters)["gravity"]
+                    biorbd_return = model.gravity()(self.parameters)
             else:
                 if self.parameters.shape[0] == 0:
-                    biorbd_return = vertcat(biorbd_return, model.gravity()["gravity"])
+                    biorbd_return = vertcat(biorbd_return, model.gravity()()["gravity"])
                 else:
-                    biorbd_return = vertcat(biorbd_return, model.gravity()(self.parameters)["gravity"])
+                    biorbd_return = vertcat(biorbd_return, model.gravity()(self.parameters))
         casadi_fun = Function(
             "gravity",
             [self.parameters],
@@ -351,14 +351,14 @@ class MultiBiorbdModel:
         for i, model in enumerate(self.models):
             if i == 0:
                 if self.parameters.shape[0] == 0:
-                    biorbd_return = model.mass()["mass"]
+                    biorbd_return = model.mass()()["mass"]
                 else:
-                    biorbd_return = model.mass()(self.parameters)["mass"]
+                    biorbd_return = model.mass()(self.parameters)
             else:
                 if self.parameters.shape[0] == 0:
-                    biorbd_return = vertcat(biorbd_return, model.mass()["mass"])
+                    biorbd_return = vertcat(biorbd_return, model.mass()()["mass"])
                 else:
-                    biorbd_return = vertcat(biorbd_return, model.mass()(self.parameters)["mass"])
+                    biorbd_return = vertcat(biorbd_return, model.mass()(self.parameters))
         casadi_fun = Function(
             "mass",
             [self.parameters],
