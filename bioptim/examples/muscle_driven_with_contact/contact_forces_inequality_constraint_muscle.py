@@ -23,6 +23,7 @@ from bioptim import (
     InitialGuessList,
     Solver,
     SolutionMerge,
+    ContactType,
 )
 
 

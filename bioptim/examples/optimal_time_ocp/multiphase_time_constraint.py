@@ -97,10 +97,10 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=0, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=0, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics, ode_solver=ode_solver)
     if n_phases == 3:
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=1, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=2, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=1, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics, ode_solver=ode_solver)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=2, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics, ode_solver=ode_solver)
 
     # Constraints
     constraints = ConstraintList()
@@ -160,7 +160,6 @@ def prepare_ocp(
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         constraints=constraints,
-        ode_solver=ode_solver,
         time_phase_mapping=time_phase_mapping,
     )
 

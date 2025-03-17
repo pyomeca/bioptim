@@ -85,14 +85,14 @@ def prepare_ocp(
     if actuator_type:
         if actuator_type == 1:
             dynamics.add(
-                DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
+                DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics, ode_solver=ode_solver,
             )
         elif actuator_type == 2:
-            dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+            dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics, ode_solver=ode_solver)
         else:
             raise ValueError("actuator_type is 1 (torque activations) or 2 (torque max constraints)")
     else:
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics, ode_solver=ode_solver)
 
     # Constraints
     constraints = ConstraintList()
@@ -123,7 +123,6 @@ def prepare_ocp(
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         constraints=constraints,
-        ode_solver=ode_solver,
     )
 
 

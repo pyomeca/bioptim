@@ -431,7 +431,7 @@ class ConfigureProblem:
         ConfigureProblem.torque_driven(
             ocp=ocp,
             nlp=nlp,
-            with_contact=with_contact,
+            contact_type=contact_type,
             with_friction=with_friction,
         )
 
@@ -439,7 +439,7 @@ class ConfigureProblem:
             ocp,
             nlp,
             DynamicsFunctions.stochastic_torque_driven,
-            with_contact=with_contact,
+            contact_type=contact_type,
             with_friction=with_friction,
         )
 

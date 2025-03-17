@@ -31,6 +31,7 @@ from bioptim import (
     OdeSolverBase,
     Solver,
     PhaseDynamics,
+    ContactType,
 )
 
 

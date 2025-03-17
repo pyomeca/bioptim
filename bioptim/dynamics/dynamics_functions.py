@@ -2,7 +2,7 @@ from casadi import horzcat, vertcat, MX, SX, DM
 
 from .dynamics_evaluation import DynamicsEvaluation
 from .fatigue.fatigue_dynamics import FatigueList
-from ..misc.enums import DefectType
+from ..misc.enums import DefectType, ContactType
 from ..misc.mapping import BiMapping
 from ..optimization.optimization_variable import OptimizationVariable
 
@@ -261,7 +261,7 @@ class DynamicsFunctions:
         algebraic_states,
         numerical_timeseries,
         nlp,
-        with_contact: bool,
+        contact_type: ContactType,
         with_friction: bool,
     ) -> DynamicsEvaluation:
         """
@@ -293,6 +293,9 @@ class DynamicsFunctions:
         DynamicsEvaluation
             The derivative of the states and the defects of the implicit dynamics
         """
+        if contact_type == ContactType.SOFT:
+            raise NotImplementedError("soft contacts not implemented yet with stochastic torque driven dynamics.")
+        with_contact = contact_type == ContactType.RIGID
 
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)

@@ -207,7 +207,7 @@ def prepare_ocp(
     # Dynamics
     dynamics = DynamicsList()
     dynamics.add(
-        DynamicsFcn.TORQUE_DRIVEN_FREE_FLOATING_BASE, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
+        DynamicsFcn.TORQUE_DRIVEN_FREE_FLOATING_BASE, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics, ode_solver=ode_solver,
     )
 
     # Define control path constraint
@@ -252,7 +252,6 @@ def prepare_ocp(
         x_init=x_init,
         objective_functions=objective_functions,
         constraints=constraints,
-        ode_solver=ode_solver,
     )
 
 
