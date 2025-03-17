@@ -46,15 +46,15 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics):
 
     if platform.system() == "Windows":
         # These tests fail on CI for Windows
-        return
+        pytest.skip("Skipped on Windows")
 
     # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
     if n_threads > 1 and phase_dynamics == PhaseDynamics.ONE_PER_NODE:
-        return
+        pytest.skip("Skipped redundant test")
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver not in (OdeSolver.RK4, OdeSolver.COLLOCATION):
-        return
+        pytest.skip("Skipped")
     if ode_solver == OdeSolver.RK8 and not use_sx:
-        return
+        pytest.skip("Skipped")
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 

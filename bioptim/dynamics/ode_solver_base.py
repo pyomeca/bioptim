@@ -208,12 +208,15 @@ class OdeSolverBase:
         nlp.controls.node_index = node_index
         nlp.algebraic_states.node_index = node_index
         dynamics_func = nlp.dynamics_func if not is_extra_dynamics else nlp.extra_dynamics_func[dynamics_index]
+        ode_index = None
+        if dynamics_func is not None:
+            ode_index = node_index if dynamics_func.size2_out("xdot") > 1 else 0
         ode_opt = {
             "model": nlp.model,
             "cx": nlp.cx,
             "control_type": nlp.control_type,
             "defects_type": self.defects_type,
-            "ode_index": node_index if dynamics_func.size2_out("xdot") > 1 else 0,
+            "ode_index": ode_index,
             "duplicate_starting_point": self.duplicate_starting_point,
             **extra_opt,
         }

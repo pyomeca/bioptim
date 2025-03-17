@@ -657,32 +657,17 @@ class COLLOCATION(Integrator):
             xp_j = self.lagrange_interpolation.interpolate_first_derivative(
                 states[0:1] + states[2:], self._integration_time[j]
             )
-
-            if self.defects_type == DefectType.EXPLICIT:
-                f_j = self.fun(
+            defects.append(
+                self.implicit_fun(
                     t,
                     states[j + 1],
                     self.get_u(controls, self._integration_time[j]),
                     params,
                     algebraic_states,
                     numerical_timeseries,
-                )[:, self.ode_idx]
-                defects.append(xp_j / self.h * self.h - f_j * self.h)
-
-            elif self.defects_type == DefectType.IMPLICIT:
-                defects.append(
-                    self.implicit_fun(
-                        t,
-                        states[j + 1],
-                        self.get_u(controls, self._integration_time[j]),
-                        params,
-                        algebraic_states,
-                        numerical_timeseries,
-                        xp_j / self.h,
-                    )
+                    xp_j / self.h,
                 )
-            else:
-                raise ValueError("Unknown defects type. Please use 'explicit' or 'implicit'")
+            )
 
         # Concatenate constraints
         defects = vertcat(*defects)
