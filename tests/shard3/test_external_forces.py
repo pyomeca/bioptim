@@ -166,22 +166,22 @@ def prepare_ocp(
 
     if together:
         external_forces = ExternalForceSetTimeSeries(nb_frames=n_shooting)
-        external_forces.add("Seg1", np.vstack((Seg1_torque, Seg1_force)), Seg1_point_of_application)
-        external_forces.add("Test", np.vstack((Test_torque, Test_force)), Test_point_of_application)
+        external_forces.add("contact0", "Seg1", np.vstack((Seg1_torque, Seg1_force)), Seg1_point_of_application)
+        external_forces.add("contact0", "Test", np.vstack((Test_torque, Test_force)), Test_point_of_application)
 
     else:
         external_forces = ExternalForceSetTimeSeries(nb_frames=n_shooting)
         external_forces.add(
-            "Seg1", np.vstack((Seg1_torque, np.zeros((3, n_shooting)))), point_of_application=Seg1_point_of_application
+            "contact0", "Seg1", np.vstack((Seg1_torque, np.zeros((3, n_shooting)))), point_of_application=Seg1_point_of_application
         )
         external_forces.add(
-            "Seg1", np.vstack((np.zeros((3, n_shooting)), Seg1_force)), point_of_application=Seg1_point_of_application
+            "contact0", "Seg1", np.vstack((np.zeros((3, n_shooting)), Seg1_force)), point_of_application=Seg1_point_of_application
         )
         external_forces.add(
-            "Test", np.vstack((Test_torque, np.zeros((3, n_shooting)))), point_of_application=Test_point_of_application
+            "contact0", "Test", np.vstack((Test_torque, np.zeros((3, n_shooting)))), point_of_application=Test_point_of_application
         )
         external_forces.add(
-            "Test", np.vstack((np.zeros((3, n_shooting)), Test_force)), point_of_application=Test_point_of_application
+            "contact0", "Test", np.vstack((np.zeros((3, n_shooting)), Test_force)), point_of_application=Test_point_of_application
         )
 
     bio_model = BiorbdModel(biorbd_model_path, external_force_set=external_forces)
