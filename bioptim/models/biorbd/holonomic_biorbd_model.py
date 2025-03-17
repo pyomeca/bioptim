@@ -52,9 +52,9 @@ class HolonomicBiorbdModel(BiorbdModel):
         self.qddot_v = MX.sym("qddot_v_mx", self.nb_dependent_joints, 1)
         self.q_v_init = MX.sym("q_v_init_mx", self.nb_dependent_joints, 1)
 
-
     def _cache_function(method):
         """Decorator to cache CasADi functions automatically"""
+
         @wraps(method)
         def wrapper(self, *args, **kwargs):
             # Create a unique key based on the method name and arguments

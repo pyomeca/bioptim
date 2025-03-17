@@ -101,6 +101,7 @@ class BiorbdModel:
 
     def _cache_function(method):
         """Decorator to cache CasADi functions automatically"""
+
         @wraps(method)
         def wrapper(self, *args, **kwargs):
             # Create a unique key based on the method name and arguments
