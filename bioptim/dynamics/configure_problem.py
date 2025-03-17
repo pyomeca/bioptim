@@ -15,6 +15,7 @@ from ..misc.enums import (
     ConstraintType,
     SoftContactDynamics,
     PhaseDynamics,
+    ContactType,
 )
 from ..misc.fcn_enum import FcnEnum
 from ..misc.mapping import BiMapping, Mapping
@@ -156,7 +157,7 @@ class ConfigureProblem:
     def torque_driven(
         ocp,
         nlp,
-        with_contact: bool = False,
+        contact_type: ContactType = ContactType.NONE,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
         with_friction: bool = False,
@@ -173,7 +174,7 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        with_contact: bool
+        contact_type: ContactType
             If the dynamic with contact should be used
         with_passive_torque: bool
             If the dynamic with passive torque should be used
@@ -188,7 +189,7 @@ class ConfigureProblem:
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
-
+        with_contact = contact_type == ContactType.RIGID
         _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
         _check_soft_contacts_dynamics(soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx)
 
@@ -362,7 +363,7 @@ class ConfigureProblem:
         ocp,
         nlp,
         problem_type,
-        with_contact: bool = False,
+        contact_type: ContactType = ContactType.NONE,
         with_friction: bool = False,
         with_cholesky: bool = False,
         initial_matrix: DM = None,
@@ -377,8 +378,8 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        with_contact: bool
-            If the dynamic with contact should be used
+        contact_type: ContactType
+            If the dynamic with soft, rigid or no contact should be used
         with_friction: bool
             If the dynamic with joint friction should be used (friction = coefficient * qdot)
         with_cholesky: bool
@@ -388,6 +389,7 @@ class ConfigureProblem:
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
+        with_contact = contact_type == ContactType.RIGID
 
         if "tau" in nlp.model.motor_noise_mapping:
             n_noised_tau = len(nlp.model.motor_noise_mapping["tau"].to_first.map_idx)
@@ -521,7 +523,7 @@ class ConfigureProblem:
     def torque_derivative_driven(
         ocp,
         nlp,
-        with_contact=False,
+        contact_type: ContactType = ContactType.NONE,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
         with_friction: bool = False,
@@ -537,8 +539,8 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        with_contact: bool
-            If the dynamic with contact should be used
+        contact_type: ContactType
+            If the dynamic with rigid, solft or no contact should be used
         with_passive_torque: bool
             If the dynamic with passive torque should be used
         with_ligament: bool
@@ -551,6 +553,7 @@ class ConfigureProblem:
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
 
         """
+        with_contact = contact_type == ContactType.RIGID
         _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
 
         _check_soft_contacts_dynamics(soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx)
@@ -596,7 +599,7 @@ class ConfigureProblem:
     def torque_activations_driven(
         ocp,
         nlp,
-        with_contact: bool = False,
+        contact_type: ContactType = ContactType.NONE,
         with_passive_torque: bool = False,
         with_residual_torque: bool = False,
         with_ligament: bool = False,
@@ -613,8 +616,8 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        with_contact: bool
-            If the dynamic with contact should be used
+        contact_type: ContactType
+            If the dynamic with rigid, solft of no contact should be used
         with_passive_torque: bool
             If the dynamic with passive torque should be used
         with_residual_torque: bool
@@ -624,7 +627,7 @@ class ConfigureProblem:
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
-
+        with_contact = contact_type == ContactType.RIGID
         _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
 
         ConfigureProblem.configure_q(ocp, nlp, True, False)
@@ -710,7 +713,7 @@ class ConfigureProblem:
         with_excitations: bool = False,
         fatigue: FatigueList = None,
         with_residual_torque: bool = False,
-        with_contact: bool = False,
+        contact_type: ContactType = ContactType.NONE,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
         with_friction: bool = False,
@@ -735,8 +738,8 @@ class ConfigureProblem:
             The list of fatigue parameters
         with_residual_torque: bool
             If the dynamic should be added with residual torques
-        with_contact: bool
-            If the dynamic with contact should be used
+        contact_type: ContactType
+            If the dynamic with rigid, soft, or no contact should be used
         with_passive_torque: bool
             If the dynamic with passive torque should be used
         with_ligament: bool
@@ -746,6 +749,7 @@ class ConfigureProblem:
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
+        with_contact = contact_type == ContactType.RIGID
         _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
 
         if fatigue is not None and "tau" in fatigue and not with_residual_torque:

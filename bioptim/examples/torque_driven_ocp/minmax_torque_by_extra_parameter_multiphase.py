@@ -30,6 +30,7 @@ from bioptim import (
     BiorbdModel,
     PenaltyController,
     ParameterObjectiveList,
+    ContactType,
 )
 from matplotlib import pyplot as plt
 
@@ -65,8 +66,8 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=False)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=False)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, contact_type=ContactType.NONE)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, contact_type=ContactType.NONE)
 
     # Mapping
     tau_mappings = BiMappingList()

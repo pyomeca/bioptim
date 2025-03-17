@@ -221,6 +221,7 @@ from .misc.enums import (
     MultiCyclicCycleSolutions,
     PhaseDynamics,
     OnlineOptim,
+    ContactType,
 )
 from .misc.mapping import BiMappingList, BiMapping, Mapping, SelectionMapping, Dependency
 from .models.biorbd.biorbd_model import BiorbdModel

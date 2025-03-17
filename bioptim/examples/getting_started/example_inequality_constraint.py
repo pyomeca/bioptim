@@ -94,7 +94,7 @@ def prepare_ocp(
     dynamics = DynamicsList()
     dynamics.add(
         DynamicsFcn.TORQUE_DRIVEN,
-        with_contact=True,
+        contact_type=ContactType.RIGID,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
         ode_solver=ode_solver,
