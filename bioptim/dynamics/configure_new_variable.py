@@ -1,5 +1,5 @@
-from casadi import MX, SX, vertcat
 import numpy as np
+from casadi import MX, SX, vertcat
 
 from .fatigue.fatigue_dynamics import FatigueList, MultiFatigueInterface
 from ..gui.plot import CustomPlot
@@ -291,7 +291,8 @@ class NewVariableConfiguration:
             for node_index in range(
                 self.nlp.n_controls_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1
             ):
-                cx_scaled = self.define_cx_scaled(n_col=3, node_index=node_index)
+                n_cx = 3
+                cx_scaled = self.define_cx_scaled(n_col=n_cx, node_index=node_index)
                 cx = self.define_cx_unscaled(cx_scaled, self.nlp.u_scaling[self.name].scaling)
                 self.nlp.controls.append(
                     self.name,
@@ -338,10 +339,9 @@ class NewVariableConfiguration:
             for node_index in range(
                 self.nlp.n_states_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1
             ):
-                n_cx = 2
+                n_cx = self.nlp.ode_solver.n_required_cx + 2
                 cx_scaled = self.define_cx_scaled(n_col=n_cx, node_index=node_index)
                 cx = self.define_cx_unscaled(cx_scaled, self.nlp.a_scaling[self.name].scaling)
-
                 self.nlp.algebraic_states.append(
                     self.name,
                     cx,
@@ -350,18 +350,16 @@ class NewVariableConfiguration:
                     node_index,
                 )
                 if not self.skip_plot:
-                    all_variables_in_one_subplot = True if self.name in ["m", "cov", "k"] else False
                     self.nlp.plot[f"{self.name}_algebraic"] = CustomPlot(
                         lambda t0, phases_dt, node_idx, x, u, p, a, d: (
                             a[self.nlp.algebraic_states.key_index(self.name), :]
                             if a.any()
                             else np.ndarray((cx[0].shape[0], 1)) * np.nan
                         ),
-                        plot_type=PlotType.STEP,
+                        plot_type=PlotType.INTEGRATED,
                         axes_idx=self.axes_idx,
                         legend=self.legend,
                         combine_to=self.combine_name,
-                        all_variables_in_one_subplot=all_variables_in_one_subplot,
                     )
 
 

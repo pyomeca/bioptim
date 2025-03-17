@@ -308,7 +308,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the covariance after and before
             """
 
-            return MultinodePenaltyFunctions.Functions.algebraic_states_equality(transition, controllers, "cov")
+            return MultinodePenaltyFunctions.Functions.controls_equality(transition, controllers, "cov")
 
         @staticmethod
         def covariance_continuous(

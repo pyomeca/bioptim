@@ -173,22 +173,22 @@ class PenaltyFunctionAbstract:
 
             # create the casadi function to be evaluated
             # Get the symbolic variables
-            if "cholesky_cov" in controller.algebraic_states.keys():
+            if "cholesky_cov" in controller.controls.keys():
                 l_cov_matrix = StochasticBioModel.reshape_to_cholesky_matrix(
-                    controller.algebraic_states["cholesky_cov"].cx_start, controller.model.matrix_shape_cov_cholesky
+                    controller.controls["cholesky_cov"].cx_start, controller.model.matrix_shape_cov_cholesky
                 )
                 cov_matrix = l_cov_matrix @ l_cov_matrix.T
-            elif "cov" in controller.algebraic_states.keys():
+            elif "cov" in controller.controls.keys():
                 cov_matrix = StochasticBioModel.reshape_to_matrix(
-                    controller.algebraic_states["cov"].cx_start, controller.model.matrix_shape_cov
+                    controller.controls["cov"].cx_start, controller.model.matrix_shape_cov
                 )
             else:
                 raise RuntimeError(
-                    "The covariance matrix must be provided in the algebraic_states to compute the expected efforts."
+                    "The covariance matrix must be provided in the controls to compute the expected efforts."
                 )
 
             k_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.algebraic_states["k"].cx_start, controller.model.matrix_shape_k
+                controller.controls["k"].cx_start, controller.model.matrix_shape_k
             )
 
             # Compute the expected effort
@@ -963,8 +963,8 @@ class PenaltyFunctionAbstract:
                 penalty.cols should not be defined if contact_index is defined
             """
 
-            if controller.get_nlp.soft_contact_forces_func is None:
-                raise RuntimeError("minimize_contact_forces requires a soft contact dynamics")
+            if controller.get_nlp.model.nb_soft_contacts == 0:
+                raise RuntimeError("minimize_contact_forces requires a soft contact")
 
             PenaltyFunctionAbstract.set_axes_rows(penalty, contact_index)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
@@ -974,12 +974,15 @@ class PenaltyFunctionAbstract:
                 force_idx.append(3 + (6 * i_sc))
                 force_idx.append(4 + (6 * i_sc))
                 force_idx.append(5 + (6 * i_sc))
-            soft_contact_force = controller.get_nlp.soft_contact_forces_func(
-                controller.time.cx,
-                controller.states.cx_start,
-                controller.controls.cx_start,
+
+            # Note to the developers: the .expand() should be an option in the future
+            # But for now, removing it breaks the tests as it introduces NaNs in the NLP
+            soft_contact_force = controller.get_nlp.model.soft_contact_forces().expand()(
+                controller.states["q"].cx,
+                controller.states["qdot"].cx,
                 controller.parameters.cx,
             )
+
             return soft_contact_force[force_idx]
 
         @staticmethod

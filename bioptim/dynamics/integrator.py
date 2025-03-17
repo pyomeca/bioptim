@@ -87,7 +87,7 @@ class Integrator:
                 self._x_sym_modified,
                 self.u_sym,
                 self.param_sym,
-                self.a_sym,
+                self._a_sym_modified,
                 self.numerical_timeseries_sym,
             ],
             self.dxdt(
@@ -129,6 +129,10 @@ class Integrator:
     @property
     def _x_sym_modified(self):
         return self.x_sym
+
+    @property
+    def _a_sym_modified(self):
+        return self.a_sym
 
     @property
     def _input_names(self):
@@ -586,6 +590,10 @@ class COLLOCATION(Integrator):
         return horzcat(*self.x_sym) if self.duplicate_starting_point else horzcat(*self.x_sym[1:])
 
     @property
+    def _a_sym_modified(self):
+        return horzcat(*self.a_sym) if self.duplicate_starting_point else horzcat(*self.a_sym[1:])
+
+    @property
     def _output_names(self):
         return ["xf", "xall", "defects"]
 
@@ -663,7 +671,7 @@ class COLLOCATION(Integrator):
                     states[j + 1],
                     self.get_u(controls, self._integration_time[j]),
                     params,
-                    algebraic_states,
+                    algebraic_states[j + 1],
                     numerical_timeseries,
                     xp_j / self.h,
                 )
@@ -726,6 +734,9 @@ class IRK(COLLOCATION):
 
         # Root-finding function, implicitly defines x_collocation_points as a function of x0 and p
         collocation_states = vertcat(*states[1:]) if self.duplicate_starting_point else vertcat(*states[2:])
+        algebraic_states = (
+            vertcat(*algebraic_states[1:]) if self.duplicate_starting_point else vertcat(*algebraic_states[2:])
+        )
         vfcn = Function(
             "vfcn",
             [collocation_states, self.t_span_sym, states[0], controls, params, algebraic_states, numerical_timeseries],

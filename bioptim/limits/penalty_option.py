@@ -317,14 +317,14 @@ class PenaltyOption(OptionGeneric):
         n_root = controller.model.nb_root
         n_joints = nx - n_root
 
-        if "cholesky_cov" in controller.algebraic_states.keys():
+        if "cholesky_cov" in controller.controls.keys():
             l_cov_matrix = StochasticBioModel.reshape_to_cholesky_matrix(
-                controller.algebraic_states["cholesky_cov"].cx_start, controller.model.matrix_shape_cov_cholesky
+                controller.controls["cholesky_cov"].cx_start, controller.model.matrix_shape_cov_cholesky
             )
             cov_matrix = l_cov_matrix @ l_cov_matrix.T
         else:
             cov_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.algebraic_states["cov"].cx_start, controller.model.matrix_shape_cov
+                controller.controls["cov"].cx_start, controller.model.matrix_shape_cov
             )
 
         jac_fcn_states = jacobian(fcn, state_cx_scaled)
@@ -896,13 +896,6 @@ class PenaltyOption(OptionGeneric):
 
         # The active controller is always the last one, and they all should be the same length anyway
         for node in range(len(controllers[-1])):
-            # TODO
-            # TODO WARNING THE NEXT IF STATEMENT IS A BUG DELIBERATELY INTRODUCED TO FIT THE PREVIOUS RESULTS.
-            # IT SHOULD BE REMOVED AS SOON AS THE MERGE IS DONE (AND VALUES OF THE TESTS ADJUSTED)
-            if self.integrate and self.target is not None:
-                self.node_idx = controllers[0].t[:-1]
-                if node not in self.node_idx:
-                    continue
 
             for controller in controllers:
                 controller.node_index = controller.t[node]
