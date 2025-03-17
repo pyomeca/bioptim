@@ -1,5 +1,6 @@
 import numpy as np
 from typing import Protocol, Callable, Any
+from functools import wraps
 
 from casadi import MX, SX, Function
 from ...misc.mapping import BiMapping, BiMappingList
