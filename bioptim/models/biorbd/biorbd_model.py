@@ -141,27 +141,22 @@ class BiorbdModel:
             raise ValueError("Friction coefficients must be positive")
         self._friction_coefficients = new_friction_coefficients
 
-    @property
+    @_cache_function
     def gravity(self) -> Function:
         """
         Returns the gravity of the model.
         Since the gravity is self-defined in the model, you need to provide the type of the output when calling the function like this:
         model.gravity()(MX() / SX())
         """
-        input_args = ("gravity", )
-        if input_args in self._cached_functions:
-            return self._cached_functions[input_args]
-        else:
-            biorbd_return = self.model.getGravity().to_mx()
-            casadi_fun = Function(
-                "gravity",
-                [self.parameters],
-                [biorbd_return],
-                ["parameters"],
-                ["gravity"],
-            )
-            self._cached_functions[input_args] = casadi_fun
-            return casadi_fun
+        biorbd_return = self.model.getGravity().to_mx()
+        casadi_fun = Function(
+            "gravity",
+            [self.parameters],
+            [biorbd_return],
+            ["parameters"],
+            ["gravity"],
+        )
+        return casadi_fun
 
     def set_gravity(self, new_gravity) -> None:
         self.model.setGravity(new_gravity)
@@ -257,7 +252,7 @@ class BiorbdModel:
         )
         return casadi_fun
 
-    @property
+    @_cache_function
     def mass(self) -> Function:
         """
         Returns the mass of the model.
@@ -975,7 +970,7 @@ class BiorbdModel:
         return casadi_fun
 
     @_cache_function
-    def tau_max(self) -> tuple[MX, MX]:
+    def tau_max(self) -> Function:
         self.model.closeActuator()
         q_biorbd = GeneralizedCoordinates(self.q)
         qdot_biorbd = GeneralizedVelocity(self.qdot)
@@ -1007,7 +1002,7 @@ class BiorbdModel:
         return casadi_fun
 
     @_cache_function
-    def markers_jacobian(self) -> list[MX]:
+    def markers_jacobian(self) -> Function:
         biorbd_return = [m.to_mx() for m in self.model.markersJacobian(GeneralizedCoordinates(self.q))]
         casadi_fun = Function(
             "markers_jacobian",

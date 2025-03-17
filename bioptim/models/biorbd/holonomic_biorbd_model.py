@@ -1,4 +1,5 @@
 from typing import Callable
+from functools import wraps
 
 import biorbd_casadi as biorbd
 import numpy as np
@@ -39,6 +40,8 @@ class HolonomicBiorbdModel(BiorbdModel):
         if parameters is not None:
             raise NotImplementedError("HolonomicBiorbdModel does not support parameters yet")
 
+        self._cached_functions = {}
+
     def _holonomic_symbolic_variables(self):
         # Declaration of MX variables of the right shape for the creation of CasADi Functions
         self.q_u = MX.sym("q_u_mx", self.nb_independent_joints, 1)
@@ -48,6 +51,25 @@ class HolonomicBiorbdModel(BiorbdModel):
         self.qdot_v = MX.sym("qdot_v_mx", self.nb_dependent_joints, 1)
         self.qddot_v = MX.sym("qddot_v_mx", self.nb_dependent_joints, 1)
         self.q_v_init = MX.sym("q_v_init_mx", self.nb_dependent_joints, 1)
+
+
+    def _cache_function(method):
+        """Decorator to cache CasADi functions automatically"""
+        @wraps(method)
+        def wrapper(self, *args, **kwargs):
+            # Create a unique key based on the method name and arguments
+            key = (method.__name__, args, frozenset(kwargs.items()))
+            if key in self._cached_functions:
+                return self._cached_functions[key]
+
+            # Call the original function to create the CasADi function
+            casadi_fun = method(self, *args, **kwargs)
+
+            # Store in the cache
+            self._cached_functions[key] = casadi_fun
+            return casadi_fun
+
+        return wrapper
 
     def set_newton_tol(self, newton_tol: float):
         self._newton_tol = newton_tol
@@ -248,6 +270,7 @@ class HolonomicBiorbdModel(BiorbdModel):
     def holonomic_constraints_double_derivative(self, q: MX, qdot: MX, qddot: MX) -> MX:
         return vertcat(*[c(q, qdot, qddot) for c in self._holonomic_constraints_double_derivatives])
 
+    @_cache_function
     def constrained_forward_dynamics(self) -> Function:
 
         mass_matrix = self.mass_matrix()(self.q, self.parameters)
@@ -335,6 +358,7 @@ class HolonomicBiorbdModel(BiorbdModel):
 
         return horzcat(constrained_jacobian_u, constrained_jacobian_v)
 
+    @_cache_function
     def partitioned_forward_dynamics(self) -> Function:
         """
         Sources
@@ -355,6 +379,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         )
         return casadi_fun
 
+    @_cache_function
     def partitioned_forward_dynamics_with_qv(self) -> Function:
         """
         Sources
@@ -376,6 +401,7 @@ class HolonomicBiorbdModel(BiorbdModel):
 
         return casadi_fun
 
+    @_cache_function
     def partitioned_forward_dynamics_full(self) -> Function:
         """
         Sources
@@ -497,6 +523,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         if state_v.shape[0] != self.nb_dependent_joints:
             raise ValueError(f"Length of state v size should be: {self.nb_dependent_joints}. Got: {state_v.shape[0]}")
 
+    @_cache_function
     def compute_q_v(self) -> Function:
         """
         Compute the dependent joint positions (q_v) from the independent joint positions (q_u).
@@ -521,6 +548,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         casadi_fun = Function("compute_q_v", [self.q_u, self.q_v_init], [v_opt], ["q_u", "q_v_init"], ["q_v"])
         return casadi_fun
 
+    @_cache_function
     def compute_q(self) -> Function:
         """
         If you don't know what to put as a q_v_init, use zeros.
@@ -530,12 +558,14 @@ class HolonomicBiorbdModel(BiorbdModel):
         casadi_fun = Function("compute_q", [self.q_u, self.q_v_init], [biorbd_return], ["q_u", "q_v_init"], ["q"])
         return casadi_fun
 
+    @_cache_function
     def compute_qdot_v(self) -> Function:
         coupling_matrix_vu = self.coupling_matrix(self.q)
         biorbd_return = coupling_matrix_vu @ self.qdot_u
         casadi_fun = Function("compute_qdot_v", [self.q, self.qdot_u], [biorbd_return], ["q", "qdot_u"], ["qdot_v"])
         return casadi_fun
 
+    @_cache_function
     def _compute_qdot_v(self) -> Function:
         q = self.compute_q()(self.q_u, self.q_v_init)
         biorbd_return = self.compute_qdot_v()(q, self.qdot_u)
@@ -548,12 +578,14 @@ class HolonomicBiorbdModel(BiorbdModel):
         )
         return casadi_fun
 
+    @_cache_function
     def compute_qdot(self) -> Function:
         qdot_v = self.compute_qdot_v()(self.q, self.qdot_u)
         biorbd_return = self.state_from_partition(self.qdot_u, qdot_v)
         casadi_fun = Function("compute_qdot", [self.q, self.qdot_u], [biorbd_return], ["q", "qdot_u"], ["qdot"])
         return casadi_fun
 
+    @_cache_function
     def compute_qddot_v(self) -> Function:
         """
         Sources
@@ -570,6 +602,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         )
         return casadi_fun
 
+    @_cache_function
     def compute_qddot(self) -> Function:
         """
         Sources
@@ -586,6 +619,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         )
         return casadi_fun
 
+    @_cache_function
     def compute_the_lagrangian_multipliers(self) -> Function:
         """
         Sources
@@ -609,6 +643,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         )
         return casadi_fun
 
+    @_cache_function
     def _compute_the_lagrangian_multipliers(self) -> Function:
         """
         Sources

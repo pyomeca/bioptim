@@ -1,4 +1,5 @@
 from typing import Protocol, Callable
+from functools import wraps
 
 from biorbd_casadi import GeneralizedCoordinates
 from casadi import MX, DM, Function
@@ -7,6 +8,25 @@ from ..holonomic_constraints import HolonomicConstraintsList
 
 
 class HolonomicBioModel(BioModel, Protocol):
+
+    def _cache_function(method):
+        """Decorator to cache CasADi functions automatically"""
+        @wraps(method)
+        def wrapper(self, *args, **kwargs):
+            # Create a unique key based on the method name and arguments
+            key = (method.__name__, args, frozenset(kwargs.items()))
+            if key in self._cached_functions:
+                return self._cached_functions[key]
+
+            # Call the original function to create the CasADi function
+            casadi_fun = method(self, *args, **kwargs)
+
+            # Store in the cache
+            self._cached_functions[key] = casadi_fun
+            return casadi_fun
+
+        return wrapper
+
     def set_holonomic_configuration(
         self,
         constraints_list: HolonomicConstraintsList,
