@@ -113,7 +113,7 @@ def prepare_ocp_first_pass(
         state_continuity_weight=state_continuity_weight,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
-        ode_solver=ode_solver
+        ode_solver=ode_solver,
     )
 
     # Path constraint
