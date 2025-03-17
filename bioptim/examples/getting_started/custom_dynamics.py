@@ -163,6 +163,7 @@ def prepare_ocp(
             my_additional_factor=1,
             expand_dynamics=expand_dynamics,
             phase_dynamics=phase_dynamics,
+            ode_solver=ode_solver,
         )
     else:
         dynamics.add(
@@ -170,6 +171,7 @@ def prepare_ocp(
             dynamic_function=custom_dynamics,
             expand_dynamics=expand_dynamics,
             phase_dynamics=phase_dynamics,
+            ode_solver=ode_solver,
         )
 
     # Constraints
@@ -201,7 +203,6 @@ def prepare_ocp(
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         constraints=constraints,
-        ode_solver=ode_solver,
         use_sx=use_sx,
     )
 

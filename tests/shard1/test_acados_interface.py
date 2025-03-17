@@ -17,7 +17,6 @@ from bioptim import (
     Axis,
     ObjectiveList,
     ObjectiveFcn,
-    OdeSolver,
     ConstraintList,
     ConstraintFcn,
     Node,
@@ -388,7 +387,6 @@ def test_acados_custom_dynamics(problem_type_custom):
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         problem_type_custom=problem_type_custom,
-        ode_solver=OdeSolver.RK4(),
         use_sx=True,
         expand_dynamics=True,
     )

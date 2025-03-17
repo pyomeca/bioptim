@@ -75,6 +75,7 @@ def prepare_ocp(
         dynamic_function=dynamics,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
+        ode_solver=ode_solver,
     )
 
     # Path constraint
@@ -111,7 +112,6 @@ def prepare_ocp(
         x_init=x_init,
         u_init=u_init,
         objective_functions=objective_functions,
-        ode_solver=ode_solver,
         use_sx=False,
         n_threads=n_threads,
     )

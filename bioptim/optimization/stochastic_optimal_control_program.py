@@ -146,7 +146,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             parameter_init=parameter_init,
             parameter_objectives=parameter_objectives,
             parameter_constraints=parameter_constraints,
-            ode_solver=None,
             control_type=control_type,
             variable_mappings=variable_mappings,
             time_phase_mapping=time_phase_mapping,
@@ -627,6 +626,7 @@ def _check_multi_threading_and_problem_type(problem_type, **kwargs):
 
 
 def _check_has_no_ode_solver_defined(**kwargs):
+    # TODO: Charbie -> Move the dynamics
     if "ode_solver" in kwargs:
         raise ValueError(
             "The ode_solver cannot be defined for a stochastic ocp. "

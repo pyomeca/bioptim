@@ -131,7 +131,6 @@ def test_plot_merged_graphs(phase_dynamics):
         markers_ref,
         muscle_excitations_ref,
         x_ref[: bio_model.nb_q, :].T,
-        ode_solver=OdeSolver.RK4(),
         use_residual_torque=True,
         kin_data_to_track="markers",
         phase_dynamics=phase_dynamics,

@@ -105,6 +105,7 @@ def prepare_ocp(
         DynamicsFcn.TORQUE_DRIVEN,
         expand_dynamics=not isinstance(ode_solver, OdeSolver.IRK),
         phase_dynamics=phase_dynamics,
+        ode_solver=ode_solver,
     )
 
     # Path constraint
@@ -133,7 +134,6 @@ def prepare_ocp(
         x_init=x_init,
         objective_functions=objective_functions,
         control_type=control_type,
-        ode_solver=ode_solver,
     )
 
 

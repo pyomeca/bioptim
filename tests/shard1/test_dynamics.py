@@ -1253,5 +1253,4 @@ def test_with_contact_error(dynamics_fcn, phase_dynamics):
             x_bounds=x_bounds,
             u_bounds=u_bounds,
             objective_functions=objective_functions,
-            ode_solver=OdeSolver.RK4(),
         )

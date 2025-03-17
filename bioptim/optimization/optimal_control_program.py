@@ -153,7 +153,6 @@ class OptimalControlProgram:
         parameter_init: InitialGuessList = None,
         parameter_objectives: ParameterObjectiveList = None,
         parameter_constraints: ParameterConstraintList = None,
-        ode_solver: list | OdeSolverBase | OdeSolver = None,
         control_type: ControlType | list = ControlType.CONSTANT,
         variable_mappings: BiMappingList = None,
         time_phase_mapping: BiMapping = None,
@@ -207,8 +206,6 @@ class OptimalControlProgram:
             All the parameter objectives to optimize of the program
         parameter_constraints: ParameterConstraintList
             All the parameter constraints of the program
-        ode_solver: OdeSolverBase
-            The solver for the ordinary differential equations
         control_type: ControlType
             The type of controls for each phase
         variable_mappings: BiMappingList
@@ -283,7 +280,6 @@ class OptimalControlProgram:
             parameter_init,
             parameter_constraints,
             parameter_objectives,
-            ode_solver,
             use_sx,
             bio_model,
             plot_mappings,
@@ -426,7 +422,6 @@ class OptimalControlProgram:
         parameter_init,
         parameter_constraints,
         parameter_objectives,
-        ode_solver,
         use_sx,
         bio_model,
         plot_mappings,
@@ -503,18 +498,6 @@ class OptimalControlProgram:
         elif not isinstance(parameter_constraints, ParameterConstraintList):
             raise RuntimeError("constraints should be built from an Constraint or ConstraintList")
 
-        if ode_solver is None:
-            ode_solver = self._set_default_ode_solver()
-
-        is_ode_solver = isinstance(ode_solver, OdeSolverBase)
-        is_list_ode_solver = (
-            all([isinstance(ode, OdeSolverBase) for ode in ode_solver])
-            if isinstance(ode_solver, list) or isinstance(ode_solver, tuple)
-            else False
-        )
-        if not is_ode_solver and not is_list_ode_solver:
-            raise RuntimeError("ode_solver should be built an instance of OdeSolver or a list of OdeSolver")
-
         if not isinstance(use_sx, bool):
             raise RuntimeError("use_sx should be a bool")
 
@@ -524,6 +507,14 @@ class OptimalControlProgram:
             dynamics.add(tp)
         if not isinstance(dynamics, DynamicsList):
             raise ValueError("dynamics must be of type DynamicsList or Dynamics")
+
+        for dyn in dynamics:
+            if dyn.ode_solver is None:
+                dyn.ode_solver = self._set_default_ode_solver()
+
+            is_ode_solver = isinstance(dyn.ode_solver, OdeSolverBase)
+            if not is_ode_solver:
+                raise RuntimeError("ode_solver should be built an instance of OdeSolver")
 
         # Type of CasADi graph
         self.cx = SX if use_sx else MX
@@ -580,7 +571,8 @@ class OptimalControlProgram:
 
         # Prepare path constraints and dynamics of the program
         NLP.add(self, "dynamics_type", dynamics, False)
-        NLP.add(self, "ode_solver", ode_solver, True)
+        ode_solver = [dyn.ode_solver for dyn in dynamics]
+        NLP.add(self, "ode_solver", ode_solver, False)
         NLP.add(self, "control_type", control_type, True)
 
         # Prepare the variable mappings
