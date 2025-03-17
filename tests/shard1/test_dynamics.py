@@ -19,7 +19,8 @@ from bioptim import (
     ParameterContainer,
     ParameterList,
     PhaseDynamics,
-    ExternalForceSetTimeSeries, ContactType,
+    ExternalForceSetTimeSeries,
+    ContactType,
 )
 
 from ..utils import TestUtils
@@ -1123,7 +1124,14 @@ def test_joints_acceleration_driven(cx, phase_dynamics):
 @pytest.mark.parametrize("with_contact", [False, True])
 def test_custom_dynamics(with_contact, phase_dynamics):
     def custom_dynamic(
-        time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp, contact_type=ContactType.NONE,
+        time,
+        states,
+        controls,
+        parameters,
+        algebraic_states,
+        numerical_timeseries,
+        nlp,
+        contact_type=ContactType.NONE,
     ) -> DynamicsEvaluation:
         with_contact = contact_type == ContactType.RIGID
         q = DynamicsFunctions.get(nlp.states["q"], states)
@@ -1233,7 +1241,9 @@ def test_with_contact_error(dynamics_fcn, phase_dynamics):
     objective_functions = ObjectiveList()
 
     # Dynamics
-    dynamics = Dynamics(dynamics_fcn, contact_type=ContactType.RIGID, expand_dynamics=True, phase_dynamics=phase_dynamics)
+    dynamics = Dynamics(
+        dynamics_fcn, contact_type=ContactType.RIGID, expand_dynamics=True, phase_dynamics=phase_dynamics
+    )
 
     # Path constraint
     x_bounds = BoundsList()

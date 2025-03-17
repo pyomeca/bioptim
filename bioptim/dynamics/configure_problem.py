@@ -1055,7 +1055,9 @@ class ConfigureProblem:
                 raise ValueError(f"OdeSolver {nlp.ode_solver} can only be used with implicit defects (not dxdt).")
         else:
             if dynamics_eval.defects is not None:
-                raise ValueError(f"OdeSolver {nlp.ode_solver} can only be used with explicit integration of dxdt (not with defects).")
+                raise ValueError(
+                    f"OdeSolver {nlp.ode_solver} can only be used with explicit integration of dxdt (not with defects)."
+                )
 
         dynamics_dxdt = dynamics_eval.dxdt
         if isinstance(dynamics_dxdt, (list, tuple)):
@@ -1153,7 +1155,6 @@ class ConfigureProblem:
                         )
             else:
                 raise NotImplementedError("Extra implicit dynamics is not implemented yet.")
-
 
     @staticmethod
     def configure_contact_function(ocp, nlp, contact_func: Callable, **extra_params):
