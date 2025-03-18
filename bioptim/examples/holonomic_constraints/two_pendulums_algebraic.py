@@ -26,7 +26,7 @@ from bioptim import (
     CostType,
     OdeSolver,
 )
-from custom_dynamics import (
+from .custom_dynamics import (
     holonomic_torque_driven_with_qv,
     configure_holonomic_torque_driven,
     constraint_holonomic,

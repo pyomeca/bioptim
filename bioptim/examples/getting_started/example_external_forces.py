@@ -164,26 +164,28 @@ def setup_external_forces(
 
     elif external_force_method == "in_global":
         external_force_set.add(
+            "contact0",
             "Seg1",
             np.concatenate((Seg1_force, Seg1_force), axis=0),
             point_of_application=Seg1_point_of_application if use_point_of_applications else None,
         )
         external_force_set.add(
+            "contact0",
             "Test",
             np.concatenate((Test_force, Test_force), axis=0),
             point_of_application=Test_point_of_application if use_point_of_applications else None,
         )
     elif external_force_method == "in_global_torque":
-        external_force_set.add_torque("Seg1", Seg1_force)
-        external_force_set.add_torque("Test", Test_force)
+        external_force_set.add_torque("contact0", "Seg1", Seg1_force)
+        external_force_set.add_torque("contact0", "Test", Test_force)
 
     elif external_force_method == "in_segment_torque":
-        external_force_set.add_torque_in_segment_frame("Seg1", Seg1_force)
-        external_force_set.add_torque_in_segment_frame("Test", Test_force)
+        external_force_set.add_torque_in_segment_frame("contact0", "Seg1", Seg1_force)
+        external_force_set.add_torque_in_segment_frame("contact0", "Test", Test_force)
 
     elif external_force_method == "in_segment":
-        external_force_set.add_in_segment_frame("Seg1", np.concatenate((Seg1_force, Seg1_force), axis=0))
-        external_force_set.add_in_segment_frame("Test", np.concatenate((Test_force, Test_force), axis=0))
+        external_force_set.add_in_segment_frame("contact0", "Seg1", np.concatenate((Seg1_force, Seg1_force), axis=0))
+        external_force_set.add_in_segment_frame("contact0", "Test", np.concatenate((Test_force, Test_force), axis=0))
 
     return external_force_set
 

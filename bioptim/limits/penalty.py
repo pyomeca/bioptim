@@ -1192,6 +1192,10 @@ class PenaltyFunctionAbstract:
                 a = horzcat(
                     *([controller.algebraic_states.cx_start] + controller.algebraic_states.cx_intermediates_list)
                 )
+                # @Ipuch: The original implementation was the following commented line
+                # Could you please confirm that it was not intentional ?
+                # The current new implementation changes your two_pendulum_algebraic test values
+                # a = controller.algebraic_states.cx  # TODO: REMOVE
 
                 integrated = controller.integrate(
                     t_span=t_span,

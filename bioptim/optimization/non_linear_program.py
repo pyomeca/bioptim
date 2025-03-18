@@ -280,10 +280,10 @@ class NonLinearProgram:
 
     def update_init(self, x_init, u_init, a_init):
 
-        if x_init is not None:
+        if x_init is not None or a_init is not None:
             not_direct_collocation = not self.ode_solver.is_direct_collocation
-            x_init_all_point = x_init.type == InterpolationType.ALL_POINTS
-            a_init_all_point = a_init.type == InterpolationType.ALL_POINTS
+            x_init_all_point = x_init.type == InterpolationType.ALL_POINTS if x_init is not None else False
+            a_init_all_point = a_init.type == InterpolationType.ALL_POINTS if a_init is not None else False
 
             if not_direct_collocation and (x_init_all_point or a_init_all_point):
                 raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
