@@ -199,17 +199,6 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
         max_bound=[200.0, 200.0, 200.0],
         interpolation=InterpolationType.CONSTANT,
     )
-    # min_bound = np.zeros((3, 41))
-    # max_bound = np.zeros((3, 41))
-    # for i_frame in range(41):
-    #     if (i_frame+1) % 4 == 0 or (i_frame) % 4 == 0 :
-    #         min_bound[:, i_frame] = [0.0, 0.0, 0.0]
-    #         max_bound[:, i_frame] = [0.0, 0.0, 0.0]
-    #     else:
-    #         min_bound[:, i_frame] = [-200.0, 0.0, 0.0]
-    #         max_bound[:, i_frame] = [200.0, 200.0, 200.0]
-    # a_bounds.add("rigid_contact_forces", min_bound=min_bound, max_bound=max_bound, interpolation=InterpolationType.ALL_POINTS)
-
     a_bounds.add(
         "rigid_contact_forces",
         min_bound=[-200.0, 0.0, 0.0],
