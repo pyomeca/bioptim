@@ -1,8 +1,20 @@
 import numpy as np
 from casadi import MX, SX, DM
-
+from typing import TypeAlias
 from .options import OptionDict, OptionGeneric
 from .enums import Node
+from .parameters_types import (
+    Int,
+    Str,
+    IntIterableOrNpArray,
+    IntIterableOrNpArrayOrInt,
+    CXOrDMOrFloatIterable,
+    CXOrDMOrNpArray,
+    AnyDict,
+    IntTuple,
+    AnyList,
+    AnyTuple,
+)
 
 
 class Mapping(OptionGeneric):
@@ -31,12 +43,7 @@ class Mapping(OptionGeneric):
         Get the len of the mapping
     """
 
-    def __init__(
-        self,
-        map_idx: list | tuple | range | np.ndarray,
-        oppose: int | list | tuple | range | np.ndarray = None,
-        **extra_parameters
-    ):
+    def __init__(self, map_idx: IntIterableOrNpArray, oppose: IntIterableOrNpArrayOrInt = None, **extra_parameters):
         """
         Parameters
         ----------
@@ -54,7 +61,7 @@ class Mapping(OptionGeneric):
             for i in oppose:
                 self.oppose[i] = -1
 
-    def map(self, obj: tuple | list | np.ndarray | MX | SX | DM) -> np.ndarray | MX | SX | DM:
+    def map(self, obj: CXOrDMOrFloatIterable) -> CXOrDMOrNpArray:
         """
         Apply the mapping to an matrix object. The rows are mapped while the columns are preserved as is
 
@@ -97,7 +104,7 @@ class Mapping(OptionGeneric):
 
         return mapped_obj
 
-    def __len__(self) -> int:
+    def __len__(self) -> Int:
         """
         Get the len of the mapping
 
@@ -107,6 +114,9 @@ class Mapping(OptionGeneric):
         """
 
         return len(self.map_idx)
+
+
+MappingOrIterable: TypeAlias = Mapping | int | list | tuple | range
 
 
 class BiMapping(OptionGeneric):
@@ -123,10 +133,10 @@ class BiMapping(OptionGeneric):
 
     def __init__(
         self,
-        to_second: Mapping | int | list | tuple | range,
-        to_first: Mapping | int | list | tuple | range,
-        oppose_to_second: Mapping | int | list | tuple | range = None,
-        oppose_to_first: Mapping | int | list | tuple | range = None,
+        to_second: MappingOrIterable,
+        to_first: MappingOrIterable,
+        oppose_to_second: MappingOrIterable = None,
+        oppose_to_first: MappingOrIterable = None,
         **extra_parameters
     ):
         """
@@ -161,18 +171,19 @@ class BiMapping(OptionGeneric):
 
 
 BiMappingOrIterableOptional = BiMapping | list["BiMapping"] | None
+DictOrBiMapping: TypeAlias = AnyDict | BiMapping
 
 
 class BiMappingList(OptionDict):
     def add(
         self,
-        name: str,
+        name: Str,
         bimapping: BiMapping = None,
-        to_second: Mapping | int | list | tuple | range = None,
-        to_first: Mapping | int | list | tuple | range = None,
-        oppose_to_second: Mapping | int | list | tuple | range = None,
-        oppose_to_first: Mapping | int | list | tuple | range = None,
-        phase: int = -1,
+        to_second: MappingOrIterable = None,
+        to_first: MappingOrIterable = None,
+        oppose_to_second: MappingOrIterable = None,
+        oppose_to_first: MappingOrIterable = None,
+        phase: Int = -1,
     ):
         """
         Add a new BiMapping to the list
@@ -242,7 +253,7 @@ class BiMappingList(OptionDict):
                             self.add(name=key, bimapping=mappings[key], phase=i_phase)
         return self
 
-    def __getitem__(self, item) -> dict | BiMapping:
+    def __getitem__(self, item) -> DictOrBiMapping:
         return super(BiMappingList, self).__getitem__(item)
 
     def __contains__(self, item):
@@ -263,7 +274,12 @@ class Dependency:
         The factor that multiplies the dependent element
     """
 
-    def __init__(self, dependent_index: int = None, reference_index: int = None, factor: int = None):
+    def __init__(
+        self,
+        dependent_index: Int = None,
+        reference_index: Int = None,
+        factor: Int = None,
+    ):
         """
         Parameters
         ----------
@@ -292,6 +308,9 @@ class Dependency:
         self.factor = factor
 
 
+DependencyTuple: TypeAlias = tuple[Dependency, ...]
+
+
 class SelectionMapping(BiMapping):
     """
     Mapping of two index sets according to the indexes that are independent
@@ -316,9 +335,9 @@ class SelectionMapping(BiMapping):
 
     def __init__(
         self,
-        nb_elements: int = None,
-        independent_indices: tuple[int, ...] = None,
-        dependencies: tuple[Dependency, ...] = None,
+        nb_elements: Int = None,
+        independent_indices: IntTuple = None,
+        dependencies: DependencyTuple = None,
         **extra_parameters
     ):
         """
@@ -392,7 +411,7 @@ class SelectionMapping(BiMapping):
                 oppose.append(i)
                 dependency_matrix[i] = int(abs(first[i]) - 1)
 
-        def _build_to_second(dependency_matrix: list, independent_indices: tuple):
+        def _build_to_second(dependency_matrix: AnyList, independent_indices: AnyTuple):
             """
             Build the to_second vector used in BiMapping thanks to the dependency matrix of the elements in the system
             and the vector of independent indices
