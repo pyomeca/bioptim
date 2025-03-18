@@ -73,18 +73,10 @@ class PenaltyHelpers:
             phases, nodes, subnodes = _get_multinode_indices(penalty, is_constructing_penalty)
             idx = 0
             for phase, node, sub in zip(phases, nodes, subnodes):
-                if penalty.phase_dynamics[idx] == PhaseDynamics.ONE_PER_NODE:
-                    if not is_constructing_penalty and node == penalty.ns[idx]:
-                        x.append(_reshape_to_vector(get_state_decision(phase, node, range(0, 1))))
-                    else:
-                        x.append(_reshape_to_vector(get_state_decision(phase, node, sub)))
-                elif node < penalty.ns[idx]:
-                    x.append(_reshape_to_vector(get_state_decision(phase, node, sub)))
+                if not is_constructing_penalty and node == penalty.ns[idx]:
+                    x.append(_reshape_to_vector(get_state_decision(phase, node, range(0, 1))))
                 else:
-                    if is_constructing_penalty:
-                        x.append(get_state_decision(0, 0, range(0, 1)).sym("dummy_x", 0, 1))
-                    else:
-                        x.append(_reshape_to_vector(get_state_decision(phase, node, range(0, 1))))
+                    x.append(_reshape_to_vector(get_state_decision(phase, node, sub)))
                 idx += 1
             return _vertcat(x)
 
