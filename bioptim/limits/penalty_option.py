@@ -645,7 +645,7 @@ class PenaltyOption(OptionGeneric):
         x = PenaltyHelpers.states(
             self,
             penalty_idx,
-            lambda p_idx, n_idx, sn_idx: self._get_states(ocp, ocp.nlp[p_idx].states, n_idx, sn_idx),
+            lambda p_idx, n_idx, sn_idx: self._get_states(ocp, ocp.nlp[p_idx].states, p_idx, n_idx, sn_idx),
             is_constructing_penalty=True,
         )
         u = PenaltyHelpers.controls(
@@ -662,7 +662,7 @@ class PenaltyOption(OptionGeneric):
         a = PenaltyHelpers.states(
             self,
             penalty_idx,
-            lambda p_idx, n_idx, sn_idx: self._get_states(ocp, ocp.nlp[p_idx].algebraic_states, n_idx, sn_idx),
+            lambda p_idx, n_idx, sn_idx: self._get_states(ocp, ocp.nlp[p_idx].algebraic_states, p_idx, n_idx, sn_idx),
             is_constructing_penalty=True,
         )
         d = PenaltyHelpers.numerical_timeseries(
@@ -674,7 +674,7 @@ class PenaltyOption(OptionGeneric):
         return controller, t0, x, u, p, a, d
 
     @staticmethod
-    def _get_states(ocp, states, n_idx, sn_idx):
+    def _get_states(ocp, states, p_idx, n_idx, sn_idx):
         states.node_index = n_idx
 
         x = ocp.cx()
@@ -686,9 +686,11 @@ class PenaltyOption(OptionGeneric):
             if sn_idx.stop == 1:
                 pass
             elif sn_idx.stop is None:
-                x = vertcat(x, vertcat(*states.scaled.cx_intermediates_list))
+                if n_idx < ocp.nlp[p_idx].ns + 1:
+                    x = vertcat(x, vertcat(*states.scaled.cx_intermediates_list))
             elif sn_idx.stop == -1:
-                x = vertcat(vertcat(x, vertcat(*states.scaled.cx_intermediates_list)), states.scaled.cx_end)
+                if n_idx < ocp.nlp[p_idx].ns + 1:
+                    x = vertcat(vertcat(x, vertcat(*states.scaled.cx_intermediates_list)), states.scaled.cx_end)
             else:
                 raise ValueError("The sn_idx.stop should be 1 or None if sn_idx.start == 0")
 

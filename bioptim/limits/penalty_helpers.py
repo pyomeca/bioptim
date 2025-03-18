@@ -72,7 +72,8 @@ class PenaltyHelpers:
             x = []
             phases, nodes, subnodes = _get_multinode_indices(penalty, is_constructing_penalty)
             for phase, node, sub in zip(phases, nodes, subnodes):
-                x.append(_reshape_to_vector(get_state_decision(phase, node, sub)))
+                if node < penalty.ns[0] + 1:
+                    x.append(_reshape_to_vector(get_state_decision(phase, node, sub)))
             return _vertcat(x)
 
         else:
@@ -226,33 +227,21 @@ def _get_multinode_indices(penalty, is_constructing_penalty: bool):
     phases = penalty.nodes_phase
     nodes = penalty.multinode_idx
 
-    if is_constructing_penalty:
-        startings = PenaltyHelpers.get_multinode_penalty_subnodes_starting_index(penalty)
-        subnodes = []
-        for i_starting, starting in enumerate(startings):
-            if penalty.subnodes_are_decision_states[0]:
-                if nodes[i_starting] == penalty.ns[phases[i_starting]]:
-                    subnodes.append(slice(0, 1))
-                else:
-                    subnodes.append(slice(0, -1))
-            elif starting < 0:
+    startings = PenaltyHelpers.get_multinode_penalty_subnodes_starting_index(penalty)
+    subnodes = []
+    for i_starting, starting in enumerate(startings):
+        if starting < 0:
+            if is_constructing_penalty:
                 subnodes.append(slice(-1, None))
             else:
-                subnodes.append(slice(starting, starting + 1))
-
-    else:
-        if penalty.subnodes_are_decision_states[0]:
-            # OK to check only the first one since all controllers should be of the same type
-            startings = PenaltyHelpers.get_multinode_penalty_subnodes_starting_index(penalty)
-            subnodes = []
-            for i_starting in range(len(startings)):
-                if nodes[i_starting] == penalty.ns[phases[i_starting]] + 1:
-                    subnodes.append(slice(0, 1))
-                else:
-                    subnodes.append(slice(0, -1))
+                subnodes.append(slice(0, 1))
+        elif penalty.subnodes_are_decision_states[0]:
+            if nodes[i_starting] == penalty.ns[i_starting]:
+                subnodes.append(slice(0, 1))
+            else:
+                subnodes.append(slice(0, -1))
         else:
-            # No need to test for wrong sizes as it will have failed during the constructing phase already
-            subnodes = [slice(0, 1)] * len(penalty.multinode_idx)
+            subnodes.append(slice(starting, starting + 1))
 
     return phases, nodes, subnodes
 

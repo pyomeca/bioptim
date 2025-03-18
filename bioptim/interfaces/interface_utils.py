@@ -401,8 +401,8 @@ def _get_x(ocp, phase_idx, node_idx, subnodes_idx, scaled):
     if subnodes_idx.stop == -1:
         if subnodes_idx.start == 0:
             x = horzcat(
-                values[node_idx] if node_idx < len(values) else ocp.cx(),
-                values[node_idx + 1][:, 0] if node_idx + 1 < len(values) else ocp.cx(),
+                values[node_idx],
+                values[node_idx + 1][:, 0] if node_idx + 1 < ocp.nlp[phase_idx].ns + 1 else ocp.cx(),
             )
         else:
             raise RuntimeError("only subnodes_idx.start == 0 is supported for subnodes_idx.stop == -1")
