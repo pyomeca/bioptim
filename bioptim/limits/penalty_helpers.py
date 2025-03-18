@@ -73,7 +73,7 @@ class PenaltyHelpers:
             phases, nodes, subnodes = _get_multinode_indices(penalty, is_constructing_penalty)
             idx = 0
             for phase, node, sub in zip(phases, nodes, subnodes):
-                if not is_constructing_penalty and node == penalty.ns[idx]:
+                if not is_constructing_penalty and node == penalty.ns[idx] and (penalty.control_types[idx] != ControlType.LINEAR_CONTINUOUS and penalty.control_types[idx] != ControlType.CONSTANT_WITH_LAST_NODE):
                     x.append(_reshape_to_vector(get_state_decision(phase, node, range(0, 1))))
                 else:
                     x.append(_reshape_to_vector(get_state_decision(phase, node, sub)))
@@ -234,7 +234,7 @@ def _get_multinode_indices(penalty, is_constructing_penalty: bool):
     startings = PenaltyHelpers.get_multinode_penalty_subnodes_starting_index(penalty)
     subnodes = []
     for i_starting, starting in enumerate(startings):
-        if starting < 0:
+        if starting < 0 or starting == 2:  # The last cx accessible
             if is_constructing_penalty:
                 subnodes.append(slice(-1, None))
             else:
