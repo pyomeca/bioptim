@@ -202,8 +202,6 @@ from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, Ph
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
 from .misc.__version__ import __version__
 from .misc.__version__ import __version__
-from .misc.casadi_expand import lt, le, gt, ge, if_else, if_else_zero
-from .misc.casadi_expand import lt, le, gt, ge, if_else, if_else_zero
 from .misc.enums import (
     Axis,
     Node,
