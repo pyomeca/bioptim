@@ -1,6 +1,7 @@
 """
 This example shows how to impose the dynamics through an inverse dynamics defect in collocation.
-It also shows how to impose the contact forces as an implicit constraints.
+It also shows how to impose the contact forces as an implicit constraint.
+Please note that this formulation does not reach convergence.
 """
 
 import platform
