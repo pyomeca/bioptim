@@ -365,26 +365,25 @@ def _get_weighted_function_inputs(penalty, penalty_idx, ocp, nlp, scaled):
 
     weight = PenaltyHelpers.weight(penalty)
     target = PenaltyHelpers.target(penalty, penalty_idx)
-    subnodes_are_decision_states = penalty.subnodes_are_decision_states[0] and not penalty.is_transition
 
     if nlp:
         x = PenaltyHelpers.states(
             penalty,
             penalty_idx,
-            lambda p_idx, n_idx, sn_idx: _get_x(ocp, p_idx, n_idx, sn_idx, scaled, subnodes_are_decision_states),
+            lambda p_idx, n_idx, sn_idx: _get_x(ocp, p_idx, n_idx, sn_idx, scaled, penalty),
         )
         u = PenaltyHelpers.controls(
             penalty,
             penalty_idx,
-            lambda p_idx, n_idx, sn_idx: _get_u(ocp, p_idx, n_idx, sn_idx, scaled, subnodes_are_decision_states),
+            lambda p_idx, n_idx, sn_idx: _get_u(ocp, p_idx, n_idx, sn_idx, scaled, penalty),
         )
         p = PenaltyHelpers.parameters(
-            penalty, penalty_idx, lambda p_idx, n_idx, sn_idx: _get_p(ocp, p_idx, n_idx, sn_idx, scaled)
+            penalty, penalty_idx, lambda p_idx, n_idx, sn_idx: _get_p(ocp, p_idx, n_idx, sn_idx, scaled, penalty)
         )
         a = PenaltyHelpers.states(
             penalty,
             penalty_idx,
-            lambda p_idx, n_idx, sn_idx: _get_a(ocp, p_idx, n_idx, sn_idx, scaled, subnodes_are_decision_states),
+            lambda p_idx, n_idx, sn_idx: _get_a(ocp, p_idx, n_idx, sn_idx, scaled, penalty),
         )
         d = PenaltyHelpers.numerical_timeseries(
             penalty,
@@ -403,7 +402,9 @@ def _get_weighted_function_inputs(penalty, penalty_idx, ocp, nlp, scaled):
     return t0, x, u, p, a, d, weight, target
 
 
-def _get_x(ocp, phase_idx, node_idx, subnodes_idx, scaled, subnodes_are_decision_states):
+def _get_x(ocp, phase_idx, node_idx, subnodes_idx, scaled, penalty):
+    idx = 0 if not penalty.is_multinode_penalty else penalty.nodes_phase.index(phase_idx)
+    subnodes_are_decision_states = penalty.subnodes_are_decision_states[idx] and not penalty.is_transition
     values = ocp.nlp[phase_idx].X_scaled if scaled else ocp.nlp[phase_idx].X
     if subnodes_idx.stop == -1:
         if subnodes_idx.start == 0:
@@ -421,7 +422,9 @@ def _get_x(ocp, phase_idx, node_idx, subnodes_idx, scaled, subnodes_are_decision
     return x
 
 
-def _get_u(ocp, phase_idx, node_idx, subnodes_idx, scaled, subnodes_are_decision_states):
+def _get_u(ocp, phase_idx, node_idx, subnodes_idx, scaled, penalty):
+    idx = 0 if not penalty.is_multinode_penalty else penalty.nodes_phase.index(phase_idx)
+    subnodes_are_decision_states = penalty.subnodes_are_decision_states[idx] and not penalty.is_transition
     values = ocp.nlp[phase_idx].U_scaled if scaled else ocp.nlp[phase_idx].U
     if subnodes_idx.stop == -1:
         if subnodes_idx.start == 0:
@@ -439,11 +442,13 @@ def _get_u(ocp, phase_idx, node_idx, subnodes_idx, scaled, subnodes_are_decision
     return u
 
 
-def _get_p(ocp, phase_idx, node_idx, subnodes_idx, scaled):
+def _get_p(ocp, phase_idx, node_idx, subnodes_idx, scaled, penalty):
     return ocp.parameters.scaled.cx if scaled else ocp.parameters.scaled
 
 
-def _get_a(ocp, phase_idx, node_idx, subnodes_idx, scaled, subnodes_are_decision_states):
+def _get_a(ocp, phase_idx, node_idx, subnodes_idx, scaled, penalty):
+    idx = 0 if not penalty.is_multinode_penalty else penalty.nodes_phase.index(phase_idx)
+    subnodes_are_decision_states = penalty.subnodes_are_decision_states[idx] and not penalty.is_transition
     values = ocp.nlp[phase_idx].A_scaled if scaled else ocp.nlp[phase_idx].A
     if subnodes_idx.stop == -1:
         if subnodes_idx.start == 0:

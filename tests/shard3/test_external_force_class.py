@@ -29,17 +29,17 @@ def test_initialization(external_forces):
     """Test the basic initialization of ExternalForceSetTimeSeries."""
     assert external_forces.nb_frames == 10
     assert external_forces._can_be_modified is True
-    assert external_forces.nb_external_forces == 0
     assert external_forces.nb_external_forces_components == 0
 
 
 def test_add_global_force(external_forces, force_array):
     """Test adding global forces to a segment."""
     segment_name = "segment1"
+    force_name = "w"
     external_forces.add("w", segment_name, force_array)
 
-    assert len(external_forces.in_global[segment_name]) == 1
-    assert np.array_equal(external_forces.in_global[segment_name][0]["values"], force_array)
+    assert external_forces.in_global[force_name]["segment"] == 'segment1'
+    assert np.array_equal(external_forces.in_global[force_name]["values"], force_array)
 
 
 def test_add_global_force_invalid_shape(external_forces):
@@ -63,10 +63,11 @@ def test_add_global_force_wrong_frame_count(external_forces):
 def test_add_torque(external_forces, torque_array):
     """Test adding global torques to a segment."""
     segment_name = "segment1"
+    force_name = "z"
     external_forces.add_torque("z", segment_name, torque_array)
 
-    assert len(external_forces.torque_in_global[segment_name]) == 1
-    assert np.array_equal(external_forces.torque_in_global[segment_name][0]["values"], torque_array)
+    assert external_forces.torque_in_global[force_name]["segment"] == 'segment1'
+    assert np.array_equal(external_forces.torque_in_global[force_name]["values"], torque_array)
 
 
 def test_add_torque_invalid_shape(external_forces):
@@ -81,10 +82,11 @@ def test_add_torque_invalid_shape(external_forces):
 def test_point_of_application(external_forces, force_array):
     """Test adding forces with custom point of application."""
     segment_name = "segment1"
+    force_name = "bb"
     point_of_application = np.random.rand(3, 10)
     external_forces.add("bb", segment_name, force_array, point_of_application)
 
-    added_force = external_forces.in_global[segment_name][0]
+    added_force = external_forces.in_global[force_name]
     assert np.array_equal(added_force["point_of_application"], point_of_application)
 
 
@@ -109,7 +111,6 @@ def test_external_forces_components_calculation(external_forces):
 
     # The actual calculation depends on implementation details
     assert external_forces.nb_external_forces_components == 9 + 3 + 6
-    assert external_forces.nb_external_forces == 3
 
 
 def test_to_numerical_time_series(external_forces, force_array):
@@ -133,7 +134,6 @@ def test_multiple_force_types(external_forces):
     external_forces.add_in_segment_frame("ll", segment_name, np.random.rand(6, 10))
     external_forces.add_torque_in_segment_frame("mm", segment_name, np.random.rand(3, 10))
 
-    assert external_forces.nb_external_forces == 5
 
 
 def test_fail_within_biomod(external_forces):

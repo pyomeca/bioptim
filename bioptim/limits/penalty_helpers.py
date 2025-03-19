@@ -247,12 +247,6 @@ def _get_multinode_indices(penalty, is_constructing_penalty: bool):
     if not penalty.is_multinode_penalty:
         raise RuntimeError("This function should only be called for multinode penalties")
 
-    if not (all(penalty.subnodes_are_decision_states) or sum(penalty.subnodes_are_decision_states) == 0):
-        # This check allows to test only for penalty.subnodes_are_decision_states[0] below
-        raise NotImplementedError(
-            "All controllers must be of the same type (either all or none should have subnodes_are_decision_states)"
-        )
-
     phases = penalty.nodes_phase
     nodes = penalty.multinode_idx
 
@@ -269,7 +263,7 @@ def _get_multinode_indices(penalty, is_constructing_penalty: bool):
                 subnodes.append(slice(2, 3))
             else:
                 subnodes.append(slice(0, 1))
-        elif penalty.subnodes_are_decision_states[0] and not penalty.is_transition:
+        elif penalty.subnodes_are_decision_states[i_starting] and not penalty.is_transition:
             if nodes[i_starting] >= penalty.ns[i_starting]:
                 subnodes.append(slice(0, 1))
             else:

@@ -143,7 +143,7 @@ def test_configure_soft_contacts(cx):
         TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/soft_contact_sphere.bioMod",
     )
 
-    ConfigureProblem.configure_soft_contact_forces(ocp, nlp, as_states=True, as_controls=False)
+    ConfigureProblem.configure_soft_contact_forces(ocp, nlp, as_states=True, as_controls=False, as_algebraic_states=False)
     npt.assert_equal(nlp.states.shape, 3)
     npt.assert_equal(nlp.states.keys(), ["soft_contact_forces"])
 
