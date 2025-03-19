@@ -105,7 +105,7 @@ def prepare_test_ocp(
             raise NotImplementedError("with_external_forces=True is only tested for with_contact=True")
         external_forces = ExternalForceSetTimeSeries(nb_frames=N_SHOOTING)
         external_forces.add(
-            "contact0", "Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :]
+            "ss", "Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :]
         )
         numerical_time_series = {"external_forces": external_forces.to_numerical_time_series()}
 

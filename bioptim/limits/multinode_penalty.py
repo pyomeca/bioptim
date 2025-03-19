@@ -68,7 +68,8 @@ class MultinodePenalty(PenaltyOption):
         if len(nodes) != len(nodes_phase):
             raise ValueError("Each of the nodes must have a corresponding nodes_phase")
 
-        self.multinode_penalty = True
+        self.is_multinode_penalty = True
+        self.is_transition = False
 
         self.nodes_phase = nodes_phase
         self.nodes = nodes

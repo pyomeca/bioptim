@@ -115,7 +115,7 @@ def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
 
         external_forces = ExternalForceSetTimeSeries(nb_frames=nlp.ns)
         external_forces.add(
-            "contact0", "Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :]
+            "r", "Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :]
         )
         numerical_time_series = {"external_forces": external_forces.to_numerical_time_series()}
 
@@ -299,7 +299,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
     if with_external_force:
         external_forces = ExternalForceSetTimeSeries(nb_frames=nlp.ns)
         external_forces.add(
-            "contact0", "Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :]
+            "s", "Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :]
         )
         numerical_timeseries = {"external_forces": external_forces.to_numerical_time_series()}
 
@@ -587,7 +587,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
     if with_external_force:
         external_forces = ExternalForceSetTimeSeries(nb_frames=nlp.ns)
         external_forces.add(
-            "contact0", "Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :]
+            "t", "Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :]
         )
         numerical_timeseries = {"external_forces": external_forces.to_numerical_time_series()}
 
@@ -713,7 +713,7 @@ def test_torque_activation_driven_with_residual_torque(
     if with_external_force:
         external_forces = ExternalForceSetTimeSeries(nb_frames=nlp.ns)
         external_forces.add(
-            "contact0", "Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :]
+            "u", "Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :]
         )
         numerical_timeseries = {"external_forces": external_forces.to_numerical_time_series()}
 
@@ -895,7 +895,7 @@ def test_muscle_driven(with_excitations, with_contact, with_residual_torque, wit
     if with_external_force:
         external_forces = ExternalForceSetTimeSeries(nb_frames=nlp.ns)
         external_forces.add(
-            "contact0",
+            "v",
             "r_ulna_radius_hand_rotation1",
             EXTERNAL_FORCE_ARRAY[:6, :],
             point_of_application=EXTERNAL_FORCE_ARRAY[6:, :],

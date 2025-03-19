@@ -365,7 +365,7 @@ def _get_weighted_function_inputs(penalty, penalty_idx, ocp, nlp, scaled):
 
     weight = PenaltyHelpers.weight(penalty)
     target = PenaltyHelpers.target(penalty, penalty_idx)
-    subnodes_are_decision_states = penalty.subnodes_are_decision_states[0]
+    subnodes_are_decision_states = penalty.subnodes_are_decision_states[0] and not penalty.is_transition
 
     if nlp:
         x = PenaltyHelpers.states(
@@ -417,7 +417,7 @@ def _get_x(ocp, phase_idx, node_idx, subnodes_idx, scaled, subnodes_are_decision
         if subnodes_are_decision_states:
             x = values[node_idx][:, subnodes_idx] if node_idx < len(values) else ocp.cx()
         else:
-            x = values[node_idx] if node_idx < len(values) else ocp.cx()
+            x = values[node_idx][:, 0] if node_idx < len(values) else ocp.cx()
     return x
 
 
@@ -435,7 +435,7 @@ def _get_u(ocp, phase_idx, node_idx, subnodes_idx, scaled, subnodes_are_decision
         if subnodes_are_decision_states:
             u = values[node_idx][:, subnodes_idx] if node_idx < len(values) else ocp.cx()
         else:
-            u = values[node_idx] if node_idx < len(values) else ocp.cx()
+            u = values[node_idx][:, 0] if node_idx < len(values) else ocp.cx()
     return u
 
 
@@ -457,7 +457,7 @@ def _get_a(ocp, phase_idx, node_idx, subnodes_idx, scaled, subnodes_are_decision
         if subnodes_are_decision_states:
             a = values[node_idx][:, subnodes_idx] if node_idx < len(values) else ocp.cx()
         else:
-            a = values[node_idx] if node_idx < len(values) else ocp.cx()
+            a = values[node_idx][:, 0] if node_idx < len(values) else ocp.cx()
     return a
 
 

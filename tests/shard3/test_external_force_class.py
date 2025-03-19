@@ -36,7 +36,7 @@ def test_initialization(external_forces):
 def test_add_global_force(external_forces, force_array):
     """Test adding global forces to a segment."""
     segment_name = "segment1"
-    external_forces.add("contact0", segment_name, force_array)
+    external_forces.add("w", segment_name, force_array)
 
     assert len(external_forces.in_global[segment_name]) == 1
     assert np.array_equal(external_forces.in_global[segment_name][0]["values"], force_array)
@@ -48,7 +48,7 @@ def test_add_global_force_invalid_shape(external_forces):
     invalid_array = np.random.rand(5, 10)  # Wrong number of rows
 
     with pytest.raises(ValueError, match="External forces must have 6 rows"):
-        external_forces.add("contact0", segment_name, invalid_array)
+        external_forces.add("x", segment_name, invalid_array)
 
 
 def test_add_global_force_wrong_frame_count(external_forces):
@@ -57,13 +57,13 @@ def test_add_global_force_wrong_frame_count(external_forces):
     wrong_frame_array = np.random.rand(6, 5)  # Wrong number of frames
 
     with pytest.raises(ValueError, match="External forces must have the same number of columns"):
-        external_forces.add("contact0", segment_name, wrong_frame_array)
+        external_forces.add("y", segment_name, wrong_frame_array)
 
 
 def test_add_torque(external_forces, torque_array):
     """Test adding global torques to a segment."""
     segment_name = "segment1"
-    external_forces.add_torque("contact0", segment_name, torque_array)
+    external_forces.add_torque("z", segment_name, torque_array)
 
     assert len(external_forces.torque_in_global[segment_name]) == 1
     assert np.array_equal(external_forces.torque_in_global[segment_name][0]["values"], torque_array)
@@ -75,14 +75,14 @@ def test_add_torque_invalid_shape(external_forces):
     invalid_array = np.random.rand(4, 10)  # Wrong number of rows
 
     with pytest.raises(ValueError, match="External torques must have 3 rows"):
-        external_forces.add_torque("contact0", segment_name, invalid_array)
+        external_forces.add_torque("aa", segment_name, invalid_array)
 
 
 def test_point_of_application(external_forces, force_array):
     """Test adding forces with custom point of application."""
     segment_name = "segment1"
     point_of_application = np.random.rand(3, 10)
-    external_forces.add("contact0", segment_name, force_array, point_of_application)
+    external_forces.add("bb", segment_name, force_array, point_of_application)
 
     added_force = external_forces.in_global[segment_name][0]
     assert np.array_equal(added_force["point_of_application"], point_of_application)
@@ -91,11 +91,11 @@ def test_point_of_application(external_forces, force_array):
 def test_bind_prevents_modification(external_forces, force_array):
     """Test that binding prevents further modifications."""
     segment_name = "segment1"
-    external_forces.add("contact0", segment_name, force_array)
+    external_forces.add("cc", segment_name, force_array)
     external_forces.bind()
 
     with pytest.raises(RuntimeError, match="External forces have been binded"):
-        external_forces.add("contact0", segment_name, force_array)
+        external_forces.add("dd", segment_name, force_array)
 
 
 def test_external_forces_components_calculation(external_forces):
@@ -103,9 +103,9 @@ def test_external_forces_components_calculation(external_forces):
     segment1, segment2 = "segment1", "segment2"
 
     # Add various types of forces
-    external_forces.add("contact0", segment1, np.random.rand(6, 10))
-    external_forces.add_torque("contact0", segment2, np.random.rand(3, 10))
-    external_forces.add_translational_force("contact0", segment1, np.random.rand(3, 10))
+    external_forces.add("ee", segment1, np.random.rand(6, 10))
+    external_forces.add_torque("ff", segment2, np.random.rand(3, 10))
+    external_forces.add_translational_force("gg", segment1, np.random.rand(3, 10))
 
     # The actual calculation depends on implementation details
     assert external_forces.nb_external_forces_components == 9 + 3 + 6
@@ -115,7 +115,7 @@ def test_external_forces_components_calculation(external_forces):
 def test_to_numerical_time_series(external_forces, force_array):
     """Test conversion to numerical time series."""
     segment_name = "segment1"
-    external_forces.add("contact0", segment_name, force_array)
+    external_forces.add("hh", segment_name, force_array)
 
     numerical_series = external_forces.to_numerical_time_series()
 
@@ -127,11 +127,11 @@ def test_multiple_force_types(external_forces):
     """Test adding multiple types of forces to the same segment."""
     segment_name = "segment1"
 
-    external_forces.add("contact0", segment_name, np.random.rand(6, 10))
-    external_forces.add_torque("contact0", segment_name, np.random.rand(3, 10))
-    external_forces.add_translational_force("contact0", segment_name, np.random.rand(3, 10))
-    external_forces.add_in_segment_frame("contact0", segment_name, np.random.rand(6, 10))
-    external_forces.add_torque_in_segment_frame("contact0", segment_name, np.random.rand(3, 10))
+    external_forces.add("ii", segment_name, np.random.rand(6, 10))
+    external_forces.add_torque("jj", segment_name, np.random.rand(3, 10))
+    external_forces.add_translational_force("kk", segment_name, np.random.rand(3, 10))
+    external_forces.add_in_segment_frame("ll", segment_name, np.random.rand(6, 10))
+    external_forces.add_torque_in_segment_frame("mm", segment_name, np.random.rand(3, 10))
 
     assert external_forces.nb_external_forces == 5
 
@@ -147,8 +147,8 @@ def test_fail_within_biomod(external_forces):
     torque_array = np.random.rand(3, 10)
     point_of_application = np.random.rand(3, 10)
 
-    external_forces.add("contact0", invalid_segment_name, force_array, point_of_application)
-    external_forces.add_torque("contact0", invalid_segment_name, torque_array)
+    external_forces.add("nn", invalid_segment_name, force_array, point_of_application)
+    external_forces.add_torque("oo", invalid_segment_name, torque_array)
 
     # Define a model with valid segment names
     valid_segment_names = ("Seg1", "ground", "Test")
@@ -178,8 +178,8 @@ def test_success_within_biomod(external_forces):
     torque_array = np.random.rand(3, 10)
     point_of_application = np.random.rand(3, 10)
 
-    external_forces.add("contact0", "Seg1", force_array, point_of_application)
-    external_forces.add_torque("contact0", "Test", torque_array)
+    external_forces.add("pp", "Seg1", force_array, point_of_application)
+    external_forces.add_torque("qq", "Test", torque_array)
 
     model = BiorbdModel(
         f"{bioptim_folder}/models/cube_with_forces.bioMod",
@@ -190,4 +190,4 @@ def test_success_within_biomod(external_forces):
     assert model.biorbd_external_forces_set is not None
 
     with pytest.raises(RuntimeError, match="External forces have been binded and cannot be modified anymore."):
-        external_forces.add("contact0", "Seg1", force_array, point_of_application)
+        external_forces.add("rr", "Seg1", force_array, point_of_application)
