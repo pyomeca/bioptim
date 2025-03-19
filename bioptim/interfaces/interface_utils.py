@@ -365,19 +365,20 @@ def _get_weighted_function_inputs(penalty, penalty_idx, ocp, nlp, scaled):
 
     weight = PenaltyHelpers.weight(penalty)
     target = PenaltyHelpers.target(penalty, penalty_idx)
+    subnodes_are_decision_states = penalty.subnodes_are_decision_states[0]
 
     if nlp:
         x = PenaltyHelpers.states(
-            penalty, penalty_idx, lambda p_idx, n_idx, sn_idx: _get_x(ocp, p_idx, n_idx, sn_idx, scaled)
+            penalty, penalty_idx, lambda p_idx, n_idx, sn_idx: _get_x(ocp, p_idx, n_idx, sn_idx, scaled, subnodes_are_decision_states)
         )
         u = PenaltyHelpers.controls(
-            penalty, penalty_idx, lambda p_idx, n_idx, sn_idx: _get_u(ocp, p_idx, n_idx, sn_idx, scaled)
+            penalty, penalty_idx, lambda p_idx, n_idx, sn_idx: _get_u(ocp, p_idx, n_idx, sn_idx, scaled, subnodes_are_decision_states)
         )
         p = PenaltyHelpers.parameters(
             penalty, penalty_idx, lambda p_idx, n_idx, sn_idx: _get_p(ocp, p_idx, n_idx, sn_idx, scaled)
         )
         a = PenaltyHelpers.states(
-            penalty, penalty_idx, lambda p_idx, n_idx, sn_idx: _get_a(ocp, p_idx, n_idx, sn_idx, scaled)
+            penalty, penalty_idx, lambda p_idx, n_idx, sn_idx: _get_a(ocp, p_idx, n_idx, sn_idx, scaled, subnodes_are_decision_states)
         )
         d = PenaltyHelpers.numerical_timeseries(
             penalty,
@@ -396,7 +397,7 @@ def _get_weighted_function_inputs(penalty, penalty_idx, ocp, nlp, scaled):
     return t0, x, u, p, a, d, weight, target
 
 
-def _get_x(ocp, phase_idx, node_idx, subnodes_idx, scaled):
+def _get_x(ocp, phase_idx, node_idx, subnodes_idx, scaled, subnodes_are_decision_states):
     values = ocp.nlp[phase_idx].X_scaled if scaled else ocp.nlp[phase_idx].X
     if subnodes_idx.stop == -1:
         if subnodes_idx.start == 0:
@@ -407,11 +408,14 @@ def _get_x(ocp, phase_idx, node_idx, subnodes_idx, scaled):
         else:
             raise RuntimeError("only subnodes_idx.start == 0 is supported for subnodes_idx.stop == -1")
     else:
-        x = values[node_idx][:, subnodes_idx] if node_idx < len(values) else ocp.cx()
+        if subnodes_are_decision_states:
+            x = values[node_idx][:, subnodes_idx] if node_idx < len(values) else ocp.cx()
+        else:
+            x = values[node_idx] if node_idx < len(values) else ocp.cx()
     return x
 
 
-def _get_u(ocp, phase_idx, node_idx, subnodes_idx, scaled):
+def _get_u(ocp, phase_idx, node_idx, subnodes_idx, scaled, subnodes_are_decision_states):
     values = ocp.nlp[phase_idx].U_scaled if scaled else ocp.nlp[phase_idx].U
     if subnodes_idx.stop == -1:
         if subnodes_idx.start == 0:
@@ -422,7 +426,10 @@ def _get_u(ocp, phase_idx, node_idx, subnodes_idx, scaled):
         else:
             raise RuntimeError("only subnodes_idx.start == 0 is supported for subnodes_idx.stop == -1")
     else:
-        u = values[node_idx][:, subnodes_idx] if node_idx < len(values) else ocp.cx()
+        if subnodes_are_decision_states:
+            u = values[node_idx][:, subnodes_idx] if node_idx < len(values) else ocp.cx()
+        else:
+            u = values[node_idx] if node_idx < len(values) else ocp.cx()
     return u
 
 
@@ -430,7 +437,7 @@ def _get_p(ocp, phase_idx, node_idx, subnodes_idx, scaled):
     return ocp.parameters.scaled.cx if scaled else ocp.parameters.scaled
 
 
-def _get_a(ocp, phase_idx, node_idx, subnodes_idx, scaled):
+def _get_a(ocp, phase_idx, node_idx, subnodes_idx, scaled, subnodes_are_decision_states):
     values = ocp.nlp[phase_idx].A_scaled if scaled else ocp.nlp[phase_idx].A
     if subnodes_idx.stop == -1:
         if subnodes_idx.start == 0:
@@ -441,7 +448,10 @@ def _get_a(ocp, phase_idx, node_idx, subnodes_idx, scaled):
         else:
             raise RuntimeError("only subnodes_idx.start == 0 is supported for subnodes_idx.stop == -1")
     else:
-        a = values[node_idx][:, subnodes_idx] if node_idx < len(values) else ocp.cx()
+        if subnodes_are_decision_states:
+            a = values[node_idx][:, subnodes_idx] if node_idx < len(values) else ocp.cx()
+        else:
+            a = values[node_idx] if node_idx < len(values) else ocp.cx()
     return a
 
 

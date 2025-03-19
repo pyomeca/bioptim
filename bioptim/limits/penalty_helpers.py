@@ -100,9 +100,15 @@ class PenaltyHelpers:
         if penalty.multinode_penalty:
             u = []
             phases, nodes, subnodes = _get_multinode_indices(penalty, is_constructing_penalty)
+            idx = 0
             for phase, node, sub in zip(phases, nodes, subnodes):
-                # No need to test for control types as this is never integrated (so we only need the starting value)
-                u.append(_reshape_to_vector(get_control_decision(phase, node, sub)))
+                if not is_constructing_penalty and node == penalty.ns[idx] and (
+                        penalty.control_types[idx] != ControlType.LINEAR_CONTINUOUS and penalty.control_types[
+                    idx] != ControlType.CONSTANT_WITH_LAST_NODE):
+                    u.append(_reshape_to_vector(get_control_decision(phase, node, range(0, 1))))
+                else:
+                    u.append(_reshape_to_vector(get_control_decision(phase, node, sub)))
+                idx += 1
             return _vertcat(u)
 
         if is_constructing_penalty:
@@ -234,9 +240,14 @@ def _get_multinode_indices(penalty, is_constructing_penalty: bool):
     startings = PenaltyHelpers.get_multinode_penalty_subnodes_starting_index(penalty)
     subnodes = []
     for i_starting, starting in enumerate(startings):
-        if starting < 0 or starting == 2:  # The last cx accessible
+        if starting < 0:  # The last cx accessible (cx_end)
             if is_constructing_penalty:
                 subnodes.append(slice(-1, None))
+            else:
+                subnodes.append(slice(0, 1))
+        elif starting == 2:  # Also the last cx accessible (cx_end) since there are only 3 cx available
+            if is_constructing_penalty:
+                subnodes.append(slice(2, 3))
             else:
                 subnodes.append(slice(0, 1))
         elif penalty.subnodes_are_decision_states[0]:
@@ -247,6 +258,25 @@ def _get_multinode_indices(penalty, is_constructing_penalty: bool):
         else:
             subnodes.append(slice(starting, starting + 1))
 
+    # for i_starting, starting in enumerate(startings):
+    #     if penalty.subnodes_are_decision_states[0]:
+    #         if starting < 0:  # The last cx accessible
+    #             if is_constructing_penalty:
+    #                 subnodes.append(slice(-1, None))
+    #             else:
+    #                 subnodes.append(slice(0, 1))
+    #         elif nodes[i_starting] >= penalty.ns[i_starting]:
+    #             subnodes.append(slice(0, 1))
+    #         else:
+    #             subnodes.append(slice(0, -1))
+    #     else:
+    #         if starting < 0 or starting == 2:  # The last cx accessible
+    #             if is_constructing_penalty:
+    #                 subnodes.append(slice(-1, None))
+    #             else:
+    #                 subnodes.append(slice(0, 1))
+    #         else:
+    #             subnodes.append(slice(starting, starting + 1))
     return phases, nodes, subnodes
 
 
