@@ -139,7 +139,7 @@ def test_configure_soft_contacts(cx):
     )
 
     ConfigureProblem.configure_soft_contact_forces(ocp, nlp, as_states=True, as_controls=False)
-    npt.assert_equal(nlp.states.shape, 3)
+    npt.assert_equal(nlp.states.shape, 6)
     npt.assert_equal(nlp.states.keys(), ["soft_contact_forces"])
 
 
