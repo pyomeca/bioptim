@@ -369,16 +369,22 @@ def _get_weighted_function_inputs(penalty, penalty_idx, ocp, nlp, scaled):
 
     if nlp:
         x = PenaltyHelpers.states(
-            penalty, penalty_idx, lambda p_idx, n_idx, sn_idx: _get_x(ocp, p_idx, n_idx, sn_idx, scaled, subnodes_are_decision_states)
+            penalty,
+            penalty_idx,
+            lambda p_idx, n_idx, sn_idx: _get_x(ocp, p_idx, n_idx, sn_idx, scaled, subnodes_are_decision_states),
         )
         u = PenaltyHelpers.controls(
-            penalty, penalty_idx, lambda p_idx, n_idx, sn_idx: _get_u(ocp, p_idx, n_idx, sn_idx, scaled, subnodes_are_decision_states)
+            penalty,
+            penalty_idx,
+            lambda p_idx, n_idx, sn_idx: _get_u(ocp, p_idx, n_idx, sn_idx, scaled, subnodes_are_decision_states),
         )
         p = PenaltyHelpers.parameters(
             penalty, penalty_idx, lambda p_idx, n_idx, sn_idx: _get_p(ocp, p_idx, n_idx, sn_idx, scaled)
         )
         a = PenaltyHelpers.states(
-            penalty, penalty_idx, lambda p_idx, n_idx, sn_idx: _get_a(ocp, p_idx, n_idx, sn_idx, scaled, subnodes_are_decision_states)
+            penalty,
+            penalty_idx,
+            lambda p_idx, n_idx, sn_idx: _get_a(ocp, p_idx, n_idx, sn_idx, scaled, subnodes_are_decision_states),
         )
         d = PenaltyHelpers.numerical_timeseries(
             penalty,

@@ -73,7 +73,14 @@ class PenaltyHelpers:
             phases, nodes, subnodes = _get_multinode_indices(penalty, is_constructing_penalty)
             idx = 0
             for phase, node, sub in zip(phases, nodes, subnodes):
-                if not is_constructing_penalty and node == penalty.ns[idx] and (penalty.control_types[idx] != ControlType.LINEAR_CONTINUOUS and penalty.control_types[idx] != ControlType.CONSTANT_WITH_LAST_NODE):
+                if (
+                    not is_constructing_penalty
+                    and node == penalty.ns[idx]
+                    and (
+                        penalty.control_types[idx] != ControlType.LINEAR_CONTINUOUS
+                        and penalty.control_types[idx] != ControlType.CONSTANT_WITH_LAST_NODE
+                    )
+                ):
                     x.append(_reshape_to_vector(get_state_decision(phase, node, range(0, 1))))
                 else:
                     x.append(_reshape_to_vector(get_state_decision(phase, node, sub)))
@@ -102,9 +109,14 @@ class PenaltyHelpers:
             phases, nodes, subnodes = _get_multinode_indices(penalty, is_constructing_penalty)
             idx = 0
             for phase, node, sub in zip(phases, nodes, subnodes):
-                if not is_constructing_penalty and node == penalty.ns[idx] and (
-                        penalty.control_types[idx] != ControlType.LINEAR_CONTINUOUS and penalty.control_types[
-                    idx] != ControlType.CONSTANT_WITH_LAST_NODE):
+                if (
+                    not is_constructing_penalty
+                    and node == penalty.ns[idx]
+                    and (
+                        penalty.control_types[idx] != ControlType.LINEAR_CONTINUOUS
+                        and penalty.control_types[idx] != ControlType.CONSTANT_WITH_LAST_NODE
+                    )
+                ):
                     u.append(_reshape_to_vector(get_control_decision(phase, node, range(0, 1))))
                 else:
                     u.append(_reshape_to_vector(get_control_decision(phase, node, sub)))

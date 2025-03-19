@@ -335,8 +335,8 @@ def test_track_and_minimize_marker_velocity_linear_controls(ode_solver, phase_dy
     npt.assert_almost_equal(qdot[2:, -1], np.array([10, 0]))
     # initial and final controls
     if isinstance(ode_solver, OdeSolver.IRK):
-        npt.assert_almost_equal(tau[2:, 0], np.array([-1.00000001e+02, 0]), decimal=5)
-        npt.assert_almost_equal(tau[2:, -1], np.array([1.00000001e+02, 0]), decimal=5)
+        npt.assert_almost_equal(tau[2:, 0], np.array([-1.00000001e02, 0]), decimal=5)
+        npt.assert_almost_equal(tau[2:, -1], np.array([1.00000001e02, 0]), decimal=5)
     else:
         npt.assert_almost_equal(tau[2:, 0], np.array([-8.495542, 0]), decimal=5)
         npt.assert_almost_equal(tau[2:, -1], np.array([8.495541, 0]), decimal=5)
