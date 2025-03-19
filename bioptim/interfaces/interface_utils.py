@@ -442,7 +442,7 @@ def _get_u(ocp, phase_idx, node_idx, subnodes_idx, scaled, penalty):
     return u
 
 
-def _get_p(ocp, phase_idx, node_idx, subnodes_idx, scaled, penalty):
+def _get_p(ocp, phase_idx, node_idx, subnodes_idx, scaled):
     return ocp.parameters.scaled.cx if scaled else ocp.parameters.scaled
 
 
