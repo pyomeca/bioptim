@@ -378,7 +378,7 @@ def _get_weighted_function_inputs(penalty, penalty_idx, ocp, nlp, scaled):
             lambda p_idx, n_idx, sn_idx: _get_u(ocp, p_idx, n_idx, sn_idx, scaled, penalty),
         )
         p = PenaltyHelpers.parameters(
-            penalty, penalty_idx, lambda p_idx, n_idx, sn_idx: _get_p(ocp, p_idx, n_idx, sn_idx, scaled, penalty)
+            penalty, penalty_idx, lambda p_idx, n_idx, sn_idx: _get_p(ocp, p_idx, n_idx, sn_idx, scaled)
         )
         a = PenaltyHelpers.states(
             penalty,
