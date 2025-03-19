@@ -104,9 +104,7 @@ def prepare_test_ocp(
         if not with_contact:
             raise NotImplementedError("with_external_forces=True is only tested for with_contact=True")
         external_forces = ExternalForceSetTimeSeries(nb_frames=N_SHOOTING)
-        external_forces.add(
-            "ss", "Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :]
-        )
+        external_forces.add("ss", "Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :])
         numerical_time_series = {"external_forces": external_forces.to_numerical_time_series()}
 
     if with_muscles and with_contact or with_muscles and with_actuator or with_contact and with_actuator:

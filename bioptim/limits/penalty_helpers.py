@@ -88,7 +88,14 @@ class PenaltyHelpers:
             return _vertcat(x)
 
         else:
-            subnodes = slice(0, None if node < penalty.ns[0] and penalty.subnodes_are_decision_states[0] and not penalty.is_transition else 1)
+            subnodes = slice(
+                0,
+                (
+                    None
+                    if node < penalty.ns[0] and penalty.subnodes_are_decision_states[0] and not penalty.is_transition
+                    else 1
+                ),
+            )
             x0 = _reshape_to_vector(get_state_decision(penalty.phase, node, subnodes))
 
             if is_constructing_penalty:
