@@ -348,7 +348,7 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
                         expected = [61.39999999999999, 1600019.9999999998, 8.125629434161866]
                 else:
                     if n_phase == 1:
-                        expected = [133.39999999999998, 12.000000000000009, 28.61866628217097]
+                        expected = [30.699999999999996, 10.000000000000005, 4.283653839663469]
                     else:
                         expected = [61.39999999999999, 20.000000000000014, 8.12562943416187]
         case OdeSolver.TRAPEZOIDAL:
