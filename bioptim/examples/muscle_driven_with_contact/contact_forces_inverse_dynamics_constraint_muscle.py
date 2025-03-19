@@ -48,7 +48,12 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, numerica
 
     # Implicit variables
     ConfigureProblem.configure_rigid_contact_forces(
-        ocp, nlp, as_states=False, as_algebraic_states=True, as_controls=False
+        ocp,
+        nlp,
+        as_states=False,
+        as_algebraic_states=True,
+        as_controls=False,
+        as_states_dot=False,
     )
 
     # Dynamics
@@ -72,7 +77,6 @@ def custom_dynamics(
     qdot = nlp.get_var_from_states_or_controls("qdot", states, controls)
     residual_tau = nlp.get_var_from_states_or_controls("tau", states, controls)
     mus_activations = nlp.get_var_from_states_or_controls("muscles", states, controls)
-    rigid_contact_forces_derivatives = nlp.get_var_from_states_or_controls()
 
     # Get external forces from the states
     rigid_contact_forces = nlp.get_external_forces(
@@ -158,7 +162,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
         node=Node.ALL_SHOOTING,
     )
     multinode_constraints = MultinodeConstraintList()
-    for i_node in range(n_shooting):
+    for i_node in range(n_shooting - 1):
         multinode_constraints.add(
             MultinodeConstraintFcn.ALGEBRAIC_STATES_CONTINUITY,
             nodes_phase=(0, 0),

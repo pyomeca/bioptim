@@ -5,11 +5,6 @@ from casadi import MX, vertcat
 class ExternalForceSet:
 
     @property
-    def nb_external_forces(self) -> int:
-        attributes = ["in_global", "torque_in_global", "translational_in_global", "in_local", "torque_in_local"]
-        return sum([len(values) for attr in attributes for values in getattr(self, attr).values()])
-
-    @property
     def nb_external_forces_components(self) -> int:
         """Return the number of vertical components of the external forces if concatenated in a unique vector"""
         attributes_no_point_of_application = ["torque_in_global", "torque_in_local"]
@@ -38,7 +33,7 @@ class ExternalForceSet:
         for attr in attributes:
             for force_name , force in getattr(self, attr).items():
                 if force["segment"] not in segment_names:
-                    wrong_segments.append(force[0]["segment"])
+                    wrong_segments.append(force["segment"])
 
         if wrong_segments:
             raise ValueError(
