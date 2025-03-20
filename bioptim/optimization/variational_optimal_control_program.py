@@ -67,12 +67,6 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                     " define it."
                 )
 
-        if "ode_solver" in kwargs:
-            raise ValueError(
-                "ode_solver cannot be defined in VariationalOptimalControlProgram since the integration is"
-                " done by the variational integrator."
-            )
-
         if "x_init" in kwargs or "x_bounds" in kwargs:
             raise ValueError(
                 "In VariationalOptimalControlProgram q_init and q_bounds must be used instead of x_init and x_bounds "
@@ -89,6 +83,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             self.configure_torque_driven,
             expand_dynamics=expand,
             skip_continuity=True,
+            ode_solver=None,
         )
 
         if qdot_bounds is None or not isinstance(qdot_bounds, BoundsList):
