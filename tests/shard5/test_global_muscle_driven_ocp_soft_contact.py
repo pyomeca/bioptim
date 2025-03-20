@@ -60,13 +60,13 @@ def test_muscle_driven_ocp():
     npt.assert_almost_equal(tau_residual[:, -1], np.array([0., 0., 0., 0.]))
     npt.assert_almost_equal(mus[:, 0], np.array([4.22584556e-06]))
     npt.assert_almost_equal(mus[:, -1], np.array([0.0]))
-    # initial and final algebraic states
-    npt.assert_almost_equal(contact_forces[:, 0], np.array([0.      ,   0.      ,   0.      ,   0.      ,   0.      ,
-       100.000001,   0.      ,   0.      ,   0.      ,   0.      ,
-         0.      , 100.000001]))
-    npt.assert_almost_equal(contact_forces[:, -1], np.array([ 0.      ,   0.      ,   0.      ,   0.      ,   0.      ,
-       100.000001,   0.      ,   0.      ,   0.      ,   0.      ,
-         0.      , 100.000001]))
+    # algebraic states (not the first and last since they are free)
+    npt.assert_almost_equal(contact_forces[:, 1], np.array([0.      ,   0.      ,   0.      ,   0.      ,   0.      ,
+       0.,   0.      ,   0.      ,   0.      ,   0.      ,
+         0.      , 0.]))
+    npt.assert_almost_equal(contact_forces[:, -2], np.array([23.8539612,  0.       ,  0.       ,  0.       , 19.894077 ,
+       25.889183 , 11.1186312,  0.       ,  0.       ,  0.       ,
+        6.737669 ,  8.7657347]))
 
     # simulate
     TestUtils.simulate(sol, decimal_value=5)

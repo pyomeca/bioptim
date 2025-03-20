@@ -217,6 +217,15 @@ def main():
         algebraic_states["soft_contact_forces"],
     )
 
+    # --- Reintegrate solution --- #
+    # TODO: Charbie -> This is not working yet
+    sol.integrate(
+        shooting_type=Shooting.SINGLE,
+        integrator=SolutionIntegrator.SCIPY_DOP853,
+        to_merge=SolutionMerge.NODES,
+        return_time=True,
+    )
+
     # --- Get contact position --- #
     contact_positions = np.zeros((2, 3, time.shape[0]))
     for i_node in range(time.shape[0]):
@@ -271,15 +280,6 @@ def main():
     axs[1].set_title("Contact forces [N]")
     plt.savefig("test.png")
     plt.show()
-
-    # --- Reintegrate solution --- #
-    # TODO: Charbie -> This is not working yet
-    sol.integrate(
-        shooting_type=Shooting.SINGLE,
-        integrator=SolutionIntegrator.SCIPY_DOP853,
-        to_merge=SolutionMerge.NODES,
-        return_time=True,
-    )
 
     # --- Show results --- #
     viewer = "pyorerun"
