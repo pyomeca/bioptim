@@ -146,7 +146,7 @@ class DynamicsFunctions:
         external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
 
         dxdt, defects = None, None
-        if not isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):  # not COLLOCATION or IRK
+        if not isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):  # not COLLOCATION or IRK
             ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
             dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
             dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
@@ -160,7 +160,7 @@ class DynamicsFunctions:
             # TODO: Charbie -> change the defect type
             slope_q = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
-            if nlp.ode_solver.defects_type == DefectType.IMPLICIT:
+            if nlp.dynamics_type.ode_solver.defects_type == DefectType.IMPLICIT:
                 if not with_contact and fatigue is None:
                     tau_id = DynamicsFunctions.inverse_dynamics(
                         nlp, q, slope_q, slope_qdot, with_contact, external_forces
@@ -261,7 +261,7 @@ class DynamicsFunctions:
         tau_full = vertcat(nlp.cx.zeros(nlp.model.nb_root), tau_joints)
 
         dxdt, defects = None, None
-        if not isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
+        if not isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
             ddq = DynamicsFunctions.forward_dynamics(
                 nlp, q_full, qdot_full, tau_full, with_contact=False, external_forces=None
             )
@@ -271,7 +271,7 @@ class DynamicsFunctions:
         else:
             slope_q = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
-            if nlp.ode_solver.defects_type == DefectType.IMPLICIT:  # TODO
+            if nlp.dynamics_type.ode_solver.defects_type == DefectType.IMPLICIT:  # TODO
                 raise NotImplementedError("Implicit dynamics with free floating base is not implemented yet")
             else:
                 ddq = DynamicsFunctions.forward_dynamics(
@@ -349,7 +349,7 @@ class DynamicsFunctions:
         tau = tau - nlp.model.friction_coefficients @ qdot if with_friction else tau
 
         dxdt, defects = None, None
-        if not isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
+        if not isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
             dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
             ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces=None)
             dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
@@ -358,7 +358,7 @@ class DynamicsFunctions:
         else:
             slope_q = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
-            if nlp.ode_solver.defects_type == DefectType.IMPLICIT:
+            if nlp.dynamics_type.ode_solver.defects_type == DefectType.IMPLICIT:
                 raise NotImplementedError(
                     "Implicit dynamics with stochastic torque driven dynamics is not implemented yet"
                 )
@@ -438,7 +438,7 @@ class DynamicsFunctions:
         tau_full = vertcat(nlp.cx.zeros(nlp.model.nb_root), tau_joints)
 
         dxdt, defects = None, None
-        if not isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
+        if not isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
             dq = DynamicsFunctions.compute_qdot(nlp, q_full, qdot_full)
             ddq = DynamicsFunctions.forward_dynamics(
                 nlp, q_full, qdot_full, tau_full, with_contact=False, external_forces=None
@@ -449,7 +449,7 @@ class DynamicsFunctions:
         else:
             slope_q = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
-            if nlp.ode_solver.defects_type == DefectType.IMPLICIT:
+            if nlp.dynamics_type.ode_solver.defects_type == DefectType.IMPLICIT:
                 raise NotImplementedError(
                     "Implicit dynamics with stochastic torque driven dynamics is not implemented yet"
                 )
@@ -583,7 +583,7 @@ class DynamicsFunctions:
         external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
 
         dxdt, defects = None, None
-        if not isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
+        if not isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
             dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
             ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
             dq = horzcat(*[dq for _ in range(ddq.shape[1])])
@@ -591,7 +591,7 @@ class DynamicsFunctions:
         else:
             slope_q = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
-            if nlp.ode_solver.defects_type == DefectType.IMPLICIT:
+            if nlp.dynamics_type.ode_solver.defects_type == DefectType.IMPLICIT:
                 raise NotImplementedError(
                     "Implicit dynamics with torque activations driven dynamics is not implemented yet"
                 )
@@ -666,7 +666,7 @@ class DynamicsFunctions:
         external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
 
         dxdt, defects = None, None
-        if not isinstance(nlp.dynamics.ode_solver, OdeSolver.COLLOCATION):
+        if not isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
             ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
             dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
             dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
@@ -675,7 +675,7 @@ class DynamicsFunctions:
         else:
             slope_q = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
-            if nlp.ode_solver.defects_type == DefectType.IMPLICIT:
+            if nlp.dynamics_type.ode_solver.defects_type == DefectType.IMPLICIT:
                 raise NotImplementedError(
                     "Implicit dynamics with torque derivative driven dynamics is not implemented yet"
                 )
@@ -896,7 +896,7 @@ class DynamicsFunctions:
         external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
 
         dxdt, defects = None, None
-        if not isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
+        if not isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
             ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
             dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
             dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
@@ -914,7 +914,7 @@ class DynamicsFunctions:
             slope_q = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
             slopes = vertcat(slope_q, slope_qdot)
-            if nlp.ode_solver.defects_type == DefectType.IMPLICIT:
+            if nlp.dynamics_type.ode_solver == DefectType.IMPLICIT:
                 raise NotImplementedError("Implicit dynamics with muscles driven dynamics is not implemented yet")
             else:
                 ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
@@ -931,6 +931,10 @@ class DynamicsFunctions:
                     slopes = vertcat(slopes, slope_mus)
                 if fatigue is not None and "muscles" in fatigue:
                     derivative = fatigue["muscles"].dynamics(derivative, nlp, states, controls)
+                    slope_ma = DynamicsFunctions.get(nlp.states_dot["muscles_ma"], nlp.states_dot.scaled.cx)
+                    slope_mr = DynamicsFunctions.get(nlp.states_dot["muscles_mr"], nlp.states_dot.scaled.cx)
+                    slope_mf = DynamicsFunctions.get(nlp.states_dot["muscles_mf"], nlp.states_dot.scaled.cx)
+                    slopes = vertcat(slopes, slope_ma, slope_mr, slope_mf)
                 defects = slopes * nlp.dt - derivative * nlp.dt
 
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
@@ -1030,7 +1034,7 @@ class DynamicsFunctions:
         qddot_joints = nlp.get_var_from_states_or_controls("qddot", states, controls)
 
         dxdt, defects = None, None
-        if not isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
+        if not isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
             qddot_root = nlp.model.forward_dynamics_free_floating_base()(q, qdot, qddot_joints, nlp.parameters.cx)
             qddot_reordered = nlp.model.reorder_qddot_root_joints(qddot_root, qddot_joints)
 
@@ -1041,7 +1045,7 @@ class DynamicsFunctions:
         else:
             slope_q = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
-            if nlp.ode_solver.defects_type == DefectType.IMPLICIT:
+            if nlp.dynamics_type.ode_solver.defects_type == DefectType.IMPLICIT:
                 raise NotImplementedError(
                     "Implicit dynamics with joints acceleration driven dynamics is not implemented yet"
                 )
@@ -1296,13 +1300,13 @@ class DynamicsFunctions:
         q_v_init = DM.zeros(nlp.model.nb_dependent_joints)
 
         dxdt, defects = None, None
-        if not isinstance(nlp.dynamics.ode_solver, OdeSolver.COLLOCATION):
+        if not isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
             qddot_u = nlp.model.partitioned_forward_dynamics()(q_u, qdot_u, q_v_init, tau)
             dxdt = vertcat(qdot_u, qddot_u)
         else:
             slope_q = DynamicsFunctions.get(nlp.states_dot["qdot_u"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot_u"], nlp.states_dot.scaled.cx)
-            if nlp.ode_solver.defects_type == DefectType.IMPLICIT:
+            if nlp.dynamics_type.ode_solvernlp.dynamics_type.ode_solver.defects_type == DefectType.IMPLICIT:
                 raise NotImplementedError(
                     "Implicit dynamics with holonomic torque driven dynamics is not implemented yet"
                 )

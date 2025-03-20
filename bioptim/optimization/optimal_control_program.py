@@ -514,11 +514,11 @@ class OptimalControlProgram:
         if not isinstance(dynamics, DynamicsList):
             raise ValueError("dynamics must be of type DynamicsList or Dynamics")
 
-        for dyn in dynamics:
+        for i_dyn, dyn in enumerate(dynamics):
             if dyn.ode_solver is None:
-                dyn.ode_solver = self._set_default_ode_solver()
+                dynamics[i_dyn].ode_solver = self._set_default_ode_solver()
 
-            is_ode_solver = isinstance(dyn.ode_solver, OdeSolverBase)
+            is_ode_solver = isinstance(dynamics[i_dyn].ode_solver, OdeSolverBase)
             if not is_ode_solver:
                 raise RuntimeError("ode_solver should be built an instance of OdeSolver")
 
