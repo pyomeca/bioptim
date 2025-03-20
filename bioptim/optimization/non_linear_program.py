@@ -43,6 +43,8 @@ class NonLinearProgram:
         The extra dynamic function used during the current phase dxdt = f(x,u,p)
     implicit_dynamics_func: Callable
         The implicit dynamic function used during the current phase f(x,u,p,xdot) = 0
+    extra_implicit_dynamics_func: Callable
+        The extra implicit dynamic function used during the current phase f(x,u,p,xdot) = 0
     dynamics_type: Dynamics
         The dynamic option declared by the user for the current phase
     g: list[list[Constraint]]
@@ -133,10 +135,12 @@ class NonLinearProgram:
         self.dt = None
         self.dynamics = []
         self.extra_dynamics = []
+        self.extra_implicit_dynamics = []
         self.dynamics_evaluation = DynamicsEvaluation()
         self.dynamics_func = None
         self.extra_dynamics_func: list = []
         self.implicit_dynamics_func = None
+        self.extra_implicit_dynamics_func: list = []
         self.dynamics_type = None
         self.g = []
         self.g_internal = []

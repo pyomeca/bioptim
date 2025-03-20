@@ -1143,7 +1143,36 @@ class ConfigureProblem:
                             f"{me}"
                         )
             else:
-                raise NotImplementedError("Extra implicit dynamics is not implemented yet.")
+                nlp.extra_implicit_dynamics_func.append(
+                    Function(
+                        "DynamicsDefects",
+                        [
+                            time_span_sym,
+                            nlp.states.scaled.cx,
+                            nlp.controls.scaled.cx,
+                            nlp.parameters.scaled.cx,
+                            nlp.algebraic_states.scaled.cx,
+                            nlp.numerical_timeseries.cx,
+                            nlp.states_dot.scaled.cx,
+                        ],
+                        [dynamics_eval.defects],
+                        ["t_span", "x", "u", "p", "a", "d", "xdot"],
+                        ["defects"],
+                    ),
+                )
+
+                if nlp.dynamics_type.expand_dynamics:
+                    try:
+                        nlp.extra_implicit_dynamics_func[-1] = nlp.extra_implicit_dynamics_func[-1].expand()
+                    except Exception as me:
+                        RuntimeError(
+                            f"An error occurred while executing the 'expand()' function for the dynamic function. "
+                            f"Please review the following casadi error message for more details.\n"
+                            "Several factors could be causing this issue. One of the most likely is the inability to "
+                            "use expand=True at all. In that case, try adding expand=False to the dynamics.\n"
+                            "Original casadi error message:\n"
+                            f"{me}"
+                        )
 
     @staticmethod
     def configure_contact_function(ocp, nlp, contact_func: Callable, **extra_params):

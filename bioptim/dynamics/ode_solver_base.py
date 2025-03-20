@@ -188,6 +188,8 @@ class OdeSolverBase:
             The NonLinearProgram handler
         node_index
             The index of the node currently initialized
+        is_implicit
+            If the dynamics is implicit or not
         dynamics_index
             The current extra dynamics to resolve (that can be referred to nlp.extra_dynamics_func[index])
         is_extra_dynamics
@@ -207,7 +209,21 @@ class OdeSolverBase:
         nlp.states_dot.node_index = node_index
         nlp.controls.node_index = node_index
         nlp.algebraic_states.node_index = node_index
-        dynamics_func = nlp.dynamics_func if not is_extra_dynamics else nlp.extra_dynamics_func[dynamics_index]
+
+        if nlp.dynamics_func is None:
+            dynamics_func = None
+        elif is_extra_dynamics:
+            dynamics_func = nlp.extra_dynamics_func[dynamics_index]
+        else:
+            dynamics_func = nlp.dynamics_func
+
+        if nlp.implicit_dynamics_func is None:
+            implicit_dynamics_func = None
+        elif is_extra_dynamics:
+            implicit_dynamics_func = nlp.extra_implicit_dynamics_func[dynamics_index]
+        else:
+            implicit_dynamics_func = nlp.implicit_dynamics_func
+
         ode_index = None
         if dynamics_func is not None:
             ode_index = node_index if dynamics_func.size2_out("xdot") > 1 else 0
@@ -229,7 +245,7 @@ class OdeSolverBase:
             "d": self.d_ode(nlp),
             "param": self.param_ode(nlp),
             "ode": dynamics_func,
-            "implicit_ode": nlp.implicit_dynamics_func,
+            "implicit_ode": implicit_dynamics_func,
         }
 
         return nlp.ode_solver.integrator(ode, ode_opt)
@@ -271,3 +287,20 @@ class OdeSolverBase:
                         )
                     ]
             nlp.extra_dynamics.append(extra_dynamics)
+
+        # Extra dynamics
+        extra_implicit_dynamics = []
+        for i in range(len(nlp.extra_implicit_dynamics_func)):
+            extra_implicit_dynamics += [
+                nlp.ode_solver.initialize_integrator(ocp, nlp, dynamics_index=i, node_index=0, is_extra_dynamics=True)
+            ]
+            if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
+                extra_implicit_dynamics = extra_implicit_dynamics * nlp.ns
+            else:
+                for node_index in range(1, nlp.ns):
+                    extra_implicit_dynamics += [
+                        nlp.ode_solver.initialize_integrator(
+                            ocp, nlp, dynamics_index=i, node_index=node_index, is_extra_dynamics=True
+                        )
+                    ]
+            nlp.extra_implicit_dynamics.append(extra_implicit_dynamics)
