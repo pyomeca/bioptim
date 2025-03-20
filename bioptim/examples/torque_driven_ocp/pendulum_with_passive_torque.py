@@ -72,6 +72,7 @@ def prepare_ocp(
         with_passive_torque=with_passive_torque,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
+        ode_solver=ode_solver,
     )
 
     # Path constraint
@@ -98,7 +99,6 @@ def prepare_ocp(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
-        ode_solver=ode_solver,
     )
 
 

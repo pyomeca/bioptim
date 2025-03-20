@@ -58,10 +58,11 @@ def test_torque_driven_with_ligament(with_ligament, cx, phase_dynamics):
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
     ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
     nlp.control_type = ControlType.CONSTANT
+    nlp.dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_ligament=with_ligament)
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_ligament=with_ligament),
+        nlp.dynamics,
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -116,11 +117,11 @@ def test_torque_derivative_driven_with_ligament(with_ligament, cx, phase_dynamic
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
     ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
     nlp.control_type = ControlType.CONSTANT
-
+    nlp.dynamics = Dynamics(DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN, with_ligament=with_ligament)
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN, with_ligament=with_ligament),
+        nlp.dynamics,
         False,
     )
 
@@ -175,10 +176,11 @@ def test_torque_activation_driven_with_ligament(with_ligament, cx, phase_dynamic
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
     ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
     nlp.control_type = ControlType.CONSTANT
+    nlp.dynamics = Dynamics(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_ligament=with_ligament)
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_ligament=with_ligament),
+        nlp.dynamics,
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -234,13 +236,14 @@ def test_muscle_driven_with_ligament(with_ligament, cx, phase_dynamics):
 
     ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
     nlp.control_type = ControlType.CONSTANT
+    nlp.dynamics = Dynamics(
+            DynamicsFcn.MUSCLE_DRIVEN,
+            with_ligament=with_ligament,
+        )
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(
-            DynamicsFcn.MUSCLE_DRIVEN,
-            with_ligament=with_ligament,
-        ),
+        nlp.dynamics,
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]

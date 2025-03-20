@@ -197,7 +197,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False, as_states_dot=True)
         ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True, fatigue=fatigue)
-        ConfigureProblem.configure_qddot(ocp, nlp, False, False, True)
+        ConfigureProblem.configure_qddot(ocp, nlp, as_states=False, as_controls=False, as_states_dot=True)
 
         # Declared soft contacts controls
         if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
@@ -278,7 +278,6 @@ class ConfigureProblem:
             nlp,
             as_states=True,
             as_controls=False,
-            as_states_dot=False,
         )
 
         name_q_joints = [str(i) for i in range(nb_root, nb_q)]
@@ -289,7 +288,6 @@ class ConfigureProblem:
             nlp,
             as_states=True,
             as_controls=False,
-            as_states_dot=False,
         )
 
         ConfigureProblem.configure_new_variable(
@@ -299,7 +297,6 @@ class ConfigureProblem:
             nlp,
             as_states=True,
             as_controls=False,
-            as_states_dot=True,
         )
 
         name_qdot_joints = [str(i) for i in range(nb_root, nb_qdot)]
@@ -310,7 +307,6 @@ class ConfigureProblem:
             nlp,
             as_states=True,
             as_controls=False,
-            as_states_dot=True,
         )
 
         ConfigureProblem.configure_new_variable(
@@ -621,7 +617,8 @@ class ConfigureProblem:
         _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
 
         ConfigureProblem.configure_q(ocp, nlp, True, False)
-        ConfigureProblem.configure_qdot(ocp, nlp, True, False)
+        ConfigureProblem.configure_qdot(ocp, nlp, True, False, as_states_dot=True)
+        ConfigureProblem.configure_qddot(ocp, nlp, False, False, as_states_dot=True)
         ConfigureProblem.configure_tau(ocp, nlp, False, True)
 
         if with_residual_torque:
@@ -751,7 +748,11 @@ class ConfigureProblem:
 
         if with_residual_torque:
             ConfigureProblem.configure_tau(ocp, nlp, False, True, fatigue=fatigue)
-        ConfigureProblem.configure_muscles(ocp, nlp, with_excitations, True, fatigue=fatigue)
+        ConfigureProblem.configure_muscles(ocp, nlp,
+                                           as_states=with_excitations,
+                                           as_states_dot=with_excitations,
+                                           as_controls=True,
+                                           fatigue=fatigue)
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
@@ -1857,7 +1858,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_muscles(ocp, nlp, as_states: bool, as_controls: bool, fatigue: FatigueList = None):
+    def configure_muscles(ocp, nlp, as_states: bool, as_controls: bool, as_states_dot:bool, fatigue: FatigueList = None):
         """
         Configure the muscles
 
@@ -1879,8 +1880,9 @@ class ConfigureProblem:
             muscle_names,
             ocp,
             nlp,
-            as_states,
-            as_controls,
+            as_states=as_states,
+            as_states_dot=as_states_dot,
+            as_controls=as_controls,
             combine_state_control_plot=True,
             fatigue=fatigue,
         )

@@ -273,7 +273,7 @@ def test_update_noised_init_rk4(interpolation, phase_dynamics):
     phase_time = 1.0
 
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase_dynamics=phase_dynamics)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase_dynamics=phase_dynamics, ode_solver=OdeSolver.RK4())
 
     x_init = InitialGuessList()
     x_init["q"] = [0] * bio_model.nb_q
@@ -285,7 +285,6 @@ def test_update_noised_init_rk4(interpolation, phase_dynamics):
         dynamics,
         n_shooting=ns,
         phase_time=phase_time,
-        ode_solver=OdeSolver.RK4(),
         x_init=x_init,
         u_init=u_init,
     )
@@ -982,7 +981,7 @@ def test_update_noised_initial_guess_collocation(interpolation, phase_dynamics):
     solver = OdeSolver.COLLOCATION(polynomial_degree=1)
 
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase_dynamics=phase_dynamics)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase_dynamics=phase_dynamics, ode_solver=solver,)
 
     x_init = InitialGuessList()
     x_init["q"] = [0] * bio_model.nb_q
@@ -994,7 +993,6 @@ def test_update_noised_initial_guess_collocation(interpolation, phase_dynamics):
         dynamics,
         n_shooting=ns,
         phase_time=phase_time,
-        ode_solver=solver,
         x_init=x_init,
         u_init=u_init,
     )

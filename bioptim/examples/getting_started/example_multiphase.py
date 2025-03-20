@@ -119,6 +119,8 @@ def prepare_ocp(
     )
 
     # Dynamics
+    if not isinstance(ode_solver):
+        ode_solver = [ode_solver] * 3
     dynamics = DynamicsList()
     dynamics.add(
         DynamicsFcn.TORQUE_DRIVEN,

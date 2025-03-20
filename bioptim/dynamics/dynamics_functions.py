@@ -665,6 +665,7 @@ class DynamicsFunctions:
 
         external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
 
+        dxdt, defects = None, None
         if not isinstance(nlp.dynamics.ode_solver, OdeSolver.COLLOCATION):
             ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
             dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
@@ -912,6 +913,7 @@ class DynamicsFunctions:
         else:
             slope_q = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
+            slopes = vertcat(slope_q, slope_qdot)
             if nlp.ode_solver.defects_type == DefectType.IMPLICIT:
                 raise NotImplementedError("Implicit dynamics with muscles driven dynamics is not implemented yet")
             else:
@@ -925,10 +927,11 @@ class DynamicsFunctions:
                     mus_excitations = DynamicsFunctions.get(nlp.controls["muscles"], controls)
                     dmus = DynamicsFunctions.compute_muscle_dot(nlp, mus_excitations, mus_activations)
                     derivative[nlp.states["muscles"].index, :] = horzcat(*[dmus for _ in range(ddq.shape[1])])
-
+                    slope_mus = DynamicsFunctions.get(nlp.states_dot["muscles"], nlp.states_dot.scaled.cx)
+                    slopes = vertcat(slopes, slope_mus)
                 if fatigue is not None and "muscles" in fatigue:
                     derivative = fatigue["muscles"].dynamics(derivative, nlp, states, controls)
-                defects = vertcat(slope_q, slope_qdot) * nlp.dt - derivative * nlp.dt
+                defects = slopes * nlp.dt - derivative * nlp.dt
 
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 

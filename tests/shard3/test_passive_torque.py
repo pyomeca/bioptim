@@ -56,14 +56,15 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, phase_dynami
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
     ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
     nlp.control_type = ControlType.CONSTANT
-    NonLinearProgram.add(
-        ocp,
-        "dynamics_type",
-        Dynamics(
+    nlp.dynamics = Dynamics(
             DynamicsFcn.TORQUE_DRIVEN,
             with_passive_torque=with_passive_torque,
             phase_dynamics=phase_dynamics,
-        ),
+        )
+    NonLinearProgram.add(
+        ocp,
+        "dynamics_type",
+        nlp.dynamics,
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -118,14 +119,15 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx, p
     ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
     nlp.control_type = ControlType.CONSTANT
 
-    NonLinearProgram.add(
-        ocp,
-        "dynamics_type",
-        Dynamics(
+    nlp.dynamics = Dynamics(
             DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
             with_passive_torque=with_passive_torque,
             phase_dynamics=phase_dynamics,
-        ),
+        )
+    NonLinearProgram.add(
+        ocp,
+        "dynamics_type",
+        nlp.dynamics,
         False,
     )
 
@@ -206,15 +208,16 @@ def test_torque_activation_driven_with_passive_torque(with_passive_torque, with_
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
     ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
     nlp.control_type = ControlType.CONSTANT
-    NonLinearProgram.add(
-        ocp,
-        "dynamics_type",
-        Dynamics(
+    nlp.dynamics = Dynamics(
             DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
             with_passive_torque=with_passive_torque,
             with_residual_torque=with_residual_torque,
             phase_dynamics=phase_dynamics,
-        ),
+        )
+    NonLinearProgram.add(
+        ocp,
+        "dynamics_type",
+        nlp.dynamics,
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -320,14 +323,15 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, cx, phase_dynami
 
     ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
     nlp.control_type = ControlType.CONSTANT
-    NonLinearProgram.add(
-        ocp,
-        "dynamics_type",
-        Dynamics(
+    nlp.dynamics = Dynamics(
             DynamicsFcn.MUSCLE_DRIVEN,
             with_passive_torque=with_passive_torque,
             phase_dynamics=phase_dynamics,
-        ),
+        )
+    NonLinearProgram.add(
+        ocp,
+        "dynamics_type",
+        nlp.dynamics,
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]

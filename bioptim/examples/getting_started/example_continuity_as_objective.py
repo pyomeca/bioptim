@@ -211,7 +211,7 @@ def prepare_ocp_second_pass(
         objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=100 / n_shooting)
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -267,7 +267,6 @@ def prepare_ocp_second_pass(
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         constraints=constraints,
-        ode_solver=ode_solver,
         use_sx=use_sx,
         n_threads=n_threads,
     )
