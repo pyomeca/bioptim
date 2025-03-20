@@ -124,7 +124,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
     )
 
     multinode_constraints = MultinodeConstraintList()
-    for i_node in range(n_shooting):
+    for i_node in range(n_shooting - 1):
         multinode_constraints.add(
             MultinodeConstraintFcn.ALGEBRAIC_STATES_CONTINUITY,
             nodes_phase=(0, 0),
