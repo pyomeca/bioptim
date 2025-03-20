@@ -78,6 +78,7 @@ def time_dynamic_dxdt(
 
     return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
 
+
 def time_dynamic_defects(
     time: MX | SX,
     states: MX | SX,
@@ -126,6 +127,7 @@ def time_dynamic_defects(
     defects = vertcat(slope_q, slope_qdot) * nlp.dt - vertcat(dq, ddq) * nlp.dt
 
     return DynamicsEvaluation(dxdt=None, defects=defects)
+
 
 def custom_configure_dxdt(
     ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries: dict[str, np.ndarray] = None
@@ -233,7 +235,9 @@ def prepare_ocp(
     for i in range(len(bio_model)):
         dynamics.add(
             custom_configure_defects if isinstance(ode_solver, OdeSolver.COLLOCATION) else custom_configure_dxdt,
-            dynamic_function=time_dynamic_defects if isinstance(ode_solver, OdeSolver.COLLOCATION) else time_dynamic_dxdt,
+            dynamic_function=(
+                time_dynamic_defects if isinstance(ode_solver, OdeSolver.COLLOCATION) else time_dynamic_dxdt
+            ),
             phase=i,
             expand_dynamics=expand,
             phase_dynamics=phase_dynamics,
