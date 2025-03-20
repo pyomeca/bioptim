@@ -237,9 +237,9 @@ def test_muscle_driven_with_ligament(with_ligament, cx, phase_dynamics):
     ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
     nlp.control_type = ControlType.CONSTANT
     nlp.dynamics = Dynamics(
-            DynamicsFcn.MUSCLE_DRIVEN,
-            with_ligament=with_ligament,
-        )
+        DynamicsFcn.MUSCLE_DRIVEN,
+        with_ligament=with_ligament,
+    )
     NonLinearProgram.add(
         ocp,
         "dynamics_type",

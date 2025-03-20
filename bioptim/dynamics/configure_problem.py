@@ -748,11 +748,9 @@ class ConfigureProblem:
 
         if with_residual_torque:
             ConfigureProblem.configure_tau(ocp, nlp, False, True, fatigue=fatigue)
-        ConfigureProblem.configure_muscles(ocp, nlp,
-                                           as_states=with_excitations,
-                                           as_states_dot=with_excitations,
-                                           as_controls=True,
-                                           fatigue=fatigue)
+        ConfigureProblem.configure_muscles(
+            ocp, nlp, as_states=with_excitations, as_states_dot=with_excitations, as_controls=True, fatigue=fatigue
+        )
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
@@ -1858,7 +1856,9 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_muscles(ocp, nlp, as_states: bool, as_controls: bool, as_states_dot:bool, fatigue: FatigueList = None):
+    def configure_muscles(
+        ocp, nlp, as_states: bool, as_controls: bool, as_states_dot: bool, fatigue: FatigueList = None
+    ):
         """
         Configure the muscles
 

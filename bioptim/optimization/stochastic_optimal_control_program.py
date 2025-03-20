@@ -622,6 +622,7 @@ def _check_multi_threading_and_problem_type(problem_type, **kwargs):
                     "n_thread is set to 1 by default."
                 )
 
+
 def _check_has_no_phase_dynamics_shared_during_the_phase(problem_type, **kwargs):
     if not isinstance(problem_type, SocpType.COLLOCATION):
         if "phase_dynamics" in kwargs:
