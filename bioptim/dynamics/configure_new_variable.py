@@ -447,7 +447,14 @@ def _manage_fatigue_to_new_variable(
 
         if split_controls:
             NewVariableConfiguration(
-                var_names_with_suffix[-1], name_elements, ocp, nlp, as_states, as_controls, as_states_dot=as_states, skip_plot=True
+                var_names_with_suffix[-1],
+                name_elements,
+                ocp,
+                nlp,
+                as_states,
+                as_controls,
+                as_states_dot=as_states,
+                skip_plot=True,
             )
             nlp.plot[f"{var_names_with_suffix[-1]}_controls"] = CustomPlot(
                 lambda t0, phases_dt, node_idx, x, u, p, a, d, key: (
@@ -459,7 +466,9 @@ def _manage_fatigue_to_new_variable(
                 color=color[i],
             )
         elif i == 0:
-            NewVariableConfiguration(f"{name}", name_elements, ocp, nlp, as_states, as_controls, as_states_dot=as_states, skip_plot=True)
+            NewVariableConfiguration(
+                f"{name}", name_elements, ocp, nlp, as_states, as_controls, as_states_dot=as_states, skip_plot=True
+            )
             nlp.plot[f"{name}_controls"] = CustomPlot(
                 lambda t0, phases_dt, node_idx, x, u, p, a, d, key: (
                     u[nlp.controls.key_index(key), :] if u.any() else np.ndarray((len(name_elements), 1)) * np.nan
