@@ -106,7 +106,8 @@ def test_get_time_aligned_with_states_single_phase(
 
     if ode_solver == OdeSolver.COLLOCATION:
         with pytest.raises(
-            ValueError, match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, we cannot use the SolutionIntegrator.OCP. We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE"
+            ValueError,
+            match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, we cannot use the SolutionIntegrator.OCP. We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
         ):
             states = sol.stepwise_states(to_merge=[])
         return None

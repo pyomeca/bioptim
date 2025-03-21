@@ -378,8 +378,8 @@ def test_generate_integrate(ode_solver, merge_phase, shooting_type, integrator, 
     if merge_phase:
         if ode_solver == OdeSolver.COLLOCATION:
             with pytest.raises(
-                    ValueError,
-                    match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, we cannot use the SolutionIntegrator.OCP. We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE"
+                ValueError,
+                match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, we cannot use the SolutionIntegrator.OCP. We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
             ):
                 merged_sol = sol.stepwise_states(to_merge=[SolutionMerge.NODES, SolutionMerge.PHASES])
             return None
