@@ -95,6 +95,7 @@ def prepare_ocp(
     )
     dof_mappings.add("q", bimapping=bimap)
     dof_mappings.add("qdot", bimapping=bimap)
+    dof_mappings.add("qddot", bimapping=bimap)
     dof_mappings.add("tau", bimapping=bimap)
     # For convenience, if only q is defined, qdot and tau are automatically defined too
     # While computing the derivatives, the states is 6 dimensions (3 for q and 3 for qdot) and controls is 3 dimensions

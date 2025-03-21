@@ -6,7 +6,7 @@ from bioptim import (
     DynamicsFunctions,
     NonLinearProgram,
     OptimalControlProgram,
-    ConfigureProblem,
+    ConfigureProblem, OdeSolver,
 )
 
 
@@ -106,7 +106,15 @@ def holonomic_torque_driven_with_qv(
     q_v = DynamicsFunctions.get(nlp.algebraic_states["q_v"], algebraic_states)
     qddot_u = nlp.model.partitioned_forward_dynamics_with_qv()(q_u, q_v, qdot_u, tau)
 
-    return DynamicsEvaluation(dxdt=vertcat(qdot_u, qddot_u), defects=None)
+    dxdt, defects = None, None
+    if not isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
+        dxdt = vertcat(qdot_u, qddot_u)
+    else:
+        slope_q_u = DynamicsFunctions.get(nlp.states_dot["q_u"], nlp.states_dot.scaled.cx)
+        slope_qdot_u = DynamicsFunctions.get(nlp.states_dot["qdot_u"], nlp.states_dot.scaled.cx)
+        defects = vertcat(slope_q_u, slope_qdot_u) * nlp.dt - vertcat(qdot_u, qddot_u) * nlp.dt
+
+    return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
 
 def configure_holonomic_torque_driven(
@@ -135,7 +143,7 @@ def configure_holonomic_torque_driven(
         nlp,
         True,
         False,
-        False,
+        True,
     )
 
     name = "q_v"
@@ -161,7 +169,7 @@ def configure_holonomic_torque_driven(
         nlp,
         True,
         False,
-        False,
+        True,
         # NOTE: not ready for phase mapping yet as it is based on dofnames of the class BioModel
         # see _set_kinematic_phase_mapping method
         # axes_idx=ConfigureProblem._apply_phase_mapping(ocp, nlp, name),
