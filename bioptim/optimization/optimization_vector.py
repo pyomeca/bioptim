@@ -347,7 +347,6 @@ class OptimizationVectorHelper:
         # For algebraic_states variables
         for p, nlp in enumerate(ocp.nlp):
             na = nlp.algebraic_states.shape
-
             for node in range(nlp.n_states_nodes):
                 nlp.algebraic_states.node_index = node
                 n_cols = nlp.n_algebraic_states_decision_steps(node)

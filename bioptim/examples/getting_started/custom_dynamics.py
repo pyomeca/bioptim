@@ -33,7 +33,7 @@ from bioptim import (
 )
 
 
-def custom_dynamics_dxdt(
+def custom_dynamics(
     time: MX | SX,
     states: MX | SX,
     controls: MX | SX,
@@ -44,8 +44,8 @@ def custom_dynamics_dxdt(
     my_additional_factor=1,
 ) -> DynamicsEvaluation:
     """
-    The custom dynamics function that provides the derivative of the states: dxdt = f(x, u, p).
-    This version of the custom dynamics should be used with explicit dynamics integrators like RK4.
+    The custom dynamics function that provides the derivative of the states: dxdt = f(x, u, p) when using an explicit dynamics integrators like RK4.
+    Otherwise, the custom dynamics function provides the defects to apply at each collocation point when using implicit dynamics integrators like COLLOCATION or IRK.
 
     Parameters
     ----------
@@ -75,90 +75,21 @@ def custom_dynamics_dxdt(
 
     # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
     dq = DynamicsFunctions.compute_qdot(nlp, q, qdot) * my_additional_factor
-    ddq = nlp.model.forward_dynamics()(q, qdot, tau, [], nlp.parameters.cx)
 
-    return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
+    dxdt, defects = None, None
+    if not isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
+        ddq = nlp.model.forward_dynamics()(q, qdot, tau, [], nlp.parameters.cx)
+        dxdt = vertcat(dq, ddq)
+    else:
+        slope_q = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.cx)
+        slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.cx)
+        ddq = nlp.model.forward_dynamics()(q, qdot, tau, [], nlp.parameters.cx)
+        # Theoretically, the defect should be "vertcat(dq, ddq) - vertcat(slope_q, slope_qdot)", but for numerical reasons, it is recommended to use this version instead
+        defects = vertcat(slope_q, slope_qdot) * nlp.dt - vertcat(dq, ddq) * nlp.dt
 
+    return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
-def custom_dynamics_defects(
-    time: MX | SX,
-    states: MX | SX,
-    controls: MX | SX,
-    parameters: MX | SX,
-    algebraic_states: MX | SX,
-    numerical_timeseries: MX | SX,
-    nlp: NonLinearProgram,
-    my_additional_factor=1,
-) -> DynamicsEvaluation:
-    """
-    The custom dynamics function that provides the defects to apply at each collocation point.
-    This version of the custom dynamics should be used when the dynamics is imposed implicitly like with COLLOCATION or IRK.
-
-    Parameters
-    ----------
-    time: MX | SX
-        The time of the system
-    states: MX | SX
-        The state of the system
-    controls: MX | SX
-        The controls of the system
-    parameters: MX | SX
-        The parameters acting on the system
-    algebraic_states: MX | SX
-        The algebraic states of the system
-    nlp: NonLinearProgram
-        A reference to the phase
-    my_additional_factor: int
-        An example of an extra parameter sent by the user
-
-    Returns
-    -------
-    The derivative of the states in the tuple[MX | SX] format
-    """
-
-    # Get the variables
-    q = DynamicsFunctions.get(nlp.states["q"], states)
-    qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-    tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
-    # Get the slope of the COLLOCATION polynomial
-    slope_q = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
-    slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
-
-    # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
-    dq = DynamicsFunctions.compute_qdot(nlp, q, qdot) * my_additional_factor
-    ddq = nlp.model.forward_dynamics()(q, qdot, tau, [], nlp.parameters.cx)
-
-    # Theoretically, the defect should be "vertcat(dq, ddq) - vertcat(slope_q, slope_qdot)", but for numerical reasons, it is recommended to use this version instead
-    defects = vertcat(slope_q, slope_qdot) * nlp.dt - vertcat(dq, ddq) * nlp.dt
-    return DynamicsEvaluation(dxdt=None, defects=defects)
-
-
-def custom_configure_dxdt(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram, my_additional_factor=1, numerical_data_timeseries=None
-):
-    """
-    Tell the program which variables are states and controls.
-    The user is expected to use the ConfigureProblem.configure_xxx functions.
-
-    Parameters
-    ----------
-    ocp: OptimalControlProgram
-        A reference to the ocp
-    nlp: NonLinearProgram
-        A reference to the phase
-    my_additional_factor: int
-        An example of an extra parameter sent by the user
-    """
-
-    ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False, as_states_dot=True)
-    ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
-    ConfigureProblem.configure_dynamics_function(
-        ocp, nlp, custom_dynamics_dxdt, my_additional_factor=my_additional_factor
-    )
-
-
-def custom_configure_defects(
+def custom_configure(
     ocp: OptimalControlProgram, nlp: NonLinearProgram, my_additional_factor=1, numerical_data_timeseries=None
 ):
     """
@@ -180,7 +111,7 @@ def custom_configure_defects(
     ConfigureProblem.configure_qddot(ocp, nlp, as_states=False, as_controls=False, as_states_dot=True)
     ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
     ConfigureProblem.configure_dynamics_function(
-        ocp, nlp, custom_dynamics_defects, my_additional_factor=my_additional_factor
+        ocp, nlp, custom_dynamics, my_additional_factor=my_additional_factor
     )
 
 
@@ -236,10 +167,8 @@ def prepare_ocp(
     dynamics = DynamicsList()
     if problem_type_custom:
         dynamics.add(
-            custom_configure_defects if isinstance(ode_solver, OdeSolver.COLLOCATION) else custom_configure_dxdt,
-            dynamic_function=(
-                custom_dynamics_defects if isinstance(ode_solver, OdeSolver.COLLOCATION) else custom_dynamics_dxdt
-            ),
+            custom_configure,
+            dynamic_function=custom_dynamics,
             my_additional_factor=1,
             expand_dynamics=expand_dynamics,
             phase_dynamics=phase_dynamics,
@@ -248,9 +177,7 @@ def prepare_ocp(
     else:
         dynamics.add(
             DynamicsFcn.TORQUE_DRIVEN,
-            dynamic_function=(
-                custom_dynamics_defects if isinstance(ode_solver, OdeSolver.COLLOCATION) else custom_dynamics_dxdt
-            ),
+            dynamic_function=custom_dynamics,
             expand_dynamics=expand_dynamics,
             phase_dynamics=phase_dynamics,
             ode_solver=ode_solver,

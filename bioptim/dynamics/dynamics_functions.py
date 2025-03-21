@@ -148,9 +148,7 @@ class DynamicsFunctions:
         dxdt, defects = None, None
         if not isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):  # not COLLOCATION or IRK
             ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
-            dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
-            dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
-            dxdt[nlp.states["qdot"].index, :] = ddq
+            dxdt = vertcat(dq, ddq)
 
             if fatigue is not None and "tau" in fatigue:
                 dxdt = fatigue["tau"].dynamics(dxdt, nlp, states, controls)
@@ -267,9 +265,7 @@ class DynamicsFunctions:
             ddq = DynamicsFunctions.forward_dynamics(
                 nlp, q_full, qdot_full, tau_full, with_contact=False, external_forces=None
             )
-            dxdt = nlp.cx(n_q + n_qdot, ddq.shape[1])
-            dxdt[:n_q, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
-            dxdt[n_q:, :] = ddq
+            dxdt = vertcat(dq, ddq)
         else:
             slope_q = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
@@ -354,9 +350,7 @@ class DynamicsFunctions:
         if not isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
             dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
             ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces=None)
-            dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
-            dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
-            dxdt[nlp.states["qdot"].index, :] = ddq
+            dxdt = vertcat(dq, ddq)
         else:
             slope_q = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
@@ -445,9 +439,7 @@ class DynamicsFunctions:
             ddq = DynamicsFunctions.forward_dynamics(
                 nlp, q_full, qdot_full, tau_full, with_contact=False, external_forces=None
             )
-            dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
-            dxdt[:n_q, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
-            dxdt[n_q:, :] = ddq
+            dxdt = vertcat(dq, ddq)
         else:
             slope_q = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
@@ -670,10 +662,7 @@ class DynamicsFunctions:
         dxdt, defects = None, None
         if not isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
             ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
-            dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
-            dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
-            dxdt[nlp.states["qdot"].index, :] = ddq
-            dxdt[nlp.states["tau"].index, :] = horzcat(*[dtau for _ in range(ddq.shape[1])])
+            dxdt = vertcat(vertcat(dq, ddq), dtau)
         else:
             slope_q = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
@@ -900,9 +889,7 @@ class DynamicsFunctions:
         dxdt, defects = None, None
         if not isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
             ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
-            dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
-            dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
-            dxdt[nlp.states["qdot"].index, :] = ddq
+            dxdt = vertcat(dq, ddq)
 
             has_excitation = True if "muscles" in nlp.states else False
             if has_excitation:

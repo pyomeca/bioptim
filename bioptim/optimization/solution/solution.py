@@ -266,8 +266,8 @@ class Solution:
         # For states
         for p, ss in enumerate(sol_states):
             repeat = 1
-            if isinstance(ocp.nlp[p].ode_solver, OdeSolver.COLLOCATION):
-                repeat = ocp.nlp[p].ode_solver.polynomial_degree + 1
+            if isinstance(ocp.nlp[p].old_ode_solver, OdeSolver.COLLOCATION):
+                repeat = ocp.nlp[p].old_ode_solver.polynomial_degree + 1
             for key in ss.keys():
                 ns = ocp.nlp[p].ns + 1 if ss[key].init.type != InterpolationType.EACH_FRAME else ocp.nlp[p].ns
                 ss[key].init.check_and_adjust_dimensions(len(ocp.nlp[p].states[key]), ns, "states")
@@ -455,8 +455,8 @@ class Solution:
                     times.append([t[[0, -1]] for t in times_tp[nlp.phase_idx][:-1]])
             else:
                 if time_alignment == TimeAlignment.STATES:
-                    if nlp.ode_solver.is_direct_collocation:
-                        if nlp.ode_solver.duplicate_starting_point:
+                    if nlp.old_ode_solver.is_direct_collocation:
+                        if nlp.old_ode_solver.duplicate_starting_point:
                             times.append(
                                 [t if t.shape == (1, 1) else vertcat(t[0], t[:-1]) for t in times_tp[nlp.phase_idx]]
                             )
@@ -712,6 +712,25 @@ class Solution:
             new._parameters = deepcopy(self._parameters)
         return new
 
+    def _prepare_dynamics(self):
+        # Imported here to avoid circular import
+        from ...dynamics.configure_problem import ConfigureProblem
+        from ...optimization.optimization_variable import OptimizationVariableContainer
+        # Redefinition of the dynamics using dxdt instead of the defects
+        for i in range(self.ocp.n_phases):
+            # Overwrite the dynamics
+            self.ocp.nlp[i].ode_solver = OdeSolver.RK4()
+            self.ocp.nlp[i].states = OptimizationVariableContainer(self.ocp.nlp[i].phase_dynamics)
+            self.ocp.nlp[i].states_dot = OptimizationVariableContainer(self.ocp.nlp[i].phase_dynamics)
+            self.ocp.nlp[i].controls = OptimizationVariableContainer(self.ocp.nlp[i].phase_dynamics)
+            self.ocp.nlp[i].numerical_data_timeseries = OptimizationVariableContainer(self.ocp.nlp[i].phase_dynamics)
+            # reset the dynamics as it is done in OptimalControlProgram
+            self.ocp.nlp[i].initialize(self.ocp.cx)
+            self.ocp.nlp[i].parameters = self.ocp.parameters  # This should be remove when phase parameters will be implemented
+            self.ocp.nlp[i].numerical_data_timeseries = self.ocp.nlp[i].dynamics_type.numerical_data_timeseries
+            ConfigureProblem.initialize(self.ocp, self.ocp.nlp[i])
+            self.ocp.nlp[i].ode_solver.prepare_dynamic_integrator(self.ocp, self.ocp.nlp[i])
+
     def _prepare_integrate(self, integrator: SolutionIntegrator):
         """
         Prepare the variables for the states integration and checks if the integrator is compatible with the ocp.
@@ -721,6 +740,9 @@ class Solution:
         integrator: SolutionIntegrator
             The integrator to use for the integration
         """
+        # Keep a copy of the ode_solver so that we know if it was a COLLOCATION or not
+        for i in range(len(self.ocp.nlp)):
+            self.ocp.nlp[i].old_ode_solver = self.ocp.nlp[i].ode_solver
 
         has_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]) > 0
         if has_direct_collocation and integrator == SolutionIntegrator.OCP:
@@ -730,6 +752,8 @@ class Solution:
                 "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
                 " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE"
             )
+        else:
+            self._prepare_dynamics()
 
         has_trapezoidal = sum([isinstance(nlp.ode_solver, OdeSolver.TRAPEZOIDAL) for nlp in self.ocp.nlp]) > 0
         if has_trapezoidal and integrator == SolutionIntegrator.OCP:

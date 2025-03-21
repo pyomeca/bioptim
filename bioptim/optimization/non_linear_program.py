@@ -423,21 +423,23 @@ class NonLinearProgram:
             return 1
         return self.dynamics[node_idx].shape_xf[1] + (1 if self.ode_solver.duplicate_starting_point else 0)
 
-    def n_states_stepwise_steps(self, node_idx) -> int:
+    def n_states_stepwise_steps(self, node_idx: int, ode_solver: OdeSolver=None) -> int:
         """
         Parameters
         ----------
         node_idx: int
             The index of the node
-
+        ode_solver: OdeSolver
+            The ode solver to use (it is useful for reintegration of COLLOCATION solutions)
         Returns
         -------
         The number of states
         """
+        ode_solver = ode_solver if ode_solver is not None else self.ode_solver
         if node_idx >= self.ns:
             return 1
-        if self.ode_solver.is_direct_collocation:
-            return self.dynamics[node_idx].shape_xall[1] - (1 if not self.ode_solver.duplicate_starting_point else 0)
+        if ode_solver.is_direct_collocation:
+            return self.dynamics[node_idx].shape_xall[1] - (1 if not ode_solver.duplicate_starting_point else 0)
         else:
             return self.dynamics[node_idx].shape_xall[1]
 
