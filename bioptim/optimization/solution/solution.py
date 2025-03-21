@@ -170,12 +170,9 @@ class Solution:
 
             x, u, p, a = OptimizationVectorHelper.to_dictionaries(ocp, vector)
             self._decision_states = SolutionData.from_scaled(ocp, x, "x")
-            self._stepwise_states = SolutionData.from_scaled(ocp, x, "x")
-            self._decision_controls = SolutionData.from_scaled(ocp, u, "u")
             self._stepwise_controls = SolutionData.from_scaled(ocp, u, "u")
             self._parameters = SolutionData.from_scaled(ocp, p, "p")
             self._decision_algebraic_states = SolutionData.from_scaled(ocp, a, "a")
-            self._stepwise_algebraic_states = SolutionData.from_scaled(ocp, a, "a")
 
     @classmethod
     def from_dict(cls, ocp, sol: dict):
@@ -568,7 +565,7 @@ class Solution:
         """
 
         if self._stepwise_states is None:
-            # @pariterre: This seems suspicious to me. If we want to integrate, we shouldn't we use sol.integrate ?
+            self._prepare_integrate(SolutionIntegrator.OCP)
             self._integrate_stepwise()
 
         data = self._stepwise_states.to_dict(to_merge=to_merge, scaled=scaled)
@@ -751,26 +748,29 @@ class Solution:
         integrator: SolutionIntegrator
             The integrator to use for the integration
         """
+        has_direct_collocation = sum([nlp.old_ode_solver.is_direct_collocation for nlp in self.ocp.nlp]) > 0
+        if has_direct_collocation:
+            if integrator == SolutionIntegrator.OCP:
+                raise ValueError(
+                    "When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
+                    "we cannot use the SolutionIntegrator.OCP.\n"
+                    "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
+                    " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE"
+                )
+            else:
+                self._prepare_dynamics()
 
-        has_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]) > 0
-        if has_direct_collocation and integrator == SolutionIntegrator.OCP:
-            raise ValueError(
-                "When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
-                "we cannot use the SolutionIntegrator.OCP.\n"
-                "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
-                " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE"
-            )
-        else:
-            self._prepare_dynamics()
-
-        has_trapezoidal = sum([isinstance(nlp.ode_solver, OdeSolver.TRAPEZOIDAL) for nlp in self.ocp.nlp]) > 0
-        if has_trapezoidal and integrator == SolutionIntegrator.OCP:
-            raise ValueError(
-                "When the ode_solver of the Optimal Control Problem is OdeSolver.TRAPEZOIDAL, "
-                "we cannot use the SolutionIntegrator.OCP.\n"
-                "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
-                " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
-            )
+        has_trapezoidal = sum([isinstance(nlp.old_ode_solver, OdeSolver.TRAPEZOIDAL) for nlp in self.ocp.nlp]) > 0
+        if has_trapezoidal:
+            if integrator == SolutionIntegrator.OCP:
+                raise ValueError(
+                    "When the ode_solver of the Optimal Control Problem is OdeSolver.TRAPEZOIDAL, "
+                    "we cannot use the SolutionIntegrator.OCP.\n"
+                    "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
+                    " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
+                )
+            else:
+                self._prepare_dynamics()
 
         params = self._parameters.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)[0][0]
         t_spans = self.t_span(time_alignment=TimeAlignment.CONTROLS)
