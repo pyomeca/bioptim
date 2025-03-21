@@ -144,6 +144,10 @@ class Solution:
 
         self.ocp = ocp
 
+        # Keeping a copy of the old_ode_solver. The new ode_solver will be overwritten in the cas od COLLOCATION and IMPLICIT
+        for i in range(ocp.n_phases):
+            self.ocp.nlp[i].old_ode_solver = self.ocp.nlp[i].ode_solver
+
         # Penalties
         self._cost, self._detailed_cost, self.constraints = cost, None, constraints
 
@@ -269,8 +273,8 @@ class Solution:
         # For states
         for p, ss in enumerate(sol_states):
             repeat = 1
-            if isinstance(ocp.nlp[p].old_ode_solver, OdeSolver.COLLOCATION):
-                repeat = ocp.nlp[p].old_ode_solver.polynomial_degree + 1
+            if isinstance(ocp.nlp[p].ode_solver, OdeSolver.COLLOCATION):
+                repeat = ocp.nlp[p].ode_solver.polynomial_degree + 1
             for key in ss.keys():
                 ns = ocp.nlp[p].ns + 1 if ss[key].init.type != InterpolationType.EACH_FRAME else ocp.nlp[p].ns
                 ss[key].init.check_and_adjust_dimensions(len(ocp.nlp[p].states[key]), ns, "states")
@@ -747,9 +751,6 @@ class Solution:
         integrator: SolutionIntegrator
             The integrator to use for the integration
         """
-        # Keep a copy of the ode_solver so that we know if it was a COLLOCATION or not
-        for i in range(len(self.ocp.nlp)):
-            self.ocp.nlp[i].old_ode_solver = self.ocp.nlp[i].ode_solver
 
         has_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]) > 0
         if has_direct_collocation and integrator == SolutionIntegrator.OCP:

@@ -148,10 +148,16 @@ class DynamicsFunctions:
         dxdt, defects = None, None
         if not isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):  # not COLLOCATION or IRK
             ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
-            dxdt = vertcat(dq, ddq)
 
             if fatigue is not None and "tau" in fatigue:
+                # dxdt cannot be mapped due to the fatigue dynamics that does its own mapping
+                dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
+                dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
+                dxdt[nlp.states["qdot"].index, :] = ddq
                 dxdt = fatigue["tau"].dynamics(dxdt, nlp, states, controls)
+            else:
+                # dxdt is mapped (so there is less constraints)
+                dxdt = vertcat(dq, ddq)
 
         else:
             # TODO: contacts and fatigue to be handled with implicit dynamics
