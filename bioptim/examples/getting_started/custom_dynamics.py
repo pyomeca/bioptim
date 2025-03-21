@@ -91,6 +91,7 @@ def custom_dynamics(
 
     return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
+
 def custom_configure(
     ocp: OptimalControlProgram, nlp: NonLinearProgram, my_additional_factor=1, numerical_data_timeseries=None
 ):
@@ -112,9 +113,7 @@ def custom_configure(
     ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False, as_states_dot=True)
     ConfigureProblem.configure_qddot(ocp, nlp, as_states=False, as_controls=False, as_states_dot=True)
     ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
-    ConfigureProblem.configure_dynamics_function(
-        ocp, nlp, custom_dynamics, my_additional_factor=my_additional_factor
-    )
+    ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamics, my_additional_factor=my_additional_factor)
 
 
 def prepare_ocp(

@@ -423,7 +423,7 @@ class NonLinearProgram:
             return 1
         return self.dynamics[node_idx].shape_xf[1] + (1 if self.ode_solver.duplicate_starting_point else 0)
 
-    def n_states_stepwise_steps(self, node_idx: int, ode_solver: OdeSolver=None) -> int:
+    def n_states_stepwise_steps(self, node_idx: int, ode_solver: OdeSolver = None) -> int:
         """
         Parameters
         ----------

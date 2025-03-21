@@ -6,7 +6,8 @@ from bioptim import (
     DynamicsFunctions,
     NonLinearProgram,
     OptimalControlProgram,
-    ConfigureProblem, OdeSolver,
+    ConfigureProblem,
+    OdeSolver,
 )
 
 

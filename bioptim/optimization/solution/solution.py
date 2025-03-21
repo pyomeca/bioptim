@@ -720,6 +720,7 @@ class Solution:
         # Imported here to avoid circular import
         from ...dynamics.configure_problem import ConfigureProblem
         from ...optimization.optimization_variable import OptimizationVariableContainer
+
         # Redefinition of the dynamics using dxdt instead of the defects
         for i in range(self.ocp.n_phases):
             # Overwrite the dynamics
@@ -730,7 +731,9 @@ class Solution:
             self.ocp.nlp[i].numerical_data_timeseries = OptimizationVariableContainer(self.ocp.nlp[i].phase_dynamics)
             # reset the dynamics as it is done in OptimalControlProgram
             self.ocp.nlp[i].initialize(self.ocp.cx)
-            self.ocp.nlp[i].parameters = self.ocp.parameters  # This should be remove when phase parameters will be implemented
+            self.ocp.nlp[i].parameters = (
+                self.ocp.parameters
+            )  # This should be remove when phase parameters will be implemented
             self.ocp.nlp[i].numerical_data_timeseries = self.ocp.nlp[i].dynamics_type.numerical_data_timeseries
             ConfigureProblem.initialize(self.ocp, self.ocp.nlp[i])
             self.ocp.nlp[i].ode_solver.prepare_dynamic_integrator(self.ocp, self.ocp.nlp[i])

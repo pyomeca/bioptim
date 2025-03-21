@@ -183,8 +183,9 @@ class DynamicsFunctions:
                 ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
                 derivative = vertcat(dq, ddq)
 
-                slope = vertcat(nlp.states["q"].mapping.to_first.map(slope_q),
-                                     nlp.states["qdot"].mapping.to_first.map(slope_qdot))
+                slope = vertcat(
+                    nlp.states["q"].mapping.to_first.map(slope_q), nlp.states["qdot"].mapping.to_first.map(slope_qdot)
+                )
 
                 if fatigue is not None and "tau" in fatigue:
                     derivative = fatigue["tau"].dynamics(derivative, nlp, states, controls)
