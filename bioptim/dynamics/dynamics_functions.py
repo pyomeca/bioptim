@@ -902,7 +902,7 @@ class DynamicsFunctions:
             if has_excitation:
                 mus_excitations = DynamicsFunctions.get(nlp.controls["muscles"], controls)
                 dmus = DynamicsFunctions.compute_muscle_dot(nlp, mus_excitations, mus_activations)
-                dxdt[nlp.states["muscles"].index, :] = horzcat(*[dmus for _ in range(ddq.shape[1])])
+                dxdt = vertcat(dxdt, dmus)
 
             if fatigue is not None and "muscles" in fatigue:
                 dxdt = fatigue["muscles"].dynamics(dxdt, nlp, states, controls)
