@@ -166,9 +166,12 @@ class Solution:
 
             x, u, p, a = OptimizationVectorHelper.to_dictionaries(ocp, vector)
             self._decision_states = SolutionData.from_scaled(ocp, x, "x")
+            self._stepwise_states = SolutionData.from_scaled(ocp, x, "x")
+            self._decision_controls = SolutionData.from_scaled(ocp, u, "u")
             self._stepwise_controls = SolutionData.from_scaled(ocp, u, "u")
             self._parameters = SolutionData.from_scaled(ocp, p, "p")
             self._decision_algebraic_states = SolutionData.from_scaled(ocp, a, "a")
+            self._stepwise_algebraic_states = SolutionData.from_scaled(ocp, a, "a")
 
     @classmethod
     def from_dict(cls, ocp, sol: dict):
@@ -561,6 +564,7 @@ class Solution:
         """
 
         if self._stepwise_states is None:
+            # @pariterre: This seems suspicious to me. If we want to integrate, we shouldn't we use sol.integrate ?
             self._integrate_stepwise()
 
         data = self._stepwise_states.to_dict(to_merge=to_merge, scaled=scaled)

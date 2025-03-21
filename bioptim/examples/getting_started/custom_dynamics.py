@@ -47,6 +47,8 @@ def custom_dynamics(
     The custom dynamics function that provides the derivative of the states: dxdt = f(x, u, p) when using an explicit dynamics integrators like RK4.
     Otherwise, the custom dynamics function provides the defects to apply at each collocation point when using implicit dynamics integrators like COLLOCATION or IRK.
 
+    **Note**: If you are using an implicit integrator, it is not possible to reintegrate the solution with this integrator. Therefore, you should integrate it using one of scipy's integrators. Moreover, you should provide the explicit derivative of your states (dxdt, the first case of the if statement below) for scipy's integrator to work.
+
     Parameters
     ----------
     time: MX | SX
