@@ -286,13 +286,93 @@ def main():
     plt.show()
 
 
-    # --- Plot the reintegration to confirm dynamics consistency --- #
-    sol_integrated = sol.integrate(shooting_type=Shooting.SINGLE,
-                                    integrator=SolutionIntegrator.SCIPY_DOP853,
-                                    to_merge=SolutionMerge.NODES,
-                                    return_time=False,
-                                   )
-    q_integrated, qdot_integrated = sol_integrated["q"], sol_integrated["qdot"]
+    # --- TODO: REMOVE --- #
+    def integrate(time, q, qdot, tau, muscle, forward_dynamics_func):
+
+        def get_u(t0, t, dt, u0, u1):
+            dt_norm = (t - t0) / dt
+            return u0 + (u1 - u0) * dt_norm
+
+        n_shooting = time.shape[0] - 1
+        dt = time[1] - time[0]
+        h = dt / 5
+        q_integrated = np.zeros((4, n_shooting + 1))
+        q_integrated[:, 0] = q[:, 0]
+        qdot_integrated = np.zeros((4, n_shooting + 1))
+        qdot_integrated[:, 0] = qdot[:, 0]
+        for i_shooting in range(n_shooting):
+            q_this_time = q_integrated[:, i_shooting]
+            qdot_this_time = qdot_integrated[:, i_shooting]
+            t0 = i_shooting * dt
+            for i_step in range(5):
+                t = t0 + i_step * h
+                q_dot1 = qdot_this_time[:]
+                qdot_dot1 = forward_dynamics_func(q_this_time,
+                                                  qdot_this_time,
+                                                  get_u(t0, t, dt, tau[:, i_shooting], tau[:, i_shooting+1]),
+                                                  get_u(t0, t, dt, mus[:, i_shooting], mus[:, i_shooting+1])
+                                                  )
+                q_dot2 = qdot_this_time[:] + h / 2 * qdot_dot1
+                qdot_dot2 = forward_dynamics_func(q_this_time + h / 2 * q_dot1,
+                                                  qdot_this_time + h / 2 * qdot_dot1,
+                                                  get_u(t0, t + h / 2, dt, tau[:, i_shooting], tau[:, i_shooting+1]),
+                                                  get_u(t0, t + h / 2, dt, mus[:, i_shooting], mus[:, i_shooting+1])
+                                                  )
+                q_dot3 = qdot_this_time[:] + h / 2 * qdot_dot2
+                qdot_dot3 = forward_dynamics_func(q_this_time + h / 2 * q_dot2,
+                                                  qdot_this_time + h / 2 * qdot_dot2,
+                                                  get_u(t0, t + h / 2, dt, tau[:, i_shooting], tau[:, i_shooting+1]),
+                                                  get_u(t0, t + h / 2, dt, mus[:, i_shooting], mus[:, i_shooting+1])
+                                                  )
+                q_dot4 = qdot_this_time[:] + h * qdot_dot3
+                qdot_dot4 = forward_dynamics_func(q_this_time + h * q_dot3, 
+                                                  qdot_this_time + h * qdot_dot3,
+                                                  get_u(t0, t + h, dt, tau[:, i_shooting], tau[:, i_shooting+1]),
+                                                  get_u(t0, t + h, dt, mus[:, i_shooting], mus[:, i_shooting+1])
+                                                  )
+                q_this_time = q_this_time + h / 6 * (q_dot1 + 2 * q_dot2 + 2 * q_dot3 + q_dot4)
+                qdot_this_time = qdot_this_time + h / 6 * (qdot_dot1 + 2 * qdot_dot2 + 2 * qdot_dot3 + qdot_dot4)
+            q_integrated[:, i_shooting + 1] = q_this_time
+            qdot_integrated[:, i_shooting + 1] = qdot_this_time
+        return q_integrated, qdot_integrated
+
+    import casadi as cas
+    nlp = ocp.nlp[0]
+    # Variables
+    q_sym = nlp.get_var_from_states_or_controls("q", states, controls)
+    qdot_sym = nlp.get_var_from_states_or_controls("qdot", states, controls)
+    residual_tau_sym = nlp.get_var_from_states_or_controls("tau", states, controls)
+    mus_activations_sym = nlp.get_var_from_states_or_controls("muscles", states, controls)
+    soft_contact_forces_sym = nlp.algebraic_states["soft_contact_forces"].cx
+
+    # Compute joint torques
+    muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q_sym, qdot_sym, mus_activations_sym)
+    tau = muscles_tau + residual_tau_sym
+
+    soft_contact_forces_computed = nlp.model.soft_contact_forces()(q_sym, qdot_sym, nlp.parameters.cx)
+
+    # Map to external forces
+    external_forces = MX.zeros(9 * 2)
+    external_forces[0:6] = soft_contact_forces_computed[0:6]
+    external_forces[9:15] = soft_contact_forces_computed[6:12]
+
+    dq = qdot_sym
+    ddq = nlp.model.forward_dynamics(with_contact=False)(
+        q_sym, qdot_sym, tau, external_forces, []
+    )
+    dxdt = vertcat(dq, ddq)
+
+    forward_dynamics_func = cas.Function("forward_dyn", [q_sym, qdot_sym, residual_tau_sym, mus_activations_sym], [dxdt])
+
+    q_integrated, qdot_integrated = integrate(time, q, qdot, tau_residual, mus, forward_dynamics_func)
+
+    # # --- Plot the reintegration to confirm dynamics consistency --- #
+    # sol_integrated = sol.integrate(shooting_type=Shooting.SINGLE,
+    #                                 integrator=SolutionIntegrator.SCIPY_DOP853,
+    #                                 to_merge=SolutionMerge.NODES,
+    #                                 return_time=False,
+    #                                )
+    # q_integrated, qdot_integrated = sol_integrated["q"], sol_integrated["qdot"]
     fig, axs = plt.subplots(4, 1, figsize=(10, 10))
     for i_dof in range(4):
         axs[i_dof].plot(time, q[i_dof, :], marker="o", linestyle='none', fillstyle='none', color="tab:red", label="Optimal solution - q")
