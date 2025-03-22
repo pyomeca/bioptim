@@ -95,9 +95,6 @@ def custom_dynamics(
         slope_q = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
         slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
 
-        # qdot
-        qdot_defect = slope_q * nlp.dt - qdot * nlp.dt
-
         # qddot
         tau_id = DynamicsFunctions.inverse_dynamics(
             nlp, q, slope_q, slope_qdot, with_contact=False, external_forces=external_forces
@@ -107,7 +104,7 @@ def custom_dynamics(
         contact_forces = nlp.model.soft_contact_forces()(q, qdot, nlp.parameters.cx)
         contact_defect = soft_contact_forces - contact_forces
 
-        defects = vertcat(qdot_defect, tau_defect, contact_defect)
+        defects = vertcat(qdot - slope_q, tau_defect, contact_defect)
 
     return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
@@ -297,10 +294,10 @@ def main():
     q_integrated, qdot_integrated = sol_integrated["q"], sol_integrated["qdot"]
     fig, axs = plt.subplots(4, 1, figsize=(10, 10))
     for i_dof in range(4):
-        axs[i_dof].plot(time, q[i_dof, :], marker="o", fillstyle='none', color="tab:red", label="Optimal solution - q")
-        axs[i_dof].plot(time, q_integrated[i_dof, :], ".", color="tab:red", label="Reintegration - q")
-        axs[i_dof].plot(time, qdot[i_dof, :], marker="o", fillstyle='none', color="tab:blue", label="Optimal solution - qdot")
-        axs[i_dof].plot(time, qdot_integrated[i_dof, :], ".", color="tab:blue", label="Reintegration - qdot")
+        axs[i_dof].plot(time, q[i_dof, :], marker="o", linestyle='none', fillstyle='none', color="tab:red", label="Optimal solution - q")
+        axs[i_dof].plot(time, q_integrated[i_dof, :], ".", linestyle='none', color="tab:red", label="Reintegration - q")
+        axs[i_dof].plot(time, qdot[i_dof, :], marker="o", linestyle='none', fillstyle='none', color="tab:blue", label="Optimal solution - qdot")
+        axs[i_dof].plot(time, qdot_integrated[i_dof, :], ".", linestyle='none', color="tab:blue", label="Reintegration - qdot")
         axs[i_dof].set_title(f"{ocp.nlp[0].model.name_dof[i_dof]}")
     axs[0].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()

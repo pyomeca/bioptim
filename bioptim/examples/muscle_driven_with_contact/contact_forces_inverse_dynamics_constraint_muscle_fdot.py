@@ -104,8 +104,7 @@ def custom_dynamics(
         )
 
         # qdot
-        qdot_defect = slope_q * nlp.dt - qdot * nlp.dt
-        defects = vertcat(qdot_defect, tau - tau_id, rigid_contact_forces_derivatives - slope_contacts)
+        defects = vertcat(qdot - slope_q, tau - tau_id, rigid_contact_forces_derivatives - slope_contacts)
 
     return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 

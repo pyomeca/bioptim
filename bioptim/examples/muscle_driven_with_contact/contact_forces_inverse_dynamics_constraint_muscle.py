@@ -103,8 +103,7 @@ def custom_dynamics(
             nlp, q, slope_q, slope_qdot, with_contact=False, external_forces=external_forces
         )
 
-        qdot_defect = slope_q * nlp.dt - qdot * nlp.dt
-        defects = vertcat(qdot_defect, tau - tau_id)
+        defects = vertcat(qdot - slope_q, tau - tau_id)
 
     return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
