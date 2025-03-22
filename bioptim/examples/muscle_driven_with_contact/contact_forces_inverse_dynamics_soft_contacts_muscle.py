@@ -307,42 +307,42 @@ def main():
             for i_step in range(5):
                 t = t0 + i_step * h
                 q_dot1 = qdot_this_time[:]
-                qdot_dot1 = forward_dynamics_func(q_this_time,
-                                                  qdot_this_time,
-                                                  get_u(t0, t, dt, tau[:, i_shooting], tau[:, i_shooting+1]),
-                                                  get_u(t0, t, dt, mus[:, i_shooting], mus[:, i_shooting+1])
+                qdot_dot1 = forward_dynamics_func(cas.vertcat(q_this_time,
+                                                  qdot_this_time),
+                                                  cas.vertcat(get_u(t0, t, dt, tau[:, i_shooting], tau[:, i_shooting+1]),
+                                                  get_u(t0, t, dt, muscle[:, i_shooting], muscle[:, i_shooting+1]))
                                                   )
                 q_dot2 = qdot_this_time[:] + h / 2 * qdot_dot1
-                qdot_dot2 = forward_dynamics_func(q_this_time + h / 2 * q_dot1,
-                                                  qdot_this_time + h / 2 * qdot_dot1,
-                                                  get_u(t0, t + h / 2, dt, tau[:, i_shooting], tau[:, i_shooting+1]),
-                                                  get_u(t0, t + h / 2, dt, mus[:, i_shooting], mus[:, i_shooting+1])
+                qdot_dot2 = forward_dynamics_func(cas.vertcat(q_this_time + h / 2 * q_dot1,
+                                                  qdot_this_time + h / 2 * qdot_dot1),
+                                                  cas.vertcat(get_u(t0, t + h / 2, dt, tau[:, i_shooting], tau[:, i_shooting+1]),
+                                                  get_u(t0, t + h / 2, dt, muscle[:, i_shooting], muscle[:, i_shooting+1]))
                                                   )
                 q_dot3 = qdot_this_time[:] + h / 2 * qdot_dot2
-                qdot_dot3 = forward_dynamics_func(q_this_time + h / 2 * q_dot2,
-                                                  qdot_this_time + h / 2 * qdot_dot2,
-                                                  get_u(t0, t + h / 2, dt, tau[:, i_shooting], tau[:, i_shooting+1]),
-                                                  get_u(t0, t + h / 2, dt, mus[:, i_shooting], mus[:, i_shooting+1])
+                qdot_dot3 = forward_dynamics_func(cas.vertcat(q_this_time + h / 2 * q_dot2,
+                                                  qdot_this_time + h / 2 * qdot_dot2),
+                                                  cas.vertcat(get_u(t0, t + h / 2, dt, tau[:, i_shooting], tau[:, i_shooting+1]),
+                                                  get_u(t0, t + h / 2, dt, muscle[:, i_shooting], muscle[:, i_shooting+1]))
                                                   )
                 q_dot4 = qdot_this_time[:] + h * qdot_dot3
-                qdot_dot4 = forward_dynamics_func(q_this_time + h * q_dot3, 
-                                                  qdot_this_time + h * qdot_dot3,
-                                                  get_u(t0, t + h, dt, tau[:, i_shooting], tau[:, i_shooting+1]),
-                                                  get_u(t0, t + h, dt, mus[:, i_shooting], mus[:, i_shooting+1])
+                qdot_dot4 = forward_dynamics_func(cas.vertcat(q_this_time + h * q_dot3,
+                                                  qdot_this_time + h * qdot_dot3),
+                                                  cas.vertcat(get_u(t0, t + h, dt, tau[:, i_shooting], tau[:, i_shooting+1]),
+                                                  get_u(t0, t + h, dt, muscle[:, i_shooting], muscle[:, i_shooting+1]))
                                                   )
                 q_this_time = q_this_time + h / 6 * (q_dot1 + 2 * q_dot2 + 2 * q_dot3 + q_dot4)
                 qdot_this_time = qdot_this_time + h / 6 * (qdot_dot1 + 2 * qdot_dot2 + 2 * qdot_dot3 + qdot_dot4)
-            q_integrated[:, i_shooting + 1] = q_this_time
-            qdot_integrated[:, i_shooting + 1] = qdot_this_time
+            q_integrated[:, i_shooting + 1] = np.reshape(q_this_time, (4, ))
+            qdot_integrated[:, i_shooting + 1] = np.reshape(qdot_this_time[:, 0], (4, ))
         return q_integrated, qdot_integrated
 
     import casadi as cas
     nlp = ocp.nlp[0]
     # Variables
-    q_sym = nlp.get_var_from_states_or_controls("q", states, controls)
-    qdot_sym = nlp.get_var_from_states_or_controls("qdot", states, controls)
-    residual_tau_sym = nlp.get_var_from_states_or_controls("tau", states, controls)
-    mus_activations_sym = nlp.get_var_from_states_or_controls("muscles", states, controls)
+    q_sym = nlp.states["q"].cx
+    qdot_sym = nlp.states["qdot"].cx
+    residual_tau_sym = nlp.controls["tau"].cx
+    mus_activations_sym = nlp.controls["muscles"].cx
     soft_contact_forces_sym = nlp.algebraic_states["soft_contact_forces"].cx
 
     # Compute joint torques
@@ -356,15 +356,13 @@ def main():
     external_forces[0:6] = soft_contact_forces_computed[0:6]
     external_forces[9:15] = soft_contact_forces_computed[6:12]
 
-    dq = qdot_sym
     ddq = nlp.model.forward_dynamics(with_contact=False)(
         q_sym, qdot_sym, tau, external_forces, []
     )
-    dxdt = vertcat(dq, ddq)
 
-    forward_dynamics_func = cas.Function("forward_dyn", [q_sym, qdot_sym, residual_tau_sym, mus_activations_sym], [dxdt])
+    forward_dynamics_func = cas.Function("forward_dyn", [nlp.states.cx, nlp.controls.cx], [ddq])
 
-    q_integrated, qdot_integrated = integrate(time, q, qdot, tau_residual, mus, forward_dynamics_func)
+    q_integrated, qdot_integrated = integrate(time[0::4], q[:, 0::4], qdot[:, 0::4], tau_residual[:, 0::2], mus[:, 0::2], forward_dynamics_func)
 
     # # --- Plot the reintegration to confirm dynamics consistency --- #
     # sol_integrated = sol.integrate(shooting_type=Shooting.SINGLE,
@@ -373,12 +371,13 @@ def main():
     #                                 return_time=False,
     #                                )
     # q_integrated, qdot_integrated = sol_integrated["q"], sol_integrated["qdot"]
+
     fig, axs = plt.subplots(4, 1, figsize=(10, 10))
     for i_dof in range(4):
         axs[i_dof].plot(time, q[i_dof, :], marker="o", linestyle='none', fillstyle='none', color="tab:red", label="Optimal solution - q")
-        axs[i_dof].plot(time, q_integrated[i_dof, :], ".", linestyle='none', color="tab:red", label="Reintegration - q")
+        axs[i_dof].plot(time[0::4], q_integrated[i_dof, :], ".", linestyle='none', color="tab:red", label="Reintegration - q")
         axs[i_dof].plot(time, qdot[i_dof, :], marker="o", linestyle='none', fillstyle='none', color="tab:blue", label="Optimal solution - qdot")
-        axs[i_dof].plot(time, qdot_integrated[i_dof, :], ".", linestyle='none', color="tab:blue", label="Reintegration - qdot")
+        axs[i_dof].plot(time[0::4], qdot_integrated[i_dof, :], ".", linestyle='none', color="tab:blue", label="Reintegration - qdot")
         axs[i_dof].set_title(f"{ocp.nlp[0].model.name_dof[i_dof]}")
     axs[0].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
