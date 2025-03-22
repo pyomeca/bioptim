@@ -45,14 +45,7 @@ def _get_solution(
             "use_sx": False,
         }
 
-    if ode_solver in (OdeSolver.COLLOCATION, OdeSolver.IRK) and control_type == ControlType.LINEAR_CONTINUOUS:
-        with pytest.raises(
-            NotImplementedError, match="ControlType.LINEAR_CONTINUOUS ControlType not implemented yet with COLLOCATION"
-        ):
-            ocp_module.prepare_ocp(**prepare_args)
-        return None
-
-    elif is_multi_phase and ode_solver == OdeSolver.COLLOCATION and duplicate_first and phase_dynamics:
+    if is_multi_phase and ode_solver == OdeSolver.COLLOCATION and duplicate_first and phase_dynamics:
         with pytest.raises(RuntimeError):
             # There is currently a bug with the duplicate_first option which creates a Casadi free variable
             # When solved, this pytest.raises should be removed
