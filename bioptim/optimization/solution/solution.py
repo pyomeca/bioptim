@@ -725,10 +725,11 @@ class Solution:
         # Redefinition of the dynamics using dxdt instead of the defects
         for i in range(self.ocp.n_phases):
             # Overwrite the dynamics
-            self.ocp.nlp[i].ode_solver = OdeSolver.RK4()
+            self.ocp.nlp[i].ode_solver = OdeSolver.RK4(n_integration_steps=self.ocp.nlp[i].old_ode_solver.polynomial_degree+1)
             self.ocp.nlp[i].states = OptimizationVariableContainer(self.ocp.nlp[i].phase_dynamics)
             self.ocp.nlp[i].states_dot = OptimizationVariableContainer(self.ocp.nlp[i].phase_dynamics)
             self.ocp.nlp[i].controls = OptimizationVariableContainer(self.ocp.nlp[i].phase_dynamics)
+            self.ocp.nlp[i].algebraic_states = OptimizationVariableContainer(self.ocp.nlp[i].phase_dynamics)
             self.ocp.nlp[i].numerical_data_timeseries = OptimizationVariableContainer(self.ocp.nlp[i].phase_dynamics)
             # reset the dynamics as it is done in OptimalControlProgram
             self.ocp.nlp[i].initialize(self.ocp.cx)

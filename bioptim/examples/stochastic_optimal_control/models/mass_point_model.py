@@ -6,7 +6,7 @@ from typing import Callable
 from casadi import vertcat, DM, sqrt
 import numpy as np
 
-from bioptim import DynamicsEvaluation, DynamicsFunctions
+from bioptim import DynamicsEvaluation, DynamicsFunctions, OdeSolver
 
 
 class MassPointModel:
@@ -84,7 +84,16 @@ class MassPointModel:
 
         qddot = -self.kapa * (q - u) - self.beta * qdot * sqrt(qdot[0] ** 2 + qdot[1] ** 2 + self.c**2) + motor_noise
 
-        return DynamicsEvaluation(dxdt=vertcat(qdot, qddot), defects=None)
+        dxdt, defects = None, None
+        if not isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
+            dxdt = vertcat(qdot, qddot)
+        else:
+            # Defects
+            slope_q = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
+            slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
+            defects = vertcat(slope_q, slope_qdot) * nlp.dt - vertcat(qdot, qddot) * nlp.dt
+
+        return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
     def dynamics_numerical(self, states, controls, motor_noise=0):
         """

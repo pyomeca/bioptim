@@ -1641,7 +1641,7 @@ class ConfigureProblem:
         """
         name = "cov"
 
-        if name in nlp.variable_mappings:
+        if name in nlp.variable_mappings and nlp.variable_mappings[name].to_second.map_idx != nlp.variable_mappings[name].to_first.map_idx:
             raise NotImplementedError(f"Algebraic states and mapping cannot be use together for now.")
 
         name_cov = []
@@ -1731,7 +1731,7 @@ class ConfigureProblem:
         """
         name = "m"
 
-        if name in nlp.variable_mappings:
+        if name in nlp.variable_mappings and nlp.variable_mappings["m"].to_first.map_idx != nlp.variable_mappings["m"].to_second.map_idx:
             raise NotImplementedError(f"Algebraic states and mapping cannot be use together for now.")
 
         name_m = []

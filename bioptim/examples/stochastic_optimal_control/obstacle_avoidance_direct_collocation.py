@@ -346,6 +346,7 @@ def configure_stochastic_optimal_control_problem(
 ):
     ConfigureProblem.configure_q(ocp, nlp, True, False, False)
     ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
+    ConfigureProblem.configure_qddot(ocp, nlp, False, False, True)
     ConfigureProblem.configure_new_variable("u", nlp.model.name_u, ocp, nlp, as_states=False, as_controls=True)
 
     # Algebraic states variables
