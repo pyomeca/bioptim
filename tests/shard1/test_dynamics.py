@@ -115,7 +115,7 @@ def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
     if with_external_force:
 
         external_forces = ExternalForceSetTimeSeries(nb_frames=nlp.ns)
-        external_forces.add("Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :])
+        external_forces.add("r", "Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :])
         numerical_time_series = {"external_forces": external_forces.to_numerical_time_series()}
 
     nlp.model = BiorbdModel(
@@ -300,7 +300,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
     numerical_timeseries = None
     if with_external_force:
         external_forces = ExternalForceSetTimeSeries(nb_frames=nlp.ns)
-        external_forces.add("Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :])
+        external_forces.add("s", "Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :])
         numerical_timeseries = {"external_forces": external_forces.to_numerical_time_series()}
 
     nlp.model = BiorbdModel(
@@ -591,7 +591,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
     numerical_timeseries = None
     if with_external_force:
         external_forces = ExternalForceSetTimeSeries(nb_frames=nlp.ns)
-        external_forces.add("Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :])
+        external_forces.add("t", "Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :])
         numerical_timeseries = {"external_forces": external_forces.to_numerical_time_series()}
 
     nlp.model = BiorbdModel(
@@ -716,7 +716,7 @@ def test_torque_activation_driven_with_residual_torque(
     numerical_timeseries = None
     if with_external_force:
         external_forces = ExternalForceSetTimeSeries(nb_frames=nlp.ns)
-        external_forces.add("Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :])
+        external_forces.add("u", "Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :])
         numerical_timeseries = {"external_forces": external_forces.to_numerical_time_series()}
 
     nlp.model = BiorbdModel(
@@ -901,6 +901,7 @@ def test_muscle_driven(with_excitations, with_contact, with_residual_torque, wit
     if with_external_force:
         external_forces = ExternalForceSetTimeSeries(nb_frames=nlp.ns)
         external_forces.add(
+            "v",
             "r_ulna_radius_hand_rotation1",
             EXTERNAL_FORCE_ARRAY[:6, :],
             point_of_application=EXTERNAL_FORCE_ARRAY[6:, :],

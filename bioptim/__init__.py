@@ -225,7 +225,7 @@ from .misc.enums import (
 )
 from .misc.mapping import BiMappingList, BiMapping, Mapping, SelectionMapping, Dependency
 from .models.biorbd.biorbd_model import BiorbdModel
-from .models.biorbd.external_forces import ExternalForceSetTimeSeries
+from .models.biorbd.external_forces import ExternalForceSetTimeSeries, ExternalForceSetVariables
 from .models.biorbd.holonomic_biorbd_model import HolonomicBiorbdModel
 from .models.biorbd.multi_biorbd_model import MultiBiorbdModel
 from .models.biorbd.stochastic_biorbd_model import StochasticBiorbdModel

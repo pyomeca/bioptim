@@ -325,9 +325,8 @@ def test_multiphase_time_constraint_with_phase_time_equality(ode_solver, phase_d
     # Load time_constraint
     from bioptim.examples.optimal_time_ocp import multiphase_time_constraint as ocp_module
 
-    # For reducing time phase_dynamics == PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
-        return
+        pytest.skip("For reducing time phase_dynamics == PhaseDynamics.ONE_PER_NODE is skipped for redundant tests")
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 

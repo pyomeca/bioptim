@@ -284,13 +284,13 @@ class NonLinearProgram:
 
     def update_init(self, x_init, u_init, a_init):
 
-        if x_init is not None:
+        if x_init is not None or a_init is not None:
             not_direct_collocation = not self.ode_solver.is_direct_collocation
-            init_all_point = x_init.type == InterpolationType.ALL_POINTS
+            x_init_all_point = x_init.type == InterpolationType.ALL_POINTS if x_init is not None else False
+            a_init_all_point = a_init.type == InterpolationType.ALL_POINTS if a_init is not None else False
 
-            if not_direct_collocation and init_all_point:
+            if not_direct_collocation and (x_init_all_point or a_init_all_point):
                 raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
-                # TODO @ipuch in PR #907, add algebraic states to the error message
 
         self._update_init(
             init=x_init,
@@ -639,12 +639,12 @@ class NonLinearProgram:
         return out
 
     def get_external_forces(
-        self, states: MX.sym, controls: MX.sym, algebraic_states: MX.sym, numerical_timeseries: MX.sym
+        self, name: str, states: MX.sym, controls: MX.sym, algebraic_states: MX.sym, numerical_timeseries: MX.sym
     ):
 
         external_forces = self.cx(0, 1)
         external_forces = self.retrieve_forces(
-            "external_forces", external_forces, states, controls, algebraic_states, numerical_timeseries
+            name, external_forces, states, controls, algebraic_states, numerical_timeseries
         )
 
         return external_forces

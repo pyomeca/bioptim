@@ -1052,6 +1052,10 @@ class ConfigureProblem:
         if isinstance(dynamics_dxdt, (list, tuple)):
             dynamics_dxdt = vertcat(*dynamics_dxdt)
 
+        dynamics_defects = dynamics_eval.defects
+        if isinstance(dynamics_defects, (list, tuple)):
+            dynamics_defects = vertcat(*dynamics_defects)
+
         time_span_sym = vertcat(nlp.time_cx, nlp.dt)
         if dynamics_dxdt is not None:
             if nlp.dynamics_func is None:
@@ -1126,7 +1130,7 @@ class ConfigureProblem:
                         nlp.numerical_timeseries.cx,
                         nlp.states_dot.scaled.cx,
                     ],
-                    [dynamics_eval.defects],
+                    [dynamics_defects],
                     ["t_span", "x", "u", "p", "a", "d", "xdot"],
                     ["defects"],
                 )
@@ -1218,16 +1222,16 @@ class ConfigureProblem:
 
         all_contact_names = []
         for elt in ocp.nlp:
-            all_contact_names.extend([name for name in elt.model.contact_names if name not in all_contact_names])
+            all_contact_names.extend([name for name in elt.model.rigid_contact_names if name not in all_contact_names])
 
         if "contact_forces" in nlp.plot_mapping:
-            contact_names_in_phase = [name for name in nlp.model.contact_names]
+            contact_names_in_phase = [name for name in nlp.model.rigid_contact_names]
             axes_idx = BiMapping(
                 to_first=nlp.plot_mapping["contact_forces"].map_idx,
                 to_second=[i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase],
             )
         else:
-            contact_names_in_phase = [name for name in nlp.model.contact_names]
+            contact_names_in_phase = [name for name in nlp.model.rigid_contact_names]
             axes_idx = BiMapping(
                 to_first=[i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase],
                 to_second=[i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase],
@@ -1850,7 +1854,9 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_rigid_contact_forces(ocp, nlp, as_states: bool, as_controls: bool):
+    def configure_rigid_contact_forces(
+        ocp, nlp, as_states: bool, as_states_dot: bool, as_algebraic_states: bool, as_controls: bool
+    ):
         """
         Configure the generalized forces derivative
 
@@ -1859,18 +1865,29 @@ class ConfigureProblem:
         nlp: NonLinearProgram
             A reference to the phase
         as_states: bool
-            If the generalized force derivatives should be a state
+            If the generalized forces should be a state
+        as_states_dot: bool
+            If the generalized forces should be a state_dot
+        as_algebraic_states: bool
+            If the generalized forces should be an algebraic state
         as_controls: bool
-            If the generalized force derivatives should be a control
+            If the generalized forces should be a control
         """
 
-        name_contact_forces = [name for name in nlp.model.contact_names]
+        name_contact_forces = [name for name in nlp.model.rigid_contact_names]
         ConfigureProblem.configure_new_variable(
-            "rigid_contact_forces", name_contact_forces, ocp, nlp, as_states, as_controls
+            "rigid_contact_forces",
+            name_contact_forces,
+            ocp,
+            nlp,
+            as_states=as_states,
+            as_states_dot=as_states_dot,
+            as_algebraic_states=as_algebraic_states,
+            as_controls=as_controls,
         )
 
     @staticmethod
-    def configure_soft_contact_forces(ocp, nlp, as_states: bool, as_controls: bool):
+    def configure_soft_contact_forces(ocp, nlp, as_states: bool, as_algebraic_states: bool, as_controls: bool):
         """
         Configure the generalized forces derivative
 
@@ -1879,15 +1896,23 @@ class ConfigureProblem:
         nlp: NonLinearProgram
             A reference to the phase
         as_states: bool
-            If the generalized force derivatives should be a state
+            If the generalized forces should be a state
+        as_algebraic_states: bool
+            If the generalized forces should be an algebraic state
         as_controls: bool
-            If the generalized force derivatives should be a control
+            If the generalized forces should be a control
         """
         name_soft_contact_forces = [
-            f"{name}_{axis}" for name in nlp.model.soft_contact_names for axis in ("X", "Y", "Z")
+            f"{name}_{axis}" for name in nlp.model.soft_contact_names for axis in ("MX", "MY", "MZ", "FX", "FY", "FZ")
         ]
         ConfigureProblem.configure_new_variable(
-            "soft_contact_forces", name_soft_contact_forces, ocp, nlp, as_states, as_controls
+            "soft_contact_forces",
+            name_soft_contact_forces,
+            ocp,
+            nlp,
+            as_states=as_states,
+            as_algebraic_states=as_algebraic_states,
+            as_controls=as_controls,
         )
 
     @staticmethod

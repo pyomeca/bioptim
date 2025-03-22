@@ -45,8 +45,8 @@ class Integrator:
         Get the multithreaded CasADi graph of the integration
     get_u(self, u: np.ndarray, t: float) -> np.ndarray
         Get the control at a given time
-    dxdt(self, h: float, time: float | MX | SX, states: MX | SX, controls: MX | SX, params: MX | SX, algebraic_states: MX | SX, numerical_timeseries: MX | SX) -> tuple[SX, list[SX]]
-        The dynamics of the system
+    get_states_end(self, h: float, time: float | MX | SX, states: MX | SX, controls: MX | SX, params: MX | SX, algebraic_states: MX | SX, numerical_timeseries: MX | SX) -> tuple[SX, list[SX]]
+        Integrate dxdt over one complete shooting interval to get the states at the end of the interval.
     """
 
     # Todo change ode and ode_opt into class
@@ -90,7 +90,7 @@ class Integrator:
                 self._a_sym_modified,
                 self.numerical_timeseries_sym,
             ],
-            self.dxdt(
+            self.get_states_end(
                 states=self.x_sym,
                 controls=self.u_sym,
                 params=self.param_sym,
@@ -194,7 +194,7 @@ class Integrator:
         else:
             raise RuntimeError(f"{self.control_type} ControlType not implemented yet")
 
-    def dxdt(
+    def get_states_end(
         self,
         states: MX | SX,
         controls: MX | SX,
@@ -302,7 +302,7 @@ class RK(Integrator):
 
         raise RuntimeError("RK is abstract, please select a specific RK")
 
-    def dxdt(
+    def get_states_end(
         self,
         states: MX | SX,
         controls: MX | SX,
@@ -509,7 +509,7 @@ class TRAPEZOIDAL(Integrator):
     def dt(self):
         return self.t_span_sym[1]
 
-    def dxdt(
+    def get_states_end(
         self,
         states: MX | SX,
         controls: MX | SX,
@@ -621,28 +621,7 @@ class COLLOCATION(Integrator):
     def _time_xall_from_dt_func(self) -> Function:
         return Function("step_time", [self.t_span_sym], [self.t_span_sym[0] + (self._integration_time + [1]) * self.h])
 
-    def get_u(self, u: np.ndarray, t: float | MX | SX) -> np.ndarray:
-        """
-        Get the control at a given time
-
-        Parameters
-        ----------
-        u: np.ndarray
-            The control matrix
-        t: float | MX | SX
-            The time a which control should be computed
-
-        Returns
-        -------
-        The control at a given time
-        """
-
-        if self.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
-            return super(COLLOCATION, self).get_u(u, t)
-        else:
-            raise NotImplementedError(f"{self.control_type} ControlType not implemented yet with COLLOCATION")
-
-    def dxdt(
+    def get_states_end(
         self,
         states: MX | SX,
         controls: MX | SX,
@@ -668,10 +647,10 @@ class COLLOCATION(Integrator):
             defects.append(
                 self.implicit_fun(
                     t,
-                    states[j + 1],
+                    states[j + 1],  # +1 instead of 0 since the first subnode is duplicated
                     self.get_u(controls, self._integration_time[j]),
                     params,
-                    algebraic_states[j + 1],
+                    algebraic_states[j + 1],  # +1 instead of 0 since the first subnode is duplicated
                     numerical_timeseries,
                     xp_j / self.h,
                 )
@@ -715,7 +694,7 @@ class IRK(COLLOCATION):
             "step_time", [self.t_span_sym], [vertcat(*[self.t_span_sym[0], self.t_span_sym[0] + self.t_span_sym[1]])]
         )
 
-    def dxdt(
+    def get_states_end(
         self,
         states: MX | SX,
         controls: MX | SX,
@@ -724,7 +703,7 @@ class IRK(COLLOCATION):
         numerical_timeseries: MX | SX,
     ) -> tuple:
         nx = states[0].shape[0]
-        _, _, defect = super(IRK, self).dxdt(
+        _, _, defect = super(IRK, self).get_states_end(
             states=states,
             controls=controls,
             params=params,
