@@ -724,20 +724,29 @@ class Solution:
 
         # Redefinition of the dynamics using dxdt instead of the defects
         for i in range(self.ocp.n_phases):
+            # Make sure to remove any dyanamics so that sol.integrate can be called multiple times
+            self.ocp.nlp[i].dynamics_func = None
+            self.ocp.nlp[i].extra_dynamics_func = []
+            self.ocp.nlp[i].implicit_dynamics_func = None
+            self.ocp.nlp[i].extra_implicit_dynamics_func = []
+
             # Overwrite the dynamics
             self.ocp.nlp[i].ode_solver = OdeSolver.RK4(
                 n_integration_steps=self.ocp.nlp[i].old_ode_solver.polynomial_degree + 1
             )
+
+            # Declare the variables
             self.ocp.nlp[i].states = OptimizationVariableContainer(self.ocp.nlp[i].phase_dynamics)
             self.ocp.nlp[i].states_dot = OptimizationVariableContainer(self.ocp.nlp[i].phase_dynamics)
             self.ocp.nlp[i].controls = OptimizationVariableContainer(self.ocp.nlp[i].phase_dynamics)
             self.ocp.nlp[i].algebraic_states = OptimizationVariableContainer(self.ocp.nlp[i].phase_dynamics)
             self.ocp.nlp[i].numerical_data_timeseries = OptimizationVariableContainer(self.ocp.nlp[i].phase_dynamics)
-            # reset the dynamics as it is done in OptimalControlProgram
+
+            # Set the dynamics again as it is done in OptimalControlProgram
             self.ocp.nlp[i].initialize(self.ocp.cx)
             self.ocp.nlp[i].parameters = (
                 self.ocp.parameters
-            )  # This should be remove when phase parameters will be implemented
+            )
             self.ocp.nlp[i].numerical_data_timeseries = self.ocp.nlp[i].dynamics_type.numerical_data_timeseries
             ConfigureProblem.initialize(self.ocp, self.ocp.nlp[i])
             self.ocp.nlp[i].ode_solver.prepare_dynamic_integrator(self.ocp, self.ocp.nlp[i])

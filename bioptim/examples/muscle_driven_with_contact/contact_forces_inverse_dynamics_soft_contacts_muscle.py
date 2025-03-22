@@ -39,7 +39,7 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, numerica
     ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False, as_states_dot=True)
     ConfigureProblem.configure_qddot(ocp, nlp, as_states=False, as_controls=False, as_states_dot=True)
     ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)  # Residual torques
-    ConfigureProblem.configure_muscles(ocp, nlp, as_states=False, as_controls=True)  # Muscle activation
+    ConfigureProblem.configure_muscles(ocp, nlp, as_states=False, as_controls=True, as_states_dot=False)  # Muscle activation
 
     # Implicit variables
     ConfigureProblem.configure_soft_contact_forces(
@@ -68,33 +68,48 @@ def custom_dynamics(
     residual_tau = nlp.get_var_from_states_or_controls("tau", states, controls)
     mus_activations = nlp.get_var_from_states_or_controls("muscles", states, controls)
 
-    # Get external forces from algebraic states
-    soft_contact_forces = nlp.algebraic_states["soft_contact_forces"].cx
+    # Compute joint torques
+    muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations)
+    tau = muscles_tau + residual_tau
+
+    if not isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
+        soft_contact_forces = nlp.model.soft_contact_forces()(q, qdot, nlp.parameters.cx)
+    else:
+        # Get external forces from algebraic states
+        soft_contact_forces = nlp.algebraic_states["soft_contact_forces"].cx
 
     # Map to external forces
     external_forces = MX.zeros(9 * 2)
     external_forces[0:6] = soft_contact_forces[0:6]
     external_forces[9:15] = soft_contact_forces[6:12]
 
-    # Compute joint torques
-    muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations)
-    tau = muscles_tau + residual_tau
+    dxdt, defects = None, None
+    if not isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
+        dq = qdot
+        ddq = DynamicsFunctions.forward_dynamics(
+            nlp, q, qdot, tau, with_contact=False, external_forces=external_forces
+        )
+        dxdt = vertcat(dq, ddq)
+    else:
+        # Defects
+        slope_q = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
+        slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
 
-    # Defects
-    slope_q = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
-    slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
+        # qdot
+        qdot_defect = slope_q * nlp.dt - qdot * nlp.dt
 
-    # qdot
-    qdot_defect = qdot - slope_q
-    # qddot
-    tau_id = DynamicsFunctions.inverse_dynamics(
-        nlp, q, slope_q, slope_qdot, with_contact=False, external_forces=external_forces
-    )
-    tau_defect = tau - tau_id
-    # contact
-    contact_forces = nlp.model.soft_contact_forces()(q, qdot, nlp.parameters.cx)
-    contact_defect = soft_contact_forces - contact_forces
-    return DynamicsEvaluation(dxdt=None, defects=vertcat(qdot_defect, tau_defect, contact_defect))
+        # qddot
+        tau_id = DynamicsFunctions.inverse_dynamics(
+            nlp, q, slope_q, slope_qdot, with_contact=False, external_forces=external_forces
+        )
+        tau_defect = tau - tau_id
+        # contact
+        contact_forces = nlp.model.soft_contact_forces()(q, qdot, nlp.parameters.cx)
+        contact_defect = soft_contact_forces - contact_forces
+
+        defects = vertcat(qdot_defect, tau_defect, contact_defect)
+
+    return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
 
 def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True):
@@ -121,6 +136,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
         dynamic_function=custom_dynamics,
         expand_dynamics=expand_dynamics,
         phase_dynamics=PhaseDynamics.ONE_PER_NODE,
+        ode_solver=OdeSolver.COLLOCATION(polynomial_degree=3),
     )
 
     multinode_constraints = MultinodeConstraintList()
@@ -184,7 +200,6 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
         control_type=ControlType.LINEAR_CONTINUOUS,
         objective_functions=objective_functions,
         multinode_constraints=multinode_constraints,
-        ode_solver=OdeSolver.COLLOCATION(polynomial_degree=3, defects_type=DefectType.IMPLICIT),
     )
 
 
@@ -203,7 +218,7 @@ def main():
     solver.set_maximum_iterations(1000)
     sol = ocp.solve(solver)
     nlp = ocp.nlp[0]
-    sol.graphs()
+    # sol.graphs()
 
     time = np.reshape(sol.decision_time(to_merge=SolutionMerge.NODES), (-1,))
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
@@ -215,15 +230,6 @@ def main():
         controls["tau"],
         controls["muscles"],
         algebraic_states["soft_contact_forces"],
-    )
-
-    # --- Reintegrate solution --- #
-    # TODO: Charbie -> This is not working yet
-    sol.integrate(
-        shooting_type=Shooting.SINGLE,
-        integrator=SolutionIntegrator.SCIPY_DOP853,
-        to_merge=SolutionMerge.NODES,
-        return_time=True,
     )
 
     # --- Get contact position --- #
@@ -278,7 +284,26 @@ def main():
     axs[1].legend()
     axs[1].grid()
     axs[1].set_title("Contact forces [N]")
-    plt.savefig("test.png")
+    plt.savefig("contacts.png")
+    plt.show()
+
+
+    # --- Plot the reintegration to confirm dynamics consistency --- #
+    sol_integrated = sol.integrate(shooting_type=Shooting.SINGLE,
+                                    integrator=SolutionIntegrator.SCIPY_DOP853,
+                                    to_merge=SolutionMerge.NODES,
+                                    return_time=False,
+                                   )
+    q_integrated, qdot_integrated = sol_integrated.states[0]["q"], sol_integrated.states[0]["qdot"]
+    fig, axs = plt.subplots(4, 1)
+    for i_dof in range(4):
+        axs[i_dof].plot(time, q[i_dof, :], "o-", "tab:red", label="Optimal solution - q")
+        axs[i_dof].plot(time, q_integrated[i_dof, :], "o--", "tab:red", label="Reintegration - q")
+        axs[i_dof].plot(time, qdot[i_dof, :], "o-", "tab:blue", label="Optimal solution - qdot")
+        axs[i_dof].plot(time, qdot_integrated[i_dof, :], "o--", "tab:blue", label="Reintegration - qdot")
+        axs[i_dof].set_title(f"{ocp.nlp[0].model.name_dof[i_dof]}")
+    axs[0].legend()
+    plt.savefig("reintegration.png")
     plt.show()
 
     # --- Show results --- #

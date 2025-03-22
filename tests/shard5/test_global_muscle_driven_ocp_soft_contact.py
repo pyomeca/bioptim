@@ -6,7 +6,7 @@ import pytest
 
 import numpy as np
 import numpy.testing as npt
-from bioptim import OdeSolver, ControlType, PhaseDynamics, SolutionMerge
+from bioptim import OdeSolver, ControlType, PhaseDynamics, SolutionMerge, SolutionIntegrator
 
 from ..utils import TestUtils
 
@@ -68,5 +68,11 @@ def test_muscle_driven_ocp():
        25.889183 , 11.1186312,  0.       ,  0.       ,  0.       ,
         6.737669 ,  8.7657347]))
 
-    # simulate
-    TestUtils.simulate(sol, decimal_value=5)
+    # Reintegrate
+    sol_integrated = sol.integrate(integrator=SolutionIntegrator.SCIPY_RK45)
+
+    # Final position
+    npt.assert_almost_equal(q[:, -1], np.array([1.29798477,  0.43475825, -0.74106543,  0.74666865]))
+    # Final velocity
+    npt.assert_almost_equal(qdot[:, -1], np.array([-4.87558018,   4.61065044,  12.99614536, -13.70780252]))
+

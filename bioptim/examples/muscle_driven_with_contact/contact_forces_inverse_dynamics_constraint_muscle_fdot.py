@@ -44,7 +44,7 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, numerica
     ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False, as_states_dot=True)
     ConfigureProblem.configure_qddot(ocp, nlp, as_states=False, as_controls=False, as_states_dot=True)
     ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)  # Residual torques
-    ConfigureProblem.configure_muscles(ocp, nlp, as_states=False, as_controls=True)  # Muscle activation
+    ConfigureProblem.configure_muscles(ocp, nlp, as_states=False, as_controls=True, as_states_dot=False)  # Muscle activation
     ConfigureProblem.configure_rigid_contact_forces(
         ocp, nlp, as_states=True, as_states_dot=True, as_algebraic_states=False, as_controls=True
     )
@@ -79,22 +79,35 @@ def custom_dynamics(
         nlp.controls["rigid_contact_forces_derivatives"], nlp.controls.scaled.cx
     )
 
-    # Map to external forces
-    external_forces = nlp.model.map_rigid_contact_forces_to_global_forces(rigid_contact_forces, q, parameters)
-
     # Compute joint torques
     muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations)
     tau = muscles_tau + residual_tau
 
-    # Defects
-    slope_q = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
-    slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
-    slope_contacts = DynamicsFunctions.get(nlp.states_dot["rigid_contact_forces"], nlp.states_dot.scaled.cx)
-    tau_id = DynamicsFunctions.inverse_dynamics(
-        nlp, q, slope_q, slope_qdot, with_contact=False, external_forces=external_forces
-    )
-    defects = vertcat(qdot - slope_q, tau - tau_id, rigid_contact_forces_derivatives - slope_contacts)
-    return DynamicsEvaluation(dxdt=None, defects=defects)
+    dxdt, defects = None, None
+    if not isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
+        dq = qdot
+        ddq = nlp.model.forward_dynamics(with_contact=False)(
+            q, qdot, tau, [], nlp.parameters.cx
+        )
+        drigid_contact_forces = rigid_contact_forces_derivatives
+        dxdt = vertcat(dq, ddq, drigid_contact_forces)
+    else:
+        # Map to external forces
+        external_forces = nlp.model.map_rigid_contact_forces_to_global_forces(rigid_contact_forces, q, parameters)
+
+        # Defects
+        slope_q = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
+        slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
+        slope_contacts = DynamicsFunctions.get(nlp.states_dot["rigid_contact_forces"], nlp.states_dot.scaled.cx)
+        tau_id = DynamicsFunctions.inverse_dynamics(
+            nlp, q, slope_q, slope_qdot, with_contact=False, external_forces=external_forces
+        )
+
+        # qdot
+        qdot_defect = slope_q * nlp.dt - qdot * nlp.dt
+        defects = vertcat(qdot_defect, tau - tau_id, rigid_contact_forces_derivatives - slope_contacts)
+
+    return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
 
 def contact_velocity_all_points(controller):
@@ -150,6 +163,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
         dynamic_function=custom_dynamics,
         expand_dynamics=expand_dynamics,
         phase_dynamics=PhaseDynamics.ONE_PER_NODE,
+        ode_solver=OdeSolver.COLLOCATION(polynomial_degree=3),
     )
 
     # Constraints
@@ -212,7 +226,6 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
         control_type=ControlType.LINEAR_CONTINUOUS,
         objective_functions=objective_functions,
         constraints=constraints,
-        ode_solver=OdeSolver.COLLOCATION(polynomial_degree=3, defects_type=DefectType.IMPLICIT),
     )
 
 
