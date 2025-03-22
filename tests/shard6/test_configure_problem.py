@@ -149,7 +149,7 @@ def test_configure_muscles(cx):
     fatigue = FatigueList()
     fatigue.add(XiaFatigue(LD=10, LR=10, F=0.01, R=0.002), state_only=False)
 
-    ConfigureProblem.configure_muscles(ocp, nlp, as_states=True, as_controls=True, fatigue=fatigue)
+    ConfigureProblem.configure_muscles(ocp, nlp, as_states=True, as_states_dot=True, as_controls=True, fatigue=fatigue)
     npt.assert_equal(nlp.states.shape, 24)
     npt.assert_equal(nlp.states.keys(), ["muscles", "muscles_ma", "muscles_mr", "muscles_mf"])
     npt.assert_equal(nlp.controls.shape, 6)

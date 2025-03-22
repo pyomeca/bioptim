@@ -145,6 +145,7 @@ def prepare_ocp(
         configure_holonomic_torque_driven,
         dynamic_function=holonomic_torque_driven_with_qv,
         expand_dynamics=expand_dynamics,
+        ode_solver=ode_solver,
     )
 
     # Boundaries
@@ -218,7 +219,6 @@ def prepare_ocp(
             a_init=a_init,
             objective_functions=objective_functions,
             variable_mappings=tau_variable_bimapping,
-            ode_solver=ode_solver,
             constraints=constraints,
         ),
         bio_model,

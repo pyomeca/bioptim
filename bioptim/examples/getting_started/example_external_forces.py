@@ -88,6 +88,7 @@ def prepare_ocp(
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
         numerical_data_timeseries=numerical_time_series,
+        ode_solver=ode_solver
     )
 
     # Constraints
@@ -116,7 +117,6 @@ def prepare_ocp(
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         constraints=constraints,
-        ode_solver=ode_solver,
         n_threads=n_threads,
         use_sx=use_sx,
     )

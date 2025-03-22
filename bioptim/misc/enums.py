@@ -195,6 +195,12 @@ class SoftContactDynamics(Enum):
     CONSTRAINT = "constraint"
 
 
+class ContactType(Enum):
+    RIGID = "rigid"
+    SOFT = "soft"
+    NONE = "none"
+
+
 class DefectType(Enum):
     EXPLICIT = "explicit"
     IMPLICIT = "implicit"

@@ -38,7 +38,7 @@ def minimize_difference(controllers: list[PenaltyController, PenaltyController])
 
 def prepare_ocp(
     biorbd_model_path: str = "models/cube.bioMod",
-    ode_solver: OdeSolverBase = OdeSolver.RK4(),
+    ode_solver: list[OdeSolverBase] = [OdeSolver.RK4(), OdeSolver.RK4(), OdeSolver.RK4()],
     long_optim: bool = False,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
@@ -119,10 +119,27 @@ def prepare_ocp(
     )
 
     # Dynamics
+    if not isinstance(ode_solver, list):
+        ode_solver = [ode_solver] * 3
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    dynamics.add(
+        DynamicsFcn.TORQUE_DRIVEN,
+        expand_dynamics=expand_dynamics,
+        phase_dynamics=phase_dynamics,
+        ode_solver=ode_solver[0],
+    )
+    dynamics.add(
+        DynamicsFcn.TORQUE_DRIVEN,
+        expand_dynamics=expand_dynamics,
+        phase_dynamics=phase_dynamics,
+        ode_solver=ode_solver[1],
+    )
+    dynamics.add(
+        DynamicsFcn.TORQUE_DRIVEN,
+        expand_dynamics=expand_dynamics,
+        phase_dynamics=phase_dynamics,
+        ode_solver=ode_solver[2],
+    )
 
     # Constraints
     constraints = ConstraintList()
@@ -162,7 +179,6 @@ def prepare_ocp(
         objective_functions=objective_functions,
         constraints=constraints,
         multinode_objectives=multinode_objective,
-        ode_solver=ode_solver,
         control_type=control_type,
     )
 

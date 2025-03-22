@@ -209,6 +209,7 @@ def prepare_ocp(
         state_continuity_weight=100,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
+        ode_solver=ode_solver,
     )
 
     # Path constraint
@@ -242,7 +243,6 @@ def prepare_ocp(
         parameter_objectives=parameter_objectives,
         parameter_bounds=parameter_bounds,
         parameter_init=parameter_init,
-        ode_solver=ode_solver,
         use_sx=use_sx,
     )
 

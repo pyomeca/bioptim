@@ -192,6 +192,7 @@ def prepare_ocp(
             phase=i,
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
+            ode_solver=ode_solver,
         )
 
     # Creates the constraint for my n phases
@@ -224,7 +225,6 @@ def prepare_ocp(
         x_bounds=x_bounds,
         objective_functions=objective_functions,
         constraints=constraints,
-        ode_solver=ode_solver,
         use_sx=use_sx,
     )
 

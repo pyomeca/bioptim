@@ -97,6 +97,7 @@ def prepare_ocp_state_as_time(
             phase=i,
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
+            ode_solver=OdeSolver.RK4(n_integration_steps=5),
         )
 
     # Define states path constraint
@@ -131,7 +132,6 @@ def prepare_ocp_state_as_time(
         objective_functions=objective_functions,
         control_type=control_type,
         use_sx=use_sx,
-        ode_solver=OdeSolver.RK4(n_integration_steps=5),
     )
 
 

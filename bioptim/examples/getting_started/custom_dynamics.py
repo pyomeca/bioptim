@@ -44,7 +44,10 @@ def custom_dynamics(
     my_additional_factor=1,
 ) -> DynamicsEvaluation:
     """
-    The custom dynamics function that provides the derivative of the states: dxdt = f(x, u, p)
+    The custom dynamics function that provides the derivative of the states: dxdt = f(x, u, p) when using an explicit dynamics integrators like RK4.
+    Otherwise, the custom dynamics function provides the defects to apply at each collocation point when using implicit dynamics integrators like COLLOCATION or IRK.
+
+    **Note**: If you are using an implicit integrator, it is not possible to reintegrate the solution with this integrator. Therefore, you should integrate it using one of scipy's integrators. Moreover, you should provide the explicit derivative of your states (dxdt, the first case of the if statement below) for scipy's integrator to work.
 
     Parameters
     ----------
@@ -74,13 +77,19 @@ def custom_dynamics(
 
     # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
     dq = DynamicsFunctions.compute_qdot(nlp, q, qdot) * my_additional_factor
-    ddq = nlp.model.forward_dynamics()(q, qdot, tau, [], nlp.parameters.cx)
 
-    # the user has to choose if want to return the explicit dynamics dx/dt = f(x,u,p)
-    # as the first argument of DynamicsEvaluation or
-    # the implicit dynamics f(x,u,p,xdot)=0 as the second argument
-    # which may be useful for IRK or COLLOCATION integrators
-    return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
+    dxdt, defects = None, None
+    if not isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
+        ddq = nlp.model.forward_dynamics()(q, qdot, tau, [], nlp.parameters.cx)
+        dxdt = vertcat(dq, ddq)
+    else:
+        slope_q = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.cx)
+        slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.cx)
+        ddq = nlp.model.forward_dynamics()(q, qdot, tau, [], nlp.parameters.cx)
+        # Theoretically, the defect should be "vertcat(dq, ddq) - vertcat(slope_q, slope_qdot)", but for numerical reasons, it is recommended to use this version instead
+        defects = vertcat(slope_q, slope_qdot) * nlp.dt - vertcat(dq, ddq) * nlp.dt
+
+    return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
 
 def custom_configure(
@@ -99,9 +108,10 @@ def custom_configure(
     my_additional_factor: int
         An example of an extra parameter sent by the user
     """
-
+    # The slopes of the polynomial are defined using as_states_dot = True
     ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
+    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False, as_states_dot=True)
+    ConfigureProblem.configure_qddot(ocp, nlp, as_states=False, as_controls=False, as_states_dot=True)
     ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
     ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamics, my_additional_factor=my_additional_factor)
 
@@ -163,6 +173,7 @@ def prepare_ocp(
             my_additional_factor=1,
             expand_dynamics=expand_dynamics,
             phase_dynamics=phase_dynamics,
+            ode_solver=ode_solver,
         )
     else:
         dynamics.add(
@@ -170,6 +181,7 @@ def prepare_ocp(
             dynamic_function=custom_dynamics,
             expand_dynamics=expand_dynamics,
             phase_dynamics=phase_dynamics,
+            ode_solver=ode_solver,
         )
 
     # Constraints
@@ -201,7 +213,6 @@ def prepare_ocp(
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         constraints=constraints,
-        ode_solver=ode_solver,
         use_sx=use_sx,
     )
 

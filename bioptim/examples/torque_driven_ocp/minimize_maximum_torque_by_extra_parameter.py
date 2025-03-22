@@ -27,6 +27,7 @@ from bioptim import (
     PenaltyController,
     ParameterObjectiveList,
     VariableScaling,
+    ContactType,
 )
 from matplotlib import pyplot as plt
 
@@ -94,7 +95,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=False)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, contact_type=ContactType.NONE)
 
     # Path constraint
     x_bounds = BoundsList()

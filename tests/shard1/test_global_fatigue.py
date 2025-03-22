@@ -596,8 +596,7 @@ def test_fatigable_effort_torque_non_split(phase_dynamics):
     from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
     if platform.system() == "Windows":
-        # This tst fails on the CI
-        return
+        pytest.skip("Skipping Windows as this tst fails on the CI")
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 

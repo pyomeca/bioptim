@@ -346,6 +346,7 @@ def configure_stochastic_optimal_control_problem(
 ):
     ConfigureProblem.configure_q(ocp, nlp, True, False, False)
     ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
+    ConfigureProblem.configure_qddot(ocp, nlp, False, False, True)
     ConfigureProblem.configure_new_variable("u", nlp.model.name_u, ocp, nlp, as_states=False, as_controls=True)
 
     # Algebraic states variables
@@ -553,6 +554,11 @@ def prepare_socp(
         )
 
     else:
+        ode_solver = OdeSolver.COLLOCATION(
+            polynomial_degree=socp_type.polynomial_degree,
+            method=socp_type.method,
+            duplicate_starting_point=True,
+        )
         dynamics.add(
             configure_optimal_control_problem,
             dynamic_function=lambda time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp, with_noise: bio_model.dynamics(
@@ -566,11 +572,7 @@ def prepare_socp(
             ),
             phase_dynamics=phase_dynamics,
             expand_dynamics=expand_dynamics,
-        )
-        ode_solver = OdeSolver.COLLOCATION(
-            polynomial_degree=socp_type.polynomial_degree,
-            method=socp_type.method,
-            duplicate_starting_point=True,
+            ode_solver=ode_solver,
         )
 
         return OptimalControlProgram(
@@ -587,7 +589,6 @@ def prepare_socp(
             control_type=ControlType.CONSTANT,
             n_threads=6,
             phase_transitions=phase_transitions,
-            ode_solver=ode_solver,
         )
 
 
