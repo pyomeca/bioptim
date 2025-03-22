@@ -294,15 +294,16 @@ def main():
                                     to_merge=SolutionMerge.NODES,
                                     return_time=False,
                                    )
-    q_integrated, qdot_integrated = sol_integrated.states[0]["q"], sol_integrated.states[0]["qdot"]
-    fig, axs = plt.subplots(4, 1)
+    q_integrated, qdot_integrated = sol_integrated["q"], sol_integrated["qdot"]
+    fig, axs = plt.subplots(4, 1, figsize=(10, 10))
     for i_dof in range(4):
-        axs[i_dof].plot(time, q[i_dof, :], "o-", "tab:red", label="Optimal solution - q")
-        axs[i_dof].plot(time, q_integrated[i_dof, :], "o--", "tab:red", label="Reintegration - q")
-        axs[i_dof].plot(time, qdot[i_dof, :], "o-", "tab:blue", label="Optimal solution - qdot")
-        axs[i_dof].plot(time, qdot_integrated[i_dof, :], "o--", "tab:blue", label="Reintegration - qdot")
+        axs[i_dof].plot(time, q[i_dof, :], marker="o", fillstyle='none', color="tab:red", label="Optimal solution - q")
+        axs[i_dof].plot(time, q_integrated[i_dof, :], ".", color="tab:red", label="Reintegration - q")
+        axs[i_dof].plot(time, qdot[i_dof, :], marker="o", fillstyle='none', color="tab:blue", label="Optimal solution - qdot")
+        axs[i_dof].plot(time, qdot_integrated[i_dof, :], ".", color="tab:blue", label="Reintegration - qdot")
         axs[i_dof].set_title(f"{ocp.nlp[0].model.name_dof[i_dof]}")
-    axs[0].legend()
+    axs[0].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    plt.tight_layout()
     plt.savefig("reintegration.png")
     plt.show()
 
