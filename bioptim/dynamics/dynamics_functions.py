@@ -148,7 +148,7 @@ class DynamicsFunctions:
         )
 
         dxdt, defects = None, None
-        if not isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):  # not COLLOCATION or IRK
+        if not isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
             ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
 
             if fatigue is not None and "tau" in fatigue:
