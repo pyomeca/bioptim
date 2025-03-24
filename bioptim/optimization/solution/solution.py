@@ -1185,7 +1185,7 @@ class Solution:
         shooting_type: Shooting = Shooting.MULTIPLE,
         integrator: SolutionIntegrator = SolutionIntegrator.OCP,
         save_name: str = None,
-    ):
+    ) -> list[plt.figure]:
         """
         Show the graphs of the simulation
 
@@ -1215,6 +1215,10 @@ class Solution:
                 fig.savefig(f"{save_name}_{name_fig}.png", format="png")
         if show_now:
             plt.show()
+
+        # Returning the figures for the tests
+        fig_list = [plt.figure(i_fig + 1) for i_fig in range(len(plt.get_figlabels()))]
+        return fig_list
 
     def animate(
         self,
