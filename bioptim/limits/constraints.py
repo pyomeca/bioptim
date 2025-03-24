@@ -377,197 +377,197 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             return controller.controls[key].cx_start
 
-        @staticmethod
-        def qddot_equals_forward_dynamics(
-            _: Constraint,
-            controller: PenaltyController,
-            with_contact: bool,
-            with_passive_torque: bool,
-            with_ligament: bool,
-            **unused_param,
-        ):
-            """
-            Compute the difference between symbolic joint accelerations and forward dynamic results
-            It includes the inversion of mass matrix
+        # @staticmethod
+        # def qddot_equals_forward_dynamics(
+        #     _: Constraint,
+        #     controller: PenaltyController,
+        #     with_contact: bool,
+        #     with_passive_torque: bool,
+        #     with_ligament: bool,
+        #     **unused_param,
+        # ):
+        #     """
+        #     Compute the difference between symbolic joint accelerations and forward dynamic results
+        #     It includes the inversion of mass matrix
+        #
+        #     Parameters
+        #     ----------
+        #     _: Constraint
+        #         The actual constraint to declare
+        #     controller: PenaltyController
+        #         The penalty node elements
+        #     with_contact: bool
+        #         True if the contact dynamics is handled
+        #     with_passive_torque: bool
+        #         True if the passive torque dynamics is handled
+        #     with_ligament: bool
+        #         True if the ligament dynamics is handled
+        #     **unused_param: dict
+        #         Since the function does nothing, we can safely ignore any argument
+        #     """
+        #
+        #     passive_torque = controller.model.passive_joint_torque()(
+        #         controller.q, controller.qdot, controller.parameters.cx
+        #     )
+        #     tau = controller.states["tau"].cx if "tau" in controller.states else controller.tau
+        #     tau = tau + passive_torque if with_passive_torque else tau
+        #     tau = (
+        #         tau + controller.model.ligament_joint_torque()(controller.q, controller.qdot, controller.parameters.cx)
+        #         if with_ligament
+        #         else tau
+        #     )
+        #
+        #     qddot = controller.controls["qddot"].cx if "qddot" in controller.controls else controller.states["qddot"].cx
+        #     # TODO: add external_forces
+        #     qddot_fd = controller.model.forward_dynamics(with_contact=with_contact)(
+        #         controller.q, controller.qdot, tau, [], controller.parameters.cx
+        #     )
+        #     return qddot - qddot_fd
 
-            Parameters
-            ----------
-            _: Constraint
-                The actual constraint to declare
-            controller: PenaltyController
-                The penalty node elements
-            with_contact: bool
-                True if the contact dynamics is handled
-            with_passive_torque: bool
-                True if the passive torque dynamics is handled
-            with_ligament: bool
-                True if the ligament dynamics is handled
-            **unused_param: dict
-                Since the function does nothing, we can safely ignore any argument
-            """
+        # @staticmethod
+        # def tau_equals_inverse_dynamics(
+        #     _: Constraint,
+        #     controller: PenaltyController,
+        #     with_contact: bool,
+        #     with_passive_torque: bool,
+        #     with_ligament: bool,
+        #     **unused_param,
+        # ):
+        #     """
+        #     Compute the difference between symbolic joint torques and inverse dynamic results
+        #     It does not include any inversion of mass matrix
+        #
+        #     Parameters
+        #     ----------
+        #     _: Constraint
+        #         The actual constraint to declare
+        #     controller: PenaltyController
+        #         The penalty node elements
+        #     with_contact: bool
+        #         True if the contact dynamics is handled
+        #     with_passive_torque: bool
+        #         True if the passive torque dynamics is handled
+        #     with_ligament: bool
+        #         True if the ligament dynamics is handled
+        #     **unused_param: dict
+        #         Since the function does nothing, we can safely ignore any argument
+        #     """
+        #
+        #     tau = controller.states["tau"].cx if "tau" in controller.states else controller.tau
+        #     qddot = controller.states["qddot"].cx if "qddot" in controller.states else controller.controls["qddot"].cx
+        #     if with_passive_torque:
+        #         tau += controller.model.passive_joint_torque()(controller.q, controller.qdot, controller.parameters.cx)
+        #     if with_ligament:
+        #         tau += controller.model.ligament_joint_torque()(controller.q, controller.qdot, controller.parameters.cx)
+        #
+        #     if controller.get_nlp.numerical_timeseries:
+        #         # TODO: deal with external forces
+        #         raise NotImplementedError(
+        #             "This implicit constraint tau_equals_inverse_dynamics is not implemented yet with numerical_timeseries (external_forces or translational_forces)"
+        #         )
+        #         # Todo: add forces_in_global tau_id = nlp.model.inverse_dynamics()(q, qdot, qddot, forces_in_global)
+        #
+        #     if with_contact:
+        #         # todo: this should be done internally in BiorbdModel
+        #         f_contact_vec = (
+        #             controller.controls["translational_forces"].cx
+        #             if "translational_forces" in controller.controls
+        #             else controller.states["translational_forces"].cx
+        #         )
+        #     else:
+        #         f_contact_vec = []
+        #     tau_id = controller.model.inverse_dynamics(with_contact=with_contact)(
+        #         controller.q, controller.qdot, qddot, f_contact_vec, controller.parameters.cx
+        #     )
+        #
+        #     var = []
+        #     var.extend([controller.states[key] for key in controller.states])
+        #     var.extend([controller.controls[key] for key in controller.controls])
+        #     var.extend([param for param in controller.parameters])
+        #
+        #     return tau_id - tau
 
-            passive_torque = controller.model.passive_joint_torque()(
-                controller.q, controller.qdot, controller.parameters.cx
-            )
-            tau = controller.states["tau"].cx if "tau" in controller.states else controller.tau
-            tau = tau + passive_torque if with_passive_torque else tau
-            tau = (
-                tau + controller.model.ligament_joint_torque()(controller.q, controller.qdot, controller.parameters.cx)
-                if with_ligament
-                else tau
-            )
+        # @staticmethod
+        # def implicit_marker_acceleration(
+        #     _: Constraint, controller: PenaltyController, contact_index: int, contact_axis: int, **unused_param
+        # ):
+        #     """
+        #     Compute the acceleration of the contact node to set it at zero
+        #
+        #     Parameters
+        #     ----------
+        #     _: Constraint
+        #         The actual constraint to declare
+        #     controller: PenaltyController
+        #         The penalty node elements
+        #     contact_index: int
+        #         The contact index
+        #     **unused_param: dict
+        #         Since the function does nothing, we can safely ignore any argument
+        #     """
+        #
+        #     qddot = controller.states["qddot"].cx if "qddot" in controller.states else controller.controls["qddot"].cx
+        #
+        #     # TODO get the index of the marker
+        #     contact_acceleration = controller.model.rigid_contact_acceleration(contact_index, contact_axis)(
+        #         controller.q, controller.qdot, qddot, controller.parameters.cx
+        #     )
+        #
+        #     return contact_acceleration
 
-            qddot = controller.controls["qddot"].cx if "qddot" in controller.controls else controller.states["qddot"].cx
-            # TODO: add external_forces
-            qddot_fd = controller.model.forward_dynamics(with_contact=with_contact)(
-                controller.q, controller.qdot, tau, [], controller.parameters.cx
-            )
-            return qddot - qddot_fd
-
-        @staticmethod
-        def tau_equals_inverse_dynamics(
-            _: Constraint,
-            controller: PenaltyController,
-            with_contact: bool,
-            with_passive_torque: bool,
-            with_ligament: bool,
-            **unused_param,
-        ):
-            """
-            Compute the difference between symbolic joint torques and inverse dynamic results
-            It does not include any inversion of mass matrix
-
-            Parameters
-            ----------
-            _: Constraint
-                The actual constraint to declare
-            controller: PenaltyController
-                The penalty node elements
-            with_contact: bool
-                True if the contact dynamics is handled
-            with_passive_torque: bool
-                True if the passive torque dynamics is handled
-            with_ligament: bool
-                True if the ligament dynamics is handled
-            **unused_param: dict
-                Since the function does nothing, we can safely ignore any argument
-            """
-
-            tau = controller.states["tau"].cx if "tau" in controller.states else controller.tau
-            qddot = controller.states["qddot"].cx if "qddot" in controller.states else controller.controls["qddot"].cx
-            if with_passive_torque:
-                tau += controller.model.passive_joint_torque()(controller.q, controller.qdot, controller.parameters.cx)
-            if with_ligament:
-                tau += controller.model.ligament_joint_torque()(controller.q, controller.qdot, controller.parameters.cx)
-
-            if controller.get_nlp.numerical_timeseries:
-                # TODO: deal with external forces
-                raise NotImplementedError(
-                    "This implicit constraint tau_equals_inverse_dynamics is not implemented yet with numerical_timeseries (external_forces or translational_forces)"
-                )
-                # Todo: add forces_in_global tau_id = nlp.model.inverse_dynamics()(q, qdot, qddot, forces_in_global)
-
-            if with_contact:
-                # todo: this should be done internally in BiorbdModel
-                f_contact_vec = (
-                    controller.controls["translational_forces"].cx
-                    if "translational_forces" in controller.controls
-                    else controller.states["translational_forces"].cx
-                )
-            else:
-                f_contact_vec = []
-            tau_id = controller.model.inverse_dynamics(with_contact=with_contact)(
-                controller.q, controller.qdot, qddot, f_contact_vec, controller.parameters.cx
-            )
-
-            var = []
-            var.extend([controller.states[key] for key in controller.states])
-            var.extend([controller.controls[key] for key in controller.controls])
-            var.extend([param for param in controller.parameters])
-
-            return tau_id - tau
-
-        @staticmethod
-        def implicit_marker_acceleration(
-            _: Constraint, controller: PenaltyController, contact_index: int, contact_axis: int, **unused_param
-        ):
-            """
-            Compute the acceleration of the contact node to set it at zero
-
-            Parameters
-            ----------
-            _: Constraint
-                The actual constraint to declare
-            controller: PenaltyController
-                The penalty node elements
-            contact_index: int
-                The contact index
-            **unused_param: dict
-                Since the function does nothing, we can safely ignore any argument
-            """
-
-            qddot = controller.states["qddot"].cx if "qddot" in controller.states else controller.controls["qddot"].cx
-
-            # TODO get the index of the marker
-            contact_acceleration = controller.model.rigid_contact_acceleration(contact_index, contact_axis)(
-                controller.q, controller.qdot, qddot, controller.parameters.cx
-            )
-
-            return contact_acceleration
-
-        @staticmethod
-        def tau_from_muscle_equal_inverse_dynamics(
-            _: Constraint, controller: PenaltyController, with_passive_torque: bool, with_ligament: bool, **unused_param
-        ):
-            """
-            Compute the difference between symbolic joint torques from muscle and inverse dynamic results
-            It does not include any inversion of mass matrix
-
-            Parameters
-            ----------
-            _: Constraint
-                The actual constraint to declare
-            controller: PenaltyController
-                The penalty node elements
-            with_passive_torque: bool
-                True if the passive torque dynamics is handled
-            with_ligament: bool
-                True if the ligament dynamics is handled
-            **unused_param: dict
-                Since the function does nothing, we can safely ignore any argument
-            """
-
-            muscle_activations = controller.controls["muscles"].cx
-            muscles_states = controller.model.state_set()
-            passive_torque = controller.model.passive_joint_torque()(
-                controller.q, controller.qdot, controller.parameters.cx
-            )
-            for k in range(len(controller.controls["muscles"])):
-                muscles_states[k].setActivation(muscle_activations[k])
-            muscle_tau = controller.model.muscle_joint_torque(
-                muscles_states, controller.q, controller.qdot, controller.parameters.cx
-            )
-            muscle_tau = muscle_tau + passive_torque if with_passive_torque else muscle_tau
-            muscle_tau = (
-                muscle_tau
-                + controller.model.ligament_joint_torque(controller.q, controller.qdot, controller.parameters.cx)
-                if with_ligament
-                else muscle_tau
-            )
-            qddot = controller.states["qddot"].cx if "qddot" in controller.states else controller.controls["qddot"].cx
-
-            if controller.get_nlp.numerical_timeseries:
-                raise NotImplementedError(
-                    "This implicit constraint tau_from_muscle_equal_inverse_dynamics is not implemented yet with external forces"
-                )
-                # Todo: add fext tau_id = nlp.model.inverse_dynamics()(q, qdot, qddot, fext)
-                # fext need to be a mx
-
-            tau_id = controller.model.inverse_dynamics()(
-                controller.q, controller.qdot, qddot, [], [], controller.parameters.cx
-            )
-
-            return tau_id - muscle_tau
+        # @staticmethod
+        # def tau_from_muscle_equal_inverse_dynamics(
+        #     _: Constraint, controller: PenaltyController, with_passive_torque: bool, with_ligament: bool, **unused_param
+        # ):
+        #     """
+        #     Compute the difference between symbolic joint torques from muscle and inverse dynamic results
+        #     It does not include any inversion of mass matrix
+        #
+        #     Parameters
+        #     ----------
+        #     _: Constraint
+        #         The actual constraint to declare
+        #     controller: PenaltyController
+        #         The penalty node elements
+        #     with_passive_torque: bool
+        #         True if the passive torque dynamics is handled
+        #     with_ligament: bool
+        #         True if the ligament dynamics is handled
+        #     **unused_param: dict
+        #         Since the function does nothing, we can safely ignore any argument
+        #     """
+        #
+        #     muscle_activations = controller.controls["muscles"].cx
+        #     muscles_states = controller.model.state_set()
+        #     passive_torque = controller.model.passive_joint_torque()(
+        #         controller.q, controller.qdot, controller.parameters.cx
+        #     )
+        #     for k in range(len(controller.controls["muscles"])):
+        #         muscles_states[k].setActivation(muscle_activations[k])
+        #     muscle_tau = controller.model.muscle_joint_torque(
+        #         muscles_states, controller.q, controller.qdot, controller.parameters.cx
+        #     )
+        #     muscle_tau = muscle_tau + passive_torque if with_passive_torque else muscle_tau
+        #     muscle_tau = (
+        #         muscle_tau
+        #         + controller.model.ligament_joint_torque(controller.q, controller.qdot, controller.parameters.cx)
+        #         if with_ligament
+        #         else muscle_tau
+        #     )
+        #     qddot = controller.states["qddot"].cx if "qddot" in controller.states else controller.controls["qddot"].cx
+        #
+        #     if controller.get_nlp.numerical_timeseries:
+        #         raise NotImplementedError(
+        #             "This implicit constraint tau_from_muscle_equal_inverse_dynamics is not implemented yet with external forces"
+        #         )
+        #         # Todo: add fext tau_id = nlp.model.inverse_dynamics()(q, qdot, qddot, fext)
+        #         # fext need to be a mx
+        #
+        #     tau_id = controller.model.inverse_dynamics()(
+        #         controller.q, controller.qdot, qddot, [], [], controller.parameters.cx
+        #     )
+        #
+        #     return tau_id - muscle_tau
 
         @staticmethod
         def implicit_soft_contact_forces(_: Constraint, controller: PenaltyController, **unused_param):
@@ -1106,11 +1106,11 @@ class ImplicitConstraintFcn(FcnEnum):
         Returns the type of the penalty
     """
 
-    QDDOT_EQUALS_FORWARD_DYNAMICS = (ConstraintFunction.Functions.qddot_equals_forward_dynamics,)
-    TAU_EQUALS_INVERSE_DYNAMICS = (ConstraintFunction.Functions.tau_equals_inverse_dynamics,)
+    # QDDOT_EQUALS_FORWARD_DYNAMICS = (ConstraintFunction.Functions.qddot_equals_forward_dynamics,)
+    # TAU_EQUALS_INVERSE_DYNAMICS = (ConstraintFunction.Functions.tau_equals_inverse_dynamics,)
     SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS = (ConstraintFunction.Functions.implicit_soft_contact_forces,)
-    CONTACT_ACCELERATION_EQUALS_ZERO = (ConstraintFunction.Functions.implicit_marker_acceleration,)
-    TAU_FROM_MUSCLE_EQUAL_INVERSE_DYNAMICS = (ConstraintFunction.Functions.tau_from_muscle_equal_inverse_dynamics,)
+    # CONTACT_ACCELERATION_EQUALS_ZERO = (ConstraintFunction.Functions.implicit_marker_acceleration,)
+    # TAU_FROM_MUSCLE_EQUAL_INVERSE_DYNAMICS = (ConstraintFunction.Functions.tau_from_muscle_equal_inverse_dynamics,)
 
     @staticmethod
     def get_type():

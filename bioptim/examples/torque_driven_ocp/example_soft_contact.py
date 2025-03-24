@@ -201,23 +201,41 @@ def main():
     """
     Defines a multiphase ocp and animate the results
     """
-    model = "../torque_driven_ocp/models/soft_contact_sphere.bioMod"
+    biorbd_model_path = "../torque_driven_ocp/models/soft_contact_sphere.bioMod"
     ode_solver = OdeSolver.RK8()
 
     # Prepare OCP to reach the second marker
-    ocp = prepare_ocp(model, 37, 0.3, ode_solver, slack=1e-4)
+    ocp = prepare_ocp(biorbd_model_path, 37, 0.3, ode_solver, slack=1e-4)
     # ocp.add_plot_penalty(CostType.ALL)
     # ocp.print(to_graph=True)
 
     # --- Solve the program --- #
     solv = Solver.IPOPT(show_online_optim=False, show_options=dict(show_bounds=True))
     solv.set_linear_solver("mumps")
-    solv.set_maximum_iterations(500)
     sol = ocp.solve(solv)
 
-    sol.animate()
-    sol.print_cost()
-    sol.graphs()
+    # sol.print_cost()
+    # sol.graphs()
+
+    # --- Show results --- #
+    viewer = "pyorerun"
+    if viewer == "pyorerun":
+        from pyorerun import BiorbdModel, PhaseRerun
+
+        # Model
+        model = BiorbdModel(biorbd_model_path)
+        model.options.transparent_mesh = False
+        model.options.show_gravity = True
+        model.options.show_floor = True
+
+        # Visualization
+        time = sol.decision_time(to_merge=SolutionMerge.NODES)
+        q = sol.decision_states(to_merge=SolutionMerge.NODES)["q"]
+        viz = PhaseRerun(time)
+        viz.add_animated_model(model, q)
+        viz.rerun_by_frame("Optimal solution")
+    else:
+        sol.animate()
 
 
 if __name__ == "__main__":

@@ -161,8 +161,8 @@ def test_soft_contact_dynamics():
 
 
 def test_defect_type():
-    assert DefectType.EXPLICIT.value == "explicit"
-    assert DefectType.IMPLICIT.value == "implicit"
+    assert DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS.value == "qddot_equals_forward_dynamics"
+    assert DefectType.TAU_EQUALS_INVERSE_DYNAMICS.value == "tau_equals_inverse_dynamics"
     assert DefectType.NOT_APPLICABLE.value == "not_applicable"
 
     # verify the number of elements
