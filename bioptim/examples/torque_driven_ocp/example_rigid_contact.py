@@ -32,6 +32,7 @@ from bioptim import (
     Axis,
     ContactType,
     PenaltyController,
+    ExternalForceSetVariables,
 )
 
 
@@ -45,6 +46,7 @@ def prepare_ocp(
     n_shooting: int,
     final_time: float,
     ode_solver: OdeSolverBase,
+    contact_type: ContactType,
     n_threads: int = 8,
     use_sx: bool = False,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
@@ -56,9 +58,17 @@ def prepare_ocp(
     -------
     The OptimalControlProgram ready to be solved
     """
-    bio_model = BiorbdModel(biorbd_model_path)
 
-    # Problem parameters
+    if ode_solver.defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
+        # Indicate to the model creator that there will be two rigid contacts in the form of optimization variables
+        external_force_set = ExternalForceSetVariables()
+        external_force_set.add(force_name="Seg2_contact0", segment="Seg2", use_point_of_application=True)
+
+        # BioModel
+        bio_model = BiorbdModel(biorbd_model_path, external_force_set=external_force_set)
+    else:
+        # BioModel
+        bio_model = BiorbdModel(biorbd_model_path)
 
     tau_min, tau_max = -100, 100
 
@@ -76,7 +86,7 @@ def prepare_ocp(
     # Dynamics
     dynamics = Dynamics(
         DynamicsFcn.TORQUE_DRIVEN,
-        contact_type=ContactType.RIGID,
+        contact_type=contact_type,
         phase_dynamics=phase_dynamics,
         ode_solver=ode_solver,
     )
@@ -128,11 +138,12 @@ def main():
     biorbd_model_path = "../torque_driven_ocp/models/3segments_4dof_1contact.bioMod"
     n_shooting = 30
     final_time = 1
-    defect_type = DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS
+    defect_type = DefectType.TAU_EQUALS_INVERSE_DYNAMICS
     ode_solver = OdeSolver.COLLOCATION(polynomial_degree=5, defects_type=defect_type)
+    contact_type = ContactType.RIGID_EXPLICIT
 
     # Prepare OCP to reach the second marker
-    ocp = prepare_ocp(biorbd_model_path, n_shooting, final_time, ode_solver)
+    ocp = prepare_ocp(biorbd_model_path, n_shooting, final_time, ode_solver, contact_type)
 
     # --- Solve the program --- #
     solver = Solver.IPOPT(show_online_optim=False, show_options=dict(show_bounds=True))
@@ -142,24 +153,6 @@ def main():
     time = sol.decision_time(to_merge=SolutionMerge.NODES)
     q = sol.decision_states(to_merge=SolutionMerge.NODES)["q"]
     qdot = sol.decision_states(to_merge=SolutionMerge.NODES)["qdot"]
-
-    # --- Show results --- #
-    viewer = "pyorerun"
-    if viewer == "pyorerun":
-        from pyorerun import BiorbdModel, PhaseRerun
-
-        # Model
-        model = BiorbdModel(biorbd_model_path)
-        model.options.transparent_mesh = False
-        model.options.show_gravity = True
-        model.options.show_floor = True
-
-        # Visualization
-        viz = PhaseRerun(time)
-        viz.add_animated_model(model, q)
-        viz.rerun_by_frame("Optimal solution")
-    else:
-        sol.animate()
 
 
     # --- Plot the reintegration -- #
@@ -186,8 +179,28 @@ def main():
         axs[i_dof].set_title(f"{ocp.nlp[0].model.name_dof[i_dof]}")
     axs[0].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
     plt.tight_layout()
-    plt.savefig(f"reintegration_{defect_type.value}.png")
+    plt.savefig(f"reintegration_{defect_type.value}_{contact_type}.png")
     plt.show()
+
+
+    # --- Show results --- #
+    viewer = "pyorerun"
+    if viewer == "pyorerun":
+        from pyorerun import BiorbdModel, PhaseRerun
+
+        # Model
+        model = BiorbdModel(biorbd_model_path)
+        model.options.transparent_mesh = False
+        model.options.show_gravity = True
+        model.options.show_floor = True
+
+        # Visualization
+        viz = PhaseRerun(time)
+        viz.add_animated_model(model, q)
+        viz.rerun_by_frame("Optimal solution")
+    else:
+        sol.animate()
+
 
 if __name__ == "__main__":
     main()

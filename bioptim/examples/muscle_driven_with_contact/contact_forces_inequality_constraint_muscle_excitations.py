@@ -50,7 +50,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
         DynamicsFcn.MUSCLE_DRIVEN,
         with_excitations=True,
         with_residual_torque=True,
-        contact_type=ContactType.RIGID,
+        contact_type=ContactType.RIGID_EXPLICIT,
         expand_dynamics=expand_dynamics,
         ode_solver=ode_solver,
     )

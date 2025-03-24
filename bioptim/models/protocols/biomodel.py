@@ -176,6 +176,20 @@ class BioModel(Protocol):
         args: qddot_root, qddot_joints
         """
 
+    def map_rigid_contact_forces_to_global_forces(
+        self, rigid_contact_forces: MX | SX, q: MX | SX, parameters: MX | SX
+    ) -> MX | SX:
+        """
+        Takes the rigid contact forces and dispatch is to match the external forces.
+        """
+
+    def map_soft_contact_forces_to_global_forces(
+        self, soft_contact_forces: MX | SX
+    ) -> MX | SX:
+        """
+        Takes the soft contact forces and dispatch is to match the external forces.
+        """
+
     def forward_dynamics(self, with_contact=False) -> Function:
         """
         compute the forward dynamics

@@ -574,6 +574,20 @@ class BiorbdModel:
 
         return external_forces
 
+
+    def map_soft_contact_forces_to_global_forces(
+        self, soft_contact_forces: MX | SX
+    ) -> MX | SX:
+        """
+        Takes the soft contact forces and dispatch is to match the external forces.
+        """
+
+        external_forces = MX.zeros(self.external_force_set.nb_external_forces_components)
+        for i_contact in range(self.nb_soft_contacts):
+            external_forces[i_contact * 9 : i_contact * 9 + 6] = soft_contact_forces[i_contact * 6 : i_contact * 6 + 6]
+
+        return external_forces
+
     def forward_dynamics(self, with_contact: bool = False) -> Function:
 
         q_biorbd = GeneralizedCoordinates(self.q)

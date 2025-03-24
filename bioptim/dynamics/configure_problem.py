@@ -21,6 +21,7 @@ from ..misc.fcn_enum import FcnEnum
 from ..misc.mapping import BiMapping, Mapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
+from ..models.protocols.biomodel import BioModel
 from ..optimization.problem_type import SocpType
 
 
@@ -189,9 +190,8 @@ class ConfigureProblem:
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
-        with_contact = contact_type == ContactType.RIGID
-        _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
-        _check_soft_contacts_dynamics(soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx)
+
+        _check_contacts_in_biorbd_model(contact_type, nlp.model, nlp.phase_idx)
 
         # Declared rigidbody states and controls
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
@@ -199,9 +199,30 @@ class ConfigureProblem:
         ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True, fatigue=fatigue)
         ConfigureProblem.configure_qddot(ocp, nlp, as_states=False, as_controls=False, as_states_dot=True)
 
-        # Declared soft contacts controls
-        if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
+        if contact_type == ContactType.RIGID_IMPLICIT:
+            ConfigureProblem.configure_rigid_contact_forces(
+                ocp,
+                nlp,
+                as_states=False,
+                as_algebraic_states=True,
+                as_controls=False,
+                as_states_dot=False,
+            )
+        elif contact_type == ContactType.RIGID_EXPLICIT:
+            ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
+        elif contact_type == ContactType.SOFT_IMPLICIT:
             ConfigureProblem.configure_soft_contact_forces(ocp, nlp, False, True)
+            # TODO : Shoud be moved the the defects instead of a constraint
+            ocp.implicit_constraints.add(
+                ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
+                node=Node.ALL_SHOOTING,
+                penalty_type=ConstraintType.IMPLICIT,
+                phase=nlp.phase_idx,
+            )
+        elif contact_type == ContactType.SOFT_EXPLICIT:
+            ConfigureProblem.configure_soft_contact_function(ocp, nlp)
+        elif contact_type != ContactType.NONE:
+            raise NotImplementedError("Contact type not implemented yet")
 
         # Configure the actual ODE of the dynamics
         if nlp.dynamics_type.dynamic_function:
@@ -211,28 +232,13 @@ class ConfigureProblem:
                 ocp,
                 nlp,
                 DynamicsFunctions.torque_driven,
-                with_contact=with_contact,
+                contact_type=contact_type,
                 fatigue=fatigue,
                 with_passive_torque=with_passive_torque,
                 with_ligament=with_ligament,
                 with_friction=with_friction,
             )
 
-        # Configure the contact forces
-        if with_contact:
-            ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
-
-        # Configure the soft contact forces
-        ConfigureProblem.configure_soft_contact_function(ocp, nlp)
-
-        # Algebraic constraints of soft contact forces if needed
-        if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
-            ocp.implicit_constraints.add(
-                ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
-                node=Node.ALL_SHOOTING,
-                penalty_type=ConstraintType.IMPLICIT,
-                phase=nlp.phase_idx,
-            )
 
     @staticmethod
     def torque_driven_free_floating_base(
@@ -385,7 +391,7 @@ class ConfigureProblem:
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
-        with_contact = contact_type == ContactType.RIGID
+        with_contact = contact_type == ContactType.RIGID_EXPLICIT
 
         if "tau" in nlp.model.motor_noise_mapping:
             n_noised_tau = len(nlp.model.motor_noise_mapping["tau"].to_first.map_idx)
@@ -539,10 +545,8 @@ class ConfigureProblem:
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
 
         """
-        with_contact = contact_type == ContactType.RIGID
-        _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
-
-        _check_soft_contacts_dynamics(soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx)
+        with_contact = contact_type == ContactType.RIGID_EXPLICIT
+        _check_contacts_in_biorbd_model(contact_type, nlp.model, nlp.phase_idx)
 
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False)
@@ -613,7 +617,7 @@ class ConfigureProblem:
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
-        with_contact = contact_type == ContactType.RIGID
+        with_contact = contact_type == ContactType.RIGID_EXPLICIT
         _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
 
         ConfigureProblem.configure_q(ocp, nlp, True, False)
@@ -736,7 +740,7 @@ class ConfigureProblem:
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
-        with_contact = contact_type == ContactType.RIGID
+        with_contact = contact_type == ContactType.RIGID_EXPLICIT
         _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
 
         if fatigue is not None and "tau" in fatigue and not with_residual_torque:
@@ -2143,22 +2147,12 @@ def _check_numerical_timeseries_format(numerical_timeseries: np.ndarray, n_shoot
         )
 
 
-def _check_soft_contacts_dynamics(
-    soft_contacts_dynamics: SoftContactDynamics,
-    nb_soft_contacts,
-    phase_idx: int,
-):
-    if nb_soft_contacts != 0:
-        if (
-            soft_contacts_dynamics != SoftContactDynamics.CONSTRAINT
-            and soft_contacts_dynamics != SoftContactDynamics.ODE
-        ):
-            raise ValueError(
-                f"Phase {phase_idx} has soft contacts but the soft_contacts_dynamics is not "
-                f"SoftContactDynamics.CONSTRAINT or SoftContactDynamics.ODE."
-            )
+def _check_contacts_in_biorbd_model(contact_type: ContactType, model: BioModel, phase_idx: int):
 
+    # Check rigid contacts
+    if contact_type in [ContactType.RIGID_EXPLICIT, ContactType.RIGID_IMPLICIT] and model.nb_contacts == 0:
+        raise ValueError(f"No rigid contact defined in the .bioMod of phase {phase_idx}, consider changing the ContactType.")
 
-def _check_contacts_in_biorbd_model(with_contact: bool, nb_contacts: int, phase_idx: int):
-    if with_contact and nb_contacts == 0:
-        raise ValueError(f"No contact defined in the .bioMod of phase {phase_idx}, set with_contact to False.")
+    # Check soft contacts
+    if contact_type in [ContactType.SOFT_EXPLICIT, ContactType.SOFT_IMPLICIT] and model.nb_soft_contacts != 0:
+        raise ValueError(f"No soft contact defined in the .bioMod of phase {phase_idx}, consider changing the ContactType.")

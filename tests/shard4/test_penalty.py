@@ -125,7 +125,7 @@ def prepare_test_ocp(
             )
             dynamics.add(
                 DynamicsFcn.TORQUE_DRIVEN,
-                contact_type=ContactType.RIGID,
+                contact_type=ContactType.RIGID_EXPLICIT,
                 expand_dynamics=True,
                 phase_dynamics=phase_dynamics,
                 numerical_data_timeseries=numerical_time_series,
@@ -136,7 +136,7 @@ def prepare_test_ocp(
             )
             dynamics.add(
                 DynamicsFcn.TORQUE_DRIVEN,
-                contact_type=ContactType.RIGID,
+                contact_type=ContactType.RIGID_EXPLICIT,
                 expand_dynamics=True,
                 phase_dynamics=phase_dynamics,
             )
