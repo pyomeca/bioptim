@@ -93,7 +93,7 @@ def test_biorbd_model():
     models.serialize()
 
     models.set_gravity(np.array([0, 0, -3]))
-    TestUtils.assert_equal(models.gravity()["gravity"], np.array([0, 0, -3, 0, 0, -3]).reshape(6, 1))
+    TestUtils.assert_equal(models.gravity()()["gravity"], np.array([0, 0, -3, 0, 0, -3]).reshape(6, 1))
     models.set_gravity(np.array([0, 0, -9.81]))
 
     with pytest.raises(NotImplementedError, match="segment_index is not implemented for MultiBiorbdModel"):
@@ -119,7 +119,7 @@ def test_biorbd_model():
         np.array([[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, -1.0], [0.0, 0.0, 0.0, 1.0]]),
     )
 
-    TestUtils.assert_equal(models.mass([]), np.array([3, 3]).reshape(2, 1))
+    TestUtils.assert_equal(models.mass()()["mass"], np.array([3, 3]).reshape(2, 1))
     TestUtils.assert_equal(
         models.center_of_mass()(np.array([1, 2, 3, 4, 5, 6]), []),
         np.array([-5.000000e-04, 8.433844e-01, -1.764446e-01, -5.000000e-04, -3.232674e-01, 1.485815e00]).reshape(6, 1),

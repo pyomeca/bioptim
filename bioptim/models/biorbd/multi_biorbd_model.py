@@ -1,6 +1,7 @@
 import biorbd_casadi as biorbd
 from casadi import MX, vertcat, Function, horzcat
 from typing import Callable
+from functools import wraps
 
 from .biorbd_model import BiorbdModel
 from ..utils import _var_mapping
@@ -82,6 +83,27 @@ class MultiBiorbdModel:
         self.muscle = MX.sym("muscle_mx", self.nb_muscles, 1)
         self.activations = MX.sym("activations_mx", self.nb_muscles, 1)
         self.parameters = MX.sym("parameters_to_be_implemented", 0, 1)
+
+        self._cached_functions = {}
+
+    def cache_function(method):
+        """Decorator to cache CasADi functions automatically"""
+
+        @wraps(method)
+        def wrapper(self, *args, **kwargs):
+            # Create a unique key based on the method name and arguments
+            key = (method.__name__, args, frozenset(kwargs.items()))
+            if key in self._cached_functions:
+                return self._cached_functions[key]
+
+            # Call the original function to create the CasADi function
+            casadi_fun = method(self, *args, **kwargs)
+
+            # Store in the cache
+            self._cached_functions[key] = casadi_fun
+            return casadi_fun
+
+        return wrapper
 
     def __getitem__(self, index):
         return self.models[index]
@@ -235,19 +257,19 @@ class MultiBiorbdModel:
         """
         return len(self.extra_models)
 
-    @property
+    @cache_function
     def gravity(self) -> Function:
         for i, model in enumerate(self.models):
             if i == 0:
                 if self.parameters.shape[0] == 0:
-                    biorbd_return = model.gravity()["gravity"]
+                    biorbd_return = model.gravity()()["gravity"]
                 else:
-                    biorbd_return = model.gravity()(self.parameters)["gravity"]
+                    biorbd_return = model.gravity()(self.parameters)
             else:
                 if self.parameters.shape[0] == 0:
-                    biorbd_return = vertcat(biorbd_return, model.gravity()["gravity"])
+                    biorbd_return = vertcat(biorbd_return, model.gravity()()["gravity"])
                 else:
-                    biorbd_return = vertcat(biorbd_return, model.gravity()(self.parameters)["gravity"])
+                    biorbd_return = vertcat(biorbd_return, model.gravity()(self.parameters))
         casadi_fun = Function(
             "gravity",
             [self.parameters],
@@ -302,6 +324,7 @@ class MultiBiorbdModel:
                 out += (seg,)
         return out
 
+    @cache_function
     def homogeneous_matrices_in_global(self, segment_index, inverse=False) -> Function:
         local_segment_id, model_id = self.local_variable_id("segment", segment_index)
         q_model = self.models[model_id].q
@@ -317,24 +340,25 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
+    @cache_function
     def homogeneous_matrices_in_child(self, segment_id) -> Function:
         local_id, model_id = self.local_variable_id("segment", segment_id)
         casadi_fun = self.models[model_id].homogeneous_matrices_in_child(local_id)(self.parameters)
         return casadi_fun
 
-    @property
+    @cache_function
     def mass(self) -> Function:
         for i, model in enumerate(self.models):
             if i == 0:
                 if self.parameters.shape[0] == 0:
-                    biorbd_return = model.mass()["mass"]
+                    biorbd_return = model.mass()()["mass"]
                 else:
-                    biorbd_return = model.mass()(self.parameters)["mass"]
+                    biorbd_return = model.mass()(self.parameters)
             else:
                 if self.parameters.shape[0] == 0:
-                    biorbd_return = vertcat(biorbd_return, model.mass()["mass"])
+                    biorbd_return = vertcat(biorbd_return, model.mass()()["mass"])
                 else:
-                    biorbd_return = vertcat(biorbd_return, model.mass()(self.parameters)["mass"])
+                    biorbd_return = vertcat(biorbd_return, model.mass()(self.parameters))
         casadi_fun = Function(
             "mass",
             [self.parameters],
@@ -344,6 +368,7 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
+    @cache_function
     def center_of_mass(self) -> Function:
         biorbd_return = MX()
         for i, model in enumerate(self.models):
@@ -358,6 +383,7 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
+    @cache_function
     def center_of_mass_velocity(self) -> Function:
         biorbd_return = MX()
         for i, model in enumerate(self.models):
@@ -376,6 +402,7 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
+    @cache_function
     def center_of_mass_acceleration(self) -> Function:
         biorbd_return = MX()
         for i, model in enumerate(self.models):
@@ -395,6 +422,7 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
+    @cache_function
     def mass_matrix(self) -> Function:
         biorbd_return = []
         for i, model in enumerate(self.models):
@@ -407,6 +435,7 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
+    @cache_function
     def non_linear_effects(self) -> Function:
         biorbd_return = []
         for i, model in enumerate(self.models):
@@ -420,6 +449,7 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
+    @cache_function
     def angular_momentum(self) -> Function:
         biorbd_return = MX()
         for i, model in enumerate(self.models):
@@ -438,6 +468,7 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
+    @cache_function
     def reshape_qdot(self, k_stab=1) -> Function:
         biorbd_return = MX()
         for i, model in enumerate(self.models):
@@ -456,6 +487,7 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
+    @cache_function
     def segment_angular_velocity(self, idx) -> Function:
         biorbd_return = MX()
         for i, model in enumerate(self.models):
@@ -509,6 +541,7 @@ class MultiBiorbdModel:
     def nb_muscles(self) -> int:
         return sum(model.nb_muscles for model in self.models)
 
+    @cache_function
     def torque(self) -> Function:
         biorbd_return = MX()
         for i, model in enumerate(self.models):
@@ -534,6 +567,7 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
+    @cache_function
     def forward_dynamics_free_floating_base(self) -> Function:
         biorbd_return = MX()
         for i, model in enumerate(self.models):
@@ -577,6 +611,7 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
+    @cache_function
     def forward_dynamics(self, with_contact) -> Function:
         """External forces and contact forces are not implemented yet for MultiBiorbdModel."""
 
@@ -604,6 +639,7 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
+    @cache_function
     def inverse_dynamics(self) -> Function:
         """External forces and contact forces are not implemented yet for MultiBiorbdModel."""
 
@@ -625,6 +661,7 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
+    @cache_function
     def contact_forces_from_constrained_forward_dynamics(self) -> Function:
         """External forces are not implemented yet for MultiBiorbdModel."""
         biorbd_return = MX()
@@ -651,6 +688,7 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
+    @cache_function
     def qdot_from_impact(self) -> Function:
         biorbd_return = MX()
         for i, model in enumerate(self.models):
@@ -673,6 +711,7 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
+    @cache_function
     def muscle_activation_dot(self) -> Function:
         biorbd_return = MX()
         n_muscles = 0
@@ -692,6 +731,7 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
+    @cache_function
     def muscle_joint_torque(self) -> Function:
         biorbd_return = MX()
         for i, model in enumerate(self.models):
@@ -712,6 +752,7 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
+    @cache_function
     def markers(self) -> Function:
         biorbd_return = []
         for i, model in enumerate(self.models):
@@ -738,6 +779,7 @@ class MultiBiorbdModel:
 
         raise ValueError(f"{name} is not in the MultiBiorbdModel")
 
+    @cache_function
     def marker(self, index, reference_segment_index=None) -> Function:
         local_marker_id, model_id = self.local_variable_id("markers", index)
         q_model = self.q[self.variable_index("q", model_id)]
@@ -789,6 +831,7 @@ class MultiBiorbdModel:
             # Note: may not work if the contact_index is not in the first model
         return model_selected.rigid_contact_index(contact_index)
 
+    @cache_function
     def markers_velocities(self, reference_index=None) -> Function:
         if reference_index is not None:
             raise RuntimeError("markers_velocities is not implemented yet with reference_index for MultiBiorbdModel")
@@ -807,6 +850,7 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
+    @cache_function
     def marker_velocity(self, marker_index: int) -> Function:
         biorbd_return = []
         for i, model in enumerate(self.models):
@@ -822,6 +866,7 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
+    @cache_function
     def tau_max(self) -> Function:
         out_max = MX()
         out_min = MX()
@@ -840,6 +885,7 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
+    @cache_function
     def rigid_contact_acceleration(self, contact_index, contact_axis) -> Function:
         model_selected = None
         model_idx = -1
@@ -870,6 +916,7 @@ class MultiBiorbdModel:
     def marker_names(self) -> tuple[str, ...]:
         return tuple([name for model in self.models for name in model.marker_names])
 
+    @cache_function
     def soft_contact_forces(self) -> Function:
         biorbd_return = MX()
         for i, model in enumerate(self.models):
@@ -889,6 +936,7 @@ class MultiBiorbdModel:
     def reshape_fext_to_fcontact(self):
         raise NotImplementedError("reshape_fext_to_fcontact is not implemented yet for MultiBiorbdModel")
 
+    @cache_function
     def normalize_state_quaternions(self) -> Function:
         biorbd_return = MX()
         for i, model in enumerate(self.models):
@@ -904,6 +952,7 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
+    @cache_function
     def contact_forces(self) -> Function:
         """external_forces is not implemented yet for MultiBiorbdModel"""
         biorbd_return = MX()
@@ -923,6 +972,7 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
+    @cache_function
     def passive_joint_torque(self) -> Function:
         biorbd_return = MX()
         for i, model in enumerate(self.models):
@@ -938,6 +988,7 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
+    @cache_function
     def ligament_joint_torque(self) -> Function:
         biorbd_return = MX()
         for i, model in enumerate(self.models):
