@@ -759,7 +759,7 @@ class BiorbdModel:
         )
         return casadi_fun
 
-    @_cache_function
+    @cache_function
     def muscle_velocity(self) -> Function:
         J = self.muscle_length_jacobian()(self.q, self.parameters)
         biorbd_return = J @ self.qdot
@@ -772,7 +772,7 @@ class BiorbdModel:
         )
         return casadi_fun
 
-    @_cache_function
+    @cache_function
     def muscle_joint_torque(self) -> Function:
         muscles_states = self.model.stateSet()
         muscles_activations = self.muscle
@@ -790,7 +790,7 @@ class BiorbdModel:
         )
         return casadi_fun
 
-    @_cache_function
+    @cache_function
     def markers(self) -> list[MX]:
         biorbd_return = horzcat(*[m.to_mx() for m in self.model.markers(GeneralizedCoordinates(self.q))])
         casadi_fun = Function(
@@ -812,7 +812,7 @@ class BiorbdModel:
     def contact_index(self, name):
         return biorbd.contact_index(self.model, name)
 
-    @_cache_function
+    @cache_function
     def marker(self, index: int, reference_segment_index: int = None) -> Function:
         q_biorbd = GeneralizedCoordinates(self.q)
         marker = self.model.marker(q_biorbd, index)
@@ -863,7 +863,7 @@ class BiorbdModel:
         """
         return self.model.rigidContacts()[contact_index].availableAxesIndices()
 
-    @_cache_function
+    @cache_function
     def markers_velocities(self, reference_index=None) -> list[MX]:
         if reference_index is None:
             biorbd_return = [
@@ -897,7 +897,7 @@ class BiorbdModel:
         )
         return casadi_fun
 
-    @_cache_function
+    @cache_function
     def marker_velocity(self, marker_index: int) -> list[MX]:
         biorbd_return = self.model.markersVelocity(
             GeneralizedCoordinates(self.q),
@@ -913,7 +913,7 @@ class BiorbdModel:
         )
         return casadi_fun
 
-    @_cache_function
+    @cache_function
     def markers_accelerations(self, reference_index=None) -> list[MX]:
         if reference_index is None:
             biorbd_return = [
@@ -953,7 +953,7 @@ class BiorbdModel:
         )
         return casadi_fun
 
-    @_cache_function
+    @cache_function
     def marker_acceleration(self, marker_index: int) -> list[MX]:
         biorbd_return = self.model.markerAcceleration(
             GeneralizedCoordinates(self.q),
@@ -970,7 +970,7 @@ class BiorbdModel:
         )
         return casadi_fun
 
-    @_cache_function
+    @cache_function
     def tau_max(self) -> Function:
         self.model.closeActuator()
         q_biorbd = GeneralizedCoordinates(self.q)
@@ -985,7 +985,7 @@ class BiorbdModel:
         )
         return casadi_fun
 
-    @_cache_function
+    @cache_function
     def rigid_contact_acceleration(self, contact_index, contact_axis) -> Function:
         q_biorbd = GeneralizedCoordinates(self.q)
         qdot_biorbd = GeneralizedVelocity(self.qdot)
@@ -1002,7 +1002,7 @@ class BiorbdModel:
         )
         return casadi_fun
 
-    @_cache_function
+    @cache_function
     def markers_jacobian(self) -> Function:
         biorbd_return = [m.to_mx() for m in self.model.markersJacobian(GeneralizedCoordinates(self.q))]
         casadi_fun = Function(
@@ -1018,7 +1018,7 @@ class BiorbdModel:
     def marker_names(self) -> tuple[str, ...]:
         return tuple([s.to_string() for s in self.model.markerNames()])
 
-    @_cache_function
+    @cache_function
     def soft_contact_forces(self) -> Function:
         q_biorbd = GeneralizedCoordinates(self.q)
         qdot_biorbd = GeneralizedVelocity(self.qdot)
@@ -1039,7 +1039,7 @@ class BiorbdModel:
         )
         return casadi_fun
 
-    @_cache_function
+    @cache_function
     def normalize_state_quaternions(self) -> Function:
 
         quat_idx = self.get_quaternion_idx()
@@ -1078,7 +1078,7 @@ class BiorbdModel:
             n_dof += self.segments[j].nbDof()
         return quat_idx
 
-    @_cache_function
+    @cache_function
     def contact_forces(self) -> Function:
         force = self.contact_forces_from_constrained_forward_dynamics()(
             self.q, self.qdot, self.tau, self.external_forces, self.parameters
@@ -1092,7 +1092,7 @@ class BiorbdModel:
         )
         return casadi_fun
 
-    @_cache_function
+    @cache_function
     def passive_joint_torque(self) -> Function:
         q_biorbd = GeneralizedCoordinates(self.q)
         qdot_biorbd = GeneralizedVelocity(self.qdot)
@@ -1106,7 +1106,7 @@ class BiorbdModel:
         )
         return casadi_fun
 
-    @_cache_function
+    @cache_function
     def ligament_joint_torque(self) -> Function:
         q_biorbd = GeneralizedCoordinates(self.q)
         qdot_biorbd = GeneralizedVelocity(self.qdot)
@@ -1177,7 +1177,7 @@ class BiorbdModel:
     def bounds_from_ranges(self, variables: str | list[str], mapping: BiMapping | BiMappingList = None) -> Bounds:
         return bounds_from_ranges(self, variables, mapping)
 
-    @_cache_function
+    @cache_function
     def lagrangian(self) -> Function:
         q_biorbd = GeneralizedCoordinates(self.q)
         qdot_biorbd = GeneralizedVelocity(self.qdot)

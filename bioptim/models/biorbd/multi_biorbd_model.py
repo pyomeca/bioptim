@@ -850,7 +850,7 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
-    @_cache_function
+    @cache_function
     def marker_velocity(self, marker_index: int) -> Function:
         biorbd_return = []
         for i, model in enumerate(self.models):
@@ -866,7 +866,7 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
-    @_cache_function
+    @cache_function
     def tau_max(self) -> Function:
         out_max = MX()
         out_min = MX()
@@ -885,7 +885,7 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
-    @_cache_function
+    @cache_function
     def rigid_contact_acceleration(self, contact_index, contact_axis) -> Function:
         model_selected = None
         model_idx = -1
@@ -916,7 +916,7 @@ class MultiBiorbdModel:
     def marker_names(self) -> tuple[str, ...]:
         return tuple([name for model in self.models for name in model.marker_names])
 
-    @_cache_function
+    @cache_function
     def soft_contact_forces(self) -> Function:
         biorbd_return = MX()
         for i, model in enumerate(self.models):
@@ -936,7 +936,7 @@ class MultiBiorbdModel:
     def reshape_fext_to_fcontact(self):
         raise NotImplementedError("reshape_fext_to_fcontact is not implemented yet for MultiBiorbdModel")
 
-    @_cache_function
+    @cache_function
     def normalize_state_quaternions(self) -> Function:
         biorbd_return = MX()
         for i, model in enumerate(self.models):
@@ -952,7 +952,7 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
-    @_cache_function
+    @cache_function
     def contact_forces(self) -> Function:
         """external_forces is not implemented yet for MultiBiorbdModel"""
         biorbd_return = MX()
@@ -972,7 +972,7 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
-    @_cache_function
+    @cache_function
     def passive_joint_torque(self) -> Function:
         biorbd_return = MX()
         for i, model in enumerate(self.models):
@@ -988,7 +988,7 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
-    @_cache_function
+    @cache_function
     def ligament_joint_torque(self) -> Function:
         biorbd_return = MX()
         for i, model in enumerate(self.models):
