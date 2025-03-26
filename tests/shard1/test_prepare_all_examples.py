@@ -1565,6 +1565,7 @@ def test_contact_forces_inverse_dynamics_constraint_muscle_fdot():
         n_shooting=10,
     )
 
+
 def test_contact_forces_inverse_dynamics_soft_contacts_muscle():
     from bioptim.examples.muscle_driven_with_contact import (
         contact_forces_inverse_dynamics_soft_contacts_muscle as ocp_module,

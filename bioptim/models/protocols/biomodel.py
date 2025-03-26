@@ -183,9 +183,7 @@ class BioModel(Protocol):
         Takes the rigid contact forces and dispatch is to match the external forces.
         """
 
-    def map_soft_contact_forces_to_global_forces(
-        self, soft_contact_forces: MX | SX
-    ) -> MX | SX:
+    def map_soft_contact_forces_to_global_forces(self, soft_contact_forces: MX | SX) -> MX | SX:
         """
         Takes the soft contact forces and dispatch is to match the external forces.
         """

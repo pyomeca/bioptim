@@ -316,7 +316,6 @@ class NewVariableConfiguration:
                         ),
                     )
 
-
         if self.as_algebraic_states:
             for node_index in range(
                 self.nlp.n_states_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1
@@ -447,9 +446,7 @@ def _manage_fatigue_to_new_variable(
                 color=color[i],
             )
         elif i == 0:
-            NewVariableConfiguration(
-                f"{name}", name_elements, ocp, nlp, as_states, as_controls, skip_plot=True
-            )
+            NewVariableConfiguration(f"{name}", name_elements, ocp, nlp, as_states, as_controls, skip_plot=True)
             nlp.plot[f"{name}_controls"] = CustomPlot(
                 lambda t0, phases_dt, node_idx, x, u, p, a, d, key: (
                     u[nlp.controls.key_index(key), :] if u.any() else np.ndarray((len(name_elements), 1)) * np.nan
@@ -462,7 +459,9 @@ def _manage_fatigue_to_new_variable(
 
         for p, params in enumerate(fatigue_suffix):
             name_tp = f"{var_names_with_suffix[-1]}_{params}"
-            NewVariableConfiguration(name_tp, name_elements, ocp, nlp, as_states=True, as_controls=False, skip_plot=True)
+            NewVariableConfiguration(
+                name_tp, name_elements, ocp, nlp, as_states=True, as_controls=False, skip_plot=True
+            )
             nlp.plot[name_tp] = CustomPlot(
                 lambda t0, phases_dt, node_idx, x, u, p, a, d, key, mod: (
                     mod * x[nlp.states.key_index(key), :] if x.any() else np.ndarray((len(name_elements), 1)) * np.nan

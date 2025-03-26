@@ -11,6 +11,7 @@ from bioptim import ContactType
 class MockData:
     pass
 
+
 # TODO
 path
 MODEL_RIGID_CONTACT = BiorbdModel("")

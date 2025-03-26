@@ -11,7 +11,13 @@ If pendulum is run as a script, it will perform the optimization and animates it
 """
 
 # --- Prepare the ocp --- #
-ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=400, n_threads=2, ode_solver=OdeSolver.COLLOCATION(polynomial_degree=3, defects_type=DefectType.TAU_EQUALS_INVERSE_DYNAMICS))
+ocp = prepare_ocp(
+    biorbd_model_path="models/pendulum.bioMod",
+    final_time=1,
+    n_shooting=400,
+    n_threads=2,
+    ode_solver=OdeSolver.COLLOCATION(polynomial_degree=3, defects_type=DefectType.TAU_EQUALS_INVERSE_DYNAMICS),
+)
 
 # --- Solve the ocp --- #
 sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
@@ -27,26 +33,49 @@ q, qdot = decision_states["q"], decision_states["qdot"]
 #                                 return_time=True,
 #                                )
 import numpy as np
-sol_integrated = sol.integrate(shooting_type=Shooting.SINGLE,
-                                integrator=SolutionIntegrator.SCIPY_DOP853,
-                                to_merge=SolutionMerge.NODES,
-                                return_time=False,
-                               )
+
+sol_integrated = sol.integrate(
+    shooting_type=Shooting.SINGLE,
+    integrator=SolutionIntegrator.SCIPY_DOP853,
+    to_merge=SolutionMerge.NODES,
+    return_time=False,
+)
 time_integrated = np.linspace(0, 1, sol_integrated["q"].shape[1])
 q_integrated, qdot_integrated = sol_integrated["q"], sol_integrated["qdot"]
 
 fig, axs = plt.subplots(4, 1, figsize=(10, 10))
 for i_dof in range(2):
-    axs[i_dof].plot(decision_time, q[i_dof, :], marker="o", linestyle='none', fillstyle='none', color="tab:red",
-                    label="Optimal solution - q")
-    axs[i_dof].plot(time_integrated, q_integrated[i_dof, :], ".", linestyle='none', color="tab:red",
-                    label="Reintegration - q")
-    axs[i_dof+2].plot(decision_time, qdot[i_dof, :], marker="o", linestyle='none', fillstyle='none', color="tab:blue",
-                    label="Optimal solution - qdot")
-    axs[i_dof+2].plot(time_integrated, qdot_integrated[i_dof, :], ".", linestyle='none', color="tab:blue",
-                    label="Reintegration - qdot")
+    axs[i_dof].plot(
+        decision_time,
+        q[i_dof, :],
+        marker="o",
+        linestyle="none",
+        fillstyle="none",
+        color="tab:red",
+        label="Optimal solution - q",
+    )
+    axs[i_dof].plot(
+        time_integrated, q_integrated[i_dof, :], ".", linestyle="none", color="tab:red", label="Reintegration - q"
+    )
+    axs[i_dof + 2].plot(
+        decision_time,
+        qdot[i_dof, :],
+        marker="o",
+        linestyle="none",
+        fillstyle="none",
+        color="tab:blue",
+        label="Optimal solution - qdot",
+    )
+    axs[i_dof + 2].plot(
+        time_integrated,
+        qdot_integrated[i_dof, :],
+        ".",
+        linestyle="none",
+        color="tab:blue",
+        label="Reintegration - qdot",
+    )
     axs[i_dof].set_title(f"{ocp.nlp[0].model.name_dof[i_dof]}")
-axs[0].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+axs[0].legend(bbox_to_anchor=(1.05, 1), loc="upper left")
 plt.tight_layout()
 plt.savefig("reintegration_.png")
 plt.show()
@@ -102,26 +131,49 @@ q, qdot = decision_states["q"], decision_states["qdot"]
 #                                 return_time=True,
 #                                )
 import numpy as np
-sol_integrated = sol.integrate(shooting_type=Shooting.SINGLE,
-                                integrator=SolutionIntegrator.SCIPY_DOP853,
-                                to_merge=SolutionMerge.NODES,
-                                return_time=False,
-                               )
+
+sol_integrated = sol.integrate(
+    shooting_type=Shooting.SINGLE,
+    integrator=SolutionIntegrator.SCIPY_DOP853,
+    to_merge=SolutionMerge.NODES,
+    return_time=False,
+)
 time_integrated = np.linspace(0, 1, sol_integrated["q"].shape[1])
 q_integrated, qdot_integrated = sol_integrated["q"], sol_integrated["qdot"]
 
 fig, axs = plt.subplots(4, 1, figsize=(10, 10))
 for i_dof in range(2):
-    axs[i_dof].plot(decision_time, q[i_dof, :-1], marker="o", linestyle='none', fillstyle='none', color="tab:red",
-                    label="Optimal solution - q")
-    axs[i_dof].plot(time_integrated, q_integrated[i_dof, :], ".", linestyle='none', color="tab:red",
-                    label="Reintegration - q")
-    axs[i_dof+2].plot(decision_time, qdot[i_dof, :-1], marker="o", linestyle='none', fillstyle='none', color="tab:blue",
-                    label="Optimal solution - qdot")
-    axs[i_dof+2].plot(time_integrated, qdot_integrated[i_dof, :], ".", linestyle='none', color="tab:blue",
-                    label="Reintegration - qdot")
+    axs[i_dof].plot(
+        decision_time,
+        q[i_dof, :-1],
+        marker="o",
+        linestyle="none",
+        fillstyle="none",
+        color="tab:red",
+        label="Optimal solution - q",
+    )
+    axs[i_dof].plot(
+        time_integrated, q_integrated[i_dof, :], ".", linestyle="none", color="tab:red", label="Reintegration - q"
+    )
+    axs[i_dof + 2].plot(
+        decision_time,
+        qdot[i_dof, :-1],
+        marker="o",
+        linestyle="none",
+        fillstyle="none",
+        color="tab:blue",
+        label="Optimal solution - qdot",
+    )
+    axs[i_dof + 2].plot(
+        time_integrated,
+        qdot_integrated[i_dof, :],
+        ".",
+        linestyle="none",
+        color="tab:blue",
+        label="Reintegration - qdot",
+    )
     axs[i_dof].set_title(f"{ocp.nlp[0].model.name_dof[i_dof]}")
-axs[0].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+axs[0].legend(bbox_to_anchor=(1.05, 1), loc="upper left")
 plt.tight_layout()
 plt.savefig("reintegration_.png")
 plt.show()

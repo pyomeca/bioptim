@@ -280,9 +280,7 @@ class OdeSolver:
             t = [self.t_ode(nlp)[0], self.t_ode(nlp)[1] - self.t_ode(nlp)[0]]
             dynamics_func = nlp.dynamics_func if not is_extra_dynamics else nlp.extra_dynamics_func[dynamics_index]
             dynamics_defects_func = (
-                nlp.dynamics_defects_func
-                if not is_extra_dynamics
-                else nlp.extra_dynamics_defects_func[dynamics_index]
+                nlp.dynamics_defects_func if not is_extra_dynamics else nlp.extra_dynamics_defects_func[dynamics_index]
             )
             ode = {
                 "x": nlp.states.scaled.cx_start,

@@ -83,9 +83,7 @@ def custom_dynamics(
     tau = muscles_tau + residual_tau
 
     dq = qdot
-    ddq = nlp.model.forward_dynamics(with_contact=False)(
-        q, qdot, tau, [], nlp.parameters.cx
-    )
+    ddq = nlp.model.forward_dynamics(with_contact=False)(q, qdot, tau, [], nlp.parameters.cx)
     drigid_contact_forces = rigid_contact_forces_derivatives
     dxdt = vertcat(dq, ddq, drigid_contact_forces)
 

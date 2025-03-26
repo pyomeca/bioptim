@@ -209,7 +209,6 @@ class ConfigureProblem:
                 with_friction=with_friction,
             )
 
-
     @staticmethod
     def torque_driven_free_floating_base(
         ocp,
@@ -531,7 +530,6 @@ class ConfigureProblem:
                 with_friction=with_friction,
             )
 
-
     @staticmethod
     def torque_activations_driven(
         ocp,
@@ -588,7 +586,6 @@ class ConfigureProblem:
                 with_residual_torque=with_residual_torque,
                 with_ligament=with_ligament,
             )
-
 
     @staticmethod
     def joints_acceleration_driven(
@@ -671,9 +668,7 @@ class ConfigureProblem:
 
         if with_residual_torque:
             ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True, fatigue=fatigue)
-        ConfigureProblem.configure_muscles(
-            ocp, nlp, as_states=with_excitations, as_controls=True, fatigue=fatigue
-        )
+        ConfigureProblem.configure_muscles(ocp, nlp, as_states=with_excitations, as_controls=True, fatigue=fatigue)
 
         ConfigureProblem.configure_contacts(ocp, nlp, contact_type)
 
@@ -811,7 +806,6 @@ class ConfigureProblem:
             legend=all_multipliers_names,
         )
 
-
     @staticmethod
     def configure_contacts(ocp, nlp, contact_type):
         if ContactType.RIGID_IMPLICIT in contact_type:
@@ -825,10 +819,11 @@ class ConfigureProblem:
         if ContactType.RIGID_EXPLICIT in contact_type:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
         if ContactType.SOFT_IMPLICIT in contact_type:
-            ConfigureProblem.configure_soft_contact_forces(ocp, nlp, as_states=False, as_algebraic_states=True, as_controls=False)
+            ConfigureProblem.configure_soft_contact_forces(
+                ocp, nlp, as_states=False, as_algebraic_states=True, as_controls=False
+            )
         if ContactType.SOFT_EXPLICIT in contact_type:
             ConfigureProblem.configure_soft_contact_function(ocp, nlp)
-
 
     @staticmethod
     def configure_qv(ocp, nlp, dyn_func: Callable, **extra_params):
@@ -981,9 +976,7 @@ class ConfigureProblem:
                 raise ValueError(f"When using OdeSolver {nlp.ode_solver} you must provide implicit defects (not dxdt).")
         else:
             if dynamics_eval.dxdt is None:
-                raise ValueError(
-                    f"When using OdeSolver {nlp.ode_solver} you must provide dxdt (not defects)."
-                )
+                raise ValueError(f"When using OdeSolver {nlp.ode_solver} you must provide dxdt (not defects).")
 
         dynamics_dxdt = dynamics_eval.dxdt
         if isinstance(dynamics_dxdt, (list, tuple)):
@@ -1432,7 +1425,9 @@ class ConfigureProblem:
         name = "qdddot"
         name_qdddot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
-        ConfigureProblem.configure_new_variable(name, name_qdddot, ocp, nlp, as_states=as_states, as_controls=as_controls, axes_idx=axes_idx)
+        ConfigureProblem.configure_new_variable(
+            name, name_qdddot, ocp, nlp, as_states=as_states, as_controls=as_controls, axes_idx=axes_idx
+        )
 
     @staticmethod
     def configure_stochastic_k(ocp, nlp, n_noised_controls: int, n_references: int):
@@ -1744,7 +1739,9 @@ class ConfigureProblem:
         name = "taudot"
         name_taudot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
-        ConfigureProblem.configure_new_variable(name, name_taudot, ocp, nlp, as_states=as_states, as_controls=as_controls, axes_idx=axes_idx)
+        ConfigureProblem.configure_new_variable(
+            name, name_taudot, ocp, nlp, as_states=as_states, as_controls=as_controls, axes_idx=axes_idx
+        )
 
     @staticmethod
     def configure_translational_forces(ocp, nlp, as_states: bool, as_controls: bool, n_contacts: int = 1):
@@ -1765,15 +1762,15 @@ class ConfigureProblem:
         """
 
         name_contact_forces = [f"Force{i}_{axis}" for i in range(n_contacts) for axis in ("X", "Y", "Z")]
-        ConfigureProblem.configure_new_variable("contact_forces", name_contact_forces, ocp, nlp, as_states=as_states, as_controls=as_controls)
+        ConfigureProblem.configure_new_variable(
+            "contact_forces", name_contact_forces, ocp, nlp, as_states=as_states, as_controls=as_controls
+        )
         ConfigureProblem.configure_new_variable(
             "contact_positions", name_contact_forces, ocp, nlp, as_states=as_states, as_controls=as_controls
         )
 
     @staticmethod
-    def configure_rigid_contact_forces(
-        ocp, nlp, as_states: bool, as_algebraic_states: bool, as_controls: bool
-    ):
+    def configure_rigid_contact_forces(ocp, nlp, as_states: bool, as_algebraic_states: bool, as_controls: bool):
         """
         Configure the generalized forces derivative
 
@@ -1830,9 +1827,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_muscles(
-        ocp, nlp, as_states: bool, as_controls: bool, fatigue: FatigueList = None
-    ):
+    def configure_muscles(ocp, nlp, as_states: bool, as_controls: bool, fatigue: FatigueList = None):
         """
         Configure the muscles
 
@@ -2059,12 +2054,20 @@ def _check_numerical_timeseries_format(numerical_timeseries: np.ndarray, n_shoot
 def _check_contacts_in_biomodel(contact_type: list[ContactType], model: BioModel, phase_idx: int):
 
     # Check rigid contacts
-    if (ContactType.RIGID_EXPLICIT in contact_type or ContactType.RIGID_IMPLICIT in contact_type) and model.nb_contacts == 0:
-        raise ValueError(f"No rigid contact defined in the .bioMod of phase {phase_idx}, consider changing the ContactType.")
+    if (
+        ContactType.RIGID_EXPLICIT in contact_type or ContactType.RIGID_IMPLICIT in contact_type
+    ) and model.nb_contacts == 0:
+        raise ValueError(
+            f"No rigid contact defined in the .bioMod of phase {phase_idx}, consider changing the ContactType."
+        )
 
     # Check soft contacts
-    if (ContactType.SOFT_EXPLICIT in contact_type or ContactType.SOFT_IMPLICIT in contact_type) and model.nb_soft_contacts != 0:
-        raise ValueError(f"No soft contact defined in the .bioMod of phase {phase_idx}, consider changing the ContactType.")
+    if (
+        ContactType.SOFT_EXPLICIT in contact_type or ContactType.SOFT_IMPLICIT in contact_type
+    ) and model.nb_soft_contacts != 0:
+        raise ValueError(
+            f"No soft contact defined in the .bioMod of phase {phase_idx}, consider changing the ContactType."
+        )
 
     # Check that contact types are not declared at the same time
     if len(contact_type) > 1:

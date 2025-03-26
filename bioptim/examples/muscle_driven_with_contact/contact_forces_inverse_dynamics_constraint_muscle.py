@@ -198,15 +198,16 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, defect_type: DefectTy
                 key="rigid_contact_forces",
             )
     else:
-        constraints.add(ConstraintFcn.TRACK_MARKERS_VELOCITY,
-                        node=Node.START,
-                        marker_index=0,
-                        )
-        constraints.add(ConstraintFcn.TRACK_MARKERS_VELOCITY,
-                        node=Node.START,
-                        marker_index=1,
-                        )
-
+        constraints.add(
+            ConstraintFcn.TRACK_MARKERS_VELOCITY,
+            node=Node.START,
+            marker_index=0,
+        )
+        constraints.add(
+            ConstraintFcn.TRACK_MARKERS_VELOCITY,
+            node=Node.START,
+            marker_index=1,
+        )
 
     # Path constraint
     n_q = bio_model.nb_q
@@ -350,34 +351,53 @@ def main():
         plt.savefig("test.png")
         plt.show()
 
-
     # --- Plot the reintegration -- #
-    sol_integrated = sol.integrate(shooting_type=Shooting.SINGLE,
-                                   integrator=SolutionIntegrator.SCIPY_DOP853,
-                                   to_merge=SolutionMerge.NODES,
-                                   return_time=False,
-                                   )
+    sol_integrated = sol.integrate(
+        shooting_type=Shooting.SINGLE,
+        integrator=SolutionIntegrator.SCIPY_DOP853,
+        to_merge=SolutionMerge.NODES,
+        return_time=False,
+    )
     time_integrated = np.linspace(0, t, sol_integrated["q"].shape[1])
     q_integrated, qdot_integrated = sol_integrated["q"], sol_integrated["qdot"]
 
     nb_q = nlp.model.nb_q
     fig, axs = plt.subplots(nb_q, 1, figsize=(10, 7))
     for i_dof in range(nb_q):
-        axs[i_dof].plot(time, q[i_dof, :], marker="o", linestyle='none', fillstyle='none', color="tab:red",
-                        label="Optimal solution - q")
-        axs[i_dof].plot(time_integrated, q_integrated[i_dof, :], ".", linestyle='none', color="tab:red",
-                        label="Reintegration - q")
-        axs[i_dof].plot(time, qdot[i_dof, :], marker="o", linestyle='none', fillstyle='none',
-                            color="tab:blue",
-                            label="Optimal solution - qdot")
-        axs[i_dof].plot(time_integrated, qdot_integrated[i_dof, :], ".", linestyle='none', color="tab:blue",
-                            label="Reintegration - qdot")
+        axs[i_dof].plot(
+            time,
+            q[i_dof, :],
+            marker="o",
+            linestyle="none",
+            fillstyle="none",
+            color="tab:red",
+            label="Optimal solution - q",
+        )
+        axs[i_dof].plot(
+            time_integrated, q_integrated[i_dof, :], ".", linestyle="none", color="tab:red", label="Reintegration - q"
+        )
+        axs[i_dof].plot(
+            time,
+            qdot[i_dof, :],
+            marker="o",
+            linestyle="none",
+            fillstyle="none",
+            color="tab:blue",
+            label="Optimal solution - qdot",
+        )
+        axs[i_dof].plot(
+            time_integrated,
+            qdot_integrated[i_dof, :],
+            ".",
+            linestyle="none",
+            color="tab:blue",
+            label="Reintegration - qdot",
+        )
         axs[i_dof].set_title(f"{ocp.nlp[0].model.name_dof[i_dof]}")
-    axs[0].legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    axs[0].legend(bbox_to_anchor=(1.05, 1), loc="upper left")
     plt.tight_layout()
     plt.savefig(f"reintegration_{defect_type.value}.png")
     plt.show()
-
 
     # --- Show results --- #
     viewer = "pyorerun"

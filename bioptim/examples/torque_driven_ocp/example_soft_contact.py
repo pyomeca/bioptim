@@ -25,7 +25,8 @@ from bioptim import (
     Solution,
     SolutionIntegrator,
     PhaseDynamics,
-    SolutionMerge, ContactType,
+    SolutionMerge,
+    ContactType,
 )
 
 
