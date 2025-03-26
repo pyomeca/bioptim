@@ -147,43 +147,27 @@ class DynamicsFunctions:
             "external_forces", states, controls, algebraic_states, numerical_timeseries
         )
 
-        dxdt, defects = None, None
-        if not isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
-            ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, contact_type, external_forces)
+        if fatigue is not None and "tau" in fatigue:
+            raise NotImplementedError("Fatigue is not implemented yet for torque driven dynamics")
 
-            if fatigue is not None and "tau" in fatigue:
-                # dxdt cannot be mapped due to the fatigue dynamics that does its own mapping
-                # @partierre ?
-                dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
-                dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
-                dxdt[nlp.states["qdot"].index, :] = ddq
-                dxdt = fatigue["tau"].dynamics(dxdt, nlp, states, controls)
-            else:
-                # dxdt is mapped to match the states shape
-                dxdt = vertcat(dq, ddq)
+        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, contact_type, external_forces)
+        dxdt = vertcat(dq, ddq)
 
-        else:
+        defects = None
+        if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
             slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
-            if nlp.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
-                ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, contact_type, external_forces)
-                derivative = vertcat(dq, ddq)
 
+            if nlp.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
                 slope = vertcat(
                     nlp.states["q"].mapping.to_first.map(slope_q), nlp.states["qdot"].mapping.to_first.map(slope_qdot)
                 )
-
-                if fatigue is not None and "tau" in fatigue:
-                    derivative = fatigue["tau"].dynamics(derivative, nlp, states, controls)
-
-                defects = slope * nlp.dt - derivative * nlp.dt
+                defects = slope * nlp.dt - dxdt * nlp.dt
 
             elif nlp.ode_solver.defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
-                if fatigue is not None:
-                    raise NotImplementedError("Inverse dynamics with fatigue is not implemented yet")
 
                 tau_id = DynamicsFunctions.inverse_dynamics(
-                    q, qdot, slope_qdot, external_forces, nlp.parameters.cx
+                    nlp, q=q, qdot=qdot, qddot=slope_qdot, contact_type=contact_type, external_forces=external_forces,
                 )
 
                 dq_defects = qdot - DynamicsFunctions.compute_qdot(nlp, q, slope_q)
@@ -193,7 +177,13 @@ class DynamicsFunctions:
             else:
                 raise NotImplementedError(f"The defect type {nlp.ode_solver.defects_type} is not implemented yet for torque driven dynamics.")
 
-        return DynamicsEvaluation(dxdt, defects)
+            # TODO: ipuch RIGID_IMPLICIT ?
+            if ContactType.SOFT_IMPLICIT in contact_type:
+                soft_contact_defect = nlp.model.soft_contact_forces()(q, qdot, nlp.parameters.cx) - \
+                                      nlp.algebraic_states["soft_contact_forces"].cx
+                defects = vertcat(defects, soft_contact_defect)
+
+        return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
     @staticmethod
     def torque_driven_free_floating_base(
@@ -1075,6 +1065,29 @@ class DynamicsFunctions:
             raise RuntimeError("Your q key combination was not found in states or controls")
         return mapping.to_first.map(nlp.model.reshape_qdot()(q, qdot, nlp.parameters.cx))
 
+
+    @staticmethod
+    def get_external_forces_from_contacts(nlp, q, qdot, contact_type: list[ContactType], external_forces: MX | SX):
+
+        external_forces = nlp.cx() if external_forces is None else external_forces
+        if ContactType.RIGID_IMPLICIT in contact_type:
+            if external_forces.shape[0] != 0:
+                raise NotImplementedError("ContactType.RIGID_IMPLICIT cannot be used with external forces yet")
+            contact_forces = nlp.algebraic_states["rigid_contact_forces"].cx
+            external_forces = vertcat(external_forces, nlp.model.map_rigid_contact_forces_to_global_forces(contact_forces, q, nlp.parameters.cx))
+
+        if ContactType.SOFT_EXPLICIT in contact_type:
+            contact_forces = nlp.model.soft_contact_forces()(q, qdot, nlp.parameters.cx)
+            external_forces = vertcat(external_forces, nlp.model.map_soft_contact_forces_to_global_forces(contact_forces))
+
+        if ContactType.SOFT_IMPLICIT in contact_type:
+            contact_forces = nlp.algebraic_states["soft_contact_forces"].cx
+            external_forces = vertcat(external_forces, nlp.model.map_soft_contact_forces_to_global_forces(contact_forces))
+
+        external_forces = [] if external_forces.shape == (0, 1) else external_forces
+
+        return external_forces
+
     @staticmethod
     def forward_dynamics(
         nlp,
@@ -1113,26 +1126,8 @@ class DynamicsFunctions:
         else:
             qdot_var_mapping = BiMapping([i for i in range(qdot.shape[0])], [i for i in range(qdot.shape[0])]).to_first
 
-        external_forces = [] if external_forces is None else external_forces
-
-        with_contact = False
-        if ContactType.RIGID_EXPLICIT in contact_type:
-            with_contact = True
-
-        if ContactType.RIGID_IMPLICIT in contact_type:
-            if external_forces.shape[0] != 0:
-                raise NotImplementedError("ContactType.RIGID_IMPLICIT cannot be used with external forces yet")
-            contact_forces = nlp.model.contact_forces()(q, qdot, tau, [], nlp.parameters.cx)
-            # TODO : change for algebraic
-            external_forces = nlp.model.map_rigid_contact_forces_to_global_forces(contact_forces, q, nlp.parameters.cx)
-
-        if ContactType.SOFT_EXPLICIT in contact_type:
-            contact_forces = nlp.model.soft_contact_forces()(q, qdot, nlp.parameters.cx)
-            external_forces = nlp.model.map_soft_contact_forces_to_global_forces(contact_forces)
-
-        if ContactType.SOFT_IMPLICIT in contact_type:
-            contact_forces = nlp.algebraic_states["soft_contact_forces"].cx
-            external_forces = nlp.model.map_soft_contact_forces_to_global_forces(contact_forces)
+        external_forces = DynamicsFunctions.get_external_forces_from_contacts(nlp, q, qdot, contact_type, external_forces)
+        with_contact = ContactType.RIGID_EXPLICIT in contact_type
 
         qddot = nlp.model.forward_dynamics(with_contact=with_contact)(
             q,
@@ -1183,24 +1178,10 @@ class DynamicsFunctions:
         else:
             raise RuntimeError("The key 'tau' was not found in states or controls")
 
-        external_forces = [] if external_forces is None else external_forces
-
         if ContactType.RIGID_EXPLICIT in contact_type:
-            raise NotImplementedError("ContactType.RIGID_EXPLICIT cannot be used with inverse dynamics yet")
+            raise NotImplementedError("Inverse dynamics, cannot be used with ContactType.RIGID_EXPLICIT yet")
 
-        if ContactType.RIGID_IMPLICIT in contact_type:
-            if external_forces.shape[0] != 0:
-                raise NotImplementedError("ContactType.RIGID_IMPLICIT cannot be used with external forces yet")
-            contact_forces = nlp.algebraic_states["rigid_contact_forces"].cx
-            external_forces = nlp.model.map_rigid_contact_forces_to_global_forces(contact_forces, q, nlp.parameters.cx)
-
-        if ContactType.SOFT_EXPLICIT in contact_type:
-            contact_forces = nlp.model.soft_contact_forces()(q, qdot, nlp.parameters.cx)
-            external_forces = nlp.model.map_soft_contact_forces_to_global_forces(contact_forces)
-
-        if ContactType.SOFT_IMPLICIT in contact_type:
-            contact_forces = nlp.algebraic_states["soft_contact_forces"].cx
-            external_forces = nlp.model.map_soft_contact_forces_to_global_forces(contact_forces)
+        external_forces = DynamicsFunctions.get_external_forces_from_contacts(nlp, q, qdot, contact_type, external_forces)
 
         tau = nlp.model.inverse_dynamics(with_contact=False)(
             q, qdot, qddot, external_forces, nlp.parameters.cx

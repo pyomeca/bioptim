@@ -84,7 +84,7 @@ def custom_dynamics(
 
     dq = qdot
     ddq = DynamicsFunctions.forward_dynamics(
-        nlp, q, qdot, tau, with_contact=False, external_forces=external_forces
+        nlp, q, qdot, tau, contact_type=[], external_forces=external_forces
     )
     dxdt = vertcat(dq, ddq)
 
@@ -96,7 +96,7 @@ def custom_dynamics(
 
         # qddot
         tau_id = DynamicsFunctions.inverse_dynamics(
-            nlp, q, slope_q, slope_qdot, with_contact=False, external_forces=external_forces
+            nlp, q, slope_q, slope_qdot, contact_type=ContactType.SOFT_IMPLICIT, external_forces=external_forces
         )
         tau_defect = tau - tau_id
         # contact

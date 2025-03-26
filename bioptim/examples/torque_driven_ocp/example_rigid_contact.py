@@ -59,7 +59,8 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    if ode_solver.defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
+    if (ode_solver.defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS or
+        ContactType.RIGID_IMPLICIT in contact_type):
         # Indicate to the model creator that there will be two rigid contacts in the form of optimization variables
         external_force_set = ExternalForceSetVariables()
         external_force_set.add(force_name="Seg2_contact0", segment="Seg2", use_point_of_application=True)
@@ -138,9 +139,9 @@ def main():
     biorbd_model_path = "../torque_driven_ocp/models/3segments_4dof_1contact.bioMod"
     n_shooting = 30
     final_time = 1
-    defect_type = DefectType.TAU_EQUALS_INVERSE_DYNAMICS
+    defect_type = DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS
     ode_solver = OdeSolver.COLLOCATION(polynomial_degree=5, defects_type=defect_type)
-    contact_type = [ContactType.RIGID_EXPLICIT]
+    contact_type = [ContactType.RIGID_IMPLICIT]
 
     # Prepare OCP to reach the second marker
     ocp = prepare_ocp(biorbd_model_path, n_shooting, final_time, ode_solver, contact_type)

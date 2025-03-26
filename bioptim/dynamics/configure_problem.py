@@ -162,7 +162,6 @@ class ConfigureProblem:
         with_passive_torque: bool = False,
         with_ligament: bool = False,
         with_friction: bool = False,
-        soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
         fatigue: FatigueList = None,
         numerical_data_timeseries: dict[str, np.ndarray] = None,
     ):
@@ -183,8 +182,6 @@ class ConfigureProblem:
             If the dynamic with ligament should be used
         with_friction: bool
             If the dynamic with joint friction should be used (friction = coefficients * qdot)
-        soft_contacts_dynamics: SoftContactDynamics
-            which soft contact dynamic should be used
         fatigue: FatigueList
             A list of fatigue elements
         numerical_data_timeseries: dict[str, np.ndarray]
@@ -209,14 +206,7 @@ class ConfigureProblem:
         if ContactType.RIGID_EXPLICIT in contact_type:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
         if ContactType.SOFT_IMPLICIT in contact_type:
-            ConfigureProblem.configure_soft_contact_forces(ocp, nlp, False, True)
-            # TODO : Shoud be moved the the defects instead of a constraint
-            ocp.implicit_constraints.add(
-                ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
-                node=Node.ALL_SHOOTING,
-                penalty_type=ConstraintType.IMPLICIT,
-                phase=nlp.phase_idx,
-            )
+            ConfigureProblem.configure_soft_contact_forces(ocp, nlp, as_states=False, as_controls=True)
         if ContactType.SOFT_EXPLICIT in contact_type:
             ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 

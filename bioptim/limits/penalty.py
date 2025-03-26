@@ -750,6 +750,8 @@ class PenaltyFunctionAbstract:
                 penalty.cols should not be defined if contact_index is defined
             """
 
+            # TODO: get_contact_forces from algebraic_states
+
             if controller.get_nlp.contact_forces_func is None:
                 raise RuntimeError("minimize_contact_forces requires a contact dynamics")
 
