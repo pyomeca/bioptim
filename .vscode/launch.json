@@ -1,0 +1,44 @@
+{
+    // Utilisez IntelliSense pour en savoir plus sur les attributs possibles.
+    // Pointez pour afficher la description des attributs existants.
+    // Pour plus d'informations, visitez : https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python : fichier actif",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "cwd": "${fileDirname}"
+        },
+        {
+            "name": "Pendulum",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/bioptim/examples/getting_started/pendulum.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "cwd": "${workspaceFolder}/bioptim/examples/getting_started/"
+        },
+        {
+            "name": "Parameter",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/bioptim/examples/muscle_driven_ocp/custom_parameters.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "cwd": "${workspaceFolder}/bioptim/examples/muscle_driven_ocp/"
+        }
+    ]
+}

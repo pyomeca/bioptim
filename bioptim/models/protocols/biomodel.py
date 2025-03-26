@@ -1,5 +1,6 @@
 import numpy as np
 from typing import Protocol, Callable, Any
+from functools import wraps
 
 from casadi import MX, SX, Function
 from ...misc.mapping import BiMapping, BiMappingList
@@ -12,6 +13,25 @@ class BioModel(Protocol):
     bioptim.
     As a reminder for developers: only necessary attributes and methods should appear here.
     """
+
+    def cache_function(method):
+        """Decorator to cache CasADi functions automatically"""
+
+        @wraps(method)
+        def wrapper(self, *args, **kwargs):
+            # Create a unique key based on the method name and arguments
+            key = (method.__name__, args, frozenset(kwargs.items()))
+            if key in self._cached_functions:
+                return self._cached_functions[key]
+
+            # Call the original function to create the CasADi function
+            casadi_fun = method(self, *args, **kwargs)
+
+            # Store in the cache
+            self._cached_functions[key] = casadi_fun
+            return casadi_fun
+
+        return wrapper
 
     @property
     def name(self) -> str:
@@ -27,12 +47,11 @@ class BioModel(Protocol):
     @property
     def friction_coefficients(self) -> Function:
         """Get the coefficient of friction to apply to specified elements in the dynamics"""
-        return Function([], [])
+        return MX()
 
-    @property
+    @cache_function
     def gravity(self) -> Function:
         """Get the current gravity applied to the model"""
-        return Function("F", [], [])
 
     def set_gravity(self, new_gravity):
         """Set the gravity vector"""
@@ -85,47 +104,53 @@ class BioModel(Protocol):
         """Get all segments"""
         return ()
 
+    @cache_function
     def rotation_matrix_to_euler_angles(self, sequence: str) -> tuple:
         """
         Get the Euler angles from a rotation matrix, in the sequence specified
         args: rotation matrix
         """
 
-    @property
+    @cache_function
     def mass(self) -> Function:
         """Get the mass of the model"""
-        return Function("F", [], [])
 
+    @cache_function
     def rt(self, rt_index) -> Function:
         """
         Get the rototrans matrix of an object (e.g., an IMU) that is placed on the model
         args: q
         """
 
+    @cache_function
     def center_of_mass(self) -> Function:
         """
         Get the center of mass of the model
         args: q
         """
 
+    @cache_function
     def center_of_mass_velocity(self) -> Function:
         """
         Get the center of mass velocity of the model
         args: q, qdot
         """
 
+    @cache_function
     def center_of_mass_acceleration(self) -> Function:
         """
         Get the center of mass acceleration of the model
         args: q, qdot, qddot
         """
 
+    @cache_function
     def angular_momentum(self) -> Function:
         """
         Get the angular momentum of the model
         args: q, qdot
         """
 
+    @cache_function
     def reshape_qdot(self) -> Function:
         """
         In case, qdot need to be reshaped, such as if one want to get velocities from quaternions.
@@ -158,12 +183,14 @@ class BioModel(Protocol):
         """Get the muscle names"""
         return ()
 
+    @cache_function
     def torque(self) -> Function:
         """
         Get the muscle torque
         args: activation, q, qdot
         """
 
+    @cache_function
     def forward_dynamics_free_floating_base(self) -> Function:
         """
         compute the free floating base forward dynamics
@@ -188,60 +215,70 @@ class BioModel(Protocol):
         Takes the soft contact forces and dispatch is to match the external forces.
         """
 
+    @cache_function
     def forward_dynamics(self, with_contact=False) -> Function:
         """
         compute the forward dynamics
         args: q, qdot, tau, external_forces
         """
 
+    @cache_function
     def inverse_dynamics(self) -> Function:
         """
         compute the inverse dynamics
         args: q, qdot, qddot, external_forces
         """
 
+    @cache_function
     def contact_forces_from_constrained_forward_dynamics(self) -> Function:
         """
         compute the contact forces
         args: q, qdot, tau, external_forces
         """
 
+    @cache_function
     def qdot_from_impact(self) -> Function:
         """
         compute the constraint impulses
         args: q, qdot_pre_impact
         """
 
+    @cache_function
     def muscle_activation_dot(self) -> Function:
         """
         Get the activation derivative of the muscles states
         args: muscle_excitations, muscle_activations
         """
 
+    @cache_function
     def muscle_joint_torque(self) -> Function:
         """
         Get the muscular joint torque
         args: muscle_states, q, qdot
         """
 
+    @cache_function
     def muscle_length_jacobian(self) -> Function:
         """
         Get the muscle velocity
         args: q
         """
 
+    @cache_function
     def muscle_velocity(self) -> Function:
         """
         Get the muscle velocity
         args: q, qdot
         """
 
+    @cache_function
     def marker(self, marker_index: int, reference_frame_idx: int = None) -> Function:
         """
         Get the position of a marker
         args: q
         """
 
+    @cache_function
     def markers(self) -> list[MX]:
         """
         Get the markers of the model
@@ -261,36 +298,42 @@ class BioModel(Protocol):
         """Get the number of rigid contacts"""
         return -1
 
-    def markers_velocities(self, reference_index=None) -> list[MX]:
+    @cache_function
+    def markers_velocities(self, reference_index=None) -> Function:
         """
         Get the marker velocities of the model, in the reference frame number reference_index
         args: q, qdot
         """
 
-    def marker_velocity(self, marker_index=None) -> list[MX]:
+    @cache_function
+    def marker_velocity(self, marker_index=None) -> Function:
         """
         Get the velocity of one marker from the model
         args: q, qdot
         """
 
-    def markers_accelerations(self, reference_index=None) -> list[MX]:
+    @cache_function
+    def markers_accelerations(self, reference_index=None) -> Function:
         """
         Get the marker accelerations of the model, in the reference frame number reference_index
         args: q, qdot, qddot
         """
 
-    def marker_acceleration(self, marker_index=None) -> list[MX]:
+    @cache_function
+    def marker_acceleration(self, marker_index=None) -> Function:
         """
         Get the acceleration of one marker from the model
         args: q, qdot, qddot
         """
 
-    def tau_max(self) -> tuple[MX, MX]:
+    @cache_function
+    def tau_max(self) -> Function:
         """
         Get the maximum torque
         args: q, qdot
         """
 
+    @cache_function
     def rigid_contact_acceleration(self, contact_index, contact_axis) -> Function:
         """
         Get the rigid contact acceleration
@@ -302,18 +345,21 @@ class BioModel(Protocol):
         """Get the marker names"""
         return ()
 
+    @cache_function
     def soft_contact_forces(self) -> Function:
         """
         Get the soft contact forces in the global frame
         args: q, qdot
         """
 
+    @cache_function
     def normalize_state_quaternions(self) -> Function:
         """
         Normalize the quaternions of the state
         args: q (The joint generalized coordinates to normalize)
         """
 
+    @cache_function
     def contact_forces(self) -> Function:
         """
         Easy accessor for the contact forces in contact dynamics
@@ -335,12 +381,14 @@ class BioModel(Protocol):
         or [nb_rigid_contacts, n_frames] if external_forces is not None
         """
 
+    @cache_function
     def passive_joint_torque(self) -> Function:
         """
         Get the passive joint torque
         args: q, qdot
         """
 
+    @cache_function
     def ligament_joint_torque(self) -> Function:
         """
         Get the ligament joint torque
@@ -363,6 +411,7 @@ class BioModel(Protocol):
         Create the desired bounds
         """
 
+    @cache_function
     def lagrangian(self) -> Function:
         """
         Compute the Lagrangian of a biorbd model.
@@ -379,6 +428,7 @@ class BioModel(Protocol):
         The Lagrangian.
         """
 
+    @cache_function
     def partitioned_forward_dynamics(self, q_u, qdot_u, q_v_init, tau) -> Function:
         """
         This is the forward dynamics of the model, but only for the independent joints

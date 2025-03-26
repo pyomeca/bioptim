@@ -850,8 +850,9 @@ An example of such a server is provided in `resources/plotting_server.py`.
 
 ## The model
 
-Bioptim is designed to work with any model, as long as it inherits from the class `bioptim.Model`. Models built with `biorbd` are already compatible with `bioptim`.
+Bioptim is designed to work with any model, as long as it matches the protocol defined in `bioptim/models/protocols/biomodel.py`. Models built with `biorbd` are already compatible with `bioptim`.
 They can be used as is or modified to add new features.
+To decrease RAM usage and computational time, it is recommended to store `casadi.Function` the first time they are called by using the decorator `@cache_function` as implemented in the protocol.
 
 ### Class: BiorbdModel
 

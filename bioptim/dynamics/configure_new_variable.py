@@ -8,38 +8,6 @@ from ..misc.enums import PlotType, ControlType, VariableType, PhaseDynamics
 from ..misc.mapping import BiMapping
 
 
-def variable_type_from_booleans_to_enums(
-    as_states: bool, as_controls: bool, as_states_dot: bool, as_algebraic_states: bool
-) -> list[VariableType]:
-    """
-    Convert the booleans to enums
-
-    Parameters
-    ----------
-    as_states: bool
-        If the new variable should be added to the state variable set
-    as_states_dot: bool
-        If the new variable should be added to the state_dot variable set
-    as_controls: bool
-        If the new variable should be added to the control variable set
-    as_algebraic_states: bool
-        If the new variable should be added to the algebraic states variable set
-
-    Returns
-    -------
-    The list of variable type
-    """
-
-    variable_type = []
-    if as_states:
-        variable_type.append(VariableType.STATES)
-    if as_controls:
-        variable_type.append(VariableType.CONTROLS)
-    if as_algebraic_states:
-        variable_type.append(VariableType.ALGEBRAIC_STATES)
-    return variable_type
-
-
 class NewVariableConfiguration:
     def __init__(
         self,
