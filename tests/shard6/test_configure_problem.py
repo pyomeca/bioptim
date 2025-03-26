@@ -58,7 +58,7 @@ def test_configures(cx):
     npt.assert_equal(nlp.states.keys(), ["q"])
 
     # Test multiple states + states dot
-    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False, as_states_dot=True)
+    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
     npt.assert_equal(nlp.states.shape, 4 + 4)
     npt.assert_equal(nlp.states.keys(), ["q", "qdot"])
     npt.assert_equal(nlp.states_dot.shape, 4)
@@ -70,7 +70,7 @@ def test_configures(cx):
     npt.assert_equal(nlp.controls.keys(), ["tau"])
 
     # Test all other configures
-    ConfigureProblem.configure_qddot(ocp, nlp, as_states=True, as_controls=False, as_states_dot=True)
+    ConfigureProblem.configure_qddot(ocp, nlp, as_states=True, as_controls=False)
     npt.assert_equal(nlp.states.shape, 4 + 4 + 4)
     npt.assert_equal(nlp.states.keys(), ["q", "qdot", "qddot"])
     npt.assert_equal(nlp.states_dot.shape, 4 + 4)
@@ -102,13 +102,12 @@ def test_configures(cx):
         as_states=True,
         as_controls=False,
         as_algebraic_states=False,
-        as_states_dot=False,
     )
     npt.assert_equal(nlp.states.shape, 4 + 4 + 4 + 4 + 3)
     npt.assert_equal(nlp.states.keys(), ["q", "qdot", "qddot", "qdddot", "rigid_contact_forces"])
 
     ConfigureProblem.configure_rigid_contact_forces(
-        ocp, nlp, as_states=False, as_controls=True, as_algebraic_states=False, as_states_dot=False
+        ocp, nlp, as_states=False, as_controls=True, as_algebraic_states=False
     )
     npt.assert_equal(nlp.controls.shape, 4 + 36 + 4 + 3 + 3 + 3)
     npt.assert_equal(
@@ -117,7 +116,7 @@ def test_configures(cx):
     )
 
     ConfigureProblem.configure_rigid_contact_forces(
-        ocp, nlp, as_states=False, as_controls=False, as_algebraic_states=True, as_states_dot=False
+        ocp, nlp, as_states=False, as_controls=False, as_algebraic_states=True
     )
     npt.assert_equal(nlp.algebraic_states.shape, 3)
     npt.assert_equal(nlp.algebraic_states.keys(), ["rigid_contact_forces"])
@@ -173,7 +172,7 @@ def test_configure_muscles(cx):
     fatigue = FatigueList()
     fatigue.add(XiaFatigue(LD=10, LR=10, F=0.01, R=0.002), state_only=False)
 
-    ConfigureProblem.configure_muscles(ocp, nlp, as_states=True, as_states_dot=True, as_controls=True, fatigue=fatigue)
+    ConfigureProblem.configure_muscles(ocp, nlp, as_states=True, as_controls=True, fatigue=fatigue)
     npt.assert_equal(nlp.states.shape, 24)
     npt.assert_equal(nlp.states.keys(), ["muscles", "muscles_ma", "muscles_mr", "muscles_mf"])
     npt.assert_equal(nlp.controls.shape, 6)

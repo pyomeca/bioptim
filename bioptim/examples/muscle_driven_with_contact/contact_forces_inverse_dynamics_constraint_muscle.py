@@ -43,10 +43,9 @@ from bioptim import (
 def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None):
     # Usual variables
     ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False, as_states_dot=True)
-    ConfigureProblem.configure_qddot(ocp, nlp, as_states=False, as_controls=False, as_states_dot=True)
+    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
     ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)  # Residual torques
-    ConfigureProblem.configure_muscles(ocp, nlp, as_states=False, as_controls=True, as_states_dot=False)  # Muscle activation
+    ConfigureProblem.configure_muscles(ocp, nlp, as_states=False, as_controls=True)  # Muscle activation
 
     if nlp.ode_solver.defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
         ConfigureProblem.configure_rigid_contact_forces(
@@ -55,7 +54,6 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, numerica
             as_states=False,
             as_algebraic_states=True,
             as_controls=False,
-            as_states_dot=False,
         )
 
     # Dynamics
@@ -93,8 +91,8 @@ def custom_dynamics(
 
     defects = None
     if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
-        slope_q = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
-        slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
+        slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
+        slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
         if nlp.ode_solver.defects_type.QDDOT_EQUALS_FORWARD_DYNAMICS:
             slope = vertcat(slope_q, slope_qdot)
             defects = slope * nlp.dt - dxdt * nlp.dt
@@ -109,8 +107,8 @@ def custom_dynamics(
             external_forces = nlp.model.map_rigid_contact_forces_to_global_forces(rigid_contact_forces, q, parameters)
 
             # Defects
-            slope_q = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
-            slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
+            slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
+            slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
             tau_id = DynamicsFunctions.inverse_dynamics(
                 nlp, q, slope_q, slope_qdot, with_contact=False, external_forces=external_forces
             )

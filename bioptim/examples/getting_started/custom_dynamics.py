@@ -87,8 +87,8 @@ def custom_dynamics(
         Please note that when using OdeSolver.COLLOCATION the dynamics is imposed using the defects and not dxdt.
         However, if you want to reintegrate the solution using sol.integrate(), dxdt must be provided.
         """
-        slope_q = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.cx)
-        slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.cx)
+        slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.cx)
+        slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.cx)
         ddq = nlp.model.forward_dynamics()(q, qdot, tau, [], nlp.parameters.cx)
         # Theoretically, the defect should be "dxdt - vertcat(slope_q, slope_qdot)", but for numerical reasons, it is recommended to use this version instead
         defects = vertcat(slope_q, slope_qdot) * nlp.dt - dxdt * nlp.dt
@@ -112,10 +112,9 @@ def custom_configure(
     my_additional_factor: int
         An example of an extra parameter sent by the user
     """
-    # The slopes of the polynomial are defined using as_states_dot = True
+    # The slopes of the polynomial are defined using the derivative of the states
     ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False, as_states_dot=True)
-    ConfigureProblem.configure_qddot(ocp, nlp, as_states=False, as_controls=False, as_states_dot=True)
+    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
     ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
     ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamics, my_additional_factor=my_additional_factor)
 
