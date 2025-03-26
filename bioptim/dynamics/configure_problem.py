@@ -185,7 +185,7 @@ class ConfigureProblem:
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
 
-        _check_contacts_in_biorbd_model(contact_type, nlp.model, nlp.phase_idx)
+        _check_contacts_in_biomodel(contact_type, nlp.model, nlp.phase_idx)
 
         # Declared rigidbody states and controls
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
@@ -508,7 +508,7 @@ class ConfigureProblem:
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
 
         """
-        _check_contacts_in_biorbd_model(contact_type, nlp.model, nlp.phase_idx)
+        _check_contacts_in_biomodel(contact_type, nlp.model, nlp.phase_idx)
 
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
@@ -564,7 +564,7 @@ class ConfigureProblem:
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
-        _check_contacts_in_biorbd_model(contact_type, nlp.model.nb_contacts, nlp.phase_idx)
+        _check_contacts_in_biomodel(contact_type, nlp.model.nb_contacts, nlp.phase_idx)
 
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
@@ -661,7 +661,7 @@ class ConfigureProblem:
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
-        _check_contacts_in_biorbd_model(contact_type, nlp.model.nb_contacts, nlp.phase_idx)
+        _check_contacts_in_biomodel(contact_type, nlp.model.nb_contacts, nlp.phase_idx)
 
         if fatigue is not None and "tau" in fatigue and not with_residual_torque:
             raise RuntimeError("Residual torques need to be used to apply fatigue on torques")
@@ -1055,8 +1055,8 @@ class ConfigureProblem:
                         )
 
         if dynamics_eval.defects is not None:
-            if nlp.implicit_dynamics_func is None:
-                nlp.implicit_dynamics_func = Function(
+            if nlp.dynamics_defects_func is None:
+                nlp.dynamics_defects_func = Function(
                     "DynamicsDefects",
                     [
                         time_span_sym,
@@ -1073,7 +1073,7 @@ class ConfigureProblem:
                 )
                 if nlp.dynamics_type.expand_dynamics:
                     try:
-                        nlp.implicit_dynamics_func = nlp.implicit_dynamics_func.expand()
+                        nlp.dynamics_defects_func = nlp.dynamics_defects_func.expand()
                     except Exception as me:
                         RuntimeError(
                             f"An error occurred while executing the 'expand()' function for the dynamic function. "
@@ -1084,7 +1084,7 @@ class ConfigureProblem:
                             f"{me}"
                         )
             else:
-                nlp.extra_implicit_dynamics_func.append(
+                nlp.extra_dynamics_defects_func.append(
                     Function(
                         "DynamicsDefects",
                         [
@@ -1104,7 +1104,7 @@ class ConfigureProblem:
 
                 if nlp.dynamics_type.expand_dynamics:
                     try:
-                        nlp.extra_implicit_dynamics_func[-1] = nlp.extra_implicit_dynamics_func[-1].expand()
+                        nlp.extra_dynamics_defects_func[-1] = nlp.extra_dynamics_defects_func[-1].expand()
                     except Exception as me:
                         RuntimeError(
                             f"An error occurred while executing the 'expand()' function for the dynamic function. "
@@ -1659,10 +1659,7 @@ class ConfigureProblem:
         """
         name = "m"
 
-        if (
-            name in nlp.variable_mappings
-            and nlp.variable_mappings["m"].to_first.map_idx != nlp.variable_mappings["m"].to_second.map_idx
-        ):
+        if nlp.variable_mappings["m"].actually_does_a_mapping:
             raise NotImplementedError(f"Algebraic states and mapping cannot be use together for now.")
 
         name_m = []
@@ -2059,7 +2056,7 @@ def _check_numerical_timeseries_format(numerical_timeseries: np.ndarray, n_shoot
         )
 
 
-def _check_contacts_in_biorbd_model(contact_type: list[ContactType], model: BioModel, phase_idx: int):
+def _check_contacts_in_biomodel(contact_type: list[ContactType], model: BioModel, phase_idx: int):
 
     # Check rigid contacts
     if (ContactType.RIGID_EXPLICIT in contact_type or ContactType.RIGID_IMPLICIT in contact_type) and model.nb_contacts == 0:

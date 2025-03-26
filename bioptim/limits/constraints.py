@@ -684,7 +684,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ]
             m_matrix = horzcat(*mi_list)
 
-            xf, _, defects = controller.integrate_extra_implicit_dynamics(0).function(
+            xf, _, defects = controller.integrate_extra_dynamics_defects(0).function(
                 vertcat(controller.t_span.cx),
                 horzcat(controller.states_scaled.cx, horzcat(*controller.states_scaled.cx_intermediates_list)),
                 controller.controls_scaled.cx,

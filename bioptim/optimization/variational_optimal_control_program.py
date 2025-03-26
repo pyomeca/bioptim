@@ -279,7 +279,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         else:
             lambdas = None
 
-        nlp.implicit_dynamics_func = Function(
+        nlp.dynamics_defects_func = Function(
             "ThreeNodesIntegration",
             three_nodes_input,
             [
@@ -296,7 +296,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             ],
         )
 
-        nlp.implicit_dynamics_func_first_node = Function(
+        nlp.dynamics_defects_func_first_node = Function(
             "TwoFirstNodesIntegration",
             two_first_nodes_input,
             [
@@ -312,7 +312,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             ],
         )
 
-        nlp.implicit_dynamics_func_last_node = Function(
+        nlp.dynamics_defects_func_last_node = Function(
             "TwoLastNodesIntegration",
             two_last_nodes_input,
             [
@@ -330,9 +330,9 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
         if expand:
             nlp.dynamics_func = nlp.dynamics_func.expand()
-            nlp.implicit_dynamics_func = nlp.implicit_dynamics_func.expand()
-            nlp.implicit_dynamics_func_first_node = nlp.implicit_dynamics_func_first_node.expand()
-            nlp.implicit_dynamics_func_last_node = nlp.implicit_dynamics_func_last_node.expand()
+            nlp.dynamics_defects_func = nlp.dynamics_defects_func.expand()
+            nlp.dynamics_defects_func_first_node = nlp.dynamics_defects_func_first_node.expand()
+            nlp.dynamics_defects_func_last_node = nlp.dynamics_defects_func_last_node.expand()
 
     def configure_torque_driven(
         self, ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None
@@ -386,7 +386,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
         """
         if self.bio_model.has_holonomic_constraints:
-            return controllers[0].get_nlp.implicit_dynamics_func(
+            return controllers[0].get_nlp.dynamics_defects_func(
                 controllers[0].dt.cx,
                 controllers[0].states["q"].cx,
                 controllers[1].states["q"].cx,
@@ -397,7 +397,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                 controllers[1].states["lambdas"].cx,
             )
         else:
-            return controllers[0].get_nlp.implicit_dynamics_func(
+            return controllers[0].get_nlp.dynamics_defects_func(
                 controllers[0].dt.cx,
                 controllers[0].states["q"].cx,
                 controllers[1].states["q"].cx,
@@ -428,7 +428,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
         """
         if self.bio_model.has_holonomic_constraints:
-            return controllers[0].get_nlp.implicit_dynamics_func_first_node(
+            return controllers[0].get_nlp.dynamics_defects_func_first_node(
                 controllers[0].dt.cx,
                 controllers[0].states["q"].cx,
                 controllers[0].parameters.cx[:n_qdot],  # hardcoded
@@ -438,7 +438,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                 controllers[0].states["lambdas"].cx,
             )
         else:
-            return controllers[0].get_nlp.implicit_dynamics_func_first_node(
+            return controllers[0].get_nlp.dynamics_defects_func_first_node(
                 controllers[0].dt.cx,
                 controllers[0].states["q"].cx,
                 controllers[0].parameters.cx[:n_qdot],  # hardcoded
@@ -469,7 +469,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
         """
         if self.bio_model.has_holonomic_constraints:
-            return controllers[0].get_nlp.implicit_dynamics_func_last_node(
+            return controllers[0].get_nlp.dynamics_defects_func_last_node(
                 controllers[0].dt.cx,
                 controllers[0].states["q"].cx,
                 controllers[1].states["q"].cx,
@@ -479,7 +479,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                 controllers[1].states["lambdas"].cx,
             )
         else:
-            return controllers[0].get_nlp.implicit_dynamics_func_last_node(
+            return controllers[0].get_nlp.dynamics_defects_func_last_node(
                 controllers[0].dt.cx,
                 controllers[0].states["q"].cx,
                 controllers[1].states["q"].cx,

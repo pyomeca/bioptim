@@ -2,7 +2,7 @@
 A very simple optimal control program playing with a soft contact sphere rolling going from one point to another.
 
 The soft contact sphere are hard to make converge and sensitive to parameters.
-One could use soft_contacts_dynamics or implicit_dynamics to ease the convergence.
+One could use ContactType.SOFT_IMPLICIT to ease the convergence.
 """
 
 import numpy as np

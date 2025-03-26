@@ -905,7 +905,7 @@ class Solution:
                     if sensory_noise_index is not None:
                         params_this_time[node][sensory_noise_index, :] = sensory_noise[:, node, i_random]
 
-                    if len(nlp.extra_dynamics_func) > 1 or len(nlp.extra_implicit_dynamics_func) > 1:
+                    if len(nlp.extra_dynamics_func) > 1 or len(nlp.extra_dynamics_defects_func) > 1:
                         raise NotImplementedError("Noisy integration is not available for multiple extra dynamics.")
                     cas_func = Function(
                         "noised_extra_dynamics",

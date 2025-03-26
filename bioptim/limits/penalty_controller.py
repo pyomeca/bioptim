@@ -279,8 +279,8 @@ class PenaltyController:
     def integrate_extra_dynamics(self, dynamics_index):
         return self._nlp.extra_dynamics[dynamics_index][self.node_index]
 
-    def integrate_extra_implicit_dynamics(self, dynamics_index):
-        return self._nlp.extra_implicit_dynamics[dynamics_index][self.node_index]
+    def integrate_extra_dynamics_defects(self, dynamics_index):
+        return self._nlp.extra_dynamics_defects[dynamics_index][self.node_index]
 
     @property
     def dynamics(self):
@@ -289,8 +289,8 @@ class PenaltyController:
     def extra_dynamics(self, dynamics_index):
         return self._nlp.extra_dynamics_func[dynamics_index]
 
-    def extra_implicit_dynamics(self, dynamics_index):
-        return self._nlp.extra_implicit_dynamics_func[dynamics_index]
+    def extra_dynamics_defects(self, dynamics_index):
+        return self._nlp.extra_dynamics_defects_func[dynamics_index]
 
     @property
     def states_scaled(self) -> OptimizationVariableList:
