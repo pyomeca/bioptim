@@ -34,17 +34,15 @@ class ConfigureProblem:
         Call the dynamics a first time
     custom(ocp, nlp, **extra_params)
         Call the user-defined dynamics configuration function
-    torque_driven(ocp, nlp, with_contact=False)
+    torque_driven
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
-    torque_derivative_driven(ocp, nlp, with_contact=False)
+    torque_derivative_driven
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
-    torque_activations_driven(ocp, nlp, with_contact=False)
+    torque_activations_driven
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau activations).
         The tau activations are bounded between -1 and 1 and actual tau is computed from torque-position-velocity
         relationship
-    muscle_driven(
-        ocp, nlp, with_excitations: bool = False, with_residual_torque: bool = False, with_contact: bool = False
-    )
+    muscle_driven
         Configure the dynamics for a muscle driven program.
         If with_excitations is set to True, then the muscle muscle activations are computed from the muscle dynamics.
         The tau from muscle is computed using the muscle activations.
@@ -194,20 +192,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True, fatigue=fatigue)
 
-        if ContactType.RIGID_IMPLICIT in contact_type:
-            ConfigureProblem.configure_rigid_contact_forces(
-                ocp,
-                nlp,
-                as_states=False,
-                as_algebraic_states=True,
-                as_controls=False,
-            )
-        if ContactType.RIGID_EXPLICIT in contact_type:
-            ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
-        if ContactType.SOFT_IMPLICIT in contact_type:
-            ConfigureProblem.configure_soft_contact_forces(ocp, nlp, as_states=False, as_controls=True)
-        if ContactType.SOFT_EXPLICIT in contact_type:
-            ConfigureProblem.configure_soft_contact_function(ocp, nlp)
+        ConfigureProblem.configure_contacts(ocp, nlp, contact_type)
 
         # Configure the actual ODE of the dynamics
         if nlp.dynamics_type.dynamic_function:
@@ -373,7 +358,6 @@ class ConfigureProblem:
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
-        with_contact = ContactType.RIGID_EXPLICIT in contact_type
 
         if "tau" in nlp.model.motor_noise_mapping:
             n_noised_tau = len(nlp.model.motor_noise_mapping["tau"].to_first.map_idx)
@@ -524,7 +508,6 @@ class ConfigureProblem:
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
 
         """
-        with_contact = ContactType.RIGID_EXPLICIT in contact_type
         _check_contacts_in_biorbd_model(contact_type, nlp.model, nlp.phase_idx)
 
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
@@ -532,20 +515,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_tau(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_taudot(ocp, nlp, as_states=False, as_controls=True)
 
-        if ContactType.RIGID_IMPLICIT in contact_type:
-            ConfigureProblem.configure_rigid_contact_forces(
-                ocp,
-                nlp,
-                as_states=False,
-                as_algebraic_states=True,
-                as_controls=False,
-            )
-        if ContactType.RIGID_EXPLICIT in contact_type:
-            ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
-        if ContactType.SOFT_IMPLICIT in contact_type:
-            ConfigureProblem.configure_soft_contact_forces(ocp, nlp, as_states=False, as_controls=True)
-        if ContactType.SOFT_EXPLICIT in contact_type:
-            ConfigureProblem.configure_soft_contact_function(ocp, nlp)
+        ConfigureProblem.configure_contacts(ocp, nlp, contact_type)
 
         # Configure the actual ODE of the dynamics
         if nlp.dynamics_type.dynamic_function:
@@ -594,16 +564,18 @@ class ConfigureProblem:
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
-        with_contact = ContactType.RIGID_EXPLICIT in contact_type
-        _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
+        _check_contacts_in_biorbd_model(contact_type, nlp.model.nb_contacts, nlp.phase_idx)
 
-        ConfigureProblem.configure_q(ocp, nlp, True, False)
-        ConfigureProblem.configure_qdot(ocp, nlp, True, False)
-        ConfigureProblem.configure_tau(ocp, nlp, False, True)
+        ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
+        ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
+        ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
 
         if with_residual_torque:
-            ConfigureProblem.configure_residual_tau(ocp, nlp, False, True)
+            ConfigureProblem.configure_residual_tau(ocp, nlp, as_states=False, as_controls=True)
 
+        ConfigureProblem.configure_contacts(ocp, nlp, contact_type)
+
+        # Configure the actual ODE of the dynamics
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
@@ -611,17 +583,12 @@ class ConfigureProblem:
                 ocp,
                 nlp,
                 DynamicsFunctions.torque_activations_driven,
-                with_contact=with_contact,
+                contact_type=contact_type,
                 with_passive_torque=with_passive_torque,
                 with_residual_torque=with_residual_torque,
                 with_ligament=with_ligament,
             )
 
-        if with_contact:
-            ConfigureProblem.configure_contact_function(
-                ocp, nlp, DynamicsFunctions.forces_from_torque_activation_driven
-            )
-        ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
     def joints_acceleration_driven(
@@ -648,29 +615,6 @@ class ConfigureProblem:
         nb_root = nlp.model.nb_root
         if not nb_root > 0:
             raise RuntimeError("BioModel must have at least one DoF on root.")
-
-        # TODO: Charbie -> check this
-        # name_qddot_roots = [str(i) for i in range(nb_root)]
-        # ConfigureProblem.configure_new_variable(
-        #     "qddot_roots",
-        #     name_qddot_roots,
-        #     ocp,
-        #     nlp,
-        #     as_states=False,
-        #     as_controls=False,
-        #     as_states_dot=True,
-        # )
-        #
-        # name_qddot_joints = [str(i + nb_root) for i in range(nlp.model.nb_qddot - nb_root)]
-        # ConfigureProblem.configure_new_variable(
-        #     "qddot_joints",
-        #     name_qddot_joints,
-        #     ocp,
-        #     nlp,
-        #     as_states=False,
-        #     as_controls=True,
-        #     as_states_dot=True,
-        # )
 
         ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.joints_acceleration_driven)
 
@@ -717,22 +661,23 @@ class ConfigureProblem:
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
-        with_contact = ContactType.RIGID_EXPLICIT in contact_type
-        _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
+        _check_contacts_in_biorbd_model(contact_type, nlp.model.nb_contacts, nlp.phase_idx)
 
         if fatigue is not None and "tau" in fatigue and not with_residual_torque:
             raise RuntimeError("Residual torques need to be used to apply fatigue on torques")
 
-        ConfigureProblem.configure_q(ocp, nlp, True, False)
-        ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
-        ConfigureProblem.configure_qddot(ocp, nlp, False, False, True)
+        ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
+        ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
 
         if with_residual_torque:
-            ConfigureProblem.configure_tau(ocp, nlp, False, True, fatigue=fatigue)
+            ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True, fatigue=fatigue)
         ConfigureProblem.configure_muscles(
             ocp, nlp, as_states=with_excitations, as_controls=True, fatigue=fatigue
         )
 
+        ConfigureProblem.configure_contacts(ocp, nlp, contact_type)
+
+        # Configure the actual ODE of the dynamics
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
@@ -740,21 +685,13 @@ class ConfigureProblem:
                 ocp,
                 nlp,
                 DynamicsFunctions.muscles_driven,
-                with_contact=with_contact,
+                contact_type=contact_type,
                 fatigue=fatigue,
                 with_residual_torque=with_residual_torque,
                 with_passive_torque=with_passive_torque,
                 with_ligament=with_ligament,
                 with_friction=with_friction,
             )
-
-        if with_contact:
-            ConfigureProblem.configure_contact_function(
-                ocp,
-                nlp,
-                DynamicsFunctions.forces_from_muscle_driven,
-            )
-        ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
     def holonomic_torque_driven(ocp, nlp, numerical_data_timeseries: dict[str, np.ndarray] = None):
@@ -873,6 +810,25 @@ class ConfigureProblem:
             axes_idx=axes_idx,
             legend=all_multipliers_names,
         )
+
+
+    @staticmethod
+    def configure_contacts(ocp, nlp, contact_type):
+        if ContactType.RIGID_IMPLICIT in contact_type:
+            ConfigureProblem.configure_rigid_contact_forces(
+                ocp,
+                nlp,
+                as_states=False,
+                as_algebraic_states=True,
+                as_controls=False,
+            )
+        if ContactType.RIGID_EXPLICIT in contact_type:
+            ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
+        if ContactType.SOFT_IMPLICIT in contact_type:
+            ConfigureProblem.configure_soft_contact_forces(ocp, nlp, as_states=False, as_algebraic_states=True, as_controls=False)
+        if ContactType.SOFT_EXPLICIT in contact_type:
+            ConfigureProblem.configure_soft_contact_function(ocp, nlp)
+
 
     @staticmethod
     def configure_qv(ocp, nlp, dyn_func: Callable, **extra_params):
