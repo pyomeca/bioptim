@@ -83,14 +83,14 @@ def custom_dynamics(
     external_forces[0:6] = soft_contact_forces[0:6]
     external_forces[9:15] = soft_contact_forces[6:12]
 
-    dxdt, defects = None, None
-    if not isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
-        dq = qdot
-        ddq = DynamicsFunctions.forward_dynamics(
-            nlp, q, qdot, tau, with_contact=False, external_forces=external_forces
-        )
-        dxdt = vertcat(dq, ddq)
-    else:
+    dq = qdot
+    ddq = DynamicsFunctions.forward_dynamics(
+        nlp, q, qdot, tau, with_contact=False, external_forces=external_forces
+    )
+    dxdt = vertcat(dq, ddq)
+
+    defects = None
+    if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
         # Defects
         slope_q = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
         slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)

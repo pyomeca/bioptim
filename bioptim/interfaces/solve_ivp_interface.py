@@ -58,7 +58,7 @@ def solve_ivp_interface(
             t_span = vertcat(t[node][0], t[node][1] - t[node][0])
         else:
             t_span = t[node]
-        t_eval = np.linspace(float(t_span[0]), float(t_span[1]), nlp.n_states_stepwise_steps(node, nlp.old_ode_solver))
+        t_eval = np.linspace(float(t_span[0]), float(t_span[1]), nlp.n_states_stepwise_steps(node, nlp.ode_solver))
 
         # If multiple shooting, we need to set the first x0, otherwise use the previous answer
         x0i = np.array(x[node] if node == 0 or shooting_type == Shooting.MULTIPLE else y[-1][:, -1])

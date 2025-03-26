@@ -78,16 +78,20 @@ def custom_dynamics(
     # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
     dq = DynamicsFunctions.compute_qdot(nlp, q, qdot) * my_additional_factor
 
-    dxdt, defects = None, None
-    if not isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
-        ddq = nlp.model.forward_dynamics()(q, qdot, tau, [], nlp.parameters.cx)
-        dxdt = vertcat(dq, ddq)
-    else:
+    ddq = nlp.model.forward_dynamics()(q, qdot, tau, [], nlp.parameters.cx)
+    dxdt = vertcat(dq, ddq)
+
+    defects = None
+    if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
+        """
+        Please note that when using OdeSolver.COLLOCATION the dynamics is imposed using the defects and not dxdt.
+        However, if you want to reintegrate the solution using sol.integrate(), dxdt must be provided.
+        """
         slope_q = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.cx)
         slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.cx)
         ddq = nlp.model.forward_dynamics()(q, qdot, tau, [], nlp.parameters.cx)
-        # Theoretically, the defect should be "vertcat(dq, ddq) - vertcat(slope_q, slope_qdot)", but for numerical reasons, it is recommended to use this version instead
-        defects = vertcat(slope_q, slope_qdot) * nlp.dt - vertcat(dq, ddq) * nlp.dt
+        # Theoretically, the defect should be "dxdt - vertcat(slope_q, slope_qdot)", but for numerical reasons, it is recommended to use this version instead
+        defects = vertcat(slope_q, slope_qdot) * nlp.dt - dxdt * nlp.dt
 
     return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 

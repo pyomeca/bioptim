@@ -84,10 +84,9 @@ class MassPointModel:
 
         qddot = -self.kapa * (q - u) - self.beta * qdot * sqrt(qdot[0] ** 2 + qdot[1] ** 2 + self.c**2) + motor_noise
 
-        dxdt, defects = None, None
-        if not isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
-            dxdt = vertcat(qdot, qddot)
-        else:
+        dxdt = vertcat(qdot, qddot)
+        defects = None
+        if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
             # Defects
             slope_q = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)

@@ -1043,13 +1043,13 @@ class ConfigureProblem:
         )
 
         # Check that the integrator matches the type of internal dynamics constraint
-        if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):  # COLLOCATION and IRK
-            if dynamics_eval.dxdt is not None:
-                raise ValueError(f"OdeSolver {nlp.ode_solver} can only be used with implicit defects (not dxdt).")
+        if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
+            if dynamics_eval.defects is None:
+                raise ValueError(f"When using OdeSolver {nlp.ode_solver} you must provide implicit defects (not dxdt).")
         else:
-            if dynamics_eval.defects is not None:
+            if dynamics_eval.dxdt is None:
                 raise ValueError(
-                    f"OdeSolver {nlp.ode_solver} can only be used with explicit integration of dxdt (not with defects)."
+                    f"When using OdeSolver {nlp.ode_solver} you must provide dxdt (not defects)."
                 )
 
         dynamics_dxdt = dynamics_eval.dxdt

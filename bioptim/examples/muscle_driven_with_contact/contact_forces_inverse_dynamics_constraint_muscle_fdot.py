@@ -83,15 +83,15 @@ def custom_dynamics(
     muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations)
     tau = muscles_tau + residual_tau
 
-    dxdt, defects = None, None
-    if not isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
-        dq = qdot
-        ddq = nlp.model.forward_dynamics(with_contact=False)(
-            q, qdot, tau, [], nlp.parameters.cx
-        )
-        drigid_contact_forces = rigid_contact_forces_derivatives
-        dxdt = vertcat(dq, ddq, drigid_contact_forces)
-    else:
+    dq = qdot
+    ddq = nlp.model.forward_dynamics(with_contact=False)(
+        q, qdot, tau, [], nlp.parameters.cx
+    )
+    drigid_contact_forces = rigid_contact_forces_derivatives
+    dxdt = vertcat(dq, ddq, drigid_contact_forces)
+
+    defects = None
+    if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
         # Map to external forces
         external_forces = nlp.model.map_rigid_contact_forces_to_global_forces(rigid_contact_forces, q, parameters)
 

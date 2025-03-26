@@ -87,23 +87,17 @@ def custom_dynamics(
     muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations)
     tau = muscles_tau + residual_tau
 
-    dxdt, defects = None, None
-    if not isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
-        dq = qdot
-        ddq = nlp.model.forward_dynamics(with_contact=with_contact)(q, qdot, tau, [], nlp.parameters.cx)
-        dxdt = vertcat(dq, ddq)
-    else:
+    dq = qdot
+    ddq = nlp.model.forward_dynamics(with_contact=with_contact)(q, qdot, tau, [], nlp.parameters.cx)
+    dxdt = vertcat(dq, ddq)
+
+    defects = None
+    if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
         slope_q = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
         slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
         if nlp.ode_solver.defects_type.QDDOT_EQUALS_FORWARD_DYNAMICS:
-            dq = qdot
-            ddq = nlp.model.forward_dynamics(with_contact=with_contact)(
-                q, qdot, tau, [], nlp.parameters.cx
-            )
-
-            derivative = vertcat(dq, ddq)
             slope = vertcat(slope_q, slope_qdot)
-            defects = slope * nlp.dt - derivative * nlp.dt
+            defects = slope * nlp.dt - dxdt * nlp.dt
         elif nlp.ode_solver.defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
 
             # Get external forces from the states
