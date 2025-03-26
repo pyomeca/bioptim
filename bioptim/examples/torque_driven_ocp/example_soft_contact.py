@@ -23,10 +23,9 @@ from bioptim import (
     Solver,
     Shooting,
     Solution,
-    SoftContactDynamics,
     SolutionIntegrator,
     PhaseDynamics,
-    SolutionMerge,
+    SolutionMerge, ContactType,
 )
 
 
@@ -51,7 +50,7 @@ def prepare_single_shooting(
     # Dynamics
     dynamics = Dynamics(
         DynamicsFcn.TORQUE_DRIVEN,
-        soft_contacts_dynamics=SoftContactDynamics.ODE,
+        contact_type=[ContactType.SOFT_EXPLICIT],
         ode_solver=ode_solver,
     )
 
@@ -149,7 +148,7 @@ def prepare_ocp(
     # Dynamics
     dynamics = Dynamics(
         DynamicsFcn.TORQUE_DRIVEN,
-        soft_contacts_dynamics=SoftContactDynamics.ODE,
+        contact_type=[ContactType.SOFT_EXPLICIT],
         phase_dynamics=phase_dynamics,
         ode_solver=ode_solver,
     )

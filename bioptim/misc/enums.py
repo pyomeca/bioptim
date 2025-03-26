@@ -190,11 +190,6 @@ class QuadratureRule(Enum):
     TRAPEZOIDAL = "trapezoidal"
 
 
-class SoftContactDynamics(Enum):
-    ODE = "ode"
-    CONSTRAINT = "constraint"
-
-
 class ContactType(Enum):
     RIGID_EXPLICIT = "rigid_explicit"
     SOFT_EXPLICIT = "soft_explicit"

@@ -12,7 +12,7 @@ from bioptim import (
     ControlType,
     SolutionIntegrator,
     QuadratureRule,
-    SoftContactDynamics,
+    ContactType,
 )
 
 from bioptim.misc.enums import SolverType, PenaltyType, ConstraintType
@@ -133,13 +133,6 @@ def test_penalty_type():
     assert len(PenaltyType) == 2
 
 
-def test_constraint_type():
-    assert ConstraintType.IMPLICIT.value == "implicit"
-
-    # verify the number of elements
-    assert len(ConstraintType) == 1
-
-
 def test_quadrature_rule():
     assert QuadratureRule.DEFAULT.value == "default"
     assert QuadratureRule.RECTANGLE_LEFT.value == "rectangle_left"
@@ -152,14 +145,6 @@ def test_quadrature_rule():
     assert len(QuadratureRule) == 6
 
 
-def test_soft_contact_dynamics():
-    assert SoftContactDynamics.ODE.value == "ode"
-    assert SoftContactDynamics.CONSTRAINT.value == "constraint"
-
-    # verify the number of elements
-    assert len(SoftContactDynamics) == 2
-
-
 def test_defect_type():
     assert DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS.value == "qddot_equals_forward_dynamics"
     assert DefectType.TAU_EQUALS_INVERSE_DYNAMICS.value == "tau_equals_inverse_dynamics"
@@ -167,6 +152,16 @@ def test_defect_type():
 
     # verify the number of elements
     assert len(DefectType) == 3
+
+
+def test_contact_type():
+    assert ContactType.RIGID_EXPLICIT.value == "rigid_explicit"
+    assert ContactType.RIGID_IMPLICIT.value == "rigid_implicit"
+    assert ContactType.SOFT_EXPLICIT.value == "soft_explicit"
+    assert ContactType.SOFT_IMPLICIT.value == "soft_implicit"
+
+    # verify the number of elements
+    assert len(ControlType) == 3
 
 
 def test_magnitude_type():

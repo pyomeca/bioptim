@@ -215,7 +215,6 @@ from .misc.enums import (
     VariableType,
     SolutionIntegrator,
     QuadratureRule,
-    SoftContactDynamics,
     DefectType,
     MagnitudeType,
     MultiCyclicCycleSolutions,

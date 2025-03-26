@@ -13,7 +13,6 @@ from ..misc.enums import (
     PlotType,
     Node,
     ConstraintType,
-    SoftContactDynamics,
     PhaseDynamics,
     ContactType,
 )
@@ -502,7 +501,6 @@ class ConfigureProblem:
         with_passive_torque: bool = False,
         with_ligament: bool = False,
         with_friction: bool = False,
-        soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
         numerical_data_timeseries: dict[str, np.ndarray] = None,
     ):
         """
@@ -522,8 +520,6 @@ class ConfigureProblem:
             If the dynamic with ligament should be used
         with_friction: bool
             If the dynamic with joint friction should be used (friction = - coefficient * qdot)
-        soft_contacts_dynamics: SoftContactDynamics
-            which soft contact dynamic should be used
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
 
@@ -531,14 +527,27 @@ class ConfigureProblem:
         with_contact = ContactType.RIGID_EXPLICIT in contact_type
         _check_contacts_in_biorbd_model(contact_type, nlp.model, nlp.phase_idx)
 
-        ConfigureProblem.configure_q(ocp, nlp, True, False)
-        ConfigureProblem.configure_qdot(ocp, nlp, True, False)
-        ConfigureProblem.configure_tau(ocp, nlp, True, False)
-        ConfigureProblem.configure_taudot(ocp, nlp, False, True)
+        ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
+        ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
+        ConfigureProblem.configure_tau(ocp, nlp, as_states=True, as_controls=False)
+        ConfigureProblem.configure_taudot(ocp, nlp, as_states=False, as_controls=True)
 
-        if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
-            ConfigureProblem.configure_soft_contact_forces(ocp, nlp, False, True)
+        if ContactType.RIGID_IMPLICIT in contact_type:
+            ConfigureProblem.configure_rigid_contact_forces(
+                ocp,
+                nlp,
+                as_states=False,
+                as_algebraic_states=True,
+                as_controls=False,
+            )
+        if ContactType.RIGID_EXPLICIT in contact_type:
+            ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
+        if ContactType.SOFT_IMPLICIT in contact_type:
+            ConfigureProblem.configure_soft_contact_forces(ocp, nlp, as_states=False, as_controls=True)
+        if ContactType.SOFT_EXPLICIT in contact_type:
+            ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
+        # Configure the actual ODE of the dynamics
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
@@ -546,27 +555,12 @@ class ConfigureProblem:
                 ocp,
                 nlp,
                 DynamicsFunctions.torque_derivative_driven,
-                with_contact=with_contact,
+                contact_type=contact_type,
                 with_passive_torque=with_passive_torque,
                 with_ligament=with_ligament,
                 with_friction=with_friction,
             )
 
-        if with_contact:
-            ConfigureProblem.configure_contact_function(
-                ocp,
-                nlp,
-                DynamicsFunctions.forces_from_torque_driven,
-            )
-
-        ConfigureProblem.configure_soft_contact_function(ocp, nlp)
-        if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
-            ocp.implicit_constraints.add(
-                ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
-                node=Node.ALL_SHOOTING,
-                penalty_type=ConstraintType.IMPLICIT,
-                phase=nlp.phase_idx,
-            )
 
     @staticmethod
     def torque_activations_driven(
