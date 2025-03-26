@@ -46,7 +46,7 @@ def prepare_ocp(
     n_shooting: int,
     final_time: float,
     ode_solver: OdeSolverBase,
-    contact_type: ContactType,
+    contact_type: list[ContactType],
     n_threads: int = 8,
     use_sx: bool = False,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
@@ -140,7 +140,7 @@ def main():
     final_time = 1
     defect_type = DefectType.TAU_EQUALS_INVERSE_DYNAMICS
     ode_solver = OdeSolver.COLLOCATION(polynomial_degree=5, defects_type=defect_type)
-    contact_type = ContactType.RIGID_EXPLICIT
+    contact_type = [ContactType.RIGID_EXPLICIT]
 
     # Prepare OCP to reach the second marker
     ocp = prepare_ocp(biorbd_model_path, n_shooting, final_time, ode_solver, contact_type)

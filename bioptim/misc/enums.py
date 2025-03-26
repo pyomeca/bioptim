@@ -200,7 +200,6 @@ class ContactType(Enum):
     SOFT_EXPLICIT = "soft_explicit"
     RIGID_IMPLICIT = "rigid_implicit"
     SOFT_IMPLICIT = "soft_implicit"
-    NONE = "none"
 
 
 class DefectType(Enum):

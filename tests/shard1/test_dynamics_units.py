@@ -52,7 +52,7 @@ def test_check_external_forces_format_wrong_length():
 
 # Tests for _check_contacts_in_biorbd_model
 def test_check_contacts_in_biorbd_model_with_contact():
-    _check_contacts_in_biorbd_model(ContactType.RIGID_EXPLICIT, 1, 0)
+    _check_contacts_in_biorbd_model([ContactType.RIGID_EXPLICIT], 1, 0)
 
 
 def test_check_contacts_in_biorbd_model_no_contact_but_flag_true():

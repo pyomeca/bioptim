@@ -91,7 +91,7 @@ class DynamicsFunctions:
         algebraic_states,
         numerical_timeseries,
         nlp,
-        contact_type: ContactType,
+        contact_type: list[ContactType],
         with_passive_torque: bool,
         with_ligament: bool,
         with_friction: bool,
@@ -293,7 +293,7 @@ class DynamicsFunctions:
         algebraic_states,
         numerical_timeseries,
         nlp,
-        contact_type: ContactType,
+        contact_type: list[ContactType],
         with_friction: bool,
     ) -> DynamicsEvaluation:
         """
@@ -325,9 +325,9 @@ class DynamicsFunctions:
         DynamicsEvaluation
             The derivative of the states and the defects of the implicit dynamics
         """
-        if contact_type in [ContactType.SOFT_EXPLICIT, ContactType.SOFT_IMPLICIT, ContactType.RIGID_IMPLICIT]:
+        if ContactType.SOFT_EXPLICIT in contact_type or  ContactType.SOFT_IMPLICIT in contact_type or ContactType.RIGID_IMPLICIT in contact_type:
             raise NotImplementedError("soft contacts and implicit contacts not implemented yet with stochastic torque driven dynamics.")
-        with_contact = contact_type == ContactType.RIGID_EXPLICIT
+        with_contact = ContactType.RIGID_EXPLICIT in contact_type
 
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
@@ -1082,7 +1082,7 @@ class DynamicsFunctions:
         q: MX | SX,
         qdot: MX | SX,
         tau: MX | SX,
-        contact_type: ContactType,
+        contact_type: list[ContactType],
         external_forces: list = None,
     ):
         """
@@ -1117,21 +1117,21 @@ class DynamicsFunctions:
         external_forces = [] if external_forces is None else external_forces
 
         with_contact = False
-        if contact_type == ContactType.RIGID_EXPLICIT:
+        if ContactType.RIGID_EXPLICIT in contact_type:
             with_contact = True
 
-        elif contact_type == ContactType.RIGID_IMPLICIT:
+        if ContactType.RIGID_IMPLICIT in contact_type:
             if external_forces.shape[0] != 0:
                 raise NotImplementedError("ContactType.RIGID_IMPLICIT cannot be used with external forces yet")
             contact_forces = nlp.model.contact_forces()(q, qdot, tau, [], nlp.parameters.cx)
             # TODO : change for algebraic
             external_forces = nlp.model.map_rigid_contact_forces_to_global_forces(contact_forces, q, nlp.parameters.cx)
 
-        elif contact_type == ContactType.SOFT_EXPLICIT:
+        if ContactType.SOFT_EXPLICIT in contact_type:
             contact_forces = nlp.model.soft_contact_forces()(q, qdot, nlp.parameters.cx)
             external_forces = nlp.model.map_soft_contact_forces_to_global_forces(contact_forces)
 
-        elif contact_type == ContactType.SOFT_IMPLICIT:
+        if ContactType.SOFT_IMPLICIT in contact_type:
             contact_forces = nlp.algebraic_states["soft_contact_forces"].cx
             external_forces = nlp.model.map_soft_contact_forces_to_global_forces(contact_forces)
 
@@ -1150,7 +1150,7 @@ class DynamicsFunctions:
         q: MX | SX,
         qdot: MX | SX,
         qddot: MX | SX,
-        contact_type: ContactType,
+        contact_type: list[ContactType],
         external_forces: MX = None,
     ):
         """
@@ -1186,20 +1186,20 @@ class DynamicsFunctions:
 
         external_forces = [] if external_forces is None else external_forces
 
-        if contact_type == ContactType.RIGID_EXPLICIT:
+        if ContactType.RIGID_EXPLICIT in contact_type:
             raise NotImplementedError("ContactType.RIGID_EXPLICIT cannot be used with inverse dynamics yet")
 
-        elif contact_type == ContactType.RIGID_IMPLICIT:
+        if ContactType.RIGID_IMPLICIT in contact_type:
             if external_forces.shape[0] != 0:
                 raise NotImplementedError("ContactType.RIGID_IMPLICIT cannot be used with external forces yet")
             contact_forces = nlp.algebraic_states["rigid_contact_forces"].cx
             external_forces = nlp.model.map_rigid_contact_forces_to_global_forces(contact_forces, q, nlp.parameters.cx)
 
-        elif contact_type == ContactType.SOFT_EXPLICIT:
+        if ContactType.SOFT_EXPLICIT in contact_type:
             contact_forces = nlp.model.soft_contact_forces()(q, qdot, nlp.parameters.cx)
             external_forces = nlp.model.map_soft_contact_forces_to_global_forces(contact_forces)
 
-        elif contact_type == ContactType.SOFT_IMPLICIT:
+        if ContactType.SOFT_IMPLICIT in contact_type:
             contact_forces = nlp.algebraic_states["soft_contact_forces"].cx
             external_forces = nlp.model.map_soft_contact_forces_to_global_forces(contact_forces)
 
