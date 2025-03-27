@@ -24,6 +24,7 @@ AnyDictOptional: TypeAlias = dict[str, Any] | None
 
 AnyList: TypeAlias = list[Any]
 IntList: TypeAlias = list[int]
+StrList: TypeAlias = list[str]
 MXList: TypeAlias = list[MX]
 NpArray: TypeAlias = np.ndarray
 FloatIterableOrNpArray: TypeAlias = list[float] | tuple[float, ...] | np.ndarray
@@ -53,4 +54,4 @@ CXOrDM: TypeAlias = MX | SX | DM | float
 CXOrDMOrFloatIterable: TypeAlias = FloatIterableOrNpArray | MX | SX | DM
 CXOrDMOrNpArray: TypeAlias = np.ndarray | MX | SX | DM
 
-StrOrBiorbdModel: TypeAlias = str | Model
+BiorbdModel: TypeAlias = Model
