@@ -37,9 +37,9 @@ class ExternalForceSetTimeSeries:
         """
         self._nb_frames = nb_frames
 
-        self.in_global: AnyDict = {}
-        self.torque_in_global: AnyDict = {}
-        self.translational_in_global: AnyDict = {}
+        self.in_global: dict[str, AnyDict] = {}
+        self.torque_in_global: dict[str, AnyDict] = {}
+        self.translational_in_global: dict[str, AnyDict] = {}
         self.in_local: dict[str, AnyDict] = {}
         self.torque_in_local: dict[str, AnyDict] = {}
 

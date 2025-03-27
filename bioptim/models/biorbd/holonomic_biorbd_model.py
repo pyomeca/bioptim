@@ -29,7 +29,7 @@ class HolonomicBiorbdModel(BiorbdModel):
 
     def __init__(
         self,
-        bio_model: Str | BiorbdModel,
+        bio_model: Str | biorbd.Model,
         friction_coefficients: NpArray = None,
         parameters: ParameterList = None,
     ):
