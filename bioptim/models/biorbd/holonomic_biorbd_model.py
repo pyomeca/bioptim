@@ -4,13 +4,24 @@ from functools import wraps
 import biorbd_casadi as biorbd
 import numpy as np
 import scipy.linalg as la
-from biorbd_casadi import GeneralizedCoordinates
 from casadi import MX, DM, vertcat, horzcat, Function, solve, rootfinder, inv, nlpsol
 
 from .biorbd_model import BiorbdModel
 from ..holonomic_constraints import HolonomicConstraintsList
 from ...optimization.parameters import ParameterList
-from ...misc.parameters_types import Int, Str, Float, Bool, NpArrayOptional, IntList, FunctionType, BiorbdModelType, NpArray
+from ...misc.parameters_types import (
+    Int,
+    Str,
+    Float,
+    Bool,
+    NpArrayOptional,
+    IntList,
+    StrOrBiorbdModel,
+    NpArray,
+    IntListOptional,
+    FloatOptional,
+)
+
 
 class HolonomicBiorbdModel(BiorbdModel):
     """
@@ -19,21 +30,21 @@ class HolonomicBiorbdModel(BiorbdModel):
 
     def __init__(
         self,
-        bio_model: BiorbdModelType,
+        bio_model: StrOrBiorbdModel,
         friction_coefficients: NpArrayOptional = None,
         parameters: ParameterList | None = None,
     ) -> None:
         super().__init__(bio_model, friction_coefficients, parameters)
-        self._newton_tol: float = 1e-10
-        self._holonomic_constraints: list = []
-        self._holonomic_constraints_jacobians: list = []
-        self._holonomic_constraints_derivatives: list = []
-        self._holonomic_constraints_double_derivatives: list = []
-        self.stabilization: bool = False
-        self.alpha: float = 0.01
-        self.beta: float = 0.01
-        self._dependent_joint_index: list[int] = []
-        self._independent_joint_index: list[int] = [i for i in range(self.nb_q)]
+        self._newton_tol: Float = 1e-10
+        self._holonomic_constraints: AnyList = []
+        self._holonomic_constraints_jacobians: AnyList = []
+        self._holonomic_constraints_derivatives: AnyList = []
+        self._holonomic_constraints_double_derivatives: AnyList = []
+        self.stabilization: Bool = False
+        self.alpha: Float = 0.01
+        self.beta: Float = 0.01
+        self._dependent_joint_index: IntList = []
+        self._independent_joint_index: IntList = [i for i in range(self.nb_q)]
 
         if parameters is not None:
             raise NotImplementedError("HolonomicBiorbdModel does not support parameters yet")
@@ -64,14 +75,14 @@ class HolonomicBiorbdModel(BiorbdModel):
 
         return wrapper
 
-    def set_newton_tol(self, newton_tol: float) -> None:
+    def set_newton_tol(self, newton_tol: Float) -> None:
         self._newton_tol = newton_tol
 
     def set_holonomic_configuration(
         self,
         constraints_list: HolonomicConstraintsList,
-        dependent_joint_index: list[int] | None = None,
-        independent_joint_index: list[int] | None = None,
+        dependent_joint_index: IntListOptional = None,
+        independent_joint_index: IntListOptional = None,
     ) -> None:
         """
         The joint indexes are not mandatory because a HolonomicBiorbdModel can be used without the partitioned dynamics,
@@ -137,7 +148,7 @@ class HolonomicBiorbdModel(BiorbdModel):
                 f"      - dependent_joint_index: {output[0]}."
             )
 
-    def partition_coordinates(self) -> tuple[NpArray, NpArray, int]:
+    def partition_coordinates(self) -> tuple[NpArray, NpArray, Int]:
         q = MX.sym("q", self.nb_q, 1)
         s = nlpsol("sol", "ipopt", {"x": q, "g": self.holonomic_constraints(q)})
         q_star = np.array(
@@ -150,7 +161,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         return self.jacobian_coordinate_partitioning(self.holonomic_constraints_jacobian(q).toarray())
 
     @staticmethod
-    def jacobian_coordinate_partitioning(J: NpArray, tol: float | None = None) -> tuple[NpArray, NpArray, int]:
+    def jacobian_coordinate_partitioning(J: NpArray, tol: FloatOptional = None) -> tuple[NpArray, NpArray, Int]:
         """
         Determine a coordinate partitioning q = {q_u, q_v} from a Jacobian J(q) of size (m x n),
         where m is the number of constraints and
@@ -193,26 +204,26 @@ class HolonomicBiorbdModel(BiorbdModel):
         return qv_indices, qu_indices, rankJ
 
     @property
-    def nb_independent_joints(self) -> int:
+    def nb_independent_joints(self) -> Int:
         return len(self._independent_joint_index)
 
     @property
-    def nb_dependent_joints(self) -> int:
+    def nb_dependent_joints(self) -> Int:
         return len(self._dependent_joint_index)
 
     @property
-    def dependent_joint_index(self) -> list[int]:
+    def dependent_joint_index(self) -> IntList:
         return self._dependent_joint_index
 
     @property
-    def independent_joint_index(self) -> list[int]:
+    def independent_joint_index(self) -> IntList:
         return self._independent_joint_index
 
     def _add_holonomic_constraint(
         self,
-        constraints: Callable | FunctionType,
-        constraints_jacobian: Callable | FunctionType,
-        constraints_double_derivative: Callable | FunctionType,
+        constraints: Callable | Function,
+        constraints_jacobian: Callable | Function,
+        constraints_double_derivative: Callable | Function,
     ) -> None:
         self._holonomic_constraints.append(constraints)
         self._holonomic_constraints_jacobians.append(constraints_jacobian)
@@ -257,7 +268,9 @@ class HolonomicBiorbdModel(BiorbdModel):
 
         biais = -self.holonomic_constraints_jacobian(self.qdot) @ self.qdot
         if self.stabilization:
-            biais -= self.alpha * self.holonomic_constraints(self.q) + self.beta * self.holonomic_constraints_derivative(self.q, self.qdot)
+            biais -= self.alpha * self.holonomic_constraints(
+                self.q
+            ) + self.beta * self.holonomic_constraints_derivative(self.q, self.qdot)
 
         tau_augmented = vertcat(tau_augmented, biais)
 
@@ -480,14 +493,18 @@ class HolonomicBiorbdModel(BiorbdModel):
     def compute_qddot_v(self) -> Function:
         coupling_matrix_vu = self.coupling_matrix(self.q)
         biorbd_return = coupling_matrix_vu @ self.qddot_u + self.biais_vector(self.q, self.qdot)
-        casadi_fun = Function("compute_qddot_v", [self.q, self.qdot, self.qddot_u], [biorbd_return], ["q", "qdot", "qddot_u"], ["qddot_v"])
+        casadi_fun = Function(
+            "compute_qddot_v", [self.q, self.qdot, self.qddot_u], [biorbd_return], ["q", "qdot", "qddot_u"], ["qddot_v"]
+        )
         return casadi_fun
 
     @cache_function
     def compute_qddot(self) -> Function:
         qddot_v = self.compute_qddot_v()(self.q, self.qdot, self.qddot_u)
         biorbd_return = self.state_from_partition(self.qddot_u, qddot_v)
-        casadi_fun = Function("compute_qddot", [self.q, self.qdot, self.qddot_u], [biorbd_return], ["q", "qdot", "qddot_u"], ["qddot"])
+        casadi_fun = Function(
+            "compute_qddot", [self.q, self.qdot, self.qddot_u], [biorbd_return], ["q", "qdot", "qddot_u"], ["qddot"]
+        )
         return casadi_fun
 
     @cache_function

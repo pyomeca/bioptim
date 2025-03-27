@@ -35,6 +35,7 @@ IntListOptional: TypeAlias = list[int] | None
 StrOrIterable: TypeAlias = str | list[str]
 
 IntOptional: TypeAlias = int | None
+FloatOptional: TypeAlias = float | None
 
 StrOptional: TypeAlias = str | None
 
@@ -52,5 +53,4 @@ CXOrDM: TypeAlias = MX | SX | DM | float
 CXOrDMOrFloatIterable: TypeAlias = FloatIterableOrNpArray | MX | SX | DM
 CXOrDMOrNpArray: TypeAlias = np.ndarray | MX | SX | DM
 
-FunctionType: TypeAlias = Function
-BiorbdModelType: TypeAlias = str | Model
+StrOrBiorbdModel: TypeAlias = str | Model
