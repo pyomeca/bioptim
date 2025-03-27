@@ -9,6 +9,19 @@ from biorbd_casadi import (
     GeneralizedTorque,
     GeneralizedAcceleration,
 )
+from ...misc.parameters_types import (
+    Str,
+    NpArrayOptional,
+    Int,
+    Bool,
+    StrTuple,
+    MXList,
+    AnyTuple,
+    IntList,
+    AnyList,
+    Range,
+    StrOrIterable,
+)
 from casadi import SX, MX, vertcat, horzcat, norm_fro, Function, DM
 
 from bioptim.models.biorbd.external_forces import (
@@ -35,8 +48,8 @@ class BiorbdModel:
 
     def __init__(
         self,
-        bio_model: str | biorbd.Model,
-        friction_coefficients: np.ndarray = None,
+        bio_model: Str | biorbd.Model,
+        friction_coefficients: NpArrayOptional,
         parameters: ParameterList = None,
         external_force_set: ExternalForceSetTimeSeries = None,
     ):
@@ -119,12 +132,12 @@ class BiorbdModel:
         return wrapper
 
     @property
-    def name(self) -> str:
+    def name(self) -> Str:
         # parse the path and split to get the .bioMod name
         return self.model.path().absolutePath().to_string().split("/")[-1]
 
     @property
-    def path(self) -> str:
+    def path(self) -> Str:
         return self.model.path().absolutePath().to_string()
 
     def copy(self):
@@ -164,38 +177,38 @@ class BiorbdModel:
         return
 
     @property
-    def nb_tau(self) -> int:
+    def nb_tau(self) -> Int:
         return self.model.nbGeneralizedTorque()
 
     @property
-    def nb_segments(self) -> int:
+    def nb_segments(self) -> Int:
         return self.model.nbSegment()
 
-    def segment_index(self, name) -> int:
+    def segment_index(self, name) -> Int:
         return biorbd.segment_index(self.model, name)
 
     @property
-    def nb_quaternions(self) -> int:
+    def nb_quaternions(self) -> Int:
         return self.model.nbQuat()
 
     @property
-    def nb_dof(self) -> int:
+    def nb_dof(self) -> Int:
         return self.model.nbDof()
 
     @property
-    def nb_q(self) -> int:
+    def nb_q(self) -> Int:
         return self.model.nbQ()
 
     @property
-    def nb_qdot(self) -> int:
+    def nb_qdot(self) -> Int:
         return self.model.nbQdot()
 
     @property
-    def nb_qddot(self) -> int:
+    def nb_qddot(self) -> Int:
         return self.model.nbQddot()
 
     @property
-    def nb_root(self) -> int:
+    def nb_root(self) -> Int:
         return self.model.nbRoot()
 
     @property
@@ -203,7 +216,7 @@ class BiorbdModel:
         return self.model.segments()
 
     @cache_function
-    def rotation_matrix_to_euler_angles(self, sequence: str) -> Function:
+    def rotation_matrix_to_euler_angles(self, sequence: Str) -> Function:
         """
         Returns the rotation matrix to euler angles function.
         """
@@ -220,7 +233,7 @@ class BiorbdModel:
         return casadi_fun
 
     @cache_function
-    def homogeneous_matrices_in_global(self, segment_index: int, inverse=False) -> Function:
+    def homogeneous_matrices_in_global(self, segment_index: Int, inverse: Bool = False) -> Function:
         """
         Returns the roto-translation matrix of the segment in the global reference frame.
         """
@@ -414,7 +427,7 @@ class BiorbdModel:
         return casadi_fun
 
     @cache_function
-    def segment_orientation(self, idx: int, sequence: str = "xyz") -> Function:
+    def segment_orientation(self, idx: Int, sequence: Str = "xyz") -> Function:
         """
         Returns the angular position of the segment in the global reference frame.
         """
@@ -431,30 +444,30 @@ class BiorbdModel:
         return casadi_fun
 
     @property
-    def name_dof(self) -> tuple[str, ...]:
+    def name_dof(self) -> StrTuple:
         return tuple(s.to_string() for s in self.model.nameDof())
 
     @property
-    def contact_names(self) -> tuple[str, ...]:
+    def contact_names(self) -> StrTuple:
         return tuple(s.to_string() for s in self.model.contactNames())
 
     @property
-    def nb_soft_contacts(self) -> int:
+    def nb_soft_contacts(self) -> Int:
         return self.model.nbSoftContacts()
 
     @property
-    def soft_contact_names(self) -> tuple[str, ...]:
+    def soft_contact_names(self) -> StrTuple:
         return tuple(s.to_string() for s in self.model.softContactNames())
 
     def soft_contact(self, soft_contact_index, *args):
         return self.model.softContact(soft_contact_index, *args)
 
     @property
-    def muscle_names(self) -> tuple[str, ...]:
+    def muscle_names(self) -> StrTuple:
         return tuple(s.to_string() for s in self.model.muscleNames())
 
     @property
-    def nb_muscles(self) -> int:
+    def nb_muscles(self) -> Int:
         return self.model.nbMuscles()
 
     @cache_function
@@ -519,12 +532,12 @@ class BiorbdModel:
 
     def _dispatch_forces_of_type(
         self,
-        force_type: str,
+        force_type: Str,
         add_force_func: "Callable",
-        num_force_components: int,
-        symbolic_counter: int,
+        num_force_components: Int,
+        symbolic_counter: Int,
         biorbd_external_forces: "biorbd.ExternalForces",
-    ) -> int:
+    ) -> Int:
         """
         Helper method to dispatch forces of a specific external forces.
 
@@ -584,7 +597,7 @@ class BiorbdModel:
         return None
 
     @cache_function
-    def forward_dynamics(self, with_contact: bool = False) -> Function:
+    def forward_dynamics(self, with_contact: Bool = False) -> Function:
 
         q_biorbd = GeneralizedCoordinates(self.q)
         qdot_biorbd = GeneralizedVelocity(self.qdot)
@@ -621,7 +634,7 @@ class BiorbdModel:
         return casadi_fun
 
     @cache_function
-    def inverse_dynamics(self, with_contact: bool = False) -> Function:
+    def inverse_dynamics(self, with_contact: Bool = False) -> Function:
 
         if with_contact:
             raise NotImplementedError("Inverse dynamics with contact is not implemented yet")
@@ -668,7 +681,7 @@ class BiorbdModel:
         return casadi_fun
 
     @cache_function
-    def rigid_contact_position(self, index: int) -> Function:
+    def rigid_contact_position(self, index: Int) -> Function:
         """
         Returns the position of the rigid contact (contact_index) in the global reference frame.
         """
@@ -791,7 +804,7 @@ class BiorbdModel:
         return casadi_fun
 
     @cache_function
-    def markers(self) -> list[MX]:
+    def markers(self) -> MXList:
         biorbd_return = horzcat(*[m.to_mx() for m in self.model.markers(GeneralizedCoordinates(self.q))])
         casadi_fun = Function(
             "markers",
@@ -803,7 +816,7 @@ class BiorbdModel:
         return casadi_fun
 
     @property
-    def nb_markers(self) -> int:
+    def nb_markers(self) -> Int:
         return self.model.nbMarkers()
 
     def marker_index(self, name):
@@ -813,7 +826,7 @@ class BiorbdModel:
         return biorbd.contact_index(self.model, name)
 
     @cache_function
-    def marker(self, index: int, reference_segment_index: int = None) -> Function:
+    def marker(self, index: Int, reference_segment_index: Int = None) -> Function:
         q_biorbd = GeneralizedCoordinates(self.q)
         marker = self.model.marker(q_biorbd, index)
         if reference_segment_index is not None:
@@ -832,7 +845,7 @@ class BiorbdModel:
         return casadi_fun
 
     @property
-    def nb_rigid_contacts(self) -> int:
+    def nb_rigid_contacts(self) -> Int:
         """
         Returns the number of rigid contacts.
         Example:
@@ -843,7 +856,7 @@ class BiorbdModel:
         return self.model.nbRigidContacts()
 
     @property
-    def nb_contacts(self) -> int:
+    def nb_contacts(self) -> Int:
         """
         Returns the number of contact index.
         Example:
@@ -853,7 +866,7 @@ class BiorbdModel:
         """
         return self.model.nbContacts()
 
-    def rigid_contact_index(self, contact_index) -> tuple:
+    def rigid_contact_index(self, contact_index) -> AnyTuple:
         """
         Returns the axis index of this specific rigid contact.
         Example:
@@ -864,7 +877,7 @@ class BiorbdModel:
         return self.model.rigidContacts()[contact_index].availableAxesIndices()
 
     @cache_function
-    def markers_velocities(self, reference_index=None) -> list[MX]:
+    def markers_velocities(self, reference_index=None) -> MXList:
         if reference_index is None:
             biorbd_return = [
                 m.to_mx()
@@ -898,7 +911,7 @@ class BiorbdModel:
         return casadi_fun
 
     @cache_function
-    def marker_velocity(self, marker_index: int) -> list[MX]:
+    def marker_velocity(self, marker_index: Int) -> MXList:
         biorbd_return = self.model.markersVelocity(
             GeneralizedCoordinates(self.q),
             GeneralizedVelocity(self.qdot),
@@ -914,7 +927,7 @@ class BiorbdModel:
         return casadi_fun
 
     @cache_function
-    def markers_accelerations(self, reference_index=None) -> list[MX]:
+    def markers_accelerations(self, reference_index=None) -> MXList:
         if reference_index is None:
             biorbd_return = [
                 m.to_mx()
@@ -954,7 +967,7 @@ class BiorbdModel:
         return casadi_fun
 
     @cache_function
-    def marker_acceleration(self, marker_index: int) -> list[MX]:
+    def marker_acceleration(self, marker_index: Int) -> MXList:
         biorbd_return = self.model.markerAcceleration(
             GeneralizedCoordinates(self.q),
             GeneralizedVelocity(self.qdot),
@@ -1015,7 +1028,7 @@ class BiorbdModel:
         return casadi_fun
 
     @property
-    def marker_names(self) -> tuple[str, ...]:
+    def marker_names(self) -> StrTuple:
         return tuple([s.to_string() for s in self.model.markerNames()])
 
     @cache_function
@@ -1067,7 +1080,7 @@ class BiorbdModel:
         )
         return casadi_fun
 
-    def get_quaternion_idx(self) -> list[list[int]]:
+    def get_quaternion_idx(self) -> list[IntList]:
         n_dof = 0
         quat_idx = []
         quat_number = 0
@@ -1120,7 +1133,7 @@ class BiorbdModel:
         )
         return casadi_fun
 
-    def ranges_from_model(self, variable: str):
+    def ranges_from_model(self, variable: Str):
         ranges = []
         for segment in self.segments:
             if "_joints" in variable:
@@ -1137,7 +1150,7 @@ class BiorbdModel:
         return ranges
 
     @staticmethod
-    def _add_range(variable: str, segment: biorbd.Segment) -> list[biorbd.Range]:
+    def _add_range(variable: Str, segment: biorbd.Segment) -> list[biorbd.Range]:
         """
         Get the range of a variable for a given segment
 
@@ -1168,13 +1181,13 @@ class BiorbdModel:
 
     def _var_mapping(
         self,
-        key: str,
-        range_for_mapping: int | list | tuple | range,
+        key: Str,
+        range_for_mapping: Int | AnyList | AnyTuple | Range,
         mapping: BiMapping = None,
     ) -> dict:
         return _var_mapping(key, range_for_mapping, mapping)
 
-    def bounds_from_ranges(self, variables: str | list[str], mapping: BiMapping | BiMappingList = None) -> Bounds:
+    def bounds_from_ranges(self, variables: StrOrIterable, mapping: BiMapping | BiMappingList = None) -> Bounds:
         return bounds_from_ranges(self, variables, mapping)
 
     @cache_function
@@ -1198,10 +1211,10 @@ class BiorbdModel:
     def animate(
         ocp,
         solution,
-        show_now: bool = True,
-        show_tracked_markers: bool = False,
-        viewer: str = "pyorerun",
-        n_frames: int = 0,
+        show_now: Bool = True,
+        show_tracked_markers: Bool = False,
+        viewer: Str = "pyorerun",
+        n_frames: Int = 0,
         **kwargs,
     ):
         if viewer == "bioviz":

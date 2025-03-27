@@ -4,6 +4,7 @@ from typing import TypeAlias
 from casadi import MX, SX, DM
 
 Int: TypeAlias = int
+Range: TypeAlias = range
 Str: TypeAlias = str
 Float: TypeAlias = float
 Bool: TypeAlias = bool
@@ -23,6 +24,7 @@ AnyDictOptional: TypeAlias = dict[str, Any] | None
 
 AnyList: TypeAlias = list[Any]
 IntList: TypeAlias = list[int]
+MXList: TypeAlias = list[MX]
 FloatIterableOrNpArray: TypeAlias = list[float] | tuple[float, ...] | np.ndarray
 IntIterableOrNpArray: TypeAlias = list[int] | tuple[int, ...] | range | np.ndarray
 IntIterableOrNpArrayOrInt: TypeAlias = int | IntIterableOrNpArray
@@ -37,8 +39,11 @@ StrOptional: TypeAlias = str | None
 
 BoolOptional: TypeAlias = bool | None
 
+NpArrayOptional: TypeAlias = np.ndarray | None
+
 AnyTuple: TypeAlias = tuple[Any, ...]
 IntTuple: TypeAlias = tuple[int, ...]
+StrTuple: TypeAlias = tuple[str, ...]
 
 IntStrOrIterable: TypeAlias = int | str | AnyIterable
 
