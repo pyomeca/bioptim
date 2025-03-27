@@ -21,6 +21,7 @@ AnyDict: TypeAlias = dict[str, Any]
 IntDict: TypeAlias = dict[str, int]
 
 AnyDictOptional: TypeAlias = dict[str, Any] | None
+AnyListOptional: TypeAlias = list[Any] | None
 
 AnyList: TypeAlias = list[Any]
 IntList: TypeAlias = list[int]
