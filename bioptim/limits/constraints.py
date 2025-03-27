@@ -53,7 +53,7 @@ class Constraint(PenaltyOption):
             Generic parameters for options
         """
         custom_function = None
-        if not isinstance(constraint, (ConstraintFcn, ImplicitConstraintFcn)):
+        if not isinstance(constraint, ConstraintFcn):
             custom_function = constraint
             constraint = ConstraintFcn.CUSTOM
 
@@ -65,9 +65,6 @@ class Constraint(PenaltyOption):
             is_stochastic=is_stochastic,
             **extra_parameters,
         )
-
-        if isinstance(constraint, ImplicitConstraintFcn):
-            self.penalty_type = ConstraintType.IMPLICIT  # doing this puts the relevance of this enum in question
 
         self.min_bound = min_bound
         self.max_bound = max_bound
@@ -871,31 +868,6 @@ class ConstraintFcn(FcnEnum):
         return ConstraintFunction
 
 
-class ImplicitConstraintFcn(FcnEnum):
-    """
-    Selection of valid constraint functions
-
-    Methods
-    -------
-    def get_type() -> Callable
-        Returns the type of the penalty
-    """
-
-    # QDDOT_EQUALS_FORWARD_DYNAMICS = (ConstraintFunction.Functions.qddot_equals_forward_dynamics,)
-    # TAU_EQUALS_INVERSE_DYNAMICS = (ConstraintFunction.Functions.tau_equals_inverse_dynamics,)
-    SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS = (ConstraintFunction.Functions.implicit_soft_contact_forces,)
-    # CONTACT_ACCELERATION_EQUALS_ZERO = (ConstraintFunction.Functions.implicit_marker_acceleration,)
-    # TAU_FROM_MUSCLE_EQUAL_INVERSE_DYNAMICS = (ConstraintFunction.Functions.tau_from_muscle_equal_inverse_dynamics,)
-
-    @staticmethod
-    def get_type():
-        """
-        Returns the type of the penalty
-        """
-
-        return ConstraintFunction
-
-
 class ParameterConstraint(PenaltyOption):
     """
     A placeholder for a parameter constraint
@@ -931,16 +903,13 @@ class ParameterConstraint(PenaltyOption):
             Generic parameters for options
         """
         custom_function = None
-        if not isinstance(parameter_constraint, (ConstraintFcn, ImplicitConstraintFcn)):
+        if not isinstance(parameter_constraint, ConstraintFcn):
             custom_function = parameter_constraint
             parameter_constraint = ConstraintFcn.CUSTOM
 
         super(ParameterConstraint, self).__init__(
             penalty=parameter_constraint, quadratic=quadratic, custom_function=custom_function, **extra_parameters
         )
-
-        if isinstance(parameter_constraint, ImplicitConstraintFcn):
-            self.penalty_type = ConstraintType.IMPLICIT  # doing this puts the relevance of this enum in question
 
         self.min_bound = min_bound
         self.max_bound = max_bound

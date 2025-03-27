@@ -198,12 +198,9 @@ class ContactType(Enum):
 
 
 class DefectType(Enum):
-    # EXPLICIT = "explicit"
-    # IMPLICIT = "implicit"
     NOT_APPLICABLE = "not_applicable"
     QDDOT_EQUALS_FORWARD_DYNAMICS = "qddot_equals_forward_dynamics"
     TAU_EQUALS_INVERSE_DYNAMICS = "tau_equals_inverse_dynamics"
-    # SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS = "soft_contact_equals_soft_contacts_dynamics
     # CONTACT_ACCELERATION_EQUALS_ZERO = "contact_acceleration_equals_zero"
 
 
