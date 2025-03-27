@@ -49,16 +49,16 @@ class BiorbdModel:
     def __init__(
         self,
         bio_model: Str | biorbd.Model,
-        friction_coefficients: NpArrayOptional,
+        friction_coefficients: NpArrayOptional = None,
         parameters: ParameterList = None,
         external_force_set: ExternalForceSetTimeSeries = None,
     ):
         """
         Parameters
         ----------
-        bio_model: str | biorbd.Model
+        bio_model: Str | biorbd.Model
             The path to the bioMod file or the biorbd.Model
-        friction_coefficients: np.ndarray
+        friction_coefficients: NpArrayOptional,
             The friction coefficients
         parameters: ParameterList
             The parameters to add to the model. The function will call the callback with the unscaled version of the

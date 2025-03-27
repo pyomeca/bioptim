@@ -25,6 +25,7 @@ AnyDictOptional: TypeAlias = dict[str, Any] | None
 AnyList: TypeAlias = list[Any]
 IntList: TypeAlias = list[int]
 MXList: TypeAlias = list[MX]
+NpArray: TypeAlias = np.ndarray
 FloatIterableOrNpArray: TypeAlias = list[float] | tuple[float, ...] | np.ndarray
 IntIterableOrNpArray: TypeAlias = list[int] | tuple[int, ...] | range | np.ndarray
 IntIterableOrNpArrayOrInt: TypeAlias = int | IntIterableOrNpArray
