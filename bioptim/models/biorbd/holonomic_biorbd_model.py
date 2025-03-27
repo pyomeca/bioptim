@@ -19,7 +19,6 @@ from ...misc.parameters_types import (
     NpArray,
     IntListOptional,
     AnyList,
-    BiorbdModel,
 )
 
 

@@ -54,5 +54,3 @@ IntStrOrIterable: TypeAlias = int | str | AnyIterable
 CXOrDM: TypeAlias = MX | SX | DM | float
 CXOrDMOrFloatIterable: TypeAlias = FloatIterableOrNpArray | MX | SX | DM
 CXOrDMOrNpArray: TypeAlias = np.ndarray | MX | SX | DM
-
-BiorbdModel: TypeAlias = Model
