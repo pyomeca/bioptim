@@ -1,7 +1,7 @@
 from typing import Any
 import numpy as np
 from typing import TypeAlias
-from casadi import MX, SX, DM, Function
+from casadi import MX, SX, DM
 from biorbd_casadi import Model
 
 Int: TypeAlias = int

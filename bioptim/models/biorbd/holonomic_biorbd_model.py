@@ -14,15 +14,10 @@ from ..holonomic_constraints import HolonomicConstraintsList
 from ...optimization.parameters import ParameterList
 
 from ...misc.parameters_types import (
-    Int,
     Str,
     Float,
-    Bool,
-    NpArrayOptional,
-    IntList,
     NpArray,
     IntListOptional,
-    FloatOptional,
     AnyList,
     BiorbdModel,
 )
