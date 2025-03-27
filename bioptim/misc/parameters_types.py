@@ -1,7 +1,8 @@
 from typing import Any
 import numpy as np
 from typing import TypeAlias
-from casadi import MX, SX, DM
+from casadi import MX, SX, DM, Function
+from biorbd_casadi import Model
 
 Int: TypeAlias = int
 Range: TypeAlias = range
@@ -9,7 +10,6 @@ Str: TypeAlias = str
 Float: TypeAlias = float
 Bool: TypeAlias = bool
 Bytes: TypeAlias = bytes
-
 
 AnyIterable: TypeAlias = list[Any] | tuple[Any, ...]
 IntIterable: TypeAlias = list[int] | tuple[int, ...]
@@ -51,3 +51,6 @@ IntStrOrIterable: TypeAlias = int | str | AnyIterable
 CXOrDM: TypeAlias = MX | SX | DM | float
 CXOrDMOrFloatIterable: TypeAlias = FloatIterableOrNpArray | MX | SX | DM
 CXOrDMOrNpArray: TypeAlias = np.ndarray | MX | SX | DM
+
+FunctionType: TypeAlias = Function
+BiorbdModelType: TypeAlias = str | Model
