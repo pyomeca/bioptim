@@ -216,7 +216,7 @@ def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_contact", [False, True])
-@pytest.mark.parametrize("implicit_contact", [False, True])
+# @pytest.mark.parametrize("implicit_contact", [False, True])
 def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact, phase_dynamics):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
@@ -239,10 +239,16 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
     ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
     nlp.control_type = ControlType.CONSTANT
 
+    # @ipuch this model does not have soft contacts, so I don't understand this test?
+    contact_type = []
+    if with_contact:
+        contact_type += [ContactType.RIGID_EXPLICIT]
+    # if implicit_contact:
+    #     contact_type += [ContactType.SOFT_IMPLICIT]
+
     nlp.dynamics = Dynamics(
         DynamicsFcn.TORQUE_DRIVEN,
-        contact_type=[ContactType.RIGID_EXPLICIT] if with_contact else [],
-        soft_contacts_dynamics=implicit_contact,
+        contact_type=contact_type,
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
     )
@@ -1136,8 +1142,8 @@ def test_joints_acceleration_driven(cx, phase_dynamics):
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
-@pytest.mark.parametrize("with_contact", [False, True])
-def test_custom_dynamics(with_contact, phase_dynamics):
+@pytest.mark.parametrize("contact_type", [[], [ContactType.RIGID_EXPLICIT]])
+def test_custom_dynamics(contact_type, phase_dynamics):
     def custom_dynamic(
         time,
         states,
@@ -1146,7 +1152,7 @@ def test_custom_dynamics(with_contact, phase_dynamics):
         algebraic_states,
         numerical_timeseries,
         nlp,
-        contact_type=[],
+        contact_type=contact_type,
     ) -> DynamicsEvaluation:
         with_contact = ContactType.RIGID_EXPLICIT in contact_type
         q = DynamicsFunctions.get(nlp.states["q"], states)
@@ -1154,18 +1160,18 @@ def test_custom_dynamics(with_contact, phase_dynamics):
         tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
+        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, contact_type)
 
         return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
 
-    def configure(ocp, nlp, contact_type=[], numerical_data_timeseries=None):
-        with_contact = ContactType.RIGID_EXPLICIT in contact_type
+    def configure(ocp, nlp, contact_type=contact_type, numerical_data_timeseries=None):
+
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False)
         ConfigureProblem.configure_tau(ocp, nlp, False, True)
         ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic, contact_type=contact_type)
 
-        if with_contact:
+        if ContactType.RIGID_EXPLICIT in contact_type:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
 
     # Prepare the program
@@ -1190,7 +1196,7 @@ def test_custom_dynamics(with_contact, phase_dynamics):
     nlp.dynamics = Dynamics(
         configure,
         dynamic_function=custom_dynamic,
-        contact_type=[ContactType.RIGID_EXPLICIT] if with_contact else [],
+        contact_type=contact_type,
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
     )
@@ -1219,7 +1225,7 @@ def test_custom_dynamics(with_contact, phase_dynamics):
     time = np.random.rand(2)
     x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states, numerical_timeseries))
 
-    if with_contact:
+    if ContactType.RIGID_EXPLICIT in contact_type:
         contact_out = np.array(
             nlp.contact_forces_func(time, states, controls, params, algebraic_states, numerical_timeseries)
         )
@@ -1272,7 +1278,7 @@ def test_with_contact_error(dynamics_fcn, phase_dynamics):
     u_bounds["tau"] = [100] * n_tau, [100] * n_tau
     u_bounds["tau"][1, :] = 0  # Prevent the model from actively rotate
 
-    with pytest.raises(ValueError, match="No contact defined in the .bioMod of phase 0, set with_contact to False"):
+    with pytest.raises(ValueError, match="No rigid contact defined in the .bioMod of phase 0, consider changing the ContactType."):
         OptimalControlProgram(
             bio_model=bio_model,
             dynamics=dynamics,
