@@ -54,6 +54,18 @@ contact    Seg2_contact0
     axis    yz
 endcontact
 
+softcontact    Seg2_contact0
+    parent    Seg2
+    type sphere
+    position    0 0 -0.5
+    radius 0.03
+    stiffness 1e5
+    damping 2
+    muStatic 1
+    muDynamic 1
+    muViscous 0
+endsoftcontact
+
 // Markers
 marker    Seg2_contact0
     parent    Seg2

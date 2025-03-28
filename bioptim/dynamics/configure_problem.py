@@ -49,7 +49,7 @@ class ConfigureProblem:
         case muscles are too weak.
     configure_dynamics_function(ocp, nlp, dyn_func, **extra_params)
         Configure the dynamics of the system
-    configure_contact_function(ocp, nlp, dyn_func: Callable, **extra_params)
+    configure_rigid_contact_function(ocp, nlp, dyn_func: Callable, **extra_params)
         Configure the contact points
     configure_soft_contact_function
         Configure the soft contact function
@@ -132,6 +132,7 @@ class ConfigureProblem:
             ocp,
             nlp,
             numerical_data_timeseries=nlp.dynamics_type.numerical_data_timeseries,
+            contact_type=nlp.dynamics_type.contact_type,
             **nlp.dynamics_type.extra_parameters,
         )
 
@@ -828,7 +829,7 @@ class ConfigureProblem:
                 as_controls=False,
             )
         if ContactType.RIGID_EXPLICIT in contact_type:
-            ConfigureProblem.configure_contact_function(ocp, nlp, force_from_where)
+            ConfigureProblem.configure_rigid_contact_function(ocp, nlp, force_from_where)
         if ContactType.SOFT_IMPLICIT in contact_type:
             ConfigureProblem.configure_soft_contact_forces(
                 ocp, nlp, as_states=False, as_algebraic_states=True, as_controls=False
@@ -1120,7 +1121,7 @@ class ConfigureProblem:
                         )
 
     @staticmethod
-    def configure_contact_function(ocp, nlp, contact_func: Callable, **extra_params):
+    def configure_rigid_contact_function(ocp, nlp, contact_func: Callable, **extra_params):
         """
         Configure the contact points
 
@@ -1199,6 +1200,26 @@ class ConfigureProblem:
         nlp: NonLinearProgram
             A reference to the phase
         """
+
+        time_span_sym = vertcat(nlp.time_cx, nlp.dt)
+        nlp.soft_contact_forces_func = Function(
+            "contact_forces_func",
+            [
+                time_span_sym,
+                nlp.states.scaled.cx,
+                nlp.controls.scaled.cx,
+                nlp.parameters.scaled.cx,
+                nlp.algebraic_states.scaled.cx,
+                nlp.numerical_timeseries.cx,
+            ],
+            [
+                nlp.model.soft_contact_forces()(nlp.states["q"].cx, nlp.states["qdot"].cx, nlp.parameters.cx)
+            ],
+            ["t_span", "x", "u", "p", "a", "d"],
+            ["contact_forces"],
+        ).expand()
+
+
         component_list = ["Mx", "My", "Mz", "Fx", "Fy", "Fz"]
 
         for i_sc in range(nlp.model.nb_soft_contacts):
@@ -1957,6 +1978,7 @@ class Dynamics(OptionGeneric):
         phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
         ode_solver: OdeSolver | OdeSolverBase = OdeSolver.RK4(),
         numerical_data_timeseries: dict[str, np.ndarray] = None,
+        contact_type: list[ContactType] = [],
         **extra_parameters: Any,
     ):
         """
@@ -1981,6 +2003,8 @@ class Dynamics(OptionGeneric):
             The integrator to use to integrate this dynamics.
         numerical_data_timeseries: dict[str, np.ndarray]
             The numerical timeseries at each node. ex: the experimental external forces data should go here.
+        contact_type: list[ContactType]
+            The type of contact to consider in the dynamics
         """
 
         configure = None
@@ -2007,6 +2031,7 @@ class Dynamics(OptionGeneric):
         self.phase_dynamics = phase_dynamics
         self.ode_solver = ode_solver
         self.numerical_data_timeseries = numerical_data_timeseries
+        self.contact_type = contact_type
 
 
 class DynamicsList(UniquePerPhaseOptionList):

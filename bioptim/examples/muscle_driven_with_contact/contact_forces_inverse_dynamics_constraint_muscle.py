@@ -36,89 +36,8 @@ from bioptim import (
     MultinodeConstraintFcn,
     ControlType,
     Shooting,
-    SolutionIntegrator,
+    SolutionIntegrator, ContactType,
 )
-
-
-def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None):
-    # Usual variables
-    ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)  # Residual torques
-    ConfigureProblem.configure_muscles(ocp, nlp, as_states=False, as_controls=True)  # Muscle activation
-
-    if nlp.ode_solver.defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
-        ConfigureProblem.configure_rigid_contact_forces(
-            ocp,
-            nlp,
-            as_states=False,
-            as_algebraic_states=True,
-            as_controls=False,
-        )
-
-    # Dynamics
-    ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamics)
-
-
-def custom_dynamics(
-    time: MX | SX,
-    states: MX | SX,
-    controls: MX | SX,
-    parameters: MX | SX,
-    algebraic_states: MX | SX,
-    numerical_timeseries: MX | SX,
-    nlp: NonLinearProgram,
-) -> DynamicsEvaluation:
-    """
-    The defects are only evaluated at the collocation nodes, but not at the first node.
-    """
-
-    with_contact = False
-
-    # Variables
-    q = DynamicsFunctions.get(nlp.states["q"], states)
-    qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-    residual_tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
-    mus_activations = DynamicsFunctions.get(nlp.controls["muscles"], controls)
-
-    # Compute joint torques
-    muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations)
-    tau = muscles_tau + residual_tau
-
-    dq = qdot
-    ddq = nlp.model.forward_dynamics(with_contact=with_contact)(q, qdot, tau, [], nlp.parameters.cx)
-    dxdt = vertcat(dq, ddq)
-
-    defects = None
-    if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
-        slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
-        slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
-        if nlp.ode_solver.defects_type.QDDOT_EQUALS_FORWARD_DYNAMICS:
-            slope = vertcat(slope_q, slope_qdot)
-            defects = slope * nlp.dt - dxdt * nlp.dt
-        elif nlp.ode_solver.defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
-
-            # Get external forces from the states
-            rigid_contact_forces = nlp.get_external_forces(
-                "rigid_contact_forces", states, controls, algebraic_states, numerical_timeseries
-            )
-
-            # Map to external forces
-            external_forces = nlp.model.map_rigid_contact_forces_to_global_forces(rigid_contact_forces, q, parameters)
-
-            # Defects
-            slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
-            slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
-            tau_id = DynamicsFunctions.inverse_dynamics(
-                nlp, q, slope_q, slope_qdot, with_contact=False, external_forces=external_forces
-            )
-
-            defects = vertcat(qdot - slope_q, tau - tau_id)
-
-        else:
-            raise NotImplementedError("This defect type is not implemented")
-
-    return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
 
 def contact_velocity_all_points(controller):
@@ -150,9 +69,9 @@ def contact_velocity_start(controller):
     return vertcat(*contact_velocities)
 
 
-def prepare_ocp(biorbd_model_path, phase_time, n_shooting, defect_type: DefectType, expand_dynamics=True):
+def prepare_ocp(biorbd_model_path, phase_time, n_shooting, defect_type: DefectType, contact_type: list[ContactType], expand_dynamics=True):
 
-    if defect_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
+    if ContactType.RIGID_IMPLICIT in contact_type:
         # Indicate to the model creator that there will be two rigid contacts in the form of optimization variables
         external_force_set = ExternalForceSetVariables()
         external_force_set.add(force_name="Seg1_contact1", segment="Seg1", use_point_of_application=True)
@@ -174,8 +93,9 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, defect_type: DefectTy
     # Dynamics
     dynamics = DynamicsList()
     dynamics.add(
-        custom_configure,
-        dynamic_function=custom_dynamics,
+        DynamicsFcn.MUSCLE_DRIVEN,
+        with_residual_torque=True,
+        contact_type=contact_type,
         expand_dynamics=expand_dynamics,
         phase_dynamics=PhaseDynamics.ONE_PER_NODE,
         ode_solver=OdeSolver.COLLOCATION(polynomial_degree=3, defects_type=defect_type),
@@ -237,7 +157,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, defect_type: DefectTy
 
     a_bounds = BoundsList()
     a_init = InitialGuessList()
-    if defect_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
+    if ContactType.RIGID_IMPLICIT in contact_type:
         # Define algebraic states path constraint
         a_bounds.add(
             "rigid_contact_forces",
@@ -265,7 +185,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, defect_type: DefectTy
         x_init=x_init,
         u_init=u_init,
         a_init=a_init,
-        control_type=ControlType.LINEAR_CONTINUOUS,
+        control_type=ControlType.CONSTANT,
         objective_functions=objective_functions,
         constraints=constraints,
         multinode_constraints=multinode_constraints,
@@ -277,11 +197,13 @@ def main():
     t = 0.1
     ns = 100
     defect_type = DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS
+    contact_type = [ContactType.RIGID_IMPLICIT]
     ocp = prepare_ocp(
         biorbd_model_path=biorbd_model_path,
         phase_time=t,
         n_shooting=ns,
         defect_type=defect_type,
+        contact_type=contact_type,
     )
     # ocp.add_plot_penalty()
 
