@@ -617,7 +617,7 @@ class BiorbdModel:
         Takes the soft contact forces and dispatch is to match the external forces.
         """
 
-        external_forces = MX.zeros(self.external_force_set.nb_external_forces_components)
+        external_forces = MX.zeros(9 * self.nb_soft_contacts)
         for i_contact in range(self.nb_soft_contacts):
             external_forces[i_contact * 9 : i_contact * 9 + 6] = soft_contact_forces[i_contact * 6 : i_contact * 6 + 6]
 

@@ -1183,7 +1183,7 @@ class DynamicsFunctions:
         qdot: MX | SX,
         tau: MX | SX,
         contact_type: list[ContactType],
-        external_forces: list = None,
+        external_forces: MX | SX = None,
     ):
         """
         Easy accessor to derivative of qdot
@@ -1200,7 +1200,7 @@ class DynamicsFunctions:
             The value of tau from "get"
         contact_type: bool
             The type of contact to use in the dynamics
-        external_forces: list[]
+        external_forces: MX | SX
             The external forces
         Returns
         -------
