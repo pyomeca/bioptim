@@ -307,8 +307,8 @@ def test_fatigable_xia_torque_non_split(phase_dynamics):
     model_path = f"{bioptim_folder}/models/pendulum.bioMod"
 
     with pytest.raises(
-            NotImplementedError,
-            match="Fatigue is not implemented yet for torque driven dynamics",
+        NotImplementedError,
+        match="Fatigue is not implemented yet for torque driven dynamics",
     ):
         ocp = ocp_module.prepare_ocp(
             biorbd_model_path=model_path,
@@ -361,8 +361,8 @@ def test_fatigable_xia_torque_split(phase_dynamics):
     model_path = f"{bioptim_folder}/models/pendulum.bioMod"
 
     with pytest.raises(
-            NotImplementedError,
-            match="Fatigue is not implemented yet for torque driven dynamics",
+        NotImplementedError,
+        match="Fatigue is not implemented yet for torque driven dynamics",
     ):
         ocp = ocp_module.prepare_ocp(
             biorbd_model_path=model_path,
@@ -455,8 +455,8 @@ def test_fatigable_xia_stabilized_torque_split(phase_dynamics):
     model_path = f"{bioptim_folder}/models/pendulum.bioMod"
 
     with pytest.raises(
-            NotImplementedError,
-            match="Fatigue is not implemented yet for torque driven dynamics",
+        NotImplementedError,
+        match="Fatigue is not implemented yet for torque driven dynamics",
     ):
         ocp = ocp_module.prepare_ocp(
             biorbd_model_path=model_path,
@@ -542,8 +542,8 @@ def test_fatigable_michaud_torque_non_split(phase_dynamics):
     model_path = f"{bioptim_folder}/models/pendulum.bioMod"
 
     with pytest.raises(
-            NotImplementedError,
-            match="Fatigue is not implemented yet for torque driven dynamics",
+        NotImplementedError,
+        match="Fatigue is not implemented yet for torque driven dynamics",
     ):
         ocp = ocp_module.prepare_ocp(
             biorbd_model_path=model_path,
@@ -596,8 +596,8 @@ def test_fatigable_michaud_torque_split(phase_dynamics):
     model_path = f"{bioptim_folder}/models/pendulum.bioMod"
 
     with pytest.raises(
-            NotImplementedError,
-            match="Fatigue is not implemented yet for torque driven dynamics",
+        NotImplementedError,
+        match="Fatigue is not implemented yet for torque driven dynamics",
     ):
         ocp = ocp_module.prepare_ocp(
             biorbd_model_path=model_path,
@@ -684,8 +684,8 @@ def test_fatigable_effort_torque_non_split(phase_dynamics):
     model_path = f"{bioptim_folder}/models/pendulum.bioMod"
 
     with pytest.raises(
-            NotImplementedError,
-            match="Fatigue is not implemented yet for torque driven dynamics",
+        NotImplementedError,
+        match="Fatigue is not implemented yet for torque driven dynamics",
     ):
         ocp = ocp_module.prepare_ocp(
             biorbd_model_path=model_path,
@@ -737,8 +737,8 @@ def test_fatigable_effort_torque_split(phase_dynamics):
     model_path = f"{bioptim_folder}/models/pendulum.bioMod"
 
     with pytest.raises(
-            NotImplementedError,
-            match="Fatigue is not implemented yet for torque driven dynamics",
+        NotImplementedError,
+        match="Fatigue is not implemented yet for torque driven dynamics",
     ):
         ocp = ocp_module.prepare_ocp(
             biorbd_model_path=model_path,

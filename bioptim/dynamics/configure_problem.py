@@ -570,7 +570,9 @@ class ConfigureProblem:
         if with_residual_torque:
             ConfigureProblem.configure_residual_tau(ocp, nlp, as_states=False, as_controls=True)
 
-        ConfigureProblem.configure_contacts(ocp, nlp, contact_type, DynamicsFunctions.forces_from_torque_activation_driven)
+        ConfigureProblem.configure_contacts(
+            ocp, nlp, contact_type, DynamicsFunctions.forces_from_torque_activation_driven
+        )
 
         # Configure the actual ODE of the dynamics
         if nlp.dynamics_type.dynamic_function:

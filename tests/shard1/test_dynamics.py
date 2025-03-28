@@ -1278,7 +1278,9 @@ def test_with_contact_error(dynamics_fcn, phase_dynamics):
     u_bounds["tau"] = [100] * n_tau, [100] * n_tau
     u_bounds["tau"][1, :] = 0  # Prevent the model from actively rotate
 
-    with pytest.raises(ValueError, match="No rigid contact defined in the .bioMod of phase 0, consider changing the ContactType."):
+    with pytest.raises(
+        ValueError, match="No rigid contact defined in the .bioMod of phase 0, consider changing the ContactType."
+    ):
         OptimalControlProgram(
             bio_model=bio_model,
             dynamics=dynamics,
