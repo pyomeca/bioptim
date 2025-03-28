@@ -30,6 +30,7 @@ from bioptim import (
     Solver,
     DynamicsEvaluation,
     PhaseDynamics,
+    ContactType,
 )
 
 
@@ -61,6 +62,8 @@ def custom_dynamics(
         The parameters acting on the system
     algebraic_states: MX | SX
         The algebraic states of the system
+    numerical_timeseries: MX | SX
+        The numerical timeseries of the system
     nlp: NonLinearProgram
         A reference to the phase
     my_additional_factor: int
@@ -97,7 +100,7 @@ def custom_dynamics(
 
 
 def custom_configure(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram, my_additional_factor=1, numerical_data_timeseries=None
+    ocp: OptimalControlProgram, nlp: NonLinearProgram, contact_type: list[ContactType], my_additional_factor=1, numerical_data_timeseries=None
 ):
     """
     Tell the program which variables are states and controls.

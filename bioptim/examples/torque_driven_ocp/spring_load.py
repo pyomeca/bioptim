@@ -24,6 +24,7 @@ from bioptim import (
     DynamicsEvaluation,
     PhaseDynamics,
     SolutionMerge,
+    ContactType,
 )
 
 # scenarios are based on a Mayer term (at Tf)
@@ -155,7 +156,7 @@ def custom_dynamic(
     return DynamicsEvaluation(dxdt=vertcat(qdot, qddot), defects=None)
 
 
-def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None):
+def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None, contact_type:list[ContactType]=[]):
     """
     The configuration of the dynamics (see custom_dynamics for more explanation)
 

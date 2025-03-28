@@ -25,6 +25,7 @@ from bioptim import (
     NonLinearProgram,
     PhaseDynamics,
     SolutionMerge,
+    ContactType,
 )
 from casadi import MX, SX, vertcat, sin, Function, DM, reshape
 import numpy as np
@@ -34,7 +35,7 @@ import pytest
 from ..utils import TestUtils
 
 
-def time_dynamic_dxdt(
+def time_dynamic(
     time: MX | SX,
     states: MX | SX,
     controls: MX | SX,
@@ -75,62 +76,22 @@ def time_dynamic_dxdt(
     # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
     dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
     ddq = nlp.model.forward_dynamics(with_contact=False)(q, qdot, tau, [], [])
+    dxdt = vertcat(dq, ddq)
 
-    return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
+    defects = None
+    if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
+        slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
+        slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
+        defects = vertcat(slope_q, slope_qdot) * nlp.dt - dxdt * nlp.dt
 
-
-def time_dynamic_defects(
-    time: MX | SX,
-    states: MX | SX,
-    controls: MX | SX,
-    parameters: MX | SX,
-    algebraic_states: MX | SX,
-    numerical_timeseries: MX | SX,
-    nlp: NonLinearProgram,
-) -> DynamicsEvaluation:
-    """
-    The custom dynamics function that provides the defects between the derivative of the states and the slope of the collocation polynomial
-
-    Parameters
-    ----------
-    time: MX | SX
-        The time of the system
-    states: MX | SX
-        The state of the system
-    controls: MX | SX
-        The controls of the system
-    parameters: MX | SX
-        The parameters acting on the system
-    algebraic_states: MX | SX
-        The Algebraic states variables of the system
-    numerical_timeseries: MX | SX
-        The numerical timeseries of the system
-    nlp: NonLinearProgram
-        A reference to the phase
-
-    Returns
-    -------
-    The derivative of the states in the tuple[MX | SX] format
-    """
-
-    q = DynamicsFunctions.get(nlp.states["q"], states)
-    qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-    tau = DynamicsFunctions.get(nlp.controls["tau"], controls) * (sin(time) * time.ones(nlp.model.nb_tau) * 10)
-
-    # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
-    dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-    ddq = nlp.model.forward_dynamics(with_contact=False)(q, qdot, tau, [], [])
-
-    # Defects
-    slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
-    slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
-    defects = vertcat(slope_q, slope_qdot) * nlp.dt - vertcat(dq, ddq) * nlp.dt
-
-    return DynamicsEvaluation(dxdt=None, defects=defects)
+    return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
 
-def custom_configure_dxdt(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries: dict[str, np.ndarray] = None
+def custom_configure(
+    ocp: OptimalControlProgram,
+        nlp: NonLinearProgram,
+        numerical_data_timeseries: dict[str, np.ndarray] = None,
+        contact_type: list[ContactType] = [],
 ):
     """
     Tell the program which variables are states and controls.
@@ -142,35 +103,17 @@ def custom_configure_dxdt(
         A reference to the ocp
     nlp: NonLinearProgram
         A reference to the phase
+    numerical_data_timeseries: dict[str, np.ndarray]
+        The numerical data timeseries to use in the dynamics
+    contact_type: list[ContactType]
+        The type of contact to use in the dynamics
     """
 
     ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
     ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
     ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
 
-    ConfigureProblem.configure_dynamics_function(ocp, nlp, time_dynamic_dxdt)
-
-
-def custom_configure_defects(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries: dict[str, np.ndarray] = None
-):
-    """
-    Tell the program which variables are states and controls.
-    The user is expected to use the ConfigureProblem.configure_xxx functions.
-
-    Parameters
-    ----------
-    ocp: OptimalControlProgram
-        A reference to the ocp
-    nlp: NonLinearProgram
-        A reference to the phase
-    """
-
-    ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
-
-    ConfigureProblem.configure_dynamics_function(ocp, nlp, time_dynamic_defects)
+    ConfigureProblem.configure_dynamics_function(ocp, nlp, time_dynamic)
 
 
 def prepare_ocp(
@@ -233,10 +176,8 @@ def prepare_ocp(
     expand = not isinstance(ode_solver, OdeSolver.IRK)
     for i in range(len(bio_model)):
         dynamics.add(
-            custom_configure_defects if isinstance(ode_solver, OdeSolver.COLLOCATION) else custom_configure_dxdt,
-            dynamic_function=(
-                time_dynamic_defects if isinstance(ode_solver, OdeSolver.COLLOCATION) else time_dynamic_dxdt
-            ),
+            custom_configure,
+            dynamic_function=time_dynamic,
             phase=i,
             expand_dynamics=expand,
             phase_dynamics=phase_dynamics,

@@ -958,6 +958,7 @@ class DynamicsFunctions:
                 if has_excitation:
                     slope_mus = DynamicsFunctions.get(nlp.states_dot["muscles"], nlp.states_dot.scaled.cx)
                     slopes = vertcat(slopes, slope_mus)
+                    derivative = vertcat(derivative, dmus)
 
                 if fatigue is not None and "muscles" in fatigue:
                     derivative = fatigue["muscles"].dynamics(derivative, nlp, states, controls)

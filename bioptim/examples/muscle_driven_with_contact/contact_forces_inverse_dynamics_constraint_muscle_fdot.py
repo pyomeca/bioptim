@@ -35,10 +35,11 @@ from bioptim import (
     MultinodeConstraintList,
     MultinodeConstraintFcn,
     ControlType,
+    ContactType,
 )
 
 
-def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None):
+def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None, contact_type:list[ContactType]=[]):
     # Usual variables
     ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
     ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)

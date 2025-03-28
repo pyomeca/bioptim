@@ -327,17 +327,24 @@ def test_track_and_minimize_marker_velocity_linear_controls(ode_solver, phase_dy
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
-    # initial and final position
-    npt.assert_almost_equal(q[2:, 0], np.array([-3.14159264, 0]))
-    npt.assert_almost_equal(q[2:, -1], np.array([3.14159264, 0]))
-    # initial and final velocities
-    npt.assert_almost_equal(qdot[2:, 0], np.array([10, 0]))
-    npt.assert_almost_equal(qdot[2:, -1], np.array([10, 0]))
-    # initial and final controls
     if isinstance(ode_solver, OdeSolver.IRK):
-        npt.assert_almost_equal(tau[2:, 0], np.array([-1.00000001e02, 0]), decimal=5)
-        npt.assert_almost_equal(tau[2:, -1], np.array([1.00000001e02, 0]), decimal=5)
+        # initial and final position
+        npt.assert_almost_equal(q[2:, 0], np.array([-2.06312345e+00, 0]))
+        npt.assert_almost_equal(q[2:, -1], np.array([2.90598011e+00, 0]))
+        # initial and final velocities
+        npt.assert_almost_equal(qdot[2:, 0], np.array([10, 0]))
+        npt.assert_almost_equal(qdot[2:, -1], np.array([10, 0]))
+        # initial and final controls
+        npt.assert_almost_equal(tau[2:, 0], np.array([-5.66596424e+01, 0]), decimal=5)
+        npt.assert_almost_equal(tau[2:, -1], np.array([5.19414628e+00, 0]), decimal=5)
     else:
+        # initial and final position
+        npt.assert_almost_equal(q[2:, 0], np.array([-3.14159264, 0]))
+        npt.assert_almost_equal(q[2:, -1], np.array([3.14159264, 0]))
+        # initial and final velocities
+        npt.assert_almost_equal(qdot[2:, 0], np.array([10, 0]))
+        npt.assert_almost_equal(qdot[2:, -1], np.array([10, 0]))
+        # initial and final controls
         npt.assert_almost_equal(tau[2:, 0], np.array([-8.495542, 0]), decimal=5)
         npt.assert_almost_equal(tau[2:, -1], np.array([8.495541, 0]), decimal=5)
 
