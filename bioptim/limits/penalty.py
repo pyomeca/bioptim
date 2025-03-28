@@ -6,7 +6,7 @@ from math import inf
 
 from .penalty_controller import PenaltyController
 from .penalty_option import PenaltyOption
-from ..misc.enums import Node, Axis, ControlType, QuadratureRule
+from ..misc.enums import Node, Axis, ControlType, QuadratureRule, ContactType
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
 
 
@@ -750,22 +750,36 @@ class PenaltyFunctionAbstract:
                 penalty.cols should not be defined if contact_index is defined
             """
 
-            # TODO: get_contact_forces from algebraic_states
+            if (ContactType.RIGID_IMPLICIT in controller.get_nlp.dynamics_type.contact_type or
+                    ContactType.SOFT_IMPLICIT in controller.get_nlp.dynamics_type.contact_type):
+                raise RuntimeError("minimize_contact_forces is only implemented for explicit contact (RIGID_EXPLICIT or SOFT_EXPLICIT).")
 
-            if controller.get_nlp.contact_forces_func is None:
-                raise RuntimeError("minimize_contact_forces requires a contact dynamics")
+            contact_forces = controller.cx()
+            if ContactType.RIGID_EXPLICIT in controller.get_nlp.dynamics_type.contact_type:
+                if controller.get_nlp.contact_forces_func is None:
+                    raise RuntimeError("minimize_contact_forces requires a contact dynamics")
 
-            PenaltyFunctionAbstract.set_axes_rows(penalty, contact_index)
-            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+                contact_force = vertcat(contact_forces, controller.get_nlp.contact_forces_func(
+                    controller.time.cx,
+                    controller.states.cx_start,
+                    controller.controls.cx_start,
+                    controller.parameters.cx,
+                    controller.algebraic_states.cx_start,
+                    controller.numerical_timeseries.cx,
+                ))
+            if ContactType.SOFT_EXPLICIT in controller.get_nlp.dynamics_type.contact_type:
+                if controller.get_nlp.soft_contact_forces_func is None:
+                    raise RuntimeError("minimize_contact_forces requires a contact dynamics")
 
-            contact_force = controller.get_nlp.contact_forces_func(
-                controller.time.cx,
-                controller.states.cx_start,
-                controller.controls.cx_start,
-                controller.parameters.cx,
-                controller.algebraic_states.cx_start,
-                controller.numerical_timeseries.cx,
-            )
+                contact_force = vertcat(contact_forces, controller.get_nlp.soft_contact_forces_func(
+                    controller.time.cx,
+                    controller.states.cx_start,
+                    controller.controls.cx_start,
+                    controller.parameters.cx,
+                    controller.algebraic_states.cx_start,
+                    controller.numerical_timeseries.cx,
+                ))
+
             return contact_force
 
         @staticmethod

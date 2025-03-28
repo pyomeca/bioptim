@@ -609,6 +609,30 @@ class COLLOCATION(Integrator):
     def _integration_time(self):
         return [0] + collocation_points(self.degree, self.method)
 
+    def get_u(self, u: np.ndarray, t: float) -> np.ndarray:
+        """
+        Get the control at a given time
+
+        Parameters
+        ----------
+        u: np.ndarray
+            The control matrix
+        t: float
+            The time a which control should be computed
+
+        Returns
+        -------
+        The control at a given time
+        """
+
+        if self.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
+            return u
+        elif self.control_type == ControlType.LINEAR_CONTINUOUS:
+            dt_norm = t / self.t_span_sym[1]
+            return u[:, 0] + (u[:, 1] - u[:, 0]) * dt_norm
+        else:
+            raise RuntimeError(f"{self.control_type} ControlType not implemented yet")
+
     @property
     def shape_xf(self):
         return [self._x_sym_modified.shape[0], self.degree + 1]
