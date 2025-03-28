@@ -36,7 +36,8 @@ from bioptim import (
     MultinodeConstraintFcn,
     ControlType,
     Shooting,
-    SolutionIntegrator, ContactType,
+    SolutionIntegrator,
+    ContactType,
 )
 
 
@@ -69,7 +70,14 @@ def contact_velocity_start(controller):
     return vertcat(*contact_velocities)
 
 
-def prepare_ocp(biorbd_model_path, phase_time, n_shooting, defect_type: DefectType, contact_type: list[ContactType], expand_dynamics=True):
+def prepare_ocp(
+    biorbd_model_path,
+    phase_time,
+    n_shooting,
+    defect_type: DefectType,
+    contact_type: list[ContactType],
+    expand_dynamics=True,
+):
 
     if ContactType.RIGID_IMPLICIT in contact_type:
         # Indicate to the model creator that there will be two rigid contacts in the form of optimization variables

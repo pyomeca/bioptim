@@ -163,8 +163,7 @@ class DynamicsFunctions:
             )
 
             if nlp.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
-                ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, contact_type,
-                                                         external_forces)
+                ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, contact_type, external_forces)
                 derivative = vertcat(dq, ddq)
                 defects = slope * nlp.dt - derivative * nlp.dt
 
@@ -468,7 +467,6 @@ class DynamicsFunctions:
                 forward_dynamics_contact_type += [contact]
         return forward_dynamics_contact_type
 
-
     @staticmethod
     def __get_fatigable_tau(nlp, states: MX | SX, controls: MX | SX, fatigue: FatigueList) -> MX | SX:
         """
@@ -598,8 +596,7 @@ class DynamicsFunctions:
             slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
             if nlp.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
-                ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, contact_type,
-                                                            external_forces)
+                ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, contact_type, external_forces)
                 derivative = vertcat(dq, ddq)
                 defects = vertcat(slope_q, slope_qdot) * nlp.dt - derivative * nlp.dt
             else:

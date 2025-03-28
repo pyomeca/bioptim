@@ -114,9 +114,7 @@ class BiorbdModel:
         def wrapper(self, *args, **kwargs):
 
             # Create a unique key based on the method name and arguments
-            key = (method.__name__,
-                   args,
-                   frozenset((k, make_hashable(v)) for k, v in kwargs.items()))
+            key = (method.__name__, args, frozenset((k, make_hashable(v)) for k, v in kwargs.items()))
             if key in self._cached_functions:
                 return self._cached_functions[key]
 

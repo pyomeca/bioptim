@@ -1212,13 +1212,10 @@ class ConfigureProblem:
                 nlp.algebraic_states.scaled.cx,
                 nlp.numerical_timeseries.cx,
             ],
-            [
-                nlp.model.soft_contact_forces()(nlp.states["q"].cx, nlp.states["qdot"].cx, nlp.parameters.cx)
-            ],
+            [nlp.model.soft_contact_forces()(nlp.states["q"].cx, nlp.states["qdot"].cx, nlp.parameters.cx)],
             ["t_span", "x", "u", "p", "a", "d"],
             ["contact_forces"],
         ).expand()
-
 
         component_list = ["Mx", "My", "Mz", "Fx", "Fy", "Fz"]
 

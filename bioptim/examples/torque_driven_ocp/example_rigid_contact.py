@@ -61,7 +61,11 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    if ContactType.RIGID_IMPLICIT in contact_type or ContactType.SOFT_IMPLICIT in contact_type or ContactType.SOFT_EXPLICIT in contact_type:
+    if (
+        ContactType.RIGID_IMPLICIT in contact_type
+        or ContactType.SOFT_IMPLICIT in contact_type
+        or ContactType.SOFT_EXPLICIT in contact_type
+    ):
         # Indicate to the model creator that there will be two rigid contacts in the form of optimization variables
         external_force_set = ExternalForceSetVariables()
         external_force_set.add(force_name="Seg2_contact0", segment="Seg2", use_point_of_application=True)
@@ -105,7 +109,12 @@ def prepare_ocp(
         )
     elif ContactType.RIGID_IMPLICIT in contact_type:
         constraints.add(
-            ConstraintFcn.TRACK_ALGEBRAIC_STATE, node=Node.ALL_SHOOTING, key="rigid_contact_forces", index=1, min_bound=0, max_bound=np.inf
+            ConstraintFcn.TRACK_ALGEBRAIC_STATE,
+            node=Node.ALL_SHOOTING,
+            key="rigid_contact_forces",
+            index=1,
+            min_bound=0,
+            max_bound=np.inf,
         )
 
     constraints.add(

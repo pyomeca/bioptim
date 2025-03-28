@@ -750,35 +750,45 @@ class PenaltyFunctionAbstract:
                 penalty.cols should not be defined if contact_index is defined
             """
 
-            if (ContactType.RIGID_IMPLICIT in controller.get_nlp.dynamics_type.contact_type or
-                    ContactType.SOFT_IMPLICIT in controller.get_nlp.dynamics_type.contact_type):
-                raise RuntimeError("minimize_contact_forces is only implemented for explicit contact (RIGID_EXPLICIT or SOFT_EXPLICIT).")
+            if (
+                ContactType.RIGID_IMPLICIT in controller.get_nlp.dynamics_type.contact_type
+                or ContactType.SOFT_IMPLICIT in controller.get_nlp.dynamics_type.contact_type
+            ):
+                raise RuntimeError(
+                    "minimize_contact_forces is only implemented for explicit contact (RIGID_EXPLICIT or SOFT_EXPLICIT)."
+                )
 
             contact_forces = controller.cx()
             if ContactType.RIGID_EXPLICIT in controller.get_nlp.dynamics_type.contact_type:
                 if controller.get_nlp.contact_forces_func is None:
                     raise RuntimeError("minimize_contact_forces requires a contact dynamics")
 
-                contact_force = vertcat(contact_forces, controller.get_nlp.contact_forces_func(
-                    controller.time.cx,
-                    controller.states.cx_start,
-                    controller.controls.cx_start,
-                    controller.parameters.cx,
-                    controller.algebraic_states.cx_start,
-                    controller.numerical_timeseries.cx,
-                ))
+                contact_force = vertcat(
+                    contact_forces,
+                    controller.get_nlp.contact_forces_func(
+                        controller.time.cx,
+                        controller.states.cx_start,
+                        controller.controls.cx_start,
+                        controller.parameters.cx,
+                        controller.algebraic_states.cx_start,
+                        controller.numerical_timeseries.cx,
+                    ),
+                )
             if ContactType.SOFT_EXPLICIT in controller.get_nlp.dynamics_type.contact_type:
                 if controller.get_nlp.soft_contact_forces_func is None:
                     raise RuntimeError("minimize_contact_forces requires a contact dynamics")
 
-                contact_force = vertcat(contact_forces, controller.get_nlp.soft_contact_forces_func(
-                    controller.time.cx,
-                    controller.states.cx_start,
-                    controller.controls.cx_start,
-                    controller.parameters.cx,
-                    controller.algebraic_states.cx_start,
-                    controller.numerical_timeseries.cx,
-                ))
+                contact_force = vertcat(
+                    contact_forces,
+                    controller.get_nlp.soft_contact_forces_func(
+                        controller.time.cx,
+                        controller.states.cx_start,
+                        controller.controls.cx_start,
+                        controller.parameters.cx,
+                        controller.algebraic_states.cx_start,
+                        controller.numerical_timeseries.cx,
+                    ),
+                )
 
             return contact_force
 
