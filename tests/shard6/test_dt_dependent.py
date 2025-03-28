@@ -34,9 +34,9 @@ from ..utils import TestUtils
 
 def custom_configure(
     ocp: OptimalControlProgram,
-        nlp: NonLinearProgram,
-        numerical_data_timeseries: dict[str, np.ndarray] = None,
-        contact_type:list[ContactType]=[]
+    nlp: NonLinearProgram,
+    numerical_data_timeseries: dict[str, np.ndarray] = None,
+    contact_type: list[ContactType] = [],
 ):
     ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
     ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)

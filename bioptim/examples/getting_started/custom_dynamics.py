@@ -100,7 +100,11 @@ def custom_dynamics(
 
 
 def custom_configure(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram, contact_type: list[ContactType], my_additional_factor=1, numerical_data_timeseries=None
+    ocp: OptimalControlProgram,
+    nlp: NonLinearProgram,
+    contact_type: list[ContactType],
+    my_additional_factor=1,
+    numerical_data_timeseries=None,
 ):
     """
     Tell the program which variables are states and controls.
