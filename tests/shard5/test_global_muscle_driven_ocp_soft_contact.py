@@ -6,7 +6,7 @@ import pytest
 
 import numpy as np
 import numpy.testing as npt
-from bioptim import OdeSolver, ControlType, PhaseDynamics, SolutionMerge, SolutionIntegrator
+from bioptim import SolutionMerge, SolutionIntegrator
 
 from ..utils import TestUtils
 

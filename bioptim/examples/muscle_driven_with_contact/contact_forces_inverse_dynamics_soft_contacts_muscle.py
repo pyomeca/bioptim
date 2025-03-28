@@ -22,7 +22,6 @@ from bioptim import (
     DynamicsFunctions,
     ExternalForceSetVariables,
     OdeSolver,
-    DefectType,
     InterpolationType,
     PhaseDynamics,
     MultinodeConstraintList,
@@ -30,6 +29,7 @@ from bioptim import (
     ControlType,
     Shooting,
     SolutionIntegrator,
+    ContactType,
 )
 
 

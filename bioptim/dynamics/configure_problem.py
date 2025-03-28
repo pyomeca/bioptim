@@ -1653,7 +1653,7 @@ class ConfigureProblem:
         """
         name = "m"
 
-        if nlp.variable_mappings["m"].actually_does_a_mapping:
+        if "m" in nlp.variable_mappings and nlp.variable_mappings["m"].actually_does_a_mapping:
             raise NotImplementedError(f"Algebraic states and mapping cannot be use together for now.")
 
         name_m = []
@@ -2063,7 +2063,7 @@ def _check_contacts_in_biomodel(contact_type: list[ContactType], model: BioModel
     # Check soft contacts
     if (
         ContactType.SOFT_EXPLICIT in contact_type or ContactType.SOFT_IMPLICIT in contact_type
-    ) and model.nb_soft_contacts != 0:
+    ) and model.nb_soft_contacts == 0:
         raise ValueError(
             f"No soft contact defined in the .bioMod of phase {phase_idx}, consider changing the ContactType."
         )

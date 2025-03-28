@@ -561,7 +561,6 @@ class Solution:
         """
 
         if self._stepwise_states is None:
-            self._prepare_integrate(SolutionIntegrator.OCP)
             self._integrate_stepwise()
 
         data = self._stepwise_states.to_dict(to_merge=to_merge, scaled=scaled)

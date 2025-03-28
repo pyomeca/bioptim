@@ -934,7 +934,7 @@ class DynamicsFunctions:
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
             slopes = vertcat(slope_q, slope_qdot)
 
-            if nlp.ode_solver == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
+            if nlp.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
                 if has_excitation:
                     slope_mus = DynamicsFunctions.get(nlp.states_dot["muscles"], nlp.states_dot.scaled.cx)
                     slopes = vertcat(slopes, slope_mus)
