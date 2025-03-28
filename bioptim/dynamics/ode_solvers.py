@@ -112,7 +112,7 @@ class OdeSolver:
         method : str
             The method of interpolation ("legendre" or "radau")
         _defects_type: DefectType
-            The type of defect to use (DefectType.EXPLICIT or DefectType.IMPLICIT)
+            The type of defects to use to constrain the slope of the polynomial at the COLLOCATION nodes
         duplicate_starting_point: bool
             Whether an additional collocation point should be added at the shooting node (this is typically used in SOCPs)
         """
@@ -121,7 +121,7 @@ class OdeSolver:
             self,
             polynomial_degree: int = 4,
             method: str = "legendre",
-            defects_type: DefectType = DefectType.EXPLICIT,
+            defects_type: DefectType = DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS,
             **kwargs,
         ):
             """
@@ -164,7 +164,13 @@ class OdeSolver:
             return out
 
         def p_ode(self, nlp):
-            return nlp.controls.scaled.cx_start
+            if nlp.control_type in (
+                ControlType.CONSTANT,
+                ControlType.CONSTANT_WITH_LAST_NODE,
+            ):
+                return nlp.controls.scaled.cx_start
+            else:
+                return horzcat(nlp.controls.scaled.cx_start, nlp.controls.scaled.cx_end)
 
         def a_ode(self, nlp):
             out = [nlp.algebraic_states.scaled.cx_start]
@@ -273,6 +279,9 @@ class OdeSolver:
 
             t = [self.t_ode(nlp)[0], self.t_ode(nlp)[1] - self.t_ode(nlp)[0]]
             dynamics_func = nlp.dynamics_func if not is_extra_dynamics else nlp.extra_dynamics_func[dynamics_index]
+            dynamics_defects_func = (
+                nlp.dynamics_defects_func if not is_extra_dynamics else nlp.extra_dynamics_defects_func[dynamics_index]
+            )
             ode = {
                 "x": nlp.states.scaled.cx_start,
                 "u": nlp.controls.scaled.cx_start,  # todo: add p=parameters

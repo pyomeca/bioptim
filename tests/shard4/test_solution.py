@@ -320,21 +320,6 @@ def test_generate_integrate(ode_solver, merge_phase, shooting_type, integrator, 
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
-    if ode_solver == OdeSolver.COLLOCATION and control_type == ControlType.LINEAR_CONTINUOUS:
-        with pytest.raises(
-            NotImplementedError, match="ControlType.LINEAR_CONTINUOUS ControlType not implemented yet with COLLOCATION"
-        ):
-            ocp = ocp_module.prepare_ocp(
-                biorbd_model_path=bioptim_folder + "/models/slider.bioMod",
-                ode_solver=ode_solver(),
-                phase_time=(0.2, 0.3, 0.5),
-                n_shooting=(3, 4, 5),
-                phase_dynamics=phase_dynamics,
-                control_type=control_type,
-                expand_dynamics=True,
-            )
-        return
-
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/slider.bioMod",
         ode_solver=ode_solver(),

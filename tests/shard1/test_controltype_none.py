@@ -104,7 +104,6 @@ class NonControlledMethod:
             nlp,
             as_states=True,
             as_controls=False,
-            as_states_dot=False,
         )
 
         name = "b"
@@ -116,7 +115,6 @@ class NonControlledMethod:
             nlp,
             as_states=True,
             as_controls=False,
-            as_states_dot=False,
         )
 
         name = "c"
@@ -128,7 +126,6 @@ class NonControlledMethod:
             nlp,
             as_states=True,
             as_controls=False,
-            as_states_dot=False,
         )
 
         ConfigureProblem.configure_dynamics_function(ocp, nlp, self.custom_dynamics, my_ocp=ocp)
@@ -160,8 +157,8 @@ def prepare_ocp(
     phase_dynamics: PhaseDynamics
         If the dynamics equation within a phase is unique or changes at each node.
         PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
-        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
-        are applied at each node
+        a phase. PhaseDynamics.ONE_PER_NODE should also be used when multi-node penalties with more than 3 nodes or with COLLOCATION (cx_intermediate_list) are added to the OCP.
+
 
     Returns
     -------
@@ -192,6 +189,7 @@ def prepare_ocp(
             phase=i,
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
+            ode_solver=ode_solver,
         )
 
     # Creates the constraint for my n phases
@@ -224,7 +222,6 @@ def prepare_ocp(
         x_bounds=x_bounds,
         objective_functions=objective_functions,
         constraints=constraints,
-        ode_solver=ode_solver,
         use_sx=use_sx,
     )
 

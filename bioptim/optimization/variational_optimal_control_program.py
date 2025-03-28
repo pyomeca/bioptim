@@ -67,12 +67,6 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                     " define it."
                 )
 
-        if "ode_solver" in kwargs:
-            raise ValueError(
-                "ode_solver cannot be defined in VariationalOptimalControlProgram since the integration is"
-                " done by the variational integrator."
-            )
-
         if "x_init" in kwargs or "x_bounds" in kwargs:
             raise ValueError(
                 "In VariationalOptimalControlProgram q_init and q_bounds must be used instead of x_init and x_bounds "
@@ -89,6 +83,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             self.configure_torque_driven,
             expand_dynamics=expand,
             skip_continuity=True,
+            ode_solver=None,
         )
 
         if qdot_bounds is None or not isinstance(qdot_bounds, BoundsList):
@@ -284,7 +279,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         else:
             lambdas = None
 
-        nlp.implicit_dynamics_func = Function(
+        nlp.dynamics_defects_func = Function(
             "ThreeNodesIntegration",
             three_nodes_input,
             [
@@ -301,7 +296,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             ],
         )
 
-        nlp.implicit_dynamics_func_first_node = Function(
+        nlp.dynamics_defects_func_first_node = Function(
             "TwoFirstNodesIntegration",
             two_first_nodes_input,
             [
@@ -317,7 +312,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             ],
         )
 
-        nlp.implicit_dynamics_func_last_node = Function(
+        nlp.dynamics_defects_func_last_node = Function(
             "TwoLastNodesIntegration",
             two_last_nodes_input,
             [
@@ -335,9 +330,9 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
         if expand:
             nlp.dynamics_func = nlp.dynamics_func.expand()
-            nlp.implicit_dynamics_func = nlp.implicit_dynamics_func.expand()
-            nlp.implicit_dynamics_func_first_node = nlp.implicit_dynamics_func_first_node.expand()
-            nlp.implicit_dynamics_func_last_node = nlp.implicit_dynamics_func_last_node.expand()
+            nlp.dynamics_defects_func = nlp.dynamics_defects_func.expand()
+            nlp.dynamics_defects_func_first_node = nlp.dynamics_defects_func_first_node.expand()
+            nlp.dynamics_defects_func_last_node = nlp.dynamics_defects_func_last_node.expand()
 
     def configure_torque_driven(
         self, ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None
@@ -368,7 +363,6 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                 nlp,
                 as_states=True,
                 as_controls=False,
-                as_states_dot=False,
             )
 
         self.configure_dynamics_function(ocp, nlp)
@@ -392,7 +386,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
         """
         if self.bio_model.has_holonomic_constraints:
-            return controllers[0].get_nlp.implicit_dynamics_func(
+            return controllers[0].get_nlp.dynamics_defects_func(
                 controllers[0].dt.cx,
                 controllers[0].states["q"].cx,
                 controllers[1].states["q"].cx,
@@ -403,7 +397,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                 controllers[1].states["lambdas"].cx,
             )
         else:
-            return controllers[0].get_nlp.implicit_dynamics_func(
+            return controllers[0].get_nlp.dynamics_defects_func(
                 controllers[0].dt.cx,
                 controllers[0].states["q"].cx,
                 controllers[1].states["q"].cx,
@@ -434,7 +428,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
         """
         if self.bio_model.has_holonomic_constraints:
-            return controllers[0].get_nlp.implicit_dynamics_func_first_node(
+            return controllers[0].get_nlp.dynamics_defects_func_first_node(
                 controllers[0].dt.cx,
                 controllers[0].states["q"].cx,
                 controllers[0].parameters.cx[:n_qdot],  # hardcoded
@@ -444,7 +438,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                 controllers[0].states["lambdas"].cx,
             )
         else:
-            return controllers[0].get_nlp.implicit_dynamics_func_first_node(
+            return controllers[0].get_nlp.dynamics_defects_func_first_node(
                 controllers[0].dt.cx,
                 controllers[0].states["q"].cx,
                 controllers[0].parameters.cx[:n_qdot],  # hardcoded
@@ -475,7 +469,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
         """
         if self.bio_model.has_holonomic_constraints:
-            return controllers[0].get_nlp.implicit_dynamics_func_last_node(
+            return controllers[0].get_nlp.dynamics_defects_func_last_node(
                 controllers[0].dt.cx,
                 controllers[0].states["q"].cx,
                 controllers[1].states["q"].cx,
@@ -485,7 +479,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                 controllers[1].states["lambdas"].cx,
             )
         else:
-            return controllers[0].get_nlp.implicit_dynamics_func_last_node(
+            return controllers[0].get_nlp.dynamics_defects_func_last_node(
                 controllers[0].dt.cx,
                 controllers[0].states["q"].cx,
                 controllers[1].states["q"].cx,

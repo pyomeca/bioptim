@@ -60,8 +60,8 @@ def prepare_ocp(
     phase_dynamics: PhaseDynamics
         If the dynamics equation within a phase is unique or changes at each node.
         PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
-        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
-        are applied at each node
+        a phase. PhaseDynamics.ONE_PER_NODE should also be used when multi-node penalties with more than 3 nodes or with COLLOCATION (cx_intermediate_list) are added to the OCP.
+
 
     Returns
     -------
@@ -105,6 +105,7 @@ def prepare_ocp(
         DynamicsFcn.TORQUE_DRIVEN,
         expand_dynamics=not isinstance(ode_solver, OdeSolver.IRK),
         phase_dynamics=phase_dynamics,
+        ode_solver=ode_solver,
     )
 
     # Path constraint
@@ -133,7 +134,6 @@ def prepare_ocp(
         x_init=x_init,
         objective_functions=objective_functions,
         control_type=control_type,
-        ode_solver=ode_solver,
     )
 
 
@@ -304,45 +304,40 @@ def test_track_and_minimize_marker_velocity(ode_solver, phase_dynamics):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_track_and_minimize_marker_velocity_linear_controls(ode_solver, phase_dynamics):
     # Load track_and_minimize_marker_velocity
-    if ode_solver == OdeSolver.IRK:
-        ode_solver = ode_solver()
-        with pytest.raises(
-            NotImplementedError, match="ControlType.LINEAR_CONTINUOUS ControlType not implemented yet with COLLOCATION"
-        ):
-            prepare_ocp(
-                biorbd_model_path=TestUtils.bioptim_folder() + "/examples/track/models/cube_and_line.bioMod",
-                n_shooting=5,
-                final_time=1,
-                marker_velocity_or_displacement="velo",
-                marker_in_first_coordinates_system=True,
-                control_type=ControlType.LINEAR_CONTINUOUS,
-                ode_solver=ode_solver,
-                phase_dynamics=phase_dynamics,
-            )
+    ode_solver = ode_solver()
+    ocp = prepare_ocp(
+        biorbd_model_path=TestUtils.bioptim_folder() + "/examples/track/models/cube_and_line.bioMod",
+        n_shooting=5,
+        final_time=1,
+        marker_velocity_or_displacement="velo",
+        marker_in_first_coordinates_system=True,
+        control_type=ControlType.LINEAR_CONTINUOUS,
+        ode_solver=ode_solver,
+        phase_dynamics=phase_dynamics,
+    )
+    sol = ocp.solve()
+
+    # Check constraints
+    g = np.array(sol.constraints)
+    npt.assert_equal(g.shape, (40, 1))
+    npt.assert_almost_equal(g, np.zeros((40, 1)))
+
+    # Check some of the results
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+
+    if isinstance(ode_solver, OdeSolver.IRK):
+        # initial and final position
+        npt.assert_almost_equal(q[2:, 0], np.array([-2.06312345e00, 0]))
+        npt.assert_almost_equal(q[2:, -1], np.array([2.90598011e00, 0]))
+        # initial and final velocities
+        npt.assert_almost_equal(qdot[2:, 0], np.array([10, 0]))
+        npt.assert_almost_equal(qdot[2:, -1], np.array([10, 0]))
+        # initial and final controls
+        npt.assert_almost_equal(tau[2:, 0], np.array([-5.66596424e01, 0]), decimal=5)
+        npt.assert_almost_equal(tau[2:, -1], np.array([5.19414628e00, 0]), decimal=5)
     else:
-        ode_solver = ode_solver()
-        ocp = prepare_ocp(
-            biorbd_model_path=TestUtils.bioptim_folder() + "/examples/track/models/cube_and_line.bioMod",
-            n_shooting=5,
-            final_time=1,
-            marker_velocity_or_displacement="velo",
-            marker_in_first_coordinates_system=True,
-            control_type=ControlType.LINEAR_CONTINUOUS,
-            ode_solver=ode_solver,
-            phase_dynamics=phase_dynamics,
-        )
-        sol = ocp.solve()
-
-        # Check constraints
-        g = np.array(sol.constraints)
-        npt.assert_equal(g.shape, (40, 1))
-        npt.assert_almost_equal(g, np.zeros((40, 1)))
-
-        # Check some of the results
-        states = sol.decision_states(to_merge=SolutionMerge.NODES)
-        controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
-        q, qdot, tau = states["q"], states["qdot"], controls["tau"]
-
         # initial and final position
         npt.assert_almost_equal(q[2:, 0], np.array([-3.14159264, 0]))
         npt.assert_almost_equal(q[2:, -1], np.array([3.14159264, 0]))
@@ -353,5 +348,5 @@ def test_track_and_minimize_marker_velocity_linear_controls(ode_solver, phase_dy
         npt.assert_almost_equal(tau[2:, 0], np.array([-8.495542, 0]), decimal=5)
         npt.assert_almost_equal(tau[2:, -1], np.array([8.495541, 0]), decimal=5)
 
-        # simulate
-        TestUtils.simulate(sol)
+    # simulate
+    TestUtils.simulate(sol)

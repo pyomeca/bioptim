@@ -13,11 +13,7 @@ from casadi import SX, MX, vertcat, horzcat, norm_fro, Function, DM
 
 from bioptim.models.biorbd.external_forces import (
     ExternalForceSetTimeSeries,
-    _add_global_force,
-    _add_torque_global,
-    _add_translational_global,
-    _add_local_force,
-    _add_torque_local,
+    ExternalForceSetVariables,
 )
 from ..utils import _var_mapping, bounds_from_ranges
 from ...limits.path_conditions import Bounds
@@ -38,7 +34,7 @@ class BiorbdModel:
         bio_model: str | biorbd.Model,
         friction_coefficients: np.ndarray = None,
         parameters: ParameterList = None,
-        external_force_set: ExternalForceSetTimeSeries = None,
+        external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None,
     ):
         """
         Parameters
@@ -93,19 +89,32 @@ class BiorbdModel:
         """
         It checks the external forces and binds them to the model.
         """
-        external_force_set._check_segment_names(tuple([s.name().to_string() for s in self.model.segments()]))
-        external_force_set._check_all_string_points_of_application(self.marker_names)
-        external_force_set._bind()
+        external_force_set.check_segment_names(tuple([s.name().to_string() for s in self.model.segments()]))
+        external_force_set.check_all_string_points_of_application(self.marker_names)
+        external_force_set.bind()
 
         return external_force_set
 
     def cache_function(method):
         """Decorator to cache CasADi functions automatically"""
 
+        def make_hashable(value):
+            """
+            Transforms non-hashable objects (dicts, and lists) into hashable objects (tuple)
+            """
+            if isinstance(value, list):
+                return tuple(make_hashable(v) for v in value)
+            elif isinstance(value, dict):
+                return tuple(sorted((k, make_hashable(v)) for k, v in value.items()))
+            elif isinstance(value, set):
+                return frozenset(make_hashable(v) for v in value)
+            return value
+
         @wraps(method)
         def wrapper(self, *args, **kwargs):
+
             # Create a unique key based on the method name and arguments
-            key = (method.__name__, args, frozenset(kwargs.items()))
+            key = (method.__name__, args, frozenset((k, make_hashable(v)) for k, v in kwargs.items()))
             if key in self._cached_functions:
                 return self._cached_functions[key]
 
@@ -435,7 +444,7 @@ class BiorbdModel:
         return tuple(s.to_string() for s in self.model.nameDof())
 
     @property
-    def contact_names(self) -> tuple[str, ...]:
+    def rigid_contact_names(self) -> tuple[str, ...]:
         return tuple(s.to_string() for s in self.model.contactNames())
 
     @property
@@ -501,11 +510,11 @@ class BiorbdModel:
 
         # "type of external force": (function to call, number of force components)
         force_mapping = {
-            "in_global": (_add_global_force, 6),
-            "torque_in_global": (_add_torque_global, 3),
-            "translational_in_global": (_add_translational_global, 3),
-            "in_local": (_add_local_force, 6),
-            "torque_in_local": (_add_torque_local, 3),
+            "in_global": (self.external_force_set.add_global_force, 6),
+            "torque_in_global": (self.external_force_set.add_torque_global, 3),
+            "translational_in_global": (self.external_force_set.add_translational_global, 3),
+            "in_local": (self.external_force_set.add_local_force, 6),
+            "torque_in_local": (self.external_force_set.add_torque_local, 3),
         }
 
         symbolic_counter = 0
@@ -546,18 +555,18 @@ class BiorbdModel:
         int
             The updated symbolic counter.
         """
-        for segment, forces_on_segment in getattr(self.external_force_set, force_type).items():
-            for force in forces_on_segment:
-                force_slicer = slice(symbolic_counter, symbolic_counter + num_force_components)
+        for force_name, force in getattr(self.external_force_set, force_type).items():
+            force_slicer = slice(symbolic_counter, symbolic_counter + num_force_components)
 
-                point_of_application_mx = self._get_point_of_application(force, force_slicer.stop)
+            point_of_application_mx = self._get_point_of_application(force, force_slicer.stop)
 
-                add_force_func(
-                    biorbd_external_forces, segment, self.external_forces[force_slicer], point_of_application_mx
-                )
-                symbolic_counter = force_slicer.stop + (
-                    3 if isinstance(force["point_of_application"], np.ndarray) else 0
-                )
+            add_force_func(
+                biorbd_external_forces,
+                force["segment"],
+                self.external_forces[force_slicer],
+                point_of_application_mx,
+            )
+            symbolic_counter = force_slicer.stop + (3 if isinstance(force["point_of_application"], np.ndarray) else 0)
 
         return symbolic_counter
 
@@ -579,9 +588,53 @@ class BiorbdModel:
         """
         if isinstance(force["point_of_application"], np.ndarray):
             return self.external_forces[slice(stop_index, stop_index + 3)]
+        if isinstance(force["point_of_application"], MX):
+            return self.external_forces[slice(stop_index, stop_index + 3)]
         elif isinstance(force["point_of_application"], str):
             return self.model.marker(self.marker_index(force["point_of_application"]))
-        return None
+        else:
+            return None
+
+    def map_rigid_contact_forces_to_global_forces(
+        self, rigid_contact_forces: MX | SX, q: MX | SX, parameters: MX | SX
+    ) -> MX | SX:
+        """
+        Takes the rigid contact forces and dispatch is to match the external forces.
+        """
+        external_forces = MX.zeros(self.external_force_set.nb_external_forces_components)
+
+        current_index = 0
+        contacts_to_add = 0
+        for i_contact in range(self.nb_rigid_contacts):
+            # Skip the moments
+            contacts_to_add += 3
+
+            # Add the forces to the right place
+            available_axes = np.array(self.rigid_contact_axes_index(i_contact))
+            contact_force_idx = range(current_index, current_index + available_axes.shape[0])
+            for i, idx in enumerate(contact_force_idx):
+                external_forces[contacts_to_add + available_axes[i]] += rigid_contact_forces[idx]
+            current_index += available_axes.shape[0]
+            contacts_to_add += 3
+
+            # Add the point of application to the right place
+            external_forces[contacts_to_add : contacts_to_add + 3] = self.rigid_contact_position(i_contact)(
+                q, parameters
+            )
+            contacts_to_add += 3
+
+        return external_forces
+
+    def map_soft_contact_forces_to_global_forces(self, soft_contact_forces: MX | SX) -> MX | SX:
+        """
+        Takes the soft contact forces and dispatch is to match the external forces.
+        """
+
+        external_forces = MX.zeros(9 * self.nb_soft_contacts)
+        for i_contact in range(self.nb_soft_contacts):
+            external_forces[i_contact * 9 : i_contact * 9 + 6] = soft_contact_forces[i_contact * 6 : i_contact * 6 + 6]
+
+        return external_forces
 
     @cache_function
     def forward_dynamics(self, with_contact: bool = False) -> Function:
@@ -684,6 +737,41 @@ class BiorbdModel:
         return casadi_fun
 
     @cache_function
+    def rigid_contact_velocity(self, contact_index: int, contact_axis: list[int, ...] = None) -> Function:
+        contact_axis = [0, 1, 2] if contact_axis is None else contact_axis
+        q_biorbd = GeneralizedCoordinates(self.q)
+        qdot_biorbd = GeneralizedVelocity(self.qdot)
+        biorbd_return = self.model.rigidContactVelocity(q_biorbd, qdot_biorbd, contact_index, True).to_mx()[
+            contact_axis
+        ]
+        casadi_fun = Function(
+            "rigid_contact_velocity",
+            [self.q, self.qdot, self.parameters],
+            [biorbd_return],
+            ["q", "qdot", "parameters"],
+            ["rigid_contact_velocity"],
+        )
+        return casadi_fun
+
+    @cache_function
+    def rigid_contact_acceleration(self, contact_index: int, contact_axis: list[int] = None) -> Function:
+        contact_axis = [0, 1, 2] if contact_axis is None else contact_axis
+        q_biorbd = GeneralizedCoordinates(self.q)
+        qdot_biorbd = GeneralizedVelocity(self.qdot)
+        qddot_biorbd = GeneralizedAcceleration(self.qddot)
+        biorbd_return = self.model.rigidContactAcceleration(
+            q_biorbd, qdot_biorbd, qddot_biorbd, contact_index, True
+        ).to_mx()[contact_axis]
+        casadi_fun = Function(
+            "rigid_contact_acceleration",
+            [self.q, self.qdot, self.qddot, self.parameters],
+            [biorbd_return],
+            ["q", "qdot", "qddot", "parameters"],
+            ["rigid_contact_acceleration"],
+        )
+        return casadi_fun
+
+    @cache_function
     def forces_on_each_rigid_contact_point(self) -> Function:
         """
         Returns the 3D force acting on each contact point in the global reference frame computed from the constrained forward dynamics.
@@ -696,7 +784,7 @@ class BiorbdModel:
         forces_on_each_point = None
         current_index = 0
         for i_contact in range(self.nb_rigid_contacts):
-            available_axes = np.array(self.rigid_contact_index(i_contact))
+            available_axes = np.array(self.rigid_contact_axes_index(i_contact))
             contact_force_idx = range(current_index, current_index + available_axes.shape[0])
             current_force = MX.zeros(3)
             for i, contact_to_add in enumerate(contact_force_idx):
@@ -853,15 +941,15 @@ class BiorbdModel:
         """
         return self.model.nbContacts()
 
-    def rigid_contact_index(self, contact_index) -> tuple:
+    def rigid_contact_axes_index(self, contact_index) -> list:
         """
         Returns the axis index of this specific rigid contact.
         Example:
             First contact with axis YZ
             Second contact with axis Z
-            rigid_contact_index(0) = (1, 2)
+            rigid_contact_axes_index(0) = (1, 2)
         """
-        return self.model.rigidContacts()[contact_index].availableAxesIndices()
+        return list(self.model.rigidContacts()[contact_index].availableAxesIndices())
 
     @cache_function
     def markers_velocities(self, reference_index=None) -> list[MX]:
@@ -985,25 +1073,7 @@ class BiorbdModel:
         )
         return casadi_fun
 
-    @cache_function
-    def rigid_contact_acceleration(self, contact_index, contact_axis) -> Function:
-        q_biorbd = GeneralizedCoordinates(self.q)
-        qdot_biorbd = GeneralizedVelocity(self.qdot)
-        qddot_biorbd = GeneralizedAcceleration(self.qddot)
-        biorbd_return = self.model.rigidContactAcceleration(
-            q_biorbd, qdot_biorbd, qddot_biorbd, contact_index, True
-        ).to_mx()[contact_axis]
-        casadi_fun = Function(
-            "rigid_contact_acceleration",
-            [self.q, self.qdot, self.qddot, self.parameters],
-            [biorbd_return],
-            ["q", "qdot", "qddot", "parameters"],
-            ["rigid_contact_acceleration"],
-        )
-        return casadi_fun
-
-    @cache_function
-    def markers_jacobian(self) -> Function:
+    def markers_jacobian(self) -> list[MX]:
         biorbd_return = [m.to_mx() for m in self.model.markersJacobian(GeneralizedCoordinates(self.q))]
         casadi_fun = Function(
             "markers_jacobian",

@@ -297,6 +297,7 @@ def prepare_ocp(
             expand_continuity=False,
             phase=i,
             phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
+            ode_solver=OdeSolver.RK4(n_integration_steps=1),
         )
 
     x_bounds = BoundsList()
@@ -376,7 +377,6 @@ def prepare_ocp(
         parameter_init=parameters_init,
         control_type=ControlType.CONSTANT,
         use_sx=use_sx,
-        ode_solver=OdeSolver.RK4(n_integration_steps=1),
     )
 
 

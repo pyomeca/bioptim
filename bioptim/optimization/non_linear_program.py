@@ -41,8 +41,10 @@ class NonLinearProgram:
         The dynamic function used during the current phase dxdt = f(x,u,p)
     extra_dynamics_func: Callable
         The extra dynamic function used during the current phase dxdt = f(x,u,p)
-    implicit_dynamics_func: Callable
+    dynamics_defects_func: Callable
         The implicit dynamic function used during the current phase f(x,u,p,xdot) = 0
+    extra_dynamics_defects_func: Callable
+        The extra implicit dynamic function used during the current phase f(x,u,p,xdot) = 0
     dynamics_type: Dynamics
         The dynamic option declared by the user for the current phase
     g: list[list[Constraint]]
@@ -133,10 +135,12 @@ class NonLinearProgram:
         self.dt = None
         self.dynamics = []
         self.extra_dynamics = []
+        self.extra_dynamics_defects = []
         self.dynamics_evaluation = DynamicsEvaluation()
         self.dynamics_func = None
         self.extra_dynamics_func: list = []
-        self.implicit_dynamics_func = None
+        self.dynamics_defects_func = None
+        self.extra_dynamics_defects_func: list = []
         self.dynamics_type = None
         self.g = []
         self.g_internal = []
@@ -280,13 +284,13 @@ class NonLinearProgram:
 
     def update_init(self, x_init, u_init, a_init):
 
-        if x_init is not None:
+        if x_init is not None or a_init is not None:
             not_direct_collocation = not self.ode_solver.is_direct_collocation
-            init_all_point = x_init.type == InterpolationType.ALL_POINTS
+            x_init_all_point = x_init.type == InterpolationType.ALL_POINTS if x_init is not None else False
+            a_init_all_point = a_init.type == InterpolationType.ALL_POINTS if a_init is not None else False
 
-            if not_direct_collocation and init_all_point:
+            if not_direct_collocation and (x_init_all_point or a_init_all_point):
                 raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
-                # TODO @ipuch in PR #907, add algebraic states to the error message
 
         self._update_init(
             init=x_init,
@@ -419,21 +423,23 @@ class NonLinearProgram:
             return 1
         return self.dynamics[node_idx].shape_xf[1] + (1 if self.ode_solver.duplicate_starting_point else 0)
 
-    def n_states_stepwise_steps(self, node_idx) -> int:
+    def n_states_stepwise_steps(self, node_idx: int, ode_solver: OdeSolver = None) -> int:
         """
         Parameters
         ----------
         node_idx: int
             The index of the node
-
+        ode_solver: OdeSolver
+            The ode solver to use (it is useful for reintegration of COLLOCATION solutions)
         Returns
         -------
         The number of states
         """
+        ode_solver = ode_solver if ode_solver is not None else self.ode_solver
         if node_idx >= self.ns:
             return 1
-        if self.ode_solver.is_direct_collocation:
-            return self.dynamics[node_idx].shape_xall[1] - (1 if not self.ode_solver.duplicate_starting_point else 0)
+        if ode_solver.is_direct_collocation:
+            return self.dynamics[node_idx].shape_xall[1] - (1 if not ode_solver.duplicate_starting_point else 0)
         else:
             return self.dynamics[node_idx].shape_xall[1]
 
@@ -633,12 +639,12 @@ class NonLinearProgram:
         return out
 
     def get_external_forces(
-        self, states: MX.sym, controls: MX.sym, algebraic_states: MX.sym, numerical_timeseries: MX.sym
+        self, name: str, states: MX.sym, controls: MX.sym, algebraic_states: MX.sym, numerical_timeseries: MX.sym
     ):
 
         external_forces = self.cx(0, 1)
         external_forces = self.retrieve_forces(
-            "external_forces", external_forces, states, controls, algebraic_states, numerical_timeseries
+            name, external_forces, states, controls, algebraic_states, numerical_timeseries
         )
 
         return external_forces

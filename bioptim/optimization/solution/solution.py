@@ -721,24 +721,25 @@ class Solution:
         integrator: SolutionIntegrator
             The integrator to use for the integration
         """
-
         has_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]) > 0
-        if has_direct_collocation and integrator == SolutionIntegrator.OCP:
-            raise ValueError(
-                "When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
-                "we cannot use the SolutionIntegrator.OCP.\n"
-                "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
-                " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE"
-            )
+        if has_direct_collocation:
+            if integrator == SolutionIntegrator.OCP:
+                raise ValueError(
+                    "When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
+                    "we cannot use the SolutionIntegrator.OCP.\n"
+                    "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
+                    " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE"
+                )
 
         has_trapezoidal = sum([isinstance(nlp.ode_solver, OdeSolver.TRAPEZOIDAL) for nlp in self.ocp.nlp]) > 0
-        if has_trapezoidal and integrator == SolutionIntegrator.OCP:
-            raise ValueError(
-                "When the ode_solver of the Optimal Control Problem is OdeSolver.TRAPEZOIDAL, "
-                "we cannot use the SolutionIntegrator.OCP.\n"
-                "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
-                " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
-            )
+        if has_trapezoidal:
+            if integrator == SolutionIntegrator.OCP:
+                raise ValueError(
+                    "When the ode_solver of the Optimal Control Problem is OdeSolver.TRAPEZOIDAL, "
+                    "we cannot use the SolutionIntegrator.OCP.\n"
+                    "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
+                    " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
+                )
 
         params = self._parameters.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)[0][0]
         t_spans = self.t_span(time_alignment=TimeAlignment.CONTROLS)
@@ -903,7 +904,7 @@ class Solution:
                     if sensory_noise_index is not None:
                         params_this_time[node][sensory_noise_index, :] = sensory_noise[:, node, i_random]
 
-                    if len(nlp.extra_dynamics_func) > 1:
+                    if len(nlp.extra_dynamics_func) > 1 or len(nlp.extra_dynamics_defects_func) > 1:
                         raise NotImplementedError("Noisy integration is not available for multiple extra dynamics.")
                     cas_func = Function(
                         "noised_extra_dynamics",

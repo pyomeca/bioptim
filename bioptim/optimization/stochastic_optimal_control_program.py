@@ -6,7 +6,7 @@ from casadi import DM_eye, vertcat, Function, horzcat
 from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVectorHelper
 from ..dynamics.configure_problem import DynamicsList, Dynamics
-from ..dynamics.ode_solvers import OdeSolver
+from ..dynamics.ode_solvers import OdeSolver, OdeSolverBase
 from ..limits.constraints import (
     ConstraintFcn,
     ConstraintList,
@@ -74,7 +74,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         **kwargs,
     ):
         _check_multi_threading_and_problem_type(problem_type, **kwargs)
-        _check_has_no_ode_solver_defined(**kwargs)
         _check_has_no_phase_dynamics_shared_during_the_phase(problem_type, **kwargs)
 
         self.problem_type = problem_type
@@ -86,6 +85,10 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             parameter_bounds = BoundsList()
         if parameter_init is None:
             parameter_init = InitialGuessList()
+
+        # Integrator
+        for dyn in dynamics:
+            dyn.ode_solver = self._set_default_ode_solver()
 
         if "motor_noise" not in parameters.keys():
             n_motor_noise = bio_model.motor_noise_magnitude.shape[0]
@@ -145,7 +148,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             parameter_init=parameter_init,
             parameter_objectives=parameter_objectives,
             parameter_constraints=parameter_constraints,
-            ode_solver=None,
             control_type=control_type,
             variable_mappings=variable_mappings,
             time_phase_mapping=time_phase_mapping,
@@ -619,22 +621,6 @@ def _check_multi_threading_and_problem_type(problem_type, **kwargs):
                     "Multi-threading is not possible yet while solving a trapezoidal stochastic ocp."
                     "n_thread is set to 1 by default."
                 )
-
-
-def _check_has_no_ode_solver_defined(**kwargs):
-    if "ode_solver" in kwargs:
-        raise ValueError(
-            "The ode_solver cannot be defined for a stochastic ocp. "
-            "The value is chosen based on the type of problem solved:"
-            "\n- TRAPEZOIDAL_EXPLICIT: OdeSolver.TRAPEZOIDAL() "
-            "\n- TRAPEZOIDAL_IMPLICIT: OdeSolver.TRAPEZOIDAL() "
-            "\n- COLLOCATION: "
-            "OdeSolver.COLLOCATION("
-            "method=problem_type.method, "
-            "polynomial_degree=problem_type.polynomial_degree, "
-            "duplicate_starting_point=True"
-            ")"
-        )
 
 
 def _check_has_no_phase_dynamics_shared_during_the_phase(problem_type, **kwargs):
