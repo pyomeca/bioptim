@@ -13,14 +13,6 @@ from .biorbd_model import BiorbdModel
 from ..holonomic_constraints import HolonomicConstraintsList
 from ...optimization.parameters import ParameterList
 
-from ...misc.parameters_types import (
-    Str,
-    Float,
-    NpArray,
-    IntListOptional,
-    AnyList,
-)
-
 
 class HolonomicBiorbdModel(BiorbdModel):
     """
@@ -29,8 +21,8 @@ class HolonomicBiorbdModel(BiorbdModel):
 
     def __init__(
         self,
-        bio_model: Str | biorbd.Model,
-        friction_coefficients: NpArray = None,
+        bio_model: str | biorbd.Model,
+        friction_coefficients: np.ndarray = None,
         parameters: ParameterList = None,
     ):
         super().__init__(bio_model, friction_coefficients, parameters)
@@ -79,14 +71,14 @@ class HolonomicBiorbdModel(BiorbdModel):
 
         return wrapper
 
-    def set_newton_tol(self, newton_tol: Float):
+    def set_newton_tol(self, newton_tol: float):
         self._newton_tol = newton_tol
 
     def set_holonomic_configuration(
         self,
         constraints_list: HolonomicConstraintsList,
-        dependent_joint_index: IntListOptional = None,
-        independent_joint_index: IntListOptional = None,
+        dependent_joint_index: list[int] = None,
+        independent_joint_index: list[int] = None,
     ):
         """
         The joint indexes are not mandatory because a HolonomicBiorbdModel can be used without the partitioned dynamics,
@@ -241,11 +233,11 @@ class HolonomicBiorbdModel(BiorbdModel):
         return len(self._dependent_joint_index)
 
     @property
-    def dependent_joint_index(self) -> AnyList:
+    def dependent_joint_index(self) -> list:
         return self._dependent_joint_index
 
     @property
-    def independent_joint_index(self) -> AnyList:
+    def independent_joint_index(self) -> list:
         return self._independent_joint_index
 
     def _add_holonomic_constraint(

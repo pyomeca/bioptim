@@ -8,14 +8,13 @@ from .viewer_utils import _prepare_tracked_markers_for_animation
 from .biorbd_model import BiorbdModel
 from .multi_biorbd_model import MultiBiorbdModel
 from ...optimization.solution.solution_data import SolutionMerge
-from ...misc.parameters_types import Bool, AnyList, NpArray, Int
 
 
 def animate_with_pyorerun(
     ocp,
     solution,
-    show_now: Bool,
-    show_tracked_markers: Bool,
+    show_now: bool,
+    show_tracked_markers: bool,
     **kwargs: Any,
 ) -> None:
     try:
@@ -27,9 +26,7 @@ def animate_with_pyorerun(
     launch_rerun(data_to_animate, show_now, tracked_markers, models, **kwargs)
 
 
-def prepare_pyorerun_animation(
-    ocp, solution, show_now: Bool = True, show_tracked_markers: Bool = True
-) -> tuple[AnyList, AnyList, None]:
+def prepare_pyorerun_animation(ocp, solution, show_now=True, show_tracked_markers=True) -> tuple[list, list, None]:
     """Extract data from the solution to isolate the data for each phase and each model"""
     n_phases = ocp.n_phases
     data_to_animate = solution.decision_states(to_merge=SolutionMerge.NODES)
@@ -67,7 +64,7 @@ def set_time(solution, n_phases, data_to_animate):
     return data_to_animate
 
 
-def set_data_for_multibiorbd_model(nlp, data_to_animate: AnyList, models: AnyList, i: Int):
+def set_data_for_multibiorbd_model(nlp, data_to_animate: list, models: list, i: int):
     """Duplicate the data for each model in the MultiBiorbdModel and models"""
     models += [model for model in nlp.model.models]
     temp_data_animate = [data_to_animate[i].copy() for _ in range(nlp.model.nb_models)]
@@ -86,8 +83,8 @@ def set_data_for_multibiorbd_model(nlp, data_to_animate: AnyList, models: AnyLis
 
 def launch_rerun(
     solution: "SolutionData",
-    show_now: Bool = True,
-    tracked_markers: list[NpArray] = None,
+    show_now: bool = True,
+    tracked_markers: list[np.ndarray] = None,
     models: BiorbdModel | list[BiorbdModel] = None,
     **kwargs: Any,
 ):

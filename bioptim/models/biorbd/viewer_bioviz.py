@@ -6,15 +6,14 @@ from .viewer_utils import _prepare_tracked_markers_for_animation
 from ...limits.objective_functions import ObjectiveFcn
 from ...misc.enums import Node
 from ...misc.utils import check_version
-from ...misc.parameters_types import Int, Bool, NpArray, AnyList, AnyListOptional
 
 
 def animate_with_bioviz_for_loop(
     ocp: "OptimalControlProgram",
     solution: "Solution",
-    show_now: Bool = True,
-    show_tracked_markers: Bool = True,
-    n_frames: Int = None,
+    show_now: bool = True,
+    show_tracked_markers: bool = True,
+    n_frames: int = None,
     **kwargs,
 ):
     """
@@ -57,10 +56,10 @@ def animate_with_bioviz_for_loop(
 def animate_with_bioviz(
     ocp,
     solution: "SolutionData",
-    show_now: Bool = True,
-    tracked_markers: list[NpArray] = None,
+    show_now: bool = True,
+    tracked_markers: list[np.ndarray] = None,
     **kwargs: Any,
-) -> AnyListOptional:
+) -> None | list:
     try:
         import bioviz
     except ModuleNotFoundError:
@@ -107,7 +106,7 @@ def animate_with_bioviz(
     return play_bioviz_animation(all_bioviz) if show_now else all_bioviz
 
 
-def play_bioviz_animation(all_bioviz: AnyList) -> None:
+def play_bioviz_animation(all_bioviz: list) -> None:
     """Play the animation of the list of bioviz objects"""
     b_is_visible = [True] * len(all_bioviz)
     while sum(b_is_visible):
@@ -119,7 +118,7 @@ def play_bioviz_animation(all_bioviz: AnyList) -> None:
     return None
 
 
-def count_in_track_markers(nlps, n_frames) -> Int:
+def count_in_track_markers(nlps, n_frames) -> int:
     """Ipuch, Legacy Code: I'm very not sure what it does if anyone knows, fix the name of the function"""
     for idx_phase in range(len(nlps)):
         for objective in nlps[idx_phase].J:
@@ -133,7 +132,7 @@ def count_in_track_markers(nlps, n_frames) -> Int:
     return n_frames
 
 
-def interpolate_data(solution, ocp, n_frames) -> AnyList:
+def interpolate_data(solution, ocp, n_frames) -> list:
     """Interpolate the data to be animated"""
     data_to_animate = []
     if n_frames == 0:

@@ -8,8 +8,6 @@ from ...misc.mapping import BiMappingList
 from ...optimization.parameters import ParameterList
 from ...optimization.variable_scaling import VariableScaling
 
-from ...misc.parameters_types import Int, Str, Bool, NpArray
-
 
 def _compute_torques_from_noise_and_feedback_default(
     nlp, time, states, controls, parameters, algebraic_states, numerical_timeseries, sensory_noise, motor_noise
@@ -41,17 +39,17 @@ class StochasticBiorbdModel(BiorbdModel):
 
     def __init__(
         self,
-        bio_model: Str | BiorbdModel,
-        n_references: Int,
-        n_feedbacks: Int,
-        n_noised_states: Int,
-        n_noised_controls: Int,
-        sensory_noise_magnitude: NpArray | DM,
-        motor_noise_magnitude: NpArray | DM,
+        bio_model: str | BiorbdModel,
+        n_references: int,
+        n_feedbacks: int,
+        n_noised_states: int,
+        n_noised_controls: int,
+        sensory_noise_magnitude: np.ndarray | DM,
+        motor_noise_magnitude: np.ndarray | DM,
         sensory_reference: Callable,
         compute_torques_from_noise_and_feedback: Callable = _compute_torques_from_noise_and_feedback_default,
         motor_noise_mapping: BiMappingList = BiMappingList(),
-        use_sx: Bool = False,
+        use_sx: bool = False,
         parameters: ParameterList = None,
         **kwargs,
     ):

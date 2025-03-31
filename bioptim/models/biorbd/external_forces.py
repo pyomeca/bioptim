@@ -1,8 +1,6 @@
 import numpy as np
 from casadi import MX, vertcat
 
-from ...misc.parameters_types import Int, AnyDict, Bool, NpArray, Str, StrTuple, NpArrayOptional, AnyList
-
 
 class ExternalForceSetTimeSeries:
     """
@@ -10,23 +8,23 @@ class ExternalForceSetTimeSeries:
 
     Attributes
     ----------
-    _nb_frames : Int
+    _nb_frames : int
         The number of frames in the time series.
-    in_global : AnyDict
+    in_global : dict[str, {}]
         Dictionary to store global external forces for each segment.
-    torque_in_global : AnyDict
+    torque_in_global : dict[str, {}]
         Dictionary to store global torques for each segment.
-    translational_in_global : AnyDict
+    translational_in_global : dict[str, {}]
         Dictionary to store global translational forces for each segment.
-    in_local : AnyDict
+    in_local : dict[str, {}]
         Dictionary to store local external forces for each segment.
-    torque_in_local : AnyDict
+    torque_in_local : dict[str, {}]
         Dictionary to store local torques for each segment.
-    _bind : Bool
+    _bind : bool
         Flag to indicate if the external forces are binded and cannot be modified.
     """
 
-    def __init__(self, nb_frames: Int):
+    def __init__(self, nb_frames: int):
         """
         Initialize the ExternalForceSetTimeSeries with the number of frames.
 
@@ -37,16 +35,16 @@ class ExternalForceSetTimeSeries:
         """
         self._nb_frames = nb_frames
 
-        self.in_global: dict[str, AnyDict] = {}
-        self.torque_in_global: dict[str, AnyDict] = {}
-        self.translational_in_global: dict[str, AnyDict] = {}
-        self.in_local: dict[str, AnyDict] = {}
-        self.torque_in_local: dict[str, AnyDict] = {}
+        self.in_global: dict[str, {}] = {}
+        self.torque_in_global: dict[str, {}] = {}
+        self.translational_in_global: dict[str, {}] = {}
+        self.in_local: dict[str, {}] = {}
+        self.torque_in_local: dict[str, {}] = {}
 
         self._bind_flag = False
 
     @property
-    def _can_be_modified(self) -> Bool:
+    def _can_be_modified(self) -> bool:
         return not self._bind_flag
 
     def _check_if_can_be_modified(self) -> None:
@@ -54,17 +52,17 @@ class ExternalForceSetTimeSeries:
             raise RuntimeError("External forces have been binded and cannot be modified anymore.")
 
     @property
-    def nb_frames(self) -> Int:
+    def nb_frames(self) -> int:
         return self._nb_frames
 
-    def _check_values_frame_shape(self, values: NpArray) -> None:
+    def _check_values_frame_shape(self, values: np.ndarray) -> None:
         if values.shape[1] != self._nb_frames:
             raise ValueError(
                 f"External forces must have the same number of columns as the number of shooting points, "
                 f"got {values.shape[1]} instead of {self._nb_frames}"
             )
 
-    def add(self, segment: str, values: NpArray, point_of_application: NpArrayOptional | Str = None):
+    def add(self, segment: str, values: np.ndarray, point_of_application: np.ndarray | str = None):
         self._check_if_can_be_modified()
         if values.shape[0] != 6:
             raise ValueError(f"External forces must have 6 rows, got {values.shape[0]}")
@@ -76,7 +74,7 @@ class ExternalForceSetTimeSeries:
         self.in_global = ensure_list(self.in_global, segment)
         self.in_global[segment].append({"values": values, "point_of_application": point_of_application})
 
-    def add_torque(self, segment: Str, values: NpArray):
+    def add_torque(self, segment: str, values: np.ndarray):
         self._check_if_can_be_modified()
         if values.shape[0] != 3:
             raise ValueError(f"External torques must have 3 rows, got {values.shape[0]}")
@@ -86,7 +84,7 @@ class ExternalForceSetTimeSeries:
         self.torque_in_global[segment].append({"values": values, "point_of_application": None})
 
     def add_translational_force(
-        self, segment: Str, values: NpArray, point_of_application_in_local: NpArrayOptional | Str = None
+        self, segment: str, values: np.ndarray, point_of_application_in_local: np.ndarray | str = None
     ):
         self._check_if_can_be_modified()
         if values.shape[0] != 3:
@@ -103,7 +101,7 @@ class ExternalForceSetTimeSeries:
         )
 
     def add_in_segment_frame(
-        self, segment: Str, values: NpArray, point_of_application_in_local: NpArrayOptional | Str = None
+        self, segment: str, values: np.ndarray, point_of_application_in_local: np.ndarray | str = None
     ):
         """
         Add external forces in the segment frame.
@@ -139,12 +137,12 @@ class ExternalForceSetTimeSeries:
         self.torque_in_local[segment].append({"values": values, "point_of_application": None})
 
     @property
-    def nb_external_forces(self) -> Int:
+    def nb_external_forces(self) -> int:
         attributes = ["in_global", "torque_in_global", "translational_in_global", "in_local", "torque_in_local"]
         return sum([len(values) for attr in attributes for values in getattr(self, attr).values()])
 
     @property
-    def nb_external_forces_components(self) -> Int:
+    def nb_external_forces_components(self) -> int:
         """Return the number of vertical components of the external forces if concatenated in a unique vector"""
         attributes_no_point_of_application = ["torque_in_global", "torque_in_local"]
         attributes_six_components = ["in_global", "in_local"]
@@ -167,7 +165,7 @@ class ExternalForceSetTimeSeries:
 
         return components
 
-    def _check_point_of_application(self, point_of_application: NpArray | Str) -> None:
+    def _check_point_of_application(self, point_of_application: np.ndarray | str) -> None:
         if isinstance(point_of_application, str):
             # The point of application is a string, nothing to check yet
             return
@@ -181,7 +179,7 @@ class ExternalForceSetTimeSeries:
 
         return
 
-    def _check_segment_names(self, segment_names: StrTuple) -> None:
+    def _check_segment_names(self, segment_names: tuple[str, ...]) -> None:
         attributes = ["in_global", "torque_in_global", "translational_in_global", "in_local", "torque_in_local"]
         wrong_segments = []
         for attr in attributes:
@@ -250,7 +248,7 @@ class ExternalForceSetTimeSeries:
         return fext_numerical_time_series
 
 
-def ensure_list(data, key) -> dict[str, AnyList]:
+def ensure_list(data, key) -> dict[str, list]:
     """Ensure that the key exists in the data and the value is a list"""
     if data.get(key) is None:
         data[key] = []
