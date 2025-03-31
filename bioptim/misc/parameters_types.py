@@ -2,6 +2,7 @@ from typing import Any
 import numpy as np
 from typing import TypeAlias
 from casadi import MX, SX, DM
+from biorbd_casadi import Model
 
 Int: TypeAlias = int
 Range: TypeAlias = range
@@ -36,7 +37,6 @@ IntListOptional: TypeAlias = list[int] | None
 StrOrIterable: TypeAlias = str | list[str]
 
 IntOptional: TypeAlias = int | None
-
 FloatOptional: TypeAlias = float | None
 
 StrOptional: TypeAlias = str | None
