@@ -36,6 +36,7 @@ IntListOptional: TypeAlias = list[int] | None
 StrOrIterable: TypeAlias = str | list[str]
 
 IntOptional: TypeAlias = int | None
+
 FloatOptional: TypeAlias = float | None
 
 StrOptional: TypeAlias = str | None
