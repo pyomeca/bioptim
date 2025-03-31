@@ -28,6 +28,7 @@ from bioptim import (
     ControlType,
     Axis,
     SolutionMerge,
+    OdeSolver,
 )
 
 from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
@@ -189,6 +190,7 @@ def prepare_socp(
         problem_type=problem_type,
         expand_dynamics=True,
         with_friction=True,
+        ode_solver=OdeSolver.COLLOCATION,  # This will be overwritten by the SocpType
     )
 
     x_bounds = BoundsList()

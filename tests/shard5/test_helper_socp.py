@@ -3,7 +3,6 @@ import pytest
 from bioptim import SocpType, PhaseDynamics
 from bioptim.optimization.stochastic_optimal_control_program import (
     _check_multi_threading_and_problem_type,
-    _check_has_no_ode_solver_defined,
     _check_has_no_phase_dynamics_shared_during_the_phase,
 )
 
@@ -24,16 +23,6 @@ def test_check_multi_threading_and_problem_type_n_thread_not_1():
 
 def test_check_multi_threading_and_problem_type_collocation():
     _check_multi_threading_and_problem_type(SocpType.COLLOCATION)
-
-
-# Tests for _check_has_no_ode_solver_defined()
-def test_check_has_no_ode_solver_defined_with_ode_solver():
-    with pytest.raises(ValueError, match="The ode_solver cannot be defined for a stochastic ocp"):
-        _check_has_no_ode_solver_defined(ode_solver="some_solver")
-
-
-def test_check_has_no_ode_solver_defined_without_ode_solver():
-    _check_has_no_ode_solver_defined()
 
 
 # Tests for _check_has_no_phase_dynamics_shared_during_the_phase()

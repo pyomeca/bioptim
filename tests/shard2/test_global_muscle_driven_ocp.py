@@ -16,9 +16,8 @@ from ..utils import TestUtils
 def test_muscle_driven_ocp(ode_solver, phase_dynamics):
     from bioptim.examples.muscle_driven_ocp import static_arm as ocp_module
 
-    # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
-        return
+        pytest.skip("Redundant test")
     if ode_solver == OdeSolver.TRAPEZOIDAL:
         control_type = ControlType.LINEAR_CONTINUOUS
     else:

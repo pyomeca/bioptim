@@ -164,8 +164,8 @@ class BioModel(Protocol):
         return ()
 
     @property
-    def contact_names(self) -> tuple[str, ...]:
-        """Get the name of the contacts"""
+    def rigid_contact_names(self) -> tuple[str, ...]:
+        """Get the name of the rigid contacts"""
         return ()
 
     @property
@@ -201,6 +201,18 @@ class BioModel(Protocol):
         """
         reorder the qddot, from the root dof and the joints dof
         args: qddot_root, qddot_joints
+        """
+
+    def map_rigid_contact_forces_to_global_forces(
+        self, rigid_contact_forces: MX | SX, q: MX | SX, parameters: MX | SX
+    ) -> MX | SX:
+        """
+        Takes the rigid contact forces and dispatch is to match the external forces.
+        """
+
+    def map_soft_contact_forces_to_global_forces(self, soft_contact_forces: MX | SX) -> MX | SX:
+        """
+        Takes the soft contact forces and dispatch is to match the external forces.
         """
 
     @cache_function

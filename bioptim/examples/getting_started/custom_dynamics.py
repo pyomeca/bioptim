@@ -30,6 +30,7 @@ from bioptim import (
     Solver,
     DynamicsEvaluation,
     PhaseDynamics,
+    ContactType,
 )
 
 
@@ -44,7 +45,10 @@ def custom_dynamics(
     my_additional_factor=1,
 ) -> DynamicsEvaluation:
     """
-    The custom dynamics function that provides the derivative of the states: dxdt = f(x, u, p)
+    The custom dynamics function that provides the derivative of the states: dxdt = f(x, u, p) when using an explicit dynamics integrators like RK4.
+    Otherwise, the custom dynamics function provides the defects to apply at each collocation point when using implicit dynamics integrators like COLLOCATION or IRK.
+
+    **Note**: If you are using an implicit integrator, it is not possible to reintegrate the solution with this integrator. Therefore, you should integrate it using one of scipy's integrators. Moreover, you should provide the explicit derivative of your states (dxdt, the first case of the if statement below) for scipy's integrator to work.
 
     Parameters
     ----------
@@ -58,6 +62,8 @@ def custom_dynamics(
         The parameters acting on the system
     algebraic_states: MX | SX
         The algebraic states of the system
+    numerical_timeseries: MX | SX
+        The numerical timeseries of the system
     nlp: NonLinearProgram
         A reference to the phase
     my_additional_factor: int
@@ -74,17 +80,31 @@ def custom_dynamics(
 
     # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
     dq = DynamicsFunctions.compute_qdot(nlp, q, qdot) * my_additional_factor
-    ddq = nlp.model.forward_dynamics()(q, qdot, tau, [], nlp.parameters.cx)
 
-    # the user has to choose if want to return the explicit dynamics dx/dt = f(x,u,p)
-    # as the first argument of DynamicsEvaluation or
-    # the implicit dynamics f(x,u,p,xdot)=0 as the second argument
-    # which may be useful for IRK or COLLOCATION integrators
-    return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
+    ddq = nlp.model.forward_dynamics()(q, qdot, tau, [], nlp.parameters.cx)
+    dxdt = vertcat(dq, ddq)
+
+    defects = None
+    if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
+        """
+        Please note that when using OdeSolver.COLLOCATION the dynamics is imposed using the defects and not dxdt.
+        However, if you want to reintegrate the solution using sol.integrate(), dxdt must be provided.
+        """
+        slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.cx)
+        slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.cx)
+        ddq = nlp.model.forward_dynamics()(q, qdot, tau, [], nlp.parameters.cx)
+        # Theoretically, the defect should be "dxdt - vertcat(slope_q, slope_qdot)", but for numerical reasons, it is recommended to use this version instead
+        defects = vertcat(slope_q, slope_qdot) * nlp.dt - dxdt * nlp.dt
+
+    return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
 
 def custom_configure(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram, my_additional_factor=1, numerical_data_timeseries=None
+    ocp: OptimalControlProgram,
+    nlp: NonLinearProgram,
+    contact_type: list[ContactType],
+    my_additional_factor=1,
+    numerical_data_timeseries=None,
 ):
     """
     Tell the program which variables are states and controls.
@@ -99,7 +119,7 @@ def custom_configure(
     my_additional_factor: int
         An example of an extra parameter sent by the user
     """
-
+    # The slopes of the polynomial are defined using the derivative of the states
     ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
     ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
     ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
@@ -131,8 +151,8 @@ def prepare_ocp(
     phase_dynamics: PhaseDynamics
         If the dynamics equation within a phase is unique or changes at each node.
         PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
-        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
-        are applied at each node
+        a phase. PhaseDynamics.ONE_PER_NODE should also be used when multi-node penalties with more than 3 nodes or with COLLOCATION (cx_intermediate_list) are added to the OCP.
+
     expand_dynamics: bool
         If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
         the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
@@ -163,6 +183,7 @@ def prepare_ocp(
             my_additional_factor=1,
             expand_dynamics=expand_dynamics,
             phase_dynamics=phase_dynamics,
+            ode_solver=ode_solver,
         )
     else:
         dynamics.add(
@@ -170,6 +191,7 @@ def prepare_ocp(
             dynamic_function=custom_dynamics,
             expand_dynamics=expand_dynamics,
             phase_dynamics=phase_dynamics,
+            ode_solver=ode_solver,
         )
 
     # Constraints
@@ -201,7 +223,6 @@ def prepare_ocp(
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         constraints=constraints,
-        ode_solver=ode_solver,
         use_sx=use_sx,
     )
 

@@ -71,6 +71,7 @@ class PhaseTransition(MultinodePenalty):
         self.bounds = Bounds("phase_transition", interpolation=InterpolationType.CONSTANT)
         self.node = Node.TRANSITION
         self.quadratic = True
+        self.is_transition = True
 
     def add_or_replace_to_penalty_pool(self, ocp, nlp):
         super(PhaseTransition, self).add_or_replace_to_penalty_pool(ocp, nlp)
