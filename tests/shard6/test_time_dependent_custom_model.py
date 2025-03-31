@@ -135,10 +135,10 @@ class Model:
 
     def declare_variables(
         self,
-            ocp: OptimalControlProgram,
-            nlp: NonLinearProgram,
-            numerical_data_timeseries: dict[str, np.ndarray] = None,
-            contact_type: list[ContactType] = []
+        ocp: OptimalControlProgram,
+        nlp: NonLinearProgram,
+        numerical_data_timeseries: dict[str, np.ndarray] = None,
+        contact_type: list[ContactType] = [],
     ):
         name = "Cn"
         name_cn = [name]

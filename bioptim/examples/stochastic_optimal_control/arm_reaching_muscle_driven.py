@@ -135,7 +135,10 @@ def stochastic_forward_dynamics(
 
 
 def configure_stochastic_optimal_control_problem(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None, contact_type: list[ContactType] = []
+    ocp: OptimalControlProgram,
+    nlp: NonLinearProgram,
+    numerical_data_timeseries=None,
+    contact_type: list[ContactType] = [],
 ):
     ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
     ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
