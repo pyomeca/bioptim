@@ -457,7 +457,7 @@ class DynamicsFunctions:
         """
         In DMS and during reintegration of COLLOCATION, the implicit contacts must be swapped for explicit contacts.
         """
-        forward_dynamics_contact_type = contact_type
+        forward_dynamics_contact_type = []
         for contact in contact_type:
             if contact == ContactType.SOFT_IMPLICIT:
                 forward_dynamics_contact_type += [ContactType.SOFT_EXPLICIT]
