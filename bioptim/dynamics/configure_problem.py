@@ -213,6 +213,7 @@ class ConfigureProblem:
     def torque_driven_free_floating_base(
         ocp,
         nlp,
+        contact_type: list[ContactType] = [],
         with_passive_torque: bool = False,
         with_ligament: bool = False,
         with_friction: bool = False,
@@ -239,6 +240,9 @@ class ConfigureProblem:
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node.
         """
+
+        if len(contact_type) > 0:
+            raise RuntimeError("Free floating base is by definition without contacts.")
 
         nb_q = nlp.model.nb_q
         nb_qdot = nlp.model.nb_qdot
@@ -410,6 +414,7 @@ class ConfigureProblem:
         ocp,
         nlp,
         problem_type,
+        contact_type,
         with_friction: bool = False,
         with_cholesky: bool = False,
         initial_matrix: DM = None,
@@ -434,6 +439,10 @@ class ConfigureProblem:
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node.
         """
+
+        if len(contact_type) > 0:
+            raise RuntimeError("Free floating base is by definition without contacts.")
+
         n_noised_tau = nlp.model.n_noised_controls
         n_noise = nlp.model.motor_noise_magnitude.shape[0] + nlp.model.sensory_noise_magnitude.shape[0]
         n_noised_states = nlp.model.n_noised_states
@@ -593,6 +602,7 @@ class ConfigureProblem:
     def joints_acceleration_driven(
         ocp,
         nlp,
+        contact_type: list[ContactType] = [],
         numerical_data_timeseries: dict[str, np.ndarray] = None,
     ):
         """
@@ -608,6 +618,10 @@ class ConfigureProblem:
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
+
+        if len(contact_type) > 0:
+            raise RuntimeError("Joint acceleration driven is by definition without contacts.")
+
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
         # Configure qddot joints

@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from bioptim import InterpolationType, PhaseDynamics, OdeSolver
+from bioptim import InterpolationType, PhaseDynamics, OdeSolver, DefectType, ContactType
 from ..utils import TestUtils
 
 
@@ -1538,17 +1538,31 @@ def test_custom_model():
     ocp_module()
 
 
-def test_contact_forces_inverse_dynamics_constraint_muscle():
+@pytest.mark.parametrize("defect_type", [DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS, DefectType.TAU_EQUALS_INVERSE_DYNAMICS])
+@pytest.mark.parametrize("contact_type", [[ContactType.RIGID_EXPLICIT], [ContactType.RIGID_IMPLICIT]])
+def test_contact_forces_inverse_dynamics_constraint_muscle(defect_type, contact_type):
     from bioptim.examples.muscle_driven_with_contact import (
         contact_forces_inverse_dynamics_constraint_muscle as ocp_module,
     )
-
     bioptim_folder = TestUtils.module_folder(ocp_module)
+
+    if defect_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS and ContactType.RIGID_EXPLICIT in contact_type:
+        with pytest.raises(NotImplementedError, match="Inverse dynamics, cannot be used with ContactType.RIGID_EXPLICIT yet"):
+            ocp_module.prepare_ocp(
+                biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts_1muscle.bioMod",
+                phase_time=0.3,
+                n_shooting=10,
+                defect_type=defect_type,
+                contact_type=contact_type,
+            )
+        return
 
     ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts_1muscle.bioMod",
         phase_time=0.3,
         n_shooting=10,
+        defect_type=defect_type,
+        contact_type=contact_type,
     )
 
 

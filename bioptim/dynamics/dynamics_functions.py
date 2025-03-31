@@ -1175,7 +1175,12 @@ class DynamicsFunctions:
         if ContactType.RIGID_IMPLICIT in contact_type:
             if external_forces.shape[0] != 0:
                 raise NotImplementedError("ContactType.RIGID_IMPLICIT cannot be used with external forces yet")
-            contact_forces = nlp.algebraic_states["rigid_contact_forces"].cx
+            if "rigid_contact_forces" in nlp.states:
+                contact_forces = nlp.states["rigid_contact_forces"].cx
+            elif "rigid_contact_forces" in nlp.algebraic_states:
+                contact_forces = nlp.algebraic_states["rigid_contact_forces"].cx
+            else:
+                raise RuntimeError("The key 'rigid_contact_forces' was not found in states or algebraic_states")
             external_forces = vertcat(
                 external_forces,
                 nlp.model.map_rigid_contact_forces_to_global_forces(contact_forces, q, nlp.parameters.cx),

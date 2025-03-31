@@ -39,6 +39,7 @@ from bioptim import (
     SolutionMerge,
     SolutionIntegrator,
     Shooting,
+    ContactType,
 )
 from bioptim.examples.stochastic_optimal_control.common import (
     test_matrix_semi_definite_positiveness,
@@ -342,7 +343,7 @@ def configure_optimal_control_problem(
 
 
 def configure_stochastic_optimal_control_problem(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None
+    ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None, contact_type: list[ContactType] = []
 ):
     ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
     ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)

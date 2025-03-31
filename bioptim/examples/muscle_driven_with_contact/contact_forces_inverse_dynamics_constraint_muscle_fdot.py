@@ -59,7 +59,7 @@ def custom_configure(
     )
 
     # Dynamics
-    ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamics)
+    ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamics, contact_type=contact_type)
 
 
 def custom_dynamics(
@@ -70,6 +70,7 @@ def custom_dynamics(
     algebraic_states: MX | SX,
     numerical_timeseries: MX | SX,
     nlp: NonLinearProgram,
+    contact_type: list[ContactType],
 ) -> DynamicsEvaluation:
     """
     The defects are only evaluated at the collocation nodes, but not at the first node.
@@ -77,7 +78,7 @@ def custom_dynamics(
     # Variables
     q = DynamicsFunctions.get(nlp.states["q"], nlp.states.scaled.cx)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], nlp.states.scaled.cx)
-    rigid_contact_forces = DynamicsFunctions.get(nlp.controls["rigid_contact_forces"], nlp.states.scaled.cx)
+    rigid_contact_forces = DynamicsFunctions.get(nlp.states["rigid_contact_forces"], nlp.states.scaled.cx)  # Extracterd automatically in inverse_dynamics
     residual_tau = DynamicsFunctions.get(nlp.controls["tau"], nlp.controls.scaled.cx)
     mus_activations = DynamicsFunctions.get(nlp.controls["muscles"], nlp.controls.scaled.cx)
     rigid_contact_forces_derivatives = DynamicsFunctions.get(
@@ -95,15 +96,12 @@ def custom_dynamics(
 
     defects = None
     if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
-        # Map to external forces
-        external_forces = nlp.model.map_rigid_contact_forces_to_global_forces(rigid_contact_forces, q, parameters)
-
         # Defects
         slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
         slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
         slope_contacts = DynamicsFunctions.get(nlp.states_dot["rigid_contact_forces"], nlp.states_dot.scaled.cx)
         tau_id = DynamicsFunctions.inverse_dynamics(
-            nlp, q, slope_q, slope_qdot, with_contact=False, external_forces=external_forces
+            nlp, q, qdot, slope_qdot, contact_type=contact_type
         )
 
         # qdot
@@ -166,6 +164,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
         expand_dynamics=expand_dynamics,
         phase_dynamics=PhaseDynamics.ONE_PER_NODE,
         ode_solver=OdeSolver.COLLOCATION(polynomial_degree=3),
+        contact_type=[ContactType.RIGID_IMPLICIT],
     )
 
     # Constraints

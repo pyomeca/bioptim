@@ -13,7 +13,7 @@ from ..limits.multinode_constraint import MultinodeConstraintList
 from ..limits.objective_functions import ParameterObjectiveList
 from ..limits.path_conditions import BoundsList, InitialGuessList
 from ..limits.penalty_controller import PenaltyController
-from ..misc.enums import ControlType
+from ..misc.enums import ControlType, ContactType
 from ..models.biorbd.variational_biorbd_model import VariationalBiorbdModel
 from ..models.protocols.variational_biomodel import VariationalBioModel
 from ..optimization.non_linear_program import NonLinearProgram
@@ -335,7 +335,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             nlp.dynamics_defects_func_last_node = nlp.dynamics_defects_func_last_node.expand()
 
     def configure_torque_driven(
-        self, ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None
+        self, ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None, contact_type: list[ContactType] = []
     ):
         """
         Configure the problem to be torque driven for the variational integrator.
