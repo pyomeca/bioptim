@@ -8,7 +8,7 @@ from casadi import SX, MX, DM, vertcat, jacobian, transpose
 from .holonomic_biorbd_model import HolonomicBiorbdModel
 from ...misc.enums import ControlType, QuadratureRule
 from ...optimization.parameters import ParameterList
-from ...misc.parameters_types import Int, Str, Float
+from ...misc.parameters_types import Str, Float
 
 
 class VariationalBiorbdModel(HolonomicBiorbdModel):
