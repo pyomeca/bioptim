@@ -644,7 +644,6 @@ class COLLOCATION(Integrator):
         else:
             raise RuntimeError(f"{self.control_type} ControlType not implemented yet")
 
-
     def get_states_end(
         self,
         states: MX | SX,

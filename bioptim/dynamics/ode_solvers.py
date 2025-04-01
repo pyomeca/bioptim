@@ -172,7 +172,6 @@ class OdeSolver:
             else:
                 return horzcat(nlp.controls.scaled.cx_start, nlp.controls.scaled.cx_end)
 
-
         def a_ode(self, nlp):
             out = [nlp.algebraic_states.scaled.cx_start]
             if not self.duplicate_starting_point:
