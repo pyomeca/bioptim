@@ -51,7 +51,6 @@ def test_configures(cx):
 
     # We start with empty OptimizationVariableContainers (states, controls, algebraic states) and then fill them with the appropriate variables
 
-
     # Test states
     ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
     n_states = 4
@@ -167,7 +166,6 @@ def test_configure_soft_contacts(cx):
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/soft_contact_sphere.bioMod",
     )
-
 
     ConfigureProblem.configure_soft_contact_forces(
         ocp, nlp, as_states=True, as_controls=False, as_algebraic_states=False
