@@ -981,7 +981,7 @@ def test_update_noised_initial_guess_collocation(interpolation, phase_dynamics):
     ode_solver = OdeSolver.COLLOCATION(polynomial_degree=1)
 
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver,phase_dynamics=phase_dynamics)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver, phase_dynamics=phase_dynamics)
 
     x_init = InitialGuessList()
     x_init["q"] = [0] * bio_model.nb_q
