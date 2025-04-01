@@ -1785,10 +1785,16 @@ class ConfigureProblem:
             If the generalized force derivatives should be an algebraic state
         """
         name_soft_contact_forces = [
-            f"{name}_{axis}" for name in nlp.model.soft_contact_names for axis in ("X", "Y", "Z")
+            f"{name}_{axis}" for name in nlp.model.soft_contact_names for axis in ("MX", "MY", "MZ", "FX", "FY", "FZ")
         ]
         ConfigureProblem.configure_new_variable(
-            "soft_contact_forces", name_soft_contact_forces, ocp, nlp, as_states, as_controls, as_algebraic_states
+            "soft_contact_forces",
+            name_soft_contact_forces,
+            ocp,
+            nlp,
+            as_states=as_states,
+            as_algebraic_states=as_algebraic_states,
+            as_controls=as_controls,
         )
 
     @staticmethod
