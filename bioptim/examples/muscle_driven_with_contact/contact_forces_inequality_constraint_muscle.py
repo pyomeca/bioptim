@@ -23,6 +23,7 @@ from bioptim import (
     InitialGuessList,
     Solver,
     SolutionMerge,
+    ContactType,
 )
 
 
@@ -48,7 +49,10 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound,
     # Dynamics
     dynamics = DynamicsList()
     dynamics.add(
-        DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, with_contact=True, expand_dynamics=expand_dynamics
+        DynamicsFcn.MUSCLE_DRIVEN,
+        with_residual_torque=True,
+        contact_type=[ContactType.RIGID_EXPLICIT],
+        expand_dynamics=expand_dynamics
     )
 
     # Constraints
@@ -114,6 +118,7 @@ def main():
     biorbd_model_path = "models/2segments_4dof_2contacts_1muscle.bioMod"
     t = 0.3
     ns = 10
+    dt = t / ns
     ocp = prepare_ocp(
         biorbd_model_path=biorbd_model_path,
         phase_time=t,
@@ -134,9 +139,14 @@ def main():
 
     x = np.concatenate((q, qdot))
     u = np.concatenate((tau, mus))
-    contact_forces = np.array(nlp.contact_forces_func(x[:, :-1], u[:, :-1], []))
+    contact_forces = np.zeros((3, nlp.ns))
+    for i_node in range(nlp.ns):
+        contact_forces[:, i_node] = np.reshape(
+            np.array(nlp.contact_forces_func([dt * i_node, dt * (i_node + 1)], x[:, i_node], u[:, i_node], [], [], [])),
+            (3,),
+        )
 
-    names_contact_forces = ocp.nlp[0].model.contact_names
+    names_contact_forces = ocp.nlp[0].model.rigid_contact_names
     for i, elt in enumerate(contact_forces):
         plt.plot(np.linspace(0, t, ns + 1)[:-1], elt, ".-", label=f"{names_contact_forces[i]}")
     plt.legend()

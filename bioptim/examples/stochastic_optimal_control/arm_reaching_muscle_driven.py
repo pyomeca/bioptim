@@ -41,6 +41,7 @@ from bioptim import (
     MultinodeConstraintList,
     MultinodeObjectiveList,
     ControlType,
+    ContactType,
 )
 from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
 from bioptim.examples.stochastic_optimal_control.models.leuven_arm_model import LeuvenArmModel
@@ -135,7 +136,10 @@ def stochastic_forward_dynamics(
 
 
 def configure_stochastic_optimal_control_problem(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None
+    ocp: OptimalControlProgram,
+        nlp: NonLinearProgram, 
+        numerical_data_timeseries=None,
+    contact_type: list[ContactType] = [],
 ):
     ConfigureProblem.configure_q(ocp, nlp, True, False, False)
     ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)

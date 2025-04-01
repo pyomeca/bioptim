@@ -15,6 +15,7 @@ from ..misc.enums import (
     ConstraintType,
     SoftContactDynamics,
     PhaseDynamics,
+    ContactType,
 )
 from ..misc.fcn_enum import FcnEnum
 from ..misc.mapping import BiMapping, Mapping
@@ -33,17 +34,15 @@ class ConfigureProblem:
         Call the dynamics a first time
     custom(ocp, nlp, **extra_params)
         Call the user-defined dynamics configuration function
-    torque_driven(ocp, nlp, with_contact=False)
+    torque_driven
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
-    torque_derivative_driven(ocp, nlp, with_contact=False)
+    torque_derivative_driven
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
-    torque_activations_driven(ocp, nlp, with_contact=False)
+    torque_activations_driven
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau activations).
         The tau activations are bounded between -1 and 1 and actual tau is computed from torque-position-velocity
         relationship
-    muscle_driven(
-        ocp, nlp, with_excitations: bool = False, with_residual_torque: bool = False, with_contact: bool = False
-    )
+    muscle_driven
         Configure the dynamics for a muscle driven program.
         If with_excitations is set to True, then the muscle muscle activations are computed from the muscle dynamics.
         The tau from muscle is computed using the muscle activations.
@@ -156,7 +155,7 @@ class ConfigureProblem:
     def torque_driven(
         ocp,
         nlp,
-        with_contact: bool = False,
+        contact_type: list[ContactType] = [],
         with_passive_torque: bool = False,
         with_ligament: bool = False,
         with_friction: bool = False,
@@ -173,8 +172,8 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        with_contact: bool
-            If the dynamic with contact should be used
+        contact_type: list[ContactType]
+            The type of contacts to consider in the dynamics
         with_passive_torque: bool
             If the dynamic with passive torque should be used
         with_ligament: bool
@@ -189,8 +188,7 @@ class ConfigureProblem:
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
 
-        _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
-        _check_soft_contacts_dynamics(soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx)
+        _check_contacts_in_biomodel(contact_type, nlp.model, nlp.phase_idx)
 
         # Declared rigidbody states and controls
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
@@ -210,7 +208,7 @@ class ConfigureProblem:
                 ocp,
                 nlp,
                 DynamicsFunctions.torque_driven,
-                with_contact=with_contact,
+                contact_type=contact_type,
                 fatigue=fatigue,
                 with_passive_torque=with_passive_torque,
                 with_ligament=with_ligament,
@@ -218,11 +216,12 @@ class ConfigureProblem:
             )
 
         # Configure the contact forces
-        if with_contact:
+        if ContactType.RIGID_EXPLICIT in contact_type:
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
 
         # Configure the soft contact forces
-        ConfigureProblem.configure_soft_contact_function(ocp, nlp)
+        if ContactType.SOFT_EXPLICIT in contact_type:
+            ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
         # Algebraic constraints of soft contact forces if needed
         if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
@@ -362,7 +361,7 @@ class ConfigureProblem:
         ocp,
         nlp,
         problem_type,
-        with_contact: bool = False,
+        contact_type: list[ContactType] = [],
         with_friction: bool = False,
         with_cholesky: bool = False,
         initial_matrix: DM = None,
@@ -377,8 +376,8 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        with_contact: bool
-            If the dynamic with contact should be used
+        contact_type: list[ContactType]
+            The type of contacts to consider in the dynamics
         with_friction: bool
             If the dynamic with joint friction should be used (friction = coefficient * qdot)
         with_cholesky: bool
@@ -424,7 +423,7 @@ class ConfigureProblem:
         ConfigureProblem.torque_driven(
             ocp=ocp,
             nlp=nlp,
-            with_contact=with_contact,
+            contact_type=contact_type,
             with_friction=with_friction,
         )
 
@@ -432,7 +431,7 @@ class ConfigureProblem:
             ocp,
             nlp,
             DynamicsFunctions.stochastic_torque_driven,
-            with_contact=with_contact,
+            contact_type=contact_type,
             with_friction=with_friction,
         )
 
@@ -511,7 +510,7 @@ class ConfigureProblem:
     def torque_derivative_driven(
         ocp,
         nlp,
-        with_contact=False,
+        contact_type: list[ContactType] = [],
         with_passive_torque: bool = False,
         with_ligament: bool = False,
         with_friction: bool = False,
@@ -527,8 +526,8 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        with_contact: bool
-            If the dynamic with contact should be used
+        contact_type: list[ContactType]
+            The type of contacts to consider in the dynamics
         with_passive_torque: bool
             If the dynamic with passive torque should be used
         with_ligament: bool
@@ -541,9 +540,7 @@ class ConfigureProblem:
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
 
         """
-        _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
-
-        _check_soft_contacts_dynamics(soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx)
+        _check_contacts_in_biomodel(contact_type, nlp.model, nlp.phase_idx)
 
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False)
@@ -560,33 +557,34 @@ class ConfigureProblem:
                 ocp,
                 nlp,
                 DynamicsFunctions.torque_derivative_driven,
-                with_contact=with_contact,
+                contact_type=contact_type,
                 with_passive_torque=with_passive_torque,
                 with_ligament=with_ligament,
                 with_friction=with_friction,
             )
 
-        if with_contact:
+        if ContactType.RIGID_EXPLICIT in contact_type:
             ConfigureProblem.configure_contact_function(
                 ocp,
                 nlp,
                 DynamicsFunctions.forces_from_torque_driven,
             )
 
-        ConfigureProblem.configure_soft_contact_function(ocp, nlp)
-        if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
-            ocp.implicit_constraints.add(
-                ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
-                node=Node.ALL_SHOOTING,
-                penalty_type=ConstraintType.IMPLICIT,
-                phase=nlp.phase_idx,
-            )
+        if ContactType.SOFT_EXPLICIT in contact_type:
+            ConfigureProblem.configure_soft_contact_function(ocp, nlp)
+            if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
+                ocp.implicit_constraints.add(
+                    ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
+                    node=Node.ALL_SHOOTING,
+                    penalty_type=ConstraintType.IMPLICIT,
+                    phase=nlp.phase_idx,
+                )
 
     @staticmethod
     def torque_activations_driven(
         ocp,
         nlp,
-        with_contact: bool = False,
+        contact_type: list[ContactType] = [],
         with_passive_torque: bool = False,
         with_residual_torque: bool = False,
         with_ligament: bool = False,
@@ -603,8 +601,8 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        with_contact: bool
-            If the dynamic with contact should be used
+        contact_type: list[ContactType]
+            The type of contacts to consider in the dynamics
         with_passive_torque: bool
             If the dynamic with passive torque should be used
         with_residual_torque: bool
@@ -615,7 +613,7 @@ class ConfigureProblem:
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
 
-        _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
+        _check_contacts_in_biomodel(contact_type, nlp.model, nlp.phase_idx)
 
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False)
@@ -631,17 +629,19 @@ class ConfigureProblem:
                 ocp,
                 nlp,
                 DynamicsFunctions.torque_activations_driven,
-                with_contact=with_contact,
+                contact_type=contact_type,
                 with_passive_torque=with_passive_torque,
                 with_residual_torque=with_residual_torque,
                 with_ligament=with_ligament,
             )
 
-        if with_contact:
+        if ContactType.RIGID_EXPLICIT in contact_type:
             ConfigureProblem.configure_contact_function(
                 ocp, nlp, DynamicsFunctions.forces_from_torque_activation_driven
             )
-        ConfigureProblem.configure_soft_contact_function(ocp, nlp)
+
+        if ContactType.SOFT_EXPLICIT in contact_type:
+            ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
     def joints_acceleration_driven(
@@ -700,7 +700,7 @@ class ConfigureProblem:
         with_excitations: bool = False,
         fatigue: FatigueList = None,
         with_residual_torque: bool = False,
-        with_contact: bool = False,
+        contact_type: list[ContactType] = [],
         with_passive_torque: bool = False,
         with_ligament: bool = False,
         with_friction: bool = False,
@@ -725,8 +725,8 @@ class ConfigureProblem:
             The list of fatigue parameters
         with_residual_torque: bool
             If the dynamic should be added with residual torques
-        with_contact: bool
-            If the dynamic with contact should be used
+        contact_type: list[ContactType]
+            The type of contacts to consider in the dynamics
         with_passive_torque: bool
             If the dynamic with passive torque should be used
         with_ligament: bool
@@ -736,7 +736,7 @@ class ConfigureProblem:
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
-        _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
+        _check_contacts_in_biomodel(contact_type, nlp.model, nlp.phase_idx)
 
         if fatigue is not None and "tau" in fatigue and not with_residual_torque:
             raise RuntimeError("Residual torques need to be used to apply fatigue on torques")
@@ -756,7 +756,7 @@ class ConfigureProblem:
                 ocp,
                 nlp,
                 DynamicsFunctions.muscles_driven,
-                with_contact=with_contact,
+                contact_type=contact_type,
                 fatigue=fatigue,
                 with_residual_torque=with_residual_torque,
                 with_passive_torque=with_passive_torque,
@@ -764,13 +764,15 @@ class ConfigureProblem:
                 with_friction=with_friction,
             )
 
-        if with_contact:
+        if ContactType.RIGID_EXPLICIT in contact_type:
             ConfigureProblem.configure_contact_function(
                 ocp,
                 nlp,
                 DynamicsFunctions.forces_from_muscle_driven,
             )
-        ConfigureProblem.configure_soft_contact_function(ocp, nlp)
+
+        if ContactType.SOFT_EXPLICIT in contact_type:
+            ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
     def holonomic_torque_driven(ocp, nlp, numerical_data_timeseries: dict[str, np.ndarray] = None):
@@ -1684,7 +1686,7 @@ class ConfigureProblem:
         """
         name = "m"
 
-        if name in nlp.variable_mappings:
+        if "m" in nlp.variable_mappings and nlp.variable_mappings["m"].actually_does_a_mapping:
             raise NotImplementedError(f"Algebraic states and mapping cannot be use together for now.")
 
         name_m = []
@@ -2058,22 +2060,24 @@ def _check_numerical_timeseries_format(numerical_timeseries: np.ndarray, n_shoot
         )
 
 
-def _check_soft_contacts_dynamics(
-    soft_contacts_dynamics: SoftContactDynamics,
-    nb_soft_contacts,
-    phase_idx: int,
-):
-    if nb_soft_contacts != 0:
-        if (
-            soft_contacts_dynamics != SoftContactDynamics.CONSTRAINT
-            and soft_contacts_dynamics != SoftContactDynamics.ODE
-        ):
-            raise ValueError(
-                f"Phase {phase_idx} has soft contacts but the soft_contacts_dynamics is not "
-                f"SoftContactDynamics.CONSTRAINT or SoftContactDynamics.ODE."
-            )
+def _check_contacts_in_biomodel(contact_type: list[ContactType], model: BioModel, phase_idx: int):
 
+    # Check rigid contacts
+    if (
+        ContactType.RIGID_EXPLICIT in contact_type or ContactType.RIGID_IMPLICIT in contact_type
+    ) and model.nb_contacts == 0:
+        raise ValueError(
+            f"No rigid contact defined in the .bioMod of phase {phase_idx}, consider changing the ContactType."
+        )
 
-def _check_contacts_in_biorbd_model(with_contact: bool, nb_contacts: int, phase_idx: int):
-    if with_contact and nb_contacts == 0:
-        raise ValueError(f"No contact defined in the .bioMod of phase {phase_idx}, set with_contact to False.")
+    # Check soft contacts
+    if (
+        ContactType.SOFT_EXPLICIT in contact_type or ContactType.SOFT_IMPLICIT in contact_type
+    ) and model.nb_soft_contacts == 0:
+        raise ValueError(
+            f"No soft contact defined in the .bioMod of phase {phase_idx}, consider changing the ContactType."
+        )
+
+    # Check that contact types are not declared at the same time
+    if len(contact_type) > 1:
+        raise NotImplementedError("It is not possible to use multiple ContactType at the same time yet.")

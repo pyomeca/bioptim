@@ -11,6 +11,7 @@ from bioptim import (
     NonLinearProgram,
     ConfigureProblem,
     DynamicsEvaluation,
+    ContactType,
 )
 
 
@@ -45,7 +46,12 @@ def custom_dynamics(
     )
 
 
-def custom_configure_my_dynamics(ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None):
+def custom_configure_my_dynamics(
+        ocp: OptimalControlProgram,
+        nlp: NonLinearProgram,
+        numerical_data_timeseries=None,
+        contact_type: list[ContactType] = [],
+):
     """
     Tell the program which variables are states and controls.
     The user is expected to use the ConfigureProblem.configure_xxx functions.

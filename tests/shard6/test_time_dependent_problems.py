@@ -25,6 +25,7 @@ from bioptim import (
     NonLinearProgram,
     PhaseDynamics,
     SolutionMerge,
+    ContactType,
 )
 from casadi import MX, SX, vertcat, sin, Function, DM, reshape
 import numpy as np
@@ -80,7 +81,10 @@ def time_dynamic(
 
 
 def custom_configure(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries: dict[str, np.ndarray] = None
+    ocp: OptimalControlProgram,
+        nlp: NonLinearProgram,
+        numerical_data_timeseries: dict[str, np.ndarray] = None,
+        contact_type: list[ContactType] = [],
 ):
     """
     Tell the program which variables are states and controls.

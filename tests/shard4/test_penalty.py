@@ -22,6 +22,7 @@ from bioptim import (
     PhaseDynamics,
     ConstraintList,
     ExternalForceSetTimeSeries,
+    ContactType,
 )
 from bioptim.limits.penalty import PenaltyOption
 from bioptim.limits.penalty_controller import PenaltyController
@@ -124,7 +125,7 @@ def prepare_test_ocp(
             )
             dynamics.add(
                 DynamicsFcn.TORQUE_DRIVEN,
-                with_contact=True,
+                contact_type=[ContactType.RIGID_EXPLICIT],
                 expand_dynamics=True,
                 phase_dynamics=phase_dynamics,
                 numerical_data_timeseries=numerical_time_series,
@@ -135,7 +136,7 @@ def prepare_test_ocp(
             )
             dynamics.add(
                 DynamicsFcn.TORQUE_DRIVEN,
-                with_contact=True,
+                contact_type=[ContactType.RIGID_EXPLICIT],
                 expand_dynamics=True,
                 phase_dynamics=phase_dynamics,
             )

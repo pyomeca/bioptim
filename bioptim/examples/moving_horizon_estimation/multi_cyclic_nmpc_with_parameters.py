@@ -37,6 +37,7 @@ from bioptim import (
     SolutionMerge,
     Solver,
     VariableScaling,
+    ContactType,
 )
 
 
@@ -110,7 +111,10 @@ def parameter_dependent_dynamic(
 
 
 def custom_configure(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries: dict[str, np.ndarray] = None
+    ocp: OptimalControlProgram,
+        nlp: NonLinearProgram,
+        numerical_data_timeseries: dict[str, np.ndarray] = None,
+        contact_type: list[ContactType] = None,
 ):
     """
     Tell the program which variables are states and controls.
@@ -166,7 +170,10 @@ def prepare_nmpc(
         interpolation=InterpolationType.CONSTANT,
     )
 
-    dynamics = Dynamics(custom_configure, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    dynamics = Dynamics(custom_configure,
+                        expand_dynamics=expand_dynamics,
+                        phase_dynamics=phase_dynamics,
+                        contact_type=[])
 
     x_bounds = BoundsList()
     x_bounds["q"] = model.bounds_from_ranges("q")

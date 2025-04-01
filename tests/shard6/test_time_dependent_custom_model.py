@@ -22,6 +22,7 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
     VariableScaling,
+    ContactType,
 )
 from casadi import DM, MX, SX, vertcat, exp
 import numpy as np
@@ -133,7 +134,11 @@ class Model:
         )
 
     def declare_variables(
-        self, ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries: dict[str, np.ndarray] = None
+        self,
+            ocp: OptimalControlProgram,
+            nlp: NonLinearProgram,
+            numerical_data_timeseries: dict[str, np.ndarray] = None,
+            contact_type: list[ContactType] = [],
     ):
         name = "Cn"
         name_cn = [name]
