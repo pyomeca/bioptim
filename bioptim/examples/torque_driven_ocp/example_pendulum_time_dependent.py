@@ -84,9 +84,9 @@ def time_dependent_dynamic(
 
 def custom_configure(
     ocp: OptimalControlProgram,
-        nlp: NonLinearProgram,
-        numerical_data_timeseries: dict[str, np.ndarray] = None,
-        contact_type: list[ContactType] = [],
+    nlp: NonLinearProgram,
+    numerical_data_timeseries: dict[str, np.ndarray] = None,
+    contact_type: list[ContactType] = [],
 ):
     """
     Tell the program which variables are states and controls.

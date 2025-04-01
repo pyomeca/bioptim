@@ -442,7 +442,8 @@ def test_torque_derivative_driven_soft_contacts_dynamics(contact_type, cx, impli
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder() + "/examples/muscle_driven_with_contact/models/2segments_4dof_2soft_contacts_1muscle.bioMod",
+        TestUtils.bioptim_folder()
+        + "/examples/muscle_driven_with_contact/models/2segments_4dof_2soft_contacts_1muscle.bioMod",
     )
     nlp.ns = N_SHOOTING
     nlp.cx = cx
@@ -1206,7 +1207,9 @@ def test_with_contact_error(dynamics_fcn, phase_dynamics):
     objective_functions = ObjectiveList()
 
     # Dynamics
-    dynamics = Dynamics(dynamics_fcn, contact_type=[ContactType.RIGID_EXPLICIT], expand_dynamics=True, phase_dynamics=phase_dynamics)
+    dynamics = Dynamics(
+        dynamics_fcn, contact_type=[ContactType.RIGID_EXPLICIT], expand_dynamics=True, phase_dynamics=phase_dynamics
+    )
 
     # Path constraint
     x_bounds = BoundsList()

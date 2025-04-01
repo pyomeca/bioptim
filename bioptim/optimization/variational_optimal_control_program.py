@@ -340,10 +340,11 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             nlp.implicit_dynamics_func_last_node = nlp.implicit_dynamics_func_last_node.expand()
 
     def configure_torque_driven(
-        self, ocp: OptimalControlProgram,
-            nlp: NonLinearProgram,
-            numerical_data_timeseries=None,
-            contact_type: list[ContactType] = []
+        self,
+        ocp: OptimalControlProgram,
+        nlp: NonLinearProgram,
+        numerical_data_timeseries=None,
+        contact_type: list[ContactType] = [],
     ):
         """
         Configure the problem to be torque driven for the variational integrator.

@@ -179,6 +179,7 @@ def test_contact_type():
     # verify the number of elements
     assert len(ContactType) == 4
 
+
 def test_magnitude_type():
     assert MagnitudeType.ABSOLUTE.value == "absolute"
     assert MagnitudeType.RELATIVE.value == "relative"
