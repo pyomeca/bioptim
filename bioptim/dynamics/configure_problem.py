@@ -1351,9 +1351,7 @@ class ConfigureProblem:
         name = "q"
         name_q = nlp.model.name_dof
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
-        ConfigureProblem.configure_new_variable(
-            name, name_q, ocp, nlp, as_states, as_controls, axes_idx=axes_idx
-        )
+        ConfigureProblem.configure_new_variable(name, name_q, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
     def configure_qdot(ocp, nlp, as_states: bool, as_controls: bool):
@@ -1373,9 +1371,7 @@ class ConfigureProblem:
         name = "qdot"
         name_qdot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
-        ConfigureProblem.configure_new_variable(
-            name, name_qdot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx
-        )
+        ConfigureProblem.configure_new_variable(name, name_qdot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
     def configure_qddot(ocp, nlp, as_states: bool, as_controls: bool):
@@ -1395,9 +1391,7 @@ class ConfigureProblem:
         name = "qddot"
         name_qddot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
-        ConfigureProblem.configure_new_variable(
-            name, name_qddot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx
-        )
+        ConfigureProblem.configure_new_variable(name, name_qddot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
     def configure_qdddot(ocp, nlp, as_states: bool, as_controls: bool):

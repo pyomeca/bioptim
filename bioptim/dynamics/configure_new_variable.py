@@ -237,7 +237,7 @@ class NewVariableConfiguration:
                     )
             # States dot
             for node_index in range(
-                    self.nlp.n_states_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1
+                self.nlp.n_states_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1
             ):
                 n_cx = self.nlp.ode_solver.n_required_cx + 2
                 cx_scaled = self.define_cx_scaled(n_col=n_cx, node_index=node_index)
