@@ -1231,7 +1231,7 @@ def test_with_contact_error(dynamics_fcn, phase_dynamics):
     objective_functions = ObjectiveList()
 
     # Dynamics
-    dynamics = Dynamics(dynamics_fcn, with_contact=True, expand_dynamics=True, phase_dynamics=phase_dynamics)
+    dynamics = Dynamics(dynamics_fcn, with_contact=True, ode_solver=OdeSolver.RK4(), expand_dynamics=True, phase_dynamics=phase_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -1253,5 +1253,4 @@ def test_with_contact_error(dynamics_fcn, phase_dynamics):
             x_bounds=x_bounds,
             u_bounds=u_bounds,
             objective_functions=objective_functions,
-            ode_solver=OdeSolver.RK4(),
         )

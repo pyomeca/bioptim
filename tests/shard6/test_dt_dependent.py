@@ -95,6 +95,7 @@ def prepare_ocp_state_as_time(
             custom_configure,
             dynamic_function=dynamics,
             phase=i,
+            ode_solver=OdeSolver.RK4(n_integration_steps=5),
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
         )
@@ -131,7 +132,6 @@ def prepare_ocp_state_as_time(
         objective_functions=objective_functions,
         control_type=control_type,
         use_sx=use_sx,
-        ode_solver=OdeSolver.RK4(n_integration_steps=5),
     )
 
 
