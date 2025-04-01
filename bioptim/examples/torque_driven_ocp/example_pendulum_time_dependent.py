@@ -153,7 +153,9 @@ def prepare_ocp(
     dynamics.add(
         custom_configure,
         dynamic_function=time_dependent_dynamic,
-        ode_solver=ode_solver, expand_dynamics=expand, phase_dynamics=phase_dynamics
+        ode_solver=ode_solver,
+        expand_dynamics=expand,
+        phase_dynamics=phase_dynamics,
     )
 
     # Path constraint
