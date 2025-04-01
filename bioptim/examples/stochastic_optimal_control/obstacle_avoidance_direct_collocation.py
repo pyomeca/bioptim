@@ -328,8 +328,8 @@ def draw_cov_ellipse(cov, pos, ax, **kwargs):
 def configure_optimal_control_problem(
     ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None
 ):
-    ConfigureProblem.configure_q(ocp, nlp, True, False, False)
-    ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
+    ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
+    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
     ConfigureProblem.configure_new_variable("u", nlp.model.name_u, ocp, nlp, as_states=False, as_controls=True)
 
     ConfigureProblem.configure_dynamics_function(

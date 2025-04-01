@@ -41,7 +41,6 @@ def test_configures(cx):
     nlp.dt = nlp.cx.sym("dt", 1, 1)
     nlp.initialize(nlp.cx)
     nlp.x_scaling = VariableScalingList()
-    nlp.xdot_scaling = VariableScalingList()
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
     ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
@@ -58,7 +57,7 @@ def test_configures(cx):
     npt.assert_equal(nlp.states.keys(), ["q"])
 
     # Test multiple states + states dot
-    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False, as_states_dot=True)
+    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
     npt.assert_equal(nlp.states.shape, 4 + 4)
     npt.assert_equal(nlp.states.keys(), ["q", "qdot"])
     npt.assert_equal(nlp.states_dot.shape, 4)
@@ -70,7 +69,7 @@ def test_configures(cx):
     npt.assert_equal(nlp.controls.keys(), ["tau"])
 
     # Test all other configures
-    ConfigureProblem.configure_qddot(ocp, nlp, as_states=True, as_controls=False, as_states_dot=True)
+    ConfigureProblem.configure_qddot(ocp, nlp, as_states=True, as_controls=False)
     npt.assert_equal(nlp.states.shape, 4 + 4 + 4)
     npt.assert_equal(nlp.states.keys(), ["q", "qdot", "qddot"])
     npt.assert_equal(nlp.states_dot.shape, 4 + 4)
@@ -112,7 +111,6 @@ def test_configure_soft_contacts(cx):
     nlp.dt = nlp.cx.sym("dt", 1, 1)
     nlp.initialize(nlp.cx)
     nlp.x_scaling = VariableScalingList()
-    nlp.xdot_scaling = VariableScalingList()
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
     ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
@@ -137,7 +135,6 @@ def test_configure_muscles(cx):
     nlp.dt = nlp.cx.sym("dt", 1, 1)
     nlp.initialize(nlp.cx)
     nlp.x_scaling = VariableScalingList()
-    nlp.xdot_scaling = VariableScalingList()
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
     ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
