@@ -114,7 +114,7 @@ def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
     if with_external_force:
 
         external_forces = ExternalForceSetTimeSeries(nb_frames=nlp.ns)
-        external_forces.add("Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :])
+        external_forces.add("force0", "Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :])
         numerical_time_series = {"external_forces": external_forces.to_numerical_time_series()}
 
     nlp.model = BiorbdModel(

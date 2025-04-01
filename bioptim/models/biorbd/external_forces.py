@@ -306,6 +306,7 @@ class ExternalForceSetVariables(ExternalForceSet):
         """
         Add moments XYZ, forces XYZ (and the point of application if requested) in the global reference frame.
         """
+        self._check_if_can_be_modified()
         point_of_application = MX.sym(f"point_of_application_{force_name}_{segment}", 3, 1) if use_point_of_application else np.zeros((3, 1))
         moments_forces = MX.sym(f"moments_forces_{force_name}_{segment}", 6, 1)
         self.in_global[force_name] = {"segment": segment, "force": moments_forces, "point_of_application": point_of_application}
@@ -314,6 +315,7 @@ class ExternalForceSetVariables(ExternalForceSet):
         """
         Add moments XYZ in the global reference frame.
         """
+        self._check_if_can_be_modified()
         moments = MX.sym(f"moments_{force_name}_{segment}", 3, 1)
         self.torque_in_global[force_name] = {"segment": segment, "force": moments, "point_of_application": None}
 
@@ -323,6 +325,7 @@ class ExternalForceSetVariables(ExternalForceSet):
         """
         Add forces XYZ (and the point of application if requested) in the local reference frame.
         """
+        self._check_if_can_be_modified()
         point_of_application_in_local = MX.sym(f"point_of_application_in_local_{force_name}_{segment}", 3, 1) if use_point_of_application_in_local else np.zeros((3, 1))
         forces = MX.sym(f"forces_{force_name}_{segment}", 3, 1)
         self.translational_in_global[force_name] = {"segment": segment, "force": forces, "point_of_application": point_of_application_in_local}
@@ -333,6 +336,7 @@ class ExternalForceSetVariables(ExternalForceSet):
         """
         Add moments XYZ, forces XYZ (and the point of application if requested) in the local reference frame.
         """
+        self._check_if_can_be_modified()
         point_of_application_in_local = MX.sym(f"point_of_application_in_local_{force_name}_{segment}", 3, 1) if use_point_of_application_in_local else np.zeros((3, 1))
         moments_forces = MX.sym(f"moments_forces_{force_name}_{segment}", 6, 1)
         self.in_local[force_name] = {"segment": segment, "force": moments_forces, "point_of_application": point_of_application_in_local}
@@ -341,6 +345,7 @@ class ExternalForceSetVariables(ExternalForceSet):
         """
         Add moments XYZ in the local reference frame.
         """
+        self._check_if_can_be_modified()
         moments = MX.sym(f"moments_{force_name}_{segment}", 3, 1)
         self.torque_in_local[force_name] = {"segment": segment, "force": moments, "point_of_application": None}
 
