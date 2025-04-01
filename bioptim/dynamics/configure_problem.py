@@ -134,6 +134,7 @@ class ConfigureProblem:
             ocp,
             nlp,
             numerical_data_timeseries=nlp.dynamics_type.numerical_data_timeseries,
+            contact_type=nlp.dynamics_type.contact_type,
             **nlp.dynamics_type.extra_parameters,
         )
 
