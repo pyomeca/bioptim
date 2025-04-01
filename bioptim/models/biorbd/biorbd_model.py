@@ -34,7 +34,7 @@ class BiorbdModel:
         bio_model: str | biorbd.Model,
         friction_coefficients: np.ndarray = None,
         parameters: ParameterList = None,
-        external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables  = None,
+        external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None,
     ):
         """
         Parameters
