@@ -761,7 +761,7 @@ class PenaltyFunctionAbstract:
             contact_forces = controller.cx()
             if ContactType.RIGID_EXPLICIT in controller.get_nlp.dynamics_type.contact_type:
                 if controller.get_nlp.rigid_contact_forces_func is None:
-                    raise RuntimeError("minimize_contact_forces requires a contact dynamics")
+                    raise RuntimeError("minimize_rigid_contact_forces requires a contact dynamics")
 
                 contact_forces = vertcat(
                     contact_forces,
@@ -990,7 +990,7 @@ class PenaltyFunctionAbstract:
             """
 
             if controller.get_nlp.model.nb_soft_contacts == 0:
-                raise RuntimeError("minimize_contact_forces requires a soft contact")
+                raise RuntimeError("minimize_soft_contact_forces requires a soft contact")
 
             PenaltyFunctionAbstract.set_axes_rows(penalty, contact_index)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic

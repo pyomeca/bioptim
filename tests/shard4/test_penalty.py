@@ -802,7 +802,7 @@ def test_penalty_minimize_contact_forces(penalty_origin, value, phase_dynamics):
     a = []
     d = []
 
-    penalty_type = penalty_origin.MINIMIZE_CONTACT_FORCES
+    penalty_type = penalty_origin.MINIMIZE_RIGID_CONTACT_FORCES
     penalty = Objective(penalty_type)
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
@@ -825,7 +825,7 @@ def test_penalty_track_contact_forces(penalty_origin, value, phase_dynamics):
     a = []
     d = []
 
-    penalty_type = penalty_origin.TRACK_CONTACT_FORCES
+    penalty_type = penalty_origin.TRACK_RIGID_CONTACT_FORCES
 
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
         penalty = Objective(penalty_type, target=np.ones((1, 1)) * value, index=0)
@@ -1092,7 +1092,7 @@ def test_penalty_contact_force_inequality(penalty_origin, value, phase_dynamics)
     a = []
     d = []
 
-    penalty_type = penalty_origin.TRACK_CONTACT_FORCES
+    penalty_type = penalty_origin.TRACK_RIGID_CONTACT_FORCES
     penalty = Constraint(penalty_type, contact_index=0)
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
@@ -1135,11 +1135,11 @@ def test_penalty_minimize_contact_forces_end_of_interval(penalty_origin, phase_d
     d = []
 
     if penalty_origin == ObjectiveFcn.Mayer:
-        penalty_type = ObjectiveFcn.Mayer.MINIMIZE_CONTACT_FORCES_END_OF_INTERVAL
+        penalty_type = ObjectiveFcn.Mayer.MINIMIZE_RIGID_CONTACT_FORCES_END_OF_INTERVAL
         penalty_object = Objective
 
     else:
-        penalty_type = ConstraintFcn.TRACK_CONTACT_FORCES_END_OF_INTERVAL
+        penalty_type = ConstraintFcn.TRACK_RIGID_CONTACT_FORCES_END_OF_INTERVAL
 
         penalty_object = Constraint
 
@@ -1176,7 +1176,7 @@ def test_penalty_minimize_sum_reaction_forces(penalty_origin, phase_dynamics, wi
         penalty_type = ObjectiveFcn.Lagrange.TRACK_SUM_REACTION_FORCES
         penalty_object = Objective
     else:
-        penalty_type = ConstraintFcn.TRACK_CONTACT_FORCES_END_OF_INTERVAL
+        penalty_type = ConstraintFcn.TRACK_RIGID_CONTACT_FORCES_END_OF_INTERVAL
         penalty_object = Constraint
 
     penalty = penalty_object(
