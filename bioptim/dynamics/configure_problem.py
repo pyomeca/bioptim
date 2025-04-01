@@ -51,8 +51,8 @@ class ConfigureProblem:
         case muscles are too weak.
     configure_dynamics_function(ocp, nlp, dyn_func, **extra_params)
         Configure the dynamics of the system
-    configure_contact_function(ocp, nlp, dyn_func: Callable, **extra_params)
-        Configure the contact points
+    configure_rigid_contact_function(ocp, nlp, dyn_func: Callable, **extra_params)
+        Configure the rigid contact points
     configure_soft_contact_function
         Configure the soft contact function
     configure_new_variable(
@@ -1146,8 +1146,8 @@ class ConfigureProblem:
         """
 
         time_span_sym = vertcat(nlp.time_cx, nlp.dt)
-        nlp.contact_forces_func = Function(
-            "contact_forces_func",
+        nlp.rigid_contact_forces_func = Function(
+            "rigid_contact_forces_func",
             [
                 time_span_sym,
                 nlp.states.scaled.cx,
@@ -1169,17 +1169,17 @@ class ConfigureProblem:
                 )
             ],
             ["t_span", "x", "u", "p", "a", "d"],
-            ["contact_forces"],
+            ["rigid_contact_forces"],
         ).expand()
 
         all_contact_names = []
         for elt in ocp.nlp:
             all_contact_names.extend([name for name in elt.model.contact_names if name not in all_contact_names])
 
-        if "contact_forces" in nlp.plot_mapping:
+        if "rigid_contact_forces" in nlp.plot_mapping:
             contact_names_in_phase = [name for name in nlp.model.contact_names]
             axes_idx = BiMapping(
-                to_first=nlp.plot_mapping["contact_forces"].map_idx,
+                to_first=nlp.plot_mapping["rigid_contact_forces"].map_idx,
                 to_second=[i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase],
             )
         else:
@@ -1189,8 +1189,8 @@ class ConfigureProblem:
                 to_second=[i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase],
             )
 
-        nlp.plot["contact_forces"] = CustomPlot(
-            lambda t0, phases_dt, node_idx, x, u, p, a, d: nlp.contact_forces_func(
+        nlp.plot["rigid_contact_forces"] = CustomPlot(
+            lambda t0, phases_dt, node_idx, x, u, p, a, d: nlp.rigid_contact_forces_func(
                 np.concatenate([t0, t0 + phases_dt[nlp.phase_idx]]), x, u, p, a, d
             ),
             plot_type=PlotType.INTEGRATED,

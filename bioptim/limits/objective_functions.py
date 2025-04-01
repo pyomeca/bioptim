@@ -337,7 +337,7 @@ class ObjectiveFcn:
         MINIMIZE_COM_ACCELERATION = (PenaltyFunctionAbstract.Functions.minimize_com_acceleration,)
         MINIMIZE_COM_POSITION = (PenaltyFunctionAbstract.Functions.minimize_com_position,)
         MINIMIZE_COM_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_com_velocity,)
-        MINIMIZE_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_contact_forces,)
+        MINIMIZE_RIGID_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_rigid_contact_forces,)
         MINIMIZE_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)
         MINIMIZE_FATIGUE = (PenaltyFunctionAbstract.Functions.minimize_fatigue,)
         MINIMIZE_LINEAR_MOMENTUM = (PenaltyFunctionAbstract.Functions.minimize_linear_momentum,)
@@ -358,7 +358,7 @@ class ObjectiveFcn:
             PenaltyFunctionAbstract.Functions.stochastic_minimize_expected_feedback_efforts,
         )
         SUPERIMPOSE_MARKERS = (PenaltyFunctionAbstract.Functions.superimpose_markers,)
-        TRACK_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_contact_forces,)
+        TRACK_RIGID_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_rigid_contact_forces,)
         TRACK_SUM_REACTION_FORCES = (PenaltyFunctionAbstract.Functions.minimize_sum_reaction_forces,)
         TRACK_CENTER_OF_PRESSURE = (PenaltyFunctionAbstract.Functions.minimize_center_of_pressure,)
         TRACK_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)

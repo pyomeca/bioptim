@@ -254,7 +254,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             constraint.min_bound = np.array([0, 0])
             constraint.max_bound = np.array([np.inf, np.inf])
 
-            contact = controller.get_nlp.contact_forces_func(
+            contact = controller.get_nlp.rigid_contact_forces_func(
                 controller.time.cx,
                 controller.states.cx_start,
                 controller.controls.cx_start,

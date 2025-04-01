@@ -155,7 +155,7 @@ class DynamicsFunctions:
         defects = None
         # TODO: contacts and fatigue to be handled with implicit dynamics
         if nlp.ode_solver.defects_type == DefectType.IMPLICIT:
-            if not with_contact and fatigue is None:
+            if len(contact_type) == 0 and fatigue is None:
                 qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
                 tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, contact_type, external_forces)
                 defects = nlp.cx(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
@@ -664,7 +664,7 @@ class DynamicsFunctions:
 
         external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
 
-        return nlp.model.contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
+        return nlp.model.rigid_contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
 
     @staticmethod
     def forces_from_torque_activation_driven(
@@ -715,7 +715,7 @@ class DynamicsFunctions:
         tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
 
         external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
-        return nlp.model.contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
+        return nlp.model.rigid_contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
 
     @staticmethod
     def muscles_driven(
@@ -888,7 +888,7 @@ class DynamicsFunctions:
         tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
 
         external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
-        return nlp.model.contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
+        return nlp.model.rigid_contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
 
     @staticmethod
     def joints_acceleration_driven(

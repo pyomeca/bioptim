@@ -57,14 +57,14 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
     # Constraints
     constraints = ConstraintList()
     constraints.add(
-        ConstraintFcn.TRACK_CONTACT_FORCES,
+        ConstraintFcn.TRACK_RIGID_CONTACT_FORCES,
         min_bound=min_bound,
         max_bound=np.inf,
         node=Node.ALL_SHOOTING,
         contact_index=1,
     )
     constraints.add(
-        ConstraintFcn.TRACK_CONTACT_FORCES,
+        ConstraintFcn.TRACK_RIGID_CONTACT_FORCES,
         min_bound=min_bound,
         max_bound=np.inf,
         node=Node.ALL_SHOOTING,
