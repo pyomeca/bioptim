@@ -3,7 +3,6 @@ import pytest
 from bioptim import SocpType, PhaseDynamics
 from bioptim.optimization.stochastic_optimal_control_program import (
     _check_multi_threading_and_problem_type,
-    _check_has_no_ode_solver_defined,
     _check_has_no_phase_dynamics_shared_during_the_phase,
 )
 
