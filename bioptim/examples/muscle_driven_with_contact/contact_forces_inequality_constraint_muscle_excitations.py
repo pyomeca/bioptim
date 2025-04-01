@@ -145,7 +145,9 @@ def main():
     contact_forces = np.zeros((3, nlp.ns))
     for i_node in range(nlp.ns):
         contact_forces[:, i_node] = np.reshape(
-            np.array(nlp.rigid_contact_forces_func([dt * i_node, dt * (i_node + 1)], x[:, i_node], u[:, i_node], [], [], [])),
+            np.array(
+                nlp.rigid_contact_forces_func([dt * i_node, dt * (i_node + 1)], x[:, i_node], u[:, i_node], [], [], [])
+            ),
             (3,),
         )
 

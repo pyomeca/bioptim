@@ -218,7 +218,8 @@ def test_torque_driven_soft_contacts_dynamics(contact_type, cx, phase_dynamics):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder() + "/examples/muscle_driven_with_contact/models/2segments_4dof_2soft_contacts_1muscle.bioMod"
+        TestUtils.bioptim_folder()
+        + "/examples/muscle_driven_with_contact/models/2segments_4dof_2soft_contacts_1muscle.bioMod"
     )
     nlp.ns = N_SHOOTING
     nlp.cx = cx
@@ -237,12 +238,12 @@ def test_torque_driven_soft_contacts_dynamics(contact_type, cx, phase_dynamics):
     nlp.control_type = ControlType.CONSTANT
 
     nlp.dynamics = Dynamics(
-            DynamicsFcn.TORQUE_DRIVEN,
-            contact_type=contact_type,
-            soft_contacts_dynamics=True if ContactType.SOFT_IMPLICIT in contact_type else False,
-            expand_dynamics=True,
-            phase_dynamics=phase_dynamics,
-        )
+        DynamicsFcn.TORQUE_DRIVEN,
+        contact_type=contact_type,
+        soft_contacts_dynamics=True if ContactType.SOFT_IMPLICIT in contact_type else False,
+        expand_dynamics=True,
+        phase_dynamics=phase_dynamics,
+    )
 
     NonLinearProgram.add(
         ocp,
@@ -270,8 +271,8 @@ def test_torque_driven_soft_contacts_dynamics(contact_type, cx, phase_dynamics):
 
     if ContactType.SOFT_IMPLICIT in contact_type:
         npt.assert_almost_equal(
-            x_out[:, 0], [0.61185289,   0.78517596,   0.60754485,   0.80839735,
-        -0.30241366, -10.38503791,   1.60445173,  35.80238642]
+            x_out[:, 0],
+            [0.61185289, 0.78517596, 0.60754485, 0.80839735, -0.30241366, -10.38503791, 1.60445173, 35.80238642],
         )
 
     elif ContactType.SOFT_EXPLICIT in contact_type:
@@ -279,17 +280,16 @@ def test_torque_driven_soft_contacts_dynamics(contact_type, cx, phase_dynamics):
             nlp.soft_contact_forces_func(time, states, controls, params, algebraic_states, numerical_timeseries)
         )
         npt.assert_almost_equal(
-            x_out[:, 0], [0.61185289,   0.78517596,   0.60754485,   0.80839735,
-        -0.30241366, -10.38503791,   1.60445173,  35.80238642]
+            x_out[:, 0],
+            [0.61185289, 0.78517596, 0.60754485, 0.80839735, -0.30241366, -10.38503791, 1.60445173, 35.80238642],
         )
 
-        npt.assert_almost_equal(contact_out[:, 0], [0.,  0.,  0.,  0.,  0., -0.,  0.,  0.,  0.,  0.,  0., -0.])
+        npt.assert_almost_equal(contact_out[:, 0], [0.0, 0.0, 0.0, 0.0, 0.0, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.0])
 
     else:
         npt.assert_almost_equal(
             x_out[:, 0],
-            [0.61185289,   0.78517596,   0.60754485,   0.80839735,
-        -0.30241366, -10.38503791,   1.60445173,  35.80238642],
+            [0.61185289, 0.78517596, 0.60754485, 0.80839735, -0.30241366, -10.38503791, 1.60445173, 35.80238642],
         )
 
 
@@ -328,12 +328,12 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
     nlp.control_type = ControlType.CONSTANT
 
     nlp.dynamics = Dynamics(
-            DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
-            contact_type=[ContactType.RIGID_EXPLICIT] if with_contact else [],
-            expand_dynamics=True,
-            phase_dynamics=phase_dynamics,
-            numerical_data_timeseries=numerical_timeseries,
-        )
+        DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
+        contact_type=[ContactType.RIGID_EXPLICIT] if with_contact else [],
+        expand_dynamics=True,
+        phase_dynamics=phase_dynamics,
+        numerical_data_timeseries=numerical_timeseries,
+    )
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
@@ -473,12 +473,12 @@ def test_torque_derivative_driven_soft_contacts_dynamics(contact_type, cx, phase
     nlp.control_type = ControlType.CONSTANT
 
     nlp.dynamics = Dynamics(
-            DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
-            contact_type=contact_type,
-            soft_contacts_dynamics=True if ContactType.SOFT_IMPLICIT in contact_type else False,
-            expand_dynamics=True,
-            phase_dynamics=phase_dynamics,
-        )
+        DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
+        contact_type=contact_type,
+        soft_contacts_dynamics=True if ContactType.SOFT_IMPLICIT in contact_type else False,
+        expand_dynamics=True,
+        phase_dynamics=phase_dynamics,
+    )
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
@@ -542,7 +542,9 @@ def test_soft_contacts_dynamics_errors(dynamics, phase_dynamics):
     ocp = OptimalControlProgram(nlp, use_sx=True)
     nlp.control_type = ControlType.CONSTANT
 
-    nlp.dynamics = Dynamics(dynamics, soft_contacts_dynamics=True, expand_dynamics=True, phase_dynamics=phase_dynamics),
+    nlp.dynamics = (
+        Dynamics(dynamics, soft_contacts_dynamics=True, expand_dynamics=True, phase_dynamics=phase_dynamics),
+    )
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
@@ -596,12 +598,12 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
     nlp.control_type = ControlType.CONSTANT
 
     nlp.dynamics = Dynamics(
-            DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
-            contact_type=[ContactType.RIGID_EXPLICIT] if with_contact else [],
-            expand_dynamics=True,
-            phase_dynamics=phase_dynamics,
-            numerical_data_timeseries=numerical_timeseries,
-        )
+        DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
+        contact_type=[ContactType.RIGID_EXPLICIT] if with_contact else [],
+        expand_dynamics=True,
+        phase_dynamics=phase_dynamics,
+        numerical_data_timeseries=numerical_timeseries,
+    )
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
@@ -721,12 +723,12 @@ def test_torque_activation_driven_with_residual_torque(
     nlp.control_type = ControlType.CONSTANT
 
     nlp.dynamics = Dynamics(
-            DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
-            with_residual_torque=with_residual_torque,
-            expand_dynamics=True,
-            phase_dynamics=phase_dynamics,
-            numerical_data_timeseries=numerical_timeseries,
-        )
+        DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
+        with_residual_torque=with_residual_torque,
+        expand_dynamics=True,
+        phase_dynamics=phase_dynamics,
+        numerical_data_timeseries=numerical_timeseries,
+    )
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
@@ -837,12 +839,14 @@ def test_torque_driven_free_floating_base(cx, phase_dynamics):
     ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
     nlp.control_type = ControlType.CONSTANT
 
-    nlp.dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN_FREE_FLOATING_BASE, expand_dynamics=True, phase_dynamics=phase_dynamics),
+    nlp.dynamics = (
+        Dynamics(DynamicsFcn.TORQUE_DRIVEN_FREE_FLOATING_BASE, expand_dynamics=True, phase_dynamics=phase_dynamics),
+    )
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
         nlp.dynamics,
-    False,
+        False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
@@ -912,19 +916,19 @@ def test_muscle_driven(with_excitations, with_contact, with_residual_torque, wit
     nlp.control_type = ControlType.CONSTANT
 
     nlp.dynamics = Dynamics(
-            DynamicsFcn.MUSCLE_DRIVEN,
-            with_residual_torque=with_residual_torque,
-            with_excitations=with_excitations,
-            contact_type=[ContactType.RIGID_EXPLICIT] if with_contact else [],
-            expand_dynamics=True,
-            phase_dynamics=phase_dynamics,
-            numerical_data_timeseries=numerical_timeseries,
-        )
+        DynamicsFcn.MUSCLE_DRIVEN,
+        with_residual_torque=with_residual_torque,
+        with_excitations=with_excitations,
+        contact_type=[ContactType.RIGID_EXPLICIT] if with_contact else [],
+        expand_dynamics=True,
+        phase_dynamics=phase_dynamics,
+        numerical_data_timeseries=numerical_timeseries,
+    )
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
         nlp.dynamics,
-    False,
+        False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
@@ -1088,10 +1092,10 @@ def test_joints_acceleration_driven(cx, phase_dynamics):
     nlp.control_type = ControlType.CONSTANT
 
     nlp.dynamics = Dynamics(
-            DynamicsFcn.JOINTS_ACCELERATION_DRIVEN,
-            expand_dynamics=True,
-            phase_dynamics=phase_dynamics,
-        )
+        DynamicsFcn.JOINTS_ACCELERATION_DRIVEN,
+        expand_dynamics=True,
+        phase_dynamics=phase_dynamics,
+    )
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
@@ -1164,12 +1168,12 @@ def test_custom_dynamics(contact_type, phase_dynamics):
     nlp.control_type = ControlType.CONSTANT
 
     nlp.dynamics = Dynamics(
-            configure,
-            dynamic_function=custom_dynamic,
-            contact_type=contact_type,
-            expand_dynamics=True,
-            phase_dynamics=phase_dynamics,
-        )
+        configure,
+        dynamic_function=custom_dynamic,
+        contact_type=contact_type,
+        expand_dynamics=True,
+        phase_dynamics=phase_dynamics,
+    )
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
@@ -1248,7 +1252,9 @@ def test_with_contact_error(dynamics_fcn, phase_dynamics):
     u_bounds["tau"] = [100] * n_tau, [100] * n_tau
     u_bounds["tau"][1, :] = 0  # Prevent the model from actively rotate
 
-    with pytest.raises(ValueError, match="No rigid contact defined in the .bioMod of phase 0, consider changing the ContactType."):
+    with pytest.raises(
+        ValueError, match="No rigid contact defined in the .bioMod of phase 0, consider changing the ContactType."
+    ):
         OptimalControlProgram(
             bio_model=bio_model,
             dynamics=dynamics,
