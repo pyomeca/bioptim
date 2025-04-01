@@ -194,6 +194,8 @@ def prepare_socp(
         )
 
     else:
+        ode_solver = OdeSolver.COLLOCATION(polynomial_degree=socp_type.polynomial_degree, method=socp_type.method)
+
         dynamics.add(
             configure_optimal_control_problem,
             dynamic_function=lambda time, states, controls, parameters, algebraic_states, nlp, with_noise: bio_model.dynamics(
@@ -206,10 +208,8 @@ def prepare_socp(
             ),
             phase_dynamics=phase_dynamics,
             expand_dynamics=expand_dynamics,
+            ode_solver=ode_solver,
         )
-
-        ode_solver = OdeSolver.COLLOCATION(polynomial_degree=socp_type.polynomial_degree, method=socp_type.method)
-
         return OptimalControlProgram(
             bio_model,
             dynamics,
@@ -219,7 +219,6 @@ def prepare_socp(
             u_bounds=u_bounds,
             objective_functions=objective_functions,
             constraints=constraints,
-            ode_solver=ode_solver,
             n_threads=6,
         )
 

@@ -52,6 +52,7 @@ def prepare_single_shooting(
     dynamics = Dynamics(
         DynamicsFcn.TORQUE_DRIVEN,
         soft_contacts_dynamics=SoftContactDynamics.ODE,
+        ode_solver=ode_solver,
     )
 
     return OptimalControlProgram(
@@ -59,7 +60,6 @@ def prepare_single_shooting(
         dynamics,
         n_shooting,
         final_time,
-        ode_solver=ode_solver,
         use_sx=use_sx,
         n_threads=n_threads,
     )
@@ -150,6 +150,7 @@ def prepare_ocp(
     dynamics = Dynamics(
         DynamicsFcn.TORQUE_DRIVEN,
         soft_contacts_dynamics=SoftContactDynamics.ODE,
+        ode_solver=ode_solver,
         phase_dynamics=phase_dynamics,
     )
 
@@ -191,7 +192,6 @@ def prepare_ocp(
         x_init=x_init,
         objective_functions=objective_functions,
         constraints=constraints,
-        ode_solver=ode_solver,
         use_sx=use_sx,
         n_threads=n_threads,
     )

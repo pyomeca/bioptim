@@ -96,6 +96,7 @@ def prepare_ocp(
     if use_actuators:
         dynamics.add(
             DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
+            ode_solver=ode_solver,
             with_contact=True,
             expand_dynamics=expand_dynamics,
             phase_dynamics=phase_dynamics,
@@ -104,6 +105,7 @@ def prepare_ocp(
         dynamics.add(
             DynamicsFcn.TORQUE_DRIVEN,
             with_contact=True,
+            ode_solver=ode_solver,
             expand_dynamics=expand_dynamics,
             phase_dynamics=phase_dynamics,
         )
@@ -155,7 +157,6 @@ def prepare_ocp(
         objective_functions=objective_functions,
         constraints=constraints,
         variable_mappings=dof_mapping,
-        ode_solver=ode_solver,
     )
 
 

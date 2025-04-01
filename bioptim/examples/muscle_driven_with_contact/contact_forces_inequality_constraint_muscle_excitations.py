@@ -50,6 +50,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
         with_excitations=True,
         with_residual_torque=True,
         with_contact=True,
+        ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
     )
 
@@ -113,7 +114,6 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
         objective_functions=objective_functions,
         constraints=constraints,
         variable_mappings=dof_mapping,
-        ode_solver=ode_solver,
     )
 
 

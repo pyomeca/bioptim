@@ -287,6 +287,7 @@ def prepare_ocp(
         DynamicsFcn.MUSCLE_DRIVEN,
         with_excitations=True,
         with_residual_torque=use_residual_torque,
+        ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
     )
@@ -322,7 +323,6 @@ def prepare_ocp(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
-        ode_solver=ode_solver,
     )
 
 

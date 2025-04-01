@@ -86,6 +86,7 @@ def prepare_ocp(
     dynamics.add(
         DynamicsFcn.MUSCLE_DRIVEN,
         with_residual_torque=True,
+        ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
     )
@@ -122,7 +123,6 @@ def prepare_ocp(
         x_init=x_init,
         u_init=u_init,
         objective_functions=objective_functions,
-        ode_solver=ode_solver,
         control_type=control_type,
         n_threads=n_threads,
     )

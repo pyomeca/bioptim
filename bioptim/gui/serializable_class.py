@@ -489,7 +489,6 @@ class NlpSerializable:
             algebraic_states=OptimizationVariableContainerSerializable.from_container(nlp.algebraic_states),
             parameters=OptimizationVariableContainerSerializable.from_container(nlp.parameters),
             numerical_timeseries=OptimizationVariableContainerSerializable.from_container(nlp.numerical_timeseries),
-            ode_solver=OdeSolverSerializable.from_ode_solver(nlp.ode_solver),
             plot={key: CustomPlotSerializable.from_custom_plot(nlp.plot[key]) for key in nlp.plot},
         )
 
@@ -504,7 +503,6 @@ class NlpSerializable:
             "algebraic_states": self.algebraic_states.serialize(),
             "parameters": self.parameters.serialize(),
             "numerical_timeseries": self.numerical_timeseries.serialize(),
-            "ode_solver": self.ode_solver.serialize(),
             "plot": {key: plot.serialize() for key, plot in self.plot.items()},
         }
 
@@ -520,7 +518,6 @@ class NlpSerializable:
             algebraic_states=OptimizationVariableContainerSerializable.deserialize(data["algebraic_states"]),
             parameters=OptimizationVariableContainerSerializable.deserialize(data["parameters"]),
             numerical_timeseries=OptimizationVariableContainerSerializable.deserialize(data["numerical_timeseries"]),
-            ode_solver=OdeSolverSerializable.deserialize(data["ode_solver"]),
             plot={key: CustomPlotSerializable.deserialize(plot) for key, plot in data["plot"].items()},
         )
 

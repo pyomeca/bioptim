@@ -62,7 +62,7 @@ def prepare_ocp(
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="qddot_joints")
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.JOINTS_ACCELERATION_DRIVEN)
+    dynamics = Dynamics(DynamicsFcn.JOINTS_ACCELERATION_DRIVEN, ode_solver=ode_solver)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -100,7 +100,6 @@ def prepare_ocp(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
-        ode_solver=ode_solver,
         use_sx=use_sx,
         n_threads=n_threads,
     )
