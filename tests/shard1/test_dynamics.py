@@ -449,7 +449,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("contact_type", [[ContactType.SOFT_IMPLICIT], [ContactType.SOFT_EXPLICIT], []])
-def test_torque_derivative_driven_soft_contacts_dynamics(contact_type, cx, implicit_contact, phase_dynamics):
+def test_torque_derivative_driven_soft_contacts_dynamics(contact_type, cx, phase_dynamics):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = BiorbdModel(
