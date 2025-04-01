@@ -1959,6 +1959,7 @@ class Dynamics(OptionGeneric):
         state_continuity_weight: float | None = None,
         phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
         numerical_data_timeseries: dict[str, np.ndarray] = None,
+        contact_type: list[ContactType] = [],
         **extra_parameters: Any,
     ):
         """
@@ -1981,6 +1982,8 @@ class Dynamics(OptionGeneric):
             If the dynamics should be shared between the nodes or not
         numerical_data_timeseries: dict[str, np.ndarray]
             The numerical timeseries at each node. ex: the experimental external forces data should go here.
+        contact_type: list[ContactType]
+            The type of contact to consider in the dynamics
         """
 
         configure = None
@@ -2006,6 +2009,7 @@ class Dynamics(OptionGeneric):
         self.state_continuity_weight = state_continuity_weight
         self.phase_dynamics = phase_dynamics
         self.numerical_data_timeseries = numerical_data_timeseries
+        self.contact_type = contact_type
 
 
 class DynamicsList(UniquePerPhaseOptionList):

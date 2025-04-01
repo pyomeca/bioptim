@@ -13,7 +13,7 @@ class MockData:
     pass
 
 
-from bioptim.examples.muscle_driven_with_contact import contact_forces_inverse_dynamics_constraint_muscle as ocp_module
+from bioptim.examples.muscle_driven_with_contact import contact_forces_inequality_constraint_muscle as ocp_module
 
 BIOPTIM_FOLDER = TestUtils.module_folder(ocp_module)
 MODEL_RIGID_CONTACT = BiorbdModel(BIOPTIM_FOLDER + "/models/2segments_4dof_2contacts_1muscle.bioMod")
