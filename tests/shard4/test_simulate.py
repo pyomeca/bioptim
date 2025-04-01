@@ -250,6 +250,17 @@ def test_integrate(integrator, ode_solver, phase_dynamics):
 
     opts = {"shooting_type": Shooting.MULTIPLE, "integrator": integrator}
 
+    if ode_solver == OdeSolver.COLLOCATION and integrator == SolutionIntegrator.OCP:
+        with pytest.raises(
+            ValueError,
+            match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
+            "we cannot use the SolutionIntegrator.OCP.\n"
+            "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
+            " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
+        ):
+            sol.integrate(**opts)
+        return
+
     states = sol.stepwise_states(to_merge=SolutionMerge.NODES)
     sol_integrated = sol.integrate(**opts, to_merge=SolutionMerge.NODES)
     for key in sol_integrated.keys():
@@ -473,22 +484,6 @@ def test_integrate_all_cases(shooting, merge, integrator, ode_solver, phase_dyna
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     n_shooting = 10 if integrator == SolutionIntegrator.OCP else 30
-
-    if ode_solver == OdeSolver.COLLOCATION and control_type == ControlType.LINEAR_CONTINUOUS:
-        with pytest.raises(
-            NotImplementedError,
-            match="ControlType.LINEAR_CONTINUOUS ControlType not implemented yet with COLLOCATION",
-        ):
-            ocp_module.prepare_ocp(
-                biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
-                final_time=1,
-                n_shooting=n_shooting,
-                ode_solver=ode_solver(),
-                phase_dynamics=phase_dynamics,
-                expand_dynamics=True,
-                control_type=control_type,
-            )
-        return
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
