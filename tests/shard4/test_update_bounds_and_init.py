@@ -1035,9 +1035,9 @@ def test_update_noised_initial_guess_collocation(interpolation, phase_dynamics):
         x.add("qdot", x_init[nq:, :], interpolation=interpolation)
         u.add("tau", np.zeros((ntau, ns)), interpolation=interpolation)
     elif interpolation == InterpolationType.ALL_POINTS:
-        x_init = np.zeros((nq * 2, ns * (solver.polynomial_degree + 1) + 1))
+        x_init = np.zeros((nq * 2, ns * (ode_solver.polynomial_degree + 1) + 1))
         for i in range(nq * 2):
-            x_init[i, :] = np.linspace(0, 1, ns * (solver.polynomial_degree + 1) + 1)
+            x_init[i, :] = np.linspace(0, 1, ns * (ode_solver.polynomial_degree + 1) + 1)
         x.add("q", x_init[:nq, :], interpolation=interpolation)
         x.add("qdot", x_init[nq:, :], interpolation=interpolation)
         u.add("tau", np.zeros((ntau, ns)), interpolation=interpolation)
