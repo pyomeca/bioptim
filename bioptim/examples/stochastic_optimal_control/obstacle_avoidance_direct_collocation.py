@@ -346,7 +346,7 @@ def configure_optimal_control_problem(
 
 
 def configure_stochastic_optimal_control_problem(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None
+    ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None, contact_type=[]
 ):
     ConfigureProblem.configure_q(ocp, nlp, True, False, False)
     ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)

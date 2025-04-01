@@ -219,7 +219,7 @@ class ConfigureProblem:
 
         # Configure the contact forces
         if ContactType.RIGID_EXPLICIT in contact_type:
-            ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
+            ConfigureProblem.configure_rigid_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
 
         # Configure the soft contact forces
         if ContactType.SOFT_EXPLICIT in contact_type:
@@ -576,7 +576,7 @@ class ConfigureProblem:
             )
 
         if ContactType.RIGID_EXPLICIT in contact_type:
-            ConfigureProblem.configure_contact_function(
+            ConfigureProblem.configure_rigid_contact_function(
                 ocp,
                 nlp,
                 DynamicsFunctions.forces_from_torque_driven,
@@ -648,7 +648,7 @@ class ConfigureProblem:
             )
 
         if ContactType.RIGID_EXPLICIT in contact_type:
-            ConfigureProblem.configure_contact_function(
+            ConfigureProblem.configure_rigid_contact_function(
                 ocp, nlp, DynamicsFunctions.forces_from_torque_activation_driven
             )
 
@@ -660,6 +660,7 @@ class ConfigureProblem:
         ocp,
         nlp,
         numerical_data_timeseries: dict[str, np.ndarray] = None,
+        contact_type: list[ContactType] = [],
     ):
         """
         Configure the dynamics for a joints acceleration driven program
@@ -674,6 +675,10 @@ class ConfigureProblem:
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
+
+        if len(contact_type) > 0:
+            raise RuntimeError("joints acceleration driven dynamics cannot be used with contacts by definition.")
+
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False, as_states_dot=True)
         # Configure qddot joints
@@ -777,7 +782,7 @@ class ConfigureProblem:
             )
 
         if ContactType.RIGID_EXPLICIT in contact_type:
-            ConfigureProblem.configure_contact_function(
+            ConfigureProblem.configure_rigid_contact_function(
                 ocp,
                 nlp,
                 DynamicsFunctions.forces_from_muscle_driven,
@@ -1142,7 +1147,7 @@ class ConfigureProblem:
                     )
 
     @staticmethod
-    def configure_contact_function(ocp, nlp, contact_func: Callable, **extra_params):
+    def configure_rigid_contact_function(ocp, nlp, contact_func: Callable, **extra_params):
         """
         Configure the contact points
 

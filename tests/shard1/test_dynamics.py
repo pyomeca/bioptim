@@ -1138,7 +1138,7 @@ def test_custom_dynamics(contact_type, phase_dynamics):
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False)
         ConfigureProblem.configure_tau(ocp, nlp, False, True)
-        ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic, with_contact=with_contact)
+        ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic, contact_type=contact_type)
 
         if ContactType.RIGID_EXPLICIT in contact_type:
             ConfigureProblem.configure_rigid_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
@@ -1248,7 +1248,7 @@ def test_with_contact_error(dynamics_fcn, phase_dynamics):
     u_bounds["tau"] = [100] * n_tau, [100] * n_tau
     u_bounds["tau"][1, :] = 0  # Prevent the model from actively rotate
 
-    with pytest.raises(ValueError, match="No contact defined in the .bioMod of phase 0, set with_contact to False"):
+    with pytest.raises(ValueError, match="No rigid contact defined in the .bioMod of phase 0, consider changing the ContactType."):
         OptimalControlProgram(
             bio_model=bio_model,
             dynamics=dynamics,
