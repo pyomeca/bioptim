@@ -238,6 +238,7 @@ class ConfigureProblem:
     def torque_driven_free_floating_base(
         ocp,
         nlp,
+        contact_type: list[ContactType],
         with_passive_torque: bool = False,
         with_ligament: bool = False,
         with_friction: bool = False,
@@ -255,6 +256,8 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
+        contact_type: list[ContactType]
+            The type of contacts to consider in the dynamics
         with_passive_torque: bool
             If the dynamic with passive torque should be used
         with_ligament: bool
@@ -264,6 +267,8 @@ class ConfigureProblem:
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node.
         """
+        if len(contact_type) > 0:
+            raise RuntimeError("free floating base dynamics cannot be used with contacts by definition.")
 
         nb_q = nlp.model.nb_q
         nb_qdot = nlp.model.nb_qdot
@@ -457,6 +462,8 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
+        contact_type: list[ContactType]
+            The type of contacts to consider in the dynamics
         with_friction: bool
             If the dynamic with joint friction should be used (friction = coefficient * qdot)
         with_cholesky: bool
@@ -466,6 +473,9 @@ class ConfigureProblem:
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node.
         """
+        if len(contact_type) > 0:
+            raise RuntimeError("free floating base dynamics cannot be used with contacts by definition.")
+
         n_noised_tau = nlp.model.n_noised_controls
         n_noise = nlp.model.motor_noise_magnitude.shape[0] + nlp.model.sensory_noise_magnitude.shape[0]
         n_noised_states = nlp.model.n_noised_states
@@ -1211,6 +1221,23 @@ class ConfigureProblem:
         nlp: NonLinearProgram
             A reference to the phase
         """
+
+        time_span_sym = vertcat(nlp.time_cx, nlp.dt)
+        nlp.soft_contact_forces_func = Function(
+            "soft_contact_forces_func",
+            [
+                time_span_sym,
+                nlp.states.scaled.cx,
+                nlp.controls.scaled.cx,
+                nlp.parameters.scaled.cx,
+                nlp.algebraic_states.scaled.cx,
+                nlp.numerical_timeseries.cx,
+            ],
+            [nlp.model.soft_contact_forces()(nlp.states["q"].cx, nlp.states["qdot"].cx, nlp.parameters.cx)],
+            ["t_span", "x", "u", "p", "a", "d"],
+            ["soft_contact_forces"],
+        ).expand()
+
         component_list = ["Mx", "My", "Mz", "Fx", "Fy", "Fz"]
 
         for i_sc in range(nlp.model.nb_soft_contacts):
