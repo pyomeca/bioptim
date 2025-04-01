@@ -1747,7 +1747,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_rigid_contact_forces(ocp, nlp, as_states: bool, as_controls: bool):
+    def configure_rigid_contact_forces(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
         """
         Configure the generalized forces derivative
 
@@ -1759,15 +1759,17 @@ class ConfigureProblem:
             If the generalized force derivatives should be a state
         as_controls: bool
             If the generalized force derivatives should be a control
+        as_algebraic_states: bool
+            If the generalized force derivatives should be an algebraic state
         """
 
         name_contact_forces = [name for name in nlp.model.contact_names]
         ConfigureProblem.configure_new_variable(
-            "rigid_contact_forces", name_contact_forces, ocp, nlp, as_states, as_controls
+            "rigid_contact_forces", name_contact_forces, ocp, nlp, as_states, as_controls, as_algebraic_states
         )
 
     @staticmethod
-    def configure_soft_contact_forces(ocp, nlp, as_states: bool, as_controls: bool):
+    def configure_soft_contact_forces(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
         """
         Configure the generalized forces derivative
 
@@ -1779,12 +1781,14 @@ class ConfigureProblem:
             If the generalized force derivatives should be a state
         as_controls: bool
             If the generalized force derivatives should be a control
+        as_algebraic_states: bool
+            If the generalized force derivatives should be an algebraic state
         """
         name_soft_contact_forces = [
             f"{name}_{axis}" for name in nlp.model.soft_contact_names for axis in ("X", "Y", "Z")
         ]
         ConfigureProblem.configure_new_variable(
-            "soft_contact_forces", name_soft_contact_forces, ocp, nlp, as_states, as_controls
+            "soft_contact_forces", name_soft_contact_forces, ocp, nlp, as_states, as_controls, as_algebraic_states
         )
 
     @staticmethod
