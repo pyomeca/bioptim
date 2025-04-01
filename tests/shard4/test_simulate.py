@@ -249,16 +249,6 @@ def test_integrate(integrator, ode_solver, phase_dynamics):
     sol = ocp.solve(solver)
 
     opts = {"shooting_type": Shooting.MULTIPLE, "integrator": integrator}
-    if ode_solver == OdeSolver.COLLOCATION and integrator == SolutionIntegrator.OCP:
-        with pytest.raises(
-            ValueError,
-            match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
-            "we cannot use the SolutionIntegrator.OCP.\n"
-            "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
-            " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
-        ):
-            sol.integrate(**opts)
-        return
 
     states = sol.stepwise_states(to_merge=SolutionMerge.NODES)
     sol_integrated = sol.integrate(**opts, to_merge=SolutionMerge.NODES)
