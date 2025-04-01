@@ -13,11 +13,7 @@ from casadi import SX, MX, vertcat, horzcat, norm_fro, Function, DM
 
 from bioptim.models.biorbd.external_forces import (
     ExternalForceSetTimeSeries,
-    _add_global_force,
-    _add_torque_global,
-    _add_translational_global,
-    _add_local_force,
-    _add_torque_local,
+    ExternalForceSetVariables,
 )
 from ..utils import _var_mapping, bounds_from_ranges
 from ...limits.path_conditions import Bounds
@@ -38,7 +34,7 @@ class BiorbdModel:
         bio_model: str | biorbd.Model,
         friction_coefficients: np.ndarray = None,
         parameters: ParameterList = None,
-        external_force_set: ExternalForceSetTimeSeries = None,
+        external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables  = None,
     ):
         """
         Parameters
@@ -93,19 +89,31 @@ class BiorbdModel:
         """
         It checks the external forces and binds them to the model.
         """
-        external_force_set._check_segment_names(tuple([s.name().to_string() for s in self.model.segments()]))
-        external_force_set._check_all_string_points_of_application(self.marker_names)
-        external_force_set._bind()
+        external_force_set.check_segment_names(tuple([s.name().to_string() for s in self.model.segments()]))
+        external_force_set.check_all_string_points_of_application(self.marker_names)
+        external_force_set.bind()
 
         return external_force_set
 
     def cache_function(method):
         """Decorator to cache CasADi functions automatically"""
 
+        def make_hashable(value):
+            """
+            Transforms non-hashable objects (dicts, and lists) into hashable objects (tuple)
+            """
+            if isinstance(value, list):
+                return tuple(make_hashable(v) for v in value)
+            elif isinstance(value, dict):
+                return tuple(sorted((k, make_hashable(v)) for k, v in value.items()))
+            elif isinstance(value, set):
+                return frozenset(make_hashable(v) for v in value)
+            return value
+
         @wraps(method)
         def wrapper(self, *args, **kwargs):
             # Create a unique key based on the method name and arguments
-            key = (method.__name__, args, frozenset(kwargs.items()))
+            key = (method.__name__, args, frozenset((k, make_hashable(v)) for k, v in kwargs.items()))
             if key in self._cached_functions:
                 return self._cached_functions[key]
 
@@ -501,11 +509,11 @@ class BiorbdModel:
 
         # "type of external force": (function to call, number of force components)
         force_mapping = {
-            "in_global": (_add_global_force, 6),
-            "torque_in_global": (_add_torque_global, 3),
-            "translational_in_global": (_add_translational_global, 3),
-            "in_local": (_add_local_force, 6),
-            "torque_in_local": (_add_torque_local, 3),
+            "in_global": (self.external_force_set.add_global_force, 6),
+            "torque_in_global": (self.external_force_set.add_torque_global, 3),
+            "translational_in_global": (self.external_force_set.add_translational_global, 3),
+            "in_local": (self.external_force_set.add_local_force, 6),
+            "torque_in_local": (self.external_force_set.add_torque_local, 3),
         }
 
         symbolic_counter = 0
@@ -546,18 +554,18 @@ class BiorbdModel:
         int
             The updated symbolic counter.
         """
-        for segment, forces_on_segment in getattr(self.external_force_set, force_type).items():
-            for force in forces_on_segment:
-                force_slicer = slice(symbolic_counter, symbolic_counter + num_force_components)
+        for force_name, force in getattr(self.external_force_set, force_type).items():
+            force_slicer = slice(symbolic_counter, symbolic_counter + num_force_components)
 
-                point_of_application_mx = self._get_point_of_application(force, force_slicer.stop)
+            point_of_application_mx = self._get_point_of_application(force, force_slicer.stop)
 
-                add_force_func(
-                    biorbd_external_forces, segment, self.external_forces[force_slicer], point_of_application_mx
-                )
-                symbolic_counter = force_slicer.stop + (
-                    3 if isinstance(force["point_of_application"], np.ndarray) else 0
-                )
+            add_force_func(
+                biorbd_external_forces,
+                force["segment"],
+                self.external_forces[force_slicer],
+                point_of_application_mx,
+            )
+            symbolic_counter = force_slicer.stop + (3 if isinstance(force["point_of_application"], np.ndarray) else 0)
 
         return symbolic_counter
 
@@ -579,9 +587,12 @@ class BiorbdModel:
         """
         if isinstance(force["point_of_application"], np.ndarray):
             return self.external_forces[slice(stop_index, stop_index + 3)]
+        elif isinstance(force["point_of_application"], MX):
+            return self.external_forces[slice(stop_index, stop_index + 3)]
         elif isinstance(force["point_of_application"], str):
             return self.model.marker(self.marker_index(force["point_of_application"]))
-        return None
+        else:
+            return None
 
     @cache_function
     def forward_dynamics(self, with_contact: bool = False) -> Function:
