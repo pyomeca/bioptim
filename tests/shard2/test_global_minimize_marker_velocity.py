@@ -301,10 +301,9 @@ def test_track_and_minimize_marker_velocity(ode_solver, phase_dynamics):
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK, OdeSolver.COLLOCATION])
 def test_track_and_minimize_marker_velocity_linear_controls(ode_solver, phase_dynamics):
     # Load track_and_minimize_marker_velocity
-    ode_solver = ode_solver()
     ocp = prepare_ocp(
         biorbd_model_path=TestUtils.bioptim_folder() + "/examples/track/models/cube_and_line.bioMod",
         n_shooting=5,
@@ -312,15 +311,22 @@ def test_track_and_minimize_marker_velocity_linear_controls(ode_solver, phase_dy
         marker_velocity_or_displacement="velo",
         marker_in_first_coordinates_system=True,
         control_type=ControlType.LINEAR_CONTINUOUS,
-        ode_solver=ode_solver,
+        ode_solver=ode_solver(),
         phase_dynamics=phase_dynamics,
     )
     sol = ocp.solve()
 
+    # Make sure it converged
+    assert sol.status == 0
+
     # Check constraints
     g = np.array(sol.constraints)
-    npt.assert_equal(g.shape, (40, 1))
-    npt.assert_almost_equal(g, np.zeros((40, 1)))
+    if ode_solver == OdeSolver.COLLOCATION:
+        npt.assert_equal(g.shape, (200, 1))
+        npt.assert_almost_equal(g, np.zeros((200, 1)))
+    else:
+        npt.assert_equal(g.shape, (40, 1))
+        npt.assert_almost_equal(g, np.zeros((40, 1)))
 
     # Check some of the results
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
@@ -334,8 +340,12 @@ def test_track_and_minimize_marker_velocity_linear_controls(ode_solver, phase_dy
     npt.assert_almost_equal(qdot[2:, 0], np.array([10, 0]))
     npt.assert_almost_equal(qdot[2:, -1], np.array([10, 0]))
     # initial and final controls
-    npt.assert_almost_equal(tau[2:, 0], np.array([-8.495542, 0]), decimal=5)
-    npt.assert_almost_equal(tau[2:, -1], np.array([8.495541, 0]), decimal=5)
+    if ode_solver == OdeSolver.COLLOCATION:
+        npt.assert_almost_equal(tau[2:, 0], np.array([-3.44506583, 0]), decimal=5)
+        npt.assert_almost_equal(tau[2:, -1], np.array([3.44506583, 0]), decimal=5)
+    else:
+        npt.assert_almost_equal(tau[2:, 0], np.array([-8.495542, 0]), decimal=5)
+        npt.assert_almost_equal(tau[2:, -1], np.array([8.495541, 0]), decimal=5)
 
     # simulate
     TestUtils.simulate(sol)
