@@ -3,11 +3,12 @@ from scipy.interpolate import interp1d
 
 from ...limits.objective_functions import ObjectiveFcn
 from ...misc.enums import Node
+from ...misc.parameters_types import IntOptional, NpArray
 
 
 def _prepare_tracked_markers_for_animation(
-    nlps: list["NonLinearProgram", ...], n_shooting: int = None
-) -> list[np.ndarray, ...]:
+    nlps: list["NonLinearProgram", ...], n_shooting: IntOptional = None
+) -> list[NpArray, ...]:
     """
     Prepare the markers which are tracked to the animation
 

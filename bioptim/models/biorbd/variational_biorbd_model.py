@@ -8,6 +8,7 @@ from casadi import SX, MX, DM, vertcat, jacobian, transpose
 from .holonomic_biorbd_model import HolonomicBiorbdModel
 from ...misc.enums import ControlType, QuadratureRule
 from ...optimization.parameters import ParameterList
+from ...misc.parameters_types import Str, Float
 
 
 class VariationalBiorbdModel(HolonomicBiorbdModel):
@@ -18,7 +19,7 @@ class VariationalBiorbdModel(HolonomicBiorbdModel):
 
     def __init__(
         self,
-        bio_model: str | biorbd.Model,
+        bio_model: Str | biorbd.Model,
         discrete_approximation: QuadratureRule = QuadratureRule.TRAPEZOIDAL,
         control_type: ControlType = ControlType.CONSTANT,
         control_discrete_approximation: QuadratureRule = QuadratureRule.MIDPOINT,
@@ -29,7 +30,7 @@ class VariationalBiorbdModel(HolonomicBiorbdModel):
 
         Parameters
         ----------
-        bio_model : str | biorbd.Model
+        bio_model : Str | biorbd.Model
             The path to the biorbd model file or a biorbd.Model instance.
         discrete_approximation : QuadratureRule, optional
             The quadrature rule for the discrete approximation (default is QuadratureRule.TRAPEZOIDAL).
@@ -91,7 +92,7 @@ class VariationalBiorbdModel(HolonomicBiorbdModel):
         self,
         control_minus: MX | SX,
         control_plus: MX | SX,
-        time_step: float,
+        time_step: Float,
     ):
         """
         Compute the term associated to the discrete forcing. The term associated to the controls in the Lagrangian
