@@ -3,6 +3,14 @@ from casadi import MX, vertcat
 
 from ...misc.parameters_types import Int, AnyDict, Bool, NpArray, Str, StrTuple, NpArrayOptional, CXOrDMOrNpArray
 
+# "type of external force": (function to call, number of force components, number of point of application components)
+BIOPTIM_TO_VECTOR_MAP = {
+    "in_global": 6,
+    "torque_in_global": 3,
+    "translational_in_global": 3,
+    "in_local": 6,
+    "torque_in_local": 3,
+}
 
 class ExternalForceSetCommon:
 
@@ -236,22 +244,13 @@ class ExternalForceSetTimeSeries(ExternalForceSetCommon):
         """Convert the external forces to a numerical time series"""
         fext_numerical_time_series = np.zeros((self.nb_external_forces_components, 1, self.nb_frames + 1))
 
-        # "type of external force": (function to call, number of force components, number of point of application components)
-        bioptim_to_vector_map = {
-            "in_global": 6,
-            "torque_in_global": 3,
-            "translational_in_global": 3,
-            "in_local": 6,
-            "torque_in_local": 3,
-        }
-
         symbolic_counter = 0
-        for attr in bioptim_to_vector_map.keys():
+        for attr in BIOPTIM_TO_VECTOR_MAP.keys():
             for segment, force in getattr(self, attr).items():
                 array_point_of_application = isinstance(force["point_of_application"], np.ndarray)
 
                 start = symbolic_counter
-                stop = symbolic_counter + bioptim_to_vector_map[attr]
+                stop = symbolic_counter + BIOPTIM_TO_VECTOR_MAP[attr]
                 force_slicer = slice(start, stop)
                 fext_numerical_time_series[force_slicer, 0, :-1] = force["values"]
 
@@ -333,23 +332,14 @@ class ExternalForceSetVariables(ExternalForceSetCommon):
         """Convert the external forces to an MX vector"""
         fext_numerical_time_series = MX.zeros((self.nb_external_forces_components, 1))
 
-        # "type of external force": (function to call, number of force components, number of point of application components)
-        bioptim_to_vector_map = {
-            "in_global": 6,
-            "torque_in_global": 3,
-            "translational_in_global": 3,
-            "in_local": 6,
-            "torque_in_local": 3,
-        }
-
         symbolic_counter = 0
-        for attr in bioptim_to_vector_map.keys():
+        for attr in BIOPTIM_TO_VECTOR_MAP.keys():
             for segment, forces in getattr(self, attr).items():
                 for force in forces:
                     array_point_of_application = not isinstance(force["point_of_application"], np.ndarray)
 
                     start = symbolic_counter
-                    stop = symbolic_counter + bioptim_to_vector_map[attr]
+                    stop = symbolic_counter + BIOPTIM_TO_VECTOR_MAP[attr]
                     force_slicer = slice(start, stop)
                     fext_numerical_time_series[force_slicer, 0, :-1] = force["values"]
 
