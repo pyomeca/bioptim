@@ -565,7 +565,9 @@ class BiorbdModel:
                 self.external_forces[force_slicer],
                 point_of_application_mx,
             )
-            symbolic_counter = force_slicer.stop + (3 if isinstance(force_characteristics["point_of_application"], np.ndarray) else 0)
+            symbolic_counter = force_slicer.stop + (
+                3 if isinstance(force_characteristics["point_of_application"], np.ndarray) else 0
+            )
 
         return symbolic_counter
 
