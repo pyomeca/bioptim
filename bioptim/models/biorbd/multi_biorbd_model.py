@@ -9,6 +9,17 @@ from ..utils import bounds_from_ranges
 from ...limits.path_conditions import Bounds
 from ...misc.mapping import BiMapping, BiMappingList
 
+from ...misc.parameters_types import (
+    Int,
+    Str,
+    Bool,
+    StrTuple,
+    AnyTuple,
+    StrOrIterable,
+    StrList,
+    AnyDict,
+)
+
 
 class MultiBiorbdModel:
     """
@@ -117,24 +128,24 @@ class MultiBiorbdModel:
 
         return wrapper
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: Int):
         return self.models[index]
 
     def deep_copy(self, *args):
         raise NotImplementedError("Deep copy is not implemented yet for MultiBiorbdModel class")
 
     @property
-    def path(self) -> tuple[list[str], list[str]]:
+    def path(self) -> tuple[StrList, StrList]:
         return [model.path for model in self.models], [model.path for model in self.extra_models]
 
     def copy(self):
         all_paths = self.path
         return MultiBiorbdModel(tuple(all_paths[0]), tuple(all_paths[1]))
 
-    def serialize(self) -> tuple[Callable, dict]:
+    def serialize(self) -> tuple[Callable, AnyDict]:
         return MultiBiorbdModel, dict(bio_model=tuple(self.path[0]), extra_bio_models=tuple(self.path[1]))
 
-    def variable_index(self, variable: str, model_index: int) -> range:
+    def variable_index(self, variable: Str, model_index: Int) -> range:
         """
         Get the index of the variables in the global vector for a given model index
 
@@ -204,22 +215,22 @@ class MultiBiorbdModel:
                 "The variable must be 'q', 'qdot', 'qddot', 'tau', 'contact' or 'markers'" f" and {variable} was sent."
             )
 
-    def global_variable_id(self, variable: str, model_index: int, model_variable_id: int) -> int:
+    def global_variable_id(self, variable: Str, model_index: Int, model_variable_id: Int) -> Int:
         """
         Get the id of the variable in the global vector for a given model index
 
         Parameters
         ----------
-        variable: str
+        variable: Str
             The variable to get the index from such as 'q', 'qdot', 'qddot', 'tau', 'contact', 'markers'
-        model_index: int
+        model_index: Int
             The index of the model to get the index from
-        model_variable_id: int
+        model_variable_id: Int
             The id of the variable in the model vector
 
         Returns
         -------
-        int
+        Int
             The id of the variable in the global vector
         """
         return self.variable_index(variable, model_index)[model_variable_id]
@@ -246,7 +257,7 @@ class MultiBiorbdModel:
                 return global_index - self.variable_index(variable, model_id)[0], model_id
 
     @property
-    def nb_models(self) -> int:
+    def nb_models(self) -> Int:
         """
         Get the number of models
 
@@ -258,7 +269,7 @@ class MultiBiorbdModel:
         return len(self.models)
 
     @property
-    def nb_extra_models(self) -> int:
+    def nb_extra_models(self) -> Int:
         """
         Get the number of extra models
 
@@ -298,11 +309,11 @@ class MultiBiorbdModel:
         return
 
     @property
-    def nb_tau(self) -> int:
+    def nb_tau(self) -> Int:
         return sum(model.nb_tau for model in self.models)
 
     @property
-    def nb_segments(self) -> int:
+    def nb_segments(self) -> Int:
         return sum(model.nb_segments for model in self.models)
 
     def segment_index(self, name) -> int:
@@ -313,19 +324,19 @@ class MultiBiorbdModel:
         return sum(model.nb_quaternions for model in self.models)
 
     @property
-    def nb_q(self) -> int:
+    def nb_q(self) -> Int:
         return sum(model.nb_q for model in self.models)
 
     @property
-    def nb_qdot(self) -> int:
+    def nb_qdot(self) -> Int:
         return sum(model.nb_qdot for model in self.models)
 
     @property
-    def nb_qddot(self) -> int:
+    def nb_qddot(self) -> Int:
         return sum(model.nb_qddot for model in self.models)
 
     @property
-    def nb_root(self) -> int:
+    def nb_root(self) -> Int:
         return sum(model.nb_root for model in self.models)
 
     @property
@@ -337,7 +348,7 @@ class MultiBiorbdModel:
         return out
 
     @cache_function
-    def homogeneous_matrices_in_global(self, segment_index, inverse=False) -> Function:
+    def homogeneous_matrices_in_global(self, segment_index, inverse: Bool = False) -> Function:
         local_segment_id, model_id = self.local_variable_id("segment", segment_index)
         q_model = self.models[model_id].q
         biorbd_return = self.models[model_id].homogeneous_matrices_in_global(local_segment_id, inverse)(
@@ -519,19 +530,19 @@ class MultiBiorbdModel:
         return casadi_fun
 
     @property
-    def name_dof(self) -> tuple[str, ...]:
+    def name_dof(self) -> StrTuple:
         return tuple([dof for model in self.models for dof in model.name_dof])
 
     @property
-    def contact_names(self) -> tuple[str, ...]:
+    def contact_names(self) -> StrTuple:
         return tuple([contact for model in self.models for contact in model.contact_names])
 
     @property
-    def nb_soft_contacts(self) -> int:
+    def nb_soft_contacts(self) -> Int:
         return sum(model.nb_soft_contacts for model in self.models)
 
     @property
-    def soft_contact_names(self) -> tuple[str, ...]:
+    def soft_contact_names(self) -> StrTuple:
         return tuple([contact for model in self.models for contact in model.soft_contact_names])
 
     def soft_contact(self, soft_contact_index, *args):
@@ -546,11 +557,11 @@ class MultiBiorbdModel:
         return out
 
     @property
-    def muscle_names(self) -> tuple[str, ...]:
+    def muscle_names(self) -> StrTuple:
         return tuple([muscle for model in self.models for muscle in model.muscle_names])
 
     @property
-    def nb_muscles(self) -> int:
+    def nb_muscles(self) -> Int:
         return sum(model.nb_muscles for model in self.models)
 
     @cache_function
@@ -780,7 +791,7 @@ class MultiBiorbdModel:
         return casadi_fun
 
     @property
-    def nb_markers(self) -> int:
+    def nb_markers(self) -> Int:
         return sum(model.nb_markers for model in self.models)
 
     def marker_index(self, name):
@@ -806,7 +817,7 @@ class MultiBiorbdModel:
         return casadi_fun
 
     @property
-    def nb_rigid_contacts(self) -> int:
+    def nb_rigid_contacts(self) -> Int:
         """
         Returns the number of rigid contacts.
         Example:
@@ -817,7 +828,7 @@ class MultiBiorbdModel:
         return sum(model.nb_rigid_contacts for model in self.models)
 
     @property
-    def nb_contacts(self) -> int:
+    def nb_contacts(self) -> Int:
         """
         Returns the number of contact index.
         Example:
@@ -827,7 +838,7 @@ class MultiBiorbdModel:
         """
         return sum(model.nb_contacts for model in self.models)
 
-    def rigid_contact_index(self, contact_index) -> tuple:
+    def rigid_contact_index(self, contact_index) -> AnyTuple:
         """
         Returns the axis index of this specific rigid contact.
         Example:
@@ -863,7 +874,7 @@ class MultiBiorbdModel:
         return casadi_fun
 
     @cache_function
-    def marker_velocity(self, marker_index: int) -> Function:
+    def marker_velocity(self, marker_index: Int) -> Function:
         biorbd_return = []
         for i, model in enumerate(self.models):
             q_model = self.q[self.variable_index("q", i)]
@@ -921,11 +932,11 @@ class MultiBiorbdModel:
         return casadi_fun
 
     @property
-    def nb_dof(self) -> int:
+    def nb_dof(self) -> Int:
         return sum(model.nb_dof for model in self.models)
 
     @property
-    def marker_names(self) -> tuple[str, ...]:
+    def marker_names(self) -> StrTuple:
         return tuple([name for model in self.models for name in model.marker_names])
 
     @cache_function
@@ -1016,10 +1027,10 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
-    def ranges_from_model(self, variable: str):
+    def ranges_from_model(self, variable: Str):
         return [the_range for model in self.models for the_range in model.ranges_from_model(variable)]
 
-    def bounds_from_ranges(self, variables: str | list[str], mapping: BiMapping | BiMappingList = None) -> Bounds:
+    def bounds_from_ranges(self, variables: StrOrIterable, mapping: BiMapping | BiMappingList = None) -> Bounds:
         return bounds_from_ranges(self, variables, mapping)
 
     def _var_mapping(self, key: str, range_for_mapping: int | list | tuple | range, mapping: BiMapping = None) -> dict:
@@ -1035,10 +1046,10 @@ class MultiBiorbdModel:
     def animate(
         ocp,
         solution,
-        show_now: bool = True,
-        show_tracked_markers: bool = False,
-        viewer: str = "pyorerun",
-        n_frames: int = 0,
+        show_now: Bool = True,
+        show_tracked_markers: Bool = False,
+        viewer: Str = "pyorerun",
+        n_frames: Int = 0,
         **kwargs,
     ):
         from .viewer_bioviz import animate_with_bioviz_for_loop

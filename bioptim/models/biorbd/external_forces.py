@@ -1,6 +1,7 @@
 import numpy as np
 from casadi import MX, vertcat
 
+from ...misc.parameters_types import Int, AnyDict, Bool, NpArray, Str, StrTuple, NpArrayOptional, AnyList
 
 
 class ExternalForceSet:
@@ -28,7 +29,7 @@ class ExternalForceSet:
         return components
 
 
-    def check_segment_names(self, segment_names: tuple[str, ...]) -> None:
+    def check_segment_names(self, segment_names: StrTuple) -> None:
         attributes = ["in_global", "torque_in_global", "translational_in_global", "in_local", "torque_in_local"]
         wrong_segments = []
         for attr in attributes:
@@ -42,7 +43,7 @@ class ExternalForceSet:
                 f" Available segments are {segment_names}."
             )
 
-    def check_all_string_points_of_application(self, model_points_of_application) -> None:
+    def check_all_string_points_of_application(self, model_points_of_application: Str) -> None:
         attributes = ["in_global", "translational_in_global", "in_local"]
         wrong_points_of_application = []
         for attr in attributes:
@@ -61,23 +62,23 @@ class ExternalForceSet:
 
     # Specific functions for adding each force type to improve readability
     @staticmethod
-    def add_global_force(biorbd_external_forces, segment, force, point_of_application):
+    def add_global_force(biorbd_external_forces, segment: str, force: CXOrDMOrNpArray, point_of_application: CXOrDMOrNpArray):
         biorbd_external_forces.add(segment, force, point_of_application)
 
     @staticmethod
-    def add_torque_global(biorbd_external_forces, segment, torque, _):
+    def add_torque_global(biorbd_external_forces, segment: str, torque: CXOrDMOrNpArray, _):
         biorbd_external_forces.add(segment, vertcat(torque, MX([0, 0, 0])), MX([0, 0, 0]))
 
     @staticmethod
-    def add_translational_global(biorbd_external_forces, segment, force, point_of_application):
+    def add_translational_global(biorbd_external_forces, segment: str, force: CXOrDMOrNpArray, point_of_application: CXOrDMOrNpArray):
         biorbd_external_forces.addTranslationalForce(force, segment, point_of_application)
 
     @staticmethod
-    def add_local_force(biorbd_external_forces, segment, force, point_of_application):
+    def add_local_force(biorbd_external_forces, segment: str, force, point_of_application):
         biorbd_external_forces.addInSegmentReferenceFrame(segment, force, point_of_application)
 
     @staticmethod
-    def add_torque_local(biorbd_external_forces, segment, torque, _):
+    def add_torque_local(biorbd_external_forces, segment: str, torque, _):
         biorbd_external_forces.addInSegmentReferenceFrame(segment, vertcat(torque, MX([0, 0, 0])), MX([0, 0, 0]))
 
 
@@ -87,23 +88,23 @@ class ExternalForceSetTimeSeries(ExternalForceSet):
 
     Attributes
     ----------
-    _nb_frames : int
+    _nb_frames : Int
         The number of frames in the time series.
-    in_global : dict[str, {}]
+    in_global : AnyDict
         Dictionary to store global external forces for each segment.
-    torque_in_global : dict[str, {}]
+    torque_in_global : AnyDict
         Dictionary to store global torques for each segment.
-    translational_in_global : dict[str, {}]
+    translational_in_global : AnyDict
         Dictionary to store global translational forces for each segment.
-    in_local : dict[str, {}]
+    in_local : AnyDict
         Dictionary to store local external forces for each segment.
-    torque_in_local : dict[str, {}]
+    torque_in_local : AnyDict
         Dictionary to store local torques for each segment.
-    _bind : bool
+    _bind : Bool
         Flag to indicate if the external forces are binded and cannot be modified.
     """
 
-    def __init__(self, nb_frames: int):
+    def __init__(self, nb_frames: Int):
         """
         Initialize the ExternalForceSetTimeSeries with the number of frames.
 
@@ -114,16 +115,16 @@ class ExternalForceSetTimeSeries(ExternalForceSet):
         """
         self._nb_frames = nb_frames
 
-        self.in_global: dict[str, {}] = {}
-        self.torque_in_global: dict[str, {}] = {}
-        self.translational_in_global: dict[str, {}] = {}
-        self.in_local: dict[str, {}] = {}
-        self.torque_in_local: dict[str, {}] = {}
+        self.in_global: dict[str, AnyDict] = {}
+        self.torque_in_global: dict[str, AnyDict] = {}
+        self.translational_in_global: dict[str, AnyDict] = {}
+        self.in_local: dict[str, AnyDict] = {}
+        self.torque_in_local: dict[str, AnyDict] = {}
 
         self._bind_flag = False
 
     @property
-    def _can_be_modified(self) -> bool:
+    def _can_be_modified(self) -> Bool:
         return not self._bind_flag
 
     def _check_if_can_be_modified(self) -> None:
@@ -135,17 +136,17 @@ class ExternalForceSetTimeSeries(ExternalForceSet):
         self._bind_flag = True
 
     @property
-    def nb_frames(self) -> int:
+    def nb_frames(self) -> Int:
         return self._nb_frames
 
-    def _check_values_frame_shape(self, values: np.ndarray) -> None:
+    def _check_values_frame_shape(self, values: NpArray) -> None:
         if values.shape[1] != self._nb_frames:
             raise ValueError(
                 f"External forces must have the same number of columns as the number of shooting points, "
                 f"got {values.shape[1]} instead of {self._nb_frames}"
             )
 
-    def add(self, force_name:str, segment: str, values: np.ndarray, point_of_application: np.ndarray | str = None):
+    def add(self, force_name: str, segment: str, values: NpArray, point_of_application: NpArrayOptional | Str = None):
         self._check_if_can_be_modified()
         if values.shape[0] != 6:
             raise ValueError(f"External forces must have 6 rows, got {values.shape[0]}")
@@ -156,7 +157,7 @@ class ExternalForceSetTimeSeries(ExternalForceSet):
 
         self.in_global[force_name] = {"segment": segment, "values": values, "point_of_application": point_of_application}
 
-    def add_torque(self, force_name:str, segment: str, values: np.ndarray):
+    def add_torque(self, force_name: str, segment: str, values: NpArray):
         self._check_if_can_be_modified()
         if values.shape[0] != 3:
             raise ValueError(f"External torques must have 3 rows, got {values.shape[0]}")
@@ -165,7 +166,7 @@ class ExternalForceSetTimeSeries(ExternalForceSet):
         self.torque_in_global[force_name] = {"segment": segment, "values": values, "point_of_application": None}
 
     def add_translational_force(
-        self, force_name:str, segment: str, values: np.ndarray, point_of_application_in_local: np.ndarray | str = None
+        self, force_name: str, segment: str, values: NpArray, point_of_application_in_local: NpArrayOptional | Str = None
     ):
         self._check_if_can_be_modified()
         if values.shape[0] != 3:
@@ -180,7 +181,7 @@ class ExternalForceSetTimeSeries(ExternalForceSet):
         self.translational_in_global[force_name] = {"segment": segment, "values": values, "point_of_application": point_of_application_in_local}
 
     def add_in_segment_frame(
-        self, force_name:str, segment: str, values: np.ndarray, point_of_application_in_local: np.ndarray | str = None
+        self, force_name: str, segment: str, values: NpArray, point_of_application_in_local: NpArrayOptional | Str = None
     ):
         """
         Add external forces in the segment frame.
@@ -213,7 +214,7 @@ class ExternalForceSetTimeSeries(ExternalForceSet):
 
         self.torque_in_local[force_name] = {"segment": segment, "values": values, "point_of_application": None}
 
-    def _check_point_of_application(self, point_of_application: np.ndarray | str) -> None:
+    def _check_point_of_application(self, point_of_application: NpArray | Str) -> None:
         if isinstance(point_of_application, str):
             # The point of application is a string, nothing to check yet
             return
@@ -227,7 +228,7 @@ class ExternalForceSetTimeSeries(ExternalForceSet):
 
         return
 
-    def to_numerical_time_series(self):
+    def to_numerical_time_series(self) -> NpArray:
         """Convert the external forces to a numerical time series"""
         fext_numerical_time_series = np.zeros((self.nb_external_forces_components, 1, self.nb_frames + 1))
 
