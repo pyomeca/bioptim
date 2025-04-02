@@ -163,15 +163,6 @@ class OdeSolver:
             out += nlp.states.scaled.cx_intermediates_list
             return out
 
-        def p_ode(self, nlp):
-            if nlp.control_type in (
-                ControlType.CONSTANT,
-                ControlType.CONSTANT_WITH_LAST_NODE,
-            ):
-                return nlp.controls.scaled.cx_start
-            else:
-                return horzcat(nlp.controls.scaled.cx_start, nlp.controls.scaled.cx_end)
-
         def a_ode(self, nlp):
             out = [nlp.algebraic_states.scaled.cx_start]
             if not self.duplicate_starting_point:

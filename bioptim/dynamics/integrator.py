@@ -45,7 +45,7 @@ class Integrator:
         Get the multithreaded CasADi graph of the integration
     get_u(self, u: np.ndarray, t: float) -> np.ndarray
         Get the control at a given time
-    get_states_end(self, h: float, time: float | MX | SX, states: MX | SX, controls: MX | SX, params: MX | SX, algebraic_states: MX | SX, numerical_timeseries: MX | SX) -> tuple[SX, list[SX]]
+    compute_states_end(self, h: float, time: float | MX | SX, states: MX | SX, controls: MX | SX, params: MX | SX, algebraic_states: MX | SX, numerical_timeseries: MX | SX) -> tuple[SX, list[SX]]
         Integrate dxdt over one complete shooting interval to get the states at the end of the interval.
     """
 
@@ -90,7 +90,7 @@ class Integrator:
                 self._a_sym_modified,
                 self.numerical_timeseries_sym,
             ],
-            self.get_states_end(
+            self.compute_states_end(
                 states=self.x_sym,
                 controls=self.u_sym,
                 params=self.param_sym,
@@ -145,7 +145,7 @@ class Integrator:
     def _initialize(self, ode: dict, ode_opt: dict):
         """
         This method is called by the constructor to initialize the integrator right before
-        creating the CasADi function from get_states_end
+        creating the CasADi function from compute_states_end
         """
         pass
 
@@ -194,7 +194,7 @@ class Integrator:
         else:
             raise RuntimeError(f"{self.control_type} ControlType not implemented yet")
 
-    def get_states_end(
+    def compute_states_end(
         self,
         states: MX | SX,
         controls: MX | SX,
@@ -302,7 +302,7 @@ class RK(Integrator):
 
         raise RuntimeError("RK is abstract, please select a specific RK")
 
-    def get_states_end(
+    def compute_states_end(
         self,
         states: MX | SX,
         controls: MX | SX,
@@ -509,7 +509,7 @@ class TRAPEZOIDAL(Integrator):
     def dt(self):
         return self.t_span_sym[1]
 
-    def get_states_end(
+    def compute_states_end(
         self,
         states: MX | SX,
         controls: MX | SX,
@@ -630,7 +630,7 @@ class COLLOCATION(Integrator):
         u: np.ndarray
             The control matrix
         t: float | MX | SX
-            The time a which control should be computed
+            The time a which control should be computed (t is computed using _integration_time and is in [0, 1])
 
         Returns
         -------
@@ -644,7 +644,7 @@ class COLLOCATION(Integrator):
         else:
             raise RuntimeError(f"{self.control_type} ControlType not implemented yet")
 
-    def get_states_end(
+    def compute_states_end(
         self,
         states: MX | SX,
         controls: MX | SX,
@@ -732,7 +732,7 @@ class IRK(COLLOCATION):
             "step_time", [self.t_span_sym], [vertcat(*[self.t_span_sym[0], self.t_span_sym[0] + self.t_span_sym[1]])]
         )
 
-    def get_states_end(
+    def compute_states_end(
         self,
         states: MX | SX,
         controls: MX | SX,
@@ -741,7 +741,7 @@ class IRK(COLLOCATION):
         numerical_timeseries: MX | SX,
     ) -> tuple:
         nx = states[0].shape[0]
-        _, _, defect = super(IRK, self).get_states_end(
+        _, _, defect = super(IRK, self).compute_states_end(
             states=states,
             controls=controls,
             params=params,
