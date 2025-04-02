@@ -1,15 +1,37 @@
 import numpy as np
 from casadi import MX, vertcat
 
-from ...misc.parameters_types import Int, AnyDict, Bool, NpArray, Str, StrTuple, NpArrayOptional, AnyList
+from ...misc.parameters_types import Int, AnyDict, Bool, NpArray, Str, StrTuple, NpArrayOptional, CXOrDMOrNpArray
 
 
-class ExternalForceSet:
+class ExternalForceSetCommon:
+
+    def __init__(self):
+        self.in_global: dict[str, AnyDict] = {}
+        self.torque_in_global: dict[str, AnyDict] = {}
+        self.translational_in_global: dict[str, AnyDict] = {}
+        self.in_local: dict[str, AnyDict] = {}
+        self.torque_in_local: dict[str, AnyDict] = {}
+
+        self._bind_flag = False
+
+    @property
+    def _can_be_modified(self) -> Bool:
+        return not self._bind_flag
+
+    def _check_if_can_be_modified(self) -> None:
+        if not self._can_be_modified:
+            raise RuntimeError("External forces have been binded and cannot be modified anymore.")
+
+    def bind(self):
+        """prevent further modification of the external forces"""
+        self._bind_flag = True
 
     @property
     def nb_external_forces_components(self) -> int:
         """Return the number of vertical components of the external forces if concatenated in a unique vector"""
         attributes_no_point_of_application = ["torque_in_global", "torque_in_local"]
+        attributes_three_components = ["translational_in_global"]
         attributes_six_components = ["in_global", "in_local"]
 
         components = 0
@@ -17,9 +39,10 @@ class ExternalForceSet:
             for values in getattr(self, attr).values():
                 components += 3
 
-        for values in self.translational_in_global.values():
-            is_point_of_application_str = isinstance(values["point_of_application"], str)
-            components += 6 - 3 * is_point_of_application_str
+        for attr in attributes_three_components:
+            for values in getattr(self, attr).values():
+                is_point_of_application_str = isinstance(values["point_of_application"], str)
+                components += 6 - 3 * is_point_of_application_str
 
         for attr in attributes_six_components:
             for values in getattr(self, attr).values():
@@ -60,6 +83,35 @@ class ExternalForceSet:
                 f" Available points of application are {model_points_of_application}."
             )
 
+    def to_timeseries(self, fext_to_fill: MX | NpArray) -> MX | NpArray:
+
+        # "type of external force": (function to call, number of force components, number of point of application components)
+        bioptim_to_vector_map = {
+            "in_global": 6,
+            "torque_in_global": 3,
+            "translational_in_global": 3,
+            "in_local": 6,
+            "torque_in_local": 3,
+        }
+
+        symbolic_counter = 0
+        for attr in bioptim_to_vector_map.keys():
+            for force_name, force_characteristics in getattr(self, attr).items():
+                array_point_of_application = not isinstance(force_characteristics["point_of_application"], np.ndarray)
+
+                start = symbolic_counter
+                stop = symbolic_counter + bioptim_to_vector_map[attr]
+                force_slicer = slice(start, stop)
+                fext_to_fill[force_slicer, 0, :-1] = force_characteristics["values"]
+
+                if array_point_of_application:
+                    poa_slicer = slice(stop, stop + 3)
+                    fext_to_fill[poa_slicer, 0, :-1] = force_characteristics["point_of_application"]
+
+                symbolic_counter = stop + 3 if array_point_of_application else stop
+
+        return fext_to_fill
+
     # Specific functions for adding each force type to improve readability
     @staticmethod
     def add_global_force(biorbd_external_forces, segment: str, force: CXOrDMOrNpArray, point_of_application: CXOrDMOrNpArray):
@@ -82,7 +134,7 @@ class ExternalForceSet:
         biorbd_external_forces.addInSegmentReferenceFrame(segment, vertcat(torque, MX([0, 0, 0])), MX([0, 0, 0]))
 
 
-class ExternalForceSetTimeSeries(ExternalForceSet):
+class ExternalForceSetTimeSeries(ExternalForceSetCommon):
     """
     A class to manage external forces applied to a set of segments over a series of frames.
 
@@ -114,26 +166,7 @@ class ExternalForceSetTimeSeries(ExternalForceSet):
             The number of frames in the time series.
         """
         self._nb_frames = nb_frames
-
-        self.in_global: dict[str, AnyDict] = {}
-        self.torque_in_global: dict[str, AnyDict] = {}
-        self.translational_in_global: dict[str, AnyDict] = {}
-        self.in_local: dict[str, AnyDict] = {}
-        self.torque_in_local: dict[str, AnyDict] = {}
-
-        self._bind_flag = False
-
-    @property
-    def _can_be_modified(self) -> Bool:
-        return not self._bind_flag
-
-    def _check_if_can_be_modified(self) -> None:
-        if not self._can_be_modified:
-            raise RuntimeError("External forces have been binded and cannot be modified anymore.")
-
-    def bind(self):
-        """prevent further modification of the external forces"""
-        self._bind_flag = True
+        super().__init__()
 
     @property
     def nb_frames(self) -> Int:
@@ -231,37 +264,10 @@ class ExternalForceSetTimeSeries(ExternalForceSet):
     def to_numerical_time_series(self) -> NpArray:
         """Convert the external forces to a numerical time series"""
         fext_numerical_time_series = np.zeros((self.nb_external_forces_components, 1, self.nb_frames + 1))
-
-        # "type of external force": (function to call, number of force components, number of point of application components)
-        bioptim_to_vector_map = {
-            "in_global": 6,
-            "torque_in_global": 3,
-            "translational_in_global": 3,
-            "in_local": 6,
-            "torque_in_local": 3,
-        }
-
-        symbolic_counter = 0
-        for attr in bioptim_to_vector_map.keys():
-            for segment, force in getattr(self, attr).items():
-                array_point_of_application = isinstance(force["point_of_application"], np.ndarray)
-
-                start = symbolic_counter
-                stop = symbolic_counter + bioptim_to_vector_map[attr]
-                force_slicer = slice(start, stop)
-                fext_numerical_time_series[force_slicer, 0, :-1] = force["values"]
-
-                if array_point_of_application:
-                    poa_slicer = slice(stop, stop + 3)
-                    fext_numerical_time_series[poa_slicer, 0, :-1] = force["point_of_application"]
-
-                symbolic_counter = stop + 3 if array_point_of_application else stop
-
-        return fext_numerical_time_series
+        return self.to_timeseries(fext_numerical_time_series)
 
 
-
-class ExternalForceSetVariables(ExternalForceSet):
+class ExternalForceSetVariables(ExternalForceSetCommon):
     """
     A class to manage optimized external forces applied to a set of segments.
 
@@ -278,30 +284,6 @@ class ExternalForceSetVariables(ExternalForceSet):
     torque_in_local : dict[str, {}]
         Dictionary to store local torques for each segment.
     """
-
-    def __init__(self):
-        """
-        Initialize the ExternalForceSetVariables with the appropriate variables.
-        """
-        self.in_global: dict[str, {}] = {}
-        self.torque_in_global: dict[str, {}] = {}
-        self.translational_in_global: dict[str, {}] = {}
-        self.in_local: dict[str, {}] = {}
-        self.torque_in_local: dict[str, {}] = {}
-
-        self._bind_flag = False
-
-    @property
-    def _can_be_modified(self) -> bool:
-        return not self._bind_flag
-
-    def _check_if_can_be_modified(self) -> None:
-        if not self._can_be_modified:
-            raise RuntimeError("External forces have been binded and cannot be modified anymore.")
-
-    def bind(self):
-        """prevent further modification of the external forces"""
-        self._bind_flag = True
 
     def add(self, force_name:str, segment: str, use_point_of_application: bool = False):
         """
@@ -353,31 +335,4 @@ class ExternalForceSetVariables(ExternalForceSet):
     def to_mx(self):
         """Convert the external forces to an MX vector"""
         fext_numerical_time_series = MX.zeros((self.nb_external_forces_components, 1))
-
-        # "type of external force": (function to call, number of force components, number of point of application components)
-        bioptim_to_vector_map = {
-            "in_global": 6,
-            "torque_in_global": 3,
-            "translational_in_global": 3,
-            "in_local": 6,
-            "torque_in_local": 3,
-        }
-
-        symbolic_counter = 0
-        for attr in bioptim_to_vector_map.keys():
-            for segment, forces in getattr(self, attr).items():
-                for force in forces:
-                    array_point_of_application = not isinstance(force["point_of_application"], np.ndarray)
-
-                    start = symbolic_counter
-                    stop = symbolic_counter + bioptim_to_vector_map[attr]
-                    force_slicer = slice(start, stop)
-                    fext_numerical_time_series[force_slicer, 0, :-1] = force["values"]
-
-                    if array_point_of_application:
-                        poa_slicer = slice(stop, stop + 3)
-                        fext_numerical_time_series[poa_slicer, 0, :-1] = force["point_of_application"]
-
-                    symbolic_counter = stop + 3 if array_point_of_application else stop
-
-        return fext_numerical_time_series
+        return self.to_timeseries(fext_numerical_time_series)
