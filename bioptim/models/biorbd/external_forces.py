@@ -247,7 +247,7 @@ class ExternalForceSetTimeSeries(ExternalForceSetCommon):
 
         symbolic_counter = 0
         for attr in BIOPTIM_TO_VECTOR_MAP.keys():
-            for segment, force in getattr(self, attr).items():
+            for force_name, force in getattr(self, attr).items():
                 array_point_of_application = isinstance(force["point_of_application"], np.ndarray)
 
                 start = symbolic_counter
@@ -328,26 +328,3 @@ class ExternalForceSetVariables(ExternalForceSetCommon):
         self._check_if_can_be_modified()
         moments = MX.sym(f"moments_{force_name}_{segment}", 3, 1)
         self.torque_in_local[force_name] = {"segment": segment, "force": moments, "point_of_application": None}
-
-    def to_mx(self):
-        """Convert the external forces to an MX vector"""
-        fext_numerical_time_series = MX.zeros((self.nb_external_forces_components, 1))
-
-        symbolic_counter = 0
-        for attr in BIOPTIM_TO_VECTOR_MAP.keys():
-            for segment, forces in getattr(self, attr).items():
-                for force in forces:
-                    array_point_of_application = not isinstance(force["point_of_application"], np.ndarray)
-
-                    start = symbolic_counter
-                    stop = symbolic_counter + BIOPTIM_TO_VECTOR_MAP[attr]
-                    force_slicer = slice(start, stop)
-                    fext_numerical_time_series[force_slicer, 0, :-1] = force["values"]
-
-                    if array_point_of_application:
-                        poa_slicer = slice(stop, stop + 3)
-                        fext_numerical_time_series[poa_slicer, 0, :-1] = force["point_of_application"]
-
-                    symbolic_counter = stop + 3 if array_point_of_application else stop
-
-        return fext_numerical_time_series

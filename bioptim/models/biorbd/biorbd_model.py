@@ -522,7 +522,7 @@ class BiorbdModel:
         int
             The updated symbolic counter.
         """
-        for force_name, force_characteristics in getattr(self.external_force_set, force_type).items():
+        for force_characteristics in getattr(self.external_force_set, force_type).values():
             force_slicer = slice(symbolic_counter, symbolic_counter + num_force_components)
 
             point_of_application_mx = self._get_point_of_application(force_characteristics, force_slicer.stop)
