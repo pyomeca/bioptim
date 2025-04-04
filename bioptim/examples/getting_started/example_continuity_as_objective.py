@@ -111,6 +111,7 @@ def prepare_ocp_first_pass(
     dynamics = Dynamics(
         DynamicsFcn.TORQUE_DRIVEN,
         state_continuity_weight=state_continuity_weight,
+        ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
     )
@@ -162,7 +163,6 @@ def prepare_ocp_first_pass(
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         constraints=constraints,
-        ode_solver=ode_solver,
         use_sx=use_sx,
         n_threads=n_threads,
     )
@@ -211,7 +211,7 @@ def prepare_ocp_second_pass(
         objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=100 / n_shooting)
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -267,7 +267,6 @@ def prepare_ocp_second_pass(
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         constraints=constraints,
-        ode_solver=ode_solver,
         use_sx=use_sx,
         n_threads=n_threads,
     )

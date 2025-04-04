@@ -30,9 +30,15 @@ def prepare_ocp(biorbd_model_path, phase_1, phase_2, phase_dynamics) -> OptimalC
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics)
+    dynamics.add(
+        DynamicsFcn.TORQUE_DRIVEN, ode_solver=OdeSolver.RK4(), expand_dynamics=True, phase_dynamics=phase_dynamics
+    )
+    dynamics.add(
+        DynamicsFcn.TORQUE_DRIVEN, ode_solver=OdeSolver.RK4(), expand_dynamics=True, phase_dynamics=phase_dynamics
+    )
+    dynamics.add(
+        DynamicsFcn.TORQUE_DRIVEN, ode_solver=OdeSolver.RK4(), expand_dynamics=True, phase_dynamics=phase_dynamics
+    )
 
     multinode_constraints = MultinodeConstraintList()
     # hard constraint
@@ -82,7 +88,6 @@ def prepare_ocp(biorbd_model_path, phase_1, phase_2, phase_dynamics) -> OptimalC
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         multinode_constraints=multinode_constraints,
-        ode_solver=OdeSolver.RK4(),
     )
 
 

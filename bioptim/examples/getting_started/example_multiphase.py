@@ -119,10 +119,27 @@ def prepare_ocp(
     )
 
     # Dynamics
+    if not isinstance(ode_solver, list):
+        ode_solver = [ode_solver] * 3
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    dynamics.add(
+        DynamicsFcn.TORQUE_DRIVEN,
+        ode_solver=ode_solver[0],
+        expand_dynamics=expand_dynamics,
+        phase_dynamics=phase_dynamics,
+    )
+    dynamics.add(
+        DynamicsFcn.TORQUE_DRIVEN,
+        ode_solver=ode_solver[1],
+        expand_dynamics=expand_dynamics,
+        phase_dynamics=phase_dynamics,
+    )
+    dynamics.add(
+        DynamicsFcn.TORQUE_DRIVEN,
+        ode_solver=ode_solver[2],
+        expand_dynamics=expand_dynamics,
+        phase_dynamics=phase_dynamics,
+    )
 
     # Constraints
     constraints = ConstraintList()
@@ -162,7 +179,6 @@ def prepare_ocp(
         objective_functions=objective_functions,
         constraints=constraints,
         multinode_objectives=multinode_objective,
-        ode_solver=ode_solver,
         control_type=control_type,
     )
 

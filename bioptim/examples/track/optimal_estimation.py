@@ -105,7 +105,7 @@ def prepare_ocp_to_track(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -128,7 +128,6 @@ def prepare_ocp_to_track(
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         variable_mappings=variable_mappings,
-        ode_solver=ode_solver,
     )
 
 
@@ -170,7 +169,7 @@ def prepare_optimal_estimation(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -191,7 +190,6 @@ def prepare_optimal_estimation(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
-        ode_solver=ode_solver,
     )
 
 

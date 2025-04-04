@@ -85,6 +85,7 @@ def prepare_ocp(
     dynamics = DynamicsList()
     dynamics.add(
         DynamicsFcn.TORQUE_DRIVEN,
+        ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
         numerical_data_timeseries=numerical_time_series,
@@ -116,7 +117,6 @@ def prepare_ocp(
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         constraints=constraints,
-        ode_solver=ode_solver,
         n_threads=n_threads,
         use_sx=use_sx,
     )

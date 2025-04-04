@@ -80,7 +80,9 @@ def generate_dat_to_track(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q", weight=1)
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    dynamics = Dynamics(
+        DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
+    )
 
     # Path constraint
     x_bounds = BoundsList()
@@ -104,7 +106,6 @@ def generate_dat_to_track(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
-        ode_solver=ode_solver,
         use_sx=use_sx,
     )
 
@@ -207,6 +208,7 @@ def prepare_ocp(
     dynamics = Dynamics(
         DynamicsFcn.TORQUE_DRIVEN,
         state_continuity_weight=100,
+        ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
     )
@@ -242,7 +244,6 @@ def prepare_ocp(
         parameter_objectives=parameter_objectives,
         parameter_bounds=parameter_bounds,
         parameter_init=parameter_init,
-        ode_solver=ode_solver,
         use_sx=use_sx,
     )
 

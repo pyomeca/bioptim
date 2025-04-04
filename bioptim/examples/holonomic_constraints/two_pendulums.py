@@ -133,7 +133,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.HOLONOMIC_TORQUE_DRIVEN, expand_dynamics=expand_dynamics)
+    dynamics.add(DynamicsFcn.HOLONOMIC_TORQUE_DRIVEN, ode_solver=OdeSolver.RK4(), expand_dynamics=expand_dynamics)
 
     # Path Constraints
     constraints = ConstraintList()
@@ -176,7 +176,6 @@ def prepare_ocp(
             dynamics,
             n_shooting,
             final_time,
-            ode_solver=OdeSolver.RK4(),
             x_bounds=x_bounds,
             u_bounds=u_bounds,
             x_init=x_init,

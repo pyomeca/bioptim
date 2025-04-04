@@ -191,6 +191,7 @@ def prepare_ocp(
             dynamic_function=custom_model.custom_dynamics,
             phase=i,
             expand_dynamics=True,
+            ode_solver=ode_solver,
             phase_dynamics=phase_dynamics,
         )
 
@@ -224,7 +225,6 @@ def prepare_ocp(
         x_bounds=x_bounds,
         objective_functions=objective_functions,
         constraints=constraints,
-        ode_solver=ode_solver,
         use_sx=use_sx,
     )
 
