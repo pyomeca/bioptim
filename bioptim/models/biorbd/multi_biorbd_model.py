@@ -1,11 +1,9 @@
 import biorbd_casadi as biorbd
 from casadi import MX, vertcat, Function, horzcat
 from typing import Callable
-from functools import wraps
 
 from .biorbd_model import BiorbdModel
-from ..utils import _var_mapping
-from ..utils import bounds_from_ranges
+from ..utils import _var_mapping, bounds_from_ranges, cache_function
 from ...limits.path_conditions import Bounds
 from ...misc.mapping import BiMapping, BiMappingList
 
@@ -96,37 +94,6 @@ class MultiBiorbdModel:
         self.parameters = MX.sym("parameters_to_be_implemented", 0, 1)
 
         self._cached_functions = {}
-
-    def cache_function(method):
-        """Decorator to cache CasADi functions automatically"""
-
-        def make_hashable(value):
-            """
-            Transforms non-hashable objects (dicts, and lists) into hashable objects (tuple)
-            """
-            if isinstance(value, list):
-                return tuple(make_hashable(v) for v in value)
-            elif isinstance(value, dict):
-                return tuple(sorted((k, make_hashable(v)) for k, v in value.items()))
-            elif isinstance(value, set):
-                return frozenset(make_hashable(v) for v in value)
-            return value
-
-        @wraps(method)
-        def wrapper(self, *args, **kwargs):
-            # Create a unique key based on the method name and arguments
-            key = (method.__name__, args, frozenset((k, make_hashable(v)) for k, v in kwargs.items()))
-            if key in self._cached_functions:
-                return self._cached_functions[key]
-
-            # Call the original function to create the CasADi function
-            casadi_fun = method(self, *args, **kwargs)
-
-            # Store in the cache
-            self._cached_functions[key] = casadi_fun
-            return casadi_fun
-
-        return wrapper
 
     def __getitem__(self, index: Int):
         return self.models[index]

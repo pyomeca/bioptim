@@ -3,6 +3,7 @@ from casadi import MX, vertcat
 
 from ...misc.parameters_types import Int, AnyDict, Bool, NpArray, Str, StrTuple, NpArrayOptional, CXOrDMOrNpArray
 
+
 # "type of external force": (function to call, number of force components, number of point of application components)
 BIOPTIM_TO_VECTOR_MAP = {
     "in_global": 6,
