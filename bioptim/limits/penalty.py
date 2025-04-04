@@ -6,7 +6,7 @@ from casadi import horzcat, vertcat, Function, MX_eye, SX_eye, SX, jacobian, tra
 
 from .penalty_controller import PenaltyController
 from .penalty_option import PenaltyOption
-from ..misc.enums import Node, Axis, ControlType, QuadratureRule
+from ..misc.enums import Node, Axis, ControlType, QuadratureRule, ContactType
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
 
 
@@ -731,7 +731,7 @@ class PenaltyFunctionAbstract:
             return linear_momentum_cx
 
         @staticmethod
-        def minimize_contact_forces(
+        def minimize_rigid_contact_forces(
             penalty: PenaltyOption, controller: PenaltyController, contact_index: tuple | list | int | str = None
         ):
             """
@@ -750,21 +750,33 @@ class PenaltyFunctionAbstract:
                 penalty.cols should not be defined if contact_index is defined
             """
 
-            if controller.get_nlp.contact_forces_func is None:
-                raise RuntimeError("minimize_contact_forces requires a contact dynamics")
+            if (
+                ContactType.RIGID_IMPLICIT in controller.get_nlp.dynamics_type.contact_type
+                or ContactType.SOFT_IMPLICIT in controller.get_nlp.dynamics_type.contact_type
+                or ContactType.SOFT_EXPLICIT in controller.get_nlp.dynamics_type.contact_type
+            ):
+                raise RuntimeError(
+                    "minimize_rigid_contact_forces is only implemented for explicit contact (RIGID_EXPLICIT)."
+                )
 
-            PenaltyFunctionAbstract.set_axes_rows(penalty, contact_index)
-            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+            contact_forces = controller.cx()
+            if ContactType.RIGID_EXPLICIT in controller.get_nlp.dynamics_type.contact_type:
+                if controller.get_nlp.rigid_contact_forces_func is None:
+                    raise RuntimeError("minimize_rigid_contact_forces requires a contact dynamics")
 
-            contact_force = controller.get_nlp.contact_forces_func(
-                controller.time.cx,
-                controller.states.cx_start,
-                controller.controls.cx_start,
-                controller.parameters.cx,
-                controller.algebraic_states.cx_start,
-                controller.numerical_timeseries.cx,
-            )
-            return contact_force
+                contact_forces = vertcat(
+                    contact_forces,
+                    controller.get_nlp.rigid_contact_forces_func(
+                        controller.time.cx,
+                        controller.states.cx_start,
+                        controller.controls.cx_start,
+                        controller.parameters.cx,
+                        controller.algebraic_states.cx_start,
+                        controller.numerical_timeseries.cx,
+                    ),
+                )[contact_index]
+
+            return contact_forces
 
         @staticmethod
         def minimize_sum_reaction_forces(
@@ -882,7 +894,7 @@ class PenaltyFunctionAbstract:
             return center_of_pressure
 
         @staticmethod
-        def minimize_contact_forces_end_of_interval(
+        def minimize_rigid_contact_forces_end_of_interval(
             penalty: PenaltyOption, controller: PenaltyController, contact_index: tuple | list | int | str = None
         ):
             """
@@ -901,8 +913,8 @@ class PenaltyFunctionAbstract:
                 penalty.cols should not be defined if contact_index is defined
             """
 
-            if controller.get_nlp.contact_forces_func is None:
-                raise RuntimeError("minimize_contact_forces requires a contact dynamics")
+            if controller.get_nlp.rigid_contact_forces_func is None:
+                raise RuntimeError("minimize_rigid_contact_forces requires a contact dynamics")
 
             if controller.control_type != ControlType.CONSTANT:
                 raise NotImplementedError(
@@ -932,7 +944,7 @@ class PenaltyFunctionAbstract:
                 d=controller.numerical_timeseries.cx,
             )["xf"]
 
-            contact_force = controller.get_nlp.contact_forces_func(
+            contact_force = controller.get_nlp.rigid_contact_forces_func(
                 controller.time.cx,
                 end_of_interval_states,
                 controller.controls.cx_start,
@@ -964,7 +976,7 @@ class PenaltyFunctionAbstract:
             """
 
             if controller.get_nlp.model.nb_soft_contacts == 0:
-                raise RuntimeError("minimize_contact_forces requires a soft contact")
+                raise RuntimeError("minimize_soft_contact_forces requires a soft contact")
 
             PenaltyFunctionAbstract.set_axes_rows(penalty, contact_index)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic

@@ -25,7 +25,7 @@ class NonLinearProgram:
     ----------
     casadi_func: dict
         All the declared casadi function
-    contact_forces_func = function
+    rigid_contact_forces_func = function
         The contact force function if exists for the current nlp
     control_type: ControlType
         The control type for the current nlp
@@ -126,7 +126,7 @@ class NonLinearProgram:
 
     def __init__(self, phase_dynamics: PhaseDynamics, use_sx: bool):
         self.casadi_func = {}
-        self.contact_forces_func = None
+        self.rigid_contact_forces_func = None
         self.soft_contact_forces_func = None
         self.control_type = ControlType.CONSTANT
         self.cx = None

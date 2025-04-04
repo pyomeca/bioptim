@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from bioptim import InterpolationType, PhaseDynamics, OdeSolver
+from bioptim import InterpolationType, PhaseDynamics, OdeSolver, ContactType
 from ..utils import TestUtils
 
 

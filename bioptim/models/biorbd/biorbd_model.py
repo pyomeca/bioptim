@@ -1079,7 +1079,7 @@ class BiorbdModel:
         return quat_idx
 
     @cache_function
-    def contact_forces(self) -> Function:
+    def rigid_contact_forces(self) -> Function:
         force = self.contact_forces_from_constrained_forward_dynamics()(
             self.q, self.qdot, self.tau, self.external_forces, self.parameters
         )

@@ -1228,7 +1228,7 @@ Since this is an Enum, it is possible to use the tab key on the keyboard to dyna
 - **BOUND_STATE**  &mdash; Adds bounds on states. Same aim as `bounds["state_name"] = min_bounds, max_bounds` but with a different numerical behaviour.
 - **BOUND_CONTROL**  &mdash; Adds bounds on controls. Same aim as `bounds["control_name"] = min_bounds, max_bounds` but with a different numerical behaviour.
 - **NON_SLIPPING**  &mdash; Adds a constraint of static friction at contact points constraining for small tangential forces.  
-This constraint assumes that the normal forces is positive (that is having an additional TRACK_CONTACT_FORCES with `max_bound=np.inf`). The extra parameters `tangential_component_idx: int`, `normal_component_idx: int`, and `static_friction_coefficient: float` must be passed to the `Constraint` constructor.
+This constraint assumes that the normal forces is positive (that is having an additional TRACK_RIGID_CONTACT_FORCES with `max_bound=np.inf`). The extra parameters `tangential_component_idx: int`, `normal_component_idx: int`, and `static_friction_coefficient: float` must be passed to the `Constraint` constructor.
 - **PROPORTIONAL_CONTROL** &mdash; Links one control to another, such that `u[first_dof] - first_dof_intercept = coef * (u[second_dof] - second_dof_intercept)`. The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Constraint` constructor.
 - **PROPORTIONAL_STATE** &mdash; Links one state to another, such that `x[first_dof] - first_dof_intercept = coef * (x[second_dof] - second_dof_intercept)`. The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Constraint` constructor.
 - **SUPERIMPOSE_MARKERS** &mdash; Matches one marker with another one. The extra parameters `first_marker_idx: int` and `second_marker_idx: int` informs which markers are to be superimposed.
@@ -1238,7 +1238,7 @@ This constraint assumes that the normal forces is positive (that is having an ad
 - **TRACK_ANGULAR_MOMENTUM**  &mdash; Constraints the angular momentum in the global reference frame toward a target. The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the momentum should be tracked.
 - **TRACK_COM_POSITION**  &mdash; Constraints the center of mass toward a target. The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the center of mass should be tracked.
 - **TRACK_COM_VELOCITY**  &mdash; Constraints the center of mass velocity toward a target. The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the velocity should be tracked.
-- **TRACK_CONTACT_FORCES**  &mdash; Tracks the non-acceleration point reaction forces toward a target.
+- **TRACK_RIGID_CONTACT_FORCES**  &mdash; Tracks the non-acceleration point reaction forces toward a target.
 - **TRACK_LINEAR_MOMENTUM**  &mdash; Constraints the linear momentum toward a target. The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the momentum should be tracked.
 - **TRACK_MARKER_WITH_SEGMENT_AXIS**  &mdash; Tracks a marker using a segment, that is aligning an axis toward the marker. The extra parameters `marker_idx: int`, `segment_index: int`, and `axis: Axis` must be passed to the `Constraint` constructor
 - **TRACK_MARKERS_VELOCITY** &mdash; Tracks the skin marker velocities toward a target.
@@ -1318,7 +1318,7 @@ Here a list of objective function with its type (Lagrange and/or Mayer) in alpha
 - **MINIMIZE_COM_ACCELERATION** (Lagrange and Mayer)  &mdash; Minimizes the center of mass acceleration towards zero (or a target). The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the acceleration should be minimized.
 - **MINIMIZE_COM_POSITION** (Lagrange and Mayer)  &mdash; Minimizes the center of mass position toward zero (or a target). The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the center of mass should be minimized.
 - **MINIMIZE_COM_VELOCITY**  (Lagrange and Mayer)  &mdash; Minimizes the center of mass velocity towards zero (or a target). The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the velocity should be minimized.
-- **MINIMIZE_CONTACT_FORCES** (Lagrange) &mdash; Minimizes the non-acceleration points of the reaction forces toward zero (or a target).
+- **MINIMIZE_RIGID_CONTACT_FORCES** (Lagrange) &mdash; Minimizes the non-acceleration points of the reaction forces toward zero (or a target).
 - **MINIMIZE_LINEAR_MOMENTUM** (Lagrange and Mayer)  &mdash; Minimizes the linear momentum towards zero (or a target). The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the momentum should be minimized.
 - **MINIMIZE_MARKERS_DISPLACEMENT** (Lagrange) &mdash; Minimizes the difference between a state at a node and the same state at the next node, effectively minimizing the velocity. The extra parameter `coordinates_system_idx` can be specified to compute the marker position in that coordinate system. Otherwise, it is computed in the global reference frame. 
 - **MINIMIZE_MARKERS_VELOCITY or MINIMIZE_MARKERS_ACCELERATION** (Lagrange and Mayer) &mdash; Minimizes the marker velocities or accelerations toward zero (or a target).
@@ -1335,7 +1335,7 @@ Here a list of objective function with its type (Lagrange and/or Mayer) in alpha
 - **PROPORTIONAL_STATE** (Lagrange and Mayer) &mdash; Minimizes the difference between one state and another, such that `x[first_dof] - first_dof_intercept = coef * (x[second_dof] - second_dof_intercept)`. The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Objective` constructor.
 - **SUPERIMPOSE_MARKERS** (Lagrange and Mayer) &mdash; Tracks one marker with another one. The extra parameters `first_marker_idx: int` and `second_marker_idx: int` informs which markers are to be superimposed
 - **TRACK_ALL_CONTROLS (Lagrange)** &mdash; Tracks all the control variables toward a target.
-- **TRACK_CONTACT_FORCES** (Lagrange) &mdash; Tracks the non-acceleration points of the reaction forces toward a target.
+- **TRACK_RIGID_CONTACT_FORCES** (Lagrange) &mdash; Tracks the non-acceleration points of the reaction forces toward a target.
 - **TRACK_MARKER_WITH_SEGMENT_AXIS** (Lagrange and Mayer) &mdash; Minimizes the distance between a marker and an axis of a segment, that is aligning an axis toward the marker. The extra parameters `marker_idx: int`, `segment_index: int` and `axis: Axis` must be passed to the `Objective` constructor
 - **TRACK_MARKERS_VELOCITY or TRACK_MARKERS_ACCELERATION** (Lagrange and Mayer) &mdash;  Tracks the marker velocities or accelerations toward a target.
 - **TRACK_MARKERS** (Lagrange and Mayer) &mdash; Tracks the skin markers towards a target. The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the markers should be tracked.
@@ -1928,14 +1928,14 @@ forces have to remain inside of a cone of friction), as shown in the part of the
 ```python
 constraints = ConstraintList()
    constraints.add(
-   ConstraintFcn.TRACK_CONTACT_FORCES,
+   ConstraintFcn.TRACK_RIGID_CONTACT_FORCES,
    min_bound=min_bound,
    max_bound=max_bound,
    node=Node.ALL,
    contact_index=1,
    )
 constraints.add(
-    ConstraintFcn.TRACK_CONTACT_FORCES,
+    ConstraintFcn.TRACK_RIGID_CONTACT_FORCES,
     min_bound=min_bound,
     max_bound=max_bound,
     node=Node.ALL,
@@ -2227,12 +2227,12 @@ In this case, the dynamics function used is `DynamicsFcn.MUSCLE_EXCITATIONS_AND_
 ### The [muscle_activations_contacts_tracker.py](./bioptim/examples/muscle_driven_with_contact/muscle_activations_contacts_tracker.py) file 
 In this example, we track both muscle controls and contact forces, as it is defined when adding the two objective 
 functions below, using both `ObjectiveFcn.Lagrange.TRACK_MUSCLES_CONTROL` and 
-`ObjectiveFcn.Lagrange.TRACK_CONTACT_FORCES` objective functions. 
+`ObjectiveFcn.Lagrange.TRACK_RIGID_CONTACT_FORCES` objective functions. 
 
 ```python
 objective_functions = ObjectiveList()
 objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MUSCLES_CONTROL, target=muscle_activations_ref)
-objective_functions.add(ObjectiveFcn.Lagrange.TRACK_CONTACT_FORCES, target=contact_forces_ref)
+objective_functions.add(ObjectiveFcn.Lagrange.TRACK_RIGID_CONTACT_FORCES, target=contact_forces_ref)
 ```
 
 Let us take a look at the structure of this example. First, we load data to track and generate data using the 
