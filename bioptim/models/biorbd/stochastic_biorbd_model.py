@@ -1,6 +1,5 @@
 from typing import Callable
 
-import numpy as np
 from casadi import DM
 
 from bioptim import BiorbdModel, DynamicsFunctions

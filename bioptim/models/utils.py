@@ -1,3 +1,4 @@
+from functools import wraps
 from ..limits.path_conditions import Bounds
 from ..misc.mapping import BiMapping, BiMappingList
 
@@ -68,3 +69,35 @@ def bounds_from_ranges(model, key: str, mapping: BiMapping | BiMappingList = Non
     x_min = [ranges[i].min() for i in mapping_tp.to_first.map_idx]
     x_max = [ranges[i].max() for i in mapping_tp.to_first.map_idx]
     return Bounds(key, min_bound=x_min, max_bound=x_max)
+
+
+def cache_function(method):
+    """Decorator to cache CasADi functions automatically"""
+
+    def make_hashable(value):
+        """
+        Transforms non-hashable objects (dicts, and lists) into hashable objects (tuple)
+        """
+        if isinstance(value, list):
+            return tuple(make_hashable(v) for v in value)
+        elif isinstance(value, dict):
+            return tuple(sorted((k, make_hashable(v)) for k, v in value.items()))
+        elif isinstance(value, set):
+            return frozenset(make_hashable(v) for v in value)
+        return value
+
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        # Create a unique key based on the method name and arguments
+        key = (method.__name__, args, frozenset((k, make_hashable(v)) for k, v in kwargs.items()))
+        if key in self._cached_functions:
+            return self._cached_functions[key]
+
+        # Call the original function to create the CasADi function
+        casadi_fun = method(self, *args, **kwargs)
+
+        # Store in the cache
+        self._cached_functions[key] = casadi_fun
+        return casadi_fun
+
+    return wrapper

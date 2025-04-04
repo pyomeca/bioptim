@@ -1,5 +1,4 @@
 from typing import Callable
-from functools import wraps
 
 import biorbd_casadi as biorbd
 import numpy as np
@@ -20,6 +19,7 @@ from ...misc.parameters_types import (
     IntListOptional,
     AnyList,
 )
+from ..utils import cache_function
 
 
 class HolonomicBiorbdModel(BiorbdModel):
@@ -59,25 +59,6 @@ class HolonomicBiorbdModel(BiorbdModel):
         self.qdot_v = MX.sym("qdot_v_mx", self.nb_dependent_joints, 1)
         self.qddot_v = MX.sym("qddot_v_mx", self.nb_dependent_joints, 1)
         self.q_v_init = MX.sym("q_v_init_mx", self.nb_dependent_joints, 1)
-
-    def cache_function(method):
-        """Decorator to cache CasADi functions automatically"""
-
-        @wraps(method)
-        def wrapper(self, *args, **kwargs):
-            # Create a unique key based on the method name and arguments
-            key = (method.__name__, args, frozenset(kwargs.items()))
-            if key in self._cached_functions:
-                return self._cached_functions[key]
-
-            # Call the original function to create the CasADi function
-            casadi_fun = method(self, *args, **kwargs)
-
-            # Store in the cache
-            self._cached_functions[key] = casadi_fun
-            return casadi_fun
-
-        return wrapper
 
     def set_newton_tol(self, newton_tol: Float):
         self._newton_tol = newton_tol
