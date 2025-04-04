@@ -209,6 +209,7 @@ class NewVariableConfiguration:
 
     def _declare_cx_and_plot(self):
         if self.as_states:
+
             # States
             for node_index in range(
                 self.nlp.n_states_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1
@@ -235,6 +236,12 @@ class NewVariableConfiguration:
                         legend=self.legend,
                         combine_to=self.combine_name,
                     )
+
+            """
+            For each state, a state_dot variable is created.
+            This state_dot represents the slope of the polynomial in COLLOCATION.
+            It is not an optimization variable, but it only used internally in bioptim to construct the integrator.
+            """
             # States dot
             for node_index in range(
                 self.nlp.n_states_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1
