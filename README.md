@@ -730,7 +730,6 @@ In the case of a multiphase optimization, one model per phase should be passed i
 `x_init` is the initial guess for the states variables (see The initial conditions section).  
 `u_init` is the initial guess for the controls variables (see The initial conditions section).  
 `x_scaling` is the scaling applied to the states variables (see The variable scaling section).  
-`xdot_scaling` is the scaling applied to the state derivative variables (see The variable scaling section).  
 `u_scaling` is the scaling applied to the controls variables (see The variable scaling section).  
 `objective_functions` is the objective function set of the ocp (see The objective functions section).  
 `constraints` is the constraint set of the ocp (see The constraints section).  
@@ -1148,7 +1147,7 @@ The parameters, except `MagnitudeType` must be specified for each phase unless y
 
 The scaling applied to the optimization variables determines how they are represented within the `OptimalControlProgram`. 
 The goal is to keep all variables in the optimization problem within an order of magnitude close to 1, 
-which improves numerical conditioning and solver performance. This applies to `x_scaling`, `xdot_scaling`, and `u_scaling` parameters. 
+which improves numerical conditioning and solver performance. This applies to `x_scaling` and `u_scaling` parameters. 
 If the expected value of a variable is of order `0.1`, then the scaling factor should be `0.1` to bring the variable closer 
 to `O(1)`, as `0.1 / 0.1 = 1`. Bioptim will apply the scaling to all initial guesses and bounds entered by the user automatically.
 However, the target in objectives and constraints should be scaled by the user (see Issue Scaling of targets #848 ).

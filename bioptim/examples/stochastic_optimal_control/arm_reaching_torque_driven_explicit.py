@@ -90,11 +90,11 @@ def configure_stochastic_optimal_control_problem(
     """
     Configure the stochastic optimal control problem.
     """
-    ConfigureProblem.configure_q(ocp, nlp, True, False, False)
-    ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
-    ConfigureProblem.configure_qddot(ocp, nlp, True, False, True)
-    ConfigureProblem.configure_qdddot(ocp, nlp, False, True)
-    ConfigureProblem.configure_tau(ocp, nlp, False, True)
+    ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
+    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
+    ConfigureProblem.configure_qddot(ocp, nlp, as_states=True, as_controls=False)
+    ConfigureProblem.configure_qdddot(ocp, nlp, as_states=False, as_controls=True)
+    ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
 
     # Algebraic states variables
     ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=2, n_references=4)

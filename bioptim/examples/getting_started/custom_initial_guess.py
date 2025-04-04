@@ -230,10 +230,6 @@ def prepare_ocp(
     x_scaling.add("q", scaling=[1] * bio_model.nb_q)
     x_scaling.add("qdot", scaling=[1] * bio_model.nb_qdot)
 
-    xdot_scaling = VariableScalingList()
-    xdot_scaling.add("qdot", scaling=[1] * bio_model.nb_qdot)
-    xdot_scaling.add("qddot", scaling=[1] * bio_model.nb_qddot)
-
     u_scaling = VariableScalingList()
     u_scaling.add("tau", scaling=[1] * bio_model.nb_tau)
 
@@ -250,7 +246,6 @@ def prepare_ocp(
         constraints=constraints,
         ode_solver=ode_solver,
         x_scaling=x_scaling,
-        xdot_scaling=xdot_scaling,
         u_scaling=u_scaling,
     )
 
