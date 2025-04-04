@@ -753,9 +753,10 @@ class PenaltyFunctionAbstract:
             if (
                 ContactType.RIGID_IMPLICIT in controller.get_nlp.dynamics_type.contact_type
                 or ContactType.SOFT_IMPLICIT in controller.get_nlp.dynamics_type.contact_type
+                or ContactType.SOFT_EXPLICIT in controller.get_nlp.dynamics_type.contact_type
             ):
                 raise RuntimeError(
-                    "minimize_rigid_contact_forces is only implemented for explicit contact (RIGID_EXPLICIT or SOFT_EXPLICIT)."
+                    "minimize_rigid_contact_forces is only implemented for explicit contact (RIGID_EXPLICIT)."
                 )
 
             contact_forces = controller.cx()
@@ -773,22 +774,7 @@ class PenaltyFunctionAbstract:
                         controller.algebraic_states.cx_start,
                         controller.numerical_timeseries.cx,
                     ),
-                )
-            if ContactType.SOFT_EXPLICIT in controller.get_nlp.dynamics_type.contact_type:
-                if controller.get_nlp.soft_contact_forces_func is None:
-                    raise RuntimeError("minimize_soft_contact_forces requires a contact dynamics")
-
-                contact_forces = vertcat(
-                    contact_forces,
-                    controller.get_nlp.soft_contact_forces_func(
-                        controller.time.cx,
-                        controller.states.cx_start,
-                        controller.controls.cx_start,
-                        controller.parameters.cx,
-                        controller.algebraic_states.cx_start,
-                        controller.numerical_timeseries.cx,
-                    ),
-                )
+                )[contact_index]
 
             return contact_forces
 
