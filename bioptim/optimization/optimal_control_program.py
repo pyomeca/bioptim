@@ -164,7 +164,6 @@ class OptimalControlProgram:
         multinode_constraints: MultinodeConstraintList = None,
         multinode_objectives: MultinodeObjectiveList = None,
         x_scaling: VariableScalingList = None,
-        xdot_scaling: VariableScalingList = None,
         u_scaling: VariableScalingList = None,
         a_scaling: VariableScalingList = None,
         n_threads: int = 1,
@@ -196,8 +195,6 @@ class OptimalControlProgram:
             The bounds for the algebraic states
         x_scaling: VariableScalingList
             The scaling for the states at each phase, if only one is sent, then the scaling is copied over the phases
-        xdot_scaling: VariableScalingList
-            The scaling for the states derivative, if only one is sent, then the scaling is copied over the phases
         u_scaling: VariableScalingList
             The scaling for the controls, if only one is sent, then the scaling is copied over the phases
         a_scaling: VariableScalingList
@@ -253,7 +250,6 @@ class OptimalControlProgram:
             a_bounds,
             a_init,
             a_scaling,
-            xdot_scaling,
         ) = self._prepare_all_decision_variables(
             x_bounds,
             x_init,
@@ -261,7 +257,6 @@ class OptimalControlProgram:
             u_bounds,
             u_init,
             u_scaling,
-            xdot_scaling,
             a_bounds,
             a_init,
             a_scaling,
@@ -302,7 +297,6 @@ class OptimalControlProgram:
 
         # Do not copy singleton since x_scaling was already dealt with before
         NLP.add(self, "x_scaling", x_scaling, True)
-        NLP.add(self, "xdot_scaling", xdot_scaling, True)
         NLP.add(self, "u_scaling", u_scaling, True)
         NLP.add(self, "a_scaling", a_scaling, True)
 
@@ -398,7 +392,6 @@ class OptimalControlProgram:
         u_bounds,
         u_init,
         u_scaling,
-        xdot_scaling,
         a_bounds,
         a_init,
         a_scaling,
@@ -415,9 +408,7 @@ class OptimalControlProgram:
         # algebraic states
         a_bounds, a_init, a_scaling = self._check_and_prepare_decision_variables("a", a_bounds, a_init, a_scaling)
 
-        xdot_scaling = self._prepare_option_dict_for_phase("xdot_scaling", xdot_scaling, VariableScalingList)
-
-        return x_bounds, x_init, x_scaling, u_bounds, u_init, u_scaling, a_bounds, a_init, a_scaling, xdot_scaling
+        return x_bounds, x_init, x_scaling, u_bounds, u_init, u_scaling, a_bounds, a_init, a_scaling
 
     def _check_arguments_and_build_nlp(
         self,
