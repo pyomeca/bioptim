@@ -102,7 +102,7 @@ class PenaltyController:
 
     @property
     def ode_solver(self) -> OdeSolver:
-        return self._nlp.ode_solver
+        return self._nlp.dynamics_type.ode_solver
 
     @property
     def phase_idx(self) -> int:

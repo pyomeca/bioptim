@@ -1341,7 +1341,7 @@ class ConfigureProblem:
 
         # TODO: compute values at collocation points
         # but for now only cx_start can be used
-        n_cx = nlp.ode_solver.n_cx - 1 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 3
+        n_cx = nlp.dynamics_type.ode_solver.n_cx - 1 if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION) else 3
         if n_cx < 3:
             n_cx = 3
 
@@ -1997,6 +1997,9 @@ class Dynamics(OptionGeneric):
             dynamic_function = extra_parameters["dynamic_function"]
             del extra_parameters["dynamic_function"]
 
+        if not isinstance(ode_solver, OdeSolverBase):
+            raise RuntimeError("ode_solver should be built an instance of OdeSolver")
+
         super(Dynamics, self).__init__(type=dynamics_type, **extra_parameters)
         self.dynamic_function = dynamic_function
         self.configure = configure
@@ -2032,7 +2035,6 @@ class DynamicsList(UniquePerPhaseOptionList):
         extra_parameters: dict
             Any parameters to pass to Dynamics
         """
-
         if isinstance(dynamics_type, Dynamics):
             self.copy(dynamics_type)
 

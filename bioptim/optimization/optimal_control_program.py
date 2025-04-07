@@ -10,7 +10,6 @@ from matplotlib import pyplot as plt
 from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVectorHelper
 from ..dynamics.configure_problem import DynamicsList, Dynamics, ConfigureProblem
-from ..dynamics.ode_solvers import OdeSolver, OdeSolverBase
 from ..gui.check_conditioning import check_conditioning
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..gui.ipopt_output_plot import SaveIterationsInfo
@@ -514,14 +513,6 @@ class OptimalControlProgram:
         if not isinstance(dynamics, DynamicsList):
             raise ValueError("dynamics must be of type DynamicsList or Dynamics")
 
-        for i_dyn, dyn in enumerate(dynamics):
-            if dyn.ode_solver is None:
-                dynamics[i_dyn].ode_solver = self._set_default_ode_solver()
-
-            is_ode_solver = isinstance(dynamics[i_dyn].ode_solver, OdeSolverBase)
-            if not is_ode_solver:
-                raise RuntimeError("ode_solver should be built an instance of OdeSolver")
-
         # Type of CasADi graph
         self.cx = SX if use_sx else MX
 
@@ -577,8 +568,6 @@ class OptimalControlProgram:
 
         # Prepare path constraints and dynamics of the program
         NLP.add(self, "dynamics_type", dynamics, False)
-        ode_solver = [dyn.ode_solver for dyn in dynamics]
-        NLP.add(self, "ode_solver", ode_solver, False)
         NLP.add(self, "control_type", control_type, True)
 
         # Prepare the variable mappings
@@ -615,7 +604,7 @@ class OptimalControlProgram:
             self.nlp[i].parameters = self.parameters  # This should be remove when phase parameters will be implemented
             self.nlp[i].numerical_data_timeseries = self.nlp[i].dynamics_type.numerical_data_timeseries
             ConfigureProblem.initialize(self, self.nlp[i])
-            self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
+            self.nlp[i].dynamics_type.ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
             if (isinstance(self.nlp[i].model, VariationalBiorbdModel)) and self.nlp[i].algebraic_states.shape > 0:
                 raise NotImplementedError(
                     "Algebraic states were not tested with variational integrators. If you come across this error, "
@@ -861,7 +850,7 @@ class OptimalControlProgram:
                 ConstraintFcn.STATE_CONTINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL
             )
             penalty.add_or_replace_to_penalty_pool(self, nlp)
-            if nlp.ode_solver.is_direct_collocation and nlp.ode_solver.duplicate_starting_point:
+            if nlp.dynamics_type.ode_solver.is_direct_collocation and nlp.dynamics_type.ode_solver.duplicate_starting_point:
                 penalty = Constraint(
                     ConstraintFcn.FIRST_COLLOCATION_HELPER_EQUALS_STATE,
                     node=Node.ALL_SHOOTING,
@@ -1434,7 +1423,7 @@ class OptimalControlProgram:
         for i in range(self.n_phases):
             x_interp = (
                 InterpolationType.EACH_FRAME
-                if self.nlp[i].ode_solver.is_direct_shooting
+                if self.nlp[i].dynamics_type.ode_solver.is_direct_shooting
                 else InterpolationType.ALL_POINTS
             )
             if self.n_phases == 1:
@@ -1681,16 +1670,10 @@ class OptimalControlProgram:
 
         return previous_phase_time + self.nlp[phase_idx].dt * node_idx
 
-    def _set_default_ode_solver(self):
-        """
-        Set the default ode solver to RK4
-        """
-        return OdeSolver.RK4()
-
     def _set_nlp_is_stochastic(self):
         """
         Set the is_stochastic variable to False
-        because it's not relevant for traditional OCP,
+        because it's not relevant for traditional OCP,_
         only relevant for StochasticOptimalControlProgram
 
         Note

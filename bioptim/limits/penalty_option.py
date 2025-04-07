@@ -366,7 +366,7 @@ class PenaltyOption(OptionGeneric):
         self.control_types = control_types
 
     def _set_subnodes_are_decision_states(self, controllers: list[PenaltyController]):
-        subnodes_are_decision_states = [c.get_nlp.ode_solver.is_direct_collocation for c in controllers]
+        subnodes_are_decision_states = [c.get_nlp.dynamics_type.ode_solver.is_direct_collocation for c in controllers]
         if self.subnodes_are_decision_states:
             # If it was already set (e.g. for multinode), we want to make sure it is consistent
             if self.subnodes_are_decision_states != subnodes_are_decision_states:
@@ -613,7 +613,7 @@ class PenaltyOption(OptionGeneric):
         if self.derivative and self.explicit_derivative:
             raise ValueError("derivative and explicit_derivative cannot be true simultaneously")
 
-        if controller.get_nlp.ode_solver.is_direct_collocation and (
+        if controller.get_nlp.dynamics_type.ode_solver.is_direct_collocation and (
             controller.get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
             and len(self.node_idx) > 1
             and controller.ns + 1 in self.node_idx

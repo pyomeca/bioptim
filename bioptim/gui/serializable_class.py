@@ -472,7 +472,6 @@ class NlpSerializable:
         self.algebraic_states = algebraic_states
         self.parameters = parameters
         self.numerical_timeseries = numerical_timeseries
-        self.ode_solver = ode_solver
         self.plot = plot
 
     @classmethod

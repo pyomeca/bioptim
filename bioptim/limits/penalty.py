@@ -920,7 +920,7 @@ class PenaltyFunctionAbstract:
             t_span = controller.t_span.cx
             cx = (
                 horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
-                if controller.get_nlp.ode_solver.is_direct_collocation
+                if controller.get_nlp.dynamics_type.ode_solver.is_direct_collocation
                 else controller.states.cx_start
             )
             end_of_interval_states = controller.integrate(
@@ -1187,7 +1187,7 @@ class PenaltyFunctionAbstract:
 
             t_span = controller.t_span.cx
             continuity = controller.states.cx_end
-            if controller.get_nlp.ode_solver.is_direct_collocation:
+            if controller.get_nlp.dynamics_type.ode_solver.is_direct_collocation:
                 cx = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
 
                 integrated = controller.integrate(

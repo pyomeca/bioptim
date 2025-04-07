@@ -369,7 +369,7 @@ def main():
         markers[:, :, i] = bio_model.markers()(q[:, i])
 
     plt.figure("Markers")
-    n_steps_ode = ocp.nlp[0].ode_solver.steps + 1 if ocp.nlp[0].ode_solver.is_direct_collocation else 1
+    n_steps_ode = ocp.nlp[0].dynamics_type.ode_solver.steps + 1 if ocp.nlp[0].dynamics_type.ode_solver.is_direct_collocation else 1
     for i in range(markers.shape[1]):
         plt.plot(
             np.linspace(0, final_time, n_shooting_points + 1),
