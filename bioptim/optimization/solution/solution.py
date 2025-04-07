@@ -731,7 +731,9 @@ class Solution:
                 " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE"
             )
 
-        has_trapezoidal = sum([isinstance(nlp.dynamics_type.ode_solver, OdeSolver.TRAPEZOIDAL) for nlp in self.ocp.nlp]) > 0
+        has_trapezoidal = (
+            sum([isinstance(nlp.dynamics_type.ode_solver, OdeSolver.TRAPEZOIDAL) for nlp in self.ocp.nlp]) > 0
+        )
         if has_trapezoidal and integrator == SolutionIntegrator.OCP:
             raise ValueError(
                 "When the ode_solver of the Optimal Control Problem is OdeSolver.TRAPEZOIDAL, "
