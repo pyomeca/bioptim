@@ -43,10 +43,10 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, phase_dynami
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.dynamics_type = Dynamics(
-            DynamicsFcn.TORQUE_DRIVEN,
-            with_passive_torque=with_passive_torque,
-            phase_dynamics=phase_dynamics,
-        )
+        DynamicsFcn.TORQUE_DRIVEN,
+        with_passive_torque=with_passive_torque,
+        phase_dynamics=phase_dynamics,
+    )
 
     nlp.ns = 5
     nlp.cx = cx
@@ -107,10 +107,10 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx, p
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.dynamics_type = Dynamics(
-            DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
-            with_passive_torque=with_passive_torque,
-            phase_dynamics=phase_dynamics,
-        )
+        DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
+        with_passive_torque=with_passive_torque,
+        phase_dynamics=phase_dynamics,
+    )
 
     nlp.ns = 5
     nlp.cx = cx
@@ -200,11 +200,11 @@ def test_torque_activation_driven_with_passive_torque(with_passive_torque, with_
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.dynamics_type = Dynamics(
-            DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
-            with_passive_torque=with_passive_torque,
-            with_residual_torque=with_residual_torque,
-            phase_dynamics=phase_dynamics,
-        )
+        DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
+        with_passive_torque=with_passive_torque,
+        with_residual_torque=with_residual_torque,
+        phase_dynamics=phase_dynamics,
+    )
 
     nlp.ns = 5
     nlp.cx = cx
@@ -315,10 +315,10 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, cx, phase_dynami
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = BiorbdModel(TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod")
     nlp.dynamics_type = Dynamics(
-            DynamicsFcn.MUSCLE_DRIVEN,
-            with_passive_torque=with_passive_torque,
-            phase_dynamics=phase_dynamics,
-        )
+        DynamicsFcn.MUSCLE_DRIVEN,
+        with_passive_torque=with_passive_torque,
+        phase_dynamics=phase_dynamics,
+    )
 
     nlp.ns = 5
     nlp.cx = cx

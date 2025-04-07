@@ -58,7 +58,6 @@ class OdeSolver:
         def integrator(self):
             return integrator.VARIATIONAL
 
-
     class TRAPEZOIDAL(OdeSolverBase):
         """
         A trapezoidal ode solver

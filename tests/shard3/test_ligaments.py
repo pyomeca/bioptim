@@ -228,9 +228,9 @@ def test_muscle_driven_with_ligament(with_ligament, cx, phase_dynamics):
         TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_ligament.bioMod"
     )
     nlp.dynamics_type = Dynamics(
-            DynamicsFcn.MUSCLE_DRIVEN,
-            with_ligament=with_ligament,
-        )
+        DynamicsFcn.MUSCLE_DRIVEN,
+        with_ligament=with_ligament,
+    )
 
     nlp.ns = 5
     nlp.cx = cx
