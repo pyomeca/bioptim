@@ -793,7 +793,9 @@ class ConfigureProblem:
             ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
-    def holonomic_torque_driven(ocp, nlp, numerical_data_timeseries: dict[str, np.ndarray] = None, contact_type: list[ContactType] = ()):
+    def holonomic_torque_driven(
+        ocp, nlp, numerical_data_timeseries: dict[str, np.ndarray] = None, contact_type: list[ContactType] = ()
+    ):
         """
         Tell the program which variables are states and controls.
 
