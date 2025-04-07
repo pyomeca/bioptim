@@ -1341,7 +1341,11 @@ class ConfigureProblem:
 
         # TODO: compute values at collocation points
         # but for now only cx_start can be used
-        n_cx = nlp.dynamics_type.ode_solver.n_cx - 1 if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION) else 3
+        n_cx = (
+            nlp.dynamics_type.ode_solver.n_cx - 1
+            if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION)
+            else 3
+        )
         if n_cx < 3:
             n_cx = 3
 

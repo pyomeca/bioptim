@@ -207,9 +207,13 @@ class NonLinearProgram:
         self.integrated_values.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
 
         self.states.initialize_intermediate_cx(n_shooting=self.ns + 1, n_cx=self.dynamics_type.ode_solver.n_required_cx)
-        self.states_dot.initialize_intermediate_cx(n_shooting=self.ns + 1, n_cx=self.dynamics_type.ode_solver.n_required_cx)
+        self.states_dot.initialize_intermediate_cx(
+            n_shooting=self.ns + 1, n_cx=self.dynamics_type.ode_solver.n_required_cx
+        )
         self.controls.initialize_intermediate_cx(n_shooting=self.ns + 1, n_cx=1)
-        self.algebraic_states.initialize_intermediate_cx(n_shooting=self.ns + 1, n_cx=self.dynamics_type.ode_solver.n_required_cx)
+        self.algebraic_states.initialize_intermediate_cx(
+            n_shooting=self.ns + 1, n_cx=self.dynamics_type.ode_solver.n_required_cx
+        )
         self.integrated_values.initialize_intermediate_cx(n_shooting=self.ns + 1, n_cx=1)
 
     def update_bounds(self, x_bounds, u_bounds, a_bounds):
@@ -414,7 +418,9 @@ class NonLinearProgram:
         """
         if node_idx >= self.ns:
             return 1
-        return self.dynamics[node_idx].shape_xf[1] + (1 if self.dynamics_type.ode_solver.duplicate_starting_point else 0)
+        return self.dynamics[node_idx].shape_xf[1] + (
+            1 if self.dynamics_type.ode_solver.duplicate_starting_point else 0
+        )
 
     def n_states_stepwise_steps(self, node_idx: int, ode_solver: OdeSolver = None) -> int:
         """
