@@ -750,11 +750,6 @@ class PenaltyFunctionAbstract:
                 penalty.cols should not be defined if contact_index is defined
             """
 
-            if not isinstance(contact_index, (tuple, list)):
-                raise RuntimeError("contact_index must be a tuple or a list")
-            if not all(isinstance(contact, (str, int)) for contact in contact_index):
-                raise RuntimeError("contact_index must be a tuple or a list of str or int")
-
             PenaltyFunctionAbstract.set_axes_rows(penalty, contact_index)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
