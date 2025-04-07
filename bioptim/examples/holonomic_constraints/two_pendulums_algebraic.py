@@ -5,6 +5,7 @@ pendulum simulation. But this time, the dynamics are computed with the algebraic
 """
 
 import platform
+
 import numpy as np
 from casadi import DM
 
