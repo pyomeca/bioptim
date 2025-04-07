@@ -750,6 +750,14 @@ class PenaltyFunctionAbstract:
                 penalty.cols should not be defined if contact_index is defined
             """
 
+            if not isinstance(contact_index, (tuple, list)):
+                raise RuntimeError("contact_index must be a tuple or a list")
+            if not all(isinstance(contact, (str, int)) for contact in contact_index):
+                raise RuntimeError("contact_index must be a tuple or a list of str or int")
+
+            PenaltyFunctionAbstract.set_axes_rows(penalty, contact_index)
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+
             if (
                 ContactType.RIGID_IMPLICIT in controller.get_nlp.dynamics_type.contact_type
                 or ContactType.SOFT_IMPLICIT in controller.get_nlp.dynamics_type.contact_type
@@ -774,9 +782,8 @@ class PenaltyFunctionAbstract:
                         controller.algebraic_states.cx_start,
                         controller.numerical_timeseries.cx,
                     ),
-                )[contact_index]
-
-            return contact_forces
+                )
+                return contact_forces
 
         @staticmethod
         def minimize_sum_reaction_forces(
