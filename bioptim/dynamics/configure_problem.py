@@ -451,7 +451,7 @@ class ConfigureProblem:
         with_cholesky: bool = False,
         initial_matrix: DM = None,
         numerical_data_timeseries: dict[str, np.ndarray] = None,
-        contact_type: list[ContactType] = ()
+        contact_type: list[ContactType] = (),
     ):
         """
         Configure the dynamics for a stochastic torque driven program with a free floating base.
