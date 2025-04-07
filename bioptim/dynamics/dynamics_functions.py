@@ -408,7 +408,7 @@ class DynamicsFunctions:
         return DynamicsEvaluation(dxdt=dxdt, defects=None)
 
     @staticmethod
-    def swap_implicit_for_explicit_contacts(contact_type):
+    def get_equivalent_explicit_contacts(contact_type):
         """
         In DMS and during reintegration of COLLOCATION, the implicit contacts must be swapped for explicit contacts.
         """

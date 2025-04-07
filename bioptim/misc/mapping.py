@@ -170,10 +170,7 @@ class BiMapping(OptionGeneric):
         self.to_first = to_first
 
     def actually_does_a_mapping(self) -> bool:
-        if self.to_first.map_idx == self.to_second.map_idx:
-            return False
-        else:
-            return True
+        return self.to_first.map_idx != self.to_second.map_idx
 
 
 BiMappingOrIterableOptional = BiMapping | list["BiMapping"] | None

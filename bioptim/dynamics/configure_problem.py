@@ -157,7 +157,7 @@ class ConfigureProblem:
     def torque_driven(
         ocp,
         nlp,
-        contact_type: list[ContactType] = [],
+        contact_type: list[ContactType] = (),
         with_passive_torque: bool = False,
         with_ligament: bool = False,
         with_friction: bool = False,
@@ -368,7 +368,7 @@ class ConfigureProblem:
         ocp,
         nlp,
         problem_type,
-        contact_type: list[ContactType] = [],
+        contact_type: list[ContactType] = (),
         with_friction: bool = False,
         with_cholesky: bool = False,
         initial_matrix: DM = None,
@@ -451,6 +451,7 @@ class ConfigureProblem:
         with_cholesky: bool = False,
         initial_matrix: DM = None,
         numerical_data_timeseries: dict[str, np.ndarray] = None,
+        contact_type: list[ContactType] = ()
     ):
         """
         Configure the dynamics for a stochastic torque driven program with a free floating base.
@@ -522,7 +523,7 @@ class ConfigureProblem:
     def torque_derivative_driven(
         ocp,
         nlp,
-        contact_type: list[ContactType] = [],
+        contact_type: list[ContactType] = (),
         with_passive_torque: bool = False,
         with_ligament: bool = False,
         with_friction: bool = False,
@@ -596,7 +597,7 @@ class ConfigureProblem:
     def torque_activations_driven(
         ocp,
         nlp,
-        contact_type: list[ContactType] = [],
+        contact_type: list[ContactType] = (),
         with_passive_torque: bool = False,
         with_residual_torque: bool = False,
         with_ligament: bool = False,
@@ -660,7 +661,7 @@ class ConfigureProblem:
         ocp,
         nlp,
         numerical_data_timeseries: dict[str, np.ndarray] = None,
-        contact_type: list[ContactType] = [],
+        contact_type: list[ContactType] = (),
     ):
         """
         Configure the dynamics for a joints acceleration driven program
@@ -717,7 +718,7 @@ class ConfigureProblem:
         with_excitations: bool = False,
         fatigue: FatigueList = None,
         with_residual_torque: bool = False,
-        contact_type: list[ContactType] = [],
+        contact_type: list[ContactType] = (),
         with_passive_torque: bool = False,
         with_ligament: bool = False,
         with_friction: bool = False,
@@ -1992,7 +1993,7 @@ class Dynamics(OptionGeneric):
         state_continuity_weight: float | None = None,
         phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
         numerical_data_timeseries: dict[str, np.ndarray] = None,
-        contact_type: list[ContactType] = [],
+        contact_type: list[ContactType] = (),
         **extra_parameters: Any,
     ):
         """

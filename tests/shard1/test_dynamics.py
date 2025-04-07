@@ -213,7 +213,7 @@ def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("cx", [MX, SX])
-@pytest.mark.parametrize("contact_type", [[ContactType.SOFT_IMPLICIT], [ContactType.SOFT_EXPLICIT], []])
+@pytest.mark.parametrize("contact_type", [[ContactType.SOFT_IMPLICIT], [ContactType.SOFT_EXPLICIT], ()])
 def test_torque_driven_soft_contacts_dynamics(contact_type, cx, phase_dynamics):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
@@ -448,7 +448,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("cx", [MX, SX])
-@pytest.mark.parametrize("contact_type", [[ContactType.SOFT_IMPLICIT], [ContactType.SOFT_EXPLICIT], []])
+@pytest.mark.parametrize("contact_type", [[ContactType.SOFT_IMPLICIT], [ContactType.SOFT_EXPLICIT], ()])
 def test_torque_derivative_driven_soft_contacts_dynamics(contact_type, cx, phase_dynamics):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
@@ -1124,7 +1124,7 @@ def test_joints_acceleration_driven(cx, phase_dynamics):
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
-@pytest.mark.parametrize("contact_type", [[], [ContactType.RIGID_EXPLICIT]])
+@pytest.mark.parametrize("contact_type", [(), [ContactType.RIGID_EXPLICIT]])
 def test_custom_dynamics(contact_type, phase_dynamics):
     def custom_dynamic(
         time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp, contact_type=[]

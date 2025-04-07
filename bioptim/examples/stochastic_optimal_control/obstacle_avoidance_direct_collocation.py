@@ -330,7 +330,7 @@ def configure_optimal_control_problem(
     ocp: OptimalControlProgram,
     nlp: NonLinearProgram,
     numerical_data_timeseries=None,
-    contact_type: list[ContactType] = [],
+    contact_type: list[ContactType] = (),
 ):
     ConfigureProblem.configure_q(ocp, nlp, True, False, False)
     ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
