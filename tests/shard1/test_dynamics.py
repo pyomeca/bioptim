@@ -121,6 +121,13 @@ def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod",
         external_force_set=external_forces,
     )
+    nlp.dynamics_type = Dynamics(
+            DynamicsFcn.TORQUE_DRIVEN,
+            with_contact=with_contact,
+            expand_dynamics=True,
+            phase_dynamics=phase_dynamics,
+            numerical_data_timeseries=numerical_time_series,
+        )
 
     nlp.cx = cx
     nlp.time_cx = cx.sym("time", 1, 1)
@@ -139,13 +146,7 @@ def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(
-            DynamicsFcn.TORQUE_DRIVEN,
-            with_contact=with_contact,
-            expand_dynamics=True,
-            phase_dynamics=phase_dynamics,
-            numerical_data_timeseries=numerical_time_series,
-        ),
+        nlp.dynamics_type,
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -220,6 +221,14 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
+    nlp.dynamics_type = Dynamics(
+            DynamicsFcn.TORQUE_DRIVEN,
+            with_contact=with_contact,
+            soft_contacts_dynamics=implicit_contact,
+            expand_dynamics=True,
+            phase_dynamics=phase_dynamics,
+        )
+
     nlp.ns = N_SHOOTING
     nlp.cx = cx
     nlp.time_cx = cx.sym("time", 1, 1)
@@ -239,13 +248,7 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(
-            DynamicsFcn.TORQUE_DRIVEN,
-            with_contact=with_contact,
-            soft_contacts_dynamics=implicit_contact,
-            expand_dynamics=True,
-            phase_dynamics=phase_dynamics,
-        ),
+        nlp.dynamics_type,
         False,
     )
 
@@ -303,6 +306,14 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod",
         external_force_set=external_forces,
     )
+    nlp.dynamics_type = Dynamics(
+            DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
+            with_contact=with_contact,
+            expand_dynamics=True,
+            phase_dynamics=phase_dynamics,
+            numerical_data_timeseries=numerical_timeseries,
+        )
+
     nlp.cx = cx
     nlp.time_cx = cx.sym("time", 1, 1)
     nlp.dt = cx.sym("dt", 1, 1)
@@ -320,13 +331,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(
-            DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
-            with_contact=with_contact,
-            expand_dynamics=True,
-            phase_dynamics=phase_dynamics,
-            numerical_data_timeseries=numerical_timeseries,
-        ),
+        nlp.dynamics_type,
         False,
     )
 
@@ -445,6 +450,14 @@ def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, impli
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
+    nlp.dynamics_type = Dynamics(
+            DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
+            with_contact=with_contact,
+            soft_contacts_dynamics=implicit_contact,
+            expand_dynamics=True,
+            phase_dynamics=phase_dynamics,
+        )
+
     nlp.ns = N_SHOOTING
     nlp.cx = cx
     nlp.time_cx = cx.sym("time", 1, 1)
@@ -463,13 +476,7 @@ def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, impli
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(
-            DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
-            with_contact=with_contact,
-            soft_contacts_dynamics=implicit_contact,
-            expand_dynamics=True,
-            phase_dynamics=phase_dynamics,
-        ),
+        nlp.dynamics_type,
         False,
     )
 
@@ -544,6 +551,8 @@ def test_soft_contacts_dynamics_errors(dynamics, phase_dynamics):
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
+    nlp.dynamics_type = Dynamics(dynamics, soft_contacts_dynamics=True, expand_dynamics=True, phase_dynamics=phase_dynamics)
+
     nlp.ns = N_SHOOTING
     nlp.cx = MX
 
@@ -555,7 +564,7 @@ def test_soft_contacts_dynamics_errors(dynamics, phase_dynamics):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(dynamics, soft_contacts_dynamics=True, expand_dynamics=True, phase_dynamics=phase_dynamics),
+        nlp.dynamics_type,
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -589,6 +598,14 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod",
         external_force_set=external_forces,
     )
+    nlp.dynamics_type = Dynamics(
+            DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
+            with_contact=with_contact,
+            expand_dynamics=True,
+            phase_dynamics=phase_dynamics,
+            numerical_data_timeseries=numerical_timeseries,
+        )
+
     nlp.cx = cx
     nlp.time_cx = cx.sym("time", 1, 1)
     nlp.dt = cx.sym("dt", 1, 1)
@@ -606,13 +623,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(
-            DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
-            with_contact=with_contact,
-            expand_dynamics=True,
-            phase_dynamics=phase_dynamics,
-            numerical_data_timeseries=numerical_timeseries,
-        ),
+        nlp.dynamics_type,
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -713,6 +724,14 @@ def test_torque_activation_driven_with_residual_torque(
         TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/2segments_2dof_2contacts.bioMod",
         external_force_set=external_forces,
     )
+    nlp.dynamics_type = Dynamics(
+            DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
+            with_residual_torque=with_residual_torque,
+            expand_dynamics=True,
+            phase_dynamics=phase_dynamics,
+            numerical_data_timeseries=numerical_timeseries,
+        )
+
     nlp.cx = cx
     nlp.time_cx = cx.sym("time", 1, 1)
     nlp.dt = cx.sym("dt", 1, 1)
@@ -729,13 +748,7 @@ def test_torque_activation_driven_with_residual_torque(
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(
-            DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
-            with_residual_torque=with_residual_torque,
-            expand_dynamics=True,
-            phase_dynamics=phase_dynamics,
-            numerical_data_timeseries=numerical_timeseries,
-        ),
+        nlp.dynamics_type,
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -826,6 +839,8 @@ def test_torque_driven_free_floating_base(cx, phase_dynamics):
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
+    nlp.dynamics_type = Dynamics(DynamicsFcn.TORQUE_DRIVEN_FREE_FLOATING_BASE, expand_dynamics=True, phase_dynamics=phase_dynamics)
+
     nlp.ns = N_SHOOTING
     nlp.cx = cx
     nlp.time_cx = cx.sym("time", 1, 1)
@@ -844,7 +859,7 @@ def test_torque_driven_free_floating_base(cx, phase_dynamics):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.TORQUE_DRIVEN_FREE_FLOATING_BASE, expand_dynamics=True, phase_dynamics=phase_dynamics),
+        nlp.dynamics_type,
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -897,6 +912,15 @@ def test_muscle_driven(with_excitations, with_contact, with_residual_torque, wit
         TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod",
         external_force_set=external_forces,
     )
+    nlp.dynamics_type = Dynamics(
+            DynamicsFcn.MUSCLE_DRIVEN,
+            with_residual_torque=with_residual_torque,
+            with_excitations=with_excitations,
+            with_contact=with_contact,
+            expand_dynamics=True,
+            phase_dynamics=phase_dynamics,
+            numerical_data_timeseries=numerical_timeseries,
+        )
 
     nlp.cx = cx
     nlp.time_cx = cx.sym("time", 1, 1)
@@ -916,15 +940,7 @@ def test_muscle_driven(with_excitations, with_contact, with_residual_torque, wit
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(
-            DynamicsFcn.MUSCLE_DRIVEN,
-            with_residual_torque=with_residual_torque,
-            with_excitations=with_excitations,
-            with_contact=with_contact,
-            expand_dynamics=True,
-            phase_dynamics=phase_dynamics,
-            numerical_data_timeseries=numerical_timeseries,
-        ),
+        nlp.dynamics_type,
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -1071,6 +1087,11 @@ def test_joints_acceleration_driven(cx, phase_dynamics):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = BiorbdModel(TestUtils.bioptim_folder() + "/examples/getting_started/models/double_pendulum.bioMod")
+    nlp.dynamics_type = Dynamics(
+            DynamicsFcn.JOINTS_ACCELERATION_DRIVEN,
+            expand_dynamics=True,
+            phase_dynamics=phase_dynamics,
+        )
 
     nlp.ns = N_SHOOTING
     nlp.cx = cx
@@ -1091,11 +1112,7 @@ def test_joints_acceleration_driven(cx, phase_dynamics):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(
-            DynamicsFcn.JOINTS_ACCELERATION_DRIVEN,
-            expand_dynamics=True,
-            phase_dynamics=phase_dynamics,
-        ),
+        nlp.dynamics_type,
         False,
     )
     np.random.seed(42)
@@ -1148,6 +1165,14 @@ def test_custom_dynamics(with_contact, phase_dynamics):
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
+    nlp.dynamics_type = Dynamics(
+            configure,
+            dynamic_function=custom_dynamic,
+            with_contact=with_contact,
+            expand_dynamics=True,
+            phase_dynamics=phase_dynamics,
+        )
+
     nlp.ns = N_SHOOTING
     nlp.cx = MX
     nlp.time_cx = nlp.cx.sym("time", 1, 1)
@@ -1165,13 +1190,7 @@ def test_custom_dynamics(with_contact, phase_dynamics):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(
-            configure,
-            dynamic_function=custom_dynamic,
-            with_contact=with_contact,
-            expand_dynamics=True,
-            phase_dynamics=phase_dynamics,
-        ),
+        nlp.dynamics_type,
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]

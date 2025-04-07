@@ -42,11 +42,16 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, phase_dynami
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
+    nlp.dynamics_type = Dynamics(
+            DynamicsFcn.TORQUE_DRIVEN,
+            with_passive_torque=with_passive_torque,
+            phase_dynamics=phase_dynamics,
+        )
+
     nlp.ns = 5
     nlp.cx = cx
     nlp.time_cx = cx.sym("time", 1, 1)
     nlp.dt = cx.sym("dt", 1, 1)
-    nlp.initialize(cx)
     nlp.x_scaling = VariableScalingList()
     nlp.xdot_scaling = VariableScalingList()
     nlp.u_scaling = VariableScalingList()
@@ -56,14 +61,11 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, phase_dynami
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
     ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
     nlp.control_type = ControlType.CONSTANT
+
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(
-            DynamicsFcn.TORQUE_DRIVEN,
-            with_passive_torque=with_passive_torque,
-            phase_dynamics=phase_dynamics,
-        ),
+        nlp.dynamics_type,
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -103,6 +105,12 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx, p
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
+    nlp.dynamics_type = Dynamics(
+            DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
+            with_passive_torque=with_passive_torque,
+            phase_dynamics=phase_dynamics,
+        )
+
     nlp.ns = 5
     nlp.cx = cx
     nlp.time_cx = cx.sym("time", 1, 1)
@@ -121,11 +129,7 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx, p
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(
-            DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
-            with_passive_torque=with_passive_torque,
-            phase_dynamics=phase_dynamics,
-        ),
+        nlp.dynamics_type,
         False,
     )
 
@@ -194,6 +198,13 @@ def test_torque_activation_driven_with_passive_torque(with_passive_torque, with_
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
+    nlp.dynamics_type = Dynamics(
+            DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
+            with_passive_torque=with_passive_torque,
+            with_residual_torque=with_residual_torque,
+            phase_dynamics=phase_dynamics,
+        )
+
     nlp.ns = 5
     nlp.cx = cx
     nlp.time_cx = cx.sym("time", 1, 1)
@@ -206,15 +217,11 @@ def test_torque_activation_driven_with_passive_torque(with_passive_torque, with_
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
     ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
     nlp.control_type = ControlType.CONSTANT
+
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(
-            DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
-            with_passive_torque=with_passive_torque,
-            with_residual_torque=with_residual_torque,
-            phase_dynamics=phase_dynamics,
-        ),
+        nlp.dynamics_type,
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -306,6 +313,12 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, cx, phase_dynami
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = BiorbdModel(TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod")
+    nlp.dynamics_type = Dynamics(
+            DynamicsFcn.MUSCLE_DRIVEN,
+            with_passive_torque=with_passive_torque,
+            phase_dynamics=phase_dynamics,
+        )
+
     nlp.ns = 5
     nlp.cx = cx
     nlp.time_cx = cx.sym("time", 1, 1)
@@ -320,14 +333,11 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, cx, phase_dynami
 
     ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
     nlp.control_type = ControlType.CONSTANT
+
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(
-            DynamicsFcn.MUSCLE_DRIVEN,
-            with_passive_torque=with_passive_torque,
-            phase_dynamics=phase_dynamics,
-        ),
+        nlp.dynamics_type,
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
