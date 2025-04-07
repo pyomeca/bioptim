@@ -8,6 +8,7 @@ from casadi import Function, vertcat
 from .optimal_control_program import OptimalControlProgram
 from ..dynamics.configure_problem import ConfigureProblem, DynamicsList
 from ..dynamics.dynamics_evaluation import DynamicsEvaluation
+from ..dynamics.ode_solvers import OdeSolver
 from ..limits.constraints import ParameterConstraintList
 from ..limits.multinode_constraint import MultinodeConstraintList
 from ..limits.objective_functions import ParameterObjectiveList
@@ -83,7 +84,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             self.configure_torque_driven,
             expand_dynamics=expand,
             skip_continuity=True,
-            ode_solver=None,
+            ode_solver=OdeSolver.VARIATIONAL(),  # This is a fake ode_solver to be able to use the variational integrator
         )
 
         if qdot_bounds is None or not isinstance(qdot_bounds, BoundsList):

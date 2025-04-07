@@ -49,6 +49,16 @@ class OdeSolver:
         def integrator(self):
             return integrator.RK8
 
+    class VARIATIONAL(RK):
+        """
+        This is a fake enum to be able to use the variational integrator.
+        """
+
+        @property
+        def integrator(self):
+            return integrator.VARIATIONAL
+
+
     class TRAPEZOIDAL(OdeSolverBase):
         """
         A trapezoidal ode solver
