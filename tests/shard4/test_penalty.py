@@ -804,7 +804,7 @@ def test_penalty_minimize_contact_forces(penalty_origin, value, phase_dynamics):
     a = []
     d = []
 
-    penalty_type = penalty_origin.MINIMIZE_RIGID_CONTACT_FORCES
+    penalty_type = penalty_origin.MINIMIZE_EXPLICIT_RIGID_CONTACT_FORCES
     penalty = Objective(penalty_type)
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 

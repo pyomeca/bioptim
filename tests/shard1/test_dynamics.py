@@ -1142,7 +1142,7 @@ def test_custom_dynamics(contact_type, phase_dynamics):
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
-        ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic, with_contact=with_contact)
+        ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic, contact_type=contact_type)
 
         if ContactType.RIGID_EXPLICIT in contact_type:
             ConfigureProblem.configure_rigid_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
