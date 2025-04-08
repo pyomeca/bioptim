@@ -141,11 +141,10 @@ def configure_stochastic_optimal_control_problem(
     numerical_data_timeseries=None,
     contact_type: list[ContactType] = (),
 ):
-    ConfigureProblem.configure_q(ocp, nlp, True, False, False)
-    ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
-    ConfigureProblem.configure_qddot(ocp, nlp, False, False, True)
+    ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
+    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
     ConfigureProblem.configure_muscles(
-        ocp, nlp, True, True
+        ocp, nlp, as_states=True, as_controls=True
     )  # Muscles activations as states + muscles excitations as controls
 
     # Algebraic variables

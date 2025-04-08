@@ -138,9 +138,8 @@ def configure_holonomic_torque_driven(
         names_u,
         ocp,
         nlp,
-        True,
-        False,
-        False,
+        as_states=True,
+        as_controls=False,
     )
 
     name = "q_v"
@@ -150,9 +149,8 @@ def configure_holonomic_torque_driven(
         names_v,
         ocp,
         nlp,
-        False,
-        False,
-        False,
+        as_states=False,
+        as_controls=False,
         as_algebraic_states=True,
     )
 
@@ -164,9 +162,8 @@ def configure_holonomic_torque_driven(
         names_udot,
         ocp,
         nlp,
-        True,
-        False,
-        False,
+        as_states=True,
+        as_controls=False,
         # NOTE: not ready for phase mapping yet as it is based on dofnames of the class BioModel
         # see _set_kinematic_phase_mapping method
         # axes_idx=ConfigureProblem._apply_phase_mapping(ocp, nlp, name),
