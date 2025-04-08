@@ -103,14 +103,14 @@ def prepare_ocp(
     # Constraints
     constraints = ConstraintList()
     constraints.add(
-        ConstraintFcn.TRACK_RIGID_CONTACT_FORCES,
+        ConstraintFcn.TRACK_EXPLICIT_RIGID_CONTACT_FORCES,
         min_bound=min_bound,
         max_bound=max_bound,
         node=Node.ALL_SHOOTING,
         contact_index=1,
     )
     constraints.add(
-        ConstraintFcn.TRACK_RIGID_CONTACT_FORCES,
+        ConstraintFcn.TRACK_EXPLICIT_RIGID_CONTACT_FORCES,
         min_bound=min_bound,
         max_bound=max_bound,
         node=Node.ALL_SHOOTING,

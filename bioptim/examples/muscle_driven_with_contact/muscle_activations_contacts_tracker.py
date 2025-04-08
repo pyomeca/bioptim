@@ -47,7 +47,7 @@ def prepare_ocp(
         ObjectiveFcn.Lagrange.TRACK_CONTROL, key="muscles", target=muscle_activations_ref, node=Node.ALL_SHOOTING
     )
     objective_functions.add(
-        ObjectiveFcn.Lagrange.TRACK_RIGID_CONTACT_FORCES, target=contact_forces_ref, node=Node.ALL_SHOOTING
+        ObjectiveFcn.Lagrange.TRACK_EXPLICIT_RIGID_CONTACT_FORCES, target=contact_forces_ref, node=Node.ALL_SHOOTING
     )
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", weight=0.001)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q", weight=0.001)

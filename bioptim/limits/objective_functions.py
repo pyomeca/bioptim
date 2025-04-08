@@ -337,7 +337,7 @@ class ObjectiveFcn:
         MINIMIZE_COM_ACCELERATION = (PenaltyFunctionAbstract.Functions.minimize_com_acceleration,)
         MINIMIZE_COM_POSITION = (PenaltyFunctionAbstract.Functions.minimize_com_position,)
         MINIMIZE_COM_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_com_velocity,)
-        MINIMIZE_RIGID_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_rigid_contact_forces,)
+        MINIMIZE_EXPLICIT_RIGID_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_explicit_rigid_contact_forces,)
         MINIMIZE_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)
         MINIMIZE_FATIGUE = (PenaltyFunctionAbstract.Functions.minimize_fatigue,)
         MINIMIZE_LINEAR_MOMENTUM = (PenaltyFunctionAbstract.Functions.minimize_linear_momentum,)
@@ -358,7 +358,7 @@ class ObjectiveFcn:
             PenaltyFunctionAbstract.Functions.stochastic_minimize_expected_feedback_efforts,
         )
         SUPERIMPOSE_MARKERS = (PenaltyFunctionAbstract.Functions.superimpose_markers,)
-        TRACK_RIGID_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_rigid_contact_forces,)
+        TRACK_EXPLICIT_RIGID_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_explicit_rigid_contact_forces,)
         TRACK_SUM_REACTION_FORCES = (PenaltyFunctionAbstract.Functions.minimize_sum_reaction_forces,)
         TRACK_CENTER_OF_PRESSURE = (PenaltyFunctionAbstract.Functions.minimize_center_of_pressure,)
         TRACK_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)
@@ -418,9 +418,9 @@ class ObjectiveFcn:
         TRACK_POWER = (PenaltyFunctionAbstract.Functions.minimize_power,)
         TRACK_SEGMENT_WITH_CUSTOM_RT = (PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt,)
         TRACK_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
-        MINIMIZE_RIGID_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_rigid_contact_forces,)
-        MINIMIZE_RIGID_CONTACT_FORCES_END_OF_INTERVAL = (
-            PenaltyFunctionAbstract.Functions.minimize_rigid_contact_forces_end_of_interval,
+        MINIMIZE_EXPLICIT_RIGID_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_explicit_rigid_contact_forces,)
+        MINIMIZE_EXPLICIT_RIGID_CONTACT_FORCES_END_OF_INTERVAL = (
+            PenaltyFunctionAbstract.Functions.minimize_explicit_rigid_contact_forces_end_of_interval,
         )
         TRACK_SUM_REACTION_FORCES = (PenaltyFunctionAbstract.Functions.minimize_sum_reaction_forces,)
         TRACK_CENTER_OF_PRESSURE = (PenaltyFunctionAbstract.Functions.minimize_center_of_pressure,)

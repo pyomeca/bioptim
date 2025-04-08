@@ -40,7 +40,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound,
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT)
     objective_functions.add(
-        ObjectiveFcn.Mayer.MINIMIZE_RIGID_CONTACT_FORCES_END_OF_INTERVAL,
+        ObjectiveFcn.Mayer.MINIMIZE_EXPLICIT_RIGID_CONTACT_FORCES_END_OF_INTERVAL,
         node=Node.PENULTIMATE,
         contact_index=2,
         quadratic=True,
@@ -58,14 +58,14 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound,
     # Constraints
     constraints = ConstraintList()
     constraints.add(
-        ConstraintFcn.TRACK_RIGID_CONTACT_FORCES,
+        ConstraintFcn.TRACK_EXPLICIT_RIGID_CONTACT_FORCES,
         min_bound=min_bound,
         max_bound=max_bound,
         node=Node.ALL_SHOOTING,
         contact_index=1,
     )
     constraints.add(
-        ConstraintFcn.TRACK_RIGID_CONTACT_FORCES,
+        ConstraintFcn.TRACK_EXPLICIT_RIGID_CONTACT_FORCES,
         min_bound=min_bound,
         max_bound=max_bound,
         node=Node.ALL_SHOOTING,

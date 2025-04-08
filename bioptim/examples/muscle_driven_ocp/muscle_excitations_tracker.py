@@ -178,7 +178,7 @@ def generate_data(
                 algebraic_states=MX(),
                 numerical_timeseries=MX(),
                 nlp=nlp,
-                contact_type=[],
+                contact_type=(),
             ).dxdt
         ],
     )

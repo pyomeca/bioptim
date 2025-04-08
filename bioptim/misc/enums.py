@@ -201,6 +201,21 @@ class ContactType(Enum):
     RIGID_IMPLICIT = "rigid_implicit"
     SOFT_IMPLICIT = "soft_implicit"
 
+    @staticmethod
+    def get_equivalent_explicit_contacts(contact_type):
+        """
+        In DMS and during reintegration of COLLOCATION, the implicit contacts must be swapped for explicit contacts.
+        """
+        forward_dynamics_contact_type = []
+        for contact in contact_type:
+            if contact == ContactType.SOFT_IMPLICIT:
+                forward_dynamics_contact_type += [ContactType.SOFT_EXPLICIT]
+            elif contact == ContactType.RIGID_IMPLICIT:
+                forward_dynamics_contact_type += [ContactType.RIGID_EXPLICIT]
+            else:
+                forward_dynamics_contact_type += [contact]
+        return forward_dynamics_contact_type
+
 
 class DefectType(Enum):
     EXPLICIT = "explicit"

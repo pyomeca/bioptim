@@ -143,7 +143,7 @@ def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
         "dynamics_type",
         Dynamics(
             DynamicsFcn.TORQUE_DRIVEN,
-            contact_type=[ContactType.RIGID_EXPLICIT] if with_contact else [],
+            contact_type=[ContactType.RIGID_EXPLICIT] if with_contact else (),
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
             numerical_data_timeseries=numerical_time_series,
@@ -600,7 +600,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
 
     nlp.dynamics = Dynamics(
         DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
-        contact_type=[ContactType.RIGID_EXPLICIT] if with_contact else [],
+        contact_type=[ContactType.RIGID_EXPLICIT] if with_contact else (),
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
         numerical_data_timeseries=numerical_timeseries,
@@ -920,7 +920,7 @@ def test_muscle_driven(with_excitations, with_contact, with_residual_torque, wit
         DynamicsFcn.MUSCLE_DRIVEN,
         with_residual_torque=with_residual_torque,
         with_excitations=with_excitations,
-        contact_type=[ContactType.RIGID_EXPLICIT] if with_contact else [],
+        contact_type=[ContactType.RIGID_EXPLICIT] if with_contact else (),
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
         numerical_data_timeseries=numerical_timeseries,
@@ -1127,7 +1127,7 @@ def test_joints_acceleration_driven(cx, phase_dynamics):
 @pytest.mark.parametrize("contact_type", [(), [ContactType.RIGID_EXPLICIT]])
 def test_custom_dynamics(contact_type, phase_dynamics):
     def custom_dynamic(
-        time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp, contact_type=[]
+        time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp, contact_type=()
     ) -> DynamicsEvaluation:
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)

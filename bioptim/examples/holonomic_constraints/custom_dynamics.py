@@ -127,7 +127,7 @@ def configure_holonomic_torque_driven(
         A reference to the phase
     numerical_data_timeseries: NumericalDataTimeseries
         A reference to the numerical data timeseries
-    contact_type: list[ContactType]
+    contact_type: list[ContactType] | tuple[ContactType]
         The type of contacts to consider in the dynamics.
     """
 

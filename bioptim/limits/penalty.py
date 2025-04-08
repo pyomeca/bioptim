@@ -731,7 +731,7 @@ class PenaltyFunctionAbstract:
             return linear_momentum_cx
 
         @staticmethod
-        def minimize_rigid_contact_forces(
+        def minimize_explicit_rigid_contact_forces(
             penalty: PenaltyOption, controller: PenaltyController, contact_index: tuple | list | int | str = None
         ):
             """
@@ -759,13 +759,13 @@ class PenaltyFunctionAbstract:
                 or ContactType.SOFT_EXPLICIT in controller.get_nlp.dynamics_type.contact_type
             ):
                 raise RuntimeError(
-                    "minimize_rigid_contact_forces is only implemented for explicit contact (RIGID_EXPLICIT)."
+                    "minimize_explicit_rigid_contact_forces is only implemented for explicit contact (RIGID_EXPLICIT)."
                 )
 
             contact_forces = controller.cx()
             if ContactType.RIGID_EXPLICIT in controller.get_nlp.dynamics_type.contact_type:
                 if controller.get_nlp.rigid_contact_forces_func is None:
-                    raise RuntimeError("minimize_rigid_contact_forces requires a contact dynamics")
+                    raise RuntimeError("minimize_explicit_rigid_contact_forces requires a contact dynamics")
 
                 contact_forces = vertcat(
                     contact_forces,
@@ -896,7 +896,7 @@ class PenaltyFunctionAbstract:
             return center_of_pressure
 
         @staticmethod
-        def minimize_rigid_contact_forces_end_of_interval(
+        def minimize_explicit_rigid_contact_forces_end_of_interval(
             penalty: PenaltyOption, controller: PenaltyController, contact_index: tuple | list | int | str = None
         ):
             """
@@ -916,7 +916,7 @@ class PenaltyFunctionAbstract:
             """
 
             if controller.get_nlp.rigid_contact_forces_func is None:
-                raise RuntimeError("minimize_rigid_contact_forces requires a contact dynamics")
+                raise RuntimeError("minimize_explicit_rigid_contact_forces requires a contact dynamics")
 
             if controller.control_type != ControlType.CONSTANT:
                 raise NotImplementedError(

@@ -827,7 +827,7 @@ def test_penalty_track_contact_forces(penalty_origin, value, phase_dynamics):
     a = []
     d = []
 
-    penalty_type = penalty_origin.TRACK_RIGID_CONTACT_FORCES
+    penalty_type = penalty_origin.TRACK_EXPLICIT_RIGID_CONTACT_FORCES
 
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
         penalty = Objective(penalty_type, target=np.ones((1, 1)) * value, index=0)
@@ -1094,7 +1094,7 @@ def test_penalty_contact_force_inequality(penalty_origin, value, phase_dynamics)
     a = []
     d = []
 
-    penalty_type = penalty_origin.TRACK_RIGID_CONTACT_FORCES
+    penalty_type = penalty_origin.TRACK_EXPLICIT_RIGID_CONTACT_FORCES
     penalty = Constraint(penalty_type, contact_index=0)
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
