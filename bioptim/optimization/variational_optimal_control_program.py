@@ -364,7 +364,6 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                 nlp,
                 as_states=True,
                 as_controls=False,
-                as_states_dot=False,
             )
 
         self.configure_dynamics_function(ocp, nlp)

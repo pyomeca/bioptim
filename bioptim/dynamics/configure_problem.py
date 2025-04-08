@@ -194,13 +194,13 @@ class ConfigureProblem:
 
         # Declared rigidbody states and controls
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
-        ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False, as_states_dot=True)
+        ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True, fatigue=fatigue)
-        ConfigureProblem.configure_qddot(ocp, nlp, False, False, True)
+        ConfigureProblem.configure_qddot(ocp, nlp, as_states=False, as_controls=False)
 
         # Declared soft contacts controls
         if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
-            ConfigureProblem.configure_soft_contact_forces(ocp, nlp, False, True)
+            ConfigureProblem.configure_soft_contact_forces(ocp, nlp, as_states=False, as_controls=True)
 
         # Configure the actual ODE of the dynamics
         if nlp.dynamics_type.dynamic_function:
@@ -277,7 +277,6 @@ class ConfigureProblem:
             nlp,
             as_states=True,
             as_controls=False,
-            as_states_dot=False,
         )
 
         name_q_joints = [str(i) for i in range(nb_root, nb_q)]
@@ -288,7 +287,6 @@ class ConfigureProblem:
             nlp,
             as_states=True,
             as_controls=False,
-            as_states_dot=False,
         )
 
         ConfigureProblem.configure_new_variable(
@@ -298,7 +296,6 @@ class ConfigureProblem:
             nlp,
             as_states=True,
             as_controls=False,
-            as_states_dot=True,
         )
 
         name_qdot_joints = [str(i) for i in range(nb_root, nb_qdot)]
@@ -309,27 +306,6 @@ class ConfigureProblem:
             nlp,
             as_states=True,
             as_controls=False,
-            as_states_dot=True,
-        )
-
-        ConfigureProblem.configure_new_variable(
-            "qddot_roots",
-            name_q_roots,
-            ocp,
-            nlp,
-            as_states=False,
-            as_controls=False,
-            as_states_dot=True,
-        )
-
-        ConfigureProblem.configure_new_variable(
-            "qddot_joints",
-            name_qdot_joints,
-            ocp,
-            nlp,
-            as_states=False,
-            as_controls=False,
-            as_states_dot=True,
         )
 
         ConfigureProblem.configure_new_variable(
@@ -339,7 +315,6 @@ class ConfigureProblem:
             nlp,
             as_states=False,
             as_controls=True,
-            as_states_dot=False,
         )
 
         # TODO: add implicit constraints + soft contacts + fatigue
@@ -545,13 +520,13 @@ class ConfigureProblem:
 
         _check_soft_contacts_dynamics(soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx)
 
-        ConfigureProblem.configure_q(ocp, nlp, True, False)
-        ConfigureProblem.configure_qdot(ocp, nlp, True, False)
-        ConfigureProblem.configure_tau(ocp, nlp, True, False)
-        ConfigureProblem.configure_taudot(ocp, nlp, False, True)
+        ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
+        ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
+        ConfigureProblem.configure_tau(ocp, nlp, as_states=True, as_controls=False)
+        ConfigureProblem.configure_taudot(ocp, nlp, as_states=False, as_controls=True)
 
         if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
-            ConfigureProblem.configure_soft_contact_forces(ocp, nlp, False, True)
+            ConfigureProblem.configure_soft_contact_forces(ocp, nlp, as_states=False, as_controls=True)
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
@@ -617,12 +592,12 @@ class ConfigureProblem:
 
         _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
 
-        ConfigureProblem.configure_q(ocp, nlp, True, False)
-        ConfigureProblem.configure_qdot(ocp, nlp, True, False)
-        ConfigureProblem.configure_tau(ocp, nlp, False, True)
+        ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
+        ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
+        ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
 
         if with_residual_torque:
-            ConfigureProblem.configure_residual_tau(ocp, nlp, False, True)
+            ConfigureProblem.configure_residual_tau(ocp, nlp, as_states=False, as_controls=True)
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
@@ -663,7 +638,7 @@ class ConfigureProblem:
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
-        ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False, as_states_dot=True)
+        ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
         # Configure qddot joints
         nb_root = nlp.model.nb_root
         if not nb_root > 0:
@@ -677,7 +652,6 @@ class ConfigureProblem:
             nlp,
             as_states=False,
             as_controls=False,
-            as_states_dot=True,
         )
 
         name_qddot_joints = [str(i + nb_root) for i in range(nlp.model.nb_qddot - nb_root)]
@@ -688,7 +662,6 @@ class ConfigureProblem:
             nlp,
             as_states=False,
             as_controls=True,
-            as_states_dot=True,
         )
 
         ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.joints_acceleration_driven)
@@ -741,13 +714,13 @@ class ConfigureProblem:
         if fatigue is not None and "tau" in fatigue and not with_residual_torque:
             raise RuntimeError("Residual torques need to be used to apply fatigue on torques")
 
-        ConfigureProblem.configure_q(ocp, nlp, True, False)
-        ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
-        ConfigureProblem.configure_qddot(ocp, nlp, False, False, True)
+        ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
+        ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
+        ConfigureProblem.configure_qddot(ocp, nlp, as_states=False, as_controls=False)
 
         if with_residual_torque:
-            ConfigureProblem.configure_tau(ocp, nlp, False, True, fatigue=fatigue)
-        ConfigureProblem.configure_muscles(ocp, nlp, with_excitations, True, fatigue=fatigue)
+            ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True, fatigue=fatigue)
+        ConfigureProblem.configure_muscles(ocp, nlp, with_excitations, as_controls=True, fatigue=fatigue)
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
@@ -1256,7 +1229,6 @@ class ConfigureProblem:
         nlp,
         as_states: bool,
         as_controls: bool,
-        as_states_dot: bool = False,
         as_algebraic_states: bool = False,
         fatigue: FatigueList = None,
         combine_name: str = None,
@@ -1279,8 +1251,6 @@ class ConfigureProblem:
             A reference to the phase
         as_states: bool
             If the new variable should be added to the state variable set
-        as_states_dot: bool
-            If the new variable should be added to the state_dot variable set
         as_controls: bool
             If the new variable should be added to the control variable set
         as_algebraic_states: bool
@@ -1303,7 +1273,6 @@ class ConfigureProblem:
             nlp,
             as_states,
             as_controls,
-            as_states_dot,
             as_algebraic_states,
             fatigue,
             combine_name,
@@ -1370,7 +1339,7 @@ class ConfigureProblem:
             )
 
     @staticmethod
-    def configure_q(ocp, nlp, as_states: bool, as_controls: bool, as_states_dot: bool = False):
+    def configure_q(ocp, nlp, as_states: bool, as_controls: bool):
         """
         Configure the generalized coordinates
 
@@ -1382,18 +1351,14 @@ class ConfigureProblem:
             If the generalized coordinates should be a state
         as_controls: bool
             If the generalized coordinates should be a control
-        as_states_dot: bool
-            If the generalized velocities should be a state_dot
         """
         name = "q"
         name_q = nlp.model.name_dof
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
-        ConfigureProblem.configure_new_variable(
-            name, name_q, ocp, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
-        )
+        ConfigureProblem.configure_new_variable(name, name_q, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
-    def configure_qdot(ocp, nlp, as_states: bool, as_controls: bool, as_states_dot: bool = False):
+    def configure_qdot(ocp, nlp, as_states: bool, as_controls: bool):
         """
         Configure the generalized velocities
 
@@ -1405,19 +1370,15 @@ class ConfigureProblem:
             If the generalized velocities should be a state
         as_controls: bool
             If the generalized velocities should be a control
-        as_states_dot: bool
-            If the generalized velocities should be a state_dot
         """
 
         name = "qdot"
         name_qdot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
-        ConfigureProblem.configure_new_variable(
-            name, name_qdot, ocp, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
-        )
+        ConfigureProblem.configure_new_variable(name, name_qdot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
-    def configure_qddot(ocp, nlp, as_states: bool, as_controls: bool, as_states_dot: bool = False):
+    def configure_qddot(ocp, nlp, as_states: bool, as_controls: bool):
         """
         Configure the generalized accelerations
 
@@ -1429,16 +1390,12 @@ class ConfigureProblem:
             If the generalized velocities should be a state
         as_controls: bool
             If the generalized velocities should be a control
-        as_states_dot: bool
-            If the generalized accelerations should be a state_dot
         """
 
         name = "qddot"
         name_qddot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
-        ConfigureProblem.configure_new_variable(
-            name, name_qddot, ocp, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
-        )
+        ConfigureProblem.configure_new_variable(name, name_qddot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
     def configure_qdddot(ocp, nlp, as_states: bool, as_controls: bool):
@@ -1490,7 +1447,6 @@ class ConfigureProblem:
             nlp,
             as_states=False,
             as_controls=True,
-            as_states_dot=False,
             as_algebraic_states=False,
         )
 
@@ -1523,7 +1479,6 @@ class ConfigureProblem:
             nlp,
             as_states=False,
             as_controls=True,
-            as_states_dot=False,
             as_algebraic_states=False,
             skip_plot=True,
         )
@@ -1555,7 +1510,6 @@ class ConfigureProblem:
             nlp,
             as_states=False,
             as_controls=True,
-            as_states_dot=False,
             as_algebraic_states=False,
             skip_plot=True,
         )
@@ -1613,7 +1567,6 @@ class ConfigureProblem:
             nlp,
             as_states=False,
             as_controls=True,
-            as_states_dot=False,
             as_algebraic_states=False,
         )
 
@@ -1644,7 +1597,6 @@ class ConfigureProblem:
             nlp,
             as_states=False,
             as_controls=True,
-            as_states_dot=False,
             as_algebraic_states=False,
         )
 
@@ -1672,7 +1624,6 @@ class ConfigureProblem:
             nlp,
             as_states=False,
             as_controls=True,
-            as_states_dot=False,
             as_algebraic_states=False,
         )
 
@@ -1706,7 +1657,6 @@ class ConfigureProblem:
             nlp,
             as_states=False,
             as_controls=False,
-            as_states_dot=False,
             as_algebraic_states=True,
         )
 
@@ -1801,7 +1751,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_rigid_contact_forces(ocp, nlp, as_states: bool, as_controls: bool):
+    def configure_rigid_contact_forces(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
         """
         Configure the generalized forces derivative
 
@@ -1813,15 +1763,17 @@ class ConfigureProblem:
             If the generalized force derivatives should be a state
         as_controls: bool
             If the generalized force derivatives should be a control
+        as_algebraic_states: bool
+            If the generalized force derivatives should be an algebraic state
         """
 
         name_contact_forces = [name for name in nlp.model.contact_names]
         ConfigureProblem.configure_new_variable(
-            "rigid_contact_forces", name_contact_forces, ocp, nlp, as_states, as_controls
+            "rigid_contact_forces", name_contact_forces, ocp, nlp, as_states, as_controls, as_algebraic_states
         )
 
     @staticmethod
-    def configure_soft_contact_forces(ocp, nlp, as_states: bool, as_controls: bool):
+    def configure_soft_contact_forces(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
         """
         Configure the generalized forces derivative
 
@@ -1833,12 +1785,20 @@ class ConfigureProblem:
             If the generalized force derivatives should be a state
         as_controls: bool
             If the generalized force derivatives should be a control
+        as_algebraic_states: bool
+            If the generalized force derivatives should be an algebraic state
         """
         name_soft_contact_forces = [
-            f"{name}_{axis}" for name in nlp.model.soft_contact_names for axis in ("X", "Y", "Z")
+            f"{name}_{axis}" for name in nlp.model.soft_contact_names for axis in ("MX", "MY", "MZ", "FX", "FY", "FZ")
         ]
         ConfigureProblem.configure_new_variable(
-            "soft_contact_forces", name_soft_contact_forces, ocp, nlp, as_states, as_controls
+            "soft_contact_forces",
+            name_soft_contact_forces,
+            ocp,
+            nlp,
+            as_states=as_states,
+            as_algebraic_states=as_algebraic_states,
+            as_controls=as_controls,
         )
 
     @staticmethod

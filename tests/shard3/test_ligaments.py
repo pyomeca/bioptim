@@ -52,7 +52,6 @@ def test_torque_driven_with_ligament(with_ligament, cx, phase_dynamics):
     nlp.dt = cx.sym("dt", 1, 1)
     nlp.initialize(cx)
     nlp.x_scaling = VariableScalingList()
-    nlp.xdot_scaling = VariableScalingList()
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
 
@@ -113,7 +112,6 @@ def test_torque_derivative_driven_with_ligament(with_ligament, cx, phase_dynamic
     nlp.dt = cx.sym("dt", 1, 1)
     nlp.initialize(cx)
     nlp.x_scaling = VariableScalingList()
-    nlp.xdot_scaling = VariableScalingList()
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
 
@@ -175,7 +173,6 @@ def test_torque_activation_driven_with_ligament(with_ligament, cx, phase_dynamic
     nlp.dt = cx.sym("dt", 1, 1)
     nlp.initialize(cx)
     nlp.x_scaling = VariableScalingList()
-    nlp.xdot_scaling = VariableScalingList()
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 2, 1))
@@ -238,7 +235,6 @@ def test_muscle_driven_with_ligament(with_ligament, cx, phase_dynamics):
     nlp.dt = cx.sym("dt", 1, 1)
     nlp.initialize(cx)
     nlp.x_scaling = VariableScalingList()
-    nlp.xdot_scaling = VariableScalingList()
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 2 + nlp.model.nb_muscles, 1))

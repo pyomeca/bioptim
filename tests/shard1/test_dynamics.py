@@ -114,7 +114,9 @@ def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
     if with_external_force:
 
         external_forces = ExternalForceSetTimeSeries(nb_frames=nlp.ns)
-        external_forces.add("Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :])
+        external_forces.add(
+            "force0", "Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :]
+        )
         numerical_time_series = {"external_forces": external_forces.to_numerical_time_series()}
 
     nlp.model = BiorbdModel(
@@ -137,7 +139,6 @@ def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
     nlp.x_scaling = VariableScalingList()
-    nlp.xdot_scaling = VariableScalingList()
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
 
@@ -238,7 +239,6 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
     nlp.x_bounds = np.zeros((nlp.model.nb_q * (2 + 3), 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q * 2, 1))
     nlp.x_scaling = VariableScalingList()
-    nlp.xdot_scaling = VariableScalingList()
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
 
@@ -299,7 +299,9 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
     numerical_timeseries = None
     if with_external_force:
         external_forces = ExternalForceSetTimeSeries(nb_frames=nlp.ns)
-        external_forces.add("Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :])
+        external_forces.add(
+            "force0", "Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :]
+        )
         numerical_timeseries = {"external_forces": external_forces.to_numerical_time_series()}
 
     nlp.model = BiorbdModel(
@@ -321,7 +323,6 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
     nlp.x_scaling = VariableScalingList()
-    nlp.xdot_scaling = VariableScalingList()
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
 
@@ -467,7 +468,6 @@ def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, impli
     nlp.x_bounds = np.zeros((nlp.model.nb_q * (2 + 3), 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q * 4, 1))
     nlp.x_scaling = VariableScalingList()
-    nlp.xdot_scaling = VariableScalingList()
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
 
@@ -593,7 +593,9 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
     numerical_timeseries = None
     if with_external_force:
         external_forces = ExternalForceSetTimeSeries(nb_frames=nlp.ns)
-        external_forces.add("Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :])
+        external_forces.add(
+            "force0", "Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :]
+        )
         numerical_timeseries = {"external_forces": external_forces.to_numerical_time_series()}
 
     nlp.model = BiorbdModel(
@@ -616,7 +618,6 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 2, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
     nlp.x_scaling = VariableScalingList()
-    nlp.xdot_scaling = VariableScalingList()
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
 
@@ -719,7 +720,9 @@ def test_torque_activation_driven_with_residual_torque(
     numerical_timeseries = None
     if with_external_force:
         external_forces = ExternalForceSetTimeSeries(nb_frames=nlp.ns)
-        external_forces.add("Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :])
+        external_forces.add(
+            "force0", "Seg0", EXTERNAL_FORCE_ARRAY[:6, :], point_of_application=EXTERNAL_FORCE_ARRAY[6:, :]
+        )
         numerical_timeseries = {"external_forces": external_forces.to_numerical_time_series()}
 
     nlp.model = BiorbdModel(
@@ -741,7 +744,6 @@ def test_torque_activation_driven_with_residual_torque(
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 2, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
     nlp.x_scaling = VariableScalingList()
-    nlp.xdot_scaling = VariableScalingList()
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
 
@@ -854,7 +856,6 @@ def test_torque_driven_free_floating_base(cx, phase_dynamics):
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_tau - nlp.model.nb_root, 1))
     nlp.x_scaling = VariableScalingList()
-    nlp.xdot_scaling = VariableScalingList()
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
 
@@ -906,6 +907,7 @@ def test_muscle_driven(with_excitations, with_contact, with_residual_torque, wit
     if with_external_force:
         external_forces = ExternalForceSetTimeSeries(nb_frames=nlp.ns)
         external_forces.add(
+            "force0",
             "r_ulna_radius_hand_rotation1",
             EXTERNAL_FORCE_ARRAY[:6, :],
             point_of_application=EXTERNAL_FORCE_ARRAY[6:, :],
@@ -934,7 +936,6 @@ def test_muscle_driven(with_excitations, with_contact, with_residual_torque, wit
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 2 + nlp.model.nb_muscles, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_muscles, 1))
     nlp.x_scaling = VariableScalingList()
-    nlp.xdot_scaling = VariableScalingList()
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
     nlp.phase_idx = 0
@@ -1106,7 +1107,6 @@ def test_joints_acceleration_driven(cx, phase_dynamics):
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
     nlp.x_scaling = VariableScalingList()
-    nlp.xdot_scaling = VariableScalingList()
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
 
@@ -1156,9 +1156,9 @@ def test_custom_dynamics(with_contact, phase_dynamics):
         return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
 
     def configure(ocp, nlp, with_contact=None, numerical_data_timeseries=None):
-        ConfigureProblem.configure_q(ocp, nlp, True, False)
-        ConfigureProblem.configure_qdot(ocp, nlp, True, False)
-        ConfigureProblem.configure_tau(ocp, nlp, False, True)
+        ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
+        ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
+        ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
         ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic, with_contact=with_contact)
 
         if with_contact:
@@ -1185,7 +1185,6 @@ def test_custom_dynamics(with_contact, phase_dynamics):
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
     nlp.x_scaling = VariableScalingList()
-    nlp.xdot_scaling = VariableScalingList()
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
 
