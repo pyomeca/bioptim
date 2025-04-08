@@ -1137,11 +1137,11 @@ def test_penalty_minimize_contact_forces_end_of_interval(penalty_origin, phase_d
     d = []
 
     if penalty_origin == ObjectiveFcn.Mayer:
-        penalty_type = ObjectiveFcn.Mayer.MINIMIZE_RIGID_CONTACT_FORCES_END_OF_INTERVAL
+        penalty_type = ObjectiveFcn.Mayer.MINIMIZE_EXPLICIT_RIGID_CONTACT_FORCES_END_OF_INTERVAL
         penalty_object = Objective
 
     else:
-        penalty_type = ConstraintFcn.TRACK_RIGID_CONTACT_FORCES_END_OF_INTERVAL
+        penalty_type = ConstraintFcn.TRACK_EXPLICIT_RIGID_CONTACT_FORCES_END_OF_INTERVAL
 
         penalty_object = Constraint
 
@@ -1178,7 +1178,7 @@ def test_penalty_minimize_sum_reaction_forces(penalty_origin, phase_dynamics, wi
         penalty_type = ObjectiveFcn.Lagrange.TRACK_SUM_REACTION_FORCES
         penalty_object = Objective
     else:
-        penalty_type = ConstraintFcn.TRACK_RIGID_CONTACT_FORCES_END_OF_INTERVAL
+        penalty_type = ConstraintFcn.TRACK_EXPLICIT_RIGID_CONTACT_FORCES_END_OF_INTERVAL
         penalty_object = Constraint
 
     penalty = penalty_object(
