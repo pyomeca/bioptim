@@ -407,7 +407,6 @@ class DynamicsFunctions:
 
         return DynamicsEvaluation(dxdt=dxdt, defects=None)
 
-
     @staticmethod
     def __get_fatigable_tau(nlp, states: MX | SX, controls: MX | SX, fatigue: FatigueList) -> MX | SX:
         """

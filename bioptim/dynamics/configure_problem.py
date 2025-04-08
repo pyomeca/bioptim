@@ -767,7 +767,10 @@ class ConfigureProblem:
 
     @staticmethod
     def holonomic_torque_driven(
-        ocp, nlp, numerical_data_timeseries: dict[str, np.ndarray] = None, contact_type: list[ContactType] | tuple[ContactType] = ()
+        ocp,
+        nlp,
+        numerical_data_timeseries: dict[str, np.ndarray] = None,
+        contact_type: list[ContactType] | tuple[ContactType] = (),
     ):
         """
         Tell the program which variables are states and controls.
