@@ -374,7 +374,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             return controller.controls[key].cx_start
 
-
         @staticmethod
         def stochastic_covariance_matrix_continuity_implicit(
             penalty: PenaltyOption,

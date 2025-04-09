@@ -78,7 +78,9 @@ def custom_dynamics(
     # Variables
     q = DynamicsFunctions.get(nlp.states["q"], nlp.states.scaled.cx)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], nlp.states.scaled.cx)
-    rigid_contact_forces = DynamicsFunctions.get(nlp.states["rigid_contact_forces"], nlp.states.scaled.cx)  # Extracterd automatically in inverse_dynamics
+    rigid_contact_forces = DynamicsFunctions.get(
+        nlp.states["rigid_contact_forces"], nlp.states.scaled.cx
+    )  # Extracterd automatically in inverse_dynamics
     residual_tau = DynamicsFunctions.get(nlp.controls["tau"], nlp.controls.scaled.cx)
     mus_activations = DynamicsFunctions.get(nlp.controls["muscles"], nlp.controls.scaled.cx)
     rigid_contact_forces_derivatives = DynamicsFunctions.get(
@@ -100,9 +102,7 @@ def custom_dynamics(
         slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
         slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
         slope_contacts = DynamicsFunctions.get(nlp.states_dot["rigid_contact_forces"], nlp.states_dot.scaled.cx)
-        tau_id = DynamicsFunctions.inverse_dynamics(
-            nlp, q, qdot, slope_qdot, contact_type=contact_type
-        )
+        tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, slope_qdot, contact_type=contact_type)
 
         # qdot
         defects = vertcat(qdot - slope_q, tau - tau_id, rigid_contact_forces_derivatives - slope_contacts)

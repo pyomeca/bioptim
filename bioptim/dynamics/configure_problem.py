@@ -523,7 +523,6 @@ class ConfigureProblem:
                 with_friction=with_friction,
             )
 
-
     @staticmethod
     def torque_activations_driven(
         ocp,
@@ -566,7 +565,9 @@ class ConfigureProblem:
         if with_residual_torque:
             ConfigureProblem.configure_residual_tau(ocp, nlp, as_states=False, as_controls=True)
 
-        ConfigureProblem.configure_contacts(ocp, nlp, contact_type, DynamicsFunctions.forces_from_torque_activation_driven)
+        ConfigureProblem.configure_contacts(
+            ocp, nlp, contact_type, DynamicsFunctions.forces_from_torque_activation_driven
+        )
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
@@ -823,7 +824,6 @@ class ConfigureProblem:
             legend=all_multipliers_names,
         )
 
-
     @staticmethod
     def configure_contacts(ocp, nlp, contact_type, force_from_where):
         if ContactType.RIGID_IMPLICIT in contact_type:
@@ -842,7 +842,6 @@ class ConfigureProblem:
             )
         if ContactType.SOFT_EXPLICIT in contact_type:
             ConfigureProblem.configure_soft_contact_function(ocp, nlp)
-
 
     @staticmethod
     def configure_qv(ocp, nlp, dyn_func: Callable, **extra_params):
@@ -988,7 +987,6 @@ class ConfigureProblem:
             nlp,
             **extra_params,
         )
-
 
         # Check that the integrator matches the type of internal dynamics constraint
         if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
@@ -1400,7 +1398,9 @@ class ConfigureProblem:
         name = "q"
         name_q = nlp.model.name_dof
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
-        ConfigureProblem.configure_new_variable(name, name_q, ocp, nlp, as_states=as_states, as_controls=as_controls, axes_idx=axes_idx)
+        ConfigureProblem.configure_new_variable(
+            name, name_q, ocp, nlp, as_states=as_states, as_controls=as_controls, axes_idx=axes_idx
+        )
 
     @staticmethod
     def configure_qdot(ocp, nlp, as_states: bool, as_controls: bool):
@@ -1420,7 +1420,9 @@ class ConfigureProblem:
         name = "qdot"
         name_qdot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
-        ConfigureProblem.configure_new_variable(name, name_qdot, ocp, nlp, as_states=as_states, as_controls=as_controls, axes_idx=axes_idx)
+        ConfigureProblem.configure_new_variable(
+            name, name_qdot, ocp, nlp, as_states=as_states, as_controls=as_controls, axes_idx=axes_idx
+        )
 
     @staticmethod
     def configure_qddot(ocp, nlp, as_states: bool, as_controls: bool):
@@ -1440,7 +1442,9 @@ class ConfigureProblem:
         name = "qddot"
         name_qddot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
-        ConfigureProblem.configure_new_variable(name, name_qddot, ocp, nlp, as_states=as_states, as_controls=as_controls, axes_idx=axes_idx)
+        ConfigureProblem.configure_new_variable(
+            name, name_qddot, ocp, nlp, as_states=as_states, as_controls=as_controls, axes_idx=axes_idx
+        )
 
     @staticmethod
     def configure_qdddot(ocp, nlp, as_states: bool, as_controls: bool):
@@ -1460,7 +1464,9 @@ class ConfigureProblem:
         name = "qdddot"
         name_qdddot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
-        ConfigureProblem.configure_new_variable(name, name_qdddot, ocp, nlp, as_states=as_states, as_controls=as_controls, axes_idx=axes_idx)
+        ConfigureProblem.configure_new_variable(
+            name, name_qdddot, ocp, nlp, as_states=as_states, as_controls=as_controls, axes_idx=axes_idx
+        )
 
     @staticmethod
     def configure_stochastic_k(ocp, nlp, n_noised_controls: int, n_references: int):
@@ -1771,10 +1777,14 @@ class ConfigureProblem:
         name = "taudot"
         name_taudot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
-        ConfigureProblem.configure_new_variable(name, name_taudot, ocp, nlp, as_states=as_states, as_controls=as_controls, axes_idx=axes_idx)
+        ConfigureProblem.configure_new_variable(
+            name, name_taudot, ocp, nlp, as_states=as_states, as_controls=as_controls, axes_idx=axes_idx
+        )
 
     @staticmethod
-    def configure_translational_forces(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool, n_contacts: int = 1):
+    def configure_translational_forces(
+        ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool, n_contacts: int = 1
+    ):
         """
         Configure contact forces as optimization variables (for now only in global reference frame with an unknown point of application))
         # TODO: Match this with ExternalForceSetTimeSeries (options: 'in_global', 'torque', ...)
@@ -1792,9 +1802,23 @@ class ConfigureProblem:
         """
 
         name_contact_forces = [f"Force{i}_{axis}" for i in range(n_contacts) for axis in ("X", "Y", "Z")]
-        ConfigureProblem.configure_new_variable("contact_forces", name_contact_forces, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states)
         ConfigureProblem.configure_new_variable(
-            "contact_positions", name_contact_forces, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states
+            "contact_forces",
+            name_contact_forces,
+            ocp,
+            nlp,
+            as_states=as_states,
+            as_controls=as_controls,
+            as_algebraic_states=as_algebraic_states,
+        )
+        ConfigureProblem.configure_new_variable(
+            "contact_positions",
+            name_contact_forces,
+            ocp,
+            nlp,
+            as_states=as_states,
+            as_controls=as_controls,
+            as_algebraic_states=as_algebraic_states,
         )
 
     @staticmethod
@@ -1816,7 +1840,13 @@ class ConfigureProblem:
 
         name_contact_forces = [name for name in nlp.model.rigid_contact_names]
         ConfigureProblem.configure_new_variable(
-            "rigid_contact_forces", name_contact_forces, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states
+            "rigid_contact_forces",
+            name_contact_forces,
+            ocp,
+            nlp,
+            as_states=as_states,
+            as_controls=as_controls,
+            as_algebraic_states=as_algebraic_states,
         )
 
     @staticmethod

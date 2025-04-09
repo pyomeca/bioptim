@@ -208,7 +208,6 @@ class OdeSolverBase:
         nlp.controls.node_index = node_index
         nlp.algebraic_states.node_index = node_index
 
-
         if nlp.dynamics_func is None:
             dynamics_func = None
         elif is_extra_dynamics:
@@ -298,7 +297,9 @@ class OdeSolverBase:
         extra_dynamics_defects = []
         for i in range(len(nlp.extra_dynamics_defects_func)):
             extra_dynamics_defects += [
-                nlp.dynamics_type.ode_solver.initialize_integrator(ocp, nlp, dynamics_index=i, node_index=0, is_extra_dynamics=True)
+                nlp.dynamics_type.ode_solver.initialize_integrator(
+                    ocp, nlp, dynamics_index=i, node_index=0, is_extra_dynamics=True
+                )
             ]
             if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
                 extra_dynamics_defects = extra_dynamics_defects * nlp.ns

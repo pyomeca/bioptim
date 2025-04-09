@@ -143,7 +143,6 @@ class DynamicsFunctions:
         tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
         tau = tau - nlp.model.friction_coefficients @ qdot if with_friction else tau
 
-
         external_forces = nlp.get_external_forces(
             "external_forces", states, controls, algebraic_states, numerical_timeseries
         )
@@ -188,10 +187,9 @@ class DynamicsFunctions:
                     f"The defect type {nlp.dynamics_type.ode_solver.defects_type} is not implemented yet for torque driven dynamics."
                 )
 
-
             if ContactType.RIGID_IMPLICIT in contact_type:
                 # TODO: Charbie -> implicit configuration to get the marker jacobian
-                rigid_contact_defect = ("TODO")
+                rigid_contact_defect = "TODO"
                 defects = vertcat(defects, rigid_contact_defect)
 
             if ContactType.SOFT_IMPLICIT in contact_type:
@@ -705,7 +703,7 @@ class DynamicsFunctions:
                 )
 
             if ContactType.RIGID_IMPLICIT in contact_type:
-                rigid_contact_defect = ("TODO")
+                rigid_contact_defect = "TODO"
                 defects = vertcat(defects, rigid_contact_defect)
 
             if ContactType.SOFT_IMPLICIT in contact_type:
@@ -765,7 +763,9 @@ class DynamicsFunctions:
         tau = tau + nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx) if with_passive_torque else tau
         tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
 
-        external_forces = nlp.get_external_forces("external_forces", states, controls, algebraic_states, numerical_timeseries)
+        external_forces = nlp.get_external_forces(
+            "external_forces", states, controls, algebraic_states, numerical_timeseries
+        )
 
         return nlp.model.rigid_contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
 
@@ -817,7 +817,9 @@ class DynamicsFunctions:
         tau = tau + nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx) if with_passive_torque else tau
         tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
 
-        external_forces = nlp.get_external_forces("external_forces", states, controls, algebraic_states, numerical_timeseries)
+        external_forces = nlp.get_external_forces(
+            "external_forces", states, controls, algebraic_states, numerical_timeseries
+        )
         return nlp.model.rigid_contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
 
     @staticmethod
@@ -1043,7 +1045,9 @@ class DynamicsFunctions:
         tau = tau + nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx) if with_passive_torque else tau
         tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
 
-        external_forces = nlp.get_external_forces("external_forces", states, controls, algebraic_states, numerical_timeseries)
+        external_forces = nlp.get_external_forces(
+            "external_forces", states, controls, algebraic_states, numerical_timeseries
+        )
         return nlp.model.rigid_contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
 
     @staticmethod
@@ -1159,9 +1163,10 @@ class DynamicsFunctions:
             raise RuntimeError("Your q key combination was not found in states or controls")
         return mapping.to_first.map(nlp.model.reshape_qdot()(q, qdot, nlp.parameters.cx))
 
-
     @staticmethod
-    def get_external_forces_from_contacts(nlp, q, qdot, contact_type: list[ContactType] | tuple[ContactType], external_forces: MX | SX):
+    def get_external_forces_from_contacts(
+        nlp, q, qdot, contact_type: list[ContactType] | tuple[ContactType], external_forces: MX | SX
+    ):
 
         external_forces = nlp.cx() if external_forces is None else external_forces
         if ContactType.RIGID_IMPLICIT in contact_type:

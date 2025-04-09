@@ -564,7 +564,6 @@ class BiorbdModel:
         else:
             return None
 
-
     def map_rigid_contact_forces_to_global_forces(
         self, rigid_contact_forces: MX | SX, q: MX | SX, parameters: MX | SX
     ) -> MX | SX:

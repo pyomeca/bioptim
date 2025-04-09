@@ -279,10 +279,7 @@ def test_torque_driven_soft_contacts_dynamics(contact_type, cx, phase_dynamics):
 
     npt.assert_almost_equal(
         x_out[:, 0],
-        [
-            0.61185289, 0.78517596, 0.60754485, 0.80839735,
-            -0.30241366, -10.38503791, 1.60445173, 35.80238642
-        ],
+        [0.61185289, 0.78517596, 0.60754485, 0.80839735, -0.30241366, -10.38503791, 1.60445173, 35.80238642],
     )
 
     if ContactType.SOFT_EXPLICIT in contact_type:
@@ -290,7 +287,6 @@ def test_torque_driven_soft_contacts_dynamics(contact_type, cx, phase_dynamics):
             nlp.soft_contact_forces_func(time, states, controls, params, algebraic_states, numerical_timeseries)
         )
         npt.assert_almost_equal(contact_out[:, 0], [0.0, 0.0, 0.0, 0.0, 0.0, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.0])
-
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])

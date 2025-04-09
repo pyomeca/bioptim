@@ -444,7 +444,7 @@ class PenaltyController:
     @property
     def external_forces(self) -> MX | SX:
         return self._nlp.get_external_forces(
-            "external_forces",  self.states.cx, self.controls.cx, self.algebraic_states.cx, self.numerical_timeseries.cx
+            "external_forces", self.states.cx, self.controls.cx, self.algebraic_states.cx, self.numerical_timeseries.cx
         )
 
     def copy(self):
