@@ -707,7 +707,6 @@ OptimalControlProgram(
     objective_functions: [Objective, ObjectiveList],
     constraints: [Constraint, ConstraintList],
     parameters: ParameterList,
-    ode_solver: OdeSolver,
     control_type: [ControlType, list],
     all_generalized_mapping: BiMapping,
     q_mapping: BiMapping,
@@ -734,8 +733,7 @@ In the case of a multiphase optimization, one model per phase should be passed i
 `objective_functions` is the objective function set of the ocp (see The objective functions section).  
 `constraints` is the constraint set of the ocp (see The constraints section).  
 `parameters` is the parameter set of the ocp (see The parameters section).
-It is a list (one element for each phase) of np.ndarray of shape (6, i, n), where the 6 components are [Mx, My, Mz, Fx, Fy, Fz], for the ith force platform (defined by the externalforceindex) for each node n.  
-`ode_solver` is the ode solver used to solve the dynamic equations.  
+It is a list (one element for each phase) of np.ndarray of shape (6, i, n), where the 6 components are [Mx, My, Mz, Fx, Fy, Fz], for the ith force platform (defined by the externalforceindex) for each node n.
 `control_type` is the type of discretization of the controls (usually CONSTANT) (see ControlType section).  
 `all_generalized_mapping` is used to reduce the number of degrees of freedom by linking them (see The mappings section).
 This one applies the same mapping to the generalized coordinates (*q*), velocities (*qdot*), and forces (*tau*).
@@ -949,7 +947,7 @@ The `DynamicsFcn` is the one presented in the corresponding section below.
 #### The options
 The full signature of Dynamics is as follows:
 ```python
-Dynamics(dynamics_type, configure: Callable, dynamic_function: Callable, phase: int)
+Dynamics(dynamics_type, configure: Callable, dynamic_function: Callable, phase: int, ode_solver: OdeSolver, contact_type: list[ContactType], numerical_timeseries: dict[str, np.ndarray])
 ```
 The `dynamics_type` is the selected `DynamicsFcn`. 
 It automatically defines both `configure` and `dynamic_function`. 
@@ -957,6 +955,9 @@ If a function is sent instead, this function is interpreted as `configure` and t
 If one is interested in changing the behavior of a particular `DynamicsFcn`, they can refer to the Custom dynamics functions right below. 
 
 The `phase` is the index of the phase the dynamics applies to. 
+The `ode_solver` is the ode to use to "integrate" the dynamics function.
+The `contact_type` is a list of contact types to consider in the dynamics equations.
+The `numerical_timeseries` is a list of numerical values (one per node) to use in the dynamics. For example, it can be used to define experimental ground reaction forces.
 The `add()` method of `DynamicsList` usually takes care of this, but it can be useful when declaring the dynamics out of order.
 
 #### Custom dynamic functions

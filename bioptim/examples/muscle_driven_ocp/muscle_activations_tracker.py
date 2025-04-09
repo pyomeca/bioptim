@@ -284,6 +284,7 @@ def prepare_ocp(
     dynamics = DynamicsList()
     dynamics.add(
         DynamicsFcn.MUSCLE_DRIVEN,
+        ode_solver=ode_solver,
         with_residual_torque=use_residual_torque,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
@@ -315,7 +316,6 @@ def prepare_ocp(
         u_bounds=u_bounds,
         u_init=u_init,
         objective_functions=objective_functions,
-        ode_solver=ode_solver,
         n_threads=n_threads,
     )
 
@@ -369,7 +369,11 @@ def main():
         markers[:, :, i] = bio_model.markers()(q[:, i])
 
     plt.figure("Markers")
-    n_steps_ode = ocp.nlp[0].ode_solver.steps + 1 if ocp.nlp[0].ode_solver.is_direct_collocation else 1
+    n_steps_ode = (
+        ocp.nlp[0].dynamics_type.ode_solver.steps + 1
+        if ocp.nlp[0].dynamics_type.ode_solver.is_direct_collocation
+        else 1
+    )
     for i in range(markers.shape[1]):
         plt.plot(
             np.linspace(0, final_time, n_shooting_points + 1),

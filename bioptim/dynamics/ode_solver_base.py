@@ -229,7 +229,7 @@ class OdeSolverBase:
             "implicit_ode": nlp.implicit_dynamics_func,
         }
 
-        return nlp.ode_solver.integrator(ode, ode_opt)
+        return nlp.dynamics_type.ode_solver.integrator(ode, ode_opt)
 
     def prepare_dynamic_integrator(self, ocp, nlp):
         """
@@ -244,26 +244,32 @@ class OdeSolverBase:
         """
 
         # Primary dynamics
-        dynamics = [nlp.ode_solver.initialize_integrator(ocp, nlp, dynamics_index=0, node_index=0)]
+        dynamics = [nlp.dynamics_type.ode_solver.initialize_integrator(ocp, nlp, dynamics_index=0, node_index=0)]
         if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
             dynamics = dynamics * nlp.ns
         else:
             for node_index in range(1, nlp.ns):
-                dynamics.append(nlp.ode_solver.initialize_integrator(ocp, nlp, dynamics_index=0, node_index=node_index))
+                dynamics.append(
+                    nlp.dynamics_type.ode_solver.initialize_integrator(
+                        ocp, nlp, dynamics_index=0, node_index=node_index
+                    )
+                )
         nlp.dynamics = dynamics
 
         # Extra dynamics
         extra_dynamics = []
         for i in range(len(nlp.extra_dynamics_func)):
             extra_dynamics += [
-                nlp.ode_solver.initialize_integrator(ocp, nlp, dynamics_index=i, node_index=0, is_extra_dynamics=True)
+                nlp.dynamics_type.ode_solver.initialize_integrator(
+                    ocp, nlp, dynamics_index=i, node_index=0, is_extra_dynamics=True
+                )
             ]
             if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
                 extra_dynamics = extra_dynamics * nlp.ns
             else:
                 for node_index in range(1, nlp.ns):
                     extra_dynamics += [
-                        nlp.ode_solver.initialize_integrator(
+                        nlp.dynamics_type.ode_solver.initialize_integrator(
                             ocp, nlp, dynamics_index=i, node_index=node_index, is_extra_dynamics=True
                         )
                     ]

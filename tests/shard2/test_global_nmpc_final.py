@@ -62,7 +62,7 @@ def test_multi_cyclic_nmpc_get_final(phase_dynamics):
     npt.assert_almost_equal(tau[:, -1], np.array([-0.00992505, 5.19414727, 2.34022319]), decimal=4)
 
     # check time
-    n_steps = nmpc.nlp[0].ode_solver.n_integration_steps
+    n_steps = nmpc.nlp[0].dynamics_type.ode_solver.n_integration_steps
     time = sol[0].stepwise_time(to_merge=SolutionMerge.NODES)
     assert time.shape == (n_cycles_total * cycle_len * (n_steps + 1) + 1, 1)
     assert time[0] == 0
@@ -197,7 +197,7 @@ def test_multi_cyclic_nmpc_with_parameters(phase_dynamics):
         )
 
     # check time
-    n_steps = nmpc.nlp[0].ode_solver.n_integration_steps
+    n_steps = nmpc.nlp[0].dynamics_type.ode_solver.n_integration_steps
     time = sol[0].stepwise_time(to_merge=SolutionMerge.NODES)
     assert time.shape == (n_cycles_total * cycle_len * (n_steps + 1) + 1, 1)
     assert time[0] == 0

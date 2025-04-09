@@ -13,12 +13,20 @@ from bioptim import (
     VariableScalingList,
     FatigueList,
     XiaFatigue,
+    Dynamics,
+    DynamicsFcn,
 )
 from ..utils import TestUtils
 
 
 class OptimalControlProgram:
     def __init__(self, nlp, use_sx):
+        nlp.time_cx = nlp.cx.sym("time", 1, 1)
+        nlp.dt = nlp.cx.sym("dt", 1, 1)
+        nlp.x_scaling = VariableScalingList()
+        nlp.u_scaling = VariableScalingList()
+        nlp.a_scaling = VariableScalingList()
+
         self.cx = nlp.cx
         self.phase_dynamics = PhaseDynamics.SHARED_DURING_THE_PHASE
         self.n_phases = 1
@@ -28,6 +36,16 @@ class OptimalControlProgram:
         self.parameters.initialize(parameters_list)
         self.implicit_constraints = ConstraintList()
         self.n_threads = 1
+        nlp.dynamics_type = Dynamics(
+            DynamicsFcn.TORQUE_DRIVEN,
+        )
+        NonLinearProgram.add(
+            self,
+            "dynamics_type",
+            nlp.dynamics_type,
+            False,
+        )
+        nlp.initialize(nlp.cx)
 
 
 @pytest.mark.parametrize("cx", [MX, SX])
@@ -37,12 +55,6 @@ def test_configures(cx):
     nlp = NonLinearProgram(phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE, use_sx=(cx == SX))
     nlp.ns = 30
     nlp.cx = MX
-    nlp.time_cx = nlp.cx.sym("time", 1, 1)
-    nlp.dt = nlp.cx.sym("dt", 1, 1)
-    nlp.initialize(nlp.cx)
-    nlp.x_scaling = VariableScalingList()
-    nlp.u_scaling = VariableScalingList()
-    nlp.a_scaling = VariableScalingList()
     ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
 
     nlp.model = BiorbdModel(
@@ -155,12 +167,6 @@ def test_configure_soft_contacts(cx):
     nlp = NonLinearProgram(phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE, use_sx=(cx == SX))
     nlp.ns = 30
     nlp.cx = MX
-    nlp.time_cx = nlp.cx.sym("time", 1, 1)
-    nlp.dt = nlp.cx.sym("dt", 1, 1)
-    nlp.initialize(nlp.cx)
-    nlp.x_scaling = VariableScalingList()
-    nlp.u_scaling = VariableScalingList()
-    nlp.a_scaling = VariableScalingList()
     ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
 
     nlp.model = BiorbdModel(
@@ -183,12 +189,6 @@ def test_configure_muscles(cx):
     nlp = NonLinearProgram(phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE, use_sx=(cx == SX))
     nlp.ns = 30
     nlp.cx = MX
-    nlp.time_cx = nlp.cx.sym("time", 1, 1)
-    nlp.dt = nlp.cx.sym("dt", 1, 1)
-    nlp.initialize(nlp.cx)
-    nlp.x_scaling = VariableScalingList()
-    nlp.u_scaling = VariableScalingList()
-    nlp.a_scaling = VariableScalingList()
     ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
 
     nlp.model = BiorbdModel(

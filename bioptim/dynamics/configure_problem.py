@@ -6,7 +6,7 @@ from casadi import vertcat, Function, DM
 from .configure_new_variable import NewVariableConfiguration
 from .dynamics_functions import DynamicsFunctions
 from .fatigue.fatigue_dynamics import FatigueList
-from .ode_solvers import OdeSolver
+from .ode_solvers import OdeSolver, OdeSolverBase
 from ..gui.plot import CustomPlot
 from ..limits.constraints import ImplicitConstraintFcn
 from ..misc.enums import (
@@ -1356,7 +1356,11 @@ class ConfigureProblem:
 
         # TODO: compute values at collocation points
         # but for now only cx_start can be used
-        n_cx = nlp.ode_solver.n_cx - 1 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 3
+        n_cx = (
+            nlp.dynamics_type.ode_solver.n_cx - 1
+            if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION)
+            else 3
+        )
         if n_cx < 3:
             n_cx = 3
 
@@ -1961,6 +1965,7 @@ class Dynamics(OptionGeneric):
         skip_continuity: bool = False,
         state_continuity_weight: float | None = None,
         phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
+        ode_solver: OdeSolver | OdeSolverBase = OdeSolver.RK4(),
         numerical_data_timeseries: dict[str, np.ndarray] = None,
         contact_type: list[ContactType] | tuple[ContactType] = (),
         **extra_parameters: Any,
@@ -1983,6 +1988,8 @@ class Dynamics(OptionGeneric):
             otherwise it is an objective
         phase_dynamics: PhaseDynamics
             If the dynamics should be shared between the nodes or not
+        ode_solver: OdeSolver
+            The integrator to use to integrate this dynamics.
         numerical_data_timeseries: dict[str, np.ndarray]
             The numerical timeseries at each node. ex: the experimental external forces data should go here.
         contact_type: list[ContactType] | tuple[ContactType]
@@ -2003,6 +2010,9 @@ class Dynamics(OptionGeneric):
             dynamic_function = extra_parameters["dynamic_function"]
             del extra_parameters["dynamic_function"]
 
+        if not isinstance(ode_solver, OdeSolverBase):
+            raise RuntimeError("ode_solver should be built an instance of OdeSolver")
+
         super(Dynamics, self).__init__(type=dynamics_type, **extra_parameters)
         self.dynamic_function = dynamic_function
         self.configure = configure
@@ -2011,6 +2021,7 @@ class Dynamics(OptionGeneric):
         self.skip_continuity = skip_continuity
         self.state_continuity_weight = state_continuity_weight
         self.phase_dynamics = phase_dynamics
+        self.ode_solver = ode_solver
         self.numerical_data_timeseries = numerical_data_timeseries
         self.contact_type = contact_type
 
@@ -2038,7 +2049,6 @@ class DynamicsList(UniquePerPhaseOptionList):
         extra_parameters: dict
             Any parameters to pass to Dynamics
         """
-
         if isinstance(dynamics_type, Dynamics):
             self.copy(dynamics_type)
 

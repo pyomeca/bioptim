@@ -266,8 +266,8 @@ class Solution:
         # For states
         for p, ss in enumerate(sol_states):
             repeat = 1
-            if isinstance(ocp.nlp[p].ode_solver, OdeSolver.COLLOCATION):
-                repeat = ocp.nlp[p].ode_solver.polynomial_degree + 1
+            if isinstance(ocp.nlp[p].dynamics_type.ode_solver, OdeSolver.COLLOCATION):
+                repeat = ocp.nlp[p].dynamics_type.ode_solver.polynomial_degree + 1
             for key in ss.keys():
                 ns = ocp.nlp[p].ns + 1 if ss[key].init.type != InterpolationType.EACH_FRAME else ocp.nlp[p].ns
                 ss[key].init.check_and_adjust_dimensions(len(ocp.nlp[p].states[key]), ns, "states")
@@ -455,8 +455,8 @@ class Solution:
                     times.append([t[[0, -1]] for t in times_tp[nlp.phase_idx][:-1]])
             else:
                 if time_alignment == TimeAlignment.STATES:
-                    if nlp.ode_solver.is_direct_collocation:
-                        if nlp.ode_solver.duplicate_starting_point:
+                    if nlp.dynamics_type.ode_solver.is_direct_collocation:
+                        if nlp.dynamics_type.ode_solver.duplicate_starting_point:
                             times.append(
                                 [t if t.shape == (1, 1) else vertcat(t[0], t[:-1]) for t in times_tp[nlp.phase_idx]]
                             )
@@ -722,7 +722,7 @@ class Solution:
             The integrator to use for the integration
         """
 
-        has_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]) > 0
+        has_direct_collocation = sum([nlp.dynamics_type.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]) > 0
         if has_direct_collocation and integrator == SolutionIntegrator.OCP:
             raise ValueError(
                 "When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
@@ -731,7 +731,9 @@ class Solution:
                 " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE"
             )
 
-        has_trapezoidal = sum([isinstance(nlp.ode_solver, OdeSolver.TRAPEZOIDAL) for nlp in self.ocp.nlp]) > 0
+        has_trapezoidal = (
+            sum([isinstance(nlp.dynamics_type.ode_solver, OdeSolver.TRAPEZOIDAL) for nlp in self.ocp.nlp]) > 0
+        )
         if has_trapezoidal and integrator == SolutionIntegrator.OCP:
             raise ValueError(
                 "When the ode_solver of the Optimal Control Problem is OdeSolver.TRAPEZOIDAL, "

@@ -287,6 +287,7 @@ def prepare_ocp(
         DynamicsFcn.MUSCLE_DRIVEN,
         with_excitations=True,
         with_residual_torque=use_residual_torque,
+        ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
     )
@@ -322,7 +323,6 @@ def prepare_ocp(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
-        ode_solver=ode_solver,
     )
 
 
@@ -372,7 +372,11 @@ def main():
         markers[:, :, i] = horzcat(*bio_model.markers()(q[:, i]))
 
     plt.figure("Markers")
-    n_steps_ode = ocp.nlp[0].ode_solver.steps + 1 if ocp.nlp[0].ode_solver.is_direct_collocation else 1
+    n_steps_ode = (
+        ocp.nlp[0].dynamics_type.ode_solver.steps + 1
+        if ocp.nlp[0].dynamics_type.ode_solver.is_direct_collocation
+        else 1
+    )
     for i in range(markers.shape[1]):
         plt.plot(np.linspace(0, 2, n_shooting_points + 1), markers_ref[:, i, :].T, "k")
         plt.plot(np.linspace(0, 2, n_shooting_points * n_steps_ode + 1), markers[:, i, :].T, "r--")

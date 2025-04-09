@@ -144,6 +144,7 @@ def prepare_ocp(
     # dynamics.add(DynamicsFcn.HOLONOMIC_TORQUE_DRIVEN, expand_dynamics=expand_dynamics)
     dynamics.add(
         configure_holonomic_torque_driven,
+        ode_solver=ode_solver,
         dynamic_function=holonomic_torque_driven_with_qv,
         expand_dynamics=expand_dynamics,
     )
@@ -219,7 +220,6 @@ def prepare_ocp(
             a_init=a_init,
             objective_functions=objective_functions,
             variable_mappings=tau_variable_bimapping,
-            ode_solver=ode_solver,
             constraints=constraints,
         ),
         bio_model,

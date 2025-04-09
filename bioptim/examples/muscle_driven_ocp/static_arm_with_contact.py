@@ -66,7 +66,12 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, contact_type=[ContactType.RIGID_EXPLICIT])
+    dynamics.add(
+        DynamicsFcn.MUSCLE_DRIVEN,
+        with_residual_torque=True,
+        contact_type=[ContactType.RIGID_EXPLICIT],
+        ode_solver=ode_solver,
+    )
     # raise RuntimeError("This example is broken, since contact dynamics with muscle is not implemented")
 
     # Path constraint
@@ -101,7 +106,6 @@ def prepare_ocp(
         x_bounds,
         u_bounds,
         objective_functions,
-        ode_solver=ode_solver,
     )
 
 

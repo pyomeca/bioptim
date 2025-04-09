@@ -785,3 +785,11 @@ class CVODES(Integrator):
     Class for CVODES integrators
 
     """
+
+
+class VARIATIONAL(RK4):
+    """
+    Fake class for variational integrator.
+    The real work is done in VariationalOptimalControlProgram.
+    TODO: The implementation of the variational integrator could be moved here (see issue #962).
+    """

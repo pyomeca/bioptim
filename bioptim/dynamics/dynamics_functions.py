@@ -154,7 +154,7 @@ class DynamicsFunctions:
 
         defects = None
         # TODO: contacts and fatigue to be handled with implicit dynamics
-        if nlp.ode_solver.defects_type == DefectType.IMPLICIT:
+        if nlp.dynamics_type.ode_solver.defects_type == DefectType.IMPLICIT:
             if len(contact_type) == 0 and fatigue is None:
                 qddot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
                 tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, contact_type, external_forces)

@@ -301,6 +301,7 @@ def prepare_ocp(
             expand_dynamics=True,
             expand_continuity=False,
             phase=i,
+            ode_solver=OdeSolver.RK4(n_integration_steps=1),
             phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         )
 
@@ -381,7 +382,6 @@ def prepare_ocp(
         parameter_init=parameters_init,
         control_type=ControlType.CONSTANT,
         use_sx=use_sx,
-        ode_solver=OdeSolver.RK4(n_integration_steps=1),
     )
 
 

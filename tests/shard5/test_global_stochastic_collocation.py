@@ -135,7 +135,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     duration = sol_socp.decision_time()[-1]
     dt = duration / n_shooting
     p_sol = vertcat(ocp.nlp[0].model.motor_noise_magnitude, ocp.nlp[0].model.sensory_noise_magnitude)
-    polynomial_degree = socp.nlp[0].ode_solver.polynomial_degree
+    polynomial_degree = socp.nlp[0].dynamics_type.ode_solver.polynomial_degree
 
     # Constraint values
     x_opt = vertcat(q_sol, qdot_sol)

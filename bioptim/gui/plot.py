@@ -514,8 +514,8 @@ class PlotOcp:
     def _get_custom_bounds(self, nlp, variable, ctr, mapping_to_first_index):
         """Get custom bounds for a variable"""
         repeat = 1
-        if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
-            repeat = nlp.ode_solver.polynomial_degree + 1
+        if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
+            repeat = nlp.dynamics_type.ode_solver.polynomial_degree + 1
         nlp.plot[variable].bounds.check_and_adjust_dimensions(len(mapping_to_first_index), nlp.ns)
 
         idx = mapping_to_first_index.index(ctr)
