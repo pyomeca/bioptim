@@ -226,8 +226,8 @@ def test_torque_driven_soft_contacts_dynamics(contact_type, cx, phase_dynamics):
     )
     nlp.dynamics_type = Dynamics(
         DynamicsFcn.TORQUE_DRIVEN,
-        with_contact=with_contact,
-        soft_contacts_dynamics=implicit_contact,
+        contact_type=contact_type,
+        soft_contacts_dynamics=True if ContactType.SOFT_IMPLICIT in contact_type else False,
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
     )
@@ -247,13 +247,6 @@ def test_torque_driven_soft_contacts_dynamics(contact_type, cx, phase_dynamics):
     ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
     nlp.control_type = ControlType.CONSTANT
 
-    nlp.dynamics_type = Dynamics(
-        DynamicsFcn.TORQUE_DRIVEN,
-        contact_type=[ContactType.RIGID_EXPLICIT] if with_contact else (),
-        soft_contacts_dynamics=implicit_contact,
-        expand_dynamics=True,
-        phase_dynamics=phase_dynamics,
-    )
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
@@ -1177,7 +1170,7 @@ def test_custom_dynamics(contact_type, phase_dynamics):
     nlp.dynamics_type = Dynamics(
         configure,
         dynamic_function=custom_dynamic,
-        contact_type=[ContactType.RIGID_EXPLICIT] if with_contact else (),
+        contact_type=contact_type,
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
     )
