@@ -951,7 +951,7 @@ class MultiBiorbdModel:
             qdot_model = self.qdot[self.variable_index("qdot", i)]
             tau_model = self.tau[self.variable_index("tau", i)]
 
-            contact_forces = model.contact_forces()(q_model, qdot_model, tau_model, [], self.parameters)
+            contact_forces = model.rigid_contact_forces()(q_model, qdot_model, tau_model, [], self.parameters)
             biorbd_return = vertcat(biorbd_return, contact_forces)
         casadi_fun = Function(
             "contact_forces",

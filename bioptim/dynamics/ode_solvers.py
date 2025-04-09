@@ -165,8 +165,8 @@ class OdeSolver:
 
         def p_ode(self, nlp):
             if nlp.control_type in (
-                    ControlType.CONSTANT,
-                    ControlType.CONSTANT_WITH_LAST_NODE,
+                ControlType.CONSTANT,
+                ControlType.CONSTANT_WITH_LAST_NODE,
             ):
                 return nlp.controls.scaled.cx_start
             elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:

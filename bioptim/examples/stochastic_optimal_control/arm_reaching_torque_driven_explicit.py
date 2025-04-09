@@ -85,7 +85,7 @@ def stochastic_forward_dynamics(
 
 
 def configure_stochastic_optimal_control_problem(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None
+    ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None, contact_type=()
 ):
     """
     Configure the stochastic optimal control problem.

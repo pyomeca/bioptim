@@ -169,6 +169,9 @@ class BiMapping(OptionGeneric):
         self.to_second = to_second
         self.to_first = to_first
 
+    def actually_does_a_mapping(self) -> bool:
+        return self.to_first.map_idx != self.to_second.map_idx
+
 
 BiMappingOrIterableOptional = BiMapping | list["BiMapping"] | None
 DictOrBiMapping: TypeAlias = AnyDict | BiMapping

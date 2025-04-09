@@ -329,7 +329,7 @@ class BioModel(Protocol):
         """
 
     @cache_function
-    def contact_forces(self) -> Function:
+    def rigid_contact_forces(self) -> Function:
         """
         Easy accessor for the contact forces in contact dynamics
 
