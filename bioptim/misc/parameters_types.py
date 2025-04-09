@@ -47,10 +47,13 @@ NpArrayOptional: TypeAlias = np.ndarray | None
 
 AnyTuple: TypeAlias = tuple[Any, ...]
 IntTuple: TypeAlias = tuple[int, ...]
+DoubleIntTuple: TypeAlias = tuple[int, int]
 StrTuple: TypeAlias = tuple[str, ...]
 
 IntStrOrIterable: TypeAlias = int | str | AnyIterable
 
+MXorSX: TypeAlias = MX | SX
+MXorSXOptional: TypeAlias = MX | SX | None
 CXOrDM: TypeAlias = MX | SX | DM | float
 CXOrDMOrFloatIterable: TypeAlias = FloatIterableOrNpArray | MX | SX | DM
 CXOrDMOrNpArray: TypeAlias = np.ndarray | MX | SX | DM
