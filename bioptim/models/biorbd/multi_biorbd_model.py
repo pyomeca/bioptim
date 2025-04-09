@@ -501,8 +501,8 @@ class MultiBiorbdModel:
         return tuple([dof for model in self.models for dof in model.name_dof])
 
     @property
-    def contact_names(self) -> StrTuple:
-        return tuple([contact for model in self.models for contact in model.contact_names])
+    def rigid_contact_names(self) -> StrTuple:
+        return tuple([contact for model in self.models for contact in model.rigid_contact_names])
 
     @property
     def nb_soft_contacts(self) -> Int:

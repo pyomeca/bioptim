@@ -145,7 +145,7 @@ class BioModel(Protocol):
         return ()
 
     @property
-    def contact_names(self) -> tuple[str, ...]:
+    def rigid_contact_names(self) -> tuple[str, ...]:
         """Get the name of the contacts"""
         return ()
 

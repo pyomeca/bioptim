@@ -411,7 +411,7 @@ class BiorbdModel:
         return tuple(s.to_string() for s in self.model.nameDof())
 
     @property
-    def contact_names(self) -> tuple[str, ...]:
+    def rigid_contact_names(self) -> tuple[str, ...]:
         return tuple(s.to_string() for s in self.model.contactNames())
 
     @property
