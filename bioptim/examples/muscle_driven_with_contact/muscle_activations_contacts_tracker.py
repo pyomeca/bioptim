@@ -56,7 +56,12 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, contact_type=[ContactType.RIGID_EXPLICIT], ode_solver=ode_solver)
+    dynamics.add(
+        DynamicsFcn.MUSCLE_DRIVEN,
+        with_residual_torque=True,
+        contact_type=[ContactType.RIGID_EXPLICIT],
+        ode_solver=ode_solver,
+    )
 
     # Path constraint
     q_at_first_node = [0, 0, -0.75, 0.75]
