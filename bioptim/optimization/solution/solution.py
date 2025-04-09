@@ -269,10 +269,14 @@ class Solution:
             if isinstance(ocp.nlp[p].ode_solver, OdeSolver.COLLOCATION):
                 repeat = ocp.nlp[p].ode_solver.polynomial_degree + 1
             for key in ss.keys():
-                ns = ocp.nlp[p].ns + 1 if ss[key].init.type != InterpolationType.EACH_FRAME else ocp.nlp[p].ns
+                ns = (
+                    ocp.nlp[p].ns * repeat
+                    if ss[key].init.type == InterpolationType.ALL_POINTS
+                    else ocp.nlp[p].ns + 1 if ss[key].init.type != InterpolationType.EACH_FRAME else ocp.nlp[p].ns
+                )
                 ss[key].init.check_and_adjust_dimensions(len(ocp.nlp[p].states[key]), ns, "states")
 
-            for i in range(all_ns[p] + 1):
+            for i in range(all_ns[p] * repeat + 1):
                 for key in ss.keys():
                     vector = np.concatenate((vector, ss[key].init.evaluate_at(i, repeat)[:, np.newaxis]))
 

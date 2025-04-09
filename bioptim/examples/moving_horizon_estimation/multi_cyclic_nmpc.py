@@ -24,6 +24,7 @@ from bioptim import (
     Axis,
     Solution,
     SolutionMerge,
+    OdeSolver,
 )
 
 
@@ -92,6 +93,7 @@ def prepare_nmpc(
         constraints=constraints,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
+        ode_solver=OdeSolver.COLLOCATION(polynomial_degree=9, method="radau"),
     )
 
 

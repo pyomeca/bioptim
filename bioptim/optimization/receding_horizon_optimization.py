@@ -9,6 +9,7 @@ import numpy as np
 from .optimal_control_program import OptimalControlProgram
 from ..optimization.solution.solution import Solution
 from ..dynamics.configure_problem import Dynamics, DynamicsList
+from ..dynamics.ode_solvers import OdeSolver
 from ..limits.constraints import ConstraintFcn, ConstraintList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList
 from ..limits.path_conditions import InitialGuessList
@@ -459,8 +460,15 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
         if solver.type == SolverType.IPOPT:
             self.update_bounds(self.nlp[0].x_bounds)
 
+        if isinstance(self.nlp[0].ode_solver, OdeSolver.COLLOCATION):
+            frame_factor = self.nlp[0].ode_solver.polynomial_degree + 1
+        else:
+            frame_factor = 1
+
         export_options = {
-            "frame_to_export": slice(0, (self.time_idx_to_cycle + 1) if self.time_idx_to_cycle >= 0 else None)
+            "frame_to_export": slice(
+                0, (self.time_idx_to_cycle * frame_factor + 1) if self.time_idx_to_cycle >= 0 else None
+            )
         }
         return super(CyclicRecedingHorizonOptimization, self).solve(
             update_function=update_function,
@@ -761,7 +769,13 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         states = {}
         controls = {}
         parameters = {}
-        window_slice = slice(cycle_number * self.cycle_len, (cycle_number + 1) * self.cycle_len + 1)
+
+        if isinstance(self.nlp[0].ode_solver, OdeSolver.COLLOCATION):
+            frame_factor = self.nlp[0].ode_solver.polynomial_degree + 1
+        else:
+            frame_factor = 1
+
+        window_slice = slice(cycle_number * self.cycle_len, (cycle_number + 1) * self.cycle_len * frame_factor + 1)
         for key in self.nlp[0].states.keys():
             states[key] = decision_states[key][:, window_slice]
 
@@ -825,11 +839,16 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
     def _initialize_one_cycle(self, dt: float, states: np.ndarray, controls: np.ndarray, parameters: np.ndarray):
         """return a solution for a single window kept of the MHE"""
         x_init = InitialGuessList()
+        interpolation_type = (
+            InterpolationType.ALL_POINTS
+            if isinstance(self.nlp[0].ode_solver, OdeSolver.COLLOCATION)
+            else InterpolationType.EACH_FRAME
+        )
         for key in self.nlp[0].states.keys():
             x_init.add(
                 key,
                 states[key],
-                interpolation=InterpolationType.EACH_FRAME,
+                interpolation=interpolation_type,
                 phase=0,
             )
 
