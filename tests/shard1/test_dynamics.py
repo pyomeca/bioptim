@@ -462,8 +462,8 @@ def test_torque_derivative_driven_soft_contacts_dynamics(contact_type, cx, phase
     )
     nlp.dynamics_type = Dynamics(
         DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
-        contact_type=[ContactType.RIGID_EXPLICIT] if with_contact else (),
-        soft_contacts_dynamics=implicit_contact,
+        contact_type=contact_type,
+        soft_contacts_dynamics=True if ContactType.SOFT_IMPLICIT in contact_type else False,
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
     )
