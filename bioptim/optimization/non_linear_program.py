@@ -131,9 +131,12 @@ class NonLinearProgram:
         self.dt = None
         self.dynamics = []
         self.extra_dynamics = []
+        self.extra_dynamics_defects = []
         self.dynamics_evaluation = DynamicsEvaluation()
         self.dynamics_func = None
         self.extra_dynamics_func: list = []
+        self.dynamics_defects_func = None
+        self.extra_dynamics_defects_func: list = []
         self.implicit_dynamics_func = None
         self.dynamics_type = None
         self.g = []

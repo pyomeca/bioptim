@@ -21,6 +21,7 @@ from bioptim import (
     PhaseDynamics,
     ExternalForceSetTimeSeries,
     ContactType,
+    ExternalForceSetVariables,
 )
 
 from ..utils import TestUtils
@@ -35,7 +36,6 @@ class OptimalControlProgram:
         parameters_list = ParameterList(use_sx=use_sx)
         self.parameters = ParameterContainer(use_sx=use_sx)
         self.parameters.initialize(parameters_list)
-        self.implicit_constraints = ConstraintList()
         self.n_threads = 1
 
 
@@ -220,9 +220,15 @@ def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
 def test_torque_driven_soft_contacts_dynamics(contact_type, cx, phase_dynamics):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
+
+    external_force_set = ExternalForceSetVariables()
+    external_force_set.add(force_name="Seg1_contact1", segment="Seg1", use_point_of_application=False)
+    external_force_set.add(force_name="Seg1_contact2", segment="Seg1", use_point_of_application=False)
+
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder()
-        + "/examples/muscle_driven_with_contact/models/2segments_4dof_2soft_contacts_1muscle.bioMod"
+        + "/examples/muscle_driven_with_contact/models/2segments_4dof_2soft_contacts_1muscle.bioMod",
+        external_force_set=external_force_set,
     )
     nlp.dynamics_type = Dynamics(
         DynamicsFcn.TORQUE_DRIVEN,
@@ -271,28 +277,20 @@ def test_torque_driven_soft_contacts_dynamics(contact_type, cx, phase_dynamics):
     time = np.random.rand(2)
     x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states, numerical_timeseries))
 
-    if ContactType.SOFT_IMPLICIT in contact_type:
-        npt.assert_almost_equal(
-            x_out[:, 0],
-            [0.61185289, 0.78517596, 0.60754485, 0.80839735, -0.30241366, -10.38503791, 1.60445173, 35.80238642],
-        )
+    npt.assert_almost_equal(
+        x_out[:, 0],
+        [
+            0.61185289, 0.78517596, 0.60754485, 0.80839735,
+            -0.30241366, -10.38503791, 1.60445173, 35.80238642
+        ],
+    )
 
-    elif ContactType.SOFT_EXPLICIT in contact_type:
+    if ContactType.SOFT_EXPLICIT in contact_type:
         contact_out = np.array(
             nlp.soft_contact_forces_func(time, states, controls, params, algebraic_states, numerical_timeseries)
         )
-        npt.assert_almost_equal(
-            x_out[:, 0],
-            [0.61185289, 0.78517596, 0.60754485, 0.80839735, -0.30241366, -10.38503791, 1.60445173, 35.80238642],
-        )
-
         npt.assert_almost_equal(contact_out[:, 0], [0.0, 0.0, 0.0, 0.0, 0.0, -0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.0])
 
-    else:
-        npt.assert_almost_equal(
-            x_out[:, 0],
-            [0.61185289, 0.78517596, 0.60754485, 0.80839735, -0.30241366, -10.38503791, 1.60445173, 35.80238642],
-        )
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -456,9 +454,15 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
 def test_torque_derivative_driven_soft_contacts_dynamics(contact_type, cx, phase_dynamics):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
+
+    external_force_set = ExternalForceSetVariables()
+    external_force_set.add(force_name="Seg1_contact1", segment="Seg1", use_point_of_application=False)
+    external_force_set.add(force_name="Seg1_contact2", segment="Seg1", use_point_of_application=False)
+
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder()
         + "/examples/muscle_driven_with_contact/models/2segments_4dof_2soft_contacts_1muscle.bioMod",
+        external_force_set=external_force_set,
     )
     nlp.dynamics_type = Dynamics(
         DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,

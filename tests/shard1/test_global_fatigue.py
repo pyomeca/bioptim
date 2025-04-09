@@ -303,37 +303,54 @@ def test_effort_fatigable_muscles(phase_dynamics):
 def test_fatigable_xia_torque_non_split(phase_dynamics):
     from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
-    # it doesn't pass on macos
-    if platform.system() == "Darwin":
-        return
-
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     model_path = f"{bioptim_folder}/models/pendulum.bioMod"
-    ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=model_path,
-        final_time=1,
-        n_shooting=10,
-        fatigue_type="xia",
-        split_controls=False,
-        use_sx=False,
-        phase_dynamics=phase_dynamics,
-        expand_dynamics=True,
-    )
-    solver = Solver.IPOPT()
-    solver.set_maximum_iterations(0)
-    sol = ocp.solve(solver)
 
-    # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
+    with pytest.raises(
+        NotImplementedError,
+        match="Fatigue is not implemented yet for torque driven dynamics",
+    ):
+        ocp = ocp_module.prepare_ocp(
+            biorbd_model_path=model_path,
+            final_time=1,
+            n_shooting=10,
+            fatigue_type="xia",
+            split_controls=False,
+            use_sx=False,
+            phase_dynamics=phase_dynamics,
+            expand_dynamics=True,
+        )
+        return
 
-    # Check constraints
-    g = np.array(sol.constraints)
-    npt.assert_equal(g.shape, (160, 1))
-
-    # Check some of the results
-    # TODO: add tests
+    # # it doesn't pass on macos
+    # if platform.system() == "Darwin":
+    #     return
+    #
+    # ocp = ocp_module.prepare_ocp(
+    #     biorbd_model_path=model_path,
+    #     final_time=1,
+    #     n_shooting=10,
+    #     fatigue_type="xia",
+    #     split_controls=False,
+    #     use_sx=False,
+    #     phase_dynamics=phase_dynamics,
+    #     expand_dynamics=True,
+    # )
+    # solver = Solver.IPOPT()
+    # solver.set_maximum_iterations(0)
+    # sol = ocp.solve(solver)
+    #
+    # # Check objective function value
+    # f = np.array(sol.cost)
+    # npt.assert_equal(f.shape, (1, 1))
+    #
+    # # Check constraints
+    # g = np.array(sol.constraints)
+    # npt.assert_equal(g.shape, (160, 1))
+    #
+    # # Check some of the results
+    # # TODO: add tests
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -343,349 +360,449 @@ def test_fatigable_xia_torque_split(phase_dynamics):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     model_path = f"{bioptim_folder}/models/pendulum.bioMod"
-    ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=model_path,
-        final_time=1,
-        n_shooting=10,
-        fatigue_type="xia",
-        split_controls=True,
-        use_sx=False,
-        phase_dynamics=phase_dynamics,
-        expand_dynamics=True,
-    )
 
-    np.random.seed(42)
-    TestUtils.compare_ocp_to_solve(
-        ocp,
-        v=np.ones((217, 1)) / 10,  # Random generates nan in the g vector
-        expected_v_f_g=[21.7, 0.04, 0.8256265085043029],
-        decimal=6,
-    )
-    if platform.system() == "Windows":
-        return
+    with pytest.raises(
+        NotImplementedError,
+        match="Fatigue is not implemented yet for torque driven dynamics",
+    ):
+        ocp = ocp_module.prepare_ocp(
+            biorbd_model_path=model_path,
+            final_time=1,
+            n_shooting=10,
+            fatigue_type="xia",
+            split_controls=True,
+            use_sx=False,
+            phase_dynamics=phase_dynamics,
+            expand_dynamics=True,
+        )
 
-    sol = ocp.solve()
-
-    # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 73.27929222817079)
-
-    # Check constraints
-    g = np.array(sol.constraints)
-    npt.assert_equal(g.shape, (160, 1))
-    npt.assert_almost_equal(g, np.zeros((160, 1)))
-
-    # Check some of the results
-    states = sol.decision_states(to_merge=SolutionMerge.NODES)
-    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
-    q, qdot = states["q"], states["qdot"]
-    ma_minus, mr_minus, mf_minus = states["tau_minus_ma"], states["tau_minus_mr"], states["tau_minus_mf"]
-    ma_plus, mr_plus, mf_plus = states["tau_plus_ma"], states["tau_plus_mr"], states["tau_plus_mf"]
-    tau_minus, tau_plus = controls["tau_minus"], controls["tau_plus"]
-
-    # initial and final position
-    npt.assert_almost_equal(q[:, 0], np.array((0, 0)))
-    npt.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
-
-    npt.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-    npt.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
-
-    npt.assert_almost_equal(ma_minus[:, 0], np.array((0.0, 0)))
-    npt.assert_almost_equal(ma_minus[:, -1], np.array((1.14097518e-01, 0)))
-    npt.assert_almost_equal(mr_minus[:, 0], np.array((1, 1)))
-    npt.assert_almost_equal(mr_minus[:, -1], np.array((0.85128364, 1)))
-    npt.assert_almost_equal(mf_minus[:, 0], np.array((0, 0)))
-    npt.assert_almost_equal(mf_minus[:, -1], np.array((3.46188391e-02, 0)))
-    npt.assert_almost_equal(ma_plus[:, 0], np.array((0, 0)))
-    npt.assert_almost_equal(ma_plus[:, -1], np.array((1.05233076e-03, 0)))
-    npt.assert_almost_equal(mr_plus[:, 0], np.array((1, 1)))
-    npt.assert_almost_equal(mr_plus[:, -1], np.array((0.97572892, 1)))
-    npt.assert_almost_equal(mf_plus[:, 0], np.array((0, 0)))
-    npt.assert_almost_equal(mf_plus[:, -1], np.array((2.32187531e-02, 0)))
-
-    npt.assert_almost_equal(tau_minus[:, 0], np.array((0, 0)), decimal=6)
-    npt.assert_almost_equal(tau_minus[:, -1], np.array((-12.0660082, 0)))
-    npt.assert_almost_equal(tau_plus[:, 0], np.array((5.2893453, 0)))
-    npt.assert_almost_equal(tau_plus[:, -1], np.array((0, 0)))
-
-    # simulate
-    TestUtils.simulate(sol)
+    # ocp = ocp_module.prepare_ocp(
+    #     biorbd_model_path=model_path,
+    #     final_time=1,
+    #     n_shooting=10,
+    #     fatigue_type="xia",
+    #     split_controls=True,
+    #     use_sx=False,
+    #     phase_dynamics=phase_dynamics,
+    #     expand_dynamics=True,
+    # )
+    #
+    # np.random.seed(42)
+    # TestUtils.compare_ocp_to_solve(
+    #     ocp,
+    #     v=np.ones((217, 1)) / 10,  # Random generates nan in the g vector
+    #     expected_v_f_g=[21.7, 0.04, 0.8256265085043029],
+    #     decimal=6,
+    # )
+    # if platform.system() == "Windows":
+    #     return
+    #
+    # sol = ocp.solve()
+    #
+    # # Check objective function value
+    # f = np.array(sol.cost)
+    # npt.assert_equal(f.shape, (1, 1))
+    # npt.assert_almost_equal(f[0, 0], 73.27929222817079)
+    #
+    # # Check constraints
+    # g = np.array(sol.constraints)
+    # npt.assert_equal(g.shape, (160, 1))
+    # npt.assert_almost_equal(g, np.zeros((160, 1)))
+    #
+    # # Check some of the results
+    # states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    # controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    # q, qdot = states["q"], states["qdot"]
+    # ma_minus, mr_minus, mf_minus = states["tau_minus_ma"], states["tau_minus_mr"], states["tau_minus_mf"]
+    # ma_plus, mr_plus, mf_plus = states["tau_plus_ma"], states["tau_plus_mr"], states["tau_plus_mf"]
+    # tau_minus, tau_plus = controls["tau_minus"], controls["tau_plus"]
+    #
+    # # initial and final position
+    # npt.assert_almost_equal(q[:, 0], np.array((0, 0)))
+    # npt.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
+    #
+    # npt.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
+    # npt.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
+    #
+    # npt.assert_almost_equal(ma_minus[:, 0], np.array((0.0, 0)))
+    # npt.assert_almost_equal(ma_minus[:, -1], np.array((1.14097518e-01, 0)))
+    # npt.assert_almost_equal(mr_minus[:, 0], np.array((1, 1)))
+    # npt.assert_almost_equal(mr_minus[:, -1], np.array((0.85128364, 1)))
+    # npt.assert_almost_equal(mf_minus[:, 0], np.array((0, 0)))
+    # npt.assert_almost_equal(mf_minus[:, -1], np.array((3.46188391e-02, 0)))
+    # npt.assert_almost_equal(ma_plus[:, 0], np.array((0, 0)))
+    # npt.assert_almost_equal(ma_plus[:, -1], np.array((1.05233076e-03, 0)))
+    # npt.assert_almost_equal(mr_plus[:, 0], np.array((1, 1)))
+    # npt.assert_almost_equal(mr_plus[:, -1], np.array((0.97572892, 1)))
+    # npt.assert_almost_equal(mf_plus[:, 0], np.array((0, 0)))
+    # npt.assert_almost_equal(mf_plus[:, -1], np.array((2.32187531e-02, 0)))
+    #
+    # npt.assert_almost_equal(tau_minus[:, 0], np.array((0, 0)), decimal=6)
+    # npt.assert_almost_equal(tau_minus[:, -1], np.array((-12.0660082, 0)))
+    # npt.assert_almost_equal(tau_plus[:, 0], np.array((5.2893453, 0)))
+    # npt.assert_almost_equal(tau_plus[:, -1], np.array((0, 0)))
+    #
+    # # simulate
+    # TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_fatigable_xia_stabilized_torque_split(phase_dynamics):
     from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
-    if platform.system() == "Windows":
-        # This is a long test and CI is already long for Windows
+    bioptim_folder = TestUtils.module_folder(ocp_module)
+    model_path = f"{bioptim_folder}/models/pendulum.bioMod"
+
+    with pytest.raises(
+        NotImplementedError,
+        match="Fatigue is not implemented yet for torque driven dynamics",
+    ):
+        ocp = ocp_module.prepare_ocp(
+            biorbd_model_path=model_path,
+            final_time=1,
+            n_shooting=10,
+            fatigue_type="xia_stabilized",
+            split_controls=True,
+            use_sx=False,
+            phase_dynamics=phase_dynamics,
+            expand_dynamics=True,
+        )
         return
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
-
-    model_path = f"{bioptim_folder}/models/pendulum.bioMod"
-    ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=model_path,
-        final_time=1,
-        n_shooting=10,
-        fatigue_type="xia_stabilized",
-        split_controls=True,
-        use_sx=False,
-        phase_dynamics=phase_dynamics,
-        expand_dynamics=True,
-    )
-    sol = ocp.solve()
-
-    # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 73.2792922281799)
-
-    # Check constraints
-    g = np.array(sol.constraints)
-    npt.assert_equal(g.shape, (160, 1))
-    npt.assert_almost_equal(g, np.zeros((160, 1)))
-
-    # Check some of the results
-    states = sol.decision_states(to_merge=SolutionMerge.NODES)
-    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
-    q, qdot = states["q"], states["qdot"]
-    ma_minus, mr_minus, mf_minus = states["tau_minus_ma"], states["tau_minus_mr"], states["tau_minus_mf"]
-    ma_plus, mr_plus, mf_plus = states["tau_plus_ma"], states["tau_plus_mr"], states["tau_plus_mf"]
-    tau_minus, tau_plus = controls["tau_minus"], controls["tau_plus"]
-
-    # initial and final position
-    npt.assert_almost_equal(q[:, 0], np.array((0, 0)))
-    npt.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
-
-    npt.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-    npt.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
-
-    npt.assert_almost_equal(ma_minus[:, 0], np.array((0.0, 0)))
-    npt.assert_almost_equal(ma_minus[:, -1], np.array((1.14097518e-01, 0)))
-    npt.assert_almost_equal(mr_minus[:, 0], np.array((1, 1)))
-    npt.assert_almost_equal(mr_minus[:, -1], np.array((0.85128364, 1)))
-    npt.assert_almost_equal(mf_minus[:, 0], np.array((0, 0)))
-    npt.assert_almost_equal(mf_minus[:, -1], np.array((3.46188391e-02, 0)))
-    npt.assert_almost_equal(ma_plus[:, 0], np.array((0, 0)))
-    npt.assert_almost_equal(ma_plus[:, -1], np.array((1.05233076e-03, 0)))
-    npt.assert_almost_equal(mr_plus[:, 0], np.array((1, 1)))
-    npt.assert_almost_equal(mr_plus[:, -1], np.array((0.97572892, 1)))
-    npt.assert_almost_equal(mf_plus[:, 0], np.array((0, 0)))
-    npt.assert_almost_equal(mf_plus[:, -1], np.array((2.32187531e-02, 0)))
-
-    npt.assert_almost_equal(tau_minus[:, 0], np.array((0, 0)), decimal=6)
-    npt.assert_almost_equal(tau_minus[:, -1], np.array((-12.0660082, 0)))
-    npt.assert_almost_equal(tau_plus[:, 0], np.array((5.2893453, 0)))
-    npt.assert_almost_equal(tau_plus[:, -1], np.array((0, 0)))
-
-    # simulate
-    TestUtils.simulate(sol)
+    # if platform.system() == "Windows":
+    #     # This is a long test and CI is already long for Windows
+    #     return
+    #
+    # ocp = ocp_module.prepare_ocp(
+    #     biorbd_model_path=model_path,
+    #     final_time=1,
+    #     n_shooting=10,
+    #     fatigue_type="xia_stabilized",
+    #     split_controls=True,
+    #     use_sx=False,
+    #     phase_dynamics=phase_dynamics,
+    #     expand_dynamics=True,
+    # )
+    # sol = ocp.solve()
+    #
+    # # Check objective function value
+    # f = np.array(sol.cost)
+    # npt.assert_equal(f.shape, (1, 1))
+    # npt.assert_almost_equal(f[0, 0], 73.2792922281799)
+    #
+    # # Check constraints
+    # g = np.array(sol.constraints)
+    # npt.assert_equal(g.shape, (160, 1))
+    # npt.assert_almost_equal(g, np.zeros((160, 1)))
+    #
+    # # Check some of the results
+    # states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    # controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    # q, qdot = states["q"], states["qdot"]
+    # ma_minus, mr_minus, mf_minus = states["tau_minus_ma"], states["tau_minus_mr"], states["tau_minus_mf"]
+    # ma_plus, mr_plus, mf_plus = states["tau_plus_ma"], states["tau_plus_mr"], states["tau_plus_mf"]
+    # tau_minus, tau_plus = controls["tau_minus"], controls["tau_plus"]
+    #
+    # # initial and final position
+    # npt.assert_almost_equal(q[:, 0], np.array((0, 0)))
+    # npt.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
+    #
+    # npt.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
+    # npt.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
+    #
+    # npt.assert_almost_equal(ma_minus[:, 0], np.array((0.0, 0)))
+    # npt.assert_almost_equal(ma_minus[:, -1], np.array((1.14097518e-01, 0)))
+    # npt.assert_almost_equal(mr_minus[:, 0], np.array((1, 1)))
+    # npt.assert_almost_equal(mr_minus[:, -1], np.array((0.85128364, 1)))
+    # npt.assert_almost_equal(mf_minus[:, 0], np.array((0, 0)))
+    # npt.assert_almost_equal(mf_minus[:, -1], np.array((3.46188391e-02, 0)))
+    # npt.assert_almost_equal(ma_plus[:, 0], np.array((0, 0)))
+    # npt.assert_almost_equal(ma_plus[:, -1], np.array((1.05233076e-03, 0)))
+    # npt.assert_almost_equal(mr_plus[:, 0], np.array((1, 1)))
+    # npt.assert_almost_equal(mr_plus[:, -1], np.array((0.97572892, 1)))
+    # npt.assert_almost_equal(mf_plus[:, 0], np.array((0, 0)))
+    # npt.assert_almost_equal(mf_plus[:, -1], np.array((2.32187531e-02, 0)))
+    #
+    # npt.assert_almost_equal(tau_minus[:, 0], np.array((0, 0)), decimal=6)
+    # npt.assert_almost_equal(tau_minus[:, -1], np.array((-12.0660082, 0)))
+    # npt.assert_almost_equal(tau_plus[:, 0], np.array((5.2893453, 0)))
+    # npt.assert_almost_equal(tau_plus[:, -1], np.array((0, 0)))
+    #
+    # # simulate
+    # TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_fatigable_michaud_torque_non_split(phase_dynamics):
     from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
-    if platform.system() == "Windows":
-        # This is a long test and CI is already long for Windows
-        return
-
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     model_path = f"{bioptim_folder}/models/pendulum.bioMod"
-    ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=model_path,
-        final_time=1,
-        n_shooting=10,
-        fatigue_type="michaud",
-        split_controls=False,
-        use_sx=False,
-        phase_dynamics=phase_dynamics,
-        expand_dynamics=True,
-    )
-    solver = Solver.IPOPT()
-    solver.set_maximum_iterations(0)
-    sol = ocp.solve(solver=solver)
 
-    # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
+    with pytest.raises(
+        NotImplementedError,
+        match="Fatigue is not implemented yet for torque driven dynamics",
+    ):
+        ocp = ocp_module.prepare_ocp(
+            biorbd_model_path=model_path,
+            final_time=1,
+            n_shooting=10,
+            fatigue_type="michaud",
+            split_controls=False,
+            use_sx=False,
+            phase_dynamics=phase_dynamics,
+            expand_dynamics=True,
+        )
+        return
 
-    # Check constraints
-    g = np.array(sol.constraints)
-    npt.assert_equal(g.shape, (200, 1))
-
-    # Check some of the results
-    # TODO: add some tests
+    # if platform.system() == "Windows":
+    #     # This is a long test and CI is already long for Windows
+    #     return
+    #
+    # ocp = ocp_module.prepare_ocp(
+    #     biorbd_model_path=model_path,
+    #     final_time=1,
+    #     n_shooting=10,
+    #     fatigue_type="michaud",
+    #     split_controls=False,
+    #     use_sx=False,
+    #     phase_dynamics=phase_dynamics,
+    #     expand_dynamics=True,
+    # )
+    # solver = Solver.IPOPT()
+    # solver.set_maximum_iterations(0)
+    # sol = ocp.solve(solver=solver)
+    #
+    # # Check objective function value
+    # f = np.array(sol.cost)
+    # npt.assert_equal(f.shape, (1, 1))
+    #
+    # # Check constraints
+    # g = np.array(sol.constraints)
+    # npt.assert_equal(g.shape, (200, 1))
+    #
+    # # Check some of the results
+    # # TODO: add some tests
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_fatigable_michaud_torque_split(phase_dynamics):
     from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
-    if platform.system() == "Windows":
-        # This tst fails on the CI
-        return
-
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     model_path = f"{bioptim_folder}/models/pendulum.bioMod"
-    ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=model_path,
-        final_time=1,
-        n_shooting=10,
-        fatigue_type="michaud",
-        split_controls=True,
-        use_sx=False,
-        phase_dynamics=phase_dynamics,
-        expand_dynamics=True,
-    )
-    sol = ocp.solve()
 
-    # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 66.4869989782804, decimal=5)
+    with pytest.raises(
+        NotImplementedError,
+        match="Fatigue is not implemented yet for torque driven dynamics",
+    ):
+        ocp = ocp_module.prepare_ocp(
+            biorbd_model_path=model_path,
+            final_time=1,
+            n_shooting=10,
+            fatigue_type="michaud",
+            split_controls=True,
+            use_sx=False,
+            phase_dynamics=phase_dynamics,
+            expand_dynamics=True,
+        )
+        return
 
-    # Check constraints
-    g = np.array(sol.constraints)
-    npt.assert_equal(g.shape, (200, 1))
-    npt.assert_almost_equal(g, np.zeros((200, 1)))
-
-    # Check some of the results
-    states = sol.decision_states(to_merge=SolutionMerge.NODES)
-    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
-    q, qdot = states["q"], states["qdot"]
-    ma_minus, mr_minus, mf_minus = states["tau_minus_ma"], states["tau_minus_mr"], states["tau_minus_mf"]
-    ma_plus, mr_plus, mf_plus = states["tau_plus_ma"], states["tau_plus_mr"], states["tau_plus_mf"]
-    tau_minus, tau_plus = controls["tau_minus"], controls["tau_plus"]
-
-    # initial and final position
-    npt.assert_almost_equal(q[:, 0], np.array((0, 0)))
-    npt.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
-
-    npt.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-    npt.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
-
-    npt.assert_almost_equal(ma_minus[:, 0], np.array((0, 0)))
-    npt.assert_almost_equal(ma_minus[:, -1], np.array((1.14840287e-01, 0)), decimal=5)
-    npt.assert_almost_equal(mr_minus[:, 0], np.array((1, 1)))
-    npt.assert_almost_equal(mr_minus[:, -1], np.array((0.88501154, 1)), decimal=5)
-    npt.assert_almost_equal(mf_minus[:, 0], np.array((0, 0)))
-    npt.assert_almost_equal(mf_minus[:, -1], np.array((0, 0)))
-    npt.assert_almost_equal(ma_plus[:, 0], np.array((0, 0)))
-    npt.assert_almost_equal(ma_plus[:, -1], np.array((6.06085673e-04, 0)), decimal=5)
-    npt.assert_almost_equal(mr_plus[:, 0], np.array((1, 1)))
-    npt.assert_almost_equal(mr_plus[:, -1], np.array((0.99924023, 1)), decimal=5)
-    npt.assert_almost_equal(mf_plus[:, 0], np.array((0, 0)))
-    npt.assert_almost_equal(mf_plus[:, -1], np.array((0, 0)))
-
-    npt.assert_almost_equal(tau_minus[:, 0], np.array((-2.39672721e-07, 0)), decimal=5)
-    npt.assert_almost_equal(tau_minus[:, -1], np.array((-11.53208375, 0)), decimal=5)
-    if platform.system() == "Linux":
-        npt.assert_almost_equal(tau_plus[:, 0], np.array((5.03417919, 0)), decimal=5)
-    npt.assert_almost_equal(tau_plus[:, -1], np.array((0, 0)))
-
-    # simulate
-    TestUtils.simulate(sol, decimal_value=6)
+    # if platform.system() == "Windows":
+    #     # This tst fails on the CI
+    #     return
+    #
+    # ocp = ocp_module.prepare_ocp(
+    #     biorbd_model_path=model_path,
+    #     final_time=1,
+    #     n_shooting=10,
+    #     fatigue_type="michaud",
+    #     split_controls=True,
+    #     use_sx=False,
+    #     phase_dynamics=phase_dynamics,
+    #     expand_dynamics=True,
+    # )
+    # sol = ocp.solve()
+    #
+    # # Check objective function value
+    # f = np.array(sol.cost)
+    # npt.assert_equal(f.shape, (1, 1))
+    # npt.assert_almost_equal(f[0, 0], 66.4869989782804, decimal=5)
+    #
+    # # Check constraints
+    # g = np.array(sol.constraints)
+    # npt.assert_equal(g.shape, (200, 1))
+    # npt.assert_almost_equal(g, np.zeros((200, 1)))
+    #
+    # # Check some of the results
+    # states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    # controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    # q, qdot = states["q"], states["qdot"]
+    # ma_minus, mr_minus, mf_minus = states["tau_minus_ma"], states["tau_minus_mr"], states["tau_minus_mf"]
+    # ma_plus, mr_plus, mf_plus = states["tau_plus_ma"], states["tau_plus_mr"], states["tau_plus_mf"]
+    # tau_minus, tau_plus = controls["tau_minus"], controls["tau_plus"]
+    #
+    # # initial and final position
+    # npt.assert_almost_equal(q[:, 0], np.array((0, 0)))
+    # npt.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
+    #
+    # npt.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
+    # npt.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
+    #
+    # npt.assert_almost_equal(ma_minus[:, 0], np.array((0, 0)))
+    # npt.assert_almost_equal(ma_minus[:, -1], np.array((1.14840287e-01, 0)), decimal=5)
+    # npt.assert_almost_equal(mr_minus[:, 0], np.array((1, 1)))
+    # npt.assert_almost_equal(mr_minus[:, -1], np.array((0.88501154, 1)), decimal=5)
+    # npt.assert_almost_equal(mf_minus[:, 0], np.array((0, 0)))
+    # npt.assert_almost_equal(mf_minus[:, -1], np.array((0, 0)))
+    # npt.assert_almost_equal(ma_plus[:, 0], np.array((0, 0)))
+    # npt.assert_almost_equal(ma_plus[:, -1], np.array((6.06085673e-04, 0)), decimal=5)
+    # npt.assert_almost_equal(mr_plus[:, 0], np.array((1, 1)))
+    # npt.assert_almost_equal(mr_plus[:, -1], np.array((0.99924023, 1)), decimal=5)
+    # npt.assert_almost_equal(mf_plus[:, 0], np.array((0, 0)))
+    # npt.assert_almost_equal(mf_plus[:, -1], np.array((0, 0)))
+    #
+    # npt.assert_almost_equal(tau_minus[:, 0], np.array((-2.39672721e-07, 0)), decimal=5)
+    # npt.assert_almost_equal(tau_minus[:, -1], np.array((-11.53208375, 0)), decimal=5)
+    # if platform.system() == "Linux":
+    #     npt.assert_almost_equal(tau_plus[:, 0], np.array((5.03417919, 0)), decimal=5)
+    # npt.assert_almost_equal(tau_plus[:, -1], np.array((0, 0)))
+    #
+    # # simulate
+    # TestUtils.simulate(sol, decimal_value=6)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_fatigable_effort_torque_non_split(phase_dynamics):
     from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
-    if platform.system() == "Windows":
-        # This tst fails on the CI
-        return
-
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     model_path = f"{bioptim_folder}/models/pendulum.bioMod"
-    ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=model_path,
-        final_time=1,
-        n_shooting=10,
-        fatigue_type="effort",
-        split_controls=False,
-        use_sx=False,
-        phase_dynamics=phase_dynamics,
-        expand_dynamics=True,
-    )
-    solver = Solver.IPOPT()
-    solver.set_maximum_iterations(0)
-    sol = ocp.solve(solver=solver)
 
-    # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
+    with pytest.raises(
+        NotImplementedError,
+        match="Fatigue is not implemented yet for torque driven dynamics",
+    ):
+        ocp = ocp_module.prepare_ocp(
+            biorbd_model_path=model_path,
+            final_time=1,
+            n_shooting=10,
+            fatigue_type="effort",
+            split_controls=False,
+            use_sx=False,
+            phase_dynamics=phase_dynamics,
+            expand_dynamics=True,
+        )
+        return
 
-    # Check constraints
-    g = np.array(sol.constraints)
-    npt.assert_equal(g.shape, (80, 1))
-
-    # Check some of the results
-    # TODO: add some tests
+    # if platform.system() == "Windows":
+    #     # This tst fails on the CI
+    #     return
+    #
+    # ocp = ocp_module.prepare_ocp(
+    #     biorbd_model_path=model_path,
+    #     final_time=1,
+    #     n_shooting=10,
+    #     fatigue_type="effort",
+    #     split_controls=False,
+    #     use_sx=False,
+    #     phase_dynamics=phase_dynamics,
+    #     expand_dynamics=True,
+    # )
+    # solver = Solver.IPOPT()
+    # solver.set_maximum_iterations(0)
+    # sol = ocp.solve(solver=solver)
+    #
+    # # Check objective function value
+    # f = np.array(sol.cost)
+    # npt.assert_equal(f.shape, (1, 1))
+    #
+    # # Check constraints
+    # g = np.array(sol.constraints)
+    # npt.assert_equal(g.shape, (80, 1))
+    #
+    # # Check some of the results
+    # # TODO: add some tests
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_fatigable_effort_torque_split(phase_dynamics):
     from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
-    if platform.system() != "Linux":
-        # This tst fails on the CI
-        return
-
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     model_path = f"{bioptim_folder}/models/pendulum.bioMod"
-    ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=model_path,
-        final_time=1,
-        n_shooting=10,
-        fatigue_type="effort",
-        split_controls=True,
-        use_sx=False,
-        phase_dynamics=phase_dynamics,
-        expand_dynamics=True,
-    )
-    sol = ocp.solve()
 
-    # Check objective function value
-    if platform.system() != "Linux":
-        f = np.array(sol.cost)
-        npt.assert_equal(f.shape, (1, 1))
-        npt.assert_almost_equal(f[0, 0], 124.09811263203727)
+    with pytest.raises(
+        NotImplementedError,
+        match="Fatigue is not implemented yet for torque driven dynamics",
+    ):
+        ocp = ocp_module.prepare_ocp(
+            biorbd_model_path=model_path,
+            final_time=1,
+            n_shooting=10,
+            fatigue_type="effort",
+            split_controls=True,
+            use_sx=False,
+            phase_dynamics=phase_dynamics,
+            expand_dynamics=True,
+        )
+        return
 
-        # Check constraints
-        g = np.array(sol.constraints)
-        npt.assert_equal(g.shape, (80, 1))
-        npt.assert_almost_equal(g, np.zeros((80, 1)))
-
-        # Check some of the results
-        states = sol.decision_states(to_merge=SolutionMerge.NODES)
-        controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
-
-        q, qdot = states["q"], states["qdot"]
-        mf_minus, mf_plus = states["tau_minus_mf"], states["tau_plus_mf"]
-        tau_minus, tau_plus = controls["tau_minus"], controls["tau_plus"]
-
-        # initial and final position
-        npt.assert_almost_equal(q[:, 0], np.array((0, 0)))
-        npt.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
-
-        npt.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-        npt.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
-
-        npt.assert_almost_equal(mf_minus[:, 0], np.array((0, 0)))
-        npt.assert_almost_equal(mf_minus[:, -1], np.array((4.51209384e-05, 1.99600599e-06)))
-        npt.assert_almost_equal(mf_plus[:, 0], np.array((0, 0)))
-        npt.assert_almost_equal(mf_plus[:, -1], np.array((4.31950457e-05, 0)))
-
-        npt.assert_almost_equal(tau_minus[:, 0], np.array((-8.39444342e-08, 0)))
-        npt.assert_almost_equal(tau_minus[:, -1], np.array((-12.03087219, 0)))
-        npt.assert_almost_equal(tau_plus[:, 0], np.array((5.85068579, 0)))
-        npt.assert_almost_equal(tau_plus[:, -1], np.array((0, 0)))
-
-    # simulate
-    TestUtils.simulate(sol)
+    # if platform.system() != "Linux":
+    #     # This tst fails on the CI
+    #     return
+    #
+    # ocp = ocp_module.prepare_ocp(
+    #     biorbd_model_path=model_path,
+    #     final_time=1,
+    #     n_shooting=10,
+    #     fatigue_type="effort",
+    #     split_controls=True,
+    #     use_sx=False,
+    #     phase_dynamics=phase_dynamics,
+    #     expand_dynamics=True,
+    # )
+    # sol = ocp.solve()
+    #
+    # # Check objective function value
+    # if platform.system() != "Linux":
+    #     f = np.array(sol.cost)
+    #     npt.assert_equal(f.shape, (1, 1))
+    #     npt.assert_almost_equal(f[0, 0], 124.09811263203727)
+    #
+    #     # Check constraints
+    #     g = np.array(sol.constraints)
+    #     npt.assert_equal(g.shape, (80, 1))
+    #     npt.assert_almost_equal(g, np.zeros((80, 1)))
+    #
+    #     # Check some of the results
+    #     states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    #     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    #
+    #     q, qdot = states["q"], states["qdot"]
+    #     mf_minus, mf_plus = states["tau_minus_mf"], states["tau_plus_mf"]
+    #     tau_minus, tau_plus = controls["tau_minus"], controls["tau_plus"]
+    #
+    #     # initial and final position
+    #     npt.assert_almost_equal(q[:, 0], np.array((0, 0)))
+    #     npt.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
+    #
+    #     npt.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
+    #     npt.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
+    #
+    #     npt.assert_almost_equal(mf_minus[:, 0], np.array((0, 0)))
+    #     npt.assert_almost_equal(mf_minus[:, -1], np.array((4.51209384e-05, 1.99600599e-06)))
+    #     npt.assert_almost_equal(mf_plus[:, 0], np.array((0, 0)))
+    #     npt.assert_almost_equal(mf_plus[:, -1], np.array((4.31950457e-05, 0)))
+    #
+    #     npt.assert_almost_equal(tau_minus[:, 0], np.array((-8.39444342e-08, 0)))
+    #     npt.assert_almost_equal(tau_minus[:, -1], np.array((-12.03087219, 0)))
+    #     npt.assert_almost_equal(tau_plus[:, 0], np.array((5.85068579, 0)))
+    #     npt.assert_almost_equal(tau_plus[:, -1], np.array((0, 0)))
+    #
+    # # simulate
+    # TestUtils.simulate(sol)

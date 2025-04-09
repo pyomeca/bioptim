@@ -177,7 +177,6 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
     - [CostType](#enum-costtype)
     - [SolutionIntegrator](#enum-solutionintegrator)
     - [QuadratureRule](#enum-quadraturerule)
-    - [SoftContactDynamics](#enum-softcontactdynamics)
     - [DefectType](#enum-defecttype)
 
     </details>
@@ -1774,14 +1773,13 @@ The type of integration used to integrate the cost function terms of Lagrange:
 - APPROXIMATE_TRAPEZOIDAL: The integral is approximated by a trapezoidal rule using the state at the beginning of the next interval.
 - TRAPEZOIDAL: The integral is approximated by a trapezoidal rule using the state at the end of the current interval.
 
-### Enum: SoftContactDynamics
-The type of transcription of any dynamics (e.g., rigidbody_dynamics or soft_contact_dynamics):
-- ODE: soft contact dynamics is handled explicitly.
-- CONSTRAINT: an extra control *fext* is added, and it ensures respecting soft contact_dynamics on nodes through a constraint.
-
 ### Enum: DefectType
-- EXPLICIT: The defect comes from the explicit formulation.
-- IMPLICIT: The defect comes from the implicit formulation.
+- QDOT_EQUALS_SLOPE: The slope of the COLLOCATION polynomial must be equal to the qdot.
+- QDDOT_EQUALS_FORWARD_DYNAMICS: The slope of the COLLOCATION polynomial must be equal to the result from the forward dynamics.
+- TAU_EQUALS_INVERSE_DYNAMICS: The slope of the COLLOCATION polynomial is used to compute the inverse dynamics, which must be equal to the tau. 
+- CONTACT_ACCELERATION_EQUALS_ZERO: The contacts point acceleration must be null (useful for ContactType.RIGID_IMPLICIT). 
+- SOFT_CONTACT_FORCES_EQUALS_LAGRANGE_MULTIPLIERS: The soft contact forces are equal to the Lagrange multipliers (useful for ContactType.SOFT_IMPLICIT).
+- ROOT_RESIDUAL_TORQUES_EQUALS_ZERO: The root residual torques must be null (useful for DynamicsFcn.JOINT_ACCELERATION_DRIVEN).
 - NOT_APPLICABLE: The defect is not applicable.
 
 ### Enum: ContactType

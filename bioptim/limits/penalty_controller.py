@@ -279,12 +279,18 @@ class PenaltyController:
     def integrate_extra_dynamics(self, dynamics_index):
         return self._nlp.extra_dynamics[dynamics_index][self.node_index]
 
+    def integrate_extra_dynamics_defects(self, dynamics_index):
+        return self._nlp.extra_dynamics_defects[dynamics_index][self.node_index]
+
     @property
     def dynamics(self):
         return self._nlp.dynamics_func
 
     def extra_dynamics(self, dynamics_index):
         return self._nlp.extra_dynamics_func[dynamics_index]
+
+    def extra_dynamics_defects(self, dynamics_index):
+        return self._nlp.extra_dynamics_defects_func[dynamics_index]
 
     @property
     def states_scaled(self) -> OptimizationVariableList:
@@ -438,7 +444,7 @@ class PenaltyController:
     @property
     def external_forces(self) -> MX | SX:
         return self._nlp.get_external_forces(
-            self.states.cx, self.controls.cx, self.algebraic_states.cx, self.numerical_timeseries.cx
+            "external_forces",  self.states.cx, self.controls.cx, self.algebraic_states.cx, self.numerical_timeseries.cx
         )
 
     def copy(self):

@@ -76,8 +76,15 @@ def time_dynamic(
     # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
     dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
     ddq = nlp.model.forward_dynamics(with_contact=False)(q, qdot, tau, [], [])
+    dxdt = vertcat(dq, ddq)
 
-    return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
+    defects = None
+    if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
+        slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
+        slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
+        defects = vertcat(slope_q, slope_qdot) * nlp.dt - dxdt * nlp.dt
+
+    return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
 
 def custom_configure(
@@ -404,6 +411,24 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
                     npt.assert_almost_equal(sol.decision_time()[-1], 1.02238, decimal=5)
                 else:
                     return
+            elif control_type is ControlType.LINEAR_CONTINUOUS:
+                if n_phase == 1:
+                    npt.assert_almost_equal(np.array(sol.cost), np.array([[219.90675564]]))
+                    npt.assert_almost_equal(
+                        sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["q"][0][10],
+                        0.18884500361053447,
+                    )
+                    npt.assert_almost_equal(
+                        sol.decision_controls(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["tau"][0][10],
+                        1.2938273882793678,
+                    )
+                    npt.assert_almost_equal(
+                        sol.decision_controls(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["tau"][0][20],
+                        0.03894288570447333,
+                    )
+                    npt.assert_almost_equal(sol.decision_time()[-1], 1.02238, decimal=5)
+                else:
+                    return
         else:
             if control_type is ControlType.CONSTANT:
                 if n_phase == 1:
@@ -421,6 +446,22 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
                         0.030406254549304543,
                     )
                     npt.assert_almost_equal(sol.decision_time()[-1], 1)
+            elif control_type is ControlType.LINEAR_CONTINUOUS:
+                if n_phase == 1:
+                    npt.assert_almost_equal(np.array(sol.cost), np.array([[219.90675564]]))
+                    npt.assert_almost_equal(
+                        sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["q"][0][10],
+                        0.18884500361053447,
+                    )
+                    npt.assert_almost_equal(
+                        sol.decision_controls(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["tau"][0][10],
+                        1.2938273882793678,
+                    )
+                    npt.assert_almost_equal(
+                        sol.decision_controls(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["tau"][0][20],
+                        0.03894288570447333,
+                    )
+                    npt.assert_almost_equal(sol.decision_time()[-1], 1.02238, decimal=5)
                 else:
                     return
 
@@ -601,8 +642,68 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
                     npt.assert_almost_equal(sol.decision_time()[-1], 1.0396, decimal=5)
                 else:
                     return
+            elif control_type is ControlType.LINEAR_CONTINUOUS:
+                if n_phase == 1:
+                    npt.assert_almost_equal(np.array(sol.cost), np.array([[338.20966265]]))
+                    npt.assert_almost_equal(
+                        sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["q"][0][10],
+                        0.03150376452725097,
+                    )
+                    npt.assert_almost_equal(
+                        sol.decision_controls(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["tau"][0][10],
+                        0.6012990041197794,
+                    )
+                    npt.assert_almost_equal(
+                        sol.decision_controls(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["tau"][0][20],
+                        0.32918646060774515,
+                    )
+                    npt.assert_almost_equal(sol.decision_time()[-1], 1.0396, decimal=5)
+                else:
+                    return
         else:
             if control_type is ControlType.CONSTANT:
+                if n_phase == 1:
+                    npt.assert_almost_equal(np.array(sol.cost), np.array([[322.05408485]]))
+                    npt.assert_almost_equal(
+                        sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["q"][0][10],
+                        0.029122530316589967,
+                    )
+                    npt.assert_almost_equal(
+                        sol.decision_controls(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["tau"][0][10],
+                        0.5375069618928111,
+                    )
+                    npt.assert_almost_equal(
+                        sol.decision_controls(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["tau"][0][20],
+                        0.35409975042643815,
+                    )
+                    npt.assert_almost_equal(sol.decision_time()[-1], 1.0)
+                else:
+                    npt.assert_almost_equal(np.array(sol.cost), np.array([[365.2257133]]))
+                    npt.assert_almost_equal(
+                        sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["q"][0][10],
+                        0.029312343780174756,
+                    )
+                    npt.assert_almost_equal(
+                        sol.decision_controls(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["tau"][0][10],
+                        0.4773666763760592,
+                    )
+                    npt.assert_almost_equal(
+                        sol.decision_controls(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["tau"][0][20],
+                        0.40384124674585303,
+                    )
+                    npt.assert_almost_equal(sol.decision_time()[0][-1], 1.0)
+                    npt.assert_almost_equal(
+                        sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["q"][1][10],
+                        -0.03076974549056092,
+                    )
+                    npt.assert_almost_equal(
+                        sol.decision_controls(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["tau"][1][10], 0.0
+                    )
+                    npt.assert_almost_equal(
+                        sol.decision_controls(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])["tau"][1][20], 0.0
+                    )
+                    npt.assert_almost_equal(sol.decision_time()[1][-1], 2.0)
+            elif control_type is ControlType.LINEAR_CONTINUOUS:
                 if n_phase == 1:
                     npt.assert_almost_equal(np.array(sol.cost), np.array([[322.05408485]]))
                     npt.assert_almost_equal(
