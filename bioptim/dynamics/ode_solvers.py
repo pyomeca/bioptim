@@ -52,6 +52,7 @@ class OdeSolver:
     class VARIATIONAL(RK):
         """
         This is a fake enum to be able to use the variational integrator.
+        TODO: The implementation of the variational integrator could be moved here (see issue #962).
         """
 
         @property
