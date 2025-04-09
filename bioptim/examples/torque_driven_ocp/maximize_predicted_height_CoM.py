@@ -26,6 +26,7 @@ from bioptim import (
     Node,
     Solver,
     PhaseDynamics,
+    ContactType,
 )
 
 
@@ -96,15 +97,15 @@ def prepare_ocp(
     if use_actuators:
         dynamics.add(
             DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
+            contact_type=[ContactType.RIGID_EXPLICIT],
             ode_solver=ode_solver,
-            with_contact=True,
             expand_dynamics=expand_dynamics,
             phase_dynamics=phase_dynamics,
         )
     else:
         dynamics.add(
             DynamicsFcn.TORQUE_DRIVEN,
-            with_contact=True,
+            contact_type=[ContactType.RIGID_EXPLICIT],
             ode_solver=ode_solver,
             expand_dynamics=expand_dynamics,
             phase_dynamics=phase_dynamics,

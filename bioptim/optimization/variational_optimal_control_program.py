@@ -14,7 +14,7 @@ from ..limits.multinode_constraint import MultinodeConstraintList
 from ..limits.objective_functions import ParameterObjectiveList
 from ..limits.path_conditions import BoundsList, InitialGuessList
 from ..limits.penalty_controller import PenaltyController
-from ..misc.enums import ControlType
+from ..misc.enums import ControlType, ContactType
 from ..models.biorbd.variational_biorbd_model import VariationalBiorbdModel
 from ..models.protocols.variational_biomodel import VariationalBioModel
 from ..optimization.non_linear_program import NonLinearProgram
@@ -336,7 +336,11 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             nlp.implicit_dynamics_func_last_node = nlp.implicit_dynamics_func_last_node.expand()
 
     def configure_torque_driven(
-        self, ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None
+        self,
+        ocp: OptimalControlProgram,
+        nlp: NonLinearProgram,
+        numerical_data_timeseries=None,
+        contact_type: list[ContactType] | tuple[ContactType] = (),
     ):
         """
         Configure the problem to be torque driven for the variational integrator.
@@ -349,6 +353,10 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             A reference to the ocp.
         nlp: NonLinearProgram
             A reference to the phase.
+        numerical_data_timeseries: dict[str, np.ndarray]
+            A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
+        contact_type: list[ContactType] | tuple[ContactType]
+        The type of contacts to consider in the dynamics.
         """
 
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)

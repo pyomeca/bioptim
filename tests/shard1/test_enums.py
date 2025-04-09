@@ -13,6 +13,7 @@ from bioptim import (
     SolutionIntegrator,
     QuadratureRule,
     SoftContactDynamics,
+    ContactType,
 )
 
 from bioptim.misc.enums import SolverType, PenaltyType, ConstraintType
@@ -167,6 +168,16 @@ def test_defect_type():
 
     # verify the number of elements
     assert len(DefectType) == 3
+
+
+def test_contact_type():
+    assert ContactType.RIGID_EXPLICIT.value == "rigid_explicit"
+    assert ContactType.RIGID_IMPLICIT.value == "rigid_implicit"
+    assert ContactType.SOFT_EXPLICIT.value == "soft_explicit"
+    assert ContactType.SOFT_IMPLICIT.value == "soft_implicit"
+
+    # verify the number of elements
+    assert len(ContactType) == 4
 
 
 def test_magnitude_type():

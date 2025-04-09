@@ -31,6 +31,7 @@ from bioptim import (
     OdeSolverBase,
     Solver,
     PhaseDynamics,
+    ContactType,
 )
 
 
@@ -94,8 +95,8 @@ def prepare_ocp(
     dynamics = DynamicsList()
     dynamics.add(
         DynamicsFcn.TORQUE_DRIVEN,
+        contact_type=[ContactType.RIGID_EXPLICIT],
         ode_solver=ode_solver,
-        with_contact=True,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
     )
@@ -103,14 +104,14 @@ def prepare_ocp(
     # Constraints
     constraints = ConstraintList()
     constraints.add(
-        ConstraintFcn.TRACK_CONTACT_FORCES,
+        ConstraintFcn.TRACK_EXPLICIT_RIGID_CONTACT_FORCES,
         min_bound=min_bound,
         max_bound=max_bound,
         node=Node.ALL_SHOOTING,
         contact_index=1,
     )
     constraints.add(
-        ConstraintFcn.TRACK_CONTACT_FORCES,
+        ConstraintFcn.TRACK_EXPLICIT_RIGID_CONTACT_FORCES,
         min_bound=min_bound,
         max_bound=max_bound,
         node=Node.ALL_SHOOTING,
