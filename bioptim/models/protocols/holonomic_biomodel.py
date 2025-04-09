@@ -6,14 +6,19 @@ from .biomodel import BioModel
 from ..holonomic_constraints import HolonomicConstraintsList
 from ..utils import cache_function
 
+from ...misc.parameters_types import (
+    Int,
+    AnyList,
+)
+
 
 class HolonomicBioModel(BioModel, Protocol):
 
     def set_holonomic_configuration(
         self,
         constraints_list: HolonomicConstraintsList,
-        dependent_joint_index: list = None,
-        independent_joint_index: list = None,
+        dependent_joint_index: AnyList = None,
+        independent_joint_index: AnyList = None,
     ):
         """
         Set the holonomic constraints of the model and if necessary the partitioned dynamics.
@@ -31,7 +36,7 @@ class HolonomicBioModel(BioModel, Protocol):
         """
 
     @property
-    def nb_independent_joints(self) -> int:
+    def nb_independent_joints(self) -> Int:
         """
         Get the number of independent joints
 
@@ -43,7 +48,7 @@ class HolonomicBioModel(BioModel, Protocol):
         return -1
 
     @property
-    def nb_dependent_joints(self) -> int:
+    def nb_dependent_joints(self) -> Int:
         """
         Get the number of dependent joints
 
@@ -55,7 +60,7 @@ class HolonomicBioModel(BioModel, Protocol):
         return -1
 
     @property
-    def dependent_joint_index(self) -> list:
+    def dependent_joint_index(self) -> AnyList:
         """
         Get the index of the dependent joints
 
@@ -67,7 +72,7 @@ class HolonomicBioModel(BioModel, Protocol):
         return []
 
     @property
-    def independent_joint_index(self) -> list:
+    def independent_joint_index(self) -> AnyList:
         """
         Get the index of the independent joints
 
@@ -110,7 +115,7 @@ class HolonomicBioModel(BioModel, Protocol):
         return False
 
     @property
-    def nb_holonomic_constraints(self) -> int:
+    def nb_holonomic_constraints(self) -> Int:
         """
         Get the number of holonomic constraints
 
