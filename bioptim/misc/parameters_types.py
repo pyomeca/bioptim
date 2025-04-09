@@ -27,6 +27,8 @@ IntList: TypeAlias = list[int]
 StrList: TypeAlias = list[str]
 MXList: TypeAlias = list[MX]
 NpArray: TypeAlias = np.ndarray
+NpArrayOrFloat: TypeAlias = np.ndarray | float
+NpArrayOrFloatOptional: TypeAlias = np.ndarray | float | None
 FloatIterableOrNpArray: TypeAlias = list[float] | tuple[float, ...] | np.ndarray
 IntIterableOrNpArray: TypeAlias = list[int] | tuple[int, ...] | range | np.ndarray
 IntIterableOrNpArrayOrInt: TypeAlias = int | IntIterableOrNpArray
@@ -51,6 +53,8 @@ StrTuple: TypeAlias = tuple[str, ...]
 
 IntStrOrIterable: TypeAlias = int | str | AnyIterable
 
+MXorSX: TypeAlias = MX | SX
+MXorSXOptional: TypeAlias = MX | SX | None
 CXOrDM: TypeAlias = MX | SX | DM | float
 CXOrDMOrFloatIterable: TypeAlias = FloatIterableOrNpArray | MX | SX | DM
 CXOrDMOrNpArray: TypeAlias = np.ndarray | MX | SX | DM

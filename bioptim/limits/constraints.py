@@ -10,6 +10,17 @@ from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
 
+from ..misc.parameters_types import (
+    Bool,
+    Int,
+    Str,
+    Float,
+    AnyDict,
+    FloatOptional,
+    NpArrayOrFloatOptional,
+    MXorSX,
+)
+
 
 class Constraint(PenaltyOption):
     """
@@ -26,11 +37,11 @@ class Constraint(PenaltyOption):
     def __init__(
         self,
         constraint: Any,
-        min_bound: np.ndarray | float = None,
-        max_bound: np.ndarray | float = None,
-        quadratic: bool = False,
-        phase: int = -1,
-        is_stochastic: bool = False,
+        min_bound: NpArrayOrFloatOptional = None,
+        max_bound: NpArrayOrFloatOptional = None,
+        quadratic: Bool = False,
+        phase: Int = -1,
+        is_stochastic: Bool = False,
         **extra_parameters: Any,
     ):
         """
@@ -73,7 +84,7 @@ class Constraint(PenaltyOption):
         self.max_bound = max_bound
         self.bounds = Bounds("constraints", interpolation=InterpolationType.CONSTANT)
 
-    def set_penalty(self, penalty: MX | SX, controller: PenaltyController):
+    def set_penalty(self, penalty: MXorSX, controller: PenaltyController):
         super(Constraint, self).set_penalty(penalty, controller)
         self.min_bound = 0 if self.min_bound is None else self.min_bound
         self.max_bound = 0 if self.max_bound is None else self.max_bound
@@ -215,9 +226,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         def non_slipping(
             constraint: Constraint,
             controller: PenaltyController,
-            tangential_component_idx: int,
-            normal_component_idx: int,
-            static_friction_coefficient: float,
+            tangential_component_idx: Int,
+            normal_component_idx: Int,
+            static_friction_coefficient: Float,
         ):
             """
             Add a constraint of static friction at contact points constraining for small tangential forces.
@@ -283,7 +294,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         def torque_max_from_q_and_qdot(
             constraint: Constraint,
             controller: PenaltyController,
-            min_torque=None,
+            min_torque: FloatOptional=None,
         ):
             """
             Nonlinear maximal values of joint torques computed from the torque-position-velocity relationship
@@ -341,7 +352,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         def bound_state(
             _: Constraint,
             controller: PenaltyController,
-            key: str,
+            key: Str,
         ):
             """
             Bound the state according to key
@@ -361,7 +372,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         def bound_control(
             _: Constraint,
             controller: PenaltyController,
-            key: str,
+            key: Str,
         ):
             """
             Bound the control according to key
@@ -381,10 +392,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         def qddot_equals_forward_dynamics(
             _: Constraint,
             controller: PenaltyController,
-            with_contact: bool,
-            with_passive_torque: bool,
-            with_ligament: bool,
-            **unused_param,
+            with_contact: Bool,
+            with_passive_torque: Bool,
+            with_ligament: Bool,
+            **unused_param: AnyDict,
         ):
             """
             Compute the difference between symbolic joint accelerations and forward dynamic results
@@ -428,10 +439,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         def tau_equals_inverse_dynamics(
             _: Constraint,
             controller: PenaltyController,
-            with_contact: bool,
-            with_passive_torque: bool,
-            with_ligament: bool,
-            **unused_param,
+            with_contact: Bool,
+            with_passive_torque: Bool,
+            with_ligament: Bool,
+            **unused_param: AnyDict,
         ):
             """
             Compute the difference between symbolic joint torques and inverse dynamic results
@@ -489,7 +500,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
         @staticmethod
         def implicit_marker_acceleration(
-            _: Constraint, controller: PenaltyController, contact_index: int, contact_axis: int, **unused_param
+            _: Constraint, controller: PenaltyController, contact_index: Int, contact_axis: Int, **unused_param: AnyDict
         ):
             """
             Compute the acceleration of the contact node to set it at zero
@@ -517,7 +528,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
         @staticmethod
         def tau_from_muscle_equal_inverse_dynamics(
-            _: Constraint, controller: PenaltyController, with_passive_torque: bool, with_ligament: bool, **unused_param
+            _: Constraint, controller: PenaltyController, with_passive_torque: Bool, with_ligament: Bool, **unused_param: AnyDict
         ):
             """
             Compute the difference between symbolic joint torques from muscle and inverse dynamic results
@@ -570,7 +581,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return tau_id - muscle_tau
 
         @staticmethod
-        def implicit_soft_contact_forces(_: Constraint, controller: PenaltyController, **unused_param):
+        def implicit_soft_contact_forces(_: Constraint, controller: PenaltyController, **unused_param: AnyDict):
             """
             Compute the difference between symbolic soft contact forces and actual force contact dynamic
 
@@ -869,7 +880,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         def semidefinite_positive_matrix(
             penalty: Constraint,
             controller: PenaltyController,
-            key: str,
+            key: Str,
         ):
             """
             This function constrains a matrix to be semi-definite positive.
@@ -1025,7 +1036,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         return 1
 
     @staticmethod
-    def penalty_nature() -> str:
+    def penalty_nature() -> Str:
         return "constraints"
 
 
@@ -1138,9 +1149,9 @@ class ParameterConstraint(PenaltyOption):
     def __init__(
         self,
         parameter_constraint: Any,
-        min_bound: np.ndarray | float = None,
-        max_bound: np.ndarray | float = None,
-        quadratic: bool = False,
+        min_bound: NpArrayOrFloatOptional = None,
+        max_bound: NpArrayOrFloatOptional = None,
+        quadratic: Bool = False,
         **extra_parameters: Any,
     ):
         """
@@ -1174,7 +1185,7 @@ class ParameterConstraint(PenaltyOption):
         # TODO Benjamin Check .name
         self.bounds = Bounds(parameter_constraint.name, interpolation=InterpolationType.CONSTANT)
 
-    def set_penalty(self, penalty: MX | SX, controller: PenaltyController):
+    def set_penalty(self, penalty: MXorSX, controller: PenaltyController):
         super(ParameterConstraint, self).set_penalty(penalty, controller)
         self.min_bound = 0 if self.min_bound is None else self.min_bound
         self.max_bound = 0 if self.max_bound is None else self.max_bound
