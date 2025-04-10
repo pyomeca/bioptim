@@ -68,7 +68,8 @@ class MultinodePenalty(PenaltyOption):
         if len(nodes) != len(nodes_phase):
             raise ValueError("Each of the nodes must have a corresponding nodes_phase")
 
-        self.multinode_penalty = True
+        self.is_multinode_penalty = True
+        self.is_transition = False
 
         self.nodes_phase = nodes_phase
         self.nodes = nodes
@@ -247,6 +248,41 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 out += algebraic_states_i - algebraic_states_0
 
             return out
+
+
+        @staticmethod
+        def algebraic_states_continuity(
+            penalty,
+            controllers: list[PenaltyController],
+            key: str = "all",
+        ):
+            """
+            Continuity function, that is the algebraic states before algebraic states after
+
+            Parameters
+            ----------
+            penalty : MultinodePenalty
+                A reference to the penalty
+            controllers: list
+                The penalty node elements
+            key: str
+                The key of the algebraic states to be used
+
+            Returns
+            -------
+            The difference between the algebraic states at the end of the interval and the algebraic states at the beginning of the next interval.
+            """
+
+            MultinodePenaltyFunctions.Functions._prepare_controller_cx(penalty, controllers)
+
+            if len(controllers) != 2:
+                raise RuntimeError("This continuity function is only valid for 2 nodes")
+
+            algebraic_states_end_interval = controllers[0].algebraic_states[key].cx_intermediates_list[-1]
+            algebraic_states_next_interval = controllers[1].algebraic_states[key].cx_start
+
+            return algebraic_states_next_interval - algebraic_states_end_interval
+
 
         @staticmethod
         def com_equality(penalty, controllers: list[PenaltyController]):
