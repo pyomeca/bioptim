@@ -668,31 +668,17 @@ class COLLOCATION(Integrator):
                 states[0:1] + states[2:], self._integration_time[j]
             )
 
-            if self.defects_type == DefectType.EXPLICIT:
-                f_j = self.fun(
+            defects.append(
+                self.implicit_fun(
                     t,
-                    states[j + 1],
+                    states[j + 1],  # +1 instead of 0 since the first subnode is duplicated
                     self.get_u(controls, self._integration_time[j]),
                     params,
-                    algebraic_states[j + 1],
+                    algebraic_states[j + 1],  # +1 instead of 0 since the first subnode is duplicated
                     numerical_timeseries,
-                )[:, self.ode_idx]
-                defects.append(xp_j - f_j * self.h)
-
-            elif self.defects_type == DefectType.IMPLICIT:
-                defects.append(
-                    self.implicit_fun(
-                        t,
-                        states[j + 1],
-                        self.get_u(controls, self._integration_time[j]),
-                        params,
-                        algebraic_states[j + 1],
-                        numerical_timeseries,
-                        xp_j / self.h,
-                    )
+                    xp_j / self.h,
                 )
-            else:
-                raise ValueError("Unknown defects type. Please use 'explicit' or 'implicit'")
+            )
 
         # Concatenate constraints
         defects = vertcat(*defects)

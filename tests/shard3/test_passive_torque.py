@@ -29,7 +29,6 @@ class OptimalControlProgram:
         parameters_list = ParameterList(use_sx=use_sx)
         self.parameters = ParameterContainer(use_sx=use_sx)
         self.parameters.initialize(parameters_list)
-        self.implicit_constraints = ConstraintList()
         self.n_threads = 1
 
 

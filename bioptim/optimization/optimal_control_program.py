@@ -436,8 +436,6 @@ class OptimalControlProgram:
         elif not isinstance(objective_functions, ObjectiveList):
             raise RuntimeError("objective_functions should be built from an Objective or ObjectiveList")
 
-        self.implicit_constraints = ConstraintList()
-
         if constraints is None:
             constraints = ConstraintList()
         elif isinstance(constraints, Constraint):

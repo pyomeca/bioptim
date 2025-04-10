@@ -122,7 +122,7 @@ class OdeSolver:
         method : str
             The method of interpolation ("legendre" or "radau")
         _defects_type: DefectType
-            The type of defect to use (DefectType.EXPLICIT or DefectType.IMPLICIT)
+            The type of defect to use
         duplicate_starting_point: bool
             Whether an additional collocation point should be added at the shooting node (this is typically used in SOCPs)
         """
@@ -131,7 +131,7 @@ class OdeSolver:
             self,
             polynomial_degree: int = 4,
             method: str = "legendre",
-            defects_type: DefectType = DefectType.EXPLICIT,
+            defects_type: DefectType = DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS,
             **kwargs,
         ):
             """

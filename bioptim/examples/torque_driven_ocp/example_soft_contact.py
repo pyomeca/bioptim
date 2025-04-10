@@ -23,11 +23,11 @@ from bioptim import (
     Solver,
     Shooting,
     Solution,
-    SoftContactDynamics,
     SolutionIntegrator,
     PhaseDynamics,
     SolutionMerge,
     ContactType,
+    ExternalForceSetVariables,
 )
 
 
@@ -47,12 +47,15 @@ def prepare_single_shooting(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    # Indicate to the model creator that there will be two rigid contacts in the form of optimization variables
+    external_force_set = ExternalForceSetVariables()
+    external_force_set.add(force_name="contact1", segment="point", use_point_of_application=True)
+
+    bio_model = BiorbdModel(biorbd_model_path, external_force_set=external_force_set)
 
     # Dynamics
     dynamics = Dynamics(
         DynamicsFcn.TORQUE_DRIVEN,
-        soft_contacts_dynamics=SoftContactDynamics.ODE,
         contact_type=[ContactType.SOFT_EXPLICIT],
         ode_solver=ode_solver,
     )
@@ -122,10 +125,13 @@ def prepare_ocp(
     -------
     The OptimalControlProgram ready to be solved
     """
-    bio_model = BiorbdModel(biorbd_model_path)
+    # Indicate to the model creator that there will be two rigid contacts in the form of optimization variables
+    external_force_set = ExternalForceSetVariables()
+    external_force_set.add(force_name="contact1", segment="point", use_point_of_application=True)
+
+    bio_model = BiorbdModel(biorbd_model_path, external_force_set=external_force_set)
 
     # Problem parameters
-
     tau_min, tau_max = -100, 100
 
     # Add objective functions
@@ -151,7 +157,6 @@ def prepare_ocp(
     # Dynamics
     dynamics = Dynamics(
         DynamicsFcn.TORQUE_DRIVEN,
-        soft_contacts_dynamics=SoftContactDynamics.ODE,
         contact_type=[ContactType.SOFT_EXPLICIT],
         ode_solver=ode_solver,
         phase_dynamics=phase_dynamics,
