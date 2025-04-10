@@ -1,9 +1,8 @@
 from typing import Callable
 
-from casadi import MX, SX, integrator as casadi_integrator, horzcat, Function, vertcat
+from casadi import MX, vertcat
 
-from . import integrator
-from ..misc.enums import ControlType, DefectType, PhaseDynamics
+from ..misc.enums import DefectType, PhaseDynamics
 
 
 class OdeSolverBase:

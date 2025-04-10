@@ -1539,7 +1539,10 @@ def test_custom_model():
 
 
 @pytest.mark.parametrize(
-    "defect_type", [DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS, DefectType.TAU_EQUALS_INVERSE_DYNAMICS]
+    "defect_type", [
+        [DefectType.QDOT_EQUALS_POLYNOMIAL_SLOPE, DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS],
+        [DefectType.QDOT_EQUALS_POLYNOMIAL_SLOPE, DefectType.TAU_EQUALS_INVERSE_DYNAMICS]
+    ]
 )
 @pytest.mark.parametrize("contact_type", [[ContactType.RIGID_EXPLICIT], [ContactType.RIGID_IMPLICIT]])
 def test_contact_forces_inverse_dynamics_constraint_muscle(defect_type, contact_type):
@@ -1549,7 +1552,7 @@ def test_contact_forces_inverse_dynamics_constraint_muscle(defect_type, contact_
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
-    if defect_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS and ContactType.RIGID_EXPLICIT in contact_type:
+    if DefectType.TAU_EQUALS_INVERSE_DYNAMICS in defect_type and ContactType.RIGID_EXPLICIT in contact_type:
         with pytest.raises(
             NotImplementedError, match="Inverse dynamics, cannot be used with ContactType.RIGID_EXPLICIT yet"
         ):

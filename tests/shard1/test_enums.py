@@ -153,12 +153,15 @@ def test_quadrature_rule():
 
 
 def test_defect_type():
-    assert DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS.value == "qddot_equals_forward_dynamics"
-    assert DefectType.TAU_EQUALS_INVERSE_DYNAMICS.value == "tau_equals_inverse_dynamics"
-    assert DefectType.NOT_APPLICABLE.value == "not_applicable"
+    assert DefectType.QDOT_EQUALS_POLYNOMIAL_SLOPE.value == "QDOT_EQUALS_POLYNOMIAL_SLOPE".lower()
+    assert DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS.value == "QDDOT_EQUALS_FORWARD_DYNAMICS".lower()
+    assert DefectType.TAU_EQUALS_INVERSE_DYNAMICS.value == "TAU_EQUALS_INVERSE_DYNAMICS".lower()
+    assert DefectType.CONTACT_ACCELERATION_EQUALS_ZERO.value == "CONTACT_ACCELERATION_EQUALS_ZERO".lower()
+    assert DefectType.SOFT_CONTACT_FORCES_EQUALS_LAGRANGE_MULTIPLIERS.value == "SOFT_CONTACT_FORCES_EQUALS_LAGRANGE_MULTIPLIERS".lower()
+    assert DefectType.ROOT_RESIDUAL_TORQUES_EQUALS_ZERO.value == "ROOT_RESIDUAL_TORQUES_EQUALS_ZERO".lower()
 
     # verify the number of elements
-    assert len(DefectType) == 3
+    assert len(DefectType) == 6
 
 
 def test_contact_type():

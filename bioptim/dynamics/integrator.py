@@ -2,7 +2,7 @@ import numpy as np
 from casadi import Function, vertcat, horzcat, collocation_points, rootfinder, DM, MX, SX, linspace
 
 from .lagrange_interpolation import LagrangeInterpolation
-from ..misc.enums import ControlType, DefectType
+from ..misc.enums import ControlType
 from ..models.protocols.biomodel import BioModel
 
 

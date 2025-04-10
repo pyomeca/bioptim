@@ -2127,6 +2127,14 @@ def _check_contacts_in_biomodel(contact_type: list[ContactType] | tuple[ContactT
             f"No soft contact defined in the .bioMod of phase {phase_idx}, consider changing the ContactType."
         )
 
+    # Check that contacts are a list or tuple of ContactType
+    if not isinstance(contact_type, (list, tuple)):
+        raise TypeError("contact_type should be a list or a tuple")
+    for elt in contact_type:
+        if not isinstance(elt, ContactType):
+            raise TypeError(f"contact_type should be a list or a tuple of ContactType, not {type(elt)}")
+
     # Check that contact types are not declared at the same time
     if len(contact_type) > 1:
         raise NotImplementedError("It is not possible to use multiple ContactType at the same time yet.")
+

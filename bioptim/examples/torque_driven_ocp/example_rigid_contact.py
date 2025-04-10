@@ -164,7 +164,7 @@ def main():
     biorbd_model_path = "../torque_driven_ocp/models/3segments_4dof_1contact.bioMod"
     n_shooting = 30
     final_time = 1
-    defect_type = DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS
+    defect_type = [DefectType.QDOT_EQUALS_POLYNOMIAL_SLOPE, DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS]
     ode_solver = OdeSolver.COLLOCATION(polynomial_degree=5, defects_type=defect_type)
     contact_type = [ContactType.RIGID_IMPLICIT]
 
