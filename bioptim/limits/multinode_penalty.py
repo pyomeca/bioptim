@@ -249,7 +249,6 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             return out
 
-
         @staticmethod
         def algebraic_states_continuity(
             penalty,
@@ -282,7 +281,6 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             algebraic_states_next_interval = controllers[1].algebraic_states[key].cx_start
 
             return algebraic_states_next_interval - algebraic_states_end_interval
-
 
         @staticmethod
         def com_equality(penalty, controllers: list[PenaltyController]):
