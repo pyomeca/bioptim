@@ -156,18 +156,21 @@ class DynamicsFunctions:
 
         defects = None
         if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
+
             slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
-            slope = vertcat(
-                nlp.states["q"].mapping.to_first.map(slope_q), nlp.states["qdot"].mapping.to_first.map(slope_qdot)
-            )
+            defects = nlp.cx()
 
-            if nlp.dynamics_type.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
+            if DefectType.QDOT_EQUALS_POLYNOMIAL_SLOPE in nlp.dynamics_type.ode_solver.defects_type:
+                q_defects = slope_q * nlp.dt - dq * nlp.dt
+                defects = vertcat(defects, q_defects)
+
+            if DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS in nlp.dynamics_type.ode_solver.defects_type:
                 ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, contact_type, external_forces)
-                derivative = vertcat(dq, ddq)
-                defects = slope * nlp.dt - derivative * nlp.dt
+                qdot_defects = slope_qdot * nlp.dt - ddq * nlp.dt
+                defects = vertcat(defects, qdot_defects)
 
-            elif nlp.dynamics_type.ode_solver.defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
+            if DefectType.TAU_EQUALS_INVERSE_DYNAMICS in nlp.dynamics_type.ode_solver.defects_type:
 
                 tau_id = DynamicsFunctions.inverse_dynamics(
                     nlp,
@@ -178,24 +181,32 @@ class DynamicsFunctions:
                     external_forces=external_forces,
                 )
 
-                dq_defects = qdot - DynamicsFunctions.compute_qdot(nlp, q, slope_q)
                 tau_defects = tau - tau_id
-                defects = vertcat(dq_defects, tau_defects)
+                defects = vertcat(defects, tau_defects)
 
-            else:
-                raise NotImplementedError(
-                    f"The defect type {nlp.dynamics_type.ode_solver.defects_type} is not implemented yet for torque driven dynamics."
-                )
+            # Option A
+            if ContactType.RIGID_IMPLICIT not in contact_type:
+                if DefectType.CONTACT_ACCELERATION_EQUALS_ZERO in nlp.dynamics_type.ode_solver.defects_type:
+                    rigid_contact_defect = "TODO"
+                    defects = vertcat(defects, rigid_contact_defect)
 
-            if ContactType.RIGID_IMPLICIT in contact_type:
-                # TODO: Charbie -> implicit configuration to get the marker jacobian
-                rigid_contact_defect = "TODO"
-                defects = vertcat(defects, rigid_contact_defect)
-
+            # Option A
             if ContactType.SOFT_IMPLICIT in contact_type:
                 soft_contact_defect = (
                     nlp.model.soft_contact_forces()(q, qdot, nlp.parameters.cx)
                     - nlp.algebraic_states["soft_contact_forces"].cx
+                )
+                defects = vertcat(defects, soft_contact_defect)
+
+            # Option B
+            if DefectType.SOFT_CONTACT_FORCES_EQUALS_LAGRANGE_MULTIPLIERS in nlp.dynamics_type.ode_solver.defects_type:
+
+                if ContactType.SOFT_IMPLICIT not in contact_type:
+                    raise RuntimeError("The defect type SOFT_CONTACT_FORCES_EQUALS_LAGRANGE_MULTIPLIERS is only available for ContactType.SOFT_IMPLICIT.")
+
+                soft_contact_defect = (
+                        nlp.model.soft_contact_forces()(q, qdot, nlp.parameters.cx)
+                        - nlp.algebraic_states["soft_contact_forces"].cx
                 )
                 defects = vertcat(defects, soft_contact_defect)
 
@@ -280,7 +291,7 @@ class DynamicsFunctions:
         if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
             slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
-            if nlp.dynamics_type.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
+            if DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS in nlp.dynamics_type.ode_solver.defects_type:
                 defects = vertcat(slope_q, slope_qdot) * nlp.dt - dxdt * nlp.dt
             else:
                 raise NotImplementedError(
@@ -367,7 +378,7 @@ class DynamicsFunctions:
         if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
             slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
-            if nlp.dynamics_type.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
+            if DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS in nlp.dynamics_type.ode_solver.defects_type:
                 defects = vertcat(slope_q, slope_qdot) * nlp.dt - dxdt * nlp.dt
             else:
                 raise NotImplementedError(
@@ -451,7 +462,7 @@ class DynamicsFunctions:
         if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
             slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
-            if nlp.dynamics_type.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
+            if DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS in nlp.dynamics_type.ode_solver.defects_type:
                 defects = vertcat(slope_q, slope_qdot) * nlp.dt - dxdt * nlp.dt
             else:
                 raise NotImplementedError(
@@ -588,7 +599,7 @@ class DynamicsFunctions:
         if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
             slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
-            if nlp.dynamics_type.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
+            if DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS in nlp.dynamics_type.ode_solver.defects_type:
                 ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, contact_type, external_forces)
                 derivative = vertcat(dq, ddq)
                 defects = vertcat(slope_q, slope_qdot) * nlp.dt - derivative * nlp.dt
@@ -678,11 +689,11 @@ class DynamicsFunctions:
                 nlp.states["tau"].mapping.to_first.map(slope_tau),
             )
 
-            if nlp.dynamics_type.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
+            if DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS in nlp.dynamics_type.ode_solver.defects_type:
                 ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, contact_type, external_forces)
                 derivative = vertcat(vertcat(dq, ddq), taudot)
                 defects = slope * nlp.dt - derivative * nlp.dt
-            elif nlp.dynamics_type.ode_solver.defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
+            elif DefectType.TAU_EQUALS_INVERSE_DYNAMICS in nlp.dynamics_type.ode_solver.defects_type:
 
                 tau_id = DynamicsFunctions.inverse_dynamics(
                     nlp,
@@ -946,7 +957,7 @@ class DynamicsFunctions:
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
             slopes = vertcat(slope_q, slope_qdot)
 
-            if nlp.dynamics_type.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
+            if DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS in nlp.dynamics_type.ode_solver.defects_type:
                 ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, contact_type, external_forces)
                 derivative = vertcat(dq, ddq)
 
@@ -964,7 +975,7 @@ class DynamicsFunctions:
 
                 defects = slopes * nlp.dt - derivative * nlp.dt
 
-            elif nlp.dynamics_type.ode_solver.defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
+            elif DefectType.TAU_EQUALS_INVERSE_DYNAMICS in nlp.dynamics_type.ode_solver.defects_type:
 
                 tau_id = DynamicsFunctions.inverse_dynamics(
                     nlp,
@@ -1101,7 +1112,7 @@ class DynamicsFunctions:
         if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
             slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
-            if nlp.dynamics_type.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
+            if DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS in nlp.dynamics_type.ode_solver.defects_type:
                 defects = vertcat(slope_q, slope_qdot) * nlp.dt - dxdt * nlp.dt
             else:
                 raise NotImplementedError(
@@ -1409,7 +1420,7 @@ class DynamicsFunctions:
         if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
             slope_q = DynamicsFunctions.get(nlp.states_dot["qdot_u"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot_u"], nlp.states_dot.scaled.cx)
-            if nlp.dynamics_type.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
+            if DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS in nlp.dynamics_type.ode_solver.defects_type:
                 qddot_u = nlp.model.partitioned_forward_dynamics()(q_u, qdot_u, q_v_init, tau)
                 derivative = vertcat(qdot_u, qddot_u)
                 defects = vertcat(slope_q, slope_qdot) * nlp.dt - derivative * nlp.dt
