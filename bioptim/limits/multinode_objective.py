@@ -6,8 +6,14 @@ from .multinode_penalty import MultinodePenalty, MultinodePenaltyList, Multinode
 from .objective_functions import ObjectiveFunction
 
 
+from ..misc.parameters_types import (
+    Bool,
+    Float,
+)
+
+
 class MultinodeObjective(MultinodePenalty):
-    def __init__(self, *args, weight: float = 0, is_stochastic: bool = False, **kwargs):
+    def __init__(self, *args, weight: Float = 0, is_stochastic: Bool = False, **kwargs):
         super(MultinodeObjective, self).__init__(MultinodeObjectiveFcn, *args, **kwargs)
 
         self.weight = weight if weight is not None else 0

@@ -9,6 +9,10 @@ from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
 
 
+from ..misc.parameters_types import (
+    Bool
+)
+
 class PenaltyController:
     """
     A placeholder for the required elements to compute a penalty (all time)

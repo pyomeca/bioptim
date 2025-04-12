@@ -11,6 +11,8 @@ Bool: TypeAlias = bool
 Bytes: TypeAlias = bytes
 
 AnyIterable: TypeAlias = list[Any] | tuple[Any, ...]
+AnyIterableOrSlice: TypeAlias = slice | list | tuple
+AnyIterableOrSliceOptional: TypeAlias = slice | list | tuple | None
 IntIterable: TypeAlias = list[int] | tuple[int, ...]
 StrIterable: TypeAlias = list[str] | tuple[str, ...]
 
@@ -24,6 +26,7 @@ AnyListOptional: TypeAlias = list[Any] | None
 
 AnyList: TypeAlias = list[Any]
 IntList: TypeAlias = list[int]
+FloatList: TypeAlias = list[float]
 StrList: TypeAlias = list[str]
 MXList: TypeAlias = list[MX]
 NpArray: TypeAlias = np.ndarray

@@ -7,6 +7,14 @@ from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
 
 
+from ..misc.parameters_types import (
+    Bool,
+    Int,
+    Str,
+    FloatOptional,
+    AnyDict,
+)
+
 class Objective(PenaltyOption):
     """
     A placeholder for an objective function
@@ -16,9 +24,9 @@ class Objective(PenaltyOption):
         self,
         objective: Any,
         custom_type: Any = None,
-        phase: int = -1,
-        is_stochastic: bool = False,
-        **extra_parameters: Any,
+        phase: Int = -1,
+        is_stochastic: Bool = False,
+        **extra_parameters: AnyDict,
     ):
         """
         Parameters
@@ -168,7 +176,7 @@ class ObjectiveList(OptionList):
         Print the ObjectiveList to the console
     """
 
-    def add(self, objective: Callable | Objective | Any, **extra_arguments: Any):
+    def add(self, objective: Callable | Objective | Any, **extra_arguments: AnyDict):
         """
         Add a new objective function to the list
 
@@ -229,7 +237,7 @@ class ObjectiveFunction:
             return nlp.dt
 
         @staticmethod
-        def penalty_nature() -> str:
+        def penalty_nature() -> Str:
             return "objective_functions"
 
     class MayerFunction(PenaltyFunctionAbstract):
@@ -246,8 +254,8 @@ class ObjectiveFunction:
             def minimize_time(
                 _: Objective,
                 controller: PenaltyController,
-                min_bound: float = None,
-                max_bound: float = None,
+                min_bound: FloatOptional = None,
+                max_bound: FloatOptional = None,
             ):
                 """
                 Minimizes the duration of the phase
@@ -273,7 +281,7 @@ class ObjectiveFunction:
             return 1
 
         @staticmethod
-        def penalty_nature() -> str:
+        def penalty_nature() -> Str:
             return "objective_functions"
 
     class ParameterFunction(PenaltyFunctionAbstract):
@@ -289,15 +297,15 @@ class ObjectiveFunction:
             pass
 
         @staticmethod
-        def penalty_nature() -> str:
+        def penalty_nature() -> Str:
             return "parameter_objectives"
 
         @staticmethod
-        def get_dt(nlp) -> int:
+        def get_dt(nlp) -> Int:
             return 1
 
     @staticmethod
-    def update_target(ocp_or_nlp: Any, list_index: int, new_target: Any):
+    def update_target(ocp_or_nlp: Any, list_index: Int, new_target: Any):
         """
         Update a specific target
 
@@ -483,7 +491,7 @@ class ParameterObjective(PenaltyOption):
     A placeholder for an objective function
     """
 
-    def __init__(self, parameter_objective: Any, custom_type: Any = None, **extra_parameters: Any):
+    def __init__(self, parameter_objective: Any, custom_type: Any = None, **extra_parameters: AnyDict):
         """
         Parameters
         ----------
@@ -581,7 +589,7 @@ class ParameterObjectiveList(OptionList):
         Print the ParameterObjectiveList to the console
     """
 
-    def add(self, parameter_objective: Callable | ParameterObjective | Any, **extra_arguments: Any):
+    def add(self, parameter_objective: Callable | ParameterObjective | Any, **extra_arguments: AnyDict):
         """
         Add a new parameter objective function to the list
 
