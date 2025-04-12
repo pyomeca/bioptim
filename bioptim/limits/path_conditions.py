@@ -66,7 +66,7 @@ class PathCondition(np.ndarray):
     def __new__(
         cls,
         input_array: NpArray | Callable,
-        t: AnyList = None,
+        t: AnyListOptional = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT,
         slice_list: AnyIterableOrSliceOptional = None,
         **extra_params,
