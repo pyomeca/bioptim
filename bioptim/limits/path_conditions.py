@@ -25,6 +25,7 @@ from ..misc.parameters_types import (
     NpArray,
     AnyIterableOrSlice,
     AnyIterableOrSliceOptional,
+    DoubleIntTuple,
 )
 
 
@@ -784,7 +785,7 @@ class InitialGuess(OptionGeneric):
         return len(self.init) > 0
 
     @property
-    def shape(self) -> IntTuple:
+    def shape(self) -> DoubleIntTuple:
         """
         Get the size of the InitialGuess
 
