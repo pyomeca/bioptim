@@ -13,6 +13,14 @@ from ..misc.mapping import BiMapping
 from ..misc.options import UniquePerPhaseOptionList
 
 
+from ..misc.parameters_types import (
+    IntOptional,
+    Float,
+    FloatOptional,
+    AnyDict,
+)
+
+
 class PhaseTransition(MultinodePenalty):
     """
     A placeholder for a transition of state
@@ -41,13 +49,13 @@ class PhaseTransition(MultinodePenalty):
 
     def __init__(
         self,
-        phase_pre_idx: int = None,
+        phase_pre_idx: IntOptional = None,
         transition: Any | Callable = None,
-        weight: float = None,
+        weight: FloatOptional = None,
         custom_function: Callable = None,
-        min_bound: float = 0,
-        max_bound: float = 0,
-        **extra_parameters: Any,
+        min_bound: Float = 0,
+        max_bound: Float = 0,
+        **extra_parameters: AnyDict,
     ):
         if not isinstance(transition, PhaseTransitionFcn):
             custom_function = transition
@@ -99,7 +107,7 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
         Configure all the phase transitions and put them in a list
     """
 
-    def add(self, transition: Any, **extra_arguments: Any):
+    def add(self, transition: Any, **extra_arguments: AnyDict):
         """
         Add a new PhaseTransition to the list
 

@@ -11,6 +11,26 @@ from ..misc.options import OptionGeneric
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
 
 
+from ..misc.parameters_types import (
+    Bool,
+    BoolOptional,
+    Int,
+    IntOptional,
+    Float,
+    Str,
+    AnyDict,
+    AnyList,
+    AnyTuple,
+    IntList,
+    FloatList,
+    NpArray,
+    NpArrayList,
+    AnySequence,
+    AnySequenceOptional,
+    MXorSX,
+)
+
+
 class PenaltyOption(OptionGeneric):
     """
     A placeholder for a penalty
@@ -86,24 +106,24 @@ class PenaltyOption(OptionGeneric):
     def __init__(
         self,
         penalty: Any,
-        phase: int = 0,
-        node: Node | list | tuple = Node.DEFAULT,
-        target: int | float | np.ndarray | list[int] | list[float] | list[np.ndarray] = None,
-        quadratic: bool = None,
-        weight: float = 1,
-        derivative: bool = False,
-        explicit_derivative: bool = False,
-        integrate: bool = False,
+        phase: Int = 0,
+        node: Node | AnyList | AnyTuple = Node.DEFAULT,
+        target: IntOptional | Float | NpArray | IntList | FloatList | NpArrayList = None,
+        quadratic: BoolOptional = None,
+        weight: Float = 1,
+        derivative: Bool = False,
+        explicit_derivative: Bool = False,
+        integrate: Bool = False,
         integration_rule: QuadratureRule = QuadratureRule.DEFAULT,
-        index: list = None,
-        rows: list | tuple | range | np.ndarray = None,
-        cols: list | tuple | range | np.ndarray = None,
+        index: AnyList = None,
+        rows: AnySequenceOptional = None,
+        cols: AnySequenceOptional = None,
         custom_function: Callable = None,
         penalty_type: PenaltyType = PenaltyType.USER,
-        is_stochastic: bool = False,
-        multi_thread: bool = None,
-        expand: bool = False,
-        **extra_parameters: Any,
+        is_stochastic: Bool = False,
+        multi_thread: Bool = None,
+        expand: Bool = False,
+        **extra_parameters: AnyDict,
     ):
         """
         Parameters
@@ -207,9 +227,7 @@ class PenaltyOption(OptionGeneric):
 
         self.multi_thread = multi_thread
 
-    def set_penalty(
-        self, penalty: MX | SX, controllers: PenaltyController | list[PenaltyController, PenaltyController]
-    ):
+    def set_penalty(self, penalty: MXorSX, controllers: PenaltyController | list[PenaltyController, PenaltyController]):
         """
         Prepare the dimension and index of the penalty (including the target)
 
@@ -242,7 +260,7 @@ class PenaltyOption(OptionGeneric):
         self._set_penalty_function(controllers, penalty)
         self._add_penalty_to_pool(controllers)
 
-    def _set_dim_idx(self, dim: list | tuple | range | np.ndarray, n_rows: int):
+    def _set_dim_idx(self, dim: AnySequence, n_rows: Int):
         """
         Checks if the variable index is consistent with the requested variable.
 
@@ -376,7 +394,7 @@ class PenaltyOption(OptionGeneric):
                 )
         self.subnodes_are_decision_states = subnodes_are_decision_states
 
-    def _set_penalty_function(self, controllers: list[PenaltyController], fcn: MX | SX):
+    def _set_penalty_function(self, controllers: list[PenaltyController], fcn: MXorSX):
         """
         Finalize the preparation of the penalty (setting function and weighted_function)
 
@@ -786,11 +804,11 @@ class PenaltyOption(OptionGeneric):
             raise ValueError("The sn_idx should be 0 or -1")
 
     @staticmethod
-    def define_target_mapping(controller: PenaltyController, key: str, rows):
+    def define_target_mapping(controller: PenaltyController, key: Str, rows):
         target_mapping = BiMapping(range(len(controller.get_nlp.variable_mappings[key].to_first.map_idx)), list(rows))
         return target_mapping
 
-    def add_target_to_plot(self, controller: PenaltyController, combine_to: str):
+    def add_target_to_plot(self, controller: PenaltyController, combine_to: Str):
         """
         Interface to the plot so it can be properly added to the proper plot
 

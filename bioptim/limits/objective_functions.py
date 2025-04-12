@@ -15,6 +15,7 @@ from ..misc.parameters_types import (
     AnyDict,
 )
 
+
 class Objective(PenaltyOption):
     """
     A placeholder for an objective function
