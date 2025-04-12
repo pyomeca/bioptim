@@ -10,8 +10,12 @@ from ..optimization.optimization_variable import OptimizationVariableList, Optim
 
 
 from ..misc.parameters_types import (
-    Bool
+    Int,
+    IntOptional,
+    AnyList,
+    MXorSX,
 )
+
 
 class PenaltyController:
     """
@@ -26,16 +30,16 @@ class PenaltyController:
         self,
         ocp,
         nlp: NonLinearProgram,
-        t: list,
-        x: list,
-        u: list,
-        x_scaled: list,
-        u_scaled: list,
-        p: MX | SX | list,
-        a: list,
-        a_scaled: list,
-        d: list,
-        node_index: int = None,
+        t: AnyList,
+        x: AnyList,
+        u: AnyList,
+        x_scaled: AnyList,
+        u_scaled: AnyList,
+        p: MXorSX | AnyList,
+        a: AnyList,
+        a_scaled: AnyList,
+        d: AnyList,
+        node_index: IntOptional = None,
     ):
         """
         Parameters
@@ -97,7 +101,7 @@ class PenaltyController:
         return self._nlp
 
     @property
-    def cx(self) -> MX | SX | Callable:
+    def cx(self) -> MXorSX | Callable:
         return self._nlp.cx
 
     @property
@@ -109,11 +113,11 @@ class PenaltyController:
         return self._nlp.ode_solver
 
     @property
-    def phase_idx(self) -> int:
+    def phase_idx(self) -> Int:
         return self._nlp.phase_idx
 
     @property
-    def ns(self) -> int:
+    def ns(self) -> Int:
         return self._nlp.ns
 
     @property
@@ -385,7 +389,7 @@ class PenaltyController:
         return MX() if type(self._nlp.parameters.scaled) == DM else self._nlp.parameters.scaled
 
     @property
-    def q(self) -> MX | SX:
+    def q(self) -> MXorSX:
         if "q" in self.states:
             return self.states["q"].mapping.to_second.map(self.states["q"].cx)
         elif "q_roots" in self.states and "q_joints" in self.states:
@@ -410,7 +414,7 @@ class PenaltyController:
             raise RuntimeError("q is not defined in the states")
 
     @property
-    def qdot(self) -> MX | SX:
+    def qdot(self) -> MXorSX:
         if "qdot" in self.states:
             return self.states["qdot"].mapping.to_second.map(self.states["qdot"].cx)
         elif "qdot_roots" in self.states and "qdot_joints" in self.states:
@@ -433,14 +437,14 @@ class PenaltyController:
             return qdot.cx
 
     @property
-    def tau(self) -> MX | SX:
+    def tau(self) -> MXorSX:
         if "tau" in self.controls:
             return self.controls["tau"].mapping.to_second.map(self.controls["tau"].cx)
         elif "tau_joints" in self.controls:
             return self.controls["tau_joints"].mapping.to_second.map(self.controls["tau_joints"].cx)
 
     @property
-    def external_forces(self) -> MX | SX:
+    def external_forces(self) -> MXorSX:
         return self._nlp.get_external_forces(
             self.states.cx, self.controls.cx, self.algebraic_states.cx, self.numerical_timeseries.cx
         )
