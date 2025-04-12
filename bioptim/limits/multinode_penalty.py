@@ -12,6 +12,13 @@ from ..misc.mapping import BiMapping
 from ..misc.options import UniquePerPhaseOptionList
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
 
+from ..misc.parameters_types import (
+    Int,
+    Str,
+    IntTuple,
+    AnyDict,
+)
+
 
 class MultinodePenalty(PenaltyOption):
     """
@@ -40,11 +47,11 @@ class MultinodePenalty(PenaltyOption):
     def __init__(
         self,
         _multinode_penalty_fcn: Any | type,
-        nodes: tuple[int | Node, ...],
-        nodes_phase: tuple[int, ...],
+        nodes: tuple[Int | Node, ...],
+        nodes_phase: IntTuple,
         multinode_penalty: Any | Callable = None,
         custom_function: Callable = None,
-        **extra_parameters: Any,
+        **extra_parameters: AnyDict,
     ):
         if not isinstance(multinode_penalty, _multinode_penalty_fcn):
             custom_function = multinode_penalty
@@ -125,7 +132,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
         def states_equality(
             penalty,
             controllers: list[PenaltyController],
-            key: str = "all",
+            key: Str = "all",
             states_mapping: list[BiMapping] = None,
         ):
             """
@@ -171,7 +178,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             return out
 
         @staticmethod
-        def controls_equality(penalty, controllers: list[PenaltyController], key: str = "all"):
+        def controls_equality(penalty, controllers: list[PenaltyController], key: Str = "all"):
             """
             The controls before equals controls after
 
@@ -211,7 +218,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
         def algebraic_states_equality(
             penalty,
             controllers: list[PenaltyController],
-            key: str = "all",
+            key: Str = "all",
         ):
             """
             Continuity function, that is the algebraic states before algebraic states after for algebraic_states ocp
@@ -659,7 +666,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             return out_vector
 
         @staticmethod
-        def custom(penalty, controllers: list[PenaltyController, PenaltyController], **extra_parameters):
+        def custom(penalty, controllers: list[PenaltyController, PenaltyController], **extra_parameters: AnyDict):
             """
             Calls the custom transition function provided by the user
 
@@ -765,7 +772,7 @@ class MultinodePenaltyList(UniquePerPhaseOptionList):
         multinode_penalty: Any,
         option_type: type = None,
         _multinode_penalty_fcn: type | Any = None,
-        **extra_arguments: Any,
+        **extra_arguments: AnyDict,
     ):
         """
         Add a new MultinodePenalty to the list

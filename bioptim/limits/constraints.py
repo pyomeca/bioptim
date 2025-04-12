@@ -294,7 +294,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         def torque_max_from_q_and_qdot(
             constraint: Constraint,
             controller: PenaltyController,
-            min_torque: FloatOptional=None,
+            min_torque: FloatOptional = None,
         ):
             """
             Nonlinear maximal values of joint torques computed from the torque-position-velocity relationship
@@ -528,7 +528,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
         @staticmethod
         def tau_from_muscle_equal_inverse_dynamics(
-            _: Constraint, controller: PenaltyController, with_passive_torque: Bool, with_ligament: Bool, **unused_param: AnyDict
+            _: Constraint,
+            controller: PenaltyController,
+            with_passive_torque: Bool,
+            with_ligament: Bool,
+            **unused_param: AnyDict,
         ):
             """
             Compute the difference between symbolic joint torques from muscle and inverse dynamic results

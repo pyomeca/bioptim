@@ -10,6 +10,24 @@ from ..misc.options import OptionGeneric, OptionDict
 from ..optimization.variable_scaling import VariableScaling
 
 
+from ..misc.parameters_types import (
+    Bool,
+    Int,
+    IntOptional,
+    Float,
+    Str,
+    AnyList,
+    IntList,
+    FloatList,
+    AnyDict,
+    AnyTuple,
+    IntTuple,
+    NpArray,
+    AnyIterableOrSlice,
+    AnyIterableOrSliceOptional,
+)
+
+
 class PathCondition(np.ndarray):
     """
     A matrix for any component (rows) and time (columns) conditions
@@ -46,10 +64,10 @@ class PathCondition(np.ndarray):
 
     def __new__(
         cls,
-        input_array: np.ndarray | Callable,
-        t: list = None,
+        input_array: NpArray | Callable,
+        t: AnyList = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT,
-        slice_list: slice | list | tuple = None,
+        slice_list: AnyIterableOrSliceOptional = None,
         **extra_params,
     ):
         """
@@ -157,10 +175,10 @@ class PathCondition(np.ndarray):
         self.extra_params = getattr(obj, "extra_params", None)
         self.slice_list = getattr(obj, "slice_list", None)
 
-    def __array__(self) -> ndarray:
+    def __array__(self) -> NpArray:
         return array([self])
 
-    def __reduce__(self) -> tuple:
+    def __reduce__(self) -> AnyTuple:
         """
         Adding some attributes to the reduced state
 
@@ -173,7 +191,7 @@ class PathCondition(np.ndarray):
         new_state = pickled_state[2] + (self.n_shooting, self.type, self.t, self.extra_params, self.slice_list)
         return pickled_state[0], pickled_state[1], new_state
 
-    def __setstate__(self, state: tuple, *args, **kwargs):
+    def __setstate__(self, state: AnyTuple, *args, **kwargs):
         """
         Adding some attributes to the expanded state
 
@@ -191,7 +209,7 @@ class PathCondition(np.ndarray):
         # Call the parent's __setstate__ with the other tuple elements.
         super(PathCondition, self).__setstate__(state[0:-5], *args, **kwargs)
 
-    def check_and_adjust_dimensions(self, n_elements: int, n_shooting: int, element_name: str):
+    def check_and_adjust_dimensions(self, n_elements: Int, n_shooting: Int, element_name: Str):
         """
         Sanity check if the dimension of the matrix are sounds when compare to the number
         of required elements and time. If the function exit, then everything is okay
@@ -248,7 +266,7 @@ class PathCondition(np.ndarray):
                     f"the expected number of column is {self.n_shooting}"
                 )
 
-    def evaluate_at(self, shooting_point: int, repeat: int = 1):
+    def evaluate_at(self, shooting_point: Int, repeat: Int = 1):
         """
         Evaluate the interpolation at a specific shooting point
 
@@ -348,11 +366,11 @@ class Bounds(OptionGeneric):
     def __init__(
         self,
         key,
-        min_bound: Callable | PathCondition | np.ndarray | list | tuple | float = None,
-        max_bound: Callable | PathCondition | np.ndarray | list | tuple | float = None,
+        min_bound: Callable | PathCondition | NpArray | AnyList | AnyTuple | Float = None,
+        max_bound: Callable | PathCondition | NpArray | AnyList | AnyTuple | Float = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
-        slice_list: slice | list | tuple = None,
-        **parameters: Any,
+        slice_list: AnyIterableOrSliceOptional = None,
+        **parameters: AnyDict,
     ):
         """
         Parameters
@@ -388,7 +406,7 @@ class Bounds(OptionGeneric):
         self.n_shooting = self.min.n_shooting
         self.key = key
 
-    def check_and_adjust_dimensions(self, n_elements: int, n_shooting: int):
+    def check_and_adjust_dimensions(self, n_elements: Int, n_shooting: Int):
         """
         Sanity check if the dimension of the matrix are sounds when compare to the number
         of required elements and time. If the function exit, then everything is okay
@@ -430,7 +448,7 @@ class Bounds(OptionGeneric):
         self.extra_params = self.min.extra_params
         self.n_shooting = self.min.n_shooting
 
-    def scale(self, scaling: float | np.ndarray | VariableScaling):
+    def scale(self, scaling: Float | NpArray | VariableScaling):
         """
         Scaling a Bound
 
@@ -442,7 +460,7 @@ class Bounds(OptionGeneric):
 
         return Bounds(None, self.min / scaling, self.max / scaling, interpolation=self.type)
 
-    def __getitem__(self, slice_list: slice | list | tuple) -> "Bounds":
+    def __getitem__(self, slice_list: AnyIterableOrSlice) -> "Bounds":
         """
         Allows to get from square brackets
 
@@ -486,7 +504,7 @@ class Bounds(OptionGeneric):
                 "b is the stopping index and c is the step for slicing."
             )
 
-    def __setitem__(self, _slice: slice | list | tuple, value: np.ndarray | list | float):
+    def __setitem__(self, _slice: AnyIterableOrSlice, value: NpArray | AnyList | Float):
         """
         Allows to set from square brackets
 
@@ -501,7 +519,7 @@ class Bounds(OptionGeneric):
         self.min[_slice] = value
         self.max[_slice] = value
 
-    def __bool__(self) -> bool:
+    def __bool__(self) -> Bool:
         """
         Get if the Bounds is empty
 
@@ -513,7 +531,7 @@ class Bounds(OptionGeneric):
         return len(self.min) > 0
 
     @property
-    def shape(self) -> list:
+    def shape(self) -> AnyList:
         """
         Get the size of the Bounds
 
@@ -569,11 +587,11 @@ class BoundsList(OptionDict):
         self,
         key,
         bounds: Bounds = None,
-        min_bound: PathCondition | np.ndarray | float | list | tuple | Callable = None,
-        max_bound: PathCondition | np.ndarray | float | list | tuple | Callable = None,
+        min_bound: PathCondition | NpArray | Float | AnyList | AnyTuple | Callable = None,
+        max_bound: PathCondition | NpArray | Float | AnyList | AnyTuple | Callable = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
-        phase: int = -1,
-        **extra_arguments: Any,
+        phase: Int = -1,
+        **extra_arguments: AnyDict,
     ):
         """
         Add a new bounds to the list, either [min_bound AND max_bound] OR [bounds] should be defined
@@ -631,7 +649,7 @@ class BoundsList(OptionDict):
     def param_when_copying(self):
         return {}
 
-    def __getitem__(self, item: int | str) -> Any:
+    def __getitem__(self, item: Int | Str) -> Any:
         """
         Get the ith option of the list
 
@@ -684,9 +702,9 @@ class InitialGuess(OptionGeneric):
     def __init__(
         self,
         key,
-        initial_guess: np.ndarray | list | tuple | float | Callable = None,
+        initial_guess: NpArray | AnyList | AnyTuple | Float | Callable = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT,
-        **parameters: Any,
+        **parameters: AnyDict,
     ):
         """
         Parameters
@@ -712,7 +730,7 @@ class InitialGuess(OptionGeneric):
         self.type = interpolation
         self.key = key
 
-    def check_and_adjust_dimensions(self, n_elements: int, n_shooting: int):
+    def check_and_adjust_dimensions(self, n_elements: Int, n_shooting: Int):
         """
         Sanity check if the dimension of the matrix are sounds when compare to the number
         of required elements and time. If the function exit, then everything is okay
@@ -742,7 +760,7 @@ class InitialGuess(OptionGeneric):
             interpolation=self.init.type,
         )
 
-    def scale(self, scaling: float | np.ndarray | VariableScaling):
+    def scale(self, scaling: Float | NpArray | VariableScaling):
         """
         Scaling an InitialGuess
 
@@ -754,7 +772,7 @@ class InitialGuess(OptionGeneric):
 
         return InitialGuess(f"{self.key}_scaled", self.init / scaling, interpolation=self.type)
 
-    def __bool__(self) -> bool:
+    def __bool__(self) -> Bool:
         """
         Get if the InitialGuess is empty
 
@@ -766,7 +784,7 @@ class InitialGuess(OptionGeneric):
         return len(self.init) > 0
 
     @property
-    def shape(self) -> tuple[int, int]:
+    def shape(self) -> IntTuple:
         """
         Get the size of the InitialGuess
 
@@ -777,7 +795,7 @@ class InitialGuess(OptionGeneric):
 
         return self.init.shape
 
-    def __setitem__(self, _slice: slice | list | tuple, value: np.ndarray | list | float):
+    def __setitem__(self, _slice: AnyIterableOrSlice, value: NpArray | AnyList | Float):
         """
         Allows to set from square brackets
 
@@ -794,11 +812,11 @@ class InitialGuess(OptionGeneric):
     def add_noise(
         self,
         bounds: Bounds | BoundsList = None,
-        magnitude: list | int | float | np.ndarray = 1,
+        magnitude: AnyList | Int | Float | NpArray = 1,
         magnitude_type: MagnitudeType = MagnitudeType.RELATIVE,
-        n_shooting: int = None,
-        bound_push: list | int | float = 0.1,
-        seed: int = None,
+        n_shooting: IntOptional = None,
+        bound_push: AnyList | Int | Float = 0.1,
+        seed: IntOptional = None,
     ):
         """
         An interface for NoisedInitialGuess class
@@ -866,15 +884,15 @@ class NoisedInitialGuess(InitialGuess):
     def __init__(
         self,
         key,
-        initial_guess: np.ndarray | list | tuple | float | Callable | PathCondition | InitialGuess = None,
+        initial_guess: NpArray | AnyList | AnyTuple | Float | Callable | PathCondition | InitialGuess = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT,
         bounds: Bounds | BoundsList = None,
-        magnitude: list | int | float | np.ndarray = 1,
+        magnitude: AnyList | Int | Float | NpArray = 1,
         magnitude_type: MagnitudeType = MagnitudeType.RELATIVE,
-        n_shooting: int = None,
-        bound_push: list | int | float = 0.1,
-        seed: int = None,
-        **parameters: Any,
+        n_shooting: IntOptional = None,
+        bound_push: AnyList | Int | Float = 0.1,
+        seed: IntOptional = None,
+        **parameters: AnyDict,
     ):
         """
         Parameters
@@ -944,7 +962,7 @@ class NoisedInitialGuess(InitialGuess):
             **parameters,
         )
 
-    def _check_magnitude(self, magnitude: list | int | float | np.ndarray):
+    def _check_magnitude(self, magnitude: AnyList | Int | Float | NpArray):
         """
         Check noise magnitude type and shape
 
@@ -974,11 +992,11 @@ class NoisedInitialGuess(InitialGuess):
 
     def _create_noise_matrix(
         self,
-        initial_guess: np.ndarray | list | tuple | float | Callable | PathCondition | InitialGuess = None,
+        initial_guess: NpArray | AnyList | AnyTuple | Float | Callable | PathCondition | InitialGuess = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT,
         magnitude_type: MagnitudeType = MagnitudeType.RELATIVE,
-        polynomial_degree: int = 1,
-        **parameters: Any,
+        polynomial_degree: Int = 1,
+        **parameters: AnyDict,
     ):
         """
         Create the matrix of the initial guess + noise evaluated at each node
@@ -1094,10 +1112,10 @@ class InitialGuessList(OptionDict):
     def add(
         self,
         key,
-        initial_guess: InitialGuess | np.ndarray | list | tuple | Callable = None,
+        initial_guess: InitialGuess | NpArray | AnyList | AnyTuple | Callable = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT,
-        phase: int = -1,
-        **extra_arguments: Any,
+        phase: Int = -1,
+        **extra_arguments: AnyDict,
     ):
         """
         Add a new initial guess to the list
@@ -1283,11 +1301,11 @@ class InitialGuessList(OptionDict):
     def add_noise(
         self,
         bounds: BoundsList = None,
-        n_shooting: int | List[int] | Tuple[int] = None,
-        magnitude: int | float | dict | list = None,
+        n_shooting: IntOptional | IntList | IntTuple = None,
+        magnitude: IntOptional | Float | AnyDict | AnyList = None,
         magnitude_type: MagnitudeType = MagnitudeType.RELATIVE,
-        bound_push: int | float | List[int] | List[float] | ndarray = 0.1,
-        seed: int | dict | list = None,
+        bound_push: Int | Float | IntList | FloatList | NpArray = 0.1,
+        seed: IntOptional | AnyDict | AnyList = None,
     ):
         """
         Add noise to each initial guesses from an InitialGuessList
