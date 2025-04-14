@@ -156,7 +156,6 @@ def prepare_ocp(
     parameter_init = InitialGuessList()
 
     if optim_gravity:
-        # WATCH OUT, it seems parameters scaling are broken
         g_scaling = VariableScaling("gravity_xyz", np.array([1, 1, 10.0]))
         parameters.add(
             "gravity_xyz",  # The name of the parameter
@@ -222,7 +221,9 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q", weight=1)
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    dynamics = Dynamics(
+        DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
+    )
 
     # Path constraint
     x_bounds = BoundsList()
@@ -250,7 +251,6 @@ def prepare_ocp(
         parameter_objectives=parameter_objectives,
         parameter_bounds=parameter_bounds,
         parameter_init=parameter_init,
-        ode_solver=ode_solver,
         use_sx=use_sx,
     )
 

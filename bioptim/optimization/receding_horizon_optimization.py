@@ -886,7 +886,6 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             bio_model=model_class(**model_initializer),
             dynamics=self.nlp[0].dynamics_type,
             objective_functions=deepcopy(self.common_objective_functions),
-            ode_solver=self.nlp[0].ode_solver,
             n_shooting=self.cycle_len,
             phase_time=self.cycle_len * dt,
             x_init=x_init,

@@ -317,14 +317,14 @@ class PenaltyOption(OptionGeneric):
         n_root = controller.model.nb_root
         n_joints = nx - n_root
 
-        if "cholesky_cov" in controller.algebraic_states.keys():
+        if "cholesky_cov" in controller.controls.keys():
             l_cov_matrix = StochasticBioModel.reshape_to_cholesky_matrix(
-                controller.algebraic_states["cholesky_cov"].cx_start, controller.model.matrix_shape_cov_cholesky
+                controller.controls["cholesky_cov"].cx_start, controller.model.matrix_shape_cov_cholesky
             )
             cov_matrix = l_cov_matrix @ l_cov_matrix.T
         else:
             cov_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.algebraic_states["cov"].cx_start, controller.model.matrix_shape_cov
+                controller.controls["cov"].cx_start, controller.model.matrix_shape_cov
             )
 
         jac_fcn_states = jacobian(fcn, state_cx_scaled)
@@ -366,7 +366,7 @@ class PenaltyOption(OptionGeneric):
         self.control_types = control_types
 
     def _set_subnodes_are_decision_states(self, controllers: list[PenaltyController]):
-        subnodes_are_decision_states = [c.get_nlp.ode_solver.is_direct_collocation for c in controllers]
+        subnodes_are_decision_states = [c.get_nlp.dynamics_type.ode_solver.is_direct_collocation for c in controllers]
         if self.subnodes_are_decision_states:
             # If it was already set (e.g. for multinode), we want to make sure it is consistent
             if self.subnodes_are_decision_states != subnodes_are_decision_states:
@@ -613,7 +613,7 @@ class PenaltyOption(OptionGeneric):
         if self.derivative and self.explicit_derivative:
             raise ValueError("derivative and explicit_derivative cannot be true simultaneously")
 
-        if controller.get_nlp.ode_solver.is_direct_collocation and (
+        if controller.get_nlp.dynamics_type.ode_solver.is_direct_collocation and (
             controller.get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
             and len(self.node_idx) > 1
             and controller.ns + 1 in self.node_idx
@@ -896,13 +896,6 @@ class PenaltyOption(OptionGeneric):
 
         # The active controller is always the last one, and they all should be the same length anyway
         for node in range(len(controllers[-1])):
-            # TODO
-            # TODO WARNING THE NEXT IF STATEMENT IS A BUG DELIBERATELY INTRODUCED TO FIT THE PREVIOUS RESULTS.
-            # IT SHOULD BE REMOVED AS SOON AS THE MERGE IS DONE (AND VALUES OF THE TESTS ADJUSTED)
-            if self.integrate and self.target is not None:
-                self.node_idx = controllers[0].t[:-1]
-                if node not in self.node_idx:
-                    continue
 
             for controller in controllers:
                 controller.node_index = controller.t[node]

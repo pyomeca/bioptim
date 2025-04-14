@@ -25,6 +25,7 @@ from bioptim import (
     NonLinearProgram,
     PhaseDynamics,
     SolutionMerge,
+    ContactType,
 )
 from casadi import MX, SX, vertcat, sin, Function, DM, reshape
 import numpy as np
@@ -80,7 +81,10 @@ def time_dynamic(
 
 
 def custom_configure(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries: dict[str, np.ndarray] = None
+    ocp: OptimalControlProgram,
+    nlp: NonLinearProgram,
+    numerical_data_timeseries: dict[str, np.ndarray] = None,
+    contact_type: list[ContactType] | tuple[ContactType] = (),
 ):
     """
     Tell the program which variables are states and controls.
@@ -92,6 +96,10 @@ def custom_configure(
         A reference to the ocp
     nlp: NonLinearProgram
         A reference to the phase
+    numerical_data_timeseries: dict[str, np.ndarray]
+            A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
+    contact_type: list[ContactType] | tuple[ContactType]
+        The type of contacts to consider in the dynamics.
     """
 
     ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
@@ -164,6 +172,7 @@ def prepare_ocp(
             custom_configure,
             dynamic_function=time_dynamic,
             phase=i,
+            ode_solver=ode_solver,
             expand_dynamics=expand,
             phase_dynamics=phase_dynamics,
         )
@@ -210,7 +219,6 @@ def prepare_ocp(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
-        ode_solver=ode_solver,
         control_type=control_type,
         use_sx=use_sx,
     )
@@ -282,20 +290,6 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
             )
         return
 
-    if integrator in (OdeSolver.COLLOCATION, OdeSolver.IRK) and control_type == ControlType.LINEAR_CONTINUOUS:
-        with pytest.raises(
-            NotImplementedError, match="ControlType.LINEAR_CONTINUOUS ControlType not implemented yet with COLLOCATION"
-        ):
-            ocp = prepare_ocp(
-                biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
-                n_phase=n_phase,
-                ode_solver=integrator(),
-                control_type=control_type,
-                minimize_time=minimize_time,
-                use_sx=use_sx,
-            )
-        return
-
     # --- Solve the program --- #
     ocp = prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
@@ -325,20 +319,49 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
                 )
             else:
                 raise ValueError("Test not implemented")
+
         case OdeSolver.COLLOCATION:
-            v_len = 665 * n_phase
-            expected = (
-                [66.5, 80006.0 if minimize_time else 6.0, 6.035552847184389]
-                if n_phase == 1
-                else [133.0, 400012.00000000006 if minimize_time else 12.0, 28.618666282170977]
-            )
+            if control_type == ControlType.CONSTANT:
+                v_len = 665 * n_phase
+                expected = (
+                    [66.5, 80006.0 if minimize_time else 6.0, 6.035552847184389]
+                    if n_phase == 1
+                    else [133.0, 400012.00000000006 if minimize_time else 12.0, 28.618666282170977]
+                )
+            elif control_type == ControlType.LINEAR_CONTINUOUS:
+                v_len = 667 * n_phase
+                if minimize_time:
+                    if n_phase == 1:
+                        expected = [66.69999999999999, 80006.0, 6.035552847184389]
+                    else:
+                        expected = [133.39999999999998, 400012.00000000006, 28.61866628217097]
+                else:
+                    if n_phase == 1:
+                        expected = [66.69999999999999, 6.000000000000002, 6.035552847184389]
+                    else:
+                        expected = [133.39999999999998, 12.000000000000009, 28.61866628217097]
+
         case OdeSolver.IRK:
-            v_len = 305 * n_phase
-            expected = (
-                [30.5, 320010.0 if minimize_time else 10.0, 4.283653839663469]
-                if n_phase == 1
-                else [61.0, 1600019.9999999998 if minimize_time else 20.0, 8.125629434161866]
-            )
+            if control_type == ControlType.CONSTANT:
+                v_len = 305 * n_phase
+                expected = (
+                    [30.5, 320010.0 if minimize_time else 10.0, 4.283653839663469]
+                    if n_phase == 1
+                    else [61.0, 1600019.9999999998 if minimize_time else 20.0, 8.125629434161866]
+                )
+            elif control_type == ControlType.LINEAR_CONTINUOUS:
+                v_len = 307 * n_phase
+                if minimize_time:
+                    if n_phase == 1:
+                        expected = [30.699999999999996, 320010.0, 4.283653839663469]
+                    else:
+                        expected = [61.39999999999999, 1600019.9999999998, 8.125629434161866]
+                else:
+                    if n_phase == 1:
+                        expected = [30.699999999999996, 10.000000000000005, 4.283653839663469]
+                    else:
+                        expected = [61.39999999999999, 20.000000000000014, 8.12562943416187]
+
         case OdeSolver.TRAPEZOIDAL:
             v_len = 187 * n_phase
             expected = (
@@ -346,6 +369,7 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
                 if n_phase == 1
                 else [37.39999999999999, 400012.00000000006 if minimize_time else 12.0, 7.154696449039014]
             )
+
         case _:
             raise ValueError("Test not implemented")
 

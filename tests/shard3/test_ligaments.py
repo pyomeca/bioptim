@@ -44,13 +44,14 @@ def test_torque_driven_with_ligament(with_ligament, cx, phase_dynamics):
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/mass_point_with_ligament.bioMod"
     )
+    nlp.dynamics_type = Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_ligament=with_ligament)
+
     nlp.ns = 5
     nlp.cx = cx
     nlp.time_cx = cx.sym("time", 1, 1)
     nlp.dt = cx.sym("dt", 1, 1)
     nlp.initialize(cx)
     nlp.x_scaling = VariableScalingList()
-    nlp.xdot_scaling = VariableScalingList()
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
 
@@ -58,10 +59,11 @@ def test_torque_driven_with_ligament(with_ligament, cx, phase_dynamics):
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
     ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
     nlp.control_type = ControlType.CONSTANT
+
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_ligament=with_ligament),
+        nlp.dynamics_type,
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -102,13 +104,14 @@ def test_torque_derivative_driven_with_ligament(with_ligament, cx, phase_dynamic
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/mass_point_with_ligament.bioMod"
     )
+    nlp.dynamics_type = Dynamics(DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN, with_ligament=with_ligament)
+
     nlp.ns = 5
     nlp.cx = cx
     nlp.time_cx = cx.sym("time", 1, 1)
     nlp.dt = cx.sym("dt", 1, 1)
     nlp.initialize(cx)
     nlp.x_scaling = VariableScalingList()
-    nlp.xdot_scaling = VariableScalingList()
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
 
@@ -120,7 +123,7 @@ def test_torque_derivative_driven_with_ligament(with_ligament, cx, phase_dynamic
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN, with_ligament=with_ligament),
+        nlp.dynamics_type,
         False,
     )
 
@@ -162,13 +165,14 @@ def test_torque_activation_driven_with_ligament(with_ligament, cx, phase_dynamic
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/mass_point_with_ligament.bioMod"
     )
+    nlp.dynamics_type = Dynamics(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_ligament=with_ligament)
+
     nlp.ns = 5
     nlp.cx = cx
     nlp.time_cx = cx.sym("time", 1, 1)
     nlp.dt = cx.sym("dt", 1, 1)
     nlp.initialize(cx)
     nlp.x_scaling = VariableScalingList()
-    nlp.xdot_scaling = VariableScalingList()
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 2, 1))
@@ -178,7 +182,7 @@ def test_torque_activation_driven_with_ligament(with_ligament, cx, phase_dynamic
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_ligament=with_ligament),
+        nlp.dynamics_type,
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -220,13 +224,17 @@ def test_muscle_driven_with_ligament(with_ligament, cx, phase_dynamics):
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_ligament.bioMod"
     )
+    nlp.dynamics_type = Dynamics(
+        DynamicsFcn.MUSCLE_DRIVEN,
+        with_ligament=with_ligament,
+    )
+
     nlp.ns = 5
     nlp.cx = cx
     nlp.time_cx = cx.sym("time", 1, 1)
     nlp.dt = cx.sym("dt", 1, 1)
     nlp.initialize(cx)
     nlp.x_scaling = VariableScalingList()
-    nlp.xdot_scaling = VariableScalingList()
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 2 + nlp.model.nb_muscles, 1))
@@ -237,10 +245,7 @@ def test_muscle_driven_with_ligament(with_ligament, cx, phase_dynamics):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(
-            DynamicsFcn.MUSCLE_DRIVEN,
-            with_ligament=with_ligament,
-        ),
+        nlp.dynamics_type,
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]

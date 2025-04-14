@@ -2,10 +2,13 @@
 Test for file IO
 """
 
+import tracemalloc
+import gc
 import pickle
 import platform
 import re
 import shutil
+import time
 
 from bioptim import (
     InterpolationType,
@@ -23,6 +26,11 @@ import numpy.testing as npt
 import pytest
 
 from ..utils import TestUtils
+
+
+# Store results for all tests
+global test_memory
+test_memory = {}
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -46,7 +54,14 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics):
 
     if platform.system() == "Windows":
         # These tests fail on CI for Windows
-        return
+        pytest.skip("Skipping tests on Windows")
+
+    gc.collect()  # Force garbage collection
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    tracemalloc.start()  # Start memory tracking
+    mem_before = tracemalloc.take_snapshot()
+
+    tik = time.time()  # Time before starting to build the problem
 
     # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
     if n_threads > 1 and phase_dynamics == PhaseDynamics.ONE_PER_NODE:
@@ -126,6 +141,7 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics):
         expand_dynamics=ode_solver not in (OdeSolver.IRK, OdeSolver.CVODES),
         control_type=control_type,
     )
+    tak = time.time()  # Time after building, but before solving
     ocp.print(to_console=True, to_graph=False)
 
     # the test is too long with CVODES
@@ -133,6 +149,7 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics):
         return
 
     sol = ocp.solve()
+    tok = time.time()  # This after solving
 
     # Check objective function value
     f = np.array(sol.cost)
@@ -243,6 +260,24 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics):
 
     # simulate
     TestUtils.simulate(sol)
+
+    # Execution times
+    building_duration = tak - tik
+    solving_duration = tok - tak
+
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    mem_after = tracemalloc.take_snapshot()
+    top_stats = mem_after.compare_to(mem_before, "lineno")
+    mem_used = sum(stat.size_diff for stat in top_stats)
+    tracemalloc.stop()
+
+    global test_memory
+    test_memory[f"pendulum-{ode_solver}-{use_sx}-{n_threads}-{phase_dynamics}"] = [
+        building_duration,
+        solving_duration,
+        mem_used,
+    ]
+
     return
 
 
@@ -250,6 +285,13 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_custom_constraint_track_markers(ode_solver, phase_dynamics):
     from bioptim.examples.getting_started import custom_constraint as ocp_module
+
+    gc.collect()  # Force garbage collection
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    tracemalloc.start()  # Start memory tracking
+    mem_before = tracemalloc.take_snapshot()
+
+    tik = time.time()  # Time before starting to build the problem
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -262,7 +304,9 @@ def test_custom_constraint_track_markers(ode_solver, phase_dynamics):
         phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver_orig != OdeSolver.IRK,
     )
+    tak = time.time()
     sol = ocp.solve()
+    tok = time.time()
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -305,6 +349,23 @@ def test_custom_constraint_track_markers(ode_solver, phase_dynamics):
         # detailed cost values
         npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 19767.533125695227)
 
+    # Execution times
+    building_duration = tak - tik
+    solving_duration = tok - tak
+
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    mem_after = tracemalloc.take_snapshot()
+    top_stats = mem_after.compare_to(mem_before, "lineno")
+    mem_used = sum(stat.size_diff for stat in top_stats)
+    tracemalloc.stop()
+
+    global test_memory
+    test_memory[f"custom_constraint_track_markers-{ode_solver}-{phase_dynamics}"] = [
+        building_duration,
+        solving_duration,
+        mem_used,
+    ]
+
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("random_init", [True, False])
@@ -312,6 +373,13 @@ def test_custom_constraint_track_markers(ode_solver, phase_dynamics):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.COLLOCATION])
 def test_initial_guesses(ode_solver, interpolation, random_init, phase_dynamics):
     from bioptim.examples.getting_started import custom_initial_guess as ocp_module
+
+    gc.collect()  # Force garbage collection
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    tracemalloc.start()  # Start memory tracking
+    mem_before = tracemalloc.take_snapshot()
+
+    tik = time.time()  # Time before starting to build the problem
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -343,8 +411,9 @@ def test_initial_guesses(ode_solver, interpolation, random_init, phase_dynamics)
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
     )
-
+    tak = time.time()
     sol = ocp.solve()
+    tok = time.time()
 
     # Check objective function value
     f = np.array(sol.cost)
@@ -380,11 +449,35 @@ def test_initial_guesses(ode_solver, interpolation, random_init, phase_dynamics)
 
     npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 13954.735000000004)
 
+    # Execution times
+    building_duration = tak - tik
+    solving_duration = tok - tak
+
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    mem_after = tracemalloc.take_snapshot()
+    top_stats = mem_after.compare_to(mem_before, "lineno")
+    mem_used = sum(stat.size_diff for stat in top_stats)
+    tracemalloc.stop()
+
+    global test_memory
+    test_memory[f"initial_guesses-{ode_solver}-{interpolation}-{random_init}-{phase_dynamics}"] = [
+        building_duration,
+        solving_duration,
+        mem_used,
+    ]
+
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_cyclic_objective(ode_solver, phase_dynamics):
     from bioptim.examples.getting_started import example_cyclic_movement as ocp_module
+
+    gc.collect()  # Force garbage collection
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    tracemalloc.start()  # Start memory tracking
+    mem_before = tracemalloc.take_snapshot()
+
+    tik = time.time()  # Time before starting to build the problem
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -401,7 +494,9 @@ def test_cyclic_objective(ode_solver, phase_dynamics):
         phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver_orig != OdeSolver.IRK,
     )
+    tak = time.time()
     sol = ocp.solve()
+    tok = time.time()
 
     # Check objective function value
     f = np.array(sol.cost)
@@ -434,11 +529,31 @@ def test_cyclic_objective(ode_solver, phase_dynamics):
     # detailed cost values
     npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 13224.252515047212)
 
+    # Execution times
+    building_duration = tak - tik
+    solving_duration = tok - tak
+
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    mem_after = tracemalloc.take_snapshot()
+    top_stats = mem_after.compare_to(mem_before, "lineno")
+    mem_used = sum(stat.size_diff for stat in top_stats)
+    tracemalloc.stop()
+
+    global test_memory
+    test_memory[f"cyclic_objective-{ode_solver}-{phase_dynamics}"] = [building_duration, solving_duration, mem_used]
+
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_cyclic_constraint(ode_solver, phase_dynamics):
     from bioptim.examples.getting_started import example_cyclic_movement as ocp_module
+
+    gc.collect()  # Force garbage collection
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    tracemalloc.start()  # Start memory tracking
+    mem_before = tracemalloc.take_snapshot()
+
+    tik = time.time()  # Time before starting to build the problem
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -455,7 +570,9 @@ def test_cyclic_constraint(ode_solver, phase_dynamics):
         phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver_orig != OdeSolver.IRK,
     )
+    tak = time.time()
     sol = ocp.solve()
+    tok = time.time()
 
     # Check objective function value
     f = np.array(sol.cost)
@@ -488,11 +605,31 @@ def test_cyclic_constraint(ode_solver, phase_dynamics):
     # detailed cost values
     npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 78921.61000000013)
 
+    # Execution times
+    building_duration = tak - tik
+    solving_duration = tok - tak
+
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    mem_after = tracemalloc.take_snapshot()
+    top_stats = mem_after.compare_to(mem_before, "lineno")
+    mem_used = sum(stat.size_diff for stat in top_stats)
+    tracemalloc.stop()
+
+    global test_memory
+    test_memory[f"cyclic_constraint-{ode_solver}-{phase_dynamics}"] = [building_duration, solving_duration, mem_used]
+
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_phase_transitions(ode_solver, phase_dynamics):
     from bioptim.examples.getting_started import custom_phase_transitions as ocp_module
+
+    gc.collect()  # Force garbage collection
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    tracemalloc.start()  # Start memory tracking
+    mem_before = tracemalloc.take_snapshot()
+
+    tik = time.time()  # Time before starting to build the problem
 
     # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.RK8:
@@ -506,7 +643,9 @@ def test_phase_transitions(ode_solver, phase_dynamics):
         phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver != OdeSolver.IRK,
     )
+    tak = time.time()
     sol = ocp.solve()
+    tok = time.time()
 
     # Check objective function value
     f = np.array(sol.cost)
@@ -555,6 +694,19 @@ def test_phase_transitions(ode_solver, phase_dynamics):
     npt.assert_almost_equal(sol.detailed_cost[2]["cost_value_weighted"], 34514.48724963841)
     npt.assert_almost_equal(sol.detailed_cost[3]["cost_value_weighted"], 21941.02244926652)
 
+    # Execution times
+    building_duration = tak - tik
+    solving_duration = tok - tak
+
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    mem_after = tracemalloc.take_snapshot()
+    top_stats = mem_after.compare_to(mem_before, "lineno")
+    mem_used = sum(stat.size_diff for stat in top_stats)
+    tracemalloc.stop()
+
+    global test_memory
+    test_memory[f"phase_transition-{ode_solver}-{phase_dynamics}"] = [building_duration, solving_duration, mem_used]
+
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.COLLOCATION])  # OdeSolver.IRK
@@ -584,7 +736,9 @@ def test_parameter_optimization(ode_solver, phase_dynamics):
         phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver_orig != OdeSolver.IRK,
     )
+    tak = time.time()
     sol = ocp.solve()
+    tok = time.time()
 
     # Check some of the results
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
@@ -662,12 +816,36 @@ def test_parameter_optimization(ode_solver, phase_dynamics):
     # Test warm starting
     TestUtils.assert_warm_start(ocp, sol)
 
+    # Execution times
+    building_duration = tak - tik
+    solving_duration = tok - tak
+
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    mem_after = tracemalloc.take_snapshot()
+    top_stats = mem_after.compare_to(mem_before, "lineno")
+    mem_used = sum(stat.size_diff for stat in top_stats)
+    tracemalloc.stop()
+
+    global test_memory
+    test_memory[f"parameter_optimization-{ode_solver}-{phase_dynamics}"] = [
+        building_duration,
+        solving_duration,
+        mem_used,
+    ]
+
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("problem_type_custom", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver, phase_dynamics):
     from bioptim.examples.getting_started import custom_dynamics as ocp_module
+
+    gc.collect()  # Force garbage collection
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    tracemalloc.start()  # Start memory tracking
+    mem_before = tracemalloc.take_snapshot()
+
+    tik = time.time()  # Time before starting to build the problem
 
     # For reducing time phase_dynamics == PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.RK8:
@@ -685,7 +863,9 @@ def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver, phase
         phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver_orig != OdeSolver.IRK,
     )
+    tak = time.time()
     sol = ocp.solve()
+    tok = time.time()
 
     # Check objective function value
     f = np.array(sol.cost)
@@ -717,6 +897,23 @@ def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver, phase
     # detailed cost values
     npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 19767.533125695227)
 
+    # Execution times
+    building_duration = tak - tik
+    solving_duration = tok - tak
+
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    mem_after = tracemalloc.take_snapshot()
+    top_stats = mem_after.compare_to(mem_before, "lineno")
+    mem_used = sum(stat.size_diff for stat in top_stats)
+    tracemalloc.stop()
+
+    global test_memory
+    test_memory[f"custom_dynamics-{ode_solver}-{problem_type_custom}-{phase_dynamics}"] = [
+        building_duration,
+        solving_duration,
+        mem_used,
+    ]
+
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -725,6 +922,13 @@ def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver, phase
 @pytest.mark.parametrize("use_point_of_applications", [True, False])
 def test_example_external_forces(ode_solver, phase_dynamics, n_threads, use_sx, use_point_of_applications):
     from bioptim.examples.getting_started import example_external_forces as ocp_module
+
+    gc.collect()  # Force garbage collection
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    tracemalloc.start()  # Start memory tracking
+    mem_before = tracemalloc.take_snapshot()
+
+    tik = time.time()  # Time before starting to build the problem
 
     if use_sx and ode_solver == OdeSolver.IRK:
         return
@@ -745,7 +949,9 @@ def test_example_external_forces(ode_solver, phase_dynamics, n_threads, use_sx, 
         n_threads=n_threads,
         use_sx=use_sx,
     )
+    tak = time.time()
     sol = ocp.solve()
+    tok = time.time()
 
     if not use_point_of_applications:
         # Check objective function value
@@ -835,11 +1041,35 @@ def test_example_external_forces(ode_solver, phase_dynamics, n_threads, use_sx, 
     # simulate
     TestUtils.simulate(sol)
 
+    # Execution times
+    building_duration = tak - tik
+    solving_duration = tok - tak
+
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    mem_after = tracemalloc.take_snapshot()
+    top_stats = mem_after.compare_to(mem_before, "lineno")
+    mem_used = sum(stat.size_diff for stat in top_stats)
+    tracemalloc.stop()
+
+    global test_memory
+    test_memory[f"external_forces-{ode_solver}-{use_sx}-{n_threads}-{phase_dynamics}-{use_point_of_applications}"] = [
+        building_duration,
+        solving_duration,
+        mem_used,
+    ]
+
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver_type", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK, OdeSolver.COLLOCATION])
 def test_example_multiphase(ode_solver_type, phase_dynamics):
     from bioptim.examples.getting_started import example_multiphase as ocp_module
+
+    gc.collect()  # Force garbage collection
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    tracemalloc.start()  # Start memory tracking
+    mem_before = tracemalloc.take_snapshot()
+
+    tik = time.time()  # Time before starting to build the problem
 
     # For reducing time phase_dynamics == PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver_type in [OdeSolver.RK8, OdeSolver.COLLOCATION]:
@@ -854,7 +1084,9 @@ def test_example_multiphase(ode_solver_type, phase_dynamics):
         phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver_type != OdeSolver.IRK,
     )
+    tak = time.time()
     sol = ocp.solve()
+    tok = time.time()
 
     # Check objective function value
     f = np.array(sol.cost)
@@ -914,12 +1146,32 @@ def test_example_multiphase(ode_solver_type, phase_dynamics):
     npt.assert_almost_equal(sol.detailed_cost[2]["cost_value_weighted"], 48129.27750487157)
     npt.assert_almost_equal(sol.detailed_cost[3]["cost_value_weighted"], 38560.82580432337)
 
+    # Execution times
+    building_duration = tak - tik
+    solving_duration = tok - tak
+
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    mem_after = tracemalloc.take_snapshot()
+    top_stats = mem_after.compare_to(mem_before, "lineno")
+    mem_used = sum(stat.size_diff for stat in top_stats)
+    tracemalloc.stop()
+
+    global test_memory
+    test_memory[f"multiphase-{ode_solver}-{phase_dynamics}"] = [building_duration, solving_duration, mem_used]
+
 
 @pytest.mark.parametrize("expand_dynamics", [True, False])
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK])
 def test_contact_forces_inequality_greater_than_constraint(ode_solver, phase_dynamics, expand_dynamics):
     from bioptim.examples.getting_started import example_inequality_constraint as ocp_module
+
+    gc.collect()  # Force garbage collection
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    tracemalloc.start()  # Start memory tracking
+    mem_before = tracemalloc.take_snapshot()
+
+    tik = time.time()  # Time before starting to build the problem
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -954,7 +1206,9 @@ def test_contact_forces_inequality_greater_than_constraint(ode_solver, phase_dyn
         phase_dynamics=phase_dynamics,
         expand_dynamics=expand_dynamics,
     )
+    tak = time.time()
     sol = ocp.solve()
+    tok = time.time()
 
     # Check objective function value
     f = np.array(sol.cost)
@@ -987,6 +1241,23 @@ def test_contact_forces_inequality_greater_than_constraint(ode_solver, phase_dyn
 
     # detailed cost values
     npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 0.19216241950659244)
+
+    # Execution times
+    building_duration = tak - tik
+    solving_duration = tok - tak
+
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    mem_after = tracemalloc.take_snapshot()
+    top_stats = mem_after.compare_to(mem_before, "lineno")
+    mem_used = sum(stat.size_diff for stat in top_stats)
+    tracemalloc.stop()
+
+    global test_memory
+    test_memory[f"contact_forces_greater_than_constraint-{ode_solver}-{phase_dynamics}-{expand_dynamics}"] = [
+        building_duration,
+        solving_duration,
+        mem_used,
+    ]
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK])
@@ -1046,6 +1317,13 @@ def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
 def test_multinode_objective(ode_solver, phase_dynamics):
     from bioptim.examples.getting_started import example_multinode_objective as ocp_module
 
+    gc.collect()  # Force garbage collection
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    tracemalloc.start()  # Start memory tracking
+    mem_before = tracemalloc.take_snapshot()
+
+    tik = time.time()  # Time before starting to build the problem
+
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ode_solver = ode_solver()
@@ -1079,7 +1357,9 @@ def test_multinode_objective(ode_solver, phase_dynamics):
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
     )
+    tak = time.time()
     sol = ocp.solve()
+    tok = time.time()
     sol.print_cost()
 
     # Check some of the results
@@ -1145,6 +1425,19 @@ def test_multinode_objective(ode_solver, phase_dynamics):
     out = fun[0](t_out, dt, x_out, u_out, p_out, a_out, d_out, weight, target)
     out_expected = sum2(sum1(controls["tau"] ** 2)) * dt * weight
     npt.assert_almost_equal(out, out_expected)
+
+    # Execution times
+    building_duration = tak - tik
+    solving_duration = tok - tak
+
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    mem_after = tracemalloc.take_snapshot()
+    top_stats = mem_after.compare_to(mem_before, "lineno")
+    mem_used = sum(stat.size_diff for stat in top_stats)
+    tracemalloc.stop()
+
+    global test_memory
+    test_memory[f"multinode_objective-{ode_solver}-{phase_dynamics}"] = [building_duration, solving_duration, mem_used]
 
 
 @pytest.mark.parametrize("node", [*Node, 0, 3])
@@ -1213,6 +1506,13 @@ def test_multinode_constraints_too_much_constraints(ode_solver, too_much_constra
 def test_multinode_constraints(ode_solver, phase_dynamics):
     from bioptim.examples.getting_started import example_multinode_constraints as ocp_module
 
+    gc.collect()  # Force garbage collection
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    tracemalloc.start()  # Start memory tracking
+    mem_before = tracemalloc.take_snapshot()
+
+    tik = time.time()  # Time before starting to build the problem
+
     # For reducing time phase_dynamics == PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.RK8:
         return
@@ -1229,7 +1529,9 @@ def test_multinode_constraints(ode_solver, phase_dynamics):
         phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver_orig != OdeSolver.IRK,
     )
+    tak = time.time()
     sol = ocp.solve()
+    tok = time.time()
     sol.print_cost()
 
     # Check objective function value
@@ -1260,9 +1562,33 @@ def test_multinode_constraints(ode_solver, phase_dynamics):
     npt.assert_almost_equal(controls[0]["tau"][:, 0], np.array([1.32977862, 9.81, 0.0]))
     npt.assert_almost_equal(controls[-1]["tau"][:, -1], np.array([-1.2, 9.81, -1.884]))
 
+    # Execution times
+    building_duration = tak - tik
+    solving_duration = tok - tak
+
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    mem_after = tracemalloc.take_snapshot()
+    top_stats = mem_after.compare_to(mem_before, "lineno")
+    mem_used = sum(stat.size_diff for stat in top_stats)
+    tracemalloc.stop()
+
+    global test_memory
+    test_memory[f"multinode_constraints-{ode_solver}-{phase_dynamics}"] = [
+        building_duration,
+        solving_duration,
+        mem_used,
+    ]
+
 
 def test_multistart():
     from bioptim.examples.getting_started import example_multistart as ocp_module
+
+    gc.collect()  # Force garbage collection
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    tracemalloc.start()  # Start memory tracking
+    mem_before = tracemalloc.take_snapshot()
+
+    tik = time.time()  # Time before starting to build the problem
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
     bio_model_path = [bioptim_folder + "/models/pendulum.bioMod"]
@@ -1280,7 +1606,9 @@ def test_multistart():
         combinatorial_parameters=combinatorial_parameters,
         save_folder=save_folder,
     )
+    tak = time.time()
     multi_start.solve()
+    tok = time.time()
 
     with open(f"{save_folder}/pendulum_multi_start_random_states_5_2.pkl", "rb") as file:
         multi_start_0 = pickle.load(file)
@@ -1446,10 +1774,30 @@ def test_multistart():
     # Delete the solutions
     shutil.rmtree(f"{save_folder}")
 
+    # Execution times
+    building_duration = tak - tik
+    solving_duration = tok - tak
+
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    mem_after = tracemalloc.take_snapshot()
+    top_stats = mem_after.compare_to(mem_before, "lineno")
+    mem_used = sum(stat.size_diff for stat in top_stats)
+    tracemalloc.stop()
+
+    global test_memory
+    test_memory[f"multistart"] = [building_duration, solving_duration, mem_used]
+
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_example_variable_scaling(phase_dynamics):
     from bioptim.examples.getting_started import example_variable_scaling as ocp_module
+
+    gc.collect()  # Force garbage collection
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    tracemalloc.start()  # Start memory tracking
+    mem_before = tracemalloc.take_snapshot()
+
+    tik = time.time()  # Time before starting to build the problem
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -1460,7 +1808,9 @@ def test_example_variable_scaling(phase_dynamics):
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
     )
+    tak = time.time()
     sol = ocp.solve()
+    tok = time.time()
 
     # Check objective function value
     f = np.array(sol.cost)
@@ -1487,3 +1837,684 @@ def test_example_variable_scaling(phase_dynamics):
     # initial and final controls
     npt.assert_almost_equal(tau[:, 0], np.array([-1000.00000999, 0.0]))
     npt.assert_almost_equal(tau[:, -1], np.array([-1000.00000999, 0.0]))
+
+    # Execution times
+    building_duration = tak - tik
+    solving_duration = tok - tak
+
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    mem_after = tracemalloc.take_snapshot()
+    top_stats = mem_after.compare_to(mem_before, "lineno")
+    mem_used = sum(stat.size_diff for stat in top_stats)
+    tracemalloc.stop()
+
+    global test_memory
+    test_memory[f"variable_scaling-{phase_dynamics}"] = [building_duration, solving_duration, mem_used]
+
+
+def test_memory_and_execution_time():
+
+    if platform.system() == "Windows":
+        pytest.skip("Tests are slower on Windows")
+
+    ref = {
+        "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.RK1'>-False-1-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            10.428200244903564,
+            4.572763681411743,
+            632152,
+        ],
+        "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.RK1'>-False-2-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            10.172236204147339,
+            3.9698519706726074,
+            591139,
+        ],
+        "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.RK1'>-True-1-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            6.906153917312622,
+            1.7605631351470947,
+            589874,
+        ],
+        "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.RK1'>-True-2-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            6.54404616355896,
+            1.9113569259643555,
+            572287,
+        ],
+        "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.RK2'>-False-1-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            10.150030136108398,
+            3.7786338329315186,
+            608129,
+        ],
+        "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.RK2'>-False-2-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            10.18199110031128,
+            4.087592124938965,
+            590669,
+        ],
+        "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.RK2'>-True-1-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            6.241022109985352,
+            1.896014928817749,
+            589008,
+        ],
+        "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.RK2'>-True-2-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            6.338693857192993,
+            2.1055331230163574,
+            569263,
+        ],
+        "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.RK4'>-False-1-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            10.423840999603271,
+            4.139120101928711,
+            473755,
+        ],
+        "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.RK4'>-False-1-PhaseDynamics.ONE_PER_NODE": [
+            25.06763982772827,
+            4.058828115463257,
+            888033,
+        ],
+        "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.RK4'>-False-2-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            10.20091700553894,
+            4.119539022445679,
+            603531,
+        ],
+        "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.RK4'>-True-1-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            6.502306938171387,
+            2.2537460327148438,
+            576834,
+        ],
+        "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.RK4'>-True-1-PhaseDynamics.ONE_PER_NODE": [
+            12.794831275939941,
+            2.2078840732574463,
+            870134,
+        ],
+        "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.RK4'>-True-2-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            6.332290887832642,
+            2.3827359676361084,
+            600001,
+        ],
+        "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.RK8'>-True-1-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            6.844088077545166,
+            3.4072978496551514,
+            560401,
+        ],
+        "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.RK8'>-True-2-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            6.832592010498047,
+            3.611886978149414,
+            576190,
+        ],
+        "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.IRK'>-False-1-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            18.43957829475403,
+            4.037032842636108,
+            899947,
+        ],
+        "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.IRK'>-False-2-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            10.616436958312988,
+            4.390933036804199,
+            735225,
+        ],
+        "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.COLLOCATION'>-False-1-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            10.969594955444336,
+            4.5225489139556885,
+            646988,
+        ],
+        "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.COLLOCATION'>-False-1-PhaseDynamics.ONE_PER_NODE": [
+            23.84077286720276,
+            4.538561105728149,
+            1210450,
+        ],
+        "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.COLLOCATION'>-False-2-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            10.9096360206604,
+            4.760142803192139,
+            752733,
+        ],
+        "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.COLLOCATION'>-True-1-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            6.926822900772095,
+            2.414496898651123,
+            727860,
+        ],
+        "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.COLLOCATION'>-True-1-PhaseDynamics.ONE_PER_NODE": [
+            12.805675983428955,
+            2.5234029293060303,
+            1196527,
+        ],
+        "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.COLLOCATION'>-True-2-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            6.878154993057251,
+            2.5607388019561768,
+            720381,
+        ],
+        "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.TRAPEZOIDAL'>-False-1-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            10.018677949905396,
+            3.510016918182373,
+            594962,
+        ],
+        "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.TRAPEZOIDAL'>-False-2-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            10.05292797088623,
+            3.9034368991851807,
+            612351,
+        ],
+        "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.TRAPEZOIDAL'>-True-1-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            6.240038156509399,
+            1.6190829277038574,
+            594868,
+        ],
+        "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.TRAPEZOIDAL'>-True-2-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            6.330470085144043,
+            1.867854118347168,
+            642813,
+        ],
+        "custom_constraint_track_markers-RK4 5 steps-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            10.673295974731445,
+            3.388075113296509,
+            609714,
+        ],
+        "custom_constraint_track_markers-RK4 5 steps-PhaseDynamics.ONE_PER_NODE": [
+            26.097075939178467,
+            3.3995869159698486,
+            923073,
+        ],
+        "custom_constraint_track_markers-RK8 5 steps-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            11.549690008163452,
+            3.6156070232391357,
+            645463,
+        ],
+        "custom_constraint_track_markers-RK8 5 steps-PhaseDynamics.ONE_PER_NODE": [
+            68.34736394882202,
+            3.636629104614258,
+            920536,
+        ],
+        "custom_constraint_track_markers-IRK legendre 4-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            10.76711106300354,
+            3.313241958618164,
+            707622,
+        ],
+        "custom_constraint_track_markers-IRK legendre 4-PhaseDynamics.ONE_PER_NODE": [
+            28.626792907714844,
+            3.40545916557312,
+            1218876,
+        ],
+        "initial_guesses-COLLOCATION legendre 4-InterpolationType.CONSTANT-True-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            2.8762149810791016,
+            0.8577940464019775,
+            390563,
+        ],
+        "initial_guesses-COLLOCATION legendre 4-InterpolationType.CONSTANT-True-PhaseDynamics.ONE_PER_NODE": [
+            5.439468145370483,
+            0.8535397052764893,
+            419250,
+        ],
+        "initial_guesses-COLLOCATION legendre 4-InterpolationType.CONSTANT-False-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            2.716529130935669,
+            0.8512768745422363,
+            389290,
+        ],
+        "initial_guesses-COLLOCATION legendre 4-InterpolationType.CONSTANT-False-PhaseDynamics.ONE_PER_NODE": [
+            5.462108135223389,
+            0.8469760417938232,
+            417190,
+        ],
+        "initial_guesses-COLLOCATION legendre 4-InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT-True-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            2.7114789485931396,
+            0.8558590412139893,
+            387704,
+        ],
+        "initial_guesses-COLLOCATION legendre 4-InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT-True-PhaseDynamics.ONE_PER_NODE": [
+            5.458024978637695,
+            0.8521609306335449,
+            417404,
+        ],
+        "initial_guesses-COLLOCATION legendre 4-InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT-False-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            2.72013783454895,
+            0.8449790477752686,
+            383868,
+        ],
+        "initial_guesses-COLLOCATION legendre 4-InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT-False-PhaseDynamics.ONE_PER_NODE": [
+            5.778219938278198,
+            0.8503592014312744,
+            415820,
+        ],
+        "initial_guesses-COLLOCATION legendre 4-InterpolationType.LINEAR-True-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            2.723651885986328,
+            0.8477730751037598,
+            387024,
+        ],
+        "initial_guesses-COLLOCATION legendre 4-InterpolationType.LINEAR-True-PhaseDynamics.ONE_PER_NODE": [
+            5.444235801696777,
+            0.8578059673309326,
+            412653,
+        ],
+        "initial_guesses-COLLOCATION legendre 4-InterpolationType.LINEAR-False-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            2.7125680446624756,
+            0.8480432033538818,
+            387892,
+        ],
+        "initial_guesses-COLLOCATION legendre 4-InterpolationType.LINEAR-False-PhaseDynamics.ONE_PER_NODE": [
+            5.640583038330078,
+            0.8465030193328857,
+            415649,
+        ],
+        "initial_guesses-COLLOCATION legendre 4-InterpolationType.EACH_FRAME-True-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            2.7136051654815674,
+            0.8542258739471436,
+            390067,
+        ],
+        "initial_guesses-COLLOCATION legendre 4-InterpolationType.EACH_FRAME-True-PhaseDynamics.ONE_PER_NODE": [
+            5.471343040466309,
+            0.8535947799682617,
+            416583,
+        ],
+        "initial_guesses-COLLOCATION legendre 4-InterpolationType.EACH_FRAME-False-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            2.719716787338257,
+            0.8414311408996582,
+            387968,
+        ],
+        "initial_guesses-COLLOCATION legendre 4-InterpolationType.EACH_FRAME-False-PhaseDynamics.ONE_PER_NODE": [
+            5.4531378746032715,
+            0.8519871234893799,
+            420160,
+        ],
+        "initial_guesses-COLLOCATION legendre 4-InterpolationType.ALL_POINTS-True-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            2.7339630126953125,
+            0.9725730419158936,
+            388817,
+        ],
+        "initial_guesses-COLLOCATION legendre 4-InterpolationType.ALL_POINTS-True-PhaseDynamics.ONE_PER_NODE": [
+            5.4997398853302,
+            0.9800679683685303,
+            419779,
+        ],
+        "initial_guesses-COLLOCATION legendre 4-InterpolationType.ALL_POINTS-False-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            2.704702854156494,
+            0.9630610942840576,
+            381522,
+        ],
+        "initial_guesses-COLLOCATION legendre 4-InterpolationType.ALL_POINTS-False-PhaseDynamics.ONE_PER_NODE": [
+            5.460683822631836,
+            0.9641790390014648,
+            419424,
+        ],
+        "initial_guesses-COLLOCATION legendre 4-InterpolationType.SPLINE-True-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            2.7380893230438232,
+            0.8656628131866455,
+            393694,
+        ],
+        "initial_guesses-COLLOCATION legendre 4-InterpolationType.SPLINE-True-PhaseDynamics.ONE_PER_NODE": [
+            5.449185848236084,
+            0.8536832332611084,
+            416973,
+        ],
+        "initial_guesses-COLLOCATION legendre 4-InterpolationType.SPLINE-False-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            2.849992275238037,
+            0.9017038345336914,
+            387004,
+        ],
+        "initial_guesses-COLLOCATION legendre 4-InterpolationType.SPLINE-False-PhaseDynamics.ONE_PER_NODE": [
+            5.450401782989502,
+            0.9272141456604004,
+            418999,
+        ],
+        "initial_guesses-COLLOCATION legendre 4-InterpolationType.CUSTOM-True-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            2.5834391117095947,
+            0.8565921783447266,
+            388699,
+        ],
+        "initial_guesses-COLLOCATION legendre 4-InterpolationType.CUSTOM-True-PhaseDynamics.ONE_PER_NODE": [
+            4.739809036254883,
+            0.8569889068603516,
+            419324,
+        ],
+        "initial_guesses-COLLOCATION legendre 4-InterpolationType.CUSTOM-False-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            2.5463249683380127,
+            0.8442230224609375,
+            368242,
+        ],
+        "initial_guesses-COLLOCATION legendre 4-InterpolationType.CUSTOM-False-PhaseDynamics.ONE_PER_NODE": [
+            4.755112886428833,
+            0.8789701461791992,
+            418743,
+        ],
+        "cyclic_objective-RK4 5 steps-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            4.349828243255615,
+            1.4332208633422852,
+            394051,
+        ],
+        "cyclic_objective-RK4 5 steps-PhaseDynamics.ONE_PER_NODE": [9.301621198654175, 1.432386875152588, 489293],
+        "cyclic_objective-RK8 5 steps-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            5.420027017593384,
+            1.5296180248260498,
+            389368,
+        ],
+        "cyclic_objective-RK8 5 steps-PhaseDynamics.ONE_PER_NODE": [20.131958961486816, 1.5301339626312256, 479750],
+        "cyclic_objective-IRK legendre 4-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            4.4788501262664795,
+            1.3940727710723877,
+            412248,
+        ],
+        "cyclic_objective-IRK legendre 4-PhaseDynamics.ONE_PER_NODE": [10.172360181808472, 1.4182348251342773, 614057],
+        "cyclic_constraint-RK4 5 steps-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            4.389387130737305,
+            1.4227328300476074,
+            394725,
+        ],
+        "cyclic_constraint-RK4 5 steps-PhaseDynamics.ONE_PER_NODE": [9.25717806816101, 1.4185810089111328, 484761],
+        "cyclic_constraint-RK8 5 steps-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            5.414251089096069,
+            1.5820820331573486,
+            393900,
+        ],
+        "cyclic_constraint-RK8 5 steps-PhaseDynamics.ONE_PER_NODE": [24.86505699157715, 1.5264549255371094, 487561],
+        "cyclic_constraint-IRK legendre 4-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            4.60000205039978,
+            1.390260934829712,
+            410702,
+        ],
+        "cyclic_constraint-IRK legendre 4-PhaseDynamics.ONE_PER_NODE": [10.216149806976318, 1.4064080715179443, 608689],
+        "phase_transition-<class 'bioptim.dynamics.ode_solvers.OdeSolver.RK4'>-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            30.478795051574707,
+            10.666538000106812,
+            1483638,
+        ],
+        "phase_transition-<class 'bioptim.dynamics.ode_solvers.OdeSolver.RK4'>-PhaseDynamics.ONE_PER_NODE": [
+            71.24667596817017,
+            10.562263011932373,
+            2297333,
+        ],
+        "phase_transition-<class 'bioptim.dynamics.ode_solvers.OdeSolver.RK8'>-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            34.5624041557312,
+            12.113614797592163,
+            1471071,
+        ],
+        "phase_transition-<class 'bioptim.dynamics.ode_solvers.OdeSolver.IRK'>-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            31.68831205368042,
+            10.003971099853516,
+            1759293,
+        ],
+        "phase_transition-<class 'bioptim.dynamics.ode_solvers.OdeSolver.IRK'>-PhaseDynamics.ONE_PER_NODE": [
+            78.9703598022461,
+            10.492695093154907,
+            3059874,
+        ],
+        "custom_dynamics-RK4 5 steps-True-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            10.58127498626709,
+            3.37709903717041,
+            606574,
+        ],
+        "custom_dynamics-RK4 5 steps-True-PhaseDynamics.ONE_PER_NODE": [23.73125386238098, 3.392482042312622, 809222],
+        "custom_dynamics-RK4 5 steps-False-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            10.532292127609253,
+            3.378679037094116,
+            611740,
+        ],
+        "custom_dynamics-RK4 5 steps-False-PhaseDynamics.ONE_PER_NODE": [
+            28.305109977722168,
+            3.4108550548553467,
+            927952,
+        ],
+        "custom_dynamics-RK8 5 steps-True-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            11.493597269058228,
+            3.5843007564544678,
+            609811,
+        ],
+        "custom_dynamics-RK8 5 steps-False-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            11.700747013092041,
+            3.7299020290374756,
+            589937,
+        ],
+        "custom_dynamics-IRK legendre 4-True-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            10.9104483127594,
+            3.4524967670440674,
+            732398,
+        ],
+        "custom_dynamics-IRK legendre 4-True-PhaseDynamics.ONE_PER_NODE": [
+            24.073041915893555,
+            3.3761467933654785,
+            1024986,
+        ],
+        "custom_dynamics-IRK legendre 4-False-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            10.821430206298828,
+            3.313566207885742,
+            703332,
+        ],
+        "custom_dynamics-IRK legendre 4-False-PhaseDynamics.ONE_PER_NODE": [
+            29.340002059936523,
+            3.4039158821105957,
+            1216012,
+        ],
+        "external_forces-RK4 5 steps-True-1-PhaseDynamics.SHARED_DURING_THE_PHASE-True": [
+            6.897389888763428,
+            2.2513530254364014,
+            607401,
+        ],
+        "external_forces-RK8 5 steps-True-1-PhaseDynamics.SHARED_DURING_THE_PHASE-True": [
+            7.531352281570435,
+            3.851998805999756,
+            607869,
+        ],
+        "external_forces-RK4 5 steps-True-1-PhaseDynamics.ONE_PER_NODE-True": [
+            15.906329154968262,
+            2.292609930038452,
+            964447,
+        ],
+        "external_forces-RK8 5 steps-True-1-PhaseDynamics.ONE_PER_NODE-True": [
+            58.4593780040741,
+            3.8535048961639404,
+            922468,
+        ],
+        "external_forces-RK4 5 steps-True-2-PhaseDynamics.SHARED_DURING_THE_PHASE-True": [
+            7.105379819869995,
+            2.4340322017669678,
+            622783,
+        ],
+        "external_forces-RK8 5 steps-True-2-PhaseDynamics.SHARED_DURING_THE_PHASE-True": [
+            7.551738739013672,
+            4.198095083236694,
+            659147,
+        ],
+        "external_forces-RK4 5 steps-False-1-PhaseDynamics.SHARED_DURING_THE_PHASE-True": [
+            11.284422874450684,
+            3.734930992126465,
+            603286,
+        ],
+        "external_forces-RK8 5 steps-False-1-PhaseDynamics.SHARED_DURING_THE_PHASE-True": [
+            37.67650890350342,
+            4.55831503868103,
+            619707,
+        ],
+        "external_forces-IRK legendre 4-False-1-PhaseDynamics.SHARED_DURING_THE_PHASE-True": [
+            11.606570720672607,
+            3.4060099124908447,
+            706930,
+        ],
+        "external_forces-RK4 5 steps-False-1-PhaseDynamics.ONE_PER_NODE-True": [
+            56.89438986778259,
+            3.6793341636657715,
+            928346,
+        ],
+        "external_forces-RK8 5 steps-False-1-PhaseDynamics.ONE_PER_NODE-True": [
+            96.77864289283752,
+            29.973921060562134,
+            941629,
+        ],
+        "external_forces-IRK legendre 4-False-1-PhaseDynamics.ONE_PER_NODE-True": [
+            35.51646900177002,
+            3.9422879219055176,
+            1220334,
+        ],
+        "external_forces-RK4 5 steps-False-2-PhaseDynamics.SHARED_DURING_THE_PHASE-True": [
+            17.36193585395813,
+            3.757427930831909,
+            678841,
+        ],
+        "external_forces-RK8 5 steps-False-2-PhaseDynamics.SHARED_DURING_THE_PHASE-True": [
+            12.601202011108398,
+            4.02860689163208,
+            669127,
+        ],
+        "external_forces-IRK legendre 4-False-2-PhaseDynamics.SHARED_DURING_THE_PHASE-True": [
+            11.716263055801392,
+            3.723665952682495,
+            763866,
+        ],
+        "external_forces-RK4 5 steps-True-1-PhaseDynamics.SHARED_DURING_THE_PHASE-False": [
+            6.879094839096069,
+            2.2598249912261963,
+            584587,
+        ],
+        "external_forces-RK8 5 steps-True-1-PhaseDynamics.SHARED_DURING_THE_PHASE-False": [
+            7.53236198425293,
+            3.913083076477051,
+            615358,
+        ],
+        "external_forces-RK4 5 steps-True-1-PhaseDynamics.ONE_PER_NODE-False": [
+            15.84078598022461,
+            2.304800033569336,
+            954320,
+        ],
+        "external_forces-RK8 5 steps-True-1-PhaseDynamics.ONE_PER_NODE-False": [
+            32.529654026031494,
+            3.8880581855773926,
+            925462,
+        ],
+        "external_forces-RK4 5 steps-True-2-PhaseDynamics.SHARED_DURING_THE_PHASE-False": [
+            6.912766933441162,
+            2.419163942337036,
+            631894,
+        ],
+        "external_forces-RK8 5 steps-True-2-PhaseDynamics.SHARED_DURING_THE_PHASE-False": [
+            7.492810964584351,
+            4.099035978317261,
+            653783,
+        ],
+        "external_forces-RK4 5 steps-False-1-PhaseDynamics.SHARED_DURING_THE_PHASE-False": [
+            11.323030948638916,
+            3.7454001903533936,
+            614744,
+        ],
+        "external_forces-RK8 5 steps-False-1-PhaseDynamics.SHARED_DURING_THE_PHASE-False": [
+            12.608556032180786,
+            4.535145998001099,
+            622750,
+        ],
+        "external_forces-IRK legendre 4-False-1-PhaseDynamics.SHARED_DURING_THE_PHASE-False": [
+            11.693609952926636,
+            3.4200541973114014,
+            707271,
+        ],
+        "external_forces-RK4 5 steps-False-1-PhaseDynamics.ONE_PER_NODE-False": [
+            31.826242208480835,
+            3.692452907562256,
+            934066,
+        ],
+        "external_forces-RK8 5 steps-False-1-PhaseDynamics.ONE_PER_NODE-False": [
+            72.00836086273193,
+            4.5808892250061035,
+            933251,
+        ],
+        "external_forces-IRK legendre 4-False-1-PhaseDynamics.ONE_PER_NODE-False": [
+            35.6413209438324,
+            3.8857109546661377,
+            1217436,
+        ],
+        "external_forces-RK4 5 steps-False-2-PhaseDynamics.SHARED_DURING_THE_PHASE-False": [
+            11.262562036514282,
+            3.7912240028381348,
+            668504,
+        ],
+        "external_forces-RK8 5 steps-False-2-PhaseDynamics.SHARED_DURING_THE_PHASE-False": [
+            12.692394971847534,
+            3.9266250133514404,
+            674000,
+        ],
+        "external_forces-IRK legendre 4-False-2-PhaseDynamics.SHARED_DURING_THE_PHASE-False": [
+            11.90785002708435,
+            3.7309491634368896,
+            761460,
+        ],
+        "multiphase-RK4 5 steps-PhaseDynamics.SHARED_DURING_THE_PHASE": [25.86482834815979, 8.448194742202759, 1270804],
+        "multiphase-RK4 5 steps-PhaseDynamics.ONE_PER_NODE": [62.09187197685242, 8.761482238769531, 2004362],
+        "multiphase-RK8 5 steps-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            29.005884885787964,
+            9.155505180358887,
+            1271537,
+        ],
+        "multiphase-IRK legendre 4-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            26.476194143295288,
+            8.287683725357056,
+            1529573,
+        ],
+        "multiphase-IRK legendre 4-PhaseDynamics.ONE_PER_NODE": [118.62483716011047, 8.728019952774048, 2669836],
+        "contact_forces_greater_than_constraint-<class 'bioptim.dynamics.ode_solvers.OdeSolver.RK4'>-PhaseDynamics.SHARED_DURING_THE_PHASE-True": [
+            7.514098882675171,
+            4.180995941162109,
+            318311,
+        ],
+        "contact_forces_greater_than_constraint-<class 'bioptim.dynamics.ode_solvers.OdeSolver.RK4'>-PhaseDynamics.ONE_PER_NODE-True": [
+            37.526939153671265,
+            4.229383945465088,
+            489763,
+        ],
+        "contact_forces_greater_than_constraint-<class 'bioptim.dynamics.ode_solvers.OdeSolver.IRK'>-PhaseDynamics.SHARED_DURING_THE_PHASE-True": [
+            7.5234458446502686,
+            4.092674970626831,
+            484960,
+        ],
+        "contact_forces_greater_than_constraint-<class 'bioptim.dynamics.ode_solvers.OdeSolver.IRK'>-PhaseDynamics.SHARED_DURING_THE_PHASE-False": [
+            7.506089925765991,
+            4.00847601890564,
+            446034,
+        ],
+        "contact_forces_greater_than_constraint-<class 'bioptim.dynamics.ode_solvers.OdeSolver.IRK'>-PhaseDynamics.ONE_PER_NODE-True": [
+            38.98725414276123,
+            5.3120410442352295,
+            580952,
+        ],
+        "contact_forces_greater_than_constraint-<class 'bioptim.dynamics.ode_solvers.OdeSolver.IRK'>-PhaseDynamics.ONE_PER_NODE-False": [
+            13.908345937728882,
+            5.336513996124268,
+            580055,
+        ],
+        "multinode_objective-RK4 5 steps-PhaseDynamics.ONE_PER_NODE": [32.83850407600403, 1.2930281162261963, 628298],
+        "multinode_objective-RK8 5 steps-PhaseDynamics.ONE_PER_NODE": [16.471795320510864, 1.8922476768493652, 613241],
+        "multinode_constraints-RK4 5 steps-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            11.765421867370605,
+            3.871987819671631,
+            769962,
+        ],
+        "multinode_constraints-RK4 5 steps-PhaseDynamics.ONE_PER_NODE": [
+            24.823140144348145,
+            29.103562831878662,
+            1032166,
+        ],
+        "multinode_constraints-RK8 5 steps-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            14.892894983291626,
+            4.162814140319824,
+            782765,
+        ],
+        "multinode_constraints-IRK legendre 4-PhaseDynamics.SHARED_DURING_THE_PHASE": [
+            12.175392866134644,
+            3.7508199214935303,
+            833686,
+        ],
+        "multinode_constraints-IRK legendre 4-PhaseDynamics.ONE_PER_NODE": [
+            52.144675970077515,
+            3.8724920749664307,
+            1299765,
+        ],
+        "multistart": [0.0025186538696289062, 17.739748239517212, 388847],
+        "variable_scaling-PhaseDynamics.SHARED_DURING_THE_PHASE": [31.575006008148193, 2.302826166152954, 569048],
+        "variable_scaling-PhaseDynamics.ONE_PER_NODE": [13.260251998901367, 2.27763295173645, 951887],
+    }
+
+    building_time = []
+    solving_time = []
+    RAM_usage = []
+    for key in ref.keys():
+        print(
+            f"Building OCP time: {ref[key][0] - test_memory[key][0]} \tSolving OCP time: {ref[key][1] - test_memory[key][1]}\t Peak RAM: {ref[key][2] - test_memory[key][2]}"
+        )
+        building_time += [ref[key][0] - test_memory[key][0]]
+        solving_time += [ref[key][1] - test_memory[key][1]]
+        RAM_usage += [ref[key][2] - test_memory[key][2]]
+    print(
+        f"Means: {np.mean(np.array(building_time))}\t {np.mean(np.array(solving_time))}\t {np.mean(np.array(RAM_usage))}"
+    )
+
+    for key in ref.keys():
+        npt.assert_array_less(test_memory[key][0], ref[key][0] * 3)
+        npt.assert_array_less(test_memory[key][1], ref[key][1] * 3)
+        npt.assert_array_less(test_memory[key][2], ref[key][2] * 3)

@@ -1,8 +1,13 @@
 import importlib.util
-from pathlib import Path
 import platform
-from typing import Any
+from pathlib import Path
 from types import ModuleType
+from typing import Any
+
+import numpy as np
+import numpy.testing as npt
+import pytest
+from casadi import MX, Function
 
 from bioptim import (
     BiorbdModel,
@@ -20,10 +25,6 @@ from bioptim import (
     OptimizationVariableList,
 )
 from bioptim.interfaces.ipopt_interface import IpoptInterface
-from casadi import MX, Function
-import numpy as np
-import numpy.testing as npt
-import pytest
 
 
 class TestUtils:
@@ -119,7 +120,7 @@ class TestUtils:
 
     @staticmethod
     def simulate(sol: Solution, decimal_value=7):
-        if sum([nlp.ode_solver.is_direct_collocation for nlp in sol.ocp.nlp]):
+        if sum([nlp.dynamics_type.ode_solver.is_direct_collocation for nlp in sol.ocp.nlp]):
             with pytest.raises(
                 ValueError,
                 match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
@@ -133,7 +134,7 @@ class TestUtils:
                 )
             return
 
-        if sum([isinstance(nlp.ode_solver, OdeSolver.TRAPEZOIDAL) for nlp in sol.ocp.nlp]):
+        if sum([isinstance(nlp.dynamics_type.ode_solver, OdeSolver.TRAPEZOIDAL) for nlp in sol.ocp.nlp]):
             with pytest.raises(
                 ValueError,
                 match="When the ode_solver of the Optimal Control Problem is OdeSolver.TRAPEZOIDAL, "

@@ -45,8 +45,8 @@ class Integrator:
         Get the multithreaded CasADi graph of the integration
     get_u(self, u: np.ndarray, t: float) -> np.ndarray
         Get the control at a given time
-    dxdt(self, h: float, time: float | MX | SX, states: MX | SX, controls: MX | SX, params: MX | SX, algebraic_states: MX | SX, numerical_timeseries: MX | SX) -> tuple[SX, list[SX]]
-        The dynamics of the system
+    compute_states_end(self, h: float, time: float | MX | SX, states: MX | SX, controls: MX | SX, params: MX | SX, algebraic_states: MX | SX, numerical_timeseries: MX | SX) -> tuple[SX, list[SX]]
+        Integrate dxdt over one complete shooting interval to get the states at the end of the interval.
     """
 
     # Todo change ode and ode_opt into class
@@ -87,10 +87,10 @@ class Integrator:
                 self._x_sym_modified,
                 self.u_sym,
                 self.param_sym,
-                self.a_sym,
+                self._a_sym_modified,
                 self.numerical_timeseries_sym,
             ],
-            self.dxdt(
+            self.compute_states_end(
                 states=self.x_sym,
                 controls=self.u_sym,
                 params=self.param_sym,
@@ -131,6 +131,10 @@ class Integrator:
         return self.x_sym
 
     @property
+    def _a_sym_modified(self):
+        return self.a_sym
+
+    @property
     def _input_names(self):
         return ["t_span", "x0", "u", "p", "a", "d"]
 
@@ -141,7 +145,7 @@ class Integrator:
     def _initialize(self, ode: dict, ode_opt: dict):
         """
         This method is called by the constructor to initialize the integrator right before
-        creating the CasADi function from dxdt
+        creating the CasADi function from compute_states_end
         """
         pass
 
@@ -190,7 +194,7 @@ class Integrator:
         else:
             raise RuntimeError(f"{self.control_type} ControlType not implemented yet")
 
-    def dxdt(
+    def compute_states_end(
         self,
         states: MX | SX,
         controls: MX | SX,
@@ -298,7 +302,7 @@ class RK(Integrator):
 
         raise RuntimeError("RK is abstract, please select a specific RK")
 
-    def dxdt(
+    def compute_states_end(
         self,
         states: MX | SX,
         controls: MX | SX,
@@ -505,7 +509,7 @@ class TRAPEZOIDAL(Integrator):
     def dt(self):
         return self.t_span_sym[1]
 
-    def dxdt(
+    def compute_states_end(
         self,
         states: MX | SX,
         controls: MX | SX,
@@ -586,6 +590,10 @@ class COLLOCATION(Integrator):
         return horzcat(*self.x_sym) if self.duplicate_starting_point else horzcat(*self.x_sym[1:])
 
     @property
+    def _a_sym_modified(self):
+        return horzcat(*self.a_sym) if self.duplicate_starting_point else horzcat(*self.a_sym[1:])
+
+    @property
     def _output_names(self):
         return ["xf", "xall", "defects"]
 
@@ -622,7 +630,7 @@ class COLLOCATION(Integrator):
         u: np.ndarray
             The control matrix
         t: float | MX | SX
-            The time a which control should be computed
+            The time a which control should be computed (t is computed using _integration_time and is in [0, 1])
 
         Returns
         -------
@@ -630,11 +638,13 @@ class COLLOCATION(Integrator):
         """
 
         if self.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
-            return super(COLLOCATION, self).get_u(u, t)
+            return u
+        elif self.control_type == ControlType.LINEAR_CONTINUOUS:
+            return u[:, 0] + (u[:, 1] - u[:, 0]) * t
         else:
-            raise NotImplementedError(f"{self.control_type} ControlType not implemented yet with COLLOCATION")
+            raise RuntimeError(f"{self.control_type} ControlType not implemented yet")
 
-    def dxdt(
+    def compute_states_end(
         self,
         states: MX | SX,
         controls: MX | SX,
@@ -664,7 +674,7 @@ class COLLOCATION(Integrator):
                     states[j + 1],
                     self.get_u(controls, self._integration_time[j]),
                     params,
-                    algebraic_states,
+                    algebraic_states[j + 1],
                     numerical_timeseries,
                 )[:, self.ode_idx]
                 defects.append(xp_j - f_j * self.h)
@@ -676,7 +686,7 @@ class COLLOCATION(Integrator):
                         states[j + 1],
                         self.get_u(controls, self._integration_time[j]),
                         params,
-                        algebraic_states,
+                        algebraic_states[j + 1],
                         numerical_timeseries,
                         xp_j / self.h,
                     )
@@ -722,7 +732,7 @@ class IRK(COLLOCATION):
             "step_time", [self.t_span_sym], [vertcat(*[self.t_span_sym[0], self.t_span_sym[0] + self.t_span_sym[1]])]
         )
 
-    def dxdt(
+    def compute_states_end(
         self,
         states: MX | SX,
         controls: MX | SX,
@@ -731,7 +741,7 @@ class IRK(COLLOCATION):
         numerical_timeseries: MX | SX,
     ) -> tuple:
         nx = states[0].shape[0]
-        _, _, defect = super(IRK, self).dxdt(
+        _, _, defect = super(IRK, self).compute_states_end(
             states=states,
             controls=controls,
             params=params,
@@ -741,6 +751,9 @@ class IRK(COLLOCATION):
 
         # Root-finding function, implicitly defines x_collocation_points as a function of x0 and p
         collocation_states = vertcat(*states[1:]) if self.duplicate_starting_point else vertcat(*states[2:])
+        algebraic_states = (
+            vertcat(*algebraic_states[1:]) if self.duplicate_starting_point else vertcat(*algebraic_states[2:])
+        )
         vfcn = Function(
             "vfcn",
             [collocation_states, self.t_span_sym, states[0], controls, params, algebraic_states, numerical_timeseries],
@@ -771,4 +784,12 @@ class CVODES(Integrator):
     """
     Class for CVODES integrators
 
+    """
+
+
+class VARIATIONAL(RK4):
+    """
+    Fake class for variational integrator.
+    The real work is done in VariationalOptimalControlProgram.
+    TODO: The implementation of the variational integrator could be moved here (see issue #962).
     """

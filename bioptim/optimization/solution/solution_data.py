@@ -58,7 +58,7 @@ class SolutionData:
         unscaled: list
             The unscaled values
         variable_type: str
-            The type of variable to convert (x for states, u for controls, p for parameters, a for algebraic states)
+            The type of variable to convert (x for states or algebraic states, u for controls, p for parameters)
         """
         n_nodes = [nlp.n_states_nodes for nlp in ocp.nlp]
         return SolutionData(unscaled, _to_scaled_values(unscaled, ocp, variable_type), n_nodes)
@@ -75,7 +75,7 @@ class SolutionData:
         scaled: list
             The scaled values
         variable_type: str
-            The type of variable to convert (x for states, u for controls, p for parameters, a for algebraic states)
+            The type of variable to convert (x for states or algebraic states, u for controls, p for parameters)
         """
         n_nodes = [nlp.n_states_nodes for nlp in ocp.nlp]
         return SolutionData(_to_unscaled_values(scaled, ocp, variable_type), scaled, n_nodes)
@@ -184,7 +184,7 @@ def _to_unscaled_values(scaled: list, ocp, variable_type: str) -> list:
     scaled: list
         The scaled values
     variable_type: str
-        The type of variable to convert (x for states, u for controls, p for parameters, a for algebraic states)
+        The type of variable to convert (x for states or algebraic states, u for controls, p for parameters)
     """
 
     unscaled: list = [None for _ in range(len(scaled))]
@@ -219,7 +219,7 @@ def _to_scaled_values(unscaled: list, ocp, variable_type: str) -> list:
     unscaled: list
         The unscaled values
     variable_type: str
-        The type of variable to convert (x for states, u for controls, p for parameters, a for algebraic states)
+        The type of variable to convert (x for states or algebraic states, u for controls, p for parameters)
     """
 
     if not unscaled:

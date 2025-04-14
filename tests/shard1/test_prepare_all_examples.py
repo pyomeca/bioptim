@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from bioptim import InterpolationType, PhaseDynamics, OdeSolver
+from bioptim import InterpolationType, PhaseDynamics, OdeSolver, ContactType
 from ..utils import TestUtils
 
 
@@ -304,7 +304,7 @@ def test__getting_started__example_multiphase_different_ode_solvers():
 
     with pytest.raises(
         RuntimeError,
-        match="ode_solver should be built an instance of OdeSolver or a list of OdeSolver",
+        match="ode_solver should be built an instance of OdeSolver",
     ):
         ocp_module.prepare_ocp(
             biorbd_model_path=bioptim_folder + "/models/cube.bioMod",

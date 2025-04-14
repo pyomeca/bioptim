@@ -81,3 +81,47 @@ def test_bounds_from_ranges(my_keys):
         # Check min and max have the right value
         npt.assert_almost_equal(x_bounds.min, x_min)
         npt.assert_almost_equal(x_bounds.max, x_max)
+
+
+def test_function_cached():
+    from bioptim.examples.getting_started import pendulum as ocp_module
+
+    bioptim_folder = TestUtils.module_folder(ocp_module)
+    model_path = "/models/pendulum.bioMod"
+    bio_model = BiorbdModel(bioptim_folder + model_path)
+
+    # No cached function
+    assert len(bio_model._cached_functions.keys()) == 0
+
+    # CoM (no argument in the first parenthesis)
+    # First call create the function and cache it
+    com = bio_model.center_of_mass()(bio_model.q, bio_model.parameters)
+    com_id = id(bio_model._cached_functions[("center_of_mass", (), frozenset())])
+    assert len(bio_model._cached_functions.keys()) == 1
+
+    # Second call use the cached function
+    com = bio_model.center_of_mass()(bio_model.q, bio_model.parameters)
+    assert com_id == id(bio_model._cached_functions[("center_of_mass", (), frozenset())])
+    assert len(bio_model._cached_functions.keys()) == 1
+
+    # marker (with an argument in the first parenthesis)
+    # First call create the function and cache it
+    marker = bio_model.marker(index=0)(bio_model.q, bio_model.parameters)
+    marker_id = id(bio_model._cached_functions[("marker", (), frozenset({("index", 0)}))])
+    assert len(bio_model._cached_functions.keys()) == 2
+
+    # Second call use the cached function
+    marker = bio_model.center_of_mass()(bio_model.q, bio_model.parameters)
+    assert marker_id == id(bio_model._cached_functions[("marker", (), frozenset({("index", 0)}))])
+    assert len(bio_model._cached_functions.keys()) == 2
+
+    # First call with other argument creates the function again and cache it
+    marker2 = bio_model.marker(index=1)(bio_model.q, bio_model.parameters)
+    marker_id2 = id(bio_model._cached_functions[("marker", (), frozenset({("index", 1)}))])
+    assert len(bio_model._cached_functions.keys()) == 3
+    assert marker_id != marker_id2
+
+    # Second call use the cached function
+    marker2 = bio_model.center_of_mass()(bio_model.q, bio_model.parameters)
+    assert marker_id2 == id(bio_model._cached_functions[("marker", (), frozenset({("index", 1)}))])
+    assert len(bio_model._cached_functions.keys()) == 3

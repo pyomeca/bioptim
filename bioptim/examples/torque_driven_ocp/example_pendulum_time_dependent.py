@@ -33,6 +33,7 @@ from bioptim import (
     NonLinearProgram,
     Solver,
     PhaseDynamics,
+    ContactType,
 )
 
 
@@ -82,7 +83,10 @@ def time_dependent_dynamic(
 
 
 def custom_configure(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries: dict[str, np.ndarray] = None
+    ocp: OptimalControlProgram,
+    nlp: NonLinearProgram,
+    numerical_data_timeseries: dict[str, np.ndarray] = None,
+    contact_type: list[ContactType] | tuple[ContactType] = (),
 ):
     """
     Tell the program which variables are states and controls.
@@ -96,6 +100,8 @@ def custom_configure(
         A reference to the phase
     numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
+    contact_type: list[ContactType] | tuple[ContactType]
+        The type of contacts to consider in the dynamics.
     """
 
     ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
@@ -151,7 +157,11 @@ def prepare_ocp(
     dynamics = DynamicsList()
     expand = not isinstance(ode_solver, OdeSolver.IRK)
     dynamics.add(
-        custom_configure, dynamic_function=time_dependent_dynamic, expand_dynamics=expand, phase_dynamics=phase_dynamics
+        custom_configure,
+        dynamic_function=time_dependent_dynamic,
+        ode_solver=ode_solver,
+        expand_dynamics=expand,
+        phase_dynamics=phase_dynamics,
     )
 
     # Path constraint
@@ -187,7 +197,6 @@ def prepare_ocp(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
-        ode_solver=ode_solver,
         use_sx=use_sx,
         control_type=control_type,
     )

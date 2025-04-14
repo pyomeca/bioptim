@@ -40,8 +40,8 @@ from scipy.integrate import solve_ivp
 
 
 def configure_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram):
-    ConfigureProblem.configure_q(ocp, nlp, True, False, False)
-    ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
+    ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
+    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
     ConfigureProblem.configure_new_variable("u", nlp.model.name_u, ocp, nlp, as_states=False, as_controls=True)
 
     ConfigureProblem.configure_dynamics_function(
@@ -53,15 +53,15 @@ def configure_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinear
     )
 
 
-def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram):
-    ConfigureProblem.configure_q(ocp, nlp, True, False, False)
-    ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
+def configure_stochastic_optimal_control_problem(
+    ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None, contact_type=()
+):
+    ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
+    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
     ConfigureProblem.configure_new_variable("u", nlp.model.name_u, ocp, nlp, as_states=False, as_controls=True)
 
     # Algebraic states variables
-    ConfigureProblem.configure_stochastic_m(
-        ocp, nlp, n_noised_states=2, n_collocation_points=nlp.model.polynomial_degree + 1
-    )
+    ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=2)
     ConfigureProblem.configure_stochastic_cov_implicit(ocp, nlp, n_noised_states=2)
     ConfigureProblem.configure_dynamics_function(
         ocp,
@@ -196,6 +196,8 @@ def prepare_socp(
         )
 
     else:
+        ode_solver = OdeSolver.COLLOCATION(polynomial_degree=socp_type.polynomial_degree, method=socp_type.method)
+
         dynamics.add(
             configure_optimal_control_problem,
             dynamic_function=lambda time, states, controls, parameters, algebraic_states, nlp, with_noise: bio_model.dynamics(
@@ -208,10 +210,8 @@ def prepare_socp(
             ),
             phase_dynamics=phase_dynamics,
             expand_dynamics=expand_dynamics,
+            ode_solver=ode_solver,
         )
-
-        ode_solver = OdeSolver.COLLOCATION(polynomial_degree=socp_type.polynomial_degree, method=socp_type.method)
-
         return OptimalControlProgram(
             bio_model,
             dynamics,
@@ -221,7 +221,6 @@ def prepare_socp(
             u_bounds=u_bounds,
             objective_functions=objective_functions,
             constraints=constraints,
-            ode_solver=ode_solver,
             n_threads=6,
         )
 

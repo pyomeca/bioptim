@@ -30,6 +30,7 @@ from bioptim import (
     Solver,
     DynamicsEvaluation,
     PhaseDynamics,
+    ContactType,
 )
 
 
@@ -84,7 +85,11 @@ def custom_dynamics(
 
 
 def custom_configure(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram, my_additional_factor=1, numerical_data_timeseries=None
+    ocp: OptimalControlProgram,
+    nlp: NonLinearProgram,
+    my_additional_factor=1,
+    numerical_data_timeseries=None,
+    contact_type: list[ContactType] | tuple[ContactType] = (),
 ):
     """
     Tell the program which variables are states and controls.
@@ -161,6 +166,7 @@ def prepare_ocp(
             custom_configure,
             dynamic_function=custom_dynamics,
             my_additional_factor=1,
+            ode_solver=ode_solver,
             expand_dynamics=expand_dynamics,
             phase_dynamics=phase_dynamics,
         )
@@ -168,6 +174,7 @@ def prepare_ocp(
         dynamics.add(
             DynamicsFcn.TORQUE_DRIVEN,
             dynamic_function=custom_dynamics,
+            ode_solver=ode_solver,
             expand_dynamics=expand_dynamics,
             phase_dynamics=phase_dynamics,
         )
@@ -201,7 +208,6 @@ def prepare_ocp(
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         constraints=constraints,
-        ode_solver=ode_solver,
         use_sx=use_sx,
     )
 

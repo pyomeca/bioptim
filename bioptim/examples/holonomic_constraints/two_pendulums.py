@@ -5,8 +5,6 @@ pendulum simulation.
 """
 
 import platform
-
-import matplotlib.pyplot as plt
 import numpy as np
 from casadi import DM
 
@@ -25,6 +23,7 @@ from bioptim import (
     OptimalControlProgram,
     Solver,
     SolutionMerge,
+    OdeSolver,
 )
 
 
@@ -48,12 +47,13 @@ def compute_all_states(sol, bio_model: HolonomicBiorbdModel):
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
 
     n = states["q_u"].shape[1]
+    n_tau = controls["tau"].shape[1]
 
     q = np.zeros((bio_model.nb_q, n))
     qdot = np.zeros((bio_model.nb_q, n))
     qddot = np.zeros((bio_model.nb_q, n))
     lambdas = np.zeros((bio_model.nb_dependent_joints, n))
-    tau = np.zeros((bio_model.nb_tau, n))
+    tau = np.zeros((bio_model.nb_tau, n_tau))
 
     for i, independent_joint_index in enumerate(bio_model.independent_joint_index):
         tau[independent_joint_index, :-1] = controls["tau"][i, :]
@@ -133,7 +133,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.HOLONOMIC_TORQUE_DRIVEN, expand_dynamics=expand_dynamics)
+    dynamics.add(DynamicsFcn.HOLONOMIC_TORQUE_DRIVEN, ode_solver=OdeSolver.RK4(), expand_dynamics=expand_dynamics)
 
     # Path Constraints
     constraints = ConstraintList()
@@ -198,9 +198,9 @@ def main():
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    print(sol.real_time_to_optimize)
 
     # --- Show results --- #
-    sol.graphs()
     q, qdot, qddot, lambdas = compute_all_states(sol, bio_model)
 
     viewer = "pyorerun"
@@ -219,14 +219,7 @@ def main():
 
         viz.rerun("double_pendulum")
 
-    time = sol.decision_time(to_merge=SolutionMerge.NODES)
-    plt.title("Lagrange multipliers of the holonomic constraint")
-    plt.plot(time, lambdas[0, :], label="y")
-    plt.plot(time, lambdas[1, :], label="z")
-    plt.xlabel("Time (s)")
-    plt.ylabel("Lagrange multipliers (N)")
-    plt.legend()
-    plt.show()
+    sol.graphs()
 
 
 if __name__ == "__main__":

@@ -126,7 +126,9 @@ def prepare_ocp(
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100)
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    dynamics = Dynamics(
+        DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
+    )
 
     # Constraints
     constraints = ConstraintList()
@@ -230,10 +232,6 @@ def prepare_ocp(
     x_scaling.add("q", scaling=[1] * bio_model.nb_q)
     x_scaling.add("qdot", scaling=[1] * bio_model.nb_qdot)
 
-    xdot_scaling = VariableScalingList()
-    xdot_scaling.add("qdot", scaling=[1] * bio_model.nb_qdot)
-    xdot_scaling.add("qddot", scaling=[1] * bio_model.nb_qddot)
-
     u_scaling = VariableScalingList()
     u_scaling.add("tau", scaling=[1] * bio_model.nb_tau)
 
@@ -248,9 +246,7 @@ def prepare_ocp(
         u_init=u_init,
         objective_functions=objective_functions,
         constraints=constraints,
-        ode_solver=ode_solver,
         x_scaling=x_scaling,
-        xdot_scaling=xdot_scaling,
         u_scaling=u_scaling,
     )
 

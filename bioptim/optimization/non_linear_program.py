@@ -1,6 +1,7 @@
 from typing import Callable, Any
 
 import casadi
+import numpy as np
 from casadi import SX, MX, vertcat
 
 from .optimization_variable import OptimizationVariableContainer
@@ -24,7 +25,7 @@ class NonLinearProgram:
     ----------
     casadi_func: dict
         All the declared casadi function
-    contact_forces_func = function
+    rigid_contact_forces_func = function
         The contact force function if exists for the current nlp
     control_type: ControlType
         The control type for the current nlp
@@ -60,8 +61,6 @@ class NonLinearProgram:
         The number of thread to use
     ns: int
         The number of shooting points
-    ode_solver: OdeSolverBase
-        The chosen ode solver
     parameters: ParameterContainer
         Reference to the optimized parameters in the underlying ocp
     par_dynamics: casadi.Function
@@ -125,7 +124,7 @@ class NonLinearProgram:
 
     def __init__(self, phase_dynamics: PhaseDynamics, use_sx: bool):
         self.casadi_func = {}
-        self.contact_forces_func = None
+        self.rigid_contact_forces_func = None
         self.soft_contact_forces_func = None
         self.control_type = ControlType.CONSTANT
         self.cx = None
@@ -145,7 +144,6 @@ class NonLinearProgram:
         self.model: BioModel | StochasticBioModel | HolonomicBioModel | VariationalBioModel | None = None
         self.n_threads = None
         self.ns = None
-        self.ode_solver = OdeSolver.RK4()
         self.par_dynamics = None
         self.phase_idx = None
         self.phase_mapping = None
@@ -207,6 +205,16 @@ class NonLinearProgram:
         self.controls.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
         self.algebraic_states.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
         self.integrated_values.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
+
+        self.states.initialize_intermediate_cx(n_shooting=self.ns + 1, n_cx=self.dynamics_type.ode_solver.n_required_cx)
+        self.states_dot.initialize_intermediate_cx(
+            n_shooting=self.ns + 1, n_cx=self.dynamics_type.ode_solver.n_required_cx
+        )
+        self.controls.initialize_intermediate_cx(n_shooting=self.ns + 1, n_cx=1)
+        self.algebraic_states.initialize_intermediate_cx(
+            n_shooting=self.ns + 1, n_cx=self.dynamics_type.ode_solver.n_required_cx
+        )
+        self.integrated_values.initialize_intermediate_cx(n_shooting=self.ns + 1, n_cx=1)
 
     def update_bounds(self, x_bounds, u_bounds, a_bounds):
         self._update_bound(
@@ -273,13 +281,13 @@ class NonLinearProgram:
 
     def update_init(self, x_init, u_init, a_init):
 
-        if x_init is not None:
-            not_direct_collocation = not self.ode_solver.is_direct_collocation
-            init_all_point = x_init.type == InterpolationType.ALL_POINTS
+        if x_init is not None or a_init is not None:
+            not_direct_collocation = not self.dynamics_type.ode_solver.is_direct_collocation
+            x_init_all_point = x_init.type == InterpolationType.ALL_POINTS if x_init is not None else False
+            a_init_all_point = a_init.type == InterpolationType.ALL_POINTS if a_init is not None else False
 
-            if not_direct_collocation and init_all_point:
+            if not_direct_collocation and (x_init_all_point or a_init_all_point):
                 raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
-                # TODO @ipuch in PR #907, add algebraic states to the error message
 
         self._update_init(
             init=x_init,
@@ -321,6 +329,73 @@ class NonLinearProgram:
         for key in init.keys():
             nlp_init.add(key, init[key], phase=0)
 
+    def declare_shooting_points(self):
+        """
+        Declare all the casadi variables with the right size to be used during this specific phase.
+        """
+        if self.control_type not in ControlType:
+            raise NotImplementedError(f"Multiple shooting problem not implemented yet for {self.control_type}")
+
+        self._declare_states_shooting_points()
+        self._declare_controls_shooting_points()
+        self._declare_algebraic_states_shooting_points()
+
+    def _declare_states_shooting_points(self):
+        p = self.phase_idx
+        x = []
+        x_scaled = []
+        for k in range(self.ns + 1):
+            self.set_node_index(k)
+            n_col = self.n_states_decision_steps(k)
+            x_scaled.append(self.cx.sym(f"X_scaled_{p}_{k}", self.states.scaled.shape, n_col))
+
+            x.append(
+                x_scaled[k]
+                * np.repeat(np.concatenate([self.x_scaling[key].scaling for key in self.states.keys()]), n_col, axis=1)
+            )
+
+        self.set_node_index(0)
+        self.X_scaled = x_scaled
+        self.X = x
+
+    def _declare_controls_shooting_points(self):
+        p = self.phase_idx
+        u = []
+        u_scaled = []
+        range_stop = self.ns if self.control_type == ControlType.CONSTANT else self.ns + 1
+        for k in range(range_stop):
+            self.set_node_index(k)
+            u_scaled.append(self.cx.sym(f"U_scaled_{p}_{k}", self.controls.scaled.shape, 1))
+            if self.controls.keys():
+                u.append(u_scaled[0] * np.concatenate([self.u_scaling[key].scaling for key in self.controls.keys()]))
+
+        self.set_node_index(0)
+        self.U_scaled = u_scaled
+        self.U = u
+
+    def _declare_algebraic_states_shooting_points(self):
+        p = self.phase_idx
+        a = []
+        a_scaled = []
+        for k in range(self.ns + 1):
+            self.set_node_index(k)
+            n_col = self.n_algebraic_states_decision_steps(k)
+            a_scaled.append(self.cx.sym(f"A_scaled_{p}_{k}", self.algebraic_states.scaled.shape, n_col))
+
+            if self.algebraic_states.keys():
+                a.append(
+                    a_scaled[k]
+                    * np.repeat(
+                        np.concatenate([self.a_scaling[key].scaling for key in self.algebraic_states.keys()]),
+                        n_col,
+                        axis=1,
+                    )
+                )
+
+        self.set_node_index(0)
+        self.A_scaled = a_scaled
+        self.A = a
+
     @property
     def n_states_nodes(self) -> int:
         """
@@ -343,23 +418,27 @@ class NonLinearProgram:
         """
         if node_idx >= self.ns:
             return 1
-        return self.dynamics[node_idx].shape_xf[1] + (1 if self.ode_solver.duplicate_starting_point else 0)
+        return self.dynamics[node_idx].shape_xf[1] + (
+            1 if self.dynamics_type.ode_solver.duplicate_starting_point else 0
+        )
 
-    def n_states_stepwise_steps(self, node_idx) -> int:
+    def n_states_stepwise_steps(self, node_idx: int, ode_solver: OdeSolver = None) -> int:
         """
         Parameters
         ----------
         node_idx: int
             The index of the node
-
+        ode_solver: OdeSolver
+            The ode solver to use (it is useful for reintegration of COLLOCATION solutions)
         Returns
         -------
         The number of states
         """
+        ode_solver = ode_solver if ode_solver is not None else self.dynamics_type.ode_solver
         if node_idx >= self.ns:
             return 1
-        if self.ode_solver.is_direct_collocation:
-            return self.dynamics[node_idx].shape_xall[1] - (1 if not self.ode_solver.duplicate_starting_point else 0)
+        if ode_solver.is_direct_collocation:
+            return self.dynamics[node_idx].shape_xall[1] - (1 if not ode_solver.duplicate_starting_point else 0)
         else:
             return self.dynamics[node_idx].shape_xall[1]
 
@@ -404,8 +483,7 @@ class NonLinearProgram:
 
         return self.n_states_nodes
 
-    @staticmethod
-    def n_algebraic_states_decision_steps(node_idx) -> int:
+    def n_algebraic_states_decision_steps(self, node_idx) -> int:
         """
         Parameters
         ----------
@@ -416,8 +494,7 @@ class NonLinearProgram:
         -------
         The number of states
         """
-
-        return 1
+        return self.n_states_decision_steps(node_idx)
 
     @staticmethod
     def add(ocp, param_name: str, param: Any, duplicate_singleton: bool, _type: Any = None, name: str = None):
@@ -611,3 +688,9 @@ class NonLinearProgram:
                     )
 
         return external_forces
+
+    def set_node_index(self, node):
+        self.states.node_index = node
+        self.states_dot.node_index = node
+        self.controls.node_index = node
+        self.algebraic_states.node_index = node

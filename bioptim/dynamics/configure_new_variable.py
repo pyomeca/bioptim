@@ -1,5 +1,5 @@
-from casadi import MX, SX, vertcat
 import numpy as np
+from casadi import MX, SX, vertcat
 
 from .fatigue.fatigue_dynamics import FatigueList, MultiFatigueInterface
 from ..gui.plot import CustomPlot
@@ -8,51 +8,7 @@ from ..misc.enums import PlotType, ControlType, VariableType, PhaseDynamics
 from ..misc.mapping import BiMapping
 
 
-def variable_type_from_booleans_to_enums(
-    as_states: bool, as_controls: bool, as_states_dot: bool, as_algebraic_states: bool
-) -> list[VariableType]:
-    """
-    Convert the booleans to enums
-
-    Parameters
-    ----------
-    as_states: bool
-        If the new variable should be added to the state variable set
-    as_states_dot: bool
-        If the new variable should be added to the state_dot variable set
-    as_controls: bool
-        If the new variable should be added to the control variable set
-    as_algebraic_states: bool
-        If the new variable should be added to the algebraic states variable set
-
-    Returns
-    -------
-    The list of variable type
-    """
-
-    variable_type = []
-    if as_states:
-        variable_type.append(VariableType.STATES)
-    if as_states_dot:
-        variable_type.append(VariableType.STATES_DOT)
-    if as_controls:
-        variable_type.append(VariableType.CONTROLS)
-    if as_algebraic_states:
-        variable_type.append(VariableType.ALGEBRAIC_STATES)
-    return variable_type
-
-
 class NewVariableConfiguration:
-    # todo: add a way to remove the if as_states, as_controls, as_states_dot, as_algebraic_states, etc...
-    #   if we want to remove ocp, nlp, it
-    #   should be a method of ocp, and specify the phase_idx where the variable is added
-    #   ocp.configure_new_variable(
-    #     phase_idx,
-    #     name,
-    #     name_elements,
-    #     variable_type=variable_types,
-    #     # VariableType.CONTROL, VariableType.STATE_DOT, VariableType.ALGEBRAIC_STATE
-    #   )
     def __init__(
         self,
         name: str,
@@ -61,7 +17,6 @@ class NewVariableConfiguration:
         nlp,
         as_states: bool,
         as_controls: bool,
-        as_states_dot: bool = False,
         as_algebraic_states: bool = False,
         fatigue: FatigueList = None,
         combine_name: str = None,
@@ -84,8 +39,6 @@ class NewVariableConfiguration:
             A reference to the phase
         as_states: bool
             If the new variable should be added to the state variable set
-        as_states_dot: bool
-            If the new variable should be added to the state_dot variable set
         as_controls: bool
             If the new variable should be added to the control variable set
         as_algebraic_states: bool
@@ -108,7 +61,6 @@ class NewVariableConfiguration:
         self.nlp = nlp
         self.as_states = as_states
         self.as_controls = as_controls
-        self.as_states_dot = as_states_dot
         self.as_algebraic_states = as_algebraic_states
         self.fatigue = fatigue
         self.combine_name = combine_name
@@ -228,10 +180,6 @@ class NewVariableConfiguration:
             self.nlp.x_scaling.add(
                 self.name, scaling=np.ones(len(self.nlp.variable_mappings[self.name].to_first.map_idx))
             )
-        if self.as_states_dot and self.name not in self.nlp.xdot_scaling:
-            self.nlp.xdot_scaling.add(
-                self.name, scaling=np.ones(len(self.nlp.variable_mappings[self.name].to_first.map_idx))
-            )
         if self.as_controls and self.name not in self.nlp.u_scaling:
             self.nlp.u_scaling.add(
                 self.name, scaling=np.ones(len(self.nlp.variable_mappings[self.name].to_first.map_idx))
@@ -261,10 +209,12 @@ class NewVariableConfiguration:
 
     def _declare_cx_and_plot(self):
         if self.as_states:
+
+            # States
             for node_index in range(
                 self.nlp.n_states_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1
             ):
-                n_cx = self.nlp.ode_solver.n_required_cx + 2
+                n_cx = self.nlp.dynamics_type.ode_solver.n_required_cx + 2
                 cx_scaled = self.define_cx_scaled(n_col=n_cx, node_index=node_index)
                 cx = self.define_cx_unscaled(cx_scaled, self.nlp.x_scaling[self.name].scaling)
                 self.nlp.states.append(
@@ -287,11 +237,32 @@ class NewVariableConfiguration:
                         combine_to=self.combine_name,
                     )
 
+            """
+            For each state, a state_dot variable is created.
+            This state_dot represents the slope of the polynomial in COLLOCATION.
+            It is not an optimization variable, but it only used internally in bioptim to construct the integrator.
+            """
+            # States dot
+            for node_index in range(
+                self.nlp.n_states_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1
+            ):
+                n_cx = self.nlp.dynamics_type.ode_solver.n_required_cx + 2
+                cx_scaled = self.define_cx_scaled(n_col=n_cx, node_index=node_index)
+                cx = self.define_cx_unscaled(cx_scaled, np.ones_like(self.nlp.x_scaling[self.name].scaling))
+                self.nlp.states_dot.append(
+                    self.name,
+                    cx,
+                    cx_scaled,
+                    self.nlp.variable_mappings[self.name],
+                    node_index,
+                )
+
         if self.as_controls:
             for node_index in range(
                 self.nlp.n_controls_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1
             ):
-                cx_scaled = self.define_cx_scaled(n_col=3, node_index=node_index)
+                n_cx = 3
+                cx_scaled = self.define_cx_scaled(n_col=n_cx, node_index=node_index)
                 cx = self.define_cx_unscaled(cx_scaled, self.nlp.u_scaling[self.name].scaling)
                 self.nlp.controls.append(
                     self.name,
@@ -319,29 +290,13 @@ class NewVariableConfiguration:
                         ),
                     )
 
-        if self.as_states_dot:
-            for node_index in range(
-                self.nlp.n_states_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1
-            ):
-                n_cx = self.nlp.ode_solver.n_required_cx + 2
-                cx_scaled = self.define_cx_scaled(n_col=n_cx, node_index=node_index)
-                cx = self.define_cx_unscaled(cx_scaled, self.nlp.xdot_scaling[self.name].scaling)
-                self.nlp.states_dot.append(
-                    self.name,
-                    cx,
-                    cx_scaled,
-                    self.nlp.variable_mappings[self.name],
-                    node_index,
-                )
-
         if self.as_algebraic_states:
             for node_index in range(
                 self.nlp.n_states_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1
             ):
-                n_cx = 2
+                n_cx = self.nlp.dynamics_type.ode_solver.n_required_cx + 2
                 cx_scaled = self.define_cx_scaled(n_col=n_cx, node_index=node_index)
                 cx = self.define_cx_unscaled(cx_scaled, self.nlp.a_scaling[self.name].scaling)
-
                 self.nlp.algebraic_states.append(
                     self.name,
                     cx,
@@ -350,18 +305,16 @@ class NewVariableConfiguration:
                     node_index,
                 )
                 if not self.skip_plot:
-                    all_variables_in_one_subplot = True if self.name in ["m", "cov", "k"] else False
                     self.nlp.plot[f"{self.name}_algebraic"] = CustomPlot(
                         lambda t0, phases_dt, node_idx, x, u, p, a, d: (
                             a[self.nlp.algebraic_states.key_index(self.name), :]
                             if a.any()
                             else np.ndarray((cx[0].shape[0], 1)) * np.nan
                         ),
-                        plot_type=PlotType.STEP,
+                        plot_type=PlotType.INTEGRATED,
                         axes_idx=self.axes_idx,
                         legend=self.legend,
                         combine_to=self.combine_name,
-                        all_variables_in_one_subplot=all_variables_in_one_subplot,
                     )
 
 

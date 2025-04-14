@@ -104,7 +104,6 @@ class NonControlledMethod:
             nlp,
             as_states=True,
             as_controls=False,
-            as_states_dot=False,
         )
 
         name = "b"
@@ -116,7 +115,6 @@ class NonControlledMethod:
             nlp,
             as_states=True,
             as_controls=False,
-            as_states_dot=False,
         )
 
         name = "c"
@@ -128,7 +126,6 @@ class NonControlledMethod:
             nlp,
             as_states=True,
             as_controls=False,
-            as_states_dot=False,
         )
 
         ConfigureProblem.configure_dynamics_function(ocp, nlp, self.custom_dynamics, my_ocp=ocp)
@@ -191,6 +188,7 @@ def prepare_ocp(
             dynamic_function=custom_model.custom_dynamics,
             phase=i,
             expand_dynamics=True,
+            ode_solver=ode_solver,
             phase_dynamics=phase_dynamics,
         )
 
@@ -224,7 +222,6 @@ def prepare_ocp(
         x_bounds=x_bounds,
         objective_functions=objective_functions,
         constraints=constraints,
-        ode_solver=ode_solver,
         use_sx=use_sx,
     )
 

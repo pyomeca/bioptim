@@ -2,7 +2,7 @@
 A very simple optimal control program playing with a soft contact sphere rolling going from one point to another.
 
 The soft contact sphere are hard to make converge and sensitive to parameters.
-One could use soft_contacts_dynamics or implicit_dynamics to ease the convergence.
+One could use ContactType.SOFT_IMPLICIT to ease the convergence.
 """
 
 import numpy as np
@@ -27,6 +27,7 @@ from bioptim import (
     SolutionIntegrator,
     PhaseDynamics,
     SolutionMerge,
+    ContactType,
 )
 
 
@@ -52,6 +53,8 @@ def prepare_single_shooting(
     dynamics = Dynamics(
         DynamicsFcn.TORQUE_DRIVEN,
         soft_contacts_dynamics=SoftContactDynamics.ODE,
+        contact_type=[ContactType.SOFT_EXPLICIT],
+        ode_solver=ode_solver,
     )
 
     return OptimalControlProgram(
@@ -59,7 +62,6 @@ def prepare_single_shooting(
         dynamics,
         n_shooting,
         final_time,
-        ode_solver=ode_solver,
         use_sx=use_sx,
         n_threads=n_threads,
     )
@@ -150,6 +152,8 @@ def prepare_ocp(
     dynamics = Dynamics(
         DynamicsFcn.TORQUE_DRIVEN,
         soft_contacts_dynamics=SoftContactDynamics.ODE,
+        contact_type=[ContactType.SOFT_EXPLICIT],
+        ode_solver=ode_solver,
         phase_dynamics=phase_dynamics,
     )
 
@@ -165,7 +169,7 @@ def prepare_ocp(
     x_bounds["q"] = bio_model.bounds_from_ranges("q")
     x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
 
-    init = initial_states_from_single_shooting(biorbd_model_path, 100, 1, ode_solver)
+    init = initial_states_from_single_shooting(biorbd_model_path, ns=n_shooting, tf=final_time, ode_solver=ode_solver)
     x_bounds["q"].min[:, 0] = (init["q"].init - slack)[:, 0]
     x_bounds["q"].max[:, 0] = (init["q"].init + slack)[:, 0]
 
@@ -191,7 +195,6 @@ def prepare_ocp(
         x_init=x_init,
         objective_functions=objective_functions,
         constraints=constraints,
-        ode_solver=ode_solver,
         use_sx=use_sx,
         n_threads=n_threads,
     )
@@ -201,23 +204,40 @@ def main():
     """
     Defines a multiphase ocp and animate the results
     """
-    model = "../torque_driven_ocp/models/soft_contact_sphere.bioMod"
+    biorbd_model_path = "../torque_driven_ocp/models/soft_contact_sphere.bioMod"
     ode_solver = OdeSolver.RK8()
 
     # Prepare OCP to reach the second marker
-    ocp = prepare_ocp(model, 37, 0.37, ode_solver, slack=1e-4)
+    ocp = prepare_ocp(biorbd_model_path, 37, 0.3, ode_solver, slack=1e-4)
     # ocp.add_plot_penalty(CostType.ALL)
     # ocp.print(to_graph=True)
 
     # --- Solve the program --- #
-    solv = Solver.IPOPT(show_online_optim=False, show_options=dict(show_bounds=True))
-    solv.set_linear_solver("mumps")
-    solv.set_maximum_iterations(500)
-    sol = ocp.solve(solv)
+    solver = Solver.IPOPT(show_online_optim=False, show_options=dict(show_bounds=True))
+    sol = ocp.solve(solver)
 
-    sol.animate()
     sol.print_cost()
     sol.graphs()
+
+    # --- Show results --- #
+    viewer = "pyorerun"
+    if viewer == "pyorerun":
+        from pyorerun import BiorbdModel, PhaseRerun
+
+        # Model
+        model = BiorbdModel(biorbd_model_path)
+        model.options.transparent_mesh = False
+        model.options.show_gravity = True
+        model.options.show_floor = True
+
+        # Visualization
+        time = sol.decision_time(to_merge=SolutionMerge.NODES)
+        q = sol.decision_states(to_merge=SolutionMerge.NODES)["q"]
+        viz = PhaseRerun(time)
+        viz.add_animated_model(model, q)
+        viz.rerun_by_frame("Optimal solution")
+    else:
+        sol.animate()
 
 
 if __name__ == "__main__":

@@ -22,6 +22,7 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
     VariableScaling,
+    ContactType,
 )
 from casadi import DM, MX, SX, vertcat, exp
 import numpy as np
@@ -133,7 +134,11 @@ class Model:
         )
 
     def declare_variables(
-        self, ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries: dict[str, np.ndarray] = None
+        self,
+        ocp: OptimalControlProgram,
+        nlp: NonLinearProgram,
+        numerical_data_timeseries: dict[str, np.ndarray] = None,
+        contact_type: list[ContactType] | tuple[ContactType] = (),
     ):
         name = "Cn"
         name_cn = [name]
@@ -296,6 +301,7 @@ def prepare_ocp(
             expand_dynamics=True,
             expand_continuity=False,
             phase=i,
+            ode_solver=OdeSolver.RK4(n_integration_steps=1),
             phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         )
 
@@ -376,7 +382,6 @@ def prepare_ocp(
         parameter_init=parameters_init,
         control_type=ControlType.CONSTANT,
         use_sx=use_sx,
-        ode_solver=OdeSolver.RK4(n_integration_steps=1),
     )
 
 

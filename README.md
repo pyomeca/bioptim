@@ -707,7 +707,6 @@ OptimalControlProgram(
     objective_functions: [Objective, ObjectiveList],
     constraints: [Constraint, ConstraintList],
     parameters: ParameterList,
-    ode_solver: OdeSolver,
     control_type: [ControlType, list],
     all_generalized_mapping: BiMapping,
     q_mapping: BiMapping,
@@ -730,13 +729,11 @@ In the case of a multiphase optimization, one model per phase should be passed i
 `x_init` is the initial guess for the states variables (see The initial conditions section).  
 `u_init` is the initial guess for the controls variables (see The initial conditions section).  
 `x_scaling` is the scaling applied to the states variables (see The variable scaling section).  
-`xdot_scaling` is the scaling applied to the state derivative variables (see The variable scaling section).  
 `u_scaling` is the scaling applied to the controls variables (see The variable scaling section).  
 `objective_functions` is the objective function set of the ocp (see The objective functions section).  
 `constraints` is the constraint set of the ocp (see The constraints section).  
 `parameters` is the parameter set of the ocp (see The parameters section).
-It is a list (one element for each phase) of np.ndarray of shape (6, i, n), where the 6 components are [Mx, My, Mz, Fx, Fy, Fz], for the ith force platform (defined by the externalforceindex) for each node n.  
-`ode_solver` is the ode solver used to solve the dynamic equations.  
+It is a list (one element for each phase) of np.ndarray of shape (6, i, n), where the 6 components are [Mx, My, Mz, Fx, Fy, Fz], for the ith force platform (defined by the externalforceindex) for each node n.
 `control_type` is the type of discretization of the controls (usually CONSTANT) (see ControlType section).  
 `all_generalized_mapping` is used to reduce the number of degrees of freedom by linking them (see The mappings section).
 This one applies the same mapping to the generalized coordinates (*q*), velocities (*qdot*), and forces (*tau*).
@@ -852,8 +849,9 @@ An example of such a server is provided in `resources/plotting_server.py`.
 
 ## The model
 
-Bioptim is designed to work with any model, as long as it inherits from the class `bioptim.Model`. Models built with `biorbd` are already compatible with `bioptim`.
+Bioptim is designed to work with any model, as long as it matches the protocol defined in `bioptim/models/protocols/biomodel.py`. Models built with `biorbd` are already compatible with `bioptim`.
 They can be used as is or modified to add new features.
+To decrease RAM usage and computational time, it is recommended to store `casadi.Function` the first time they are called by using the decorator `@cache_function` as implemented in the protocol.
 
 ### Class: BiorbdModel
 
@@ -949,7 +947,7 @@ The `DynamicsFcn` is the one presented in the corresponding section below.
 #### The options
 The full signature of Dynamics is as follows:
 ```python
-Dynamics(dynamics_type, configure: Callable, dynamic_function: Callable, phase: int)
+Dynamics(dynamics_type, configure: Callable, dynamic_function: Callable, phase: int, ode_solver: OdeSolver, contact_type: list[ContactType], numerical_timeseries: dict[str, np.ndarray])
 ```
 The `dynamics_type` is the selected `DynamicsFcn`. 
 It automatically defines both `configure` and `dynamic_function`. 
@@ -957,6 +955,9 @@ If a function is sent instead, this function is interpreted as `configure` and t
 If one is interested in changing the behavior of a particular `DynamicsFcn`, they can refer to the Custom dynamics functions right below. 
 
 The `phase` is the index of the phase the dynamics applies to. 
+The `ode_solver` is the ode to use to "integrate" the dynamics function.
+The `contact_type` is a list of contact types to consider in the dynamics equations.
+The `numerical_timeseries` is a list of numerical values (one per node) to use in the dynamics. For example, it can be used to define experimental ground reaction forces.
 The `add()` method of `DynamicsList` usually takes care of this, but it can be useful when declaring the dynamics out of order.
 
 #### Custom dynamic functions
@@ -1006,7 +1007,12 @@ The torque driven defines the states (x) as *q* and *qdot* and the controls (u) 
 The derivative of *q* is trivially *qdot*.
 The derivative of *qdot* is given by the biorbd function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`.
 If external forces are provided, they are added to the ForwardDynamics function. Possible options:
-- **with_contact = True:** The derivative of *qdot* is given by the `biorbd` function that includes non-acceleration contact point defined in the bioMod: `qddot = bio_model.ForwardDynamicsConstraintsDirect(q, qdot, tau)`.
+- **contact_type** 
+  - **[]**: No contacts are considered in the dynamics. 
+  - **[ContactType.RIGID_EXPLICIT]**: Non-acceleration contact points are included in the dynamics equation.
+  - **[ContactType.RIGID_IMPLICIT]**: Lagrange multipliers representing the contact forces are introduced as algebraic states to satisfy the non-acceleration constraint of contact points.
+  - **[ContactType.SOFT_EXPLICIT]**: The contact forces resulting from the penetration of spheres in the ground (located on the OXY plane) are included in the dynamics equation.
+  - **[ContactType.SOFT_IMPLICIT]**: Lagrange multipliers representing the contact forces resulting from the penetration of spheres in the ground (located on the OXY plane) are introduced as algebraic states to satisfy the penetration-force relationship.
 - **with_passive_torque = True:** The passive torque is taken into account in the *tau*.
 - **with_ligament = True:** The tau generated by the ligament is taken into account in the *tau*.
 
@@ -1016,8 +1022,12 @@ The derivative of *q* is trivially *qdot*.
 The derivative of *qdot* is given by the biorbd function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`.
 The derivative of *tau* is trivially *taudot*. 
 If external forces are provided, they are added to the ForwardDynamics function. Possible options:
-- **with_contact = True:** The derivative of *qdot* is given by the `biorbd` function that includes non-acceleration contact point defined in the bioMod: `qddot = bio_model.ForwardDynamicsConstraintsDirect(q, qdot, tau)`.
-- **with_passive_torque = True:** The passive torque is taken into account in the *tau*.
+- **contact_type** 
+  - **[]**: No contacts are considered in the dynamics. 
+  - **[ContactType.RIGID_EXPLICIT]**: Non-acceleration contact points are included in the dynamics equation.
+  - **[ContactType.RIGID_IMPLICIT]**: Lagrange multipliers representing the contact forces are introduced as algebraic states to satisfy the non-acceleration constraint of contact points.
+  - **[ContactType.SOFT_EXPLICIT]**: The contact forces resulting from the penetration of spheres in the ground (located on the OXY plane) are included in the dynamics equation.
+  - **[ContactType.SOFT_IMPLICIT]**: Lagrange multipliers representing the contact forces resulting from the penetration of spheres in the ground (located on the OXY plane) are introduced as algebraic states to satisfy the penetration-force relationship.- **with_passive_torque = True:** The passive torque is taken into account in the *tau*.
 - **with_ligament = True:** The tau generated by the ligament is taken into account in the *tau*.
 
 #### TORQUE_ACTIVATIONS_DRIVEN
@@ -1029,8 +1039,12 @@ Then, the derivative of *qdot* is given by the `biorbd` function: `qddot = bio_m
 Please note, this dynamics is expected to be very slow to converge, if it ever does. 
 One is therefore encourage using TORQUE_DRIVEN instead, and to add the TORQUE_MAX_FROM_ACTUATORS constraint.
 This has been shown to be more efficient and allows defining minimum torque. Possible options:
-- **with_contact = True:** The derivative of *qdot* is given by the `biorbd` function that includes non-acceleration contact point defined in the bioMod: `qddot = bio_model.ForwardDynamicsConstraintsDirect(q, qdot, tau)`.
-- **with_passive_torque = True:** The passive torque is taken into account in the *tau*.
+- **contact_type** 
+  - **[]**: No contacts are considered in the dynamics. 
+  - **[ContactType.RIGID_EXPLICIT]**: Non-acceleration contact points are included in the dynamics equation.
+  - **[ContactType.RIGID_IMPLICIT]**: Lagrange multipliers representing the contact forces are introduced as algebraic states to satisfy the non-acceleration constraint of contact points.
+  - **[ContactType.SOFT_EXPLICIT]**: The contact forces resulting from the penetration of spheres in the ground (located on the OXY plane) are included in the dynamics equation.
+  - **[ContactType.SOFT_IMPLICIT]**: Lagrange multipliers representing the contact forces resulting from the penetration of spheres in the ground (located on the OXY plane) are introduced as algebraic states to satisfy the penetration-force relationship.- **with_passive_torque = True:** The passive torque is taken into account in the *tau*.
 - **with_ligament = True:** The tau generated by the ligament is taken into account in the *tau*.
 - **with_residual_torque = True:** The residual torque is taken into account in the *tau*.
 
@@ -1046,10 +1060,13 @@ This dynamic is suitable for bodies in free fall.
 The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as the muscle activations. 
 The derivative of *q* is trivially *qdot*. Possible options:
 The actual *tau* is computed from the muscle activation converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(muscles_states, q, qdot)`.
-The derivative of *qdot* is given by the `biorbd` function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`.
-- **with_contact = True:** The actual *tau* is computed from the sum of *tau* to the *a* converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(a, q, qdot)`.
-The derivative of *qdot* is given by the `biorbd` function that includes non-acceleration contact point defined in the bioMod: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`.
-- **with_passive_torque = True:** The passive torque is taken into account in the *tau*.
+The derivative of *qdot* is given by the `biorbd` function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`. The actual *tau* is computed from the sum of *tau* to the *a* converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(a, q, qdot)`.
+- **contact_type** 
+  - **[]**: No contacts are considered in the dynamics. 
+  - **[ContactType.RIGID_EXPLICIT]**: Non-acceleration contact points are included in the dynamics equation.
+  - **[ContactType.RIGID_IMPLICIT]**: Lagrange multipliers representing the contact forces are introduced as algebraic states to satisfy the non-acceleration constraint of contact points.
+  - **[ContactType.SOFT_EXPLICIT]**: The contact forces resulting from the penetration of spheres in the ground (located on the OXY plane) are included in the dynamics equation.
+  - **[ContactType.SOFT_IMPLICIT]**: Lagrange multipliers representing the contact forces resulting from the penetration of spheres in the ground (located on the OXY plane) are introduced as algebraic states to satisfy the penetration-force relationship.- **with_passive_torque = True:** The passive torque is taken into account in the *tau*.
 - **with_ligament = True:** The tau generated by the ligament is taken into account in the *tau*.
 - **with_residual_torque = True:** The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as the *tau* and the muscle activations (*a*). 
 The actual *tau* is computed from the sum of *tau* to the muscle activation converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(a, q, qdot)`.
@@ -1147,7 +1164,7 @@ The parameters, except `MagnitudeType` must be specified for each phase unless y
 
 The scaling applied to the optimization variables determines how they are represented within the `OptimalControlProgram`. 
 The goal is to keep all variables in the optimization problem within an order of magnitude close to 1, 
-which improves numerical conditioning and solver performance. This applies to `x_scaling`, `xdot_scaling`, and `u_scaling` parameters. 
+which improves numerical conditioning and solver performance. This applies to `x_scaling` and `u_scaling` parameters. 
 If the expected value of a variable is of order `0.1`, then the scaling factor should be `0.1` to bring the variable closer 
 to `O(1)`, as `0.1 / 0.1 = 1`. Bioptim will apply the scaling to all initial guesses and bounds entered by the user automatically.
 However, the target in objectives and constraints should be scaled by the user (see Issue Scaling of targets #848 ).
@@ -1227,7 +1244,7 @@ Since this is an Enum, it is possible to use the tab key on the keyboard to dyna
 - **BOUND_STATE**  &mdash; Adds bounds on states. Same aim as `bounds["state_name"] = min_bounds, max_bounds` but with a different numerical behaviour.
 - **BOUND_CONTROL**  &mdash; Adds bounds on controls. Same aim as `bounds["control_name"] = min_bounds, max_bounds` but with a different numerical behaviour.
 - **NON_SLIPPING**  &mdash; Adds a constraint of static friction at contact points constraining for small tangential forces.  
-This constraint assumes that the normal forces is positive (that is having an additional TRACK_CONTACT_FORCES with `max_bound=np.inf`). The extra parameters `tangential_component_idx: int`, `normal_component_idx: int`, and `static_friction_coefficient: float` must be passed to the `Constraint` constructor.
+This constraint assumes that the normal forces is positive (that is having an additional TRACK_EXPLICIT_RIGID_CONTACT_FORCES with `max_bound=np.inf`). The extra parameters `tangential_component_idx: int`, `normal_component_idx: int`, and `static_friction_coefficient: float` must be passed to the `Constraint` constructor.
 - **PROPORTIONAL_CONTROL** &mdash; Links one control to another, such that `u[first_dof] - first_dof_intercept = coef * (u[second_dof] - second_dof_intercept)`. The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Constraint` constructor.
 - **PROPORTIONAL_STATE** &mdash; Links one state to another, such that `x[first_dof] - first_dof_intercept = coef * (x[second_dof] - second_dof_intercept)`. The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Constraint` constructor.
 - **SUPERIMPOSE_MARKERS** &mdash; Matches one marker with another one. The extra parameters `first_marker_idx: int` and `second_marker_idx: int` informs which markers are to be superimposed.
@@ -1237,7 +1254,7 @@ This constraint assumes that the normal forces is positive (that is having an ad
 - **TRACK_ANGULAR_MOMENTUM**  &mdash; Constraints the angular momentum in the global reference frame toward a target. The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the momentum should be tracked.
 - **TRACK_COM_POSITION**  &mdash; Constraints the center of mass toward a target. The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the center of mass should be tracked.
 - **TRACK_COM_VELOCITY**  &mdash; Constraints the center of mass velocity toward a target. The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the velocity should be tracked.
-- **TRACK_CONTACT_FORCES**  &mdash; Tracks the non-acceleration point reaction forces toward a target.
+- **TRACK_RIGID_CONTACT_FORCES**  &mdash; Tracks the non-acceleration point reaction forces toward a target.
 - **TRACK_LINEAR_MOMENTUM**  &mdash; Constraints the linear momentum toward a target. The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the momentum should be tracked.
 - **TRACK_MARKER_WITH_SEGMENT_AXIS**  &mdash; Tracks a marker using a segment, that is aligning an axis toward the marker. The extra parameters `marker_idx: int`, `segment_index: int`, and `axis: Axis` must be passed to the `Constraint` constructor
 - **TRACK_MARKERS_VELOCITY** &mdash; Tracks the skin marker velocities toward a target.
@@ -1317,7 +1334,7 @@ Here a list of objective function with its type (Lagrange and/or Mayer) in alpha
 - **MINIMIZE_COM_ACCELERATION** (Lagrange and Mayer)  &mdash; Minimizes the center of mass acceleration towards zero (or a target). The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the acceleration should be minimized.
 - **MINIMIZE_COM_POSITION** (Lagrange and Mayer)  &mdash; Minimizes the center of mass position toward zero (or a target). The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the center of mass should be minimized.
 - **MINIMIZE_COM_VELOCITY**  (Lagrange and Mayer)  &mdash; Minimizes the center of mass velocity towards zero (or a target). The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the velocity should be minimized.
-- **MINIMIZE_CONTACT_FORCES** (Lagrange) &mdash; Minimizes the non-acceleration points of the reaction forces toward zero (or a target).
+- **MINIMIZE_EXPLICIT_RIGID_CONTACT_FORCES** (Lagrange) &mdash; Minimizes the non-acceleration points of the reaction forces toward zero (or a target).
 - **MINIMIZE_LINEAR_MOMENTUM** (Lagrange and Mayer)  &mdash; Minimizes the linear momentum towards zero (or a target). The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the momentum should be minimized.
 - **MINIMIZE_MARKERS_DISPLACEMENT** (Lagrange) &mdash; Minimizes the difference between a state at a node and the same state at the next node, effectively minimizing the velocity. The extra parameter `coordinates_system_idx` can be specified to compute the marker position in that coordinate system. Otherwise, it is computed in the global reference frame. 
 - **MINIMIZE_MARKERS_VELOCITY or MINIMIZE_MARKERS_ACCELERATION** (Lagrange and Mayer) &mdash; Minimizes the marker velocities or accelerations toward zero (or a target).
@@ -1334,7 +1351,7 @@ Here a list of objective function with its type (Lagrange and/or Mayer) in alpha
 - **PROPORTIONAL_STATE** (Lagrange and Mayer) &mdash; Minimizes the difference between one state and another, such that `x[first_dof] - first_dof_intercept = coef * (x[second_dof] - second_dof_intercept)`. The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Objective` constructor.
 - **SUPERIMPOSE_MARKERS** (Lagrange and Mayer) &mdash; Tracks one marker with another one. The extra parameters `first_marker_idx: int` and `second_marker_idx: int` informs which markers are to be superimposed
 - **TRACK_ALL_CONTROLS (Lagrange)** &mdash; Tracks all the control variables toward a target.
-- **TRACK_CONTACT_FORCES** (Lagrange) &mdash; Tracks the non-acceleration points of the reaction forces toward a target.
+- **TRACK_RIGID_CONTACT_FORCES** (Lagrange) &mdash; Tracks the non-acceleration points of the reaction forces toward a target.
 - **TRACK_MARKER_WITH_SEGMENT_AXIS** (Lagrange and Mayer) &mdash; Minimizes the distance between a marker and an axis of a segment, that is aligning an axis toward the marker. The extra parameters `marker_idx: int`, `segment_index: int` and `axis: Axis` must be passed to the `Objective` constructor
 - **TRACK_MARKERS_VELOCITY or TRACK_MARKERS_ACCELERATION** (Lagrange and Mayer) &mdash;  Tracks the marker velocities or accelerations toward a target.
 - **TRACK_MARKERS** (Lagrange and Mayer) &mdash; Tracks the skin markers towards a target. The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the markers should be tracked.
@@ -1769,6 +1786,11 @@ The type of transcription of any dynamics (e.g., rigidbody_dynamics or soft_cont
 - IMPLICIT: The defect comes from the implicit formulation.
 - NOT_APPLICABLE: The defect is not applicable.
 
+### Enum: ContactType
+- RIGID_EXPLICIT: The rigid contact (non-acceleration) forces are computed explicitly from the states and controls.
+- RIGID_IMPLICIT: The rigid contact (non-acceleration) forces are introduced as algebraic states.
+- SOFT_EXPLICIT: The soft contact (non-penetration) forces are computed explicitly from the states.
+- SOFT_IMPLICIT: The soft contact (non-penetration) forces are introduced as algebraic states.
 
 
 # Examples
@@ -1927,14 +1949,14 @@ forces have to remain inside of a cone of friction), as shown in the part of the
 ```python
 constraints = ConstraintList()
    constraints.add(
-   ConstraintFcn.TRACK_CONTACT_FORCES,
+   ConstraintFcn.TRACK_RIGID_CONTACT_FORCES,
    min_bound=min_bound,
    max_bound=max_bound,
    node=Node.ALL,
    contact_index=1,
    )
 constraints.add(
-    ConstraintFcn.TRACK_CONTACT_FORCES,
+    ConstraintFcn.TRACK_RIGID_CONTACT_FORCES,
     min_bound=min_bound,
     max_bound=max_bound,
     node=Node.ALL,
@@ -2226,12 +2248,12 @@ In this case, the dynamics function used is `DynamicsFcn.MUSCLE_EXCITATIONS_AND_
 ### The [muscle_activations_contacts_tracker.py](./bioptim/examples/muscle_driven_with_contact/muscle_activations_contacts_tracker.py) file 
 In this example, we track both muscle controls and contact forces, as it is defined when adding the two objective 
 functions below, using both `ObjectiveFcn.Lagrange.TRACK_MUSCLES_CONTROL` and 
-`ObjectiveFcn.Lagrange.TRACK_CONTACT_FORCES` objective functions. 
+`ObjectiveFcn.Lagrange.TRACK_RIGID_CONTACT_FORCES` objective functions. 
 
 ```python
 objective_functions = ObjectiveList()
 objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MUSCLES_CONTROL, target=muscle_activations_ref)
-objective_functions.add(ObjectiveFcn.Lagrange.TRACK_CONTACT_FORCES, target=contact_forces_ref)
+objective_functions.add(ObjectiveFcn.Lagrange.TRACK_RIGID_CONTACT_FORCES, target=contact_forces_ref)
 ```
 
 Let us take a look at the structure of this example. First, we load data to track and generate data using the 

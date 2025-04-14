@@ -85,16 +85,16 @@ def stochastic_forward_dynamics(
 
 
 def configure_stochastic_optimal_control_problem(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None
+    ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None, contact_type=()
 ):
     """
     Configure the stochastic optimal control problem.
     """
-    ConfigureProblem.configure_q(ocp, nlp, True, False, False)
-    ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
-    ConfigureProblem.configure_qddot(ocp, nlp, True, False, True)
-    ConfigureProblem.configure_qdddot(ocp, nlp, False, True)
-    ConfigureProblem.configure_tau(ocp, nlp, False, True)
+    ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
+    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
+    ConfigureProblem.configure_qddot(ocp, nlp, as_states=True, as_controls=False)
+    ConfigureProblem.configure_qdddot(ocp, nlp, as_states=False, as_controls=True)
+    ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
 
     # Algebraic states variables
     ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=2, n_references=4)
@@ -292,11 +292,11 @@ def expected_feedback_effort(controllers: list[PenaltyController]) -> cas.MX:
 
     # create the casadi function to be evaluated
     # Get the symbolic variables
-    ref = controllers[0].algebraic_states["ref"].cx
+    ref = controllers[0].controls["ref"].cx
     cov_sym = cas.MX.sym("cov", controllers[0].integrated_values.cx.shape[0])
     cov_matrix = StochasticBioModel.reshape_to_matrix(cov_sym, controllers[0].model.matrix_shape_cov)
 
-    k = controllers[0].algebraic_states["k"].cx
+    k = controllers[0].controls["k"].cx
     k_matrix = StochasticBioModel.reshape_to_matrix(k, controllers[0].model.matrix_shape_k)
 
     # Compute the expected effort
@@ -306,7 +306,7 @@ def expected_feedback_effort(controllers: list[PenaltyController]) -> cas.MX:
         controllers[0].states.cx,
         controllers[0].controls.cx,
         controllers[0].parameters.cx,
-        controllers[0].algebraic_states,
+        controllers[0].algebraic_states.cx,
         controllers[0].numerical_timeseries.cx,
         controllers[0].get_nlp,
     )
@@ -316,14 +316,14 @@ def expected_feedback_effort(controllers: list[PenaltyController]) -> cas.MX:
     expected_effort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
     func = cas.Function(
         "expected_effort_fb_mx",
-        [controllers[0].states.cx, controllers[0].algebraic_states.cx, cov_sym],
+        [controllers[0].states.cx, controllers[0].controls.cx, cov_sym],
         [expected_effort_fb_mx],
     )
 
     f_expected_effort_fb: Any = 0
-    for i, ctrl in enumerate(controllers):
-        P_vector = ctrl.integrated_values.cx
-        out = func(ctrl.states.cx, ctrl.algebraic_states.cx, P_vector)
+    for i, controller in enumerate(controllers):
+        P_vector = controller.integrated_values.cx
+        out = func(controller.states.cx, controller.controls.cx, P_vector)
         f_expected_effort_fb += out * dt
 
     return f_expected_effort_fb
@@ -481,6 +481,26 @@ def prepare_socp(
     u_bounds = BoundsList()
     u_bounds.add("qdddot", min_bound=controls_min[:n_q, :], max_bound=controls_max[:n_q, :])
     u_bounds.add("tau", min_bound=controls_min[n_q:, :], max_bound=controls_max[n_q:, :])
+    u_bounds.add(
+        "k",
+        min_bound=np.ones((n_tau * (n_q + n_qdot),)) * -cas.inf,
+        max_bound=np.ones((n_tau * (n_q + n_qdot),)) * cas.inf,
+        interpolation=InterpolationType.CONSTANT,
+    )
+    u_bounds.add(
+        "ref",
+        min_bound=np.ones((n_q + n_qdot,)) * -cas.inf,
+        max_bound=np.ones((n_q + n_qdot,)) * cas.inf,
+        interpolation=InterpolationType.CONSTANT,
+    )
+
+    a_bounds = BoundsList()
+    a_bounds.add(
+        "m",
+        min_bound=np.ones((n_states * n_states,)) * -cas.inf,
+        max_bound=np.ones((n_states * n_states,)) * cas.inf,
+        interpolation=InterpolationType.CONSTANT,
+    )
 
     # Initial guesses
     states_init = np.zeros((n_states, n_shooting + 1))
@@ -502,48 +522,22 @@ def prepare_socp(
     u_init = InitialGuessList()
     u_init.add("qdddot", initial_guess=controls_init[:n_q, :], interpolation=InterpolationType.EACH_FRAME)
     u_init.add("tau", initial_guess=controls_init[n_q:, :], interpolation=InterpolationType.EACH_FRAME)
+    u_init.add(
+        "k",
+        initial_guess=np.ones((n_tau * (n_q + n_qdot),)) * 0.01,
+        interpolation=InterpolationType.CONSTANT,
+    )
+    u_init.add(
+        "ref",
+        initial_guess=np.ones((n_q + n_qdot,)) * 0.01,
+        interpolation=InterpolationType.CONSTANT,
+    )
 
     a_init = InitialGuessList()
-    a_bounds = BoundsList()
-    n_algebraic_states = n_tau * (n_q + n_qdot) + n_q + n_qdot + n_states * n_states  # K(2x4) + ref(4x1) + M(6x6)
-    algebraic_states_init = np.zeros((n_algebraic_states, n_shooting + 1))
-    algebraic_states_min = np.ones((n_algebraic_states, 3)) * -cas.inf
-    algebraic_states_max = np.ones((n_algebraic_states, 3)) * cas.inf
-    curent_index = 0
-    algebraic_states_init[: n_tau * (n_q + n_qdot), :] = 0.01  # K
-    a_init.add(
-        "k",
-        initial_guess=algebraic_states_init[: n_tau * (n_q + n_qdot), :],
-        interpolation=InterpolationType.EACH_FRAME,
-    )
-    a_bounds.add(
-        "k",
-        min_bound=algebraic_states_min[: n_tau * (n_q + n_qdot), :],
-        max_bound=algebraic_states_max[: n_tau * (n_q + n_qdot), :],
-    )
-    curent_index += n_tau * (n_q + n_qdot)
-    algebraic_states_init[curent_index : curent_index + n_q + n_qdot, :] = 0.01  # ref
-    a_init.add(
-        "ref",
-        initial_guess=algebraic_states_init[curent_index : curent_index + n_q + n_qdot, :],
-        interpolation=InterpolationType.EACH_FRAME,
-    )
-    a_bounds.add(
-        "ref",
-        min_bound=algebraic_states_min[curent_index : curent_index + n_q + n_qdot, :],
-        max_bound=algebraic_states_max[curent_index : curent_index + n_q + n_qdot, :],
-    )
-    curent_index += n_q + n_qdot
-    algebraic_states_init[curent_index : curent_index + n_states * n_states, :] = 0.01  # M
     a_init.add(
         "m",
-        initial_guess=algebraic_states_init[curent_index : curent_index + n_states * n_states, :],
-        interpolation=InterpolationType.EACH_FRAME,
-    )
-    a_bounds.add(
-        "m",
-        min_bound=algebraic_states_min[curent_index : curent_index + n_states * n_states, :],
-        max_bound=algebraic_states_max[curent_index : curent_index + n_states * n_states, :],
+        initial_guess=np.ones((n_states * n_states,)) * 0.01,
+        interpolation=InterpolationType.CONSTANT,
     )
 
     integrated_value_functions = {"cov": lambda nlp, node_index: get_cov_mat(nlp, node_index, use_sx)}
@@ -629,8 +623,8 @@ def main():
     qddot_sol = sol_socp.states["qddot"]
     qdddot_sol = sol_socp.controls["qdddot"]
     tau_sol = sol_socp.controls["tau"]
-    k_sol = sol_socp.algebraic_states["k"]
-    ref_sol = sol_socp.algebraic_states["ref"]
+    k_sol = sol_socp.controls["k"]
+    ref_sol = sol_socp.controls["ref"]
     m_sol = sol_socp.algebraic_states["m"]
     cov_sol_vect = sol_socp.integrated_values["cov"]
     cov_sol = np.zeros((6, 6, n_shooting))
@@ -638,7 +632,7 @@ def main():
         for j in range(6):
             for k in range(6):
                 cov_sol[j, k, i] = cov_sol_vect[j * 6 + k, i]
-    algebraic_states_sol = np.vstack((k_sol, ref_sol, m_sol))
+    stochastic_variables_sol = np.vstack((k_sol, ref_sol, m_sol))
     data = {
         "q_sol": q_sol,
         "qdot_sol": qdot_sol,
@@ -649,7 +643,7 @@ def main():
         "ref_sol": ref_sol,
         "m_sol": m_sol,
         "cov_sol": cov_sol,
-        "algebraic_states_sol": algebraic_states_sol,
+        "stochastic_variables_sol": stochastic_variables_sol,
     }
 
     # --- Save the results --- #

@@ -266,8 +266,8 @@ class Solution:
         # For states
         for p, ss in enumerate(sol_states):
             repeat = 1
-            if isinstance(ocp.nlp[p].ode_solver, OdeSolver.COLLOCATION):
-                repeat = ocp.nlp[p].ode_solver.polynomial_degree + 1
+            if isinstance(ocp.nlp[p].dynamics_type.ode_solver, OdeSolver.COLLOCATION):
+                repeat = ocp.nlp[p].dynamics_type.ode_solver.polynomial_degree + 1
             for key in ss.keys():
                 ns = (
                     ocp.nlp[p].ns * repeat
@@ -459,8 +459,8 @@ class Solution:
                     times.append([t[[0, -1]] for t in times_tp[nlp.phase_idx][:-1]])
             else:
                 if time_alignment == TimeAlignment.STATES:
-                    if nlp.ode_solver.is_direct_collocation:
-                        if nlp.ode_solver.duplicate_starting_point:
+                    if nlp.dynamics_type.ode_solver.is_direct_collocation:
+                        if nlp.dynamics_type.ode_solver.duplicate_starting_point:
                             times.append(
                                 [t if t.shape == (1, 1) else vertcat(t[0], t[:-1]) for t in times_tp[nlp.phase_idx]]
                             )
@@ -726,7 +726,7 @@ class Solution:
             The integrator to use for the integration
         """
 
-        has_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]) > 0
+        has_direct_collocation = sum([nlp.dynamics_type.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]) > 0
         if has_direct_collocation and integrator == SolutionIntegrator.OCP:
             raise ValueError(
                 "When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
@@ -735,7 +735,9 @@ class Solution:
                 " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE"
             )
 
-        has_trapezoidal = sum([isinstance(nlp.ode_solver, OdeSolver.TRAPEZOIDAL) for nlp in self.ocp.nlp]) > 0
+        has_trapezoidal = (
+            sum([isinstance(nlp.dynamics_type.ode_solver, OdeSolver.TRAPEZOIDAL) for nlp in self.ocp.nlp]) > 0
+        )
         if has_trapezoidal and integrator == SolutionIntegrator.OCP:
             raise ValueError(
                 "When the ode_solver of the Optimal Control Problem is OdeSolver.TRAPEZOIDAL, "
@@ -853,7 +855,7 @@ class Solution:
 
         t_spans, x, u, params, a = self._prepare_integrate(integrator=integrator)
 
-        cov_index = self.ocp.nlp[0].algebraic_states["cov"].index
+        cov_index = self.ocp.nlp[0].controls["cov"].index
         n_sub_nodes = x[0][0].shape[1]
         motor_noise_index = self.ocp.nlp[0].parameters["motor_noise"].index
         sensory_noise_index = (
@@ -872,7 +874,7 @@ class Solution:
                     out[p][key][i_node] = np.zeros((len(nlp.states[key].index), n_sub_nodes, size))
                 out[p][key][nlp.ns] = np.zeros((len(nlp.states[key].index), 1, size))
 
-        cov_matrix = StochasticBioModel.reshape_to_matrix(a[0][0][cov_index, :], self.ocp.nlp[0].model.matrix_shape_cov)
+        cov_matrix = StochasticBioModel.reshape_to_matrix(u[0][0][cov_index, 0], self.ocp.nlp[0].model.matrix_shape_cov)
         first_x = np.random.multivariate_normal(x[0][0][:, 0], cov_matrix, size=size).T
         for p, nlp in enumerate(self.ocp.nlp):
             d = []
@@ -1189,7 +1191,7 @@ class Solution:
         shooting_type: Shooting = Shooting.MULTIPLE,
         integrator: SolutionIntegrator = SolutionIntegrator.OCP,
         save_name: str = None,
-    ):
+    ) -> list[plt.figure]:
         """
         Show the graphs of the simulation
 
@@ -1219,6 +1221,10 @@ class Solution:
                 fig.savefig(f"{save_name}_{name_fig}.png", format="png")
         if show_now:
             plt.show()
+
+        # Returning the figures for the tests
+        fig_list = [plt.figure(i_fig + 1) for i_fig in range(len(plt.get_figlabels()))]
+        return fig_list
 
     def animate(
         self,

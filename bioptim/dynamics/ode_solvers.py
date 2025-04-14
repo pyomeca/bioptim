@@ -49,6 +49,16 @@ class OdeSolver:
         def integrator(self):
             return integrator.RK8
 
+    class VARIATIONAL(RK):
+        """
+        This is a fake enum to be able to use the variational integrator.
+        TODO: The implementation of the variational integrator could be moved here (see issue #962).
+        """
+
+        @property
+        def integrator(self):
+            return integrator.VARIATIONAL
+
     class TRAPEZOIDAL(OdeSolverBase):
         """
         A trapezoidal ode solver
@@ -164,10 +174,24 @@ class OdeSolver:
             return out
 
         def p_ode(self, nlp):
-            return nlp.controls.scaled.cx_start
+            if nlp.control_type in (
+                ControlType.CONSTANT,
+                ControlType.CONSTANT_WITH_LAST_NODE,
+            ):
+                return nlp.controls.scaled.cx_start
+            elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                return horzcat(nlp.controls.scaled.cx_start, nlp.controls.scaled.cx_end)
+            elif nlp.control_type == ControlType.NONE:
+                return nlp.cx()
+            else:
+                raise NotImplementedError(f"The control_type {nlp.control_type} is not implemented.")
 
         def a_ode(self, nlp):
-            return nlp.algebraic_states.scaled.cx_start
+            out = [nlp.algebraic_states.scaled.cx_start]
+            if not self.duplicate_starting_point:
+                out += [nlp.algebraic_states.scaled.cx_start]
+            out += nlp.algebraic_states.scaled.cx_intermediates_list
+            return out
 
         def d_ode(self, nlp):
             return nlp.numerical_timeseries.cx_start

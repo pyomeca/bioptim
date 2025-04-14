@@ -156,6 +156,7 @@ def prepare_ocp(
         expand_dynamics=expand_dynamics,
         fatigue=fatigue_dynamics,
         with_residual_torque=torque_level > 0,
+        ode_solver=ode_solver,
         phase_dynamics=phase_dynamics,
     )
 
@@ -208,7 +209,6 @@ def prepare_ocp(
         u_init=u_init,
         objective_functions=objective_functions,
         constraints=constraint,
-        ode_solver=ode_solver,
         use_sx=False,
         n_threads=n_threads,
     )

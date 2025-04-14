@@ -22,6 +22,7 @@ from bioptim import (
     NonLinearProgram,
     PhaseDynamics,
     SolutionMerge,
+    ContactType,
 )
 from casadi import MX, SX, vertcat, sin, Function, DM
 import numpy as np
@@ -32,7 +33,10 @@ from ..utils import TestUtils
 
 
 def custom_configure(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries: dict[str, np.ndarray] = None
+    ocp: OptimalControlProgram,
+    nlp: NonLinearProgram,
+    numerical_data_timeseries: dict[str, np.ndarray] = None,
+    contact_type: list[ContactType] | tuple[ContactType] = (),
 ):
     ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
     ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
@@ -95,6 +99,7 @@ def prepare_ocp_state_as_time(
             custom_configure,
             dynamic_function=dynamics,
             phase=i,
+            ode_solver=OdeSolver.RK4(n_integration_steps=5),
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
         )
@@ -131,7 +136,6 @@ def prepare_ocp_state_as_time(
         objective_functions=objective_functions,
         control_type=control_type,
         use_sx=use_sx,
-        ode_solver=OdeSolver.RK4(n_integration_steps=5),
     )
 
 

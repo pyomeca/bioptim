@@ -4,9 +4,11 @@ from biorbd_casadi import GeneralizedCoordinates
 from casadi import MX, DM, Function
 from .biomodel import BioModel
 from ..holonomic_constraints import HolonomicConstraintsList
+from ..utils import cache_function
 
 
 class HolonomicBioModel(BioModel, Protocol):
+
     def set_holonomic_configuration(
         self,
         constraints_list: HolonomicConstraintsList,
@@ -327,6 +329,7 @@ class HolonomicBioModel(BioModel, Protocol):
         https://doi.org/10.5194/ms-4-199-2013, 2013.
         """
 
+    @cache_function
     def compute_q_v(self) -> Function:
         """
         Compute the dependent joint from the independent joint,
@@ -334,11 +337,13 @@ class HolonomicBioModel(BioModel, Protocol):
         At the end of this step, we get admissible generalized coordinates w.r.t. the holonomic constraints
         """
 
+    @cache_function
     def compute_q(self) -> Function:
         """
         Compute the generalized coordinates from the independent joint coordinates
         """
 
+    @cache_function
     def compute_qdot_v(self) -> Function:
         """
         Compute the dependent joint velocities from the independent joint velocities and the positions.
@@ -361,6 +366,7 @@ class HolonomicBioModel(BioModel, Protocol):
             The dependent joint velocities
         """
 
+    @cache_function
     def compute_qddot_v(self) -> Function:
         """
         Compute the dependent joint accelerations from the independent joint accelerations and the velocities and
@@ -374,6 +380,7 @@ class HolonomicBioModel(BioModel, Protocol):
         Equation (17) in the paper.
         """
 
+    @cache_function
     def compute_qddot(self) -> Function:
         """
         Compute the accelerations from the independent joint accelerations and the velocities and positions.
@@ -386,6 +393,7 @@ class HolonomicBioModel(BioModel, Protocol):
         Equation (17) in the paper.
         """
 
+    @cache_function
     def compute_the_lagrangian_multipliers(self) -> Function:
         """
         Compute the Lagrangian multiplier, denoted lambda in the paper:
@@ -418,6 +426,7 @@ class HolonomicBioModel(BioModel, Protocol):
             The dependent state vector to check
         """
 
+    @cache_function
     def holonomic_forward_dynamics(self) -> Function:
         """
         Compute the forward dynamics while respecting holonomic constraints.
@@ -429,6 +438,7 @@ class HolonomicBioModel(BioModel, Protocol):
             The holonomic forward dynamics function
         """
 
+    @cache_function
     def holonomic_inverse_dynamics(self) -> Function:
         """
         Compute the inverse dynamics while respecting holonomic constraints.
@@ -440,6 +450,7 @@ class HolonomicBioModel(BioModel, Protocol):
             The holonomic inverse dynamics function
         """
 
+    @cache_function
     def constraint_forces(self) -> Function:
         """
         Compute the forces required to maintain the holonomic constraints.

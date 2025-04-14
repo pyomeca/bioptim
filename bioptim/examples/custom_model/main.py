@@ -73,6 +73,7 @@ def prepare_ocp(
     dynamics.add(
         configure_dynamics,
         dynamic_function=dynamics,
+        ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
     )
@@ -111,7 +112,6 @@ def prepare_ocp(
         x_init=x_init,
         u_init=u_init,
         objective_functions=objective_functions,
-        ode_solver=ode_solver,
         use_sx=False,
         n_threads=n_threads,
     )
