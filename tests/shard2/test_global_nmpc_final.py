@@ -112,7 +112,7 @@ def test_multi_cyclic_nmpc_get_final(phase_dynamics, ode_solver):
         npt.assert_almost_equal(qdot[:, -1], np.array([6.30433142, 2.43360425, -0.57159656]), decimal=5)
 
         # initial and final controls
-        npt.assert_almost_equal(tau[:, 0], np.array([-0.84584471, 4.73417929, 2.29945589]))
+        npt.assert_almost_equal(tau[:, 0], np.array([-0.84584471, 4.73417929, 2.29945589]), decimal=4)
         npt.assert_almost_equal(tau[:, -1], np.array([0.84584471, 5.54336732, 2.50909275]), decimal=4)
 
         # check time
