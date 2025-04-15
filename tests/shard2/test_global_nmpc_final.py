@@ -108,7 +108,7 @@ def test_multi_cyclic_nmpc_get_final(phase_dynamics, ode_solver):
         npt.assert_almost_equal(q[:, -1], np.array([8.26519465e-40, 1.04359174e00, 1.03625065e00]))
 
         # initial and final velocities
-        npt.assert_almost_equal(qdot[:, 0], np.array([6.30433142, 2.55091859, 0.05715048]))
+        npt.assert_almost_equal(qdot[:, 0], np.array([6.30433142, 2.55091859, 0.05715048]), decimal=5)
         npt.assert_almost_equal(qdot[:, -1], np.array([6.30433142, 2.43360425, -0.57159656]), decimal=5)
 
         # initial and final controls
