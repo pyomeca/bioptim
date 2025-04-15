@@ -80,6 +80,8 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             **kwargs,
         )
         self.total_optimization_run = 0
+        if isinstance(dynamics, DynamicsList):
+            dynamics = dynamics[0]
         if isinstance(dynamics.ode_solver, OdeSolver.COLLOCATION):
             self.frame_factor = self.nlp[0].dynamics_type.ode_solver.polynomial_degree + 1
         else:
