@@ -5,18 +5,18 @@ from ..protocols.holonomic_biomodel import HolonomicBioModel
 
 from ...misc.parameters_types import (
     Float,
-    MXorSX,
-    MXorSXOptional,
+    CX,
+    CXOptional,
 )
 
 
 class VariationalBioModel(HolonomicBioModel, Protocol):
     def discrete_lagrangian(
         self,
-        q1: MXorSX,
-        q2: MXorSX,
-        time_step: MXorSX,
-    ) -> MXorSX:
+        q1: CX,
+        q2: CX,
+        time_step: CX,
+    ) -> CX:
         """
         Compute the discrete Lagrangian of a biorbd model.
 
@@ -36,8 +36,8 @@ class VariationalBioModel(HolonomicBioModel, Protocol):
 
     def control_approximation(
         self,
-        control_minus: MXorSX,
-        control_plus: MXorSX,
+        control_minus: CX,
+        control_plus: CX,
         time_step: Float,
     ):
         """
@@ -64,7 +64,7 @@ class VariationalBioModel(HolonomicBioModel, Protocol):
         IEEE Transactions on Robotics, 25(6), 1249–1261. doi:10.1109/tro.2009.2032955
         """
 
-    def discrete_holonomic_constraints_jacobian(self, time_step: MXorSX, q: MXorSX) -> MXorSXOptional:
+    def discrete_holonomic_constraints_jacobian(self, time_step: CX, q: CX) -> CXOptional:
         """
         Compute the discrete Jacobian of the holonomic constraints. See Variational integrators for constrained
         dynamical systems (https://onlinelibrary.wiley.com/doi/epdf/10.1002/zamm.200700173) eq. (21) for more
@@ -85,15 +85,15 @@ class VariationalBioModel(HolonomicBioModel, Protocol):
 
     def discrete_euler_lagrange_equations(
         self,
-        time_step: MXorSX,
-        q_prev: MXorSX,
-        q_cur: MXorSX,
-        q_next: MXorSX,
-        control_prev: MXorSX,
-        control_cur: MXorSX,
-        control_next: MXorSX,
-        lambdas: MXorSXOptional = None,
-    ) -> MXorSX:
+        time_step: CX,
+        q_prev: CX,
+        q_cur: CX,
+        q_next: CX,
+        control_prev: CX,
+        control_cur: CX,
+        control_next: CX,
+        lambdas: CXOptional = None,
+    ) -> CX:
         """
         Compute the discrete Euler-Lagrange equations of a biorbd model
 
@@ -129,13 +129,13 @@ class VariationalBioModel(HolonomicBioModel, Protocol):
 
     def compute_initial_states(
         self,
-        time_step: MXorSX,
-        q0: MXorSX,
-        qdot0: MXorSX,
-        q1: MXorSX,
-        control0: MXorSX,
-        control1: MXorSX,
-        lambdas0: MXorSXOptional = None,
+        time_step: CX,
+        q0: CX,
+        qdot0: CX,
+        q1: CX,
+        control0: CX,
+        control1: CX,
+        lambdas0: CXOptional = None,
     ):
         """
         Parameters
@@ -169,13 +169,13 @@ class VariationalBioModel(HolonomicBioModel, Protocol):
 
     def compute_final_states(
         self,
-        time_step: MXorSX,
-        q_penultimate: MXorSX,
-        q_ultimate: MXorSX,
-        q_dot_ultimate: MXorSX,
-        control_penultimate: MXorSX,
-        control_ultimate: MXorSX,
-        lambdas_ultimate: MXorSXOptional = None,
+        time_step: CX,
+        q_penultimate: CX,
+        q_ultimate: CX,
+        q_dot_ultimate: CX,
+        control_penultimate: CX,
+        control_ultimate: CX,
+        lambdas_ultimate: CXOptional = None,
     ):
         """
         Compute the initial states of the system from the initial position and velocity.

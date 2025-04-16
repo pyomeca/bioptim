@@ -15,7 +15,7 @@ from ...misc.parameters_types import (
     StrTuple,
     StrOrIterable,
     Bool,
-    NpArray,
+    NpArrayListOptional,
     AnyListOptional,
 )
 
@@ -440,7 +440,7 @@ class BioModel(Protocol):
 
     @staticmethod
     def animate(
-        ocp, solution: "SolutionData", show_now: Bool = True, tracked_markers: list[NpArray] = None, **kwargs: Any
+        ocp, solution: "SolutionData", show_now: Bool = True, tracked_markers: NpArrayListOptional = None, **kwargs: Any
     ) -> AnyListOptional:
         """
         Animate a solution

@@ -4,7 +4,7 @@ import numpy as np
 from ..protocols.biomodel import BioModel
 from ...misc.mapping import BiMappingList
 
-from ...misc.parameters_types import Bool, NpArray, DoubleIntTuple
+from ...misc.parameters_types import Bool, NpArray, DoubleIntTuple, CXorDMorNpArray
 
 
 class StochasticBioModel(BioModel):
@@ -37,7 +37,7 @@ class StochasticBioModel(BioModel):
         """Compute the sensory reference"""
 
     @staticmethod
-    def reshape_to_matrix(var, shape):
+    def reshape_to_matrix(var: CXorDMorNpArray, shape: DoubleIntTuple) -> CXorDMorNpArray:
         """
         Restore the matrix form of the variables
 
@@ -60,7 +60,7 @@ class StochasticBioModel(BioModel):
         return matrix
 
     @staticmethod
-    def reshape_to_cholesky_matrix(var, shape):
+    def reshape_to_cholesky_matrix(var: CXorDMorNpArray, shape: DoubleIntTuple) -> CXorDMorNpArray:
         """
         Restore the lower diagonal matrix form of the variables vector
         """
@@ -86,7 +86,7 @@ class StochasticBioModel(BioModel):
         return matrix
 
     @staticmethod
-    def reshape_to_vector(matrix):
+    def reshape_to_vector(matrix: CXorDMorNpArray) -> CXorDMorNpArray:
         """
         Restore the vector form of the matrix
 

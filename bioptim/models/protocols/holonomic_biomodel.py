@@ -9,6 +9,8 @@ from ..utils import cache_function
 from ...misc.parameters_types import (
     Int,
     AnyList,
+    IntList,
+    IntListOptional,
 )
 
 
@@ -17,8 +19,8 @@ class HolonomicBioModel(BioModel, Protocol):
     def set_holonomic_configuration(
         self,
         constraints_list: HolonomicConstraintsList,
-        dependent_joint_index: AnyList = None,
-        independent_joint_index: AnyList = None,
+        dependent_joint_index: IntListOptional = None,
+        independent_joint_index: IntListOptional = None,
     ):
         """
         Set the holonomic constraints of the model and if necessary the partitioned dynamics.
@@ -60,7 +62,7 @@ class HolonomicBioModel(BioModel, Protocol):
         return -1
 
     @property
-    def dependent_joint_index(self) -> AnyList:
+    def dependent_joint_index(self) -> IntList:
         """
         Get the index of the dependent joints
 
@@ -72,7 +74,7 @@ class HolonomicBioModel(BioModel, Protocol):
         return []
 
     @property
-    def independent_joint_index(self) -> AnyList:
+    def independent_joint_index(self) -> IntList:
         """
         Get the index of the independent joints
 
