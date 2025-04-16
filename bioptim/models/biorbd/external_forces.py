@@ -1,7 +1,7 @@
 import numpy as np
 from casadi import MX, vertcat
 
-from ...misc.parameters_types import Int, AnyDict, Bool, NpArray, Str, StrTuple, NpArrayOptional, CXOrDMOrNpArray
+from ...misc.parameters_types import Int, AnyDict, Bool, NpArray, Str, StrTuple, NpArrayOptional, CXorDMorNpArray
 
 
 # "type of external force": (function to call, number of force components, number of point of application components)
@@ -94,15 +94,15 @@ class ExternalForceSetCommon:
 
     # Specific functions for adding each force type to improve readability
     @staticmethod
-    def add_global_force(biorbd_external_forces, segment: str, force: CXOrDMOrNpArray, point_of_application: CXOrDMOrNpArray):
+    def add_global_force(biorbd_external_forces, segment: str, force: CXorDMorNpArray, point_of_application: CXorDMorNpArray):
         biorbd_external_forces.add(segment, force, point_of_application)
 
     @staticmethod
-    def add_torque_global(biorbd_external_forces, segment: str, torque: CXOrDMOrNpArray, _):
+    def add_torque_global(biorbd_external_forces, segment: str, torque: CXorDMorNpArray, _):
         biorbd_external_forces.add(segment, vertcat(torque, MX([0, 0, 0])), MX([0, 0, 0]))
 
     @staticmethod
-    def add_translational_global(biorbd_external_forces, segment: str, force: CXOrDMOrNpArray, point_of_application: CXOrDMOrNpArray):
+    def add_translational_global(biorbd_external_forces, segment: str, force: CXorDMorNpArray, point_of_application: CXorDMorNpArray):
         biorbd_external_forces.addTranslationalForce(force, segment, point_of_application)
 
     @staticmethod
