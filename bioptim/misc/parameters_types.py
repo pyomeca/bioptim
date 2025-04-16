@@ -32,6 +32,7 @@ IntIterableOrNpArray: TypeAlias = list[int] | tuple[int, ...] | range | np.ndarr
 IntIterableOrNpArrayOrInt: TypeAlias = int | IntIterableOrNpArray
 
 IntListOptional: TypeAlias = list[int] | None
+NpArrayListOptional: TypeAlias = list[np.ndarray] | None
 
 StrOrIterable: TypeAlias = str | list[str]
 
