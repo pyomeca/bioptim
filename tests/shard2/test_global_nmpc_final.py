@@ -13,7 +13,14 @@ from ..utils import TestUtils
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4(), OdeSolver.COLLOCATION(polynomial_degree=9, method="radau")])
+@pytest.mark.parametrize(
+    "ode_solver",
+    [
+        OdeSolver.RK4(),
+        OdeSolver.COLLOCATION(polynomial_degree=3, method="legendre"),
+        OdeSolver.COLLOCATION(polynomial_degree=3, method="radau"),
+    ],
+)
 def test_multi_cyclic_nmpc_get_final(phase_dynamics, ode_solver):
     def update_functions(_nmpc, cycle_idx, _sol):
         return cycle_idx < n_cycles_total  # True if there are still some cycle to perform
@@ -101,23 +108,26 @@ def test_multi_cyclic_nmpc_get_final(phase_dynamics, ode_solver):
             assert time[0] == 0
             npt.assert_almost_equal(time[-1], 1.0, decimal=4)
 
-    if isinstance(ode_solver, OdeSolver.COLLOCATION):
+    elif isinstance(ode_solver, OdeSolver.COLLOCATION):
         # initial and final position
         npt.assert_equal(q.shape, (3, n_cycles_total * cycle_len * (ode_solver.polynomial_degree + 1) + 1))
         npt.assert_almost_equal(q[:, 0], np.array((-12.56637061, 1.04359174, 1.03625065)))
+        npt.assert_almost_equal(q[:, -1], np.array([0, 1.04359174, 1.03625065]))
 
-        if phase_dynamics == PhaseDynamics.ONE_PER_NODE and platform.system() == "Windows":
-            npt.assert_almost_equal(q[:, -1], np.array([-5.2918670e-10, 9.3322462e-01, 1.4923819e00]), decimal=4)
-        else:
-            npt.assert_almost_equal(q[:, -1], np.array([8.26519465e-40, 1.04359174e00, 1.03625065e00]))
-
-        # initial and final velocities
-        npt.assert_almost_equal(qdot[:, 0], np.array([6.30433142, 2.55091859, 0.05715048]), decimal=5)
-        npt.assert_almost_equal(qdot[:, -1], np.array([6.30433142, 2.43360425, -0.57159656]), decimal=5)
-
-        # initial and final controls
-        npt.assert_almost_equal(tau[:, 0], np.array([-0.84584471, 4.73417929, 2.29945589]), decimal=4)
-        npt.assert_almost_equal(tau[:, -1], np.array([0.84584471, 5.54336732, 2.50909275]), decimal=4)
+        if ode_solver.method == "legendre":
+            # initial and final velocities
+            npt.assert_almost_equal(qdot[:, 0], np.array([6.29093673e00, 2.56659010e00, 4.62085624e-03]), decimal=5)
+            npt.assert_almost_equal(qdot[:, -1], np.array([6.29093673, 2.42638512, -0.60602527]), decimal=5)
+            # initial and final controls
+            npt.assert_almost_equal(tau[:, 0], np.array([-0.31005694, 4.75097658, 2.37929274]), decimal=4)
+            npt.assert_almost_equal(tau[:, -1], np.array([0.31005694, 5.34027249, 2.38319481]), decimal=4)
+        elif ode_solver.method == "radau":
+            # initial and final velocities
+            npt.assert_almost_equal(qdot[:, 0], np.array([6.28810582, 2.55273016, 0.02629208]), decimal=5)
+            npt.assert_almost_equal(qdot[:, -1], np.array([6.28810582, 2.42193911, -0.57785156]), decimal=5)
+            # initial and final controls
+            npt.assert_almost_equal(tau[:, 0], np.array([-0.19682043, 4.8495567, 2.37851092]), decimal=4)
+            npt.assert_almost_equal(tau[:, -1], np.array([0.19682043, 5.35770415, 2.43092058]), decimal=4)
 
         # check time
         n_steps = nmpc.nlp[0].dynamics_type.ode_solver.polynomial_degree
@@ -132,11 +142,11 @@ def test_multi_cyclic_nmpc_get_final(phase_dynamics, ode_solver):
             q = states["q"]
 
             # initial and final position
-            npt.assert_equal(q.shape, (3, 401))
+            npt.assert_equal(q.shape, (3, 161))
 
             # check time
             time = s.stepwise_time(to_merge=SolutionMerge.NODES)
-            assert time.shape == (401, 1)
+            assert time.shape == (161, 1)
             assert time[0] == 0
             npt.assert_almost_equal(time[-1], 2.0, decimal=4)
 
@@ -148,11 +158,11 @@ def test_multi_cyclic_nmpc_get_final(phase_dynamics, ode_solver):
             q = states["q"]
 
             # initial and final position
-            npt.assert_equal(q.shape, (3, 201))
+            npt.assert_equal(q.shape, (3, 81))
 
             # check time
             time = s.stepwise_time(to_merge=SolutionMerge.NODES)
-            assert time.shape == (201, 1)
+            assert time.shape == (81, 1)
             assert time[0] == 0
             npt.assert_almost_equal(time[-1], 1.0, decimal=4)
 
