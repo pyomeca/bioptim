@@ -17,8 +17,8 @@ from ..misc.parameters_types import (
     Float,
     AnyDict,
     FloatOptional,
-    NpArrayOrFloatOptional,
-    MXorSX,
+    NpArrayorFloatOptional,
+    CX,
 )
 
 
@@ -37,8 +37,8 @@ class Constraint(PenaltyOption):
     def __init__(
         self,
         constraint: Any,
-        min_bound: NpArrayOrFloatOptional = None,
-        max_bound: NpArrayOrFloatOptional = None,
+        min_bound: NpArrayorFloatOptional = None,
+        max_bound: NpArrayorFloatOptional = None,
         quadratic: Bool = False,
         phase: Int = -1,
         is_stochastic: Bool = False,
@@ -84,7 +84,7 @@ class Constraint(PenaltyOption):
         self.max_bound = max_bound
         self.bounds = Bounds("constraints", interpolation=InterpolationType.CONSTANT)
 
-    def set_penalty(self, penalty: MXorSX, controller: PenaltyController):
+    def set_penalty(self, penalty: CX, controller: PenaltyController):
         super(Constraint, self).set_penalty(penalty, controller)
         self.min_bound = 0 if self.min_bound is None else self.min_bound
         self.max_bound = 0 if self.max_bound is None else self.max_bound
@@ -1153,8 +1153,8 @@ class ParameterConstraint(PenaltyOption):
     def __init__(
         self,
         parameter_constraint: Any,
-        min_bound: NpArrayOrFloatOptional = None,
-        max_bound: NpArrayOrFloatOptional = None,
+        min_bound: NpArrayorFloatOptional = None,
+        max_bound: NpArrayorFloatOptional = None,
         quadratic: Bool = False,
         **extra_parameters: Any,
     ):
@@ -1189,7 +1189,7 @@ class ParameterConstraint(PenaltyOption):
         # TODO Benjamin Check .name
         self.bounds = Bounds(parameter_constraint.name, interpolation=InterpolationType.CONSTANT)
 
-    def set_penalty(self, penalty: MXorSX, controller: PenaltyController):
+    def set_penalty(self, penalty: CX, controller: PenaltyController):
         super(ParameterConstraint, self).set_penalty(penalty, controller)
         self.min_bound = 0 if self.min_bound is None else self.min_bound
         self.max_bound = 0 if self.max_bound is None else self.max_bound

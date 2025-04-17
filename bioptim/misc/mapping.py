@@ -7,7 +7,7 @@ from .parameters_types import (
     Int,
     Str,
     IntIterableorNpArray,
-    IntIterableorNpArrayOrInt,
+    IntIterableorNpArrayorInt,
     CXorDMorFloatIterable,
     CXorDMorNpArray,
     AnyDict,
@@ -43,7 +43,7 @@ class Mapping(OptionGeneric):
         Get the len of the mapping
     """
 
-    def __init__(self, map_idx: IntIterableorNpArray, oppose: IntIterableorNpArrayOrInt = None, **extra_parameters):
+    def __init__(self, map_idx: IntIterableorNpArray, oppose: IntIterableorNpArrayorInt = None, **extra_parameters):
         """
         Parameters
         ----------

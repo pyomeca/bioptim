@@ -27,7 +27,7 @@ from ..misc.parameters_types import (
     NpArrayList,
     AnySequence,
     AnySequenceOptional,
-    MXorSX,
+    CX,
 )
 
 
@@ -227,7 +227,7 @@ class PenaltyOption(OptionGeneric):
 
         self.multi_thread = multi_thread
 
-    def set_penalty(self, penalty: MXorSX, controllers: PenaltyController | list[PenaltyController, PenaltyController]):
+    def set_penalty(self, penalty: CX, controllers: PenaltyController | list[PenaltyController, PenaltyController]):
         """
         Prepare the dimension and index of the penalty (including the target)
 
@@ -394,7 +394,7 @@ class PenaltyOption(OptionGeneric):
                 )
         self.subnodes_are_decision_states = subnodes_are_decision_states
 
-    def _set_penalty_function(self, controllers: list[PenaltyController], fcn: MXorSX):
+    def _set_penalty_function(self, controllers: list[PenaltyController], fcn: CX):
         """
         Finalize the preparation of the penalty (setting function and weighted_function)
 

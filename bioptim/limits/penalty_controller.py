@@ -13,7 +13,7 @@ from ..misc.parameters_types import (
     Int,
     IntOptional,
     AnyList,
-    MXorSX,
+    CX,
 )
 
 
@@ -35,7 +35,7 @@ class PenaltyController:
         u: AnyList,
         x_scaled: AnyList,
         u_scaled: AnyList,
-        p: MXorSX | AnyList,
+        p: CX | AnyList,
         a: AnyList,
         a_scaled: AnyList,
         d: AnyList,
@@ -101,7 +101,7 @@ class PenaltyController:
         return self._nlp
 
     @property
-    def cx(self) -> MXorSX | Callable:
+    def cx(self) -> CX | Callable:
         return self._nlp.cx
 
     @property
@@ -389,7 +389,7 @@ class PenaltyController:
         return MX() if type(self._nlp.parameters.scaled) == DM else self._nlp.parameters.scaled
 
     @property
-    def q(self) -> MXorSX:
+    def q(self) -> CX:
         if "q" in self.states:
             return self.states["q"].mapping.to_second.map(self.states["q"].cx)
         elif "q_roots" in self.states and "q_joints" in self.states:
@@ -414,7 +414,7 @@ class PenaltyController:
             raise RuntimeError("q is not defined in the states")
 
     @property
-    def qdot(self) -> MXorSX:
+    def qdot(self) -> CX:
         if "qdot" in self.states:
             return self.states["qdot"].mapping.to_second.map(self.states["qdot"].cx)
         elif "qdot_roots" in self.states and "qdot_joints" in self.states:
@@ -437,14 +437,14 @@ class PenaltyController:
             return qdot.cx
 
     @property
-    def tau(self) -> MXorSX:
+    def tau(self) -> CX:
         if "tau" in self.controls:
             return self.controls["tau"].mapping.to_second.map(self.controls["tau"].cx)
         elif "tau_joints" in self.controls:
             return self.controls["tau_joints"].mapping.to_second.map(self.controls["tau_joints"].cx)
 
     @property
-    def external_forces(self) -> MXorSX:
+    def external_forces(self) -> CX:
         return self._nlp.get_external_forces(
             self.states.cx, self.controls.cx, self.algebraic_states.cx, self.numerical_timeseries.cx
         )
