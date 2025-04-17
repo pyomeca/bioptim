@@ -565,7 +565,7 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
                 self.nlp[0].x_bounds[key].min[s, 2] = self.nlp[0].x_bounds[key].min[s, 0] - range_of_motion * 0.01
                 self.nlp[0].x_bounds[key].max[s, 2] = self.nlp[0].x_bounds[key].max[s, 0] + range_of_motion * 0.01
             else:
-                t = self.time_idx_to_cycle
+                t = self.time_idx_to_cycle * self.nb_intermediate_frames
                 states = sol.decision_states(to_merge=SolutionMerge.NODES)
                 self.nlp[0].x_bounds[key].min[s, 2] = states[key][s, t] - range_of_motion * 0.01
                 self.nlp[0].x_bounds[key].max[s, 2] = states[key][s, t] + range_of_motion * 0.01
@@ -580,7 +580,7 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
 
         # Update the initial frame bounds
         for key in states.keys():
-            self.nlp[0].x_bounds[key][:, 0] = states[key][:, self.time_idx_to_cycle]
+            self.nlp[0].x_bounds[key][:, 0] = states[key][:, self.time_idx_to_cycle * self.nb_intermediate_frames]
         self._set_cyclic_bound(sol)
         return True
 
