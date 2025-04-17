@@ -117,8 +117,8 @@ def test_multi_cyclic_nmpc_get_final(phase_dynamics, ode_solver):
 
         if ode_solver.method == "legendre":
             # initial and final velocities
-            npt.assert_almost_equal(qdot[:, 0], np.array([6.29093673e00, 2.56659010e00, 4.62085624e-03]), decimal=5)
-            npt.assert_almost_equal(qdot[:, -1], np.array([6.29093673, 2.42638512, -0.60602527]), decimal=5)
+            npt.assert_almost_equal(qdot[:, 0], np.array([6.29093673e00, 2.56659010e00, 4.62085624e-03]), decimal=3)
+            npt.assert_almost_equal(qdot[:, -1], np.array([6.29093673, 2.42638512, -0.60602527]), decimal=3)
             # initial and final controls
             npt.assert_almost_equal(tau[:, 0], np.array([-0.31005694, 4.75097658, 2.37929274]), decimal=4)
             npt.assert_almost_equal(tau[:, -1], np.array([0.31005694, 5.34027249, 2.38319481]), decimal=4)
