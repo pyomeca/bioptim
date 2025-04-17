@@ -370,7 +370,12 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         parameters = sol.decision_parameters()
 
         frame_to_export = slice(
-            self.frame_to_export.start, (self.frame_to_export.stop - 1) * self.nb_intermediate_frames + 1
+            self.frame_to_export.start,
+            (
+                (self.frame_to_export.stop - 1) * self.nb_intermediate_frames + 1
+                if self.frame_to_export.stop is not None
+                else None
+            ),
         )
         for key in self.nlp[0].states.keys():
             states[key] = merged_states[key][:, frame_to_export]
