@@ -265,20 +265,22 @@ class Solution:
 
         # For states
         for p, ss in enumerate(sol_states):
-            repeat = 1
+            nb_intermediate_frames = 1
             if isinstance(ocp.nlp[p].dynamics_type.ode_solver, OdeSolver.COLLOCATION):
-                repeat = ocp.nlp[p].dynamics_type.ode_solver.polynomial_degree + 1
+                nb_intermediate_frames = ocp.nlp[p].dynamics_type.ode_solver.polynomial_degree + 1
             for key in ss.keys():
                 ns = (
-                    ocp.nlp[p].ns * repeat
+                    ocp.nlp[p].ns * nb_intermediate_frames
                     if ss[key].init.type == InterpolationType.ALL_POINTS
                     else ocp.nlp[p].ns + 1 if ss[key].init.type != InterpolationType.EACH_FRAME else ocp.nlp[p].ns
                 )
                 ss[key].init.check_and_adjust_dimensions(len(ocp.nlp[p].states[key]), ns, "states")
 
-            for i in range(all_ns[p] * repeat + 1):
+            for i in range(all_ns[p] * nb_intermediate_frames + 1):
                 for key in ss.keys():
-                    vector = np.concatenate((vector, ss[key].init.evaluate_at(i, repeat)[:, np.newaxis]))
+                    vector = np.concatenate(
+                        (vector, ss[key].init.evaluate_at(i, nb_intermediate_frames)[:, np.newaxis])
+                    )
 
         # For controls
         for p, ss in enumerate(sol_controls):
