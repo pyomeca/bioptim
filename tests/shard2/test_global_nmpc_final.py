@@ -19,6 +19,7 @@ from ..utils import TestUtils
         OdeSolver.RK4(),
         OdeSolver.COLLOCATION(polynomial_degree=3, method="legendre"),
         OdeSolver.COLLOCATION(polynomial_degree=3, method="radau"),
+        # OdeSolver.IRK(polynomial_degree=3), # TODO
     ],
 )
 def test_multi_cyclic_nmpc_get_final(phase_dynamics, ode_solver):
