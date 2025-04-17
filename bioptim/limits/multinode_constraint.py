@@ -7,9 +7,14 @@ from ..misc.enums import InterpolationType, PenaltyType, ConstraintType
 from ..misc.fcn_enum import FcnEnum
 from .multinode_penalty import MultinodePenalty, MultinodePenaltyList, MultinodePenaltyFunctions
 
+from ..misc.parameters_types import (
+    Bool,
+    Float,
+)
+
 
 class MultinodeConstraint(MultinodePenalty):
-    def __init__(self, *args, min_bound: float = 0, max_bound: float = 0, is_stochastic: bool = False, **kwargs):
+    def __init__(self, *args, min_bound: Float = 0, max_bound: Float = 0, is_stochastic: Bool = False, **kwargs):
         if "weight" in kwargs and kwargs["weight"] is not None:
             raise ValueError(
                 "MultinodeConstraints can't declare weight, use MultinodeObjective instead. If you were defining a "

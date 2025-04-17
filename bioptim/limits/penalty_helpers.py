@@ -5,20 +5,27 @@ from casadi import MX, SX, DM, vertcat
 
 from ..misc.enums import PhaseDynamics, ControlType
 
+from ..misc.parameters_types import (
+    Bool,
+    Int,
+    IntList,
+    BoolList,
+)
+
 
 class PenaltyProtocol(Protocol):
-    transition: bool  # If the penalty is a transition penalty
-    multinode_penalty: bool  # If the penalty is a multinode penalty
-    phase: int  # The phase of the penalty (only for non multinode or transition penalties)
-    nodes_phase: list[int]  # The phases of the penalty (only for multinode penalties)
-    node_idx: list[int]  # The node index of the penalty (only for non multinode or transition penalties)
-    multinode_idx: list[int]  # The node index of the penalty (only for multinode penalties)
-    subnodes_are_decision_states: list[bool]  # If the subnodes are decision states (e.g. collocation points)
-    integrate: bool  # If the penalty is an integral penalty
-    derivative: bool  # If the penalty is a derivative penalty
-    explicit_derivative: bool  # If the penalty is an explicit derivative penalty
+    transition: Bool  # If the penalty is a transition penalty
+    multinode_penalty: Bool  # If the penalty is a multinode penalty
+    phase: Int  # The phase of the penalty (only for non multinode or transition penalties)
+    nodes_phase: IntList  # The phases of the penalty (only for multinode penalties)
+    node_idx: IntList  # The node index of the penalty (only for non multinode or transition penalties)
+    multinode_idx: IntList  # The node index of the penalty (only for multinode penalties)
+    subnodes_are_decision_states: BoolList  # If the subnodes are decision states (e.g. collocation points)
+    integrate: Bool  # If the penalty is an integral penalty
+    derivative: Bool  # If the penalty is a derivative penalty
+    explicit_derivative: Bool  # If the penalty is an explicit derivative penalty
     phase_dynamics: list[PhaseDynamics]  # The dynamics of the penalty (only for multinode penalties)
-    ns = list[int]  # The number of shooting points of problem (only for multinode penalties)
+    ns = IntList  # The number of shooting points of problem (only for multinode penalties)
     control_types: ControlType  # The control type of the penalties
 
 
@@ -53,7 +60,7 @@ class PenaltyHelpers:
         return _reshape_to_vector(_reshape_to_vector(get_all_dt(ocp.time_phase_mapping.to_first.map_idx)))
 
     @staticmethod
-    def states(penalty, index, get_state_decision: Callable, is_constructing_penalty: bool = False):
+    def states(penalty, index, get_state_decision: Callable, is_constructing_penalty: Bool = False):
         """
         get_state_decision: Callable[int, int, slice]
             A function that returns the state decision of a given phase, node and subnodes (or steps)
@@ -89,7 +96,7 @@ class PenaltyHelpers:
             return vertcat(x0, x1)
 
     @staticmethod
-    def controls(penalty, index, get_control_decision: Callable, is_constructing_penalty: bool = False):
+    def controls(penalty, index, get_control_decision: Callable, is_constructing_penalty: Bool = False):
         node = penalty.node_idx[index]
 
         if penalty.multinode_penalty:
@@ -212,7 +219,7 @@ class PenaltyHelpers:
         return out
 
 
-def _get_multinode_indices(penalty, is_constructing_penalty: bool):
+def _get_multinode_indices(penalty, is_constructing_penalty: Bool):
     if not penalty.multinode_penalty:
         raise RuntimeError("This function should only be called for multinode penalties")
 

@@ -9,6 +9,24 @@ from .penalty_option import PenaltyOption
 from ..misc.enums import Node, Axis, ControlType, QuadratureRule, ContactType
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
 
+from ..misc.parameters_types import (
+    Int,
+    IntOptional,
+    IntOrStr,
+    IntOrStrOptional,
+    Float,
+    Str,
+    IntOrStr,
+    AnyList,
+    AnyListOptional,
+    AnyTuple,
+    AnyIterable,
+    AnyIterableOptional,
+    IntTuple,
+    StrTuple,
+    AnyDict,
+)
+
 
 class PenaltyFunctionAbstract:
     """
@@ -39,7 +57,7 @@ class PenaltyFunctionAbstract:
         """
 
         @staticmethod
-        def minimize_states(penalty: PenaltyOption, controller: PenaltyController, key: str):
+        def minimize_states(penalty: PenaltyOption, controller: PenaltyController, key: Str):
             """
             Minimize the states variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -68,7 +86,7 @@ class PenaltyFunctionAbstract:
             return controller.states[key].cx_start
 
         @staticmethod
-        def minimize_controls(penalty: PenaltyOption, controller: PenaltyController, key: str):
+        def minimize_controls(penalty: PenaltyOption, controller: PenaltyController, key: Str):
             """
             Minimize the joint torque part of the control variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -98,7 +116,7 @@ class PenaltyFunctionAbstract:
         def minimize_power(
             penalty: PenaltyOption,
             controller: PenaltyController,
-            key_control: str,
+            key_control: Str,
         ):
             """
             Minimize a product of states variables x control variable; e.g. joint power; muscle power.
@@ -129,7 +147,7 @@ class PenaltyFunctionAbstract:
                 return controls * muscles_dot
 
         @staticmethod
-        def minimize_algebraic_states(penalty: PenaltyOption, controller: PenaltyController, key: str):
+        def minimize_algebraic_states(penalty: PenaltyOption, controller: PenaltyController, key: Str):
             """
             Minimize a algebraic_states variable.
             By default, this function is quadratic, meaning that it minimizes towards the target.
@@ -235,7 +253,7 @@ class PenaltyFunctionAbstract:
             return expectedEffort_fb_mx
 
         @staticmethod
-        def minimize_fatigue(penalty: PenaltyOption, controller: PenaltyController, key: str):
+        def minimize_fatigue(penalty: PenaltyOption, controller: PenaltyController, key: Str):
             """
             Minimize the states variables.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -257,9 +275,9 @@ class PenaltyFunctionAbstract:
         def minimize_markers(
             penalty: PenaltyOption,
             controller: PenaltyController,
-            marker_index: tuple | list | int | str = None,
-            axes: tuple | list = None,
-            reference_jcs: str | int = None,
+            marker_index: AnyTuple | AnyList | IntOptional | Str = None,
+            axes: AnyTuple | AnyListOptional = None,
+            reference_jcs: IntOrStrOptional = None,
         ):
             """
             Minimize a marker set.
@@ -310,9 +328,9 @@ class PenaltyFunctionAbstract:
         def minimize_markers_velocity(
             penalty: PenaltyOption,
             controller: PenaltyController,
-            marker_index: tuple | list | int | str = None,
-            axes: tuple | list = None,
-            reference_jcs: str | int = None,
+            marker_index: AnyTuple | AnyList | IntOptional | Str = None,
+            axes: AnyIterableOptional = None,
+            reference_jcs: IntOrStrOptional = None,
         ):
             """
             Minimize a marker set velocity by computing the actual velocity of the markers
@@ -351,9 +369,9 @@ class PenaltyFunctionAbstract:
         def minimize_markers_acceleration(
             penalty: PenaltyOption,
             controller: PenaltyController,
-            marker_index: tuple | list | int | str = None,
-            axes: tuple | list = None,
-            reference_jcs: str | int = None,
+            marker_index: AnyTuple | AnyList | IntOptional | Str = None,
+            axes: AnyIterableOptional = None,
+            reference_jcs: IntOrStrOptional = None,
         ):
             """
             Minimize a marker set acecleration by computing the actual acceleration of the markers
@@ -391,9 +409,9 @@ class PenaltyFunctionAbstract:
         def superimpose_markers(
             penalty: PenaltyOption,
             controller: PenaltyController,
-            first_marker: str | int,
-            second_marker: str | int,
-            axes: tuple | list = None,
+            first_marker: IntOrStr,
+            second_marker: IntOrStr,
+            axes: AnyIterableOptional = None,
         ):
             """
             Minimize the distance between two markers
@@ -435,9 +453,9 @@ class PenaltyFunctionAbstract:
         def superimpose_markers_velocity(
             penalty: PenaltyOption,
             controller: PenaltyController,
-            first_marker: str | int,
-            second_marker: str | int,
-            axes: tuple | list = None,
+            first_marker: IntOrStr,
+            second_marker: IntOrStr,
+            axes: AnyIterableOptional = None,
         ):
             """
             Minimize the distance between two markers
@@ -483,12 +501,12 @@ class PenaltyFunctionAbstract:
         def proportional_states(
             penalty: PenaltyOption,
             controller: PenaltyController,
-            key: str,
-            first_dof: int,
-            second_dof: int,
-            coef: float,
-            first_dof_intercept: float = 0,
-            second_dof_intercept: float = 0,
+            key: Str,
+            first_dof: Int,
+            second_dof: Int,
+            coef: Float,
+            first_dof_intercept: Float = 0,
+            second_dof_intercept: Float = 0,
         ):
             """
             Introduce a proportionality between two variables (e.g. one variable is twice the other)
@@ -525,12 +543,12 @@ class PenaltyFunctionAbstract:
         def proportional_controls(
             penalty: PenaltyOption,
             controller: PenaltyController,
-            key: str,
-            first_dof: int,
-            second_dof: int,
-            coef: float,
-            first_dof_intercept: float = 0,
-            second_dof_intercept: float = 0,
+            key: Str,
+            first_dof: Int,
+            second_dof: Int,
+            coef: Float,
+            first_dof_intercept: Float = 0,
+            second_dof_intercept: Float = 0,
         ):
             """
             Introduce a proportionality between two variables (e.g. one variable is twice the other)
@@ -608,7 +626,9 @@ class PenaltyFunctionAbstract:
             return com_height
 
         @staticmethod
-        def minimize_com_position(penalty: PenaltyOption, controller: PenaltyController, axes: tuple | list = None):
+        def minimize_com_position(
+            penalty: PenaltyOption, controller: PenaltyController, axes: AnyIterableOptional = None
+        ):
             """
             Adds the objective that the position of the center of mass of the model should be minimized.
             If no axes is specified, the squared-norm of the center_of_mass's position is minimized.
@@ -631,7 +651,9 @@ class PenaltyFunctionAbstract:
             return controller.model.center_of_mass()(controller.q, controller.parameters.cx)
 
         @staticmethod
-        def minimize_com_velocity(penalty: PenaltyOption, controller: PenaltyController, axes: tuple | list = None):
+        def minimize_com_velocity(
+            penalty: PenaltyOption, controller: PenaltyController, axes: AnyIterableOptional = None
+        ):
             """
             Adds the objective that the velocity of the center of mass of the model should be minimized.
             If no axis is specified, the squared-norm of the center_of_mass's velocity is minimized.
@@ -654,7 +676,9 @@ class PenaltyFunctionAbstract:
             return controller.model.center_of_mass_velocity()(controller.q, controller.qdot, controller.parameters.cx)
 
         @staticmethod
-        def minimize_com_acceleration(penalty: PenaltyOption, controller: PenaltyController, axes: tuple | list = None):
+        def minimize_com_acceleration(
+            penalty: PenaltyOption, controller: PenaltyController, axes: AnyIterableOptional = None
+        ):
             """
             Adds the objective that the velocity of the center of mass of the model should be minimized.
             If no axis is specified, the squared-norm of the center_of_mass's velocity is minimized.
@@ -683,7 +707,9 @@ class PenaltyFunctionAbstract:
             return marker
 
         @staticmethod
-        def minimize_angular_momentum(penalty: PenaltyOption, controller: PenaltyController, axes: tuple | list = None):
+        def minimize_angular_momentum(
+            penalty: PenaltyOption, controller: PenaltyController, axes: AnyIterableOptional = None
+        ):
             """
             Adds the objective that the angular momentum of the model in the global reference frame should be minimized.
             If no axis is specified, the three components of the angular momentum are minimized.
@@ -704,7 +730,9 @@ class PenaltyFunctionAbstract:
             return controller.model.angular_momentum()(controller.q, controller.qdot, controller.parameters.cx)
 
         @staticmethod
-        def minimize_linear_momentum(penalty: PenaltyOption, controller: PenaltyController, axes: tuple | list = None):
+        def minimize_linear_momentum(
+            penalty: PenaltyOption, controller: PenaltyController, axes: AnyIterableOptional = None
+        ):
             """
             Adds the objective that the linear momentum of the model in the global reference frame should be minimized.
             If no axis is specified, the three components of the linear momentum are minimized.
@@ -732,7 +760,9 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def minimize_explicit_rigid_contact_forces(
-            penalty: PenaltyOption, controller: PenaltyController, contact_index: tuple | list | int | str = None
+            penalty: PenaltyOption,
+            controller: PenaltyController,
+            contact_index: AnyTuple | AnyList | IntOptional | Str = None,
         ):
             """
             Minimize the contact forces computed from dynamics with contact
@@ -784,7 +814,7 @@ class PenaltyFunctionAbstract:
         def minimize_sum_reaction_forces(
             penalty: PenaltyOption,
             controller: PenaltyController,
-            contact_index: tuple[str, ...] | tuple[int, ...] | list[str | int],
+            contact_index: StrTuple | IntTuple | list[IntOrStr],
         ):
             """
             Simulate force plate data from the contact forces computed through the dynamics with contact.
@@ -829,7 +859,7 @@ class PenaltyFunctionAbstract:
         def minimize_center_of_pressure(
             penalty: PenaltyOption,
             controller: PenaltyController,
-            contact_index: tuple[str, ...] | tuple[int, ...] | list[str | int],
+            contact_index: StrTuple | IntTuple | list[IntOrStr],
         ):
             """
             Simulate the center of pressure from force plate data from the contact forces computed through the dynamics with contact
@@ -897,7 +927,9 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def minimize_explicit_rigid_contact_forces_end_of_interval(
-            penalty: PenaltyOption, controller: PenaltyController, contact_index: tuple | list | int | str = None
+            penalty: PenaltyOption,
+            controller: PenaltyController,
+            contact_index: AnyTuple | AnyList | IntOptional | Str = None,
         ):
             """
             Minimize the contact forces at the end of the interval computed by integrating the dynamics with contact.
@@ -959,7 +991,9 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def minimize_soft_contact_forces(
-            penalty: PenaltyOption, controller: PenaltyController, contact_index: tuple | list | int | str = None
+            penalty: PenaltyOption,
+            controller: PenaltyController,
+            contact_index: AnyTuple | AnyList | IntOptional | Str = None,
         ):
             """
             Minimize the soft contact forces computed from dynamics with contact
@@ -1003,9 +1037,9 @@ class PenaltyFunctionAbstract:
         def track_segment_with_custom_rt(
             penalty: PenaltyOption,
             controller: PenaltyController,
-            segment: int | str,
-            rt_index: int,
-            sequence: str = "zyx",
+            segment: IntOrStr,
+            rt_index: Int,
+            sequence: Str = "zyx",
         ):
             """
             Minimize the difference of the euler angles extracted from the coordinate system of a segment
@@ -1043,8 +1077,8 @@ class PenaltyFunctionAbstract:
         def track_marker_with_segment_axis(
             penalty: PenaltyOption,
             controller: PenaltyController,
-            marker: int | str,
-            segment: int | str,
+            marker: IntOrStr,
+            segment: IntOrStr,
             axis: Axis,
         ):
             """
@@ -1089,9 +1123,9 @@ class PenaltyFunctionAbstract:
         def minimize_segment_rotation(
             penalty: PenaltyOption,
             controller: PenaltyController,
-            segment: int | str,
-            axes: list | tuple = None,
-            sequence: str = "xyz",
+            segment: IntOrStr,
+            axes: AnyIterableOptional = None,
+            sequence: Str = "xyz",
         ):
             """
             Track the orientation of a segment in the global with the sequence XYZ.
@@ -1138,8 +1172,8 @@ class PenaltyFunctionAbstract:
         def minimize_segment_velocity(
             penalty: PenaltyOption,
             controller: PenaltyController,
-            segment: int | str,
-            axes: list | tuple = None,
+            segment: IntOrStr,
+            axes: AnyIterableOptional = None,
         ):
             """
             Track the orientation of a segment.
@@ -1181,7 +1215,7 @@ class PenaltyFunctionAbstract:
             return segment_angular_velocity[axes]
 
         @staticmethod
-        def state_continuity(penalty: PenaltyOption, controller: PenaltyController | list):
+        def state_continuity(penalty: PenaltyOption, controller: PenaltyController | AnyList):
             if controller.control_type in (
                 ControlType.CONSTANT,
                 ControlType.CONSTANT_WITH_LAST_NODE,
@@ -1236,7 +1270,7 @@ class PenaltyFunctionAbstract:
             return continuity
 
         @staticmethod
-        def first_collocation_point_equals_state(penalty: PenaltyOption, controller: PenaltyController | list):
+        def first_collocation_point_equals_state(penalty: PenaltyOption, controller: PenaltyController | AnyList):
             """
             Ensures that the first collocation helper is equal to the states at the shooting node.
             This is a necessary constraint for COLLOCATION with duplicate_starting_point.
@@ -1246,7 +1280,7 @@ class PenaltyFunctionAbstract:
             return collocation_helper - states
 
         @staticmethod
-        def custom(penalty: PenaltyOption, controller: PenaltyController | list, **parameters: Any):
+        def custom(penalty: PenaltyOption, controller: PenaltyController | AnyList, **parameters: AnyDict):
             """
             A user defined penalty function
 
@@ -1302,7 +1336,7 @@ class PenaltyFunctionAbstract:
             return val
 
         @staticmethod
-        def minimize_parameter(penalty: PenaltyOption, controller: PenaltyController, key: str = "all"):
+        def minimize_parameter(penalty: PenaltyOption, controller: PenaltyController, key: Str = "all"):
             """
             Minimize the specified parameter.
             By default this function is quadratic, meaning that it minimizes towards the target.
@@ -1339,7 +1373,7 @@ class PenaltyFunctionAbstract:
 
     @staticmethod
     def set_idx_columns(
-        penalty: PenaltyOption, controller: PenaltyController, index: str | int | list | tuple, _type: str
+        penalty: PenaltyOption, controller: PenaltyController, index: IntOrStr | AnyIterable, _type: Str
     ):
         """
         Simple penalty.cols setter for marker index and names
@@ -1372,7 +1406,7 @@ class PenaltyFunctionAbstract:
         penalty.cols_is_set = True
 
     @staticmethod
-    def set_axes_rows(penalty: PenaltyOption, axes: list | tuple):
+    def set_axes_rows(penalty: PenaltyOption, axes: AnyIterable):
         """
         Simple penalty.cols setter for marker index and names
 
@@ -1394,7 +1428,7 @@ class PenaltyFunctionAbstract:
         penalty.rows_is_set = True
 
     @staticmethod
-    def _check_idx(name: str, elements: list | tuple | int, max_n_elements: int = inf, min_n_elements: int = 0):
+    def _check_idx(name: str, elements: AnyIterable | Int, max_n_elements: Int = inf, min_n_elements: Int = 0):
         """
         Generic sanity check for requested dimensions.
         If the function returns, everything is okay
@@ -1462,7 +1496,7 @@ class PenaltyFunctionAbstract:
         raise RuntimeError("get_dt cannot be called from an abstract class")
 
     @staticmethod
-    def penalty_nature() -> str:
+    def penalty_nature() -> Str:
         """
         Get the nature of the penalty
 
@@ -1474,7 +1508,7 @@ class PenaltyFunctionAbstract:
         raise RuntimeError("penalty_nature cannot be called from an abstract class")
 
     @staticmethod
-    def _get_qddot(controller: PenaltyController, attribute: str):
+    def _get_qddot(controller: PenaltyController, attribute: Str):
         """
         Returns the generalized acceleration by either fetching it directly
         from the controller's states or controls or from the controller's dynamics.

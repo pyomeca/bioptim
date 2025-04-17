@@ -4,8 +4,12 @@ from .path_conditions import InitialGuessList, BoundsList
 from ..dynamics.fatigue.fatigue_dynamics import FatigueList
 from ..misc.enums import VariableType
 
+from ..misc.parameters_types import (
+    Bool,
+)
 
-def FatigueBounds(fatigue: FatigueList, variable_type=VariableType.STATES, fix_first_frame=False):
+
+def FatigueBounds(fatigue: FatigueList, variable_type=VariableType.STATES, fix_first_frame: Bool = False):
     """
     Parameters
     ----------
