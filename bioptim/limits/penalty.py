@@ -14,17 +14,17 @@ from ..misc.parameters_types import (
     IntOptional,
     IntOrStr,
     IntOrStrOptional,
+    IntIterable,
+    StrIterable,
     Float,
     Str,
     IntOrStr,
     AnyList,
-    AnyListOptional,
     AnyTuple,
     AnyIterable,
     AnyIterableOptional,
     IntTuple,
     StrTuple,
-    AnyDict,
 )
 
 
@@ -275,8 +275,8 @@ class PenaltyFunctionAbstract:
         def minimize_markers(
             penalty: PenaltyOption,
             controller: PenaltyController,
-            marker_index: AnyTuple | AnyList | IntOptional | Str = None,
-            axes: AnyTuple | AnyListOptional = None,
+            marker_index: AnyIterableOptional | Int | Str = None,
+            axes: AnyIterableOptional = None,
             reference_jcs: IntOrStrOptional = None,
         ):
             """
@@ -328,7 +328,7 @@ class PenaltyFunctionAbstract:
         def minimize_markers_velocity(
             penalty: PenaltyOption,
             controller: PenaltyController,
-            marker_index: AnyTuple | AnyList | IntOptional | Str = None,
+            marker_index: AnyIterableOptional | Int | Str = None,
             axes: AnyIterableOptional = None,
             reference_jcs: IntOrStrOptional = None,
         ):
@@ -369,7 +369,7 @@ class PenaltyFunctionAbstract:
         def minimize_markers_acceleration(
             penalty: PenaltyOption,
             controller: PenaltyController,
-            marker_index: AnyTuple | AnyList | IntOptional | Str = None,
+            marker_index: AnyIterableOptional | Int | Str = None,
             axes: AnyIterableOptional = None,
             reference_jcs: IntOrStrOptional = None,
         ):
@@ -762,7 +762,7 @@ class PenaltyFunctionAbstract:
         def minimize_explicit_rigid_contact_forces(
             penalty: PenaltyOption,
             controller: PenaltyController,
-            contact_index: AnyTuple | AnyList | IntOptional | Str = None,
+            contact_index: AnyIterableOptional | Int | Str = None,
         ):
             """
             Minimize the contact forces computed from dynamics with contact
@@ -814,7 +814,7 @@ class PenaltyFunctionAbstract:
         def minimize_sum_reaction_forces(
             penalty: PenaltyOption,
             controller: PenaltyController,
-            contact_index: StrTuple | IntTuple | list[IntOrStr],
+            contact_index: IntIterable | StrIterable,
         ):
             """
             Simulate force plate data from the contact forces computed through the dynamics with contact.
@@ -859,7 +859,7 @@ class PenaltyFunctionAbstract:
         def minimize_center_of_pressure(
             penalty: PenaltyOption,
             controller: PenaltyController,
-            contact_index: StrTuple | IntTuple | list[IntOrStr],
+            contact_index: IntIterable | StrIterable,
         ):
             """
             Simulate the center of pressure from force plate data from the contact forces computed through the dynamics with contact
@@ -929,7 +929,7 @@ class PenaltyFunctionAbstract:
         def minimize_explicit_rigid_contact_forces_end_of_interval(
             penalty: PenaltyOption,
             controller: PenaltyController,
-            contact_index: AnyTuple | AnyList | IntOptional | Str = None,
+            contact_index: IntIterable | StrIterable | IntOptional | Str = None,
         ):
             """
             Minimize the contact forces at the end of the interval computed by integrating the dynamics with contact.
@@ -993,7 +993,7 @@ class PenaltyFunctionAbstract:
         def minimize_soft_contact_forces(
             penalty: PenaltyOption,
             controller: PenaltyController,
-            contact_index: AnyTuple | AnyList | IntOptional | Str = None,
+            contact_index: IntIterable | StrIterable | IntOptional | Str = None,
         ):
             """
             Minimize the soft contact forces computed from dynamics with contact
@@ -1124,7 +1124,7 @@ class PenaltyFunctionAbstract:
             penalty: PenaltyOption,
             controller: PenaltyController,
             segment: IntOrStr,
-            axes: AnyIterableOptional = None,
+            axes: list[Axis] | tuple[Axis] | None = None,
             sequence: Str = "xyz",
         ):
             """
@@ -1173,7 +1173,7 @@ class PenaltyFunctionAbstract:
             penalty: PenaltyOption,
             controller: PenaltyController,
             segment: IntOrStr,
-            axes: AnyIterableOptional = None,
+            axes: list[Axis] | tuple[Axis] | None = None,
         ):
             """
             Track the orientation of a segment.
@@ -1215,7 +1215,7 @@ class PenaltyFunctionAbstract:
             return segment_angular_velocity[axes]
 
         @staticmethod
-        def state_continuity(penalty: PenaltyOption, controller: PenaltyController | AnyList):
+        def state_continuity(penalty: PenaltyOption, controller: PenaltyController):
             if controller.control_type in (
                 ControlType.CONSTANT,
                 ControlType.CONSTANT_WITH_LAST_NODE,
@@ -1270,7 +1270,7 @@ class PenaltyFunctionAbstract:
             return continuity
 
         @staticmethod
-        def first_collocation_point_equals_state(penalty: PenaltyOption, controller: PenaltyController | AnyList):
+        def first_collocation_point_equals_state(penalty: PenaltyOption, controller: PenaltyController):
             """
             Ensures that the first collocation helper is equal to the states at the shooting node.
             This is a necessary constraint for COLLOCATION with duplicate_starting_point.
@@ -1280,7 +1280,7 @@ class PenaltyFunctionAbstract:
             return collocation_helper - states
 
         @staticmethod
-        def custom(penalty: PenaltyOption, controller: PenaltyController | AnyList, **parameters: AnyDict):
+        def custom(penalty: PenaltyOption, controller: PenaltyController | AnyList, **parameters: Any):
             """
             A user defined penalty function
 
@@ -1373,7 +1373,7 @@ class PenaltyFunctionAbstract:
 
     @staticmethod
     def set_idx_columns(
-        penalty: PenaltyOption, controller: PenaltyController, index: IntOrStr | AnyIterable, _type: Str
+        penalty: PenaltyOption, controller: PenaltyController, index: IntIterable | StrIterable | IntOrStr, _type: Str
     ):
         """
         Simple penalty.cols setter for marker index and names
@@ -1428,7 +1428,7 @@ class PenaltyFunctionAbstract:
         penalty.rows_is_set = True
 
     @staticmethod
-    def _check_idx(name: str, elements: AnyIterable | Int, max_n_elements: Int = inf, min_n_elements: Int = 0):
+    def _check_idx(name: str, elements: IntIterable, max_n_elements: Int = inf, min_n_elements: Int = 0):
         """
         Generic sanity check for requested dimensions.
         If the function returns, everything is okay

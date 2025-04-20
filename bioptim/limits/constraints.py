@@ -619,7 +619,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
         @staticmethod
         def stochastic_covariance_matrix_continuity_implicit(
-            penalty: PenaltyOption,
+            penalty: Constraint,
             controller: PenaltyController,
         ):
             """
@@ -795,7 +795,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
         @staticmethod
         def stochastic_covariance_matrix_continuity_collocation(
-            penalty,
+            penalty: Constraint,
             controller: PenaltyController,
         ):
             """
@@ -866,7 +866,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         def symmetric_matrix(
             penalty: Constraint,
             controller: PenaltyController,
-            key: str,
+            key: Str,
         ):
             """
             This function constrains a matrix to be symmetric
@@ -905,7 +905,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return diagonal_terms
 
         @staticmethod
-        def collocation_jacobians(penalty, controller):
+        def collocation_jacobians(penalty: Constraint, controller: PenaltyController):
             """
             This function computes the jacobians of the collocation equation and of the continuity equation with respect to the collocation points and the noise
             """

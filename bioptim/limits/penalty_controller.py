@@ -281,17 +281,17 @@ class PenaltyController:
         return out
 
     @property
-    def integrate(self):
+    def integrate(self) -> Callable:
         return self._nlp.dynamics[self.node_index]
 
-    def integrate_extra_dynamics(self, dynamics_index):
+    def integrate_extra_dynamics(self, dynamics_index) -> Callable:
         return self._nlp.extra_dynamics[dynamics_index][self.node_index]
 
     @property
-    def dynamics(self):
+    def dynamics(self) -> Callable:
         return self._nlp.dynamics_func
 
-    def extra_dynamics(self, dynamics_index):
+    def extra_dynamics(self, dynamics_index) -> Callable:
         return self._nlp.extra_dynamics_func[dynamics_index]
 
     @property

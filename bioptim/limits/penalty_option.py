@@ -15,18 +15,15 @@ from ..misc.parameters_types import (
     Bool,
     BoolOptional,
     Int,
-    IntOptional,
+    IntListOptional,
     Float,
     Str,
-    AnyDict,
-    AnyList,
-    AnyTuple,
-    IntList,
-    FloatList,
-    NpArray,
+    AnyIterable,
     NpArrayList,
     AnySequence,
     AnySequenceOptional,
+    FloatIterableorNpArray,
+    IntIterableorNpArray,
     CX,
 )
 
@@ -107,15 +104,15 @@ class PenaltyOption(OptionGeneric):
         self,
         penalty: Any,
         phase: Int = 0,
-        node: Node | AnyList | AnyTuple = Node.DEFAULT,
-        target: IntOptional | Float | NpArray | IntList | FloatList | NpArrayList = None,
+        node: Node | AnyIterable = Node.DEFAULT,
+        target: FloatIterableorNpArray | IntIterableorNpArray | NpArrayList | None = None,
         quadratic: BoolOptional = None,
         weight: Float = 1,
         derivative: Bool = False,
         explicit_derivative: Bool = False,
         integrate: Bool = False,
         integration_rule: QuadratureRule = QuadratureRule.DEFAULT,
-        index: AnyList = None,
+        index: IntListOptional | Int = None,
         rows: AnySequenceOptional = None,
         cols: AnySequenceOptional = None,
         custom_function: Callable = None,
@@ -123,7 +120,7 @@ class PenaltyOption(OptionGeneric):
         is_stochastic: Bool = False,
         multi_thread: Bool = None,
         expand: Bool = False,
-        **extra_parameters: AnyDict,
+        **extra_parameters: Any,
     ):
         """
         Parameters
@@ -227,7 +224,7 @@ class PenaltyOption(OptionGeneric):
 
         self.multi_thread = multi_thread
 
-    def set_penalty(self, penalty: CX, controllers: PenaltyController | list[PenaltyController, PenaltyController]):
+    def set_penalty(self, penalty: CX, controllers: PenaltyController | list[PenaltyController]):
         """
         Prepare the dimension and index of the penalty (including the target)
 
@@ -315,7 +312,7 @@ class PenaltyOption(OptionGeneric):
                 f"target {self.target.shape} does not correspond to expected size {shape} for penalty {self.name}"
             )
 
-    def transform_penalty_to_stochastic(self, controller: PenaltyController, fcn, state_cx_scaled):
+    def transform_penalty_to_stochastic(self, controller: PenaltyController, fcn: CX, state_cx_scaled: CX):
         """
         Transform the penalty fcn into the variation of fcn depending on the noise:
             fcn = fcn(x, u, p, a, d) becomes d/dx(fcn) * covariance * d/dx(fcn).T
@@ -623,7 +620,7 @@ class PenaltyOption(OptionGeneric):
             self.function[node] = self.function[node].expand()
             self.weighted_function[node] = self.weighted_function[node].expand()
 
-    def _check_sanity_of_penalty_interactions(self, controller):
+    def _check_sanity_of_penalty_interactions(self, controller: PenaltyController):
         if self.multinode_penalty and self.explicit_derivative:
             raise ValueError("multinode_penalty and explicit_derivative cannot be true simultaneously")
         if self.multinode_penalty and self.derivative:
@@ -692,7 +689,7 @@ class PenaltyOption(OptionGeneric):
         return controller, t0, x, u, p, a, d
 
     @staticmethod
-    def _get_states(ocp, states, n_idx, sn_idx):
+    def _get_states(ocp, states, n_idx: Int, sn_idx: Int) -> CX:
         states.node_index = n_idx
 
         x = ocp.cx()
@@ -730,7 +727,7 @@ class PenaltyOption(OptionGeneric):
 
         return x
 
-    def _get_u(self, ocp, p_idx, n_idx, sn_idx):
+    def _get_u(self, ocp, p_idx: Int, n_idx: Int, sn_idx: Int) -> CX:
         nlp = ocp.nlp[p_idx]
         controls = nlp.controls
         controls.node_index = n_idx
@@ -790,7 +787,7 @@ class PenaltyOption(OptionGeneric):
 
         return u
 
-    def get_numerical_timeseries(self, ocp, p_idx, n_idx, sn_idx):
+    def get_numerical_timeseries(self, ocp, p_idx: Int, n_idx: Int, sn_idx: Int) -> CX:
         nlp = ocp.nlp[p_idx]
         numerical_timeseries = nlp.numerical_timeseries
 

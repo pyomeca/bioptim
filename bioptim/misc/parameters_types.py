@@ -2,6 +2,7 @@ from typing import Any
 import numpy as np
 from typing import TypeAlias
 from casadi import MX, SX, DM
+from .enums import Node
 
 Int: TypeAlias = int
 Range: TypeAlias = range
@@ -39,10 +40,12 @@ NpArray: TypeAlias = np.ndarray
 NpArrayorFloat: TypeAlias = np.ndarray | float
 NpArrayorFloatOptional: TypeAlias = np.ndarray | float | None
 FloatIterableorNpArray: TypeAlias = list[float] | tuple[float, ...] | np.ndarray
+FloatIterableorNpArrayorFloat: TypeAlias = FloatIterableorNpArray | float
 IntIterableorNpArray: TypeAlias = list[int] | tuple[int, ...] | range | np.ndarray
 IntIterableorNpArrayorInt: TypeAlias = int | IntIterableorNpArray
 
 IntListOptional: TypeAlias = list[int] | None
+FloatListOptional: TypeAlias = list[float] | None
 NpArrayListOptional: TypeAlias = list[np.ndarray] | None
 
 StrOrIterable: TypeAlias = str | list[str]
@@ -65,6 +68,8 @@ DoubleIntTuple: TypeAlias = tuple[int, int]
 StrTuple: TypeAlias = tuple[str, ...]
 
 IntStrorIterable: TypeAlias = int | str | AnyIterable
+IntorIterableOptional: TypeAlias = IntOptional | IntList | IntTuple
+IntorNodeIterable: TypeAlias = tuple[Int | Node, ...] | list[Int | Node]
 
 CX: TypeAlias = MX | SX
 CXOptional: TypeAlias = MX | SX | None

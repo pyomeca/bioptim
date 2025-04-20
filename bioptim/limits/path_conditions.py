@@ -17,15 +17,22 @@ from ..misc.parameters_types import (
     Float,
     Str,
     AnyList,
-    AnyListOptional,
+    FloatListOptional,
     IntList,
     FloatList,
+    StrList,
     AnyDict,
     AnyTuple,
-    IntTuple,
+    AnyIterable,
+    IntDict,
     NpArray,
+    NpArrayorFloat,
     AnyIterableOrSlice,
     AnyIterableOrSliceOptional,
+    IntIterableorNpArray,
+    IntorIterableOptional,
+    FloatIterableorNpArray,
+    FloatIterableorNpArrayorFloat,
     DoubleIntTuple,
 )
 
@@ -67,7 +74,7 @@ class PathCondition(np.ndarray):
     def __new__(
         cls,
         input_array: NpArray | Callable,
-        t: AnyListOptional = None,
+        t: FloatListOptional = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT,
         slice_list: AnyIterableOrSliceOptional = None,
         **extra_params,
@@ -158,7 +165,7 @@ class PathCondition(np.ndarray):
 
         return obj
 
-    def __array_finalize__(self, obj):
+    def __array_finalize__(self, obj: "PathCondition"):
         """
         Finalize the array. This is required since PathCondition inherits from np.ndarray
 
@@ -372,7 +379,7 @@ class Bounds(OptionGeneric):
         max_bound: Callable | PathCondition | NpArray | AnyList | AnyTuple | Float = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
         slice_list: AnyIterableOrSliceOptional = None,
-        **parameters: AnyDict,
+        **parameters: Any,
     ):
         """
         Parameters
@@ -450,7 +457,7 @@ class Bounds(OptionGeneric):
         self.extra_params = self.min.extra_params
         self.n_shooting = self.min.n_shooting
 
-    def scale(self, scaling: Float | NpArray | VariableScaling):
+    def scale(self, scaling: Float | NpArray):
         """
         Scaling a Bound
 
@@ -506,7 +513,7 @@ class Bounds(OptionGeneric):
                 "b is the stopping index and c is the step for slicing."
             )
 
-    def __setitem__(self, _slice: AnyIterableOrSlice, value: NpArray | AnyList | Float):
+    def __setitem__(self, _slice: AnyIterableOrSlice, value: FloatIterableorNpArrayorFloat):
         """
         Allows to set from square brackets
 
@@ -574,7 +581,7 @@ class BoundsList(OptionDict):
         super(BoundsList, self).__init__(sub_type=Bounds)
         self.type = InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: Str, value: FloatIterableorNpArrayorFloat):
         if isinstance(value, (list, tuple)):
             self.add(key, min_bound=value[0], max_bound=value[1])
             return
@@ -587,13 +594,13 @@ class BoundsList(OptionDict):
 
     def add(
         self,
-        key,
+        key: Str,
         bounds: Bounds = None,
         min_bound: PathCondition | NpArray | Float | AnyList | AnyTuple | Callable = None,
         max_bound: PathCondition | NpArray | Float | AnyList | AnyTuple | Callable = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
         phase: Int = -1,
-        **extra_arguments: AnyDict,
+        **extra_arguments: Any,
     ):
         """
         Add a new bounds to the list, either [min_bound AND max_bound] OR [bounds] should be defined
@@ -704,9 +711,9 @@ class InitialGuess(OptionGeneric):
     def __init__(
         self,
         key,
-        initial_guess: NpArray | AnyList | AnyTuple | Float | Callable = None,
+        initial_guess: NpArrayorFloat | AnyIterable | Callable = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT,
-        **parameters: AnyDict,
+        **parameters: Any,
     ):
         """
         Parameters
@@ -762,7 +769,7 @@ class InitialGuess(OptionGeneric):
             interpolation=self.init.type,
         )
 
-    def scale(self, scaling: Float | NpArray | VariableScaling):
+    def scale(self, scaling: Float | NpArray):
         """
         Scaling an InitialGuess
 
@@ -797,7 +804,7 @@ class InitialGuess(OptionGeneric):
 
         return self.init.shape
 
-    def __setitem__(self, _slice: AnyIterableOrSlice, value: NpArray | AnyList | Float):
+    def __setitem__(self, _slice: AnyIterableOrSlice, value: FloatIterableorNpArrayorFloat):
         """
         Allows to set from square brackets
 
@@ -894,7 +901,7 @@ class NoisedInitialGuess(InitialGuess):
         n_shooting: IntOptional = None,
         bound_push: AnyList | Int | Float = 0.1,
         seed: IntOptional = None,
-        **parameters: AnyDict,
+        **parameters: Any,
     ):
         """
         Parameters
@@ -998,7 +1005,7 @@ class NoisedInitialGuess(InitialGuess):
         interpolation: InterpolationType = InterpolationType.CONSTANT,
         magnitude_type: MagnitudeType = MagnitudeType.RELATIVE,
         polynomial_degree: Int = 1,
-        **parameters: AnyDict,
+        **parameters: Any,
     ):
         """
         Create the matrix of the initial guess + noise evaluated at each node
@@ -1117,7 +1124,7 @@ class InitialGuessList(OptionDict):
         initial_guess: InitialGuess | NpArray | AnyList | AnyTuple | Callable = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT,
         phase: Int = -1,
-        **extra_arguments: AnyDict,
+        **extra_arguments: Any,
     ):
         """
         Add a new initial guess to the list
@@ -1167,7 +1174,7 @@ class InitialGuessList(OptionDict):
         raise NotImplementedError("Printing of InitialGuessList is not ready yet")
 
     @staticmethod
-    def _check_type_and_format_bounds(bounds, nb_phases):
+    def _check_type_and_format_bounds(bounds: Bounds, nb_phases: Int):
         """
         Check bounds type and format
 
@@ -1185,7 +1192,7 @@ class InitialGuessList(OptionDict):
         return bounds
 
     @staticmethod
-    def _check_type_and_format_magnitude(magnitude, nb_phases, keys):
+    def _check_type_and_format_magnitude(magnitude: AnyList | Int | Float, nb_phases: Int, keys: StrList):
         """
         Check magnitude type and format
 
@@ -1226,7 +1233,7 @@ class InitialGuessList(OptionDict):
         return magnitude
 
     @staticmethod
-    def _check_type_and_format_bound_push(bound_push, nb_phases):
+    def _check_type_and_format_bound_push(bound_push: FloatIterableorNpArray | IntIterableorNpArray, nb_phases: Int):
         """
         Check bound_push type and format
 
@@ -1263,7 +1270,7 @@ class InitialGuessList(OptionDict):
         return bound_push
 
     @staticmethod
-    def _check_type_and_format_seed(seed, nb_phases, keys):
+    def _check_type_and_format_seed(seed: Str, nb_phases: Int, keys: List[Str]):
         """
         Check seed type and format
 
@@ -1303,11 +1310,11 @@ class InitialGuessList(OptionDict):
     def add_noise(
         self,
         bounds: BoundsList = None,
-        n_shooting: IntOptional | IntList | IntTuple = None,
+        n_shooting: IntorIterableOptional = None,
         magnitude: IntOptional | Float | AnyDict | AnyList = None,
         magnitude_type: MagnitudeType = MagnitudeType.RELATIVE,
         bound_push: Int | Float | IntList | FloatList | NpArray = 0.1,
-        seed: IntOptional | AnyDict | AnyList = None,
+        seed: IntOptional | IntDict | IntList = None,
     ):
         """
         Add noise to each initial guesses from an InitialGuessList

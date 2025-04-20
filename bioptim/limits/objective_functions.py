@@ -12,7 +12,7 @@ from ..misc.parameters_types import (
     Int,
     Str,
     FloatOptional,
-    AnyDict,
+    NpArrayorFloatOptional,
 )
 
 
@@ -27,7 +27,7 @@ class Objective(PenaltyOption):
         custom_type: Any = None,
         phase: Int = -1,
         is_stochastic: Bool = False,
-        **extra_parameters: AnyDict,
+        **extra_parameters: Any,
     ):
         """
         Parameters
@@ -177,7 +177,7 @@ class ObjectiveList(OptionList):
         Print the ObjectiveList to the console
     """
 
-    def add(self, objective: Callable | Objective | Any, **extra_arguments: AnyDict):
+    def add(self, objective: Callable | Objective | Any, **extra_arguments: Any):
         """
         Add a new objective function to the list
 
@@ -306,7 +306,7 @@ class ObjectiveFunction:
             return 1
 
     @staticmethod
-    def update_target(ocp_or_nlp: Any, list_index: Int, new_target: Any):
+    def update_target(ocp_or_nlp: Any, list_index: Int, new_target: NpArrayorFloatOptional):
         """
         Update a specific target
 
@@ -492,7 +492,7 @@ class ParameterObjective(PenaltyOption):
     A placeholder for an objective function
     """
 
-    def __init__(self, parameter_objective: Any, custom_type: Any = None, **extra_parameters: AnyDict):
+    def __init__(self, parameter_objective: Any, custom_type: Any = None, **extra_parameters: Any):
         """
         Parameters
         ----------
@@ -590,7 +590,7 @@ class ParameterObjectiveList(OptionList):
         Print the ParameterObjectiveList to the console
     """
 
-    def add(self, parameter_objective: Callable | ParameterObjective | Any, **extra_arguments: AnyDict):
+    def add(self, parameter_objective: Callable | ParameterObjective | Any, **extra_arguments: Any):
         """
         Add a new parameter objective function to the list
 

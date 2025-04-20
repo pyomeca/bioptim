@@ -17,6 +17,7 @@ from ..misc.parameters_types import (
     Str,
     IntTuple,
     AnyDict,
+    IntorNodeIterable,
 )
 
 
@@ -46,8 +47,8 @@ class MultinodePenalty(PenaltyOption):
 
     def __init__(
         self,
-        _multinode_penalty_fcn: Any | type,
-        nodes: tuple[Int | Node, ...],
+        _multinode_penalty_fcn: Any,
+        nodes: IntorNodeIterable,
         nodes_phase: IntTuple,
         multinode_penalty: Any | Callable = None,
         custom_function: Callable = None,
@@ -322,7 +323,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             return out
 
         @staticmethod
-        def time_equality(penalty, controllers: list[PenaltyController, PenaltyController]):
+        def time_equality(penalty, controllers: list[PenaltyController]):
             """
             The duration of one phase must be the same as the duration of another phase
 
@@ -350,7 +351,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             return out
 
         @staticmethod
-        def track_total_time(penalty, controllers: list[PenaltyController, PenaltyController]):
+        def track_total_time(penalty, controllers: list[PenaltyController]):
             """
             The total duration of the phases must be equal to a defined duration
 
@@ -555,7 +556,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
         @staticmethod
         def stochastic_df_dw_implicit(
             penalty,
-            controllers: list[PenaltyController],
+            controllers: list[PenaltyController, PenaltyController],
         ):
             """
             This function constraints the stochastic matrix C to its actual value which is
@@ -666,7 +667,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             return out_vector
 
         @staticmethod
-        def custom(penalty, controllers: list[PenaltyController, PenaltyController], **extra_parameters: AnyDict):
+        def custom(penalty, controllers: list[PenaltyController], **extra_parameters: AnyDict):
             """
             Calls the custom transition function provided by the user
 

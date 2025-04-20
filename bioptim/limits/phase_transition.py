@@ -17,7 +17,6 @@ from ..misc.parameters_types import (
     IntOptional,
     Float,
     FloatOptional,
-    AnyDict,
 )
 
 
@@ -55,7 +54,7 @@ class PhaseTransition(MultinodePenalty):
         custom_function: Callable = None,
         min_bound: Float = 0,
         max_bound: Float = 0,
-        **extra_parameters: AnyDict,
+        **extra_parameters: Any,
     ):
         if not isinstance(transition, PhaseTransitionFcn):
             custom_function = transition
@@ -107,7 +106,7 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
         Configure all the phase transitions and put them in a list
     """
 
-    def add(self, transition: Any, **extra_arguments: AnyDict):
+    def add(self, transition: Any, **extra_arguments: Any):
         """
         Add a new PhaseTransition to the list
 
