@@ -15,6 +15,12 @@ from ..misc.enums import (
 )
 from ..optimization.non_linear_program import NonLinearProgram
 
+from ..misc.parameters_types import (
+    Bool,
+    AnyDictOptional,
+    CX,
+)
+
 
 class SQPInterface(SolverInterface):
     """
@@ -71,7 +77,7 @@ class SQPInterface(SolverInterface):
         self.lam_g = None
         self.lam_x = None
 
-    def online_optim(self, ocp, show_options: dict = None):
+    def online_optim(self, ocp, show_options: AnyDictOptional = None):
         """
         Declare the online callback to update the graphs while optimizing
 
@@ -106,7 +112,7 @@ class SQPInterface(SolverInterface):
         raise NotImplementedError("This is broken")
         # generic_set_lagrange_multiplier(self, sol)
 
-    def dispatch_bounds(self, include_g: bool = True, include_g_internal: bool = True, include_g_implicit: bool = True):
+    def dispatch_bounds(self, include_g: Bool = True, include_g_internal: Bool = True, include_g_implicit: Bool = True):
         """
         Parse the bounds of the full ocp to a SQP-friendly one
         """
@@ -114,7 +120,7 @@ class SQPInterface(SolverInterface):
             self, include_g=include_g, include_g_internal=include_g_internal, include_g_implicit=include_g_implicit
         )
 
-    def dispatch_obj_func(self):
+    def dispatch_obj_func(self) -> CX:
         """
         Parse the objective functions of the full ocp to a SQP-friendly one
 

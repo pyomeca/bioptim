@@ -14,6 +14,13 @@ from ..limits.path_conditions import Bounds
 from ..misc.enums import InterpolationType
 
 
+from ..misc.parameters_types import (
+    Str,
+    Bool,
+    AnyListorDict,
+)
+
+
 class AcadosInterface(SolverInterface):
     """
     The ACADOS solver interface
@@ -226,7 +233,7 @@ class AcadosInterface(SolverInterface):
         self.acados_ocp.dims.nu = ocp.nlp[0].controls.shape
         self.acados_ocp.dims.N = ocp.nlp[0].ns
 
-    def __set_constr_type(self, constr_type: str = "BGH"):
+    def __set_constr_type(self, constr_type: Str = "BGH"):
         """
         Set the type of constraints
 
@@ -401,7 +408,7 @@ class AcadosInterface(SolverInterface):
         self.acados_ocp.constraints.lh_e = np.array(self.end_g_bounds.min[:, 0])
         self.acados_ocp.constraints.uh_e = np.array(self.end_g_bounds.max[:, 0])
 
-    def __set_cost_type(self, cost_type: str = "NONLINEAR_LS"):
+    def __set_cost_type(self, cost_type: Str = "NONLINEAR_LS"):
         """
         Set the type of cost functions
 
@@ -832,7 +839,7 @@ class AcadosInterface(SolverInterface):
     def online_optim(self, ocp):
         raise NotImplementedError("online_optim is not implemented yet with ACADOS backend")
 
-    def get_optimized_value(self) -> list | dict:
+    def get_optimized_value(self) -> AnyListorDict:
         """
         Get the previously optimized solution
 
@@ -874,7 +881,7 @@ class AcadosInterface(SolverInterface):
 
         return out[0] if len(out) == 1 else out
 
-    def solve(self, expand_during_shake_tree=False) -> list | dict:
+    def solve(self, expand_during_shake_tree: Bool=False) -> AnyListorDict:
         """
         Solve the prepared ocp
 

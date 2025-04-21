@@ -14,7 +14,14 @@ from ..misc.enums import InterpolationType, OnlineOptim
 from ..optimization.non_linear_program import NonLinearProgram
 
 
-def generic_online_optim(interface, ocp, show_options: dict | None = None):
+from ..misc.parameters_types import (
+    AnyDictOptional,
+    Bool,
+    AnyDict,
+    CX,
+)
+
+def generic_online_optim(interface, ocp, show_options: AnyDictOptional = None):
     """
     Declare the online callback to update the graphs while optimizing
 
@@ -44,7 +51,7 @@ def generic_online_optim(interface, ocp, show_options: dict | None = None):
     interface.options_common["iteration_callback"] = to_call(ocp, **show_options)
 
 
-def generic_solve(interface, expand_during_shake_tree=False) -> dict:
+def generic_solve(interface, expand_during_shake_tree: Bool=False) -> AnyDict:
     """
     Solve the prepared ocp
 
@@ -134,7 +141,7 @@ def generic_solve(interface, expand_during_shake_tree=False) -> dict:
     return interface.out
 
 
-def _shake_tree_for_penalties(ocp, penalties_cx, v, v_bounds, expand):
+def _shake_tree_for_penalties(ocp, penalties_cx, v, v_bounds, expand: Bool):
     """
     Remove the dt in the objectives and constraints if they are constant
 
@@ -192,7 +199,7 @@ def generic_set_lagrange_multiplier(interface, sol: Solution):
     return sol
 
 
-def generic_dispatch_bounds(interface, include_g: bool, include_g_internal: bool, include_g_implicit: bool):
+def generic_dispatch_bounds(interface, include_g: Bool, include_g_internal: Bool, include_g_implicit: Bool):
     """
     Parse the bounds of the full ocp to a SQP-friendly one
 
@@ -256,7 +263,7 @@ def generic_dispatch_bounds(interface, include_g: bool, include_g_internal: bool
     return all_g, all_g_bounds
 
 
-def generic_dispatch_obj_func(interface):
+def generic_dispatch_obj_func(interface) -> CX:
     """
     Parse the objective functions of the full ocp to a SQP-friendly one
 
@@ -277,7 +284,7 @@ def generic_dispatch_obj_func(interface):
     return all_objectives
 
 
-def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scaled=True):
+def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scaled: Bool=True):
     """
     Parse the penalties of the full ocp to a SQP-friendly one
 

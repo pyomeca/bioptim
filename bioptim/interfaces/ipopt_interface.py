@@ -17,6 +17,12 @@ from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.solution.solution import Solution
 
 
+from ..misc.parameters_types import (
+    Bool,
+    AnyDict,
+    AnyDictOptional,
+)
+
 class IpoptInterface(SolverInterface):
     """
     The Ipopt solver interface
@@ -72,7 +78,7 @@ class IpoptInterface(SolverInterface):
         self.lam_g = None
         self.lam_x = None
 
-    def online_optim(self, ocp, show_options: dict = None):
+    def online_optim(self, ocp, show_options: AnyDictOptional = None):
         """
         Declare the online callback to update the graphs while optimizing
 
@@ -86,7 +92,7 @@ class IpoptInterface(SolverInterface):
 
         generic_online_optim(self, ocp, show_options)
 
-    def solve(self, expand_during_shake_tree) -> dict:
+    def solve(self, expand_during_shake_tree) -> AnyDict:
         """
         Solve the prepared ocp
 
@@ -107,7 +113,7 @@ class IpoptInterface(SolverInterface):
         """
         sol = generic_set_lagrange_multiplier(self, sol)
 
-    def dispatch_bounds(self, include_g: bool = True, include_g_internal: bool = True, include_g_implicit: bool = True):
+    def dispatch_bounds(self, include_g: Bool = True, include_g_internal: Bool = True, include_g_implicit: Bool = True):
         """
         Parse the bounds of the full ocp to a Ipopt-friendly one
         """
