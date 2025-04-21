@@ -15,7 +15,6 @@ from ..misc.parameters_types import (
     Int,
     Str,
     Float,
-    AnyDict,
     FloatOptional,
     NpArrayorFloatOptional,
     CX,
@@ -395,7 +394,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             with_contact: Bool,
             with_passive_torque: Bool,
             with_ligament: Bool,
-            **unused_param: AnyDict,
+            **unused_param: Any,
         ):
             """
             Compute the difference between symbolic joint accelerations and forward dynamic results
@@ -442,7 +441,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             with_contact: Bool,
             with_passive_torque: Bool,
             with_ligament: Bool,
-            **unused_param: AnyDict,
+            **unused_param: Any,
         ):
             """
             Compute the difference between symbolic joint torques and inverse dynamic results
@@ -500,7 +499,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
         @staticmethod
         def implicit_marker_acceleration(
-            _: Constraint, controller: PenaltyController, contact_index: Int, contact_axis: Int, **unused_param: AnyDict
+            _: Constraint, controller: PenaltyController, contact_index: Int, contact_axis: Int, **unused_param: Any
         ):
             """
             Compute the acceleration of the contact node to set it at zero
@@ -532,7 +531,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             controller: PenaltyController,
             with_passive_torque: Bool,
             with_ligament: Bool,
-            **unused_param: AnyDict,
+            **unused_param: Any,
         ):
             """
             Compute the difference between symbolic joint torques from muscle and inverse dynamic results
@@ -585,7 +584,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return tau_id - muscle_tau
 
         @staticmethod
-        def implicit_soft_contact_forces(_: Constraint, controller: PenaltyController, **unused_param: AnyDict):
+        def implicit_soft_contact_forces(_: Constraint, controller: PenaltyController, **unused_param: Any):
             """
             Compute the difference between symbolic soft contact forces and actual force contact dynamic
 

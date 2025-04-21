@@ -13,10 +13,8 @@ from ..misc.options import UniquePerPhaseOptionList
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
 
 from ..misc.parameters_types import (
-    Int,
     Str,
     IntTuple,
-    AnyDict,
     IntorNodeIterable,
 )
 
@@ -52,7 +50,7 @@ class MultinodePenalty(PenaltyOption):
         nodes_phase: IntTuple,
         multinode_penalty: Any | Callable = None,
         custom_function: Callable = None,
-        **extra_parameters: AnyDict,
+        **extra_parameters: Any,
     ):
         if not isinstance(multinode_penalty, _multinode_penalty_fcn):
             custom_function = multinode_penalty
@@ -667,7 +665,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             return out_vector
 
         @staticmethod
-        def custom(penalty, controllers: list[PenaltyController], **extra_parameters: AnyDict):
+        def custom(penalty, controllers: list[PenaltyController], **extra_parameters: Any):
             """
             Calls the custom transition function provided by the user
 
@@ -773,7 +771,7 @@ class MultinodePenaltyList(UniquePerPhaseOptionList):
         multinode_penalty: Any,
         option_type: type = None,
         _multinode_penalty_fcn: type | Any = None,
-        **extra_arguments: AnyDict,
+        **extra_arguments: Any,
     ):
         """
         Add a new MultinodePenalty to the list
