@@ -4,26 +4,28 @@ import numpy as np
 from ..protocols.biomodel import BioModel
 from ...misc.mapping import BiMappingList
 
+from ...misc.parameters_types import Bool, NpArray, DoubleIntTuple, CXorDMorNpArray
+
 
 class StochasticBioModel(BioModel):
     """
     This class allows to define a model that can be used in a stochastic optimal control problem.
     """
 
-    sensory_noise_magnitude: np.ndarray
-    motor_noise_magnitude: np.ndarray
+    sensory_noise_magnitude: NpArray
+    motor_noise_magnitude: NpArray
 
     sensory_reference: Callable
     motor_noise_mapping: BiMappingList
 
-    matrix_shape_k: tuple[int, int]
-    matrix_shape_c: tuple[int, int]
-    matrix_shape_a: tuple[int, int]
-    matrix_shape_cov: tuple[int, int]
-    matrix_shape_cov_cholesky: tuple[int, int]
-    matrix_shape_m: tuple[int, int]
+    matrix_shape_k: DoubleIntTuple
+    matrix_shape_c: DoubleIntTuple
+    matrix_shape_a: DoubleIntTuple
+    matrix_shape_cov: DoubleIntTuple
+    matrix_shape_cov_cholesky: DoubleIntTuple
+    matrix_shape_m: DoubleIntTuple
 
-    def stochastic_dynamics(self, q, qdot, tau, ref, k, with_noise=True):
+    def stochastic_dynamics(self, q, qdot, tau, ref, k, with_noise: Bool = True):
         """The stochastic dynamics that should be applied to the model"""
 
     def compute_torques_from_noise_and_feedback(
@@ -35,7 +37,7 @@ class StochasticBioModel(BioModel):
         """Compute the sensory reference"""
 
     @staticmethod
-    def reshape_to_matrix(var, shape):
+    def reshape_to_matrix(var: CXorDMorNpArray, shape: DoubleIntTuple) -> CXorDMorNpArray:
         """
         Restore the matrix form of the variables
 
@@ -58,7 +60,7 @@ class StochasticBioModel(BioModel):
         return matrix
 
     @staticmethod
-    def reshape_to_cholesky_matrix(var, shape):
+    def reshape_to_cholesky_matrix(var: CXorDMorNpArray, shape: DoubleIntTuple) -> CXorDMorNpArray:
         """
         Restore the lower diagonal matrix form of the variables vector
         """
@@ -84,7 +86,7 @@ class StochasticBioModel(BioModel):
         return matrix
 
     @staticmethod
-    def reshape_to_vector(matrix):
+    def reshape_to_vector(matrix: CXorDMorNpArray) -> CXorDMorNpArray:
         """
         Restore the vector form of the matrix
 

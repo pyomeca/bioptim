@@ -6,10 +6,10 @@ from .enums import Node
 from .parameters_types import (
     Int,
     Str,
-    IntIterableOrNpArray,
-    IntIterableOrNpArrayOrInt,
-    CXOrDMOrFloatIterable,
-    CXOrDMOrNpArray,
+    IntIterableorNpArray,
+    IntIterableorNpArrayOrInt,
+    CXorDMorFloatIterable,
+    CXorDMorNpArray,
     AnyDict,
     IntTuple,
     AnyList,
@@ -43,7 +43,7 @@ class Mapping(OptionGeneric):
         Get the len of the mapping
     """
 
-    def __init__(self, map_idx: IntIterableOrNpArray, oppose: IntIterableOrNpArrayOrInt = None, **extra_parameters):
+    def __init__(self, map_idx: IntIterableorNpArray, oppose: IntIterableorNpArrayOrInt = None, **extra_parameters):
         """
         Parameters
         ----------
@@ -61,7 +61,7 @@ class Mapping(OptionGeneric):
             for i in oppose:
                 self.oppose[i] = -1
 
-    def map(self, obj: CXOrDMOrFloatIterable) -> CXOrDMOrNpArray:
+    def map(self, obj: CXorDMorFloatIterable) -> CXorDMorNpArray:
         """
         Apply the mapping to an matrix object. The rows are mapped while the columns are preserved as is
 
