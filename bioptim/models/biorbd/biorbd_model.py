@@ -17,6 +17,7 @@ from bioptim.models.biorbd.external_forces import (
 from ..utils import _var_mapping, bounds_from_ranges, cache_function
 from ...limits.path_conditions import Bounds
 from ...misc.mapping import BiMapping, BiMappingList
+from ...misc.enums import ContactType
 from ...misc.utils import check_version
 from ...optimization.parameters import ParameterList
 
@@ -34,6 +35,7 @@ class BiorbdModel:
         friction_coefficients: np.ndarray = None,
         parameters: ParameterList = None,
         external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None,
+        contact_type: list[ContactType] | tuple[ContactType] = (),
     ):
         """
         Parameters
@@ -47,12 +49,24 @@ class BiorbdModel:
             parameters. The user can use this callback to modify the model.
         external_force_set: ExternalForceSetTimeSeries
             The external forces to add to the model
+        contact_type: list[ContactType] | tuple[ContactType]
+            The type of contacts tu use in the model's dynamics
         """
 
         if not isinstance(bio_model, str) and not isinstance(bio_model, biorbd.Model):
             raise ValueError("The model should be of type 'str' or 'biorbd.Model'")
 
         self.model = biorbd.Model(bio_model) if isinstance(bio_model, str) else bio_model
+
+        if not isinstance(contact_type, (list, tuple)):
+            raise RuntimeError(f"The contact_type should be a list or a tuple of ContactType, not {contact_type}.")
+        for contact in contact_type:
+            if not isinstance(contact, ContactType):
+                raise RuntimeError(f"The contact_type should be a list or a tuple of ContactType, not {contact}.")
+        if len(contact_type) > 1:
+            raise NotImplementedError("Only one ContactType is supported at the moment.")
+        self.contact_type = contact_type
+
         if parameters is not None:
             for param_key in parameters:
                 parameters[param_key].apply_parameter(self)
@@ -84,10 +98,46 @@ class BiorbdModel:
             1,
         )
 
-    def _set_external_force_set(self, external_force_set: ExternalForceSetTimeSeries):
+    def _set_external_force_set(self, external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables):
         """
         It checks the external forces and binds them to the model.
         """
+        if (ContactType.RIGID_IMPLICIT in self.contact_type or
+            ContactType.SOFT_IMPLICIT in self.contact_type or
+            ContactType.SOFT_EXPLICIT) and isinstance(external_force_set, ExternalForceSetTimeSeries):
+            raise NotImplementedError(
+                f"Your contact_type {self.contact_type} is not supported yet with external_force_set of type ExternalForceSetTimeSeries.")
+
+        if len(self.contact_type) > 0:
+            if external_force_set is None:
+                external_force_set = ExternalForceSetVariables()
+            if ContactType.RIGID_IMPLICIT in self.contact_type:
+                for i_contact in range(self.nb_rigid_contacts):
+                    external_force_set.add(
+                        force_name=f"implicit_rigid_contact_{i_contact}",
+                        segment=self.rigid_contact_segment(i_contact),
+                        use_point_of_application=True,
+                    )
+            elif ContactType.SOFT_IMPLICIT in self.contact_type:
+                for i_contact in range(self.nb_soft_contacts):
+                    external_force_set.add(
+                        force_name=f"implicit_soft_contact_{i_contact}",
+                        segment=self.soft_contact_segment(i_contact),
+                        use_point_of_application=True,
+                    )
+            elif ContactType.SOFT_EXPLICIT in self.contact_type:
+                for i_contact in range(self.nb_soft_contacts):
+                    external_force_set.add(
+                        force_name=f"explicit_soft_contact_{i_contact}",
+                        segment=self.soft_contact_segment(i_contact),
+                        use_point_of_application=True,
+                    )
+            else:
+                raise NotImplementedError(
+                    f"Your contact_type {self.contact_type} is not supported yet."
+                )
+
+
         external_force_set.check_segment_names(tuple([s.name().to_string() for s in self.model.segments()]))
         external_force_set.check_all_string_points_of_application(self.marker_names)
         external_force_set.bind()
@@ -884,6 +934,18 @@ class BiorbdModel:
             rigid_contact_axes_index(0) = (1, 2)
         """
         return tuple(self.model.rigidContacts()[contact_index].availableAxesIndices())
+
+    def rigid_contact_segment(self, contact_index) -> tuple:
+        """
+        Returns the name of the segment on which this specific rigid contact is.
+        """
+        return tuple(self.model.rigidContacts()[contact_index].segmentName())
+
+    def soft_contact_segment(self, contact_index) -> tuple:
+        """
+        Returns the name of the segment on which this specific rigid contact is.
+        """
+        return tuple(self.model.softContacts()[contact_index].segmentName())
 
     @cache_function
     def markers_velocities(self, reference_index=None) -> list[MX]:
