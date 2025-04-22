@@ -1532,7 +1532,7 @@ def test_multinode_constraints(ode_solver, phase_dynamics):
     tak = time.time()
     sol = ocp.solve()
     tok = time.time()
-    sol.print_cost()
+    # sol.print_cost()  # sol.print_cost() was broken for multinode penalties
 
     # Check objective function value
     f = np.array(sol.cost)
