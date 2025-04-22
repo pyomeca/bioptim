@@ -1280,7 +1280,7 @@ class PenaltyFunctionAbstract:
             return collocation_helper - states
 
         @staticmethod
-        def custom(penalty: PenaltyOption, controller: PenaltyController | AnyList, **parameters: Any):
+        def custom(penalty: PenaltyOption, controller: PenaltyController, **parameters: Any):
             """
             A user defined penalty function
 

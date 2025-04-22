@@ -1271,7 +1271,7 @@ class InitialGuessList(OptionDict):
         return bound_push
 
     @staticmethod
-    def _check_type_and_format_seed(seed: Str, nb_phases: Int, keys: List[Str]):
+    def _check_type_and_format_seed(seed: IntOptional | IntDict | IntList, nb_phases: Int, keys: List[Str]):
         """
         Check seed type and format
 

@@ -8,7 +8,6 @@ from ..misc.enums import PhaseDynamics, ControlType
 from ..misc.parameters_types import (
     Bool,
     Int,
-    IntTuple,
     IntList,
     BoolList,
     Float,
@@ -223,7 +222,7 @@ class PenaltyHelpers:
         return out
 
 
-def _get_multinode_indices(penalty, is_constructing_penalty: Bool) -> IntTuple:
+def _get_multinode_indices(penalty, is_constructing_penalty: Bool) -> IntList:
     if not penalty.multinode_penalty:
         raise RuntimeError("This function should only be called for multinode penalties")
 

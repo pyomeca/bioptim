@@ -1,8 +1,9 @@
 from typing import Any, Callable
 
 import numpy as np
-from casadi import vertcat, Function, MX, SX, jacobian, diag
+from casadi import vertcat, Function, jacobian, diag
 
+from ..optimization.optimization_variable import OptimizationVariableList
 from .penalty_controller import PenaltyController
 from ..limits.penalty_helpers import PenaltyHelpers
 from ..misc.enums import Node, PlotType, ControlType, PenaltyType, QuadratureRule, PhaseDynamics
@@ -18,13 +19,13 @@ from ..misc.parameters_types import (
     IntListOptional,
     Float,
     Str,
-    AnyIterable,
     NpArrayList,
     AnySequence,
     AnySequenceOptional,
     FloatIterableorNpArray,
     IntIterableorNpArray,
     CX,
+    IntorNodeIterable,
 )
 
 
@@ -104,7 +105,7 @@ class PenaltyOption(OptionGeneric):
         self,
         penalty: Any,
         phase: Int = 0,
-        node: Node | AnyIterable = Node.DEFAULT,
+        node: Node | IntorNodeIterable = Node.DEFAULT,
         target: FloatIterableorNpArray | IntIterableorNpArray | NpArrayList | None = None,
         quadratic: BoolOptional = None,
         weight: Float = 1,
@@ -689,7 +690,7 @@ class PenaltyOption(OptionGeneric):
         return controller, t0, x, u, p, a, d
 
     @staticmethod
-    def _get_states(ocp, states, n_idx: Int, sn_idx: Int) -> CX:
+    def _get_states(ocp, states: OptimizationVariableList, n_idx: Int, sn_idx: Int) -> CX:
         states.node_index = n_idx
 
         x = ocp.cx()
