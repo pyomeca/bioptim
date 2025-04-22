@@ -541,7 +541,9 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
             parameter_init=p_init,
             parameter_bounds=self.parameter_bounds,
         )
-        a_init = InitialGuessList()
+        a_init = (
+            InitialGuessList()
+        )  # TODO: Algebraic_states are not implemented in MHE, to do implicit contacts, this should be addressed
         return Solution.from_initial_guess(solution_ocp, [np.array([dt]), x_init, u_init, p_init, a_init])
 
     def _initialize_state_idx_to_cycle(self, options):
@@ -687,18 +689,17 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
                     )
                 else:
                     initial_guess_frames = []
-                    nb_intermediate_frames = self.nlp[0].dynamics_type.ode_solver.polynomial_degree + 1
                     for _ in range(self.n_cycles):
                         initial_guess_frames.extend(
                             list(
                                 range(
-                                    self.n_cycles_to_advance * self.cycle_len * nb_intermediate_frames,
-                                    (self.n_cycles_to_advance + 1) * self.cycle_len * nb_intermediate_frames,
+                                    self.n_cycles_to_advance * self.cycle_len * self.nb_intermediate_frames,
+                                    (self.n_cycles_to_advance + 1) * self.cycle_len * self.nb_intermediate_frames,
                                 )
                             )
                         )
                     initial_guess_frames.append(
-                        (self.n_cycles_to_advance + 1) * self.cycle_len * nb_intermediate_frames
+                        (self.n_cycles_to_advance + 1) * self.cycle_len * self.nb_intermediate_frames
                     )
                     self.nlp[0].x_init[key].init[:, :] = states[key][:, initial_guess_frames]
             else:
