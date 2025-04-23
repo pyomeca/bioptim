@@ -1,14 +1,32 @@
 from typing import Any, Callable
 
 import numpy as np
-from casadi import vertcat, Function, MX, SX, jacobian, diag
+from casadi import vertcat, Function, jacobian, diag
 
+from ..optimization.optimization_variable import OptimizationVariableList
 from .penalty_controller import PenaltyController
 from ..limits.penalty_helpers import PenaltyHelpers
 from ..misc.enums import Node, PlotType, ControlType, PenaltyType, QuadratureRule, PhaseDynamics
 from ..misc.mapping import BiMapping
 from ..misc.options import OptionGeneric
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
+
+
+from ..misc.parameters_types import (
+    Bool,
+    BoolOptional,
+    Int,
+    IntListOptional,
+    Float,
+    Str,
+    NpArrayList,
+    AnySequence,
+    AnySequenceOptional,
+    FloatIterableorNpArray,
+    IntIterableorNpArray,
+    CX,
+    IntorNodeIterable,
+)
 
 
 class PenaltyOption(OptionGeneric):
@@ -86,23 +104,23 @@ class PenaltyOption(OptionGeneric):
     def __init__(
         self,
         penalty: Any,
-        phase: int = 0,
-        node: Node | list | tuple = Node.DEFAULT,
-        target: int | float | np.ndarray | list[int] | list[float] | list[np.ndarray] = None,
-        quadratic: bool = None,
-        weight: float = 1,
-        derivative: bool = False,
-        explicit_derivative: bool = False,
-        integrate: bool = False,
+        phase: Int = 0,
+        node: Node | IntorNodeIterable = Node.DEFAULT,
+        target: FloatIterableorNpArray | IntIterableorNpArray | NpArrayList | None = None,
+        quadratic: BoolOptional = None,
+        weight: Float = 1,
+        derivative: Bool = False,
+        explicit_derivative: Bool = False,
+        integrate: Bool = False,
         integration_rule: QuadratureRule = QuadratureRule.DEFAULT,
-        index: list = None,
-        rows: list | tuple | range | np.ndarray = None,
-        cols: list | tuple | range | np.ndarray = None,
+        index: IntListOptional | Int = None,
+        rows: AnySequenceOptional = None,
+        cols: AnySequenceOptional = None,
         custom_function: Callable = None,
         penalty_type: PenaltyType = PenaltyType.USER,
-        is_stochastic: bool = False,
-        multi_thread: bool = None,
-        expand: bool = False,
+        is_stochastic: Bool = False,
+        multi_thread: Bool = None,
+        expand: Bool = False,
         **extra_parameters: Any,
     ):
         """
@@ -207,9 +225,7 @@ class PenaltyOption(OptionGeneric):
 
         self.multi_thread = multi_thread
 
-    def set_penalty(
-        self, penalty: MX | SX, controllers: PenaltyController | list[PenaltyController, PenaltyController]
-    ):
+    def set_penalty(self, penalty: CX, controllers: PenaltyController | list[PenaltyController]):
         """
         Prepare the dimension and index of the penalty (including the target)
 
@@ -242,7 +258,7 @@ class PenaltyOption(OptionGeneric):
         self._set_penalty_function(controllers, penalty)
         self._add_penalty_to_pool(controllers)
 
-    def _set_dim_idx(self, dim: list | tuple | range | np.ndarray, n_rows: int):
+    def _set_dim_idx(self, dim: AnySequence, n_rows: Int):
         """
         Checks if the variable index is consistent with the requested variable.
 
@@ -297,7 +313,7 @@ class PenaltyOption(OptionGeneric):
                 f"target {self.target.shape} does not correspond to expected size {shape} for penalty {self.name}"
             )
 
-    def transform_penalty_to_stochastic(self, controller: PenaltyController, fcn, state_cx_scaled):
+    def transform_penalty_to_stochastic(self, controller: PenaltyController, fcn: CX, state_cx_scaled: CX):
         """
         Transform the penalty fcn into the variation of fcn depending on the noise:
             fcn = fcn(x, u, p, a, d) becomes d/dx(fcn) * covariance * d/dx(fcn).T
@@ -376,7 +392,7 @@ class PenaltyOption(OptionGeneric):
                 )
         self.subnodes_are_decision_states = subnodes_are_decision_states
 
-    def _set_penalty_function(self, controllers: list[PenaltyController], fcn: MX | SX):
+    def _set_penalty_function(self, controllers: list[PenaltyController], fcn: CX):
         """
         Finalize the preparation of the penalty (setting function and weighted_function)
 
@@ -605,7 +621,7 @@ class PenaltyOption(OptionGeneric):
             self.function[node] = self.function[node].expand()
             self.weighted_function[node] = self.weighted_function[node].expand()
 
-    def _check_sanity_of_penalty_interactions(self, controller):
+    def _check_sanity_of_penalty_interactions(self, controller: PenaltyController):
         if self.multinode_penalty and self.explicit_derivative:
             raise ValueError("multinode_penalty and explicit_derivative cannot be true simultaneously")
         if self.multinode_penalty and self.derivative:
@@ -674,7 +690,7 @@ class PenaltyOption(OptionGeneric):
         return controller, t0, x, u, p, a, d
 
     @staticmethod
-    def _get_states(ocp, states, n_idx, sn_idx):
+    def _get_states(ocp, states: OptimizationVariableList, n_idx: Int, sn_idx: Int) -> CX:
         states.node_index = n_idx
 
         x = ocp.cx()
@@ -712,7 +728,7 @@ class PenaltyOption(OptionGeneric):
 
         return x
 
-    def _get_u(self, ocp, p_idx, n_idx, sn_idx):
+    def _get_u(self, ocp, p_idx: Int, n_idx: Int, sn_idx: Int) -> CX:
         nlp = ocp.nlp[p_idx]
         controls = nlp.controls
         controls.node_index = n_idx
@@ -772,7 +788,7 @@ class PenaltyOption(OptionGeneric):
 
         return u
 
-    def get_numerical_timeseries(self, ocp, p_idx, n_idx, sn_idx):
+    def get_numerical_timeseries(self, ocp, p_idx: Int, n_idx: Int, sn_idx: Int) -> CX:
         nlp = ocp.nlp[p_idx]
         numerical_timeseries = nlp.numerical_timeseries
 
@@ -786,11 +802,11 @@ class PenaltyOption(OptionGeneric):
             raise ValueError("The sn_idx should be 0 or -1")
 
     @staticmethod
-    def define_target_mapping(controller: PenaltyController, key: str, rows):
+    def define_target_mapping(controller: PenaltyController, key: Str, rows):
         target_mapping = BiMapping(range(len(controller.get_nlp.variable_mappings[key].to_first.map_idx)), list(rows))
         return target_mapping
 
-    def add_target_to_plot(self, controller: PenaltyController, combine_to: str):
+    def add_target_to_plot(self, controller: PenaltyController, combine_to: Str):
         """
         Interface to the plot so it can be properly added to the proper plot
 

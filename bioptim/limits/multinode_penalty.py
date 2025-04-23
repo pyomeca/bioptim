@@ -12,6 +12,12 @@ from ..misc.mapping import BiMapping
 from ..misc.options import UniquePerPhaseOptionList
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
 
+from ..misc.parameters_types import (
+    Str,
+    IntTuple,
+    IntorNodeIterable,
+)
+
 
 class MultinodePenalty(PenaltyOption):
     """
@@ -39,9 +45,9 @@ class MultinodePenalty(PenaltyOption):
 
     def __init__(
         self,
-        _multinode_penalty_fcn: Any | type,
-        nodes: tuple[int | Node, ...],
-        nodes_phase: tuple[int, ...],
+        _multinode_penalty_fcn: Any,
+        nodes: IntorNodeIterable,
+        nodes_phase: IntTuple,
         multinode_penalty: Any | Callable = None,
         custom_function: Callable = None,
         **extra_parameters: Any,
@@ -125,7 +131,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
         def states_equality(
             penalty,
             controllers: list[PenaltyController],
-            key: str = "all",
+            key: Str = "all",
             states_mapping: list[BiMapping] = None,
         ):
             """
@@ -171,7 +177,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             return out
 
         @staticmethod
-        def controls_equality(penalty, controllers: list[PenaltyController], key: str = "all"):
+        def controls_equality(penalty, controllers: list[PenaltyController], key: Str = "all"):
             """
             The controls before equals controls after
 
@@ -211,7 +217,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
         def algebraic_states_equality(
             penalty,
             controllers: list[PenaltyController],
-            key: str = "all",
+            key: Str = "all",
         ):
             """
             Continuity function, that is the algebraic states before algebraic states after for algebraic_states ocp
@@ -315,7 +321,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             return out
 
         @staticmethod
-        def time_equality(penalty, controllers: list[PenaltyController, PenaltyController]):
+        def time_equality(penalty, controllers: list[PenaltyController]):
             """
             The duration of one phase must be the same as the duration of another phase
 
@@ -343,7 +349,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             return out
 
         @staticmethod
-        def track_total_time(penalty, controllers: list[PenaltyController, PenaltyController]):
+        def track_total_time(penalty, controllers: list[PenaltyController]):
             """
             The total duration of the phases must be equal to a defined duration
 
@@ -548,7 +554,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
         @staticmethod
         def stochastic_df_dw_implicit(
             penalty,
-            controllers: list[PenaltyController],
+            controllers: list[PenaltyController, PenaltyController],
         ):
             """
             This function constraints the stochastic matrix C to its actual value which is
@@ -659,7 +665,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             return out_vector
 
         @staticmethod
-        def custom(penalty, controllers: list[PenaltyController, PenaltyController], **extra_parameters):
+        def custom(penalty, controllers: list[PenaltyController], **extra_parameters: Any):
             """
             Calls the custom transition function provided by the user
 
