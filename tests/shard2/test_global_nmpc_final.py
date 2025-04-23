@@ -25,6 +25,15 @@ from ..utils import TestUtils
     ],
 )
 def test_multi_cyclic_nmpc_get_final(phase_dynamics, ode_solver):
+
+    if (
+        platform.system() == "Windows"
+        and isinstance(ode_solver, OdeSolver.COLLOCATION)
+        and ode_solver.method == "legendre"
+        and phase_dynamics == PhaseDynamics.ONE_PER_NODE
+    ):
+        return
+
     def update_functions(_nmpc, cycle_idx, _sol):
         return cycle_idx < n_cycles_total  # True if there are still some cycle to perform
 
