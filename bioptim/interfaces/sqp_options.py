@@ -88,7 +88,7 @@ class SQP_METHOD(GenericSolver):
     show_online_optim: BoolOptional = None
     online_optim: OnlineOptim | None = None
     show_options: AnyDictOptional = None
-    c_compile: Bool = False
+    c_compile = False  # Type deliberately not added. Setting :Bool = False breaks the code 
     _beta: Float = 0.8
     _c1: Float = 1e-4
     _hessian_approximation: Str = "exact"  # "exact", "limited-memory"
