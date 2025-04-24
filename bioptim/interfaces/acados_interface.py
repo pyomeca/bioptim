@@ -881,7 +881,7 @@ class AcadosInterface(SolverInterface):
 
         return out[0] if len(out) == 1 else out
 
-    def solve(self, expand_during_shake_tree: Bool=False) -> AnyListorDict:
+    def solve(self, expand_during_shake_tree: Bool = False) -> AnyListorDict:
         """
         Solve the prepared ocp
 

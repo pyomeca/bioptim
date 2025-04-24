@@ -23,6 +23,7 @@ from ..misc.parameters_types import (
     AnyDictOptional,
 )
 
+
 class IpoptInterface(SolverInterface):
     """
     The Ipopt solver interface

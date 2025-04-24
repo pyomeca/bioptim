@@ -15,6 +15,7 @@ from ..misc.parameters_types import (
     AnyDictOptional,
 )
 
+
 @dataclass
 class SQP_METHOD(GenericSolver):
     """

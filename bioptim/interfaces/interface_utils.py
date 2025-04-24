@@ -21,6 +21,7 @@ from ..misc.parameters_types import (
     CX,
 )
 
+
 def generic_online_optim(interface, ocp, show_options: AnyDictOptional = None):
     """
     Declare the online callback to update the graphs while optimizing
@@ -51,7 +52,7 @@ def generic_online_optim(interface, ocp, show_options: AnyDictOptional = None):
     interface.options_common["iteration_callback"] = to_call(ocp, **show_options)
 
 
-def generic_solve(interface, expand_during_shake_tree: Bool=False) -> AnyDict:
+def generic_solve(interface, expand_during_shake_tree: Bool = False) -> AnyDict:
     """
     Solve the prepared ocp
 
@@ -284,7 +285,7 @@ def generic_dispatch_obj_func(interface) -> CX:
     return all_objectives
 
 
-def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scaled: Bool=True):
+def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scaled: Bool = True):
     """
     Parse the penalties of the full ocp to a SQP-friendly one
 

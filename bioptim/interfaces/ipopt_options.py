@@ -14,6 +14,7 @@ from ..misc.parameters_types import (
     AnyDictOptional,
 )
 
+
 @dataclass
 class IPOPT(GenericSolver):
     """
