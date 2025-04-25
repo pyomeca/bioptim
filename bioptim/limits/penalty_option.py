@@ -691,7 +691,7 @@ class PenaltyOption(OptionGeneric):
         return controller, t0, x, u, p, a, d
 
     @staticmethod
-    def _get_states(ocp, states: OptimizationVariableList, n_idx: Int, sn_idx: range) -> CX:
+    def _get_states(ocp, states: OptimizationVariableList, p_idx: Int, n_idx: Int, sn_idx: range) -> CX:
         states.node_index = n_idx
 
         x = ocp.cx()
