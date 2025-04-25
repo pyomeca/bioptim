@@ -407,10 +407,12 @@ def _get_x(ocp, phase_idx, node_idx, subnodes_idx, scaled, penalty):
     x = PenaltyHelpers.get_states(ocp, penalty, phase_idx, node_idx, subnodes_idx, values)
     return x
 
+
 def _get_u(ocp, phase_idx, node_idx, subnodes_idx, scaled, penalty):
     values = ocp.nlp[phase_idx].U_scaled if scaled else ocp.nlp[phase_idx].U
     u = PenaltyHelpers.get_controls(ocp, penalty, phase_idx, node_idx, subnodes_idx, values)
     return u
+
 
 def _get_p(ocp, phase_idx, node_idx, subnodes_idx, scaled):
     return ocp.parameters.scaled.cx if scaled else ocp.parameters.scaled

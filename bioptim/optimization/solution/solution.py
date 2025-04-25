@@ -1302,17 +1302,17 @@ class Solution:
             x = PenaltyHelpers.states(
                 penalty,
                 idx,
-                lambda p_idx, n_idx, sn_idx: self._get_x(self.ocp, penalty, p_idx, n_idx, sn_idx, merged_x)
-                )
+                lambda p_idx, n_idx, sn_idx: self._get_x(self.ocp, penalty, p_idx, n_idx, sn_idx, merged_x),
+            )
             u = PenaltyHelpers.controls(
                 penalty,
                 idx,
-                lambda p_idx, n_idx, sn_idx: self._get_u(self.ocp, penalty, p_idx, n_idx, sn_idx, merged_u)
-                )
+                lambda p_idx, n_idx, sn_idx: self._get_u(self.ocp, penalty, p_idx, n_idx, sn_idx, merged_u),
+            )
             a = PenaltyHelpers.states(
                 penalty,
                 idx,
-                lambda p_idx, n_idx, sn_idx: self._get_x(self.ocp, penalty, p_idx, n_idx, sn_idx, merged_a)
+                lambda p_idx, n_idx, sn_idx: self._get_x(self.ocp, penalty, p_idx, n_idx, sn_idx, merged_a),
             )
             d_tp = PenaltyHelpers.numerical_timeseries(
                 penalty,
