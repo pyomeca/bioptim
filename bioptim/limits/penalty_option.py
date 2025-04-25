@@ -214,7 +214,8 @@ class PenaltyOption(OptionGeneric):
         self.weighted_function: list[Function | None] = []
         self.weighted_function_non_threaded: list[Function | None] = []
 
-        self.multinode_penalty = False
+        self.is_multinode_penalty = False
+        self.is_transition = False
         self.nodes_phase = None  # This is relevant for multinodes
         self.nodes = None  # This is relevant for multinodes
         if self.derivative and self.explicit_derivative:
@@ -622,9 +623,9 @@ class PenaltyOption(OptionGeneric):
             self.weighted_function[node] = self.weighted_function[node].expand()
 
     def _check_sanity_of_penalty_interactions(self, controller: PenaltyController):
-        if self.multinode_penalty and self.explicit_derivative:
+        if self.is_multinode_penalty and self.explicit_derivative:
             raise ValueError("multinode_penalty and explicit_derivative cannot be true simultaneously")
-        if self.multinode_penalty and self.derivative:
+        if self.is_multinode_penalty and self.derivative:
             raise ValueError("multinode_penalty and derivative cannot be true simultaneously")
         if self.derivative and self.explicit_derivative:
             raise ValueError("derivative and explicit_derivative cannot be true simultaneously")
@@ -641,7 +642,7 @@ class PenaltyOption(OptionGeneric):
             )
 
     def get_variable_inputs(self, controllers: list[PenaltyController]):
-        if self.multinode_penalty:
+        if self.is_multinode_penalty:
             controller = controllers[0]  # Recast controller as a normal variable (instead of a list)
             self.node_idx[0] = controller.node_index
 
@@ -661,7 +662,7 @@ class PenaltyOption(OptionGeneric):
         x = PenaltyHelpers.states(
             self,
             penalty_idx,
-            lambda p_idx, n_idx, sn_idx: self._get_states(ocp, ocp.nlp[p_idx].states, n_idx, sn_idx),
+            lambda p_idx, n_idx, sn_idx: self._get_states(ocp, ocp.nlp[p_idx].states, p_idx, n_idx, sn_idx),
             is_constructing_penalty=True,
         )
         u = PenaltyHelpers.controls(
@@ -678,7 +679,7 @@ class PenaltyOption(OptionGeneric):
         a = PenaltyHelpers.states(
             self,
             penalty_idx,
-            lambda p_idx, n_idx, sn_idx: self._get_states(ocp, ocp.nlp[p_idx].algebraic_states, n_idx, sn_idx),
+            lambda p_idx, n_idx, sn_idx: self._get_states(ocp, ocp.nlp[p_idx].algebraic_states, p_idx, n_idx, sn_idx),
             is_constructing_penalty=True,
         )
         d = PenaltyHelpers.numerical_timeseries(
@@ -690,7 +691,7 @@ class PenaltyOption(OptionGeneric):
         return controller, t0, x, u, p, a, d
 
     @staticmethod
-    def _get_states(ocp, states: OptimizationVariableList, n_idx: Int, sn_idx: Int) -> CX:
+    def _get_states(ocp, states: OptimizationVariableList, p_idx: Int, n_idx: Int, sn_idx: range) -> CX:
         states.node_index = n_idx
 
         x = ocp.cx()
@@ -702,7 +703,11 @@ class PenaltyOption(OptionGeneric):
             if sn_idx.stop == 1:
                 pass
             elif sn_idx.stop is None:
-                x = vertcat(x, vertcat(*states.scaled.cx_intermediates_list))
+                if n_idx < ocp.nlp[p_idx].ns + 1:
+                    x = vertcat(x, vertcat(*states.scaled.cx_intermediates_list))
+            elif sn_idx.stop == -1:
+                if n_idx < ocp.nlp[p_idx].ns + 1:
+                    x = vertcat(vertcat(x, vertcat(*states.scaled.cx_intermediates_list)), states.scaled.cx_end)
             else:
                 raise ValueError("The sn_idx.stop should be 1 or None if sn_idx.start == 0")
 
@@ -745,7 +750,7 @@ class PenaltyOption(OptionGeneric):
                     # performing some kind of integration or derivative and this last node does not exist
                     if nlp.control_type in (ControlType.CONSTANT_WITH_LAST_NODE,):
                         return vertcat(u, controls.scaled.cx_end)
-                    if self.integrate or self.derivative or self.explicit_derivative:
+                    if self.integrate or self.derivative or self.explicit_derivative or self.is_multinode_penalty:
                         return u
                     else:
                         return vertcat(u, controls.scaled.cx_end)
@@ -760,10 +765,10 @@ class PenaltyOption(OptionGeneric):
             u = vertcat(u, controls.scaled.cx_start)
             if sn_idx.stop == 1:
                 pass
-            elif sn_idx.stop is None:
+            elif sn_idx.stop is None or sn_idx.stop == -1:
                 u = vertcat_cx_end()
             else:
-                raise ValueError("The sn_idx.stop should be 1 or None if sn_idx.start == 0")
+                raise ValueError("The sn_idx.stop should be 1, -1 or None if sn_idx.start == 0")
 
         elif sn_idx.start == 1:
             if sn_idx.stop == 2:
