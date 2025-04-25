@@ -989,12 +989,12 @@ class ConfigureProblem:
         )
 
         # Check that the integrator matches the type of internal dynamics constraint
-        if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
+        if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
             if dynamics_eval.defects is None:
-                raise ValueError(f"When using OdeSolver {nlp.ode_solver} you must provide implicit defects (not dxdt).")
+                raise ValueError(f"When using OdeSolver {nlp.dynamics_type.ode_solver} you must provide implicit defects (not dxdt).")
         else:
             if dynamics_eval.dxdt is None:
-                raise ValueError(f"When using OdeSolver {nlp.ode_solver} you must provide dxdt (not defects).")
+                raise ValueError(f"When using OdeSolver {nlp.dynamics_type.ode_solver} you must provide dxdt (not defects).")
 
         dynamics_dxdt = dynamics_eval.dxdt
         if isinstance(dynamics_dxdt, (list, tuple)):

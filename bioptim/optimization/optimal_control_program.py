@@ -646,7 +646,6 @@ class OptimalControlProgram:
         self._declare_continuity()
 
         # Prepare constraints
-        self.update_constraints(self.implicit_constraints)
         self.update_constraints(constraints)
         self.update_parameter_constraints(parameter_constraints)
 

@@ -97,7 +97,7 @@ def custom_dynamics(
     dxdt = vertcat(dq, ddq, drigid_contact_forces)
 
     defects = None
-    if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
+    if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
         # Defects
         slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
         slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
