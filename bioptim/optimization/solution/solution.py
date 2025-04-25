@@ -1302,23 +1302,17 @@ class Solution:
             x = PenaltyHelpers.states(
                 penalty,
                 idx,
-                lambda p_idx, n_idx, sn_idx: (
-                    merged_x[p_idx][n_idx][:, sn_idx] if n_idx < len(merged_x[p_idx]) else np.array(())
-                ),
-            )
+                lambda p_idx, n_idx, sn_idx: self._get_x(self.ocp, penalty, p_idx, n_idx, sn_idx, merged_x)
+                )
             u = PenaltyHelpers.controls(
                 penalty,
                 idx,
-                lambda p_idx, n_idx, sn_idx: (
-                    merged_u[p_idx][n_idx][:, sn_idx] if n_idx < len(merged_u[p_idx]) else np.array(())
-                ),
-            )
+                lambda p_idx, n_idx, sn_idx: self._get_u(self.ocp, penalty, p_idx, n_idx, sn_idx, merged_u)
+                )
             a = PenaltyHelpers.states(
                 penalty,
                 idx,
-                lambda p_idx, n_idx, sn_idx: (
-                    merged_a[p_idx][n_idx][:, sn_idx] if n_idx < len(merged_a[p_idx]) else np.array(())
-                ),
+                lambda p_idx, n_idx, sn_idx: self._get_x(self.ocp, penalty, p_idx, n_idx, sn_idx, merged_a)
             )
             d_tp = PenaltyHelpers.numerical_timeseries(
                 penalty,
@@ -1342,6 +1336,18 @@ class Solution:
         val_weighted = np.nansum(val_weighted)
 
         return val, val_weighted
+
+    @staticmethod
+    def _get_x(ocp, penalty, phase_idx, node_idx, subnodes_idx, merged_x):
+        values = merged_x[phase_idx]
+        x = PenaltyHelpers.get_states(ocp, penalty, phase_idx, node_idx, subnodes_idx, values)
+        return x
+
+    @staticmethod
+    def _get_u(ocp, penalty, phase_idx, node_idx, subnodes_idx, merged_u):
+        values = merged_u[phase_idx]
+        u = PenaltyHelpers.get_controls(ocp, penalty, phase_idx, node_idx, subnodes_idx, values)
+        return u
 
     @property
     def cost(self):

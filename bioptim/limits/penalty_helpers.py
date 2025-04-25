@@ -1,7 +1,7 @@
 from typing import Callable, Protocol
 
 import numpy as np
-from casadi import MX, SX, DM, vertcat
+from casadi import MX, SX, DM, vertcat, horzcat
 
 from ..misc.enums import PhaseDynamics, ControlType
 
@@ -108,6 +108,26 @@ class PenaltyHelpers:
             return vertcat(x0, x1)
 
     @staticmethod
+    def get_states(ocp, penalty, phase_idx, node_idx, subnodes_idx, values):
+        null_element = ocp.cx() if type(values[0]) != np.ndarray else np.array([])
+        idx = 0 if not penalty.is_multinode_penalty else penalty.nodes_phase.index(phase_idx)
+        subnodes_are_decision_states = penalty.subnodes_are_decision_states[idx] and not penalty.is_transition
+        if subnodes_idx.stop == -1:
+            if subnodes_idx.start == 0:
+                x = horzcat(
+                    values[node_idx],
+                    values[node_idx + 1][:, 0] if node_idx + 1 < ocp.nlp[phase_idx].ns + 1 else null_element,
+                )
+            else:
+                raise RuntimeError("only subnodes_idx.start == 0 is supported for subnodes_idx.stop == -1")
+        else:
+            if subnodes_are_decision_states:
+                x = values[node_idx][:, subnodes_idx] if node_idx < len(values) else null_element
+            else:
+                x = values[node_idx][:, 0] if node_idx < len(values) else null_element
+        return x
+
+    @staticmethod
     def controls(penalty, index, get_control_decision: Callable, is_constructing_penalty: bool = False):
         node = penalty.node_idx[index]
 
@@ -150,6 +170,26 @@ class PenaltyHelpers:
             u1 = _reshape_to_vector(get_control_decision(penalty.phase, node + 1, slice(0, 1)))
             u = _vertcat([u0, u1])
 
+        return u
+
+    @staticmethod
+    def get_controls(ocp, penalty, phase_idx, node_idx, subnodes_idx, values):
+        null_element = ocp.cx() if type(values[0]) != np.ndarray else np.array([])
+        idx = 0 if not penalty.is_multinode_penalty else penalty.nodes_phase.index(phase_idx)
+        subnodes_are_decision_states = penalty.subnodes_are_decision_states[idx] and not penalty.is_transition
+        if subnodes_idx.stop == -1:
+            if subnodes_idx.start == 0:
+                u = horzcat(
+                    values[node_idx] if node_idx < len(values) else null_element,
+                    values[node_idx + 1][:, 0] if node_idx + 1 < len(values) else null_element,
+                )
+            else:
+                raise RuntimeError("only subnodes_idx.start == 0 is supported for subnodes_idx.stop == -1")
+        else:
+            if subnodes_are_decision_states:
+                u = values[node_idx][:, subnodes_idx] if node_idx < len(values) else null_element
+            else:
+                u = values[node_idx][:, 0] if node_idx < len(values) else null_element
         return u
 
     @staticmethod
