@@ -10,6 +10,16 @@ from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
 
+from ..misc.parameters_types import (
+    Bool,
+    Int,
+    Str,
+    Float,
+    FloatOptional,
+    NpArrayorFloatOptional,
+    CX,
+)
+
 
 class Constraint(PenaltyOption):
     """
@@ -26,11 +36,11 @@ class Constraint(PenaltyOption):
     def __init__(
         self,
         constraint: Any,
-        min_bound: np.ndarray | float = None,
-        max_bound: np.ndarray | float = None,
-        quadratic: bool = False,
-        phase: int = -1,
-        is_stochastic: bool = False,
+        min_bound: NpArrayorFloatOptional = None,
+        max_bound: NpArrayorFloatOptional = None,
+        quadratic: Bool = False,
+        phase: Int = -1,
+        is_stochastic: Bool = False,
         **extra_parameters: Any,
     ):
         """
@@ -70,7 +80,7 @@ class Constraint(PenaltyOption):
         self.max_bound = max_bound
         self.bounds = Bounds("constraints", interpolation=InterpolationType.CONSTANT)
 
-    def set_penalty(self, penalty: MX | SX, controller: PenaltyController):
+    def set_penalty(self, penalty: CX, controller: PenaltyController):
         super(Constraint, self).set_penalty(penalty, controller)
         self.min_bound = 0 if self.min_bound is None else self.min_bound
         self.max_bound = 0 if self.max_bound is None else self.max_bound
@@ -212,9 +222,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         def non_slipping(
             constraint: Constraint,
             controller: PenaltyController,
-            tangential_component_idx: int,
-            normal_component_idx: int,
-            static_friction_coefficient: float,
+            tangential_component_idx: Int,
+            normal_component_idx: Int,
+            static_friction_coefficient: Float,
         ):
             """
             Add a constraint of static friction at contact points constraining for small tangential forces.
@@ -280,7 +290,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         def torque_max_from_q_and_qdot(
             constraint: Constraint,
             controller: PenaltyController,
-            min_torque=None,
+            min_torque: FloatOptional = None,
         ):
             """
             Nonlinear maximal values of joint torques computed from the torque-position-velocity relationship
@@ -338,7 +348,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         def bound_state(
             _: Constraint,
             controller: PenaltyController,
-            key: str,
+            key: Str,
         ):
             """
             Bound the state according to key
@@ -358,7 +368,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         def bound_control(
             _: Constraint,
             controller: PenaltyController,
-            key: str,
+            key: Str,
         ):
             """
             Bound the control according to key
@@ -376,7 +386,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
         @staticmethod
         def stochastic_covariance_matrix_continuity_implicit(
-            penalty: PenaltyOption,
+            penalty: Constraint,
             controller: PenaltyController,
         ):
             """
@@ -552,7 +562,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
         @staticmethod
         def stochastic_covariance_matrix_continuity_collocation(
-            penalty,
+            penalty: Constraint,
             controller: PenaltyController,
         ):
             """
@@ -623,7 +633,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         def symmetric_matrix(
             penalty: Constraint,
             controller: PenaltyController,
-            key: str,
+            key: Str,
         ):
             """
             This function constrains a matrix to be symmetric
@@ -641,7 +651,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         def semidefinite_positive_matrix(
             penalty: Constraint,
             controller: PenaltyController,
-            key: str,
+            key: Str,
         ):
             """
             This function constrains a matrix to be semi-definite positive.
@@ -662,7 +672,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return diagonal_terms
 
         @staticmethod
-        def collocation_jacobians(penalty, controller):
+        def collocation_jacobians(penalty: Constraint, controller: PenaltyController):
             """
             This function computes the jacobians of the collocation equation and of the continuity equation with respect to the collocation points and the noise
             """
@@ -797,7 +807,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         return 1
 
     @staticmethod
-    def penalty_nature() -> str:
+    def penalty_nature() -> Str:
         return "constraints"
 
 
@@ -885,9 +895,9 @@ class ParameterConstraint(PenaltyOption):
     def __init__(
         self,
         parameter_constraint: Any,
-        min_bound: np.ndarray | float = None,
-        max_bound: np.ndarray | float = None,
-        quadratic: bool = False,
+        min_bound: NpArrayorFloatOptional = None,
+        max_bound: NpArrayorFloatOptional = None,
+        quadratic: Bool = False,
         **extra_parameters: Any,
     ):
         """
@@ -918,7 +928,7 @@ class ParameterConstraint(PenaltyOption):
         # TODO Benjamin Check .name
         self.bounds = Bounds(parameter_constraint.name, interpolation=InterpolationType.CONSTANT)
 
-    def set_penalty(self, penalty: MX | SX, controller: PenaltyController):
+    def set_penalty(self, penalty: CX, controller: PenaltyController):
         super(ParameterConstraint, self).set_penalty(penalty, controller)
         self.min_bound = 0 if self.min_bound is None else self.min_bound
         self.max_bound = 0 if self.max_bound is None else self.max_bound

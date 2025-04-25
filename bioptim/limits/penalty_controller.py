@@ -9,6 +9,14 @@ from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
 
 
+from ..misc.parameters_types import (
+    Int,
+    IntOptional,
+    AnyList,
+    CX,
+)
+
+
 class PenaltyController:
     """
     A placeholder for the required elements to compute a penalty (all time)
@@ -22,16 +30,16 @@ class PenaltyController:
         self,
         ocp,
         nlp: NonLinearProgram,
-        t: list,
-        x: list,
-        u: list,
-        x_scaled: list,
-        u_scaled: list,
-        p: MX | SX | list,
-        a: list,
-        a_scaled: list,
-        d: list,
-        node_index: int = None,
+        t: AnyList,
+        x: AnyList,
+        u: AnyList,
+        x_scaled: AnyList,
+        u_scaled: AnyList,
+        p: CX | AnyList,
+        a: AnyList,
+        a_scaled: AnyList,
+        d: AnyList,
+        node_index: IntOptional = None,
     ):
         """
         Parameters
@@ -93,7 +101,7 @@ class PenaltyController:
         return self._nlp
 
     @property
-    def cx(self) -> MX | SX | Callable:
+    def cx(self) -> CX | Callable:
         return self._nlp.cx
 
     @property
@@ -105,11 +113,11 @@ class PenaltyController:
         return self._nlp.dynamics_type.ode_solver
 
     @property
-    def phase_idx(self) -> int:
+    def phase_idx(self) -> Int:
         return self._nlp.phase_idx
 
     @property
-    def ns(self) -> int:
+    def ns(self) -> Int:
         return self._nlp.ns
 
     @property
@@ -273,20 +281,20 @@ class PenaltyController:
         return out
 
     @property
-    def integrate(self):
+    def integrate(self) -> Callable:
         return self._nlp.dynamics[self.node_index]
 
-    def integrate_extra_dynamics(self, dynamics_index):
+    def integrate_extra_dynamics(self, dynamics_index) -> Callable:
         return self._nlp.extra_dynamics[dynamics_index][self.node_index]
 
     def integrate_extra_dynamics_defects(self, dynamics_index):
         return self._nlp.extra_dynamics_defects[dynamics_index][self.node_index]
 
     @property
-    def dynamics(self):
+    def dynamics(self) -> Callable:
         return self._nlp.dynamics_func
 
-    def extra_dynamics(self, dynamics_index):
+    def extra_dynamics(self, dynamics_index) -> Callable:
         return self._nlp.extra_dynamics_func[dynamics_index]
 
     def extra_dynamics_defects(self, dynamics_index):
@@ -387,7 +395,7 @@ class PenaltyController:
         return MX() if type(self._nlp.parameters.scaled) == DM else self._nlp.parameters.scaled
 
     @property
-    def q(self) -> MX | SX:
+    def q(self) -> CX:
         if "q" in self.states:
             return self.states["q"].mapping.to_second.map(self.states["q"].cx)
         elif "q_roots" in self.states and "q_joints" in self.states:
@@ -412,7 +420,7 @@ class PenaltyController:
             raise RuntimeError("q is not defined in the states")
 
     @property
-    def qdot(self) -> MX | SX:
+    def qdot(self) -> CX:
         if "qdot" in self.states:
             return self.states["qdot"].mapping.to_second.map(self.states["qdot"].cx)
         elif "qdot_roots" in self.states and "qdot_joints" in self.states:
@@ -435,14 +443,14 @@ class PenaltyController:
             return qdot.cx
 
     @property
-    def tau(self) -> MX | SX:
+    def tau(self) -> CX:
         if "tau" in self.controls:
             return self.controls["tau"].mapping.to_second.map(self.controls["tau"].cx)
         elif "tau_joints" in self.controls:
             return self.controls["tau_joints"].mapping.to_second.map(self.controls["tau_joints"].cx)
 
     @property
-    def external_forces(self) -> MX | SX:
+    def external_forces(self) -> CX:
         return self._nlp.get_external_forces(
             "external_forces", self.states.cx, self.controls.cx, self.algebraic_states.cx, self.numerical_timeseries.cx
         )

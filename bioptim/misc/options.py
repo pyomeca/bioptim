@@ -1,6 +1,6 @@
 from copy import deepcopy
 from typing import Any, Callable
-from .parameters_types import Int, Str, Bool, AnyList, AnyDict, IntStrOrIterable
+from .parameters_types import Int, Str, Bool, AnyList, AnyDict, IntStrorIterable
 
 import numpy as np
 
@@ -308,7 +308,7 @@ class OptionDict(OptionList):
                 )
             self.add(key, value)
 
-    def __getitem__(self, item: IntStrOrIterable) -> AnyDict | Any:
+    def __getitem__(self, item: IntStrorIterable) -> AnyDict | Any:
         if isinstance(item, str):
             if len(self.options) != 1:
                 raise TypeError(
