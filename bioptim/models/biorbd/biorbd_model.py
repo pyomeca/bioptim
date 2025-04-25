@@ -96,11 +96,14 @@ class BiorbdModel:
         """
         It checks the external forces and binds them to the model.
         """
-        if (ContactType.RIGID_IMPLICIT in self.contact_type or
-            ContactType.SOFT_IMPLICIT in self.contact_type or
-            ContactType.SOFT_EXPLICIT) and isinstance(external_force_set, ExternalForceSetTimeSeries):
+        if (
+            ContactType.RIGID_IMPLICIT in self.contact_type
+            or ContactType.SOFT_IMPLICIT in self.contact_type
+            or ContactType.SOFT_EXPLICIT
+        ) and isinstance(external_force_set, ExternalForceSetTimeSeries):
             raise NotImplementedError(
-                f"Your contact_type {self.contact_type} is not supported yet with external_force_set of type ExternalForceSetTimeSeries.")
+                f"Your contact_type {self.contact_type} is not supported yet with external_force_set of type ExternalForceSetTimeSeries."
+            )
 
         if len(self.contact_type) > 0:
             if external_force_set is None:
@@ -127,10 +130,7 @@ class BiorbdModel:
                         use_point_of_application=True,
                     )
             else:
-                raise NotImplementedError(
-                    f"Your contact_type {self.contact_type} is not supported yet."
-                )
-
+                raise NotImplementedError(f"Your contact_type {self.contact_type} is not supported yet.")
 
         external_force_set.check_segment_names(tuple([s.name().to_string() for s in self.model.segments()]))
         external_force_set.check_all_string_points_of_application(self.marker_names)

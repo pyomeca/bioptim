@@ -1539,10 +1539,11 @@ def test_custom_model():
 
 
 @pytest.mark.parametrize(
-    "defect_type", [
+    "defect_type",
+    [
         [DefectType.QDOT_EQUALS_POLYNOMIAL_SLOPE, DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS],
-        [DefectType.QDOT_EQUALS_POLYNOMIAL_SLOPE, DefectType.TAU_EQUALS_INVERSE_DYNAMICS]
-    ]
+        [DefectType.QDOT_EQUALS_POLYNOMIAL_SLOPE, DefectType.TAU_EQUALS_INVERSE_DYNAMICS],
+    ],
 )
 @pytest.mark.parametrize("contact_type", [[ContactType.RIGID_EXPLICIT], [ContactType.RIGID_IMPLICIT]])
 def test_contact_forces_inverse_dynamics_constraint_muscle(defect_type, contact_type):

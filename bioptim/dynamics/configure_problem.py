@@ -178,7 +178,9 @@ class ConfigureProblem:
         ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True, fatigue=fatigue)
         ConfigureProblem.configure_qddot(ocp, nlp, as_states=False, as_controls=False)
 
-        ConfigureProblem.configure_contacts(ocp, nlp, nlp.model.contact_type, DynamicsFunctions.forces_from_torque_driven)
+        ConfigureProblem.configure_contacts(
+            ocp, nlp, nlp.model.contact_type, DynamicsFunctions.forces_from_torque_driven
+        )
 
         # Configure the actual ODE of the dynamics
         if nlp.dynamics_type.dynamic_function:
@@ -437,7 +439,9 @@ class ConfigureProblem:
         ConfigureProblem.configure_tau(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_taudot(ocp, nlp, as_states=False, as_controls=True)
 
-        ConfigureProblem.configure_contacts(ocp, nlp, nlp.model.contact_type, DynamicsFunctions.forces_from_torque_driven)
+        ConfigureProblem.configure_contacts(
+            ocp, nlp, nlp.model.contact_type, DynamicsFunctions.forces_from_torque_driven
+        )
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
@@ -571,7 +575,9 @@ class ConfigureProblem:
             ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True, fatigue=fatigue)
         ConfigureProblem.configure_muscles(ocp, nlp, with_excitations, as_controls=True, fatigue=fatigue)
 
-        ConfigureProblem.configure_contacts(ocp, nlp, nlp.model.contact_type, DynamicsFunctions.forces_from_muscle_driven)
+        ConfigureProblem.configure_contacts(
+            ocp, nlp, nlp.model.contact_type, DynamicsFunctions.forces_from_muscle_driven
+        )
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
@@ -875,10 +881,14 @@ class ConfigureProblem:
         # Check that the integrator matches the type of internal dynamics constraint
         if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
             if dynamics_eval.defects is None:
-                raise ValueError(f"When using OdeSolver {nlp.dynamics_type.ode_solver} you must provide implicit defects (not dxdt).")
+                raise ValueError(
+                    f"When using OdeSolver {nlp.dynamics_type.ode_solver} you must provide implicit defects (not dxdt)."
+                )
         else:
             if dynamics_eval.dxdt is None:
-                raise ValueError(f"When using OdeSolver {nlp.dynamics_type.ode_solver} you must provide dxdt (not defects).")
+                raise ValueError(
+                    f"When using OdeSolver {nlp.dynamics_type.ode_solver} you must provide dxdt (not defects)."
+                )
 
         dynamics_dxdt = dynamics_eval.dxdt
         if isinstance(dynamics_dxdt, (list, tuple)):

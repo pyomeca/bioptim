@@ -193,11 +193,13 @@ class DynamicsFunctions:
             if DefectType.SOFT_CONTACT_FORCES_EQUALS_LAGRANGE_MULTIPLIERS in nlp.dynamics_type.ode_solver.defects_type:
 
                 if ContactType.SOFT_IMPLICIT not in nlp.model.contact_type:
-                    raise RuntimeError("The defect type SOFT_CONTACT_FORCES_EQUALS_LAGRANGE_MULTIPLIERS is only available for ContactType.SOFT_IMPLICIT.")
+                    raise RuntimeError(
+                        "The defect type SOFT_CONTACT_FORCES_EQUALS_LAGRANGE_MULTIPLIERS is only available for ContactType.SOFT_IMPLICIT."
+                    )
 
                 soft_contact_defect = (
-                        nlp.model.soft_contact_forces()(q, qdot, nlp.parameters.cx)
-                        - nlp.algebraic_states["soft_contact_forces"].cx
+                    nlp.model.soft_contact_forces()(q, qdot, nlp.parameters.cx)
+                    - nlp.algebraic_states["soft_contact_forces"].cx
                 )
                 defects = vertcat(defects, soft_contact_defect)
 
@@ -348,7 +350,9 @@ class DynamicsFunctions:
             tau -= nlp.model.friction_coefficients @ qdot
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, contact_type=nlp.model.contact_type, external_forces=None)
+        ddq = DynamicsFunctions.forward_dynamics(
+            nlp, q, qdot, tau, contact_type=nlp.model.contact_type, external_forces=None
+        )
         dxdt = vertcat(dq, ddq)
 
         defects = None
@@ -1114,9 +1118,7 @@ class DynamicsFunctions:
         return mapping.to_first.map(nlp.model.reshape_qdot()(q, qdot, nlp.parameters.cx))
 
     @staticmethod
-    def get_external_forces_from_contacts(
-        nlp, q, qdot, contact_type, external_forces: MX | SX
-    ):
+    def get_external_forces_from_contacts(nlp, q, qdot, contact_type, external_forces: MX | SX):
 
         external_forces = nlp.cx() if external_forces is None else external_forces
         if ContactType.RIGID_IMPLICIT in contact_type:

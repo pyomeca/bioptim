@@ -127,7 +127,10 @@ class OdeSolver:
             self,
             polynomial_degree: int = 4,
             method: str = "legendre",
-            defects_type: tuple[DefectType] | list[DefectType] = (DefectType.QDOT_EQUALS_POLYNOMIAL_SLOPE, DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS),
+            defects_type: tuple[DefectType] | list[DefectType] = (
+                DefectType.QDOT_EQUALS_POLYNOMIAL_SLOPE,
+                DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS,
+            ),
             **kwargs,
         ):
             """

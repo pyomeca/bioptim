@@ -109,9 +109,7 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx, p
         model_filename = "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
 
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
-    nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder() + model_filename
-    )
+    nlp.model = BiorbdModel(TestUtils.bioptim_folder() + model_filename)
     nlp.dynamics_type = Dynamics(
         DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
         phase_dynamics=phase_dynamics,
@@ -205,9 +203,7 @@ def test_torque_activation_driven_with_passive_torque(with_passive_torque, with_
         model_filename = "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
 
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
-    nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder() + model_filename
-    )
+    nlp.model = BiorbdModel(TestUtils.bioptim_folder() + model_filename)
     nlp.dynamics_type = Dynamics(
         DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
         with_residual_torque=with_residual_torque,
@@ -373,14 +369,17 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, cx, phase_dynami
         npt.assert_almost_equal(
             x_out[:, 0],
             [
-                2.05844943e-02,  1.83404510e-01, -8.02145442e+01,  1.20656840e+02,
+                2.05844943e-02,
+                1.83404510e-01,
+                -8.02145442e01,
+                1.20656840e02,
             ],
             decimal=6,
         )
     else:
         npt.assert_almost_equal(
             x_out[:, 0],
-            [2.05844943e-02,  1.83404510e-01, -7.38801944e+00, -9.06421422e+01],
+            [2.05844943e-02, 1.83404510e-01, -7.38801944e00, -9.06421422e01],
             decimal=6,
         )
 
