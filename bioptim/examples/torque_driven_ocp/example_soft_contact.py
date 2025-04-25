@@ -46,17 +46,11 @@ def prepare_single_shooting(
     -------
     The OptimalControlProgram ready to be solved
     """
-
-    # Indicate to the model creator that there will be two rigid contacts in the form of optimization variables
-    external_force_set = ExternalForceSetVariables()
-    external_force_set.add(force_name="contact1", segment="point", use_point_of_application=True)
-
-    bio_model = BiorbdModel(biorbd_model_path, external_force_set=external_force_set)
+    bio_model = BiorbdModel(biorbd_model_path, contact_type=[ContactType.SOFT_EXPLICIT])
 
     # Dynamics
     dynamics = Dynamics(
         DynamicsFcn.TORQUE_DRIVEN,
-        contact_type=[ContactType.SOFT_EXPLICIT],
         ode_solver=ode_solver,
     )
 

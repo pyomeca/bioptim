@@ -6,6 +6,19 @@ from ...misc.mapping import BiMapping, BiMappingList
 from ...limits.path_conditions import Bounds
 from ..utils import cache_function
 
+from ...misc.parameters_types import (
+    AnyDict,
+    AnyTuple,
+    Str,
+    Int,
+    MXList,
+    StrTuple,
+    StrOrIterable,
+    Bool,
+    NpArrayListOptional,
+    AnyListOptional,
+)
+
 
 class BioModel(Protocol):
     """
@@ -15,14 +28,14 @@ class BioModel(Protocol):
     """
 
     @property
-    def name(self) -> str:
+    def name(self) -> Str:
         """Get the name of the model"""
         return ""
 
     def copy(self):
         """copy the model by reloading one"""
 
-    def serialize(self) -> tuple[Callable, dict]:
+    def serialize(self) -> tuple[Callable, AnyDict]:
         """transform the class into a save and load format"""
 
     @property
@@ -38,55 +51,55 @@ class BioModel(Protocol):
         """Set the gravity vector"""
 
     @property
-    def nb_tau(self) -> int:
+    def nb_tau(self) -> Int:
         """Get the number of generalized forces"""
         return -1
 
     @property
-    def nb_segments(self) -> int:
+    def nb_segments(self) -> Int:
         """Get the number of segment"""
         return -1
 
-    def segment_index(self, segment_name) -> int:
+    def segment_index(self, segment_name) -> Int:
         """Get the segment index from its name"""
 
     @property
-    def nb_quaternions(self) -> int:
+    def nb_quaternions(self) -> Int:
         """Get the number of quaternion"""
         return -1
 
     @property
-    def nb_dof(self) -> int:
+    def nb_dof(self) -> Int:
         """Get the number of dof"""
         return -1
 
     @property
-    def nb_q(self) -> int:
+    def nb_q(self) -> Int:
         """Get the number of Generalized coordinates"""
         return -1
 
     @property
-    def nb_qdot(self) -> int:
+    def nb_qdot(self) -> Int:
         """Get the number of Generalized velocities"""
         return -1
 
     @property
-    def nb_qddot(self) -> int:
+    def nb_qddot(self) -> Int:
         """Get the number of Generalized accelerations"""
         return -1
 
     @property
-    def nb_root(self) -> int:
+    def nb_root(self) -> Int:
         """Get the number of root Dof"""
         return -1
 
     @property
-    def segments(self) -> tuple:
+    def segments(self) -> AnyTuple:
         """Get all segments"""
         return ()
 
     @cache_function
-    def rotation_matrix_to_euler_angles(self, sequence: str) -> tuple:
+    def rotation_matrix_to_euler_angles(self, sequence: Str) -> AnyTuple:
         """
         Get the Euler angles from a rotation matrix, in the sequence specified
         args: rotation matrix
@@ -140,27 +153,27 @@ class BioModel(Protocol):
         """
 
     @property
-    def name_dof(self) -> tuple[str, ...]:
+    def name_dof(self) -> StrTuple:
         """Get the name of the degrees of freedom"""
         return ()
 
     @property
-    def rigid_contact_names(self) -> tuple[str, ...]:
+    def rigid_contact_names(self) -> StrTuple:
         """Get the name of the contacts"""
         return ()
 
     @property
-    def nb_soft_contacts(self) -> int:
+    def nb_soft_contacts(self) -> Int:
         """Get the number of soft contacts"""
         return -1
 
     @property
-    def soft_contact_names(self) -> tuple[str, ...]:
+    def soft_contact_names(self) -> StrTuple:
         """Get the soft contact names"""
         return ()
 
     @property
-    def muscle_names(self) -> tuple[str, ...]:
+    def muscle_names(self) -> StrTuple:
         """Get the muscle names"""
         return ()
 
@@ -241,29 +254,29 @@ class BioModel(Protocol):
         """
 
     @cache_function
-    def marker(self, marker_index: int, reference_frame_idx: int = None) -> Function:
+    def marker(self, marker_index: Int, reference_frame_idx: Int = None) -> Function:
         """
         Get the position of a marker
         args: q
         """
 
     @cache_function
-    def markers(self) -> list[MX]:
+    def markers(self) -> MXList:
         """
         Get the markers of the model
         args: q
         """
 
     @property
-    def nb_markers(self) -> int:
+    def nb_markers(self) -> Int:
         """Get the number of markers of the model"""
         return -1
 
-    def marker_index(self, name) -> int:
+    def marker_index(self, name) -> Int:
         """Get the index of a marker"""
 
     @property
-    def nb_rigid_contacts(self) -> int:
+    def nb_rigid_contacts(self) -> Int:
         """Get the number of rigid contacts"""
         return -1
 
@@ -310,7 +323,7 @@ class BioModel(Protocol):
         """
 
     @property
-    def marker_names(self) -> tuple[str, ...]:
+    def marker_names(self) -> StrTuple:
         """Get the marker names"""
         return ()
 
@@ -364,7 +377,7 @@ class BioModel(Protocol):
         args: q, qdot
         """
 
-    def bounds_from_ranges(self, variables: str | list[str], mapping: BiMapping | BiMappingList = None) -> Bounds:
+    def bounds_from_ranges(self, variables: StrOrIterable, mapping: BiMapping | BiMappingList = None) -> Bounds:
         """
         Create bounds from ranges of the model depending on the variable chosen, such as q, qdot, qddot
 
@@ -427,8 +440,8 @@ class BioModel(Protocol):
 
     @staticmethod
     def animate(
-        ocp, solution: "SolutionData", show_now: bool = True, tracked_markers: list[np.ndarray] = None, **kwargs: Any
-    ) -> None | list:
+        ocp, solution: "SolutionData", show_now: Bool = True, tracked_markers: NpArrayListOptional = None, **kwargs: Any
+    ) -> AnyListOptional:
         """
         Animate a solution
 

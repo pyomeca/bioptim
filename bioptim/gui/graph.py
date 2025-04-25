@@ -4,7 +4,7 @@ from ..limits.constraints import Constraint
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective
 from ..limits.path_conditions import Bounds
 from ..misc.enums import Node, InterpolationType
-from ..misc.parameters_types import FloatIterableOrNpArray, StrIterable, Int, Str, AnyDict
+from ..misc.parameters_types import FloatIterableorNpArray, StrIterable, Int, Str, AnyDict
 
 
 class GraphAbstract:
@@ -48,7 +48,7 @@ class GraphAbstract:
 
         self.ocp = ocp
 
-    def _vector_layout_structure(self, vector: FloatIterableOrNpArray, decimal: Int):
+    def _vector_layout_structure(self, vector: FloatIterableorNpArray, decimal: Int):
         """
         Main structure of the next method _vector_layout(self, vector: list | np.ndarray, size: int, param: bool)
 
