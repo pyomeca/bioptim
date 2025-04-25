@@ -4,7 +4,7 @@ Test for file IO
 
 import platform
 
-from bioptim import Solver, MultiCyclicCycleSolutions, PhaseDynamics, SolutionMerge
+from bioptim import Solver, MultiCyclicCycleSolutions, PhaseDynamics, SolutionMerge, OdeSolver
 import numpy as np
 import numpy.testing as npt
 import pytest
@@ -13,7 +13,27 @@ from ..utils import TestUtils
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
-def test_multi_cyclic_nmpc_get_final(phase_dynamics):
+@pytest.mark.parametrize(
+    "ode_solver",
+    [
+        OdeSolver.RK4(),
+        OdeSolver.COLLOCATION(polynomial_degree=3, method="radau"),
+        OdeSolver.COLLOCATION(
+            polynomial_degree=3, method="legendre"
+        ),  # Not all outputs are tested as the legendre method is sensitive on all platform
+        # OdeSolver.IRK(polynomial_degree=3), # TODO
+    ],
+)
+def test_multi_cyclic_nmpc_get_final(phase_dynamics, ode_solver):
+
+    if (
+        platform.system() == "Windows"
+        and isinstance(ode_solver, OdeSolver.COLLOCATION)
+        and ode_solver.method == "legendre"
+        and phase_dynamics == PhaseDynamics.ONE_PER_NODE
+    ):
+        return
+
     def update_functions(_nmpc, cycle_idx, _sol):
         return cycle_idx < n_cycles_total  # True if there are still some cycle to perform
 
@@ -34,6 +54,7 @@ def test_multi_cyclic_nmpc_get_final(phase_dynamics):
         max_torque=50,
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
+        ode_solver=ode_solver,
     )
     sol = nmpc.solve(
         update_functions,
@@ -48,55 +69,106 @@ def test_multi_cyclic_nmpc_get_final(phase_dynamics):
     controls = sol[0].decision_controls(to_merge=SolutionMerge.NODES)
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
-    # initial and final position
-    npt.assert_equal(q.shape, (3, n_cycles_total * cycle_len + 1))
-    npt.assert_almost_equal(q[:, 0], np.array((-12.56637061, 1.04359174, 1.03625065)))
-    npt.assert_almost_equal(q[:, -1], np.array([1.37753244e-40, 1.04359174e00, 1.03625065e00]))
-
-    # initial and final velocities
-    npt.assert_almost_equal(qdot[:, 0], np.array((6.28293718, 2.5617072, -0.00942694)))
-    npt.assert_almost_equal(qdot[:, -1], np.array([6.28293718, 2.41433059, -0.59773899]), decimal=5)
-
-    # initial and final controls
-    npt.assert_almost_equal(tau[:, 0], np.array((0.00992505, 4.88488618, 2.4400698)))
-    npt.assert_almost_equal(tau[:, -1], np.array([-0.00992505, 5.19414727, 2.34022319]), decimal=4)
-
-    # check time
-    n_steps = nmpc.nlp[0].dynamics_type.ode_solver.n_integration_steps
-    time = sol[0].stepwise_time(to_merge=SolutionMerge.NODES)
-    assert time.shape == (n_cycles_total * cycle_len * (n_steps + 1) + 1, 1)
-    assert time[0] == 0
-    npt.assert_almost_equal(time[-1], 3.0)
-
-    # check some results of the second structure
-    for s in sol[1]:
-        states = s.stepwise_states(to_merge=SolutionMerge.NODES)
-        q = states["q"]
-
+    if isinstance(ode_solver, OdeSolver.RK4):
         # initial and final position
-        npt.assert_equal(q.shape, (3, 241))
+        npt.assert_equal(q.shape, (3, n_cycles_total * cycle_len + 1))
+        npt.assert_almost_equal(q[:, 0], np.array((-12.56637061, 1.04359174, 1.03625065)))
+        npt.assert_almost_equal(q[:, -1], np.array([1.37753244e-40, 1.04359174e00, 1.03625065e00]))
+
+        # initial and final velocities
+        npt.assert_almost_equal(qdot[:, 0], np.array((6.28293718, 2.5617072, -0.00942694)))
+        npt.assert_almost_equal(qdot[:, -1], np.array([6.28293718, 2.41433059, -0.59773899]), decimal=5)
+
+        # initial and final controls
+        npt.assert_almost_equal(tau[:, 0], np.array((0.00992505, 4.88488618, 2.4400698)))
+        npt.assert_almost_equal(tau[:, -1], np.array([-0.00992505, 5.19414727, 2.34022319]), decimal=4)
 
         # check time
-        time = s.stepwise_time(to_merge=SolutionMerge.NODES)
-        assert time.shape == (241, 1)
+        n_steps = nmpc.nlp[0].dynamics_type.ode_solver.n_integration_steps
+        time = sol[0].stepwise_time(to_merge=SolutionMerge.NODES)
+        assert time.shape == (n_cycles_total * cycle_len * (n_steps + 1) + 1, 1)
         assert time[0] == 0
-        npt.assert_almost_equal(time[-1], 2.0, decimal=4)
+        npt.assert_almost_equal(time[-1], 3.0)
 
-    # check some result of the third structure
-    assert len(sol[2]) == 4
+        # check some results of the second structure
+        for s in sol[1]:
+            states = s.stepwise_states(to_merge=SolutionMerge.NODES)
+            q = states["q"]
 
-    for s in sol[2]:
-        states = s.stepwise_states(to_merge=SolutionMerge.NODES)
-        q = states["q"]
+            # initial and final position
+            npt.assert_equal(q.shape, (3, 241))
 
-        # initial and final position
-        npt.assert_equal(q.shape, (3, 121))
+            # check time
+            time = s.stepwise_time(to_merge=SolutionMerge.NODES)
+            assert time.shape == (241, 1)
+            assert time[0] == 0
+            npt.assert_almost_equal(time[-1], 2.0, decimal=4)
+
+        # check some result of the third structure
+        assert len(sol[2]) == 4
+
+        for s in sol[2]:
+            states = s.stepwise_states(to_merge=SolutionMerge.NODES)
+            q = states["q"]
+
+            # initial and final position
+            npt.assert_equal(q.shape, (3, 121))
+
+            # check time
+            time = s.stepwise_time(to_merge=SolutionMerge.NODES)
+            assert time.shape == (121, 1)
+            assert time[0] == 0
+            npt.assert_almost_equal(time[-1], 1.0, decimal=4)
+
+    elif isinstance(ode_solver, OdeSolver.COLLOCATION):
+        if ode_solver.method == "radau":
+            # initial and final position
+            npt.assert_equal(q.shape, (3, n_cycles_total * cycle_len * (ode_solver.polynomial_degree + 1) + 1))
+            npt.assert_almost_equal(q[:, 0], np.array((-12.56637061, 1.04359174, 1.03625065)))
+            npt.assert_almost_equal(q[:, -1], np.array([0, 1.04359174, 1.03625065]))
+            # initial and final velocities
+            npt.assert_almost_equal(qdot[:, 0], np.array([6.28810582, 2.55273016, 0.02629208]), decimal=5)
+            npt.assert_almost_equal(qdot[:, -1], np.array([6.28810582, 2.42193911, -0.57785156]), decimal=5)
+            # initial and final controls
+            npt.assert_almost_equal(tau[:, 0], np.array([-0.19682043, 4.8495567, 2.37851092]), decimal=4)
+            npt.assert_almost_equal(tau[:, -1], np.array([0.19682043, 5.35770415, 2.43092058]), decimal=4)
 
         # check time
-        time = s.stepwise_time(to_merge=SolutionMerge.NODES)
-        assert time.shape == (121, 1)
+        n_steps = nmpc.nlp[0].dynamics_type.ode_solver.polynomial_degree
+        time = sol[0].stepwise_time(to_merge=SolutionMerge.NODES)
+        assert time.shape == (n_cycles_total * cycle_len * (n_steps + 1) + 1, 1)
         assert time[0] == 0
-        npt.assert_almost_equal(time[-1], 1.0, decimal=4)
+        npt.assert_almost_equal(time[-1], 3.0)
+
+        # check some results of the second structure
+        for s in sol[1]:
+            states = s.stepwise_states(to_merge=SolutionMerge.NODES)
+            q = states["q"]
+
+            # initial and final position
+            npt.assert_equal(q.shape, (3, 161))
+
+            # check time
+            time = s.stepwise_time(to_merge=SolutionMerge.NODES)
+            assert time.shape == (161, 1)
+            assert time[0] == 0
+            npt.assert_almost_equal(time[-1], 2.0, decimal=4)
+
+        # check some result of the third structure
+        assert len(sol[2]) == 4
+
+        for s in sol[2]:
+            states = s.stepwise_states(to_merge=SolutionMerge.NODES)
+            q = states["q"]
+
+            # initial and final position
+            npt.assert_equal(q.shape, (3, 81))
+
+            # check time
+            time = s.stepwise_time(to_merge=SolutionMerge.NODES)
+            assert time.shape == (81, 1)
+            assert time[0] == 0
+            npt.assert_almost_equal(time[-1], 1.0, decimal=4)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])

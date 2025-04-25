@@ -24,6 +24,7 @@ from bioptim import (
     Axis,
     Solution,
     SolutionMerge,
+    OdeSolver,
 )
 
 
@@ -52,9 +53,12 @@ def prepare_nmpc(
     max_torque,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
+    ode_solver: OdeSolver = OdeSolver.RK4(),
 ):
     model = BiorbdModel(model_path)
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    dynamics = Dynamics(
+        DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics, ode_solver=ode_solver
+    )
 
     x_bounds = BoundsList()
     x_bounds["q"] = model.bounds_from_ranges("q")

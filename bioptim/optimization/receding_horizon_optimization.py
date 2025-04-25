@@ -9,6 +9,7 @@ import numpy as np
 from .optimal_control_program import OptimalControlProgram
 from ..optimization.solution.solution import Solution
 from ..dynamics.configure_problem import Dynamics, DynamicsList
+from ..dynamics.ode_solvers import OdeSolver
 from ..limits.constraints import ConstraintFcn, ConstraintList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList
 from ..limits.path_conditions import InitialGuessList
@@ -79,6 +80,10 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             **kwargs,
         )
         self.total_optimization_run = 0
+        if isinstance(self.nlp[0].dynamics_type.ode_solver, OdeSolver.COLLOCATION):
+            self.nb_intermediate_frames = self.nlp[0].dynamics_type.ode_solver.polynomial_degree + 1
+        else:
+            self.nb_intermediate_frames = 1
 
     def solve(
         self,
@@ -364,13 +369,21 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         controls = {}
         parameters = sol.decision_parameters()
 
+        frame_to_export = slice(
+            self.frame_to_export.start,
+            (
+                (self.frame_to_export.stop - 1) * self.nb_intermediate_frames + 1
+                if self.frame_to_export.stop is not None
+                else None
+            ),
+        )
         for key in self.nlp[0].states.keys():
-            states[key] = merged_states[key][:, self.frame_to_export]
+            states[key] = merged_states[key][:, frame_to_export]
 
         frames = self.frame_to_export
         if frames.stop is not None and frames.stop == self.nlp[0].n_controls_nodes:
             if self.nlp[0].control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
-                frames = slice(self.frame_to_export.start, self.frame_to_export.stop - 1)
+                frames = slice(frames.start, frames.stop - 1)
         for key in self.nlp[0].controls.keys():
             controls[key] = merged_controls[key][:, frames]
 
@@ -460,7 +473,7 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
             self.update_bounds(self.nlp[0].x_bounds)
 
         export_options = {
-            "frame_to_export": slice(0, (self.time_idx_to_cycle + 1) if self.time_idx_to_cycle >= 0 else None)
+            "frame_to_export": slice(0, (self.time_idx_to_cycle + 1) if self.time_idx_to_cycle >= 0 else None),
         }
         return super(CyclicRecedingHorizonOptimization, self).solve(
             update_function=update_function,
@@ -528,7 +541,9 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
             parameter_init=p_init,
             parameter_bounds=self.parameter_bounds,
         )
-        a_init = InitialGuessList()
+        a_init = (
+            InitialGuessList()
+        )  # TODO: Algebraic_states are not implemented in MHE, to do implicit contacts, this should be addressed
         return Solution.from_initial_guess(solution_ocp, [np.array([dt]), x_init, u_init, p_init, a_init])
 
     def _initialize_state_idx_to_cycle(self, options):
@@ -557,7 +572,7 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
                 self.nlp[0].x_bounds[key].min[s, 2] = self.nlp[0].x_bounds[key].min[s, 0] - range_of_motion * 0.01
                 self.nlp[0].x_bounds[key].max[s, 2] = self.nlp[0].x_bounds[key].max[s, 0] + range_of_motion * 0.01
             else:
-                t = self.time_idx_to_cycle
+                t = self.time_idx_to_cycle * self.nb_intermediate_frames
                 states = sol.decision_states(to_merge=SolutionMerge.NODES)
                 self.nlp[0].x_bounds[key].min[s, 2] = states[key][s, t] - range_of_motion * 0.01
                 self.nlp[0].x_bounds[key].max[s, 2] = states[key][s, t] + range_of_motion * 0.01
@@ -572,7 +587,7 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
 
         # Update the initial frame bounds
         for key in states.keys():
-            self.nlp[0].x_bounds[key][:, 0] = states[key][:, self.time_idx_to_cycle]
+            self.nlp[0].x_bounds[key][:, 0] = states[key][:, self.time_idx_to_cycle * self.nb_intermediate_frames]
         self._set_cyclic_bound(sol)
         return True
 
@@ -661,15 +676,43 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         states = sol.decision_states(to_merge=SolutionMerge.NODES)
 
         for key in states.keys():
-            if self.nlp[0].x_init[key].type != InterpolationType.EACH_FRAME:
-                self.nlp[0].x_init.add(
-                    key,
-                    np.ndarray((states[key].shape[0], self.nlp[0].ns + 1)),
-                    interpolation=InterpolationType.EACH_FRAME,
-                    phase=0,
-                )
-                self.nlp[0].x_init[key].check_and_adjust_dimensions(self.nlp[0].states[key].shape, self.nlp[0].ns)
-            self.nlp[0].x_init[key].init[:, :] = states[key][:, self.initial_guess_frames]
+            if isinstance(self.nlp[0].dynamics_type.ode_solver, OdeSolver.COLLOCATION):
+                if self.nlp[0].x_init[key].type != InterpolationType.ALL_POINTS:
+                    self.nlp[0].x_init.add(
+                        key,
+                        np.ndarray((states[key].shape[0], self.nlp[0].ns * self.nb_intermediate_frames + 1)),
+                        interpolation=InterpolationType.ALL_POINTS,
+                        phase=0,
+                    )
+                    self.nlp[0].x_init[key].check_and_adjust_dimensions(
+                        self.nlp[0].states[key].shape, self.nlp[0].ns * self.nb_intermediate_frames
+                    )
+                else:
+                    initial_guess_frames = []
+                    for _ in range(self.n_cycles):
+                        initial_guess_frames.extend(
+                            list(
+                                range(
+                                    self.n_cycles_to_advance * self.cycle_len * self.nb_intermediate_frames,
+                                    (self.n_cycles_to_advance + 1) * self.cycle_len * self.nb_intermediate_frames,
+                                )
+                            )
+                        )
+                    initial_guess_frames.append(
+                        (self.n_cycles_to_advance + 1) * self.cycle_len * self.nb_intermediate_frames
+                    )
+                    self.nlp[0].x_init[key].init[:, :] = states[key][:, initial_guess_frames]
+            else:
+                if self.nlp[0].x_init[key].type != InterpolationType.EACH_FRAME:
+                    self.nlp[0].x_init.add(
+                        key,
+                        np.ndarray((states[key].shape[0], self.nlp[0].ns + 1)),
+                        interpolation=InterpolationType.EACH_FRAME,
+                        phase=0,
+                    )
+                    self.nlp[0].x_init[key].check_and_adjust_dimensions(self.nlp[0].states[key].shape, self.nlp[0].ns)
+                else:
+                    self.nlp[0].x_init[key].init[:, :] = states[key][:, self.initial_guess_frames]
 
     def advance_window_initial_guess_controls(self, sol, **advance_options):
         controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
@@ -761,7 +804,11 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         states = {}
         controls = {}
         parameters = {}
-        window_slice = slice(cycle_number * self.cycle_len, (cycle_number + 1) * self.cycle_len + 1)
+
+        window_slice = slice(
+            cycle_number * self.cycle_len * self.nb_intermediate_frames,
+            (cycle_number + 1) * self.cycle_len * self.nb_intermediate_frames + 1,
+        )
         for key in self.nlp[0].states.keys():
             states[key] = decision_states[key][:, window_slice]
 
@@ -781,7 +828,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             x_init.add(
                 key,
                 np.concatenate([state[key][:, :-1] for state in states] + [states[-1][key][:, -1:]], axis=1),
-                interpolation=InterpolationType.EACH_FRAME,
+                interpolation=self.nlp[0].x_init.type,
                 phase=0,
             )
 
@@ -829,7 +876,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             x_init.add(
                 key,
                 states[key],
-                interpolation=InterpolationType.EACH_FRAME,
+                interpolation=self.nlp[0].x_init.type,
                 phase=0,
             )
 

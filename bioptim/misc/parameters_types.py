@@ -2,6 +2,7 @@ from typing import Any
 import numpy as np
 from typing import TypeAlias
 from casadi import MX, SX, DM
+from .enums import Node
 
 Int: TypeAlias = int
 Range: TypeAlias = range
@@ -11,6 +12,11 @@ Bool: TypeAlias = bool
 Bytes: TypeAlias = bytes
 
 AnyIterable: TypeAlias = list[Any] | tuple[Any, ...]
+AnyIterableOptional: TypeAlias = list[Any] | tuple[Any, ...] | None
+AnyIterableOrSlice: TypeAlias = slice | list | tuple
+AnyIterableOrSliceOptional: TypeAlias = slice | list | tuple | None
+AnySequence: TypeAlias = list | tuple | range | np.ndarray
+AnySequenceOptional: TypeAlias = list | tuple | range | np.ndarray | None
 IntIterable: TypeAlias = list[int] | tuple[int, ...]
 StrIterable: TypeAlias = list[str] | tuple[str, ...]
 
@@ -23,20 +29,30 @@ AnyDictOptional: TypeAlias = dict[str, Any] | None
 AnyListOptional: TypeAlias = list[Any] | None
 
 AnyList: TypeAlias = list[Any]
+BoolList: TypeAlias = list[bool]
 IntList: TypeAlias = list[int]
+FloatList: TypeAlias = list[float]
 StrList: TypeAlias = list[str]
 MXList: TypeAlias = list[MX]
+NpArrayList: TypeAlias = list[np.ndarray]
 NpArray: TypeAlias = np.ndarray
+
+NpArrayorFloat: TypeAlias = np.ndarray | float
+NpArrayorFloatOptional: TypeAlias = np.ndarray | float | None
 FloatIterableorNpArray: TypeAlias = list[float] | tuple[float, ...] | np.ndarray
+FloatIterableorNpArrayorFloat: TypeAlias = FloatIterableorNpArray | float
 IntIterableorNpArray: TypeAlias = list[int] | tuple[int, ...] | range | np.ndarray
-IntIterableorNpArrayOrInt: TypeAlias = int | IntIterableorNpArray
+IntIterableorNpArrayorInt: TypeAlias = int | IntIterableorNpArray
 
 IntListOptional: TypeAlias = list[int] | None
+FloatListOptional: TypeAlias = list[float] | None
 NpArrayListOptional: TypeAlias = list[np.ndarray] | None
 
 StrOrIterable: TypeAlias = str | list[str]
 
 IntOptional: TypeAlias = int | None
+IntOrStr: TypeAlias = int | str
+IntOrStrOptional: TypeAlias = int | str | None
 
 FloatOptional: TypeAlias = float | None
 
@@ -51,7 +67,9 @@ IntTuple: TypeAlias = tuple[int, ...]
 DoubleIntTuple: TypeAlias = tuple[int, int]
 StrTuple: TypeAlias = tuple[str, ...]
 
-IntStrOrIterable: TypeAlias = int | str | AnyIterable
+IntStrorIterable: TypeAlias = int | str | AnyIterable
+IntorIterableOptional: TypeAlias = IntOptional | IntList | IntTuple
+IntorNodeIterable: TypeAlias = tuple[Int | Node, ...] | list[Int | Node]
 
 CX: TypeAlias = MX | SX
 CXOptional: TypeAlias = MX | SX | None

@@ -7,6 +7,15 @@ from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
 
 
+from ..misc.parameters_types import (
+    Bool,
+    Int,
+    Str,
+    FloatOptional,
+    NpArrayorFloatOptional,
+)
+
+
 class Objective(PenaltyOption):
     """
     A placeholder for an objective function
@@ -16,8 +25,8 @@ class Objective(PenaltyOption):
         self,
         objective: Any,
         custom_type: Any = None,
-        phase: int = -1,
-        is_stochastic: bool = False,
+        phase: Int = -1,
+        is_stochastic: Bool = False,
         **extra_parameters: Any,
     ):
         """
@@ -229,7 +238,7 @@ class ObjectiveFunction:
             return nlp.dt
 
         @staticmethod
-        def penalty_nature() -> str:
+        def penalty_nature() -> Str:
             return "objective_functions"
 
     class MayerFunction(PenaltyFunctionAbstract):
@@ -246,8 +255,8 @@ class ObjectiveFunction:
             def minimize_time(
                 _: Objective,
                 controller: PenaltyController,
-                min_bound: float = None,
-                max_bound: float = None,
+                min_bound: FloatOptional = None,
+                max_bound: FloatOptional = None,
             ):
                 """
                 Minimizes the duration of the phase
@@ -273,7 +282,7 @@ class ObjectiveFunction:
             return 1
 
         @staticmethod
-        def penalty_nature() -> str:
+        def penalty_nature() -> Str:
             return "objective_functions"
 
     class ParameterFunction(PenaltyFunctionAbstract):
@@ -289,15 +298,15 @@ class ObjectiveFunction:
             pass
 
         @staticmethod
-        def penalty_nature() -> str:
+        def penalty_nature() -> Str:
             return "parameter_objectives"
 
         @staticmethod
-        def get_dt(nlp) -> int:
+        def get_dt(nlp) -> Int:
             return 1
 
     @staticmethod
-    def update_target(ocp_or_nlp: Any, list_index: int, new_target: Any):
+    def update_target(ocp_or_nlp: Any, list_index: Int, new_target: NpArrayorFloatOptional):
         """
         Update a specific target
 

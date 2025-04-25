@@ -5,26 +5,36 @@ from casadi import MX, SX, DM, vertcat, horzcat
 
 from ..misc.enums import PhaseDynamics, ControlType
 
+from ..misc.parameters_types import (
+    Bool,
+    Int,
+    IntList,
+    BoolList,
+    Float,
+    NpArray,
+    CXorDMorNpArray,
+)
+
 
 class PenaltyProtocol(Protocol):
-    transition: bool  # If the penalty is a transition penalty
-    multinode_penalty: bool  # If the penalty is a multinode penalty
-    phase: int  # The phase of the penalty (only for non multinode or transition penalties)
-    nodes_phase: list[int]  # The phases of the penalty (only for multinode penalties)
-    node_idx: list[int]  # The node index of the penalty (only for non multinode or transition penalties)
-    multinode_idx: list[int]  # The node index of the penalty (only for multinode penalties)
-    subnodes_are_decision_states: list[bool]  # If the subnodes are decision states (e.g. collocation points)
-    integrate: bool  # If the penalty is an integral penalty
-    derivative: bool  # If the penalty is a derivative penalty
-    explicit_derivative: bool  # If the penalty is an explicit derivative penalty
+    transition: Bool  # If the penalty is a transition penalty
+    multinode_penalty: Bool  # If the penalty is a multinode penalty
+    phase: Int  # The phase of the penalty (only for non multinode or transition penalties)
+    nodes_phase: IntList  # The phases of the penalty (only for multinode penalties)
+    node_idx: IntList  # The node index of the penalty (only for non multinode or transition penalties)
+    multinode_idx: IntList  # The node index of the penalty (only for multinode penalties)
+    subnodes_are_decision_states: BoolList  # If the subnodes are decision states (e.g. collocation points)
+    integrate: Bool  # If the penalty is an integral penalty
+    derivative: Bool  # If the penalty is a derivative penalty
+    explicit_derivative: Bool  # If the penalty is an explicit derivative penalty
     phase_dynamics: list[PhaseDynamics]  # The dynamics of the penalty (only for multinode penalties)
-    ns = list[int]  # The number of shooting points of problem (only for multinode penalties)
+    ns = IntList  # The number of shooting points of problem (only for multinode penalties)
     control_types: ControlType  # The control type of the penalties
 
 
 class PenaltyHelpers:
     @staticmethod
-    def t0(penalty, index, get_t0: Callable):
+    def t0(penalty, index: Int, get_t0: Callable):
         """
         This method returns the t0 of a penalty.
         """
@@ -53,7 +63,7 @@ class PenaltyHelpers:
         return _reshape_to_vector(_reshape_to_vector(get_all_dt(ocp.time_phase_mapping.to_first.map_idx)))
 
     @staticmethod
-    def states(penalty, index, get_state_decision: Callable, is_constructing_penalty: bool = False):
+    def states(penalty, index: Int, get_state_decision: Callable, is_constructing_penalty: Bool = False):
         """
         get_state_decision: Callable[int, int, slice]
             A function that returns the state decision of a given phase, node and subnodes (or steps)
@@ -108,7 +118,7 @@ class PenaltyHelpers:
             return vertcat(x0, x1)
 
     @staticmethod
-    def get_states(ocp, penalty, phase_idx, node_idx, subnodes_idx, values):
+    def get_states(ocp, penalty, phase_idx: Int, node_idx: Int, subnodes_idx: range, values: CXorDMorNpArray):
         null_element = ocp.cx() if type(values[0]) != np.ndarray else np.array([])
         idx = 0 if not penalty.is_multinode_penalty else penalty.nodes_phase.index(phase_idx)
         subnodes_are_decision_states = penalty.subnodes_are_decision_states[idx] and not penalty.is_transition
@@ -128,7 +138,7 @@ class PenaltyHelpers:
         return x
 
     @staticmethod
-    def controls(penalty, index, get_control_decision: Callable, is_constructing_penalty: bool = False):
+    def controls(penalty, index: Int, get_control_decision: Callable, is_constructing_penalty: Bool = False):
         node = penalty.node_idx[index]
 
         if penalty.is_multinode_penalty:
@@ -173,7 +183,7 @@ class PenaltyHelpers:
         return u
 
     @staticmethod
-    def get_controls(ocp, penalty, phase_idx, node_idx, subnodes_idx, values):
+    def get_controls(ocp, penalty, phase_idx: Int, node_idx: Int, subnodes_idx: range, values: CXorDMorNpArray):
         null_element = ocp.cx() if type(values[0]) != np.ndarray else np.array([])
         idx = 0 if not penalty.is_multinode_penalty else penalty.nodes_phase.index(phase_idx)
         subnodes_are_decision_states = penalty.subnodes_are_decision_states[idx] and not penalty.is_transition
@@ -193,13 +203,13 @@ class PenaltyHelpers:
         return u
 
     @staticmethod
-    def parameters(penalty, index, get_parameter_decision: Callable):
+    def parameters(penalty, index: Int, get_parameter_decision: Callable):
         node = penalty.node_idx[index]
         p = get_parameter_decision(penalty.phase, node, None)
         return _reshape_to_vector(p)
 
     @staticmethod
-    def numerical_timeseries(penalty, index, get_numerical_timeseries: Callable):
+    def numerical_timeseries(penalty, index: Int, get_numerical_timeseries: Callable):
         node = penalty.node_idx[index]
         if penalty.is_multinode_penalty:
             # numerical timeseries are expected to be provided only at the shooting node.
@@ -220,11 +230,11 @@ class PenaltyHelpers:
         return d
 
     @staticmethod
-    def weight(penalty):
+    def weight(penalty) -> Float:
         return penalty.weight
 
     @staticmethod
-    def target(penalty, penalty_node_idx):
+    def target(penalty, penalty_node_idx: Int) -> NpArray:
         if penalty.target is None:
             return np.array([])
 
@@ -236,7 +246,7 @@ class PenaltyHelpers:
         return penalty.target[..., penalty_node_idx]
 
     @staticmethod
-    def get_multinode_penalty_subnodes_starting_index(p):
+    def get_multinode_penalty_subnodes_starting_index(p: Int) -> IntList:
         """
         Prepare the current_cx_to_get for each of the controller. Basically it finds if this penalty has more than
         one usage. If it does, it increments a counter of the cx used, up to the maximum.
@@ -283,7 +293,7 @@ class PenaltyHelpers:
         return out
 
 
-def _get_multinode_indices(penalty, is_constructing_penalty: bool):
+def _get_multinode_indices(penalty, is_constructing_penalty: Bool) -> IntList:
     if not penalty.is_multinode_penalty:
         raise RuntimeError("This function should only be called for multinode penalties")
 
@@ -314,7 +324,7 @@ def _get_multinode_indices(penalty, is_constructing_penalty: bool):
     return phases, nodes, subnodes
 
 
-def _reshape_to_vector(m):
+def _reshape_to_vector(m: CXorDMorNpArray) -> CXorDMorNpArray:
     """
     Reshape a matrix to a vector (column major)
     """
@@ -327,7 +337,7 @@ def _reshape_to_vector(m):
         raise RuntimeError("Invalid type to reshape")
 
 
-def _vertcat(v):
+def _vertcat(v: list[CXorDMorNpArray]) -> CXorDMorNpArray:
     """
     Vertically concatenate a list of vectors
     """
