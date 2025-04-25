@@ -27,7 +27,6 @@ def prepare_ocp(
     final_time: float,
     n_shooting: int,
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
-    with_passive_torque=False,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
@@ -44,8 +43,6 @@ def prepare_ocp(
         The number of shooting points to define int the direct multiple shooting program
     ode_solver: OdeSolverBase = OdeSolver.RK4()
         Which type of OdeSolver to use
-    with_passive_torque: bool
-        If the passive torque is used in dynamics
     phase_dynamics: PhaseDynamics
         If the dynamics equation within a phase is unique or changes at each node.
         PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
@@ -68,7 +65,6 @@ def prepare_ocp(
     # Dynamics
     dynamics = Dynamics(
         DynamicsFcn.TORQUE_DRIVEN,
-        with_passive_torque=with_passive_torque,
         ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
@@ -111,7 +107,6 @@ def main():
         biorbd_model_path="models/pendulum_with_passive_torque.bioMod",
         final_time=1,
         n_shooting=30,
-        with_passive_torque=False,
     )
 
     # Custom plots

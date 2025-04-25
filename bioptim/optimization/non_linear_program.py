@@ -11,6 +11,7 @@ from ..dynamics.ode_solvers import OdeSolver
 from ..limits.path_conditions import InitialGuessList, BoundsList
 from ..misc.enums import ControlType, PhaseDynamics, InterpolationType
 from ..misc.options import OptionList
+from ..misc.parameters_types import Str, CX
 from ..models.protocols.biomodel import BioModel
 from ..models.protocols.holonomic_biomodel import HolonomicBioModel
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
@@ -641,12 +642,12 @@ class NonLinearProgram:
         return out
 
     def get_external_forces(
-        self, states: MX.sym, controls: MX.sym, algebraic_states: MX.sym, numerical_timeseries: MX.sym
-    ):
+        self, name: Str, states: MX.sym, controls: MX.sym, algebraic_states: MX.sym, numerical_timeseries: MX.sym
+    ) -> CX:
 
         external_forces = self.cx(0, 1)
         external_forces = self.retrieve_forces(
-            "external_forces", external_forces, states, controls, algebraic_states, numerical_timeseries
+            name, external_forces, states, controls, algebraic_states, numerical_timeseries
         )
 
         return external_forces

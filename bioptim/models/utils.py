@@ -1,6 +1,7 @@
 from functools import wraps
 from ..limits.path_conditions import Bounds
 from ..misc.mapping import BiMapping, BiMappingList
+from ..misc.enums import ContactType
 
 
 def _dof_mapping(key, model, mapping: BiMapping = None) -> dict:
@@ -101,3 +102,43 @@ def cache_function(method):
         return casadi_fun
 
     return wrapper
+
+
+def check_contacts(contact_type: list[ContactType] | tuple[ContactType], model):
+
+    # Check the type and that there is only one of them
+    if not isinstance(contact_type, (list, tuple)):
+        raise RuntimeError(f"The contact_type should be a list or a tuple of ContactType, not {contact_type}.")
+    for contact in contact_type:
+        if not isinstance(contact, ContactType):
+            raise RuntimeError(f"The contact_type should be a list or a tuple of ContactType, not {contact}.")
+    if len(contact_type) > 1:
+        raise NotImplementedError("Only one ContactType is supported at the moment.")
+
+    # Check rigid contacts
+    if (
+        ContactType.RIGID_EXPLICIT in contact_type or ContactType.RIGID_IMPLICIT in contact_type
+    ) and model.nb_contacts == 0:
+        raise ValueError(
+            f"No rigid contact defined in the model, consider changing the ContactType."
+        )
+
+    # Check soft contacts
+    if (
+        ContactType.SOFT_EXPLICIT in contact_type or ContactType.SOFT_IMPLICIT in contact_type
+    ) and model.nb_soft_contacts == 0:
+        raise ValueError(
+            f"No soft contact defined in the model, consider changing the ContactType."
+        )
+
+    # Check that contacts are a list or tuple of ContactType
+    if not isinstance(contact_type, (list, tuple)):
+        raise TypeError("contact_type should be a list or a tuple")
+    for elt in contact_type:
+        if not isinstance(elt, ContactType):
+            raise TypeError(f"contact_type should be a list or a tuple of ContactType, not {type(elt)}")
+
+    # Check that contact types are not declared at the same time
+    if len(contact_type) > 1:
+        raise NotImplementedError("It is not possible to use multiple ContactType at the same time yet.")
+

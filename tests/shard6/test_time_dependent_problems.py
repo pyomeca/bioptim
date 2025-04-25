@@ -91,7 +91,6 @@ def custom_configure(
     ocp: OptimalControlProgram,
     nlp: NonLinearProgram,
     numerical_data_timeseries: dict[str, np.ndarray] = None,
-    contact_type: list[ContactType] | tuple[ContactType] = (),
 ):
     """
     Tell the program which variables are states and controls.
@@ -105,8 +104,6 @@ def custom_configure(
         A reference to the phase
     numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
-    contact_type: list[ContactType] | tuple[ContactType]
-        The type of contacts to consider in the dynamics.
     """
 
     ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)

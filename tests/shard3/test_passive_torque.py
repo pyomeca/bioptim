@@ -5,7 +5,6 @@ from bioptim import (
     NonLinearProgram,
     DynamicsFcn,
     Dynamics,
-    ConstraintList,
     Solver,
     VariableScalingList,
     ParameterList,
@@ -36,14 +35,18 @@ class OptimalControlProgram:
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_passive_torque", [False, True])
 def test_torque_driven_with_passive_torque(with_passive_torque, cx, phase_dynamics):
-    # Prepare the program
+
+    if with_passive_torque:
+        model_filename = "/examples/getting_started/models/2segments_4dof_2contacts_with_passive_torque.bioMod"
+    else:
+        model_filename = "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+        TestUtils.bioptim_folder() + model_filename,
     )
     nlp.dynamics_type = Dynamics(
         DynamicsFcn.TORQUE_DRIVEN,
-        with_passive_torque=with_passive_torque,
         phase_dynamics=phase_dynamics,
     )
 
@@ -99,14 +102,18 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, phase_dynami
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_passive_torque", [False, True])
 def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx, phase_dynamics):
-    # Prepare the program
+
+    if with_passive_torque:
+        model_filename = "/examples/getting_started/models/2segments_4dof_2contacts_with_passive_torque.bioMod"
+    else:
+        model_filename = "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+        TestUtils.bioptim_folder() + model_filename
     )
     nlp.dynamics_type = Dynamics(
         DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
-        with_passive_torque=with_passive_torque,
         phase_dynamics=phase_dynamics,
     )
 
@@ -191,14 +198,18 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx, p
 @pytest.mark.parametrize("with_passive_torque", [False, True])
 @pytest.mark.parametrize("with_residual_torque", [False, True])
 def test_torque_activation_driven_with_passive_torque(with_passive_torque, with_residual_torque, cx, phase_dynamics):
-    # Prepare the program
+
+    if with_passive_torque:
+        model_filename = "/examples/getting_started/models/2segments_4dof_2contacts_with_passive_torque.bioMod"
+    else:
+        model_filename = "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+        TestUtils.bioptim_folder() + model_filename
     )
     nlp.dynamics_type = Dynamics(
         DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
-        with_passive_torque=with_passive_torque,
         with_residual_torque=with_residual_torque,
         phase_dynamics=phase_dynamics,
     )
@@ -307,12 +318,16 @@ def test_torque_activation_driven_with_passive_torque(with_passive_torque, with_
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_passive_torque", [False, True])
 def test_muscle_driven_with_passive_torque(with_passive_torque, cx, phase_dynamics):
-    # Prepare the program
+
+    if with_passive_torque:
+        model_filename = "/examples/muscle_driven_ocp/models/arm26_with_passive_torque.bioMod"
+    else:
+        model_filename = "/examples/muscle_driven_ocp/models/arm26.bioMod"
+
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
-    nlp.model = BiorbdModel(TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod")
+    nlp.model = BiorbdModel(TestUtils.bioptim_folder() + model_filename)
     nlp.dynamics_type = Dynamics(
         DynamicsFcn.MUSCLE_DRIVEN,
-        with_passive_torque=with_passive_torque,
         phase_dynamics=phase_dynamics,
     )
 
@@ -358,19 +373,14 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, cx, phase_dynami
         npt.assert_almost_equal(
             x_out[:, 0],
             [
-                1.8340450985e-01,
-                6.1185289472e-01,
-                7.8517596139e-01,
-                -5.3408086130e00,
-                1.6890917494e02,
-                -5.4766884856e02,
+                2.05844943e-02,  1.83404510e-01, -8.02145442e+01,  1.20656840e+02,
             ],
             decimal=6,
         )
     else:
         npt.assert_almost_equal(
             x_out[:, 0],
-            [1.83404510e-01, 6.11852895e-01, 7.85175961e-01, -4.37708456e00, 1.33221135e02, -4.71307550e02],
+            [2.05844943e-02,  1.83404510e-01, -7.38801944e+00, -9.06421422e+01],
             decimal=6,
         )
 
@@ -380,10 +390,13 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, cx, phase_dynami
 def test_pendulum_passive_torque(with_passive_torque, phase_dynamics):
     from bioptim.examples.torque_driven_ocp import pendulum_with_passive_torque as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    if with_passive_torque:
+        model_filename = "/examples/getting_started/models/pendulum_with_passive_torque.bioMod"
+    else:
+        model_filename = "/examples/getting_started/models/pendulum.bioMod"
 
     # Define the problem
-    biorbd_model_path = bioptim_folder + "/models/pendulum_with_passive_torque.bioMod"
+    biorbd_model_path = TestUtils.bioptim_folder() + model_filename
     final_time = 1
     n_shooting = 30
 
@@ -391,7 +404,6 @@ def test_pendulum_passive_torque(with_passive_torque, phase_dynamics):
         biorbd_model_path,
         final_time,
         n_shooting,
-        with_passive_torque=with_passive_torque,
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
     )
@@ -415,12 +427,12 @@ def test_pendulum_passive_torque(with_passive_torque, phase_dynamics):
         # initial and final controls
         npt.assert_almost_equal(
             tau[:, 0],
-            np.array([6.16172631, 0.0]),
+            np.array([94.73491384, 0.0]),
             decimal=6,
         )
         npt.assert_almost_equal(
             tau[:, -1],
-            np.array([-11.82081071, 0.0]),
+            np.array([-29.76345201, 0.0]),
             decimal=6,
         )
 

@@ -89,7 +89,6 @@ def custom_configure(
     nlp: NonLinearProgram,
     my_additional_factor=1,
     numerical_data_timeseries=None,
-    contact_type: list[ContactType] | tuple[ContactType] = (),
 ):
     """
     Tell the program which variables are states and controls.

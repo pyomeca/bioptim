@@ -14,7 +14,7 @@ from bioptim.models.biorbd.external_forces import (
     ExternalForceSetTimeSeries,
     ExternalForceSetVariables,
 )
-from ..utils import _var_mapping, bounds_from_ranges, cache_function
+from ..utils import _var_mapping, bounds_from_ranges, cache_function, check_contacts
 from ...limits.path_conditions import Bounds
 from ...misc.mapping import BiMapping, BiMappingList
 from ...misc.enums import ContactType
@@ -58,13 +58,7 @@ class BiorbdModel:
 
         self.model = biorbd.Model(bio_model) if isinstance(bio_model, str) else bio_model
 
-        if not isinstance(contact_type, (list, tuple)):
-            raise RuntimeError(f"The contact_type should be a list or a tuple of ContactType, not {contact_type}.")
-        for contact in contact_type:
-            if not isinstance(contact, ContactType):
-                raise RuntimeError(f"The contact_type should be a list or a tuple of ContactType, not {contact}.")
-        if len(contact_type) > 1:
-            raise NotImplementedError("Only one ContactType is supported at the moment.")
+        check_contacts(contact_type, self)
         self.contact_type = contact_type
 
         if parameters is not None:
@@ -223,6 +217,14 @@ class BiorbdModel:
     @property
     def nb_root(self) -> int:
         return self.model.nbRoot()
+
+    @property
+    def nb_ligaments(self) -> int:
+        return self.model.nbLigaments()
+
+    @property
+    def nb_passive_joint_torques(self) -> int:
+        return self.model.nbPassiveTorques()
 
     @property
     def segments(self) -> tuple[biorbd.Segment]:

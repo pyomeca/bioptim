@@ -91,10 +91,6 @@ class DynamicsFunctions:
         algebraic_states,
         numerical_timeseries,
         nlp,
-        contact_type: list[ContactType] | tuple[ContactType],
-        with_passive_torque: bool,
-        with_ligament: bool,
-        with_friction: bool,
         fatigue: FatigueList,
     ) -> DynamicsEvaluation:
         """
@@ -116,14 +112,6 @@ class DynamicsFunctions:
             The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
-        contact_type: list[ContactType] | tuple[ContactType]
-            The type of contacts to consider in the dynamics
-        with_passive_torque: bool
-            If the dynamic with passive torque should be used
-        with_ligament: bool
-            If the dynamic with ligament should be used
-        with_friction: bool
-            If the dynamic with friction should be used
         fatigue : FatigueList
             A list of fatigue elements
 
@@ -139,9 +127,12 @@ class DynamicsFunctions:
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
 
         tau = DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue)
-        tau = tau + nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx) if with_passive_torque else tau
-        tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
-        tau = tau - nlp.model.friction_coefficients @ qdot if with_friction else tau
+        if nlp.model.nb_passive_joint_torques > 0:
+            tau += nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx)
+        if nlp.model.nb_ligaments > 0:
+            tau += nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx)
+        if nlp.model.friction_coefficients is not None:
+            tau -= nlp.model.friction_coefficients @ qdot
 
         external_forces = nlp.get_external_forces(
             "external_forces", states, controls, algebraic_states, numerical_timeseries
@@ -150,7 +141,7 @@ class DynamicsFunctions:
         if fatigue is not None and "tau" in fatigue:
             raise NotImplementedError("Fatigue is not implemented yet for torque driven dynamics")
 
-        forward_dynamics_contact_type = ContactType.get_equivalent_explicit_contacts(contact_type)
+        forward_dynamics_contact_type = ContactType.get_equivalent_explicit_contacts(nlp.model.contact_type)
         ddq_fd = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, forward_dynamics_contact_type, external_forces)
         dxdt = vertcat(dq, ddq_fd)
 
@@ -166,7 +157,7 @@ class DynamicsFunctions:
                 defects = vertcat(defects, q_defects)
 
             if DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS in nlp.dynamics_type.ode_solver.defects_type:
-                ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, contact_type, external_forces)
+                ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, nlp.model.contact_type, external_forces)
                 qdot_defects = slope_qdot * nlp.dt - ddq * nlp.dt
                 defects = vertcat(defects, qdot_defects)
 
@@ -177,7 +168,7 @@ class DynamicsFunctions:
                     q=q,
                     qdot=qdot,
                     qddot=slope_qdot,
-                    contact_type=contact_type,
+                    contact_type=nlp.model.contact_type,
                     external_forces=external_forces,
                 )
 
@@ -185,13 +176,13 @@ class DynamicsFunctions:
                 defects = vertcat(defects, tau_defects)
 
             # Option A
-            if ContactType.RIGID_IMPLICIT not in contact_type:
+            if ContactType.RIGID_IMPLICIT not in nlp.model.contact_type:
                 if DefectType.CONTACT_ACCELERATION_EQUALS_ZERO in nlp.dynamics_type.ode_solver.defects_type:
                     rigid_contact_defect = "TODO"
                     defects = vertcat(defects, rigid_contact_defect)
 
             # Option A
-            if ContactType.SOFT_IMPLICIT in contact_type:
+            if ContactType.SOFT_IMPLICIT in nlp.model.contact_type:
                 soft_contact_defect = (
                     nlp.model.soft_contact_forces()(q, qdot, nlp.parameters.cx)
                     - nlp.algebraic_states["soft_contact_forces"].cx
@@ -201,7 +192,7 @@ class DynamicsFunctions:
             # Option B
             if DefectType.SOFT_CONTACT_FORCES_EQUALS_LAGRANGE_MULTIPLIERS in nlp.dynamics_type.ode_solver.defects_type:
 
-                if ContactType.SOFT_IMPLICIT not in contact_type:
+                if ContactType.SOFT_IMPLICIT not in nlp.model.contact_type:
                     raise RuntimeError("The defect type SOFT_CONTACT_FORCES_EQUALS_LAGRANGE_MULTIPLIERS is only available for ContactType.SOFT_IMPLICIT.")
 
                 soft_contact_defect = (
@@ -221,9 +212,6 @@ class DynamicsFunctions:
         algebraic_states,
         numerical_timeseries,
         nlp,
-        with_passive_torque: bool,
-        with_ligament: bool,
-        with_friction: bool,
     ) -> DynamicsEvaluation:
         """
         Forward dynamics driven by joint torques without actuation of the free floating base
@@ -244,12 +232,6 @@ class DynamicsFunctions:
             The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
-        with_passive_torque: bool
-            If the dynamic with passive torque should be used
-        with_ligament: bool
-            If the dynamic with ligament should be used
-        with_friction: bool
-            If the dynamic with friction should be used
 
         Returns
         ----------
@@ -269,13 +251,12 @@ class DynamicsFunctions:
         n_q = nlp.model.nb_q
         n_qdot = nlp.model.nb_qdot
 
-        tau_joints = (
-            tau_joints + nlp.model.passive_joint_torque()(q_full, qdot_full, nlp.parameters.cx)
-            if with_passive_torque
-            else tau_joints
-        )
-        tau_joints = tau_joints + nlp.model.ligament_joint_torque()(q_full, qdot_full) if with_ligament else tau_joints
-        tau_joints = tau_joints - nlp.model.friction_coefficients @ qdot_joints if with_friction else tau_joints
+        if nlp.model.nb_passive_joint_torques > 0:
+            tau_joints += nlp.model.passive_joint_torque()(q_full, qdot_full, nlp.parameters.cx)
+        if nlp.model.nb_ligaments > 0:
+            tau_joints += nlp.model.ligament_joint_torque()(q_full, qdot_full)
+        if nlp.model.friction_coefficients is not None:
+            tau_joints -= nlp.model.friction_coefficients @ qdot_joints
 
         tau_full = vertcat(nlp.cx.zeros(nlp.model.nb_root), tau_joints)
 
@@ -309,8 +290,6 @@ class DynamicsFunctions:
         algebraic_states,
         numerical_timeseries,
         nlp,
-        contact_type: list[ContactType] | tuple[ContactType],
-        with_friction: bool,
     ) -> DynamicsEvaluation:
         """
         Forward dynamics subject to motor and sensory noise driven by torques
@@ -331,10 +310,6 @@ class DynamicsFunctions:
             The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
-        contact_type: list[ContactType] | tuple[ContactType]
-            The type of contacts to consider in the dynamics
-        with_friction: bool
-            If the dynamic with friction should be used
 
         Returns
         ----------
@@ -343,9 +318,9 @@ class DynamicsFunctions:
         """
 
         if (
-            ContactType.SOFT_EXPLICIT in contact_type
-            or ContactType.SOFT_IMPLICIT in contact_type
-            or ContactType.RIGID_IMPLICIT in contact_type
+            ContactType.SOFT_EXPLICIT in nlp.model.contact_type
+            or ContactType.SOFT_IMPLICIT in nlp.model.contact_type
+            or ContactType.RIGID_IMPLICIT in nlp.model.contact_type
         ):
             raise NotImplementedError(
                 "soft contacts and implicit contacts not implemented yet with stochastic torque driven dynamics."
@@ -368,10 +343,12 @@ class DynamicsFunctions:
             sensory_noise=sensory_noise,
             motor_noise=motor_noise,
         )
-        tau = tau - nlp.model.friction_coefficients @ qdot if with_friction else tau
+
+        if nlp.model.friction_coefficients is not None:
+            tau -= nlp.model.friction_coefficients @ qdot
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, contact_type=contact_type, external_forces=None)
+        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, contact_type=nlp.model.contact_type, external_forces=None)
         dxdt = vertcat(dq, ddq)
 
         defects = None
@@ -395,7 +372,6 @@ class DynamicsFunctions:
         algebraic_states,
         numerical_timeseries,
         nlp,
-        with_friction: bool,
     ) -> DynamicsEvaluation:
         """
         Forward dynamics subject to motor and sensory noise driven by joint torques
@@ -416,8 +392,6 @@ class DynamicsFunctions:
             The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
-        with_friction: bool
-            If the dynamic with friction should be used
 
         Returns
         ----------
@@ -447,7 +421,8 @@ class DynamicsFunctions:
             motor_noise=motor_noise,
             sensory_noise=sensory_noise,
         )
-        tau_joints = (tau_joints - nlp.model.friction_coefficients @ qdot_joints) if with_friction else tau_joints
+        if nlp.model.friction_coefficients is not None:
+            tau_joints -= nlp.model.friction_coefficients @ qdot_joints
 
         tau_full = vertcat(nlp.cx.zeros(nlp.model.nb_root), tau_joints)
 
@@ -535,10 +510,7 @@ class DynamicsFunctions:
         algebraic_states,
         numerical_timeseries,
         nlp,
-        contact_type: list[ContactType] | tuple[ContactType],
-        with_passive_torque: bool,
         with_residual_torque: bool,
-        with_ligament: bool,
     ):
         """
         Forward dynamics driven by joint torques activations.
@@ -559,14 +531,8 @@ class DynamicsFunctions:
             The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
-        contact_type: list[ContactType] | tuple[ContactType]
-            The type of contacts to consider in the dynamics
-        with_passive_torque: bool
-            If the dynamic with passive torque should be used
         with_residual_torque: bool
             If the dynamic should be added with residual torques
-        with_ligament: bool
-            If the dynamic with ligament should be used
 
         Returns
         ----------
@@ -579,19 +545,22 @@ class DynamicsFunctions:
         tau_activation = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
         tau = nlp.model.torque()(tau_activation, q, qdot, nlp.parameters.cx)
-        if with_passive_torque:
-            tau += nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx)
         if with_residual_torque:
             tau += DynamicsFunctions.get(nlp.controls["residual_tau"], controls)
-        if with_ligament:
+
+        if nlp.model.nb_passive_joint_torques > 0:
+            tau += nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx)
+        if nlp.model.nb_ligaments > 0:
             tau += nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx)
+        if nlp.model.friction_coefficients is not None:
+            tau -= nlp.model.friction_coefficients @ qdot
 
         external_forces = nlp.get_external_forces(
             "external_forces", states, controls, algebraic_states, numerical_timeseries
         )
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-        forward_dynamics_contact_type = ContactType.get_equivalent_explicit_contacts(contact_type)
+        forward_dynamics_contact_type = ContactType.get_equivalent_explicit_contacts(nlp.model.contact_type)
         ddq_fd = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, forward_dynamics_contact_type, external_forces)
         dxdt = vertcat(dq, ddq_fd)
 
@@ -600,7 +569,7 @@ class DynamicsFunctions:
             slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
             if DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS in nlp.dynamics_type.ode_solver.defects_type:
-                ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, contact_type, external_forces)
+                ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, nlp.model.contact_type, external_forces)
                 derivative = vertcat(dq, ddq)
                 defects = vertcat(slope_q, slope_qdot) * nlp.dt - derivative * nlp.dt
             else:
@@ -619,10 +588,6 @@ class DynamicsFunctions:
         algebraic_states,
         numerical_timeseries,
         nlp,
-        contact_type: list[ContactType] | tuple[ContactType],
-        with_passive_torque: bool,
-        with_ligament: bool,
-        with_friction: bool,
     ) -> DynamicsEvaluation:
         """
         Forward dynamics driven by joint torques derivatives
@@ -643,14 +608,6 @@ class DynamicsFunctions:
             The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
-        contact_type: list[ContactType] | tuple[ContactType]
-            The type of contacts to consider in the dynamics
-        with_passive_torque: bool
-            If the dynamic with passive torque should be used
-        with_ligament: bool
-            If the dynamic with ligament should be used
-        with_friction: bool
-            If the dynamic with friction should be used
 
         Returns
         ----------
@@ -663,9 +620,12 @@ class DynamicsFunctions:
         tau = DynamicsFunctions.get(nlp.states["tau"], states)
         taudot = DynamicsFunctions.get(nlp.controls["taudot"], controls)
 
-        tau = tau + nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx) if with_passive_torque else tau
-        tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
-        tau = tau - nlp.model.friction_coefficients @ qdot if with_friction else tau
+        if nlp.model.nb_passive_joint_torques > 0:
+            tau += nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx)
+        if nlp.model.nb_ligaments > 0:
+            tau += nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx)
+        if nlp.model.friction_coefficients is not None:
+            tau -= nlp.model.friction_coefficients @ qdot
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
 
@@ -673,7 +633,7 @@ class DynamicsFunctions:
             "external_forces", states, controls, algebraic_states, numerical_timeseries
         )
 
-        forward_dynamics_contact_type = ContactType.get_equivalent_explicit_contacts(contact_type)
+        forward_dynamics_contact_type = ContactType.get_equivalent_explicit_contacts(nlp.model.contact_type)
         ddq_fd = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, forward_dynamics_contact_type, external_forces)
         dxdt = vertcat(vertcat(dq, ddq_fd), taudot)
 
@@ -690,7 +650,7 @@ class DynamicsFunctions:
             )
 
             if DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS in nlp.dynamics_type.ode_solver.defects_type:
-                ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, contact_type, external_forces)
+                ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, nlp.model.contact_type, external_forces)
                 derivative = vertcat(vertcat(dq, ddq), taudot)
                 defects = slope * nlp.dt - derivative * nlp.dt
             elif DefectType.TAU_EQUALS_INVERSE_DYNAMICS in nlp.dynamics_type.ode_solver.defects_type:
@@ -700,7 +660,7 @@ class DynamicsFunctions:
                     q=q,
                     qdot=qdot,
                     qddot=slope_qdot,
-                    contact_type=contact_type,
+                    contact_type=nlp.model.contact_type,
                     external_forces=external_forces,
                 )
 
@@ -713,11 +673,11 @@ class DynamicsFunctions:
                     f"The defect type {nlp.dynamics_type.ode_solver.defects_type} is not implemented yet for torque derivative driven dynamics."
                 )
 
-            if ContactType.RIGID_IMPLICIT in contact_type:
+            if ContactType.RIGID_IMPLICIT in nlp.model.contact_type:
                 rigid_contact_defect = "TODO"
                 defects = vertcat(defects, rigid_contact_defect)
 
-            if ContactType.SOFT_IMPLICIT in contact_type:
+            if ContactType.SOFT_IMPLICIT in nlp.model.contact_type:
                 soft_contact_defect = (
                     nlp.model.soft_contact_forces()(q, qdot, nlp.parameters.cx)
                     - nlp.algebraic_states["soft_contact_forces"].cx
@@ -735,8 +695,6 @@ class DynamicsFunctions:
         algebraic_states,
         numerical_timeseries: MX.sym,
         nlp,
-        with_passive_torque: bool = False,
-        with_ligament: bool = False,
     ) -> MX | SX:
         """
         Contact forces of a forward dynamics driven by joint torques with contact constraints.
@@ -757,10 +715,6 @@ class DynamicsFunctions:
             The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
-        with_passive_torque: bool
-            If the dynamic with passive torque should be used
-        with_ligament: bool
-            If the dynamic with ligament should be used
 
         Returns
         ----------
@@ -771,8 +725,10 @@ class DynamicsFunctions:
         q = nlp.get_var_from_states_or_controls("q", states, controls)
         qdot = nlp.get_var_from_states_or_controls("qdot", states, controls)
         tau = nlp.get_var_from_states_or_controls("tau", states, controls)
-        tau = tau + nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx) if with_passive_torque else tau
-        tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
+        if nlp.model.nb_passive_joint_torques > 0:
+            tau += nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx)
+        if nlp.model.nb_ligaments > 0:
+            tau += nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx)
 
         external_forces = nlp.get_external_forces(
             "external_forces", states, controls, algebraic_states, numerical_timeseries
@@ -789,8 +745,6 @@ class DynamicsFunctions:
         algebraic_states,
         numerical_timeseries,
         nlp,
-        with_passive_torque: bool = False,
-        with_ligament: bool = False,
     ) -> MX | SX:
         """
         Contact forces of a forward dynamics driven by joint torques with contact constraints.
@@ -811,10 +765,6 @@ class DynamicsFunctions:
             The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
-        with_passive_torque: bool
-            If the dynamic with passive torque should be used
-        with_ligament: bool
-            If the dynamic with ligament should be used
 
         Returns
         ----------
@@ -825,8 +775,10 @@ class DynamicsFunctions:
         qdot = nlp.get_var_from_states_or_controls("qdot", states, controls)
         tau_activations = nlp.get_var_from_states_or_controls("tau", states, controls)
         tau = nlp.model.torque()(tau_activations, q, qdot, nlp.parameters.cx)
-        tau = tau + nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx) if with_passive_torque else tau
-        tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
+        if nlp.model.nb_passive_joint_torques > 0:
+            tau += nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx)
+        if nlp.model.nb_ligaments > 0:
+            tau += nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx)
 
         external_forces = nlp.get_external_forces(
             "external_forces", states, controls, algebraic_states, numerical_timeseries
@@ -842,10 +794,6 @@ class DynamicsFunctions:
         algebraic_states,
         numerical_timeseries,
         nlp,
-        contact_type: list[ContactType] | tuple[ContactType],
-        with_passive_torque: bool = False,
-        with_ligament: bool = False,
-        with_friction: bool = False,
         with_residual_torque: bool = False,
         fatigue=None,
     ) -> DynamicsEvaluation:
@@ -868,14 +816,6 @@ class DynamicsFunctions:
             The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
-        contact_type: list[ContactType] | tuple[ContactType]
-            The type of contacts to consider in the dynamics
-        with_passive_torque: bool
-            If the dynamic with passive torque should be used
-        with_ligament: bool
-            If the dynamic with ligament should be used
-        with_friction: bool
-            If the dynamic with friction should be used
         fatigue: FatigueDynamicsList
             To define fatigue elements
         with_residual_torque: bool
@@ -928,9 +868,12 @@ class DynamicsFunctions:
         muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations, fatigue_states)
 
         tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
-        tau = tau + nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx) if with_passive_torque else tau
-        tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
-        tau = tau - nlp.model.friction_coefficients @ qdot if with_friction else tau
+        if nlp.model.nb_passive_joint_torques > 0:
+            tau += nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx)
+        if nlp.model.nb_ligaments > 0:
+            tau += nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx)
+        if nlp.model.friction_coefficients is not None:
+            tau -= nlp.model.friction_coefficients @ qdot
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
 
@@ -938,7 +881,7 @@ class DynamicsFunctions:
             "external_forces", states, controls, algebraic_states, numerical_timeseries
         )
 
-        forward_dynamics_contact_type = ContactType.get_equivalent_explicit_contacts(contact_type)
+        forward_dynamics_contact_type = ContactType.get_equivalent_explicit_contacts(nlp.model.contact_type)
         ddq_fd = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, forward_dynamics_contact_type, external_forces)
         dxdt = vertcat(dq, ddq_fd)
 
@@ -958,7 +901,7 @@ class DynamicsFunctions:
             slopes = vertcat(slope_q, slope_qdot)
 
             if DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS in nlp.dynamics_type.ode_solver.defects_type:
-                ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, contact_type, external_forces)
+                ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, nlp.model.contact_type, external_forces)
                 derivative = vertcat(dq, ddq)
 
                 if has_excitation:
@@ -982,7 +925,7 @@ class DynamicsFunctions:
                     q=q,
                     qdot=qdot,
                     qddot=slope_qdot,
-                    contact_type=contact_type,
+                    contact_type=nlp.model.contact_type,
                     external_forces=external_forces,
                 )
                 dq_defects = qdot - DynamicsFunctions.compute_qdot(nlp, q, slope_q)
@@ -1013,8 +956,6 @@ class DynamicsFunctions:
         algebraic_states,
         numerical_timeseries,
         nlp,
-        with_passive_torque: bool = False,
-        with_ligament: bool = False,
     ) -> MX | SX:
         """
         Contact forces of a forward dynamics driven by muscles activations and joint torques with contact constraints.
@@ -1035,10 +976,6 @@ class DynamicsFunctions:
             The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
-        with_passive_torque: bool
-            If the dynamic with passive torque should be used
-        with_ligament: bool
-            If the dynamic with ligament should be used
 
         Returns
         ----------
@@ -1053,8 +990,10 @@ class DynamicsFunctions:
         muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations)
 
         tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
-        tau = tau + nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx) if with_passive_torque else tau
-        tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
+        if nlp.model.nb_passive_joint_torques > 0:
+            tau += nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx)
+        if nlp.model.nb_ligaments > 0:
+            tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx)
 
         external_forces = nlp.get_external_forces(
             "external_forces", states, controls, algebraic_states, numerical_timeseries
@@ -1176,7 +1115,7 @@ class DynamicsFunctions:
 
     @staticmethod
     def get_external_forces_from_contacts(
-        nlp, q, qdot, contact_type: list[ContactType] | tuple[ContactType], external_forces: MX | SX
+        nlp, q, qdot, contact_type, external_forces: MX | SX
     ):
 
         external_forces = nlp.cx() if external_forces is None else external_forces
@@ -1216,7 +1155,7 @@ class DynamicsFunctions:
         q: MX | SX,
         qdot: MX | SX,
         tau: MX | SX,
-        contact_type: list[ContactType] | tuple[ContactType] | tuple[ContactType],
+        contact_type: list[ContactType] | tuple[ContactType],
         external_forces: MX | SX = None,
     ):
         """

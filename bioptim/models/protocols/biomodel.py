@@ -94,6 +94,14 @@ class BioModel(Protocol):
         return -1
 
     @property
+    def nb_ligaments(self) -> int:
+        return -1
+
+    @property
+    def nb_passive_joint_torques(self) -> int:
+        return -1
+
+    @property
     def segments(self) -> AnyTuple:
         """Get all segments"""
         return ()

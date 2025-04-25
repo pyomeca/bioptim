@@ -123,11 +123,11 @@ def prepare_test_ocp(
         if with_external_forces:
             bio_model = BiorbdModel(
                 bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod",
+                contact_type=[ContactType.RIGID_EXPLICIT],
                 external_force_set=external_forces,
             )
             dynamics.add(
                 DynamicsFcn.TORQUE_DRIVEN,
-                contact_type=[ContactType.RIGID_EXPLICIT],
                 expand_dynamics=True,
                 phase_dynamics=phase_dynamics,
                 numerical_data_timeseries=numerical_time_series,
@@ -135,10 +135,10 @@ def prepare_test_ocp(
         else:
             bio_model = BiorbdModel(
                 bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod",
+                contact_type=[ContactType.RIGID_EXPLICIT],
             )
             dynamics.add(
                 DynamicsFcn.TORQUE_DRIVEN,
-                contact_type=[ContactType.RIGID_EXPLICIT],
                 expand_dynamics=True,
                 phase_dynamics=phase_dynamics,
             )

@@ -132,7 +132,6 @@ class ConfigureProblem:
             ocp,
             nlp,
             numerical_data_timeseries=nlp.dynamics_type.numerical_data_timeseries,
-            contact_type=nlp.dynamics_type.contact_type,
             **nlp.dynamics_type.extra_parameters,
         )
 
@@ -155,10 +154,6 @@ class ConfigureProblem:
     def torque_driven(
         ocp,
         nlp,
-        contact_type: list[ContactType] | tuple[ContactType] = (),
-        with_passive_torque: bool = False,
-        with_ligament: bool = False,
-        with_friction: bool = False,
         fatigue: FatigueList = None,
         numerical_data_timeseries: dict[str, np.ndarray] = None,
     ):
@@ -171,21 +166,11 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        contact_type: list[ContactType] | tuple[ContactType]
-            The type of contacts to consider in the dynamics
-        with_passive_torque: bool
-            If the dynamic with passive torque should be used
-        with_ligament: bool
-            If the dynamic with ligament should be used
-        with_friction: bool
-            If the dynamic with joint friction should be used (friction = coefficients * qdot)
         fatigue: FatigueList
             A list of fatigue elements
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
-
-        _check_contacts_in_biomodel(contact_type, nlp.model, nlp.phase_idx)
 
         # Declared rigidbody states and controls
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
@@ -193,7 +178,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True, fatigue=fatigue)
         ConfigureProblem.configure_qddot(ocp, nlp, as_states=False, as_controls=False)
 
-        ConfigureProblem.configure_contacts(ocp, nlp, contact_type, DynamicsFunctions.forces_from_torque_driven)
+        ConfigureProblem.configure_contacts(ocp, nlp, nlp.model.contact_type, DynamicsFunctions.forces_from_torque_driven)
 
         # Configure the actual ODE of the dynamics
         if nlp.dynamics_type.dynamic_function:
@@ -203,21 +188,13 @@ class ConfigureProblem:
                 ocp,
                 nlp,
                 DynamicsFunctions.torque_driven,
-                contact_type=contact_type,
                 fatigue=fatigue,
-                with_passive_torque=with_passive_torque,
-                with_ligament=with_ligament,
-                with_friction=with_friction,
             )
 
     @staticmethod
     def torque_driven_free_floating_base(
         ocp,
         nlp,
-        contact_type: list[ContactType] | tuple[ContactType],
-        with_passive_torque: bool = False,
-        with_ligament: bool = False,
-        with_friction: bool = False,
         numerical_data_timeseries: dict[str, np.ndarray] = None,
     ):
         """
@@ -232,19 +209,9 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        contact_type: list[ContactType] | tuple[ContactType]
-            The type of contacts to consider in the dynamics
-        with_passive_torque: bool
-            If the dynamic with passive torque should be used
-        with_ligament: bool
-            If the dynamic with ligament should be used
-        with_friction: bool
-            If the dynamic with joint friction should be used (friction = coefficients * qdot)
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node.
         """
-        if len(contact_type) > 0:
-            raise RuntimeError("free floating base dynamics cannot be used with contacts by definition.")
 
         nb_q = nlp.model.nb_q
         nb_qdot = nlp.model.nb_qdot
@@ -309,9 +276,6 @@ class ConfigureProblem:
                 ocp,
                 nlp,
                 DynamicsFunctions.torque_driven_free_floating_base,
-                with_passive_torque=with_passive_torque,
-                with_ligament=with_ligament,
-                with_friction=with_friction,
             )
 
     @staticmethod
@@ -319,8 +283,6 @@ class ConfigureProblem:
         ocp,
         nlp,
         problem_type,
-        contact_type: list[ContactType] | tuple[ContactType] = (),
-        with_friction: bool = False,
         with_cholesky: bool = False,
         initial_matrix: DM = None,
         numerical_data_timeseries: dict[str, np.ndarray] = None,
@@ -334,10 +296,6 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        contact_type: list[ContactType] | tuple[ContactType]
-            The type of contacts to consider in the dynamics
-        with_friction: bool
-            If the dynamic with joint friction should be used (friction = coefficient * qdot)
         with_cholesky: bool
             If the Cholesky decomposition should be used for the covariance matrix.
         initial_matrix: DM
@@ -381,16 +339,12 @@ class ConfigureProblem:
         ConfigureProblem.torque_driven(
             ocp=ocp,
             nlp=nlp,
-            contact_type=contact_type,
-            with_friction=with_friction,
         )
 
         ConfigureProblem.configure_dynamics_function(
             ocp,
             nlp,
             DynamicsFunctions.stochastic_torque_driven,
-            contact_type=contact_type,
-            with_friction=with_friction,
         )
 
     @staticmethod
@@ -398,11 +352,9 @@ class ConfigureProblem:
         ocp,
         nlp,
         problem_type,
-        with_friction: bool = False,
         with_cholesky: bool = False,
         initial_matrix: DM = None,
         numerical_data_timeseries: dict[str, np.ndarray] = None,
-        contact_type: list[ContactType] | tuple[ContactType] = (),
     ):
         """
         Configure the dynamics for a stochastic torque driven program with a free floating base.
@@ -414,10 +366,6 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        contact_type: list[ContactType] | tuple[ContactType]
-            The type of contacts to consider in the dynamics
-        with_friction: bool
-            If the dynamic with joint friction should be used (friction = coefficient * qdot)
         with_cholesky: bool
             If the Cholesky decomposition should be used for the covariance matrix.
         initial_matrix: DM
@@ -425,9 +373,6 @@ class ConfigureProblem:
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node.
         """
-        if len(contact_type) > 0:
-            raise RuntimeError("free floating base dynamics cannot be used with contacts by definition.")
-
         n_noised_tau = nlp.model.n_noised_controls
         n_noise = nlp.model.motor_noise_magnitude.shape[0] + nlp.model.sensory_noise_magnitude.shape[0]
         n_noised_states = nlp.model.n_noised_states
@@ -460,24 +405,18 @@ class ConfigureProblem:
         ConfigureProblem.torque_driven_free_floating_base(
             ocp=ocp,
             nlp=nlp,
-            with_friction=with_friction,
         )
 
         ConfigureProblem.configure_dynamics_function(
             ocp,
             nlp,
             DynamicsFunctions.stochastic_torque_driven_free_floating_base,
-            with_friction=with_friction,
         )
 
     @staticmethod
     def torque_derivative_driven(
         ocp,
         nlp,
-        contact_type: list[ContactType] | tuple[ContactType] = (),
-        with_passive_torque: bool = False,
-        with_ligament: bool = False,
-        with_friction: bool = False,
         numerical_data_timeseries: dict[str, np.ndarray] = None,
     ):
         """
@@ -489,26 +428,16 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        contact_type: list[ContactType] | tuple[ContactType]
-            The type of contacts to consider in the dynamics
-        with_passive_torque: bool
-            If the dynamic with passive torque should be used
-        with_ligament: bool
-            If the dynamic with ligament should be used
-        with_friction: bool
-            If the dynamic with joint friction should be used (friction = - coefficient * qdot)
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
 
         """
-        _check_contacts_in_biomodel(contact_type, nlp.model, nlp.phase_idx)
-
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_tau(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_taudot(ocp, nlp, as_states=False, as_controls=True)
 
-        ConfigureProblem.configure_contacts(ocp, nlp, contact_type, DynamicsFunctions.forces_from_torque_driven)
+        ConfigureProblem.configure_contacts(ocp, nlp, nlp.model.contact_type, DynamicsFunctions.forces_from_torque_driven)
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
@@ -517,20 +446,13 @@ class ConfigureProblem:
                 ocp,
                 nlp,
                 DynamicsFunctions.torque_derivative_driven,
-                contact_type=contact_type,
-                with_passive_torque=with_passive_torque,
-                with_ligament=with_ligament,
-                with_friction=with_friction,
             )
 
     @staticmethod
     def torque_activations_driven(
         ocp,
         nlp,
-        contact_type: list[ContactType] | tuple[ContactType] = (),
-        with_passive_torque: bool = False,
         with_residual_torque: bool = False,
-        with_ligament: bool = False,
         numerical_data_timeseries: dict[str, np.ndarray] = None,
     ):
         """
@@ -544,20 +466,11 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        contact_type: list[ContactType] | tuple[ContactType]
-            The type of contacts to consider in the dynamics
-        with_passive_torque: bool
-            If the dynamic with passive torque should be used
         with_residual_torque: bool
             If the dynamic with a residual torque should be used
-        with_ligament: bool
-            If the dynamic with ligament should be used
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
-
-        _check_contacts_in_biomodel(contact_type, nlp.model, nlp.phase_idx)
-
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
@@ -566,7 +479,7 @@ class ConfigureProblem:
             ConfigureProblem.configure_residual_tau(ocp, nlp, as_states=False, as_controls=True)
 
         ConfigureProblem.configure_contacts(
-            ocp, nlp, contact_type, DynamicsFunctions.forces_from_torque_activation_driven
+            ocp, nlp, nlp.model.contact_type, DynamicsFunctions.forces_from_torque_activation_driven
         )
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
@@ -575,10 +488,7 @@ class ConfigureProblem:
                 ocp,
                 nlp,
                 DynamicsFunctions.torque_activations_driven,
-                contact_type=contact_type,
-                with_passive_torque=with_passive_torque,
                 with_residual_torque=with_residual_torque,
-                with_ligament=with_ligament,
             )
 
     @staticmethod
@@ -586,7 +496,6 @@ class ConfigureProblem:
         ocp,
         nlp,
         numerical_data_timeseries: dict[str, np.ndarray] = None,
-        contact_type: list[ContactType] | tuple[ContactType] = (),
     ):
         """
         Configure the dynamics for a joints acceleration driven program
@@ -601,10 +510,6 @@ class ConfigureProblem:
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
-
-        if len(contact_type) > 0:
-            raise RuntimeError("joints acceleration driven dynamics cannot be used with contacts by definition.")
-
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
         # Configure qddot joints
@@ -631,10 +536,6 @@ class ConfigureProblem:
         with_excitations: bool = False,
         fatigue: FatigueList = None,
         with_residual_torque: bool = False,
-        contact_type: list[ContactType] | tuple[ContactType] = (),
-        with_passive_torque: bool = False,
-        with_ligament: bool = False,
-        with_friction: bool = False,
         numerical_data_timeseries: dict[str, np.ndarray] = None,
     ):
         """
@@ -656,19 +557,9 @@ class ConfigureProblem:
             The list of fatigue parameters
         with_residual_torque: bool
             If the dynamic should be added with residual torques
-        contact_type: list[ContactType] | tuple[ContactType]
-            The type of contacts to consider in the dynamics
-        with_passive_torque: bool
-            If the dynamic with passive torque should be used
-        with_ligament: bool
-            If the dynamic with ligament should be used
-        with_friction: bool
-            If the dynamic with joint friction should be used (friction = coefficients * qdot)
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
-        _check_contacts_in_biomodel(contact_type, nlp.model, nlp.phase_idx)
-
         if fatigue is not None and "tau" in fatigue and not with_residual_torque:
             raise RuntimeError("Residual torques need to be used to apply fatigue on torques")
 
@@ -680,7 +571,7 @@ class ConfigureProblem:
             ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True, fatigue=fatigue)
         ConfigureProblem.configure_muscles(ocp, nlp, with_excitations, as_controls=True, fatigue=fatigue)
 
-        ConfigureProblem.configure_contacts(ocp, nlp, contact_type, DynamicsFunctions.forces_from_muscle_driven)
+        ConfigureProblem.configure_contacts(ocp, nlp, nlp.model.contact_type, DynamicsFunctions.forces_from_muscle_driven)
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
@@ -689,12 +580,8 @@ class ConfigureProblem:
                 ocp,
                 nlp,
                 DynamicsFunctions.muscles_driven,
-                contact_type=contact_type,
                 fatigue=fatigue,
                 with_residual_torque=with_residual_torque,
-                with_passive_torque=with_passive_torque,
-                with_ligament=with_ligament,
-                with_friction=with_friction,
             )
 
     @staticmethod
@@ -702,7 +589,6 @@ class ConfigureProblem:
         ocp,
         nlp,
         numerical_data_timeseries: dict[str, np.ndarray] = None,
-        contact_type: list[ContactType] | tuple[ContactType] = (),
     ):
         """
         Tell the program which variables are states and controls.
@@ -715,8 +601,6 @@ class ConfigureProblem:
             A reference to the phase
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node.
-        contact_type: list[ContactType] | tuple[ContactType]
-            The type of contacts to consider in the dynamics.
         """
 
         name = "q_u"
@@ -726,9 +610,9 @@ class ConfigureProblem:
             names_u,
             ocp,
             nlp,
-            True,
-            False,
-            False,
+            as_states=True,
+            as_controls=False,
+            as_algebraic_states=False,
             # NOTE: not ready for phase mapping yet as it is based on dofnames of the class BioModel
             # see _set_kinematic_phase_mapping method
             # axes_idx=ConfigureProblem._apply_phase_mapping(ocp, nlp, name),
@@ -742,9 +626,9 @@ class ConfigureProblem:
             names_udot,
             ocp,
             nlp,
-            True,
-            False,
-            False,
+            as_states=True,
+            as_controls=False,
+            as_algebraic_states=False,
             # NOTE: not ready for phase mapping yet as it is based on dofnames of the class BioModel
             # see _set_kinematic_phase_mapping method
             # axes_idx=ConfigureProblem._apply_phase_mapping(ocp, nlp, name),
@@ -1998,7 +1882,6 @@ class Dynamics(OptionGeneric):
         phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
         ode_solver: OdeSolver | OdeSolverBase = OdeSolver.RK4(),
         numerical_data_timeseries: dict[str, np.ndarray] = None,
-        contact_type: list[ContactType] | tuple[ContactType] = (),
         **extra_parameters: Any,
     ):
         """
@@ -2023,8 +1906,6 @@ class Dynamics(OptionGeneric):
             The integrator to use to integrate this dynamics.
         numerical_data_timeseries: dict[str, np.ndarray]
             The numerical timeseries at each node. ex: the experimental external forces data should go here.
-        contact_type: list[ContactType] | tuple[ContactType]
-            The type of contact to consider in the dynamics
         """
 
         configure = None
@@ -2054,7 +1935,6 @@ class Dynamics(OptionGeneric):
         self.phase_dynamics = phase_dynamics
         self.ode_solver = ode_solver
         self.numerical_data_timeseries = numerical_data_timeseries
-        self.contact_type = contact_type
 
 
 class DynamicsList(UniquePerPhaseOptionList):
@@ -2107,34 +1987,3 @@ def _check_numerical_timeseries_format(numerical_timeseries: np.ndarray, n_shoot
             f"The numerical_data_timeseries should be of format dict[str, np.ndarray] "
             f"where the list is the number of shooting points of the phase "
         )
-
-
-def _check_contacts_in_biomodel(contact_type: list[ContactType] | tuple[ContactType], model: BioModel, phase_idx: int):
-
-    # Check rigid contacts
-    if (
-        ContactType.RIGID_EXPLICIT in contact_type or ContactType.RIGID_IMPLICIT in contact_type
-    ) and model.nb_contacts == 0:
-        raise ValueError(
-            f"No rigid contact defined in the .bioMod of phase {phase_idx}, consider changing the ContactType."
-        )
-
-    # Check soft contacts
-    if (
-        ContactType.SOFT_EXPLICIT in contact_type or ContactType.SOFT_IMPLICIT in contact_type
-    ) and model.nb_soft_contacts == 0:
-        raise ValueError(
-            f"No soft contact defined in the .bioMod of phase {phase_idx}, consider changing the ContactType."
-        )
-
-    # Check that contacts are a list or tuple of ContactType
-    if not isinstance(contact_type, (list, tuple)):
-        raise TypeError("contact_type should be a list or a tuple")
-    for elt in contact_type:
-        if not isinstance(elt, ContactType):
-            raise TypeError(f"contact_type should be a list or a tuple of ContactType, not {type(elt)}")
-
-    # Check that contact types are not declared at the same time
-    if len(contact_type) > 1:
-        raise NotImplementedError("It is not possible to use multiple ContactType at the same time yet.")
-
