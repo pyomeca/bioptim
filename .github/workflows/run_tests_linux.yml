@@ -27,7 +27,7 @@ jobs:
 
       - name: Setup environment
         run: |
-          mamba env create -f environment.yml
+          mamba create -f environment.yml
 
       - name: Print mamba info
         run: |
