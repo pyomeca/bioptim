@@ -93,7 +93,7 @@ class IpoptInterface(SolverInterface):
 
         generic_online_optim(self, ocp, show_options)
 
-    def solve(self, expand_during_shake_tree) -> AnyDict:
+    def solve(self, expand_during_shake_tree: Bool) -> AnyDict:
         """
         Solve the prepared ocp
 
@@ -103,7 +103,7 @@ class IpoptInterface(SolverInterface):
         """
         return generic_solve(self, expand_during_shake_tree)
 
-    def set_lagrange_multiplier(self, sol: Solution):
+    def set_lagrange_multiplier(self, sol: Solution) -> None:
         """
         Set the lagrange multiplier from a solution structure
 

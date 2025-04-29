@@ -107,8 +107,8 @@ class IPOPT(GenericSolver):
     _warm_start_bound_push: Float = 0.001
     _warm_start_slack_bound_frac: Float = 0.001
     _warm_start_bound_frac: Float = 0.001
-    _bound_push: float = 0.01
-    _bound_frac: float = 0.01
+    _bound_push: Float = 0.01
+    _bound_frac: Float = 0.01
     _print_level: Int = 5
     _c_compile: Bool = False
     _check_derivatives_for_naninf: Str = "no"  # "yes"
@@ -213,93 +213,93 @@ class IPOPT(GenericSolver):
     def check_derivatives_for_naninf(self) -> Bool:
         return self._check_derivatives_for_naninf
 
-    def set_tol(self, val: Float):
+    def set_tol(self, val: Float) -> None:
         self._tol = val
 
-    def set_dual_inf_tol(self, val: Float):
+    def set_dual_inf_tol(self, val: Float) -> None:
         self._dual_inf_tol = val
 
-    def set_constr_viol_tol(self, val: Float):
+    def set_constr_viol_tol(self, val: Float) -> None:
         self._constr_viol_tol = val
 
-    def set_compl_inf_tol(self, val: Float):
+    def set_compl_inf_tol(self, val: Float) -> None:
         self._compl_inf_tol = val
 
-    def set_acceptable_tol(self, val: Float):
+    def set_acceptable_tol(self, val: Float) -> None:
         self._acceptable_tol = val
 
-    def set_acceptable_dual_inf_tol(self, val: Float):
+    def set_acceptable_dual_inf_tol(self, val: Float) -> None:
         self._acceptable_dual_inf_tol = val
 
-    def set_acceptable_constr_viol_tol(self, val: Float):
+    def set_acceptable_constr_viol_tol(self, val: Float) -> None:
         self._acceptable_constr_viol_tol = val
 
-    def set_acceptable_compl_inf_tol(self, val: Float):
+    def set_acceptable_compl_inf_tol(self, val: Float) -> None:
         self._acceptable_compl_inf_tol = val
 
-    def set_maximum_iterations(self, num: Int):
+    def set_maximum_iterations(self, num: Int) -> None:
         self._max_iter = num
 
-    def set_hessian_approximation(self, val: Str):
+    def set_hessian_approximation(self, val: Str) -> None:
         self._hessian_approximation = val
 
-    def set_nlp_scaling_method(self, val: Str):
+    def set_nlp_scaling_method(self, val: Str) -> None:
         self._nlp_scaling_method = val
 
-    def set_limited_memory_max_history(self, num: Int):
+    def set_limited_memory_max_history(self, num: Int) -> None:
         self._limited_memory_max_history = num
 
-    def set_linear_solver(self, val: Str):
+    def set_linear_solver(self, val: Str) -> None:
         self._linear_solver = val
 
-    def set_mu_init(self, val: Float):
+    def set_mu_init(self, val: Float) -> None:
         self._mu_init = val
 
-    def set_warm_start_init_point(self, val: Str):
+    def set_warm_start_init_point(self, val: Str) -> None:
         self._warm_start_init_point = val
 
-    def set_warm_start_mult_bound_push(self, val: Float):
+    def set_warm_start_mult_bound_push(self, val: Float) -> None:
         self._warm_start_mult_bound_push = val
 
-    def set_warm_start_slack_bound_push(self, val: Float):
+    def set_warm_start_slack_bound_push(self, val: Float) -> None:
         self._warm_start_slack_bound_push = val
 
-    def set_warm_start_bound_push(self, val: Float):
+    def set_warm_start_bound_push(self, val: Float) -> None:
         self._warm_start_bound_push = val
 
-    def set_warm_start_slack_bound_frac(self, val: Float):
+    def set_warm_start_slack_bound_frac(self, val: Float) -> None:
         self._warm_start_slack_bound_frac = val
 
-    def set_warm_start_bound_frac(self, val: Float):
+    def set_warm_start_bound_frac(self, val: Float) -> None:
         self._warm_start_bound_frac = val
 
-    def set_bound_push(self, val: Float):
+    def set_bound_push(self, val: Float) -> None:
         self._bound_push = val
 
-    def set_bound_frac(self, val: Float):
+    def set_bound_frac(self, val: Float) -> None:
         self._bound_frac = val
 
-    def set_print_level(self, num: Int):
+    def set_print_level(self, num: Int) -> None:
         self._print_level = num
 
-    def set_c_compile(self, val: Bool):
+    def set_c_compile(self, val: Bool) -> None:
         self._c_compile = val
 
-    def set_check_derivatives_for_naninf(self, val: Bool):
+    def set_check_derivatives_for_naninf(self, val: Bool) -> None:
         string_val = "yes" if val else "no"
         self._check_derivatives_for_naninf = string_val
 
-    def set_convergence_tolerance(self, val: Float):
+    def set_convergence_tolerance(self, val: Float) -> None:
         self._tol = val
         self._compl_inf_tol = val
         self._acceptable_tol = val
         self._acceptable_compl_inf_tol = val
 
-    def set_constraint_tolerance(self, val: Float):
+    def set_constraint_tolerance(self, val: Float) -> None:
         self._constr_viol_tol = val
         self._acceptable_constr_viol_tol = val
 
-    def set_warm_start_options(self, val: Float = 1e-10):
+    def set_warm_start_options(self, val: Float = 1e-10) -> None:
         """
         This function set global warm start options
 
@@ -317,7 +317,7 @@ class IPOPT(GenericSolver):
         self._warm_start_slack_bound_frac = val
         self._warm_start_bound_frac = val
 
-    def set_initialization_options(self, val: Float):
+    def set_initialization_options(self, val: Float) -> None:
         """
         This function set global initialization options
 
@@ -329,7 +329,7 @@ class IPOPT(GenericSolver):
         self._bound_push = val
         self._bound_frac = val
 
-    def set_option_unsafe(self, val: Any, name: Str):
+    def set_option_unsafe(self, val: Any, name: Str) -> None:
         """
         This function is unsafe because we did not check if the option exist in the solver option list.
         If it's not it just will be ignored. Please make sure that the option you're asking for exist.

@@ -5,8 +5,8 @@ from casadi import vertcat
 from scipy.integrate import solve_ivp
 from scipy.interpolate import interp1d
 
+from ..optimization.non_linear_program import NonLinearProgram
 from ..misc.enums import Shooting, ControlType, SolutionIntegrator
-
 from ..misc.parameters_types import (
     NpArrayList,
     NpArray,
@@ -17,7 +17,7 @@ from ..misc.parameters_types import (
 def solve_ivp_interface(
     list_of_dynamics: list[Callable],
     shooting_type: Shooting,
-    nlp,
+    nlp: NonLinearProgram,
     t: NpArrayList,
     x: NpArrayList,
     u: NpArrayList,

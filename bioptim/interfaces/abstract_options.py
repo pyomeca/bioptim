@@ -25,7 +25,7 @@ class GenericSolver(ABC):
     type: SolverType = SolverType.NONE
 
     @abstractmethod
-    def set_convergence_tolerance(self, tol: Float):
+    def set_convergence_tolerance(self, tol: Float) -> None:
         """
         This function set the convergence tolerance
 
@@ -36,7 +36,7 @@ class GenericSolver(ABC):
         """
 
     @abstractmethod
-    def set_constraint_tolerance(self, tol: Float):
+    def set_constraint_tolerance(self, tol: Float) -> None:
         """
         This function set the constraint tolerance.
 
@@ -47,7 +47,7 @@ class GenericSolver(ABC):
         """
 
     @abstractmethod
-    def set_maximum_iterations(self, num: Int):
+    def set_maximum_iterations(self, num: Int) -> None:
         """
         This function set the number of maximal iterations.
 
@@ -69,7 +69,7 @@ class GenericSolver(ABC):
         """
 
     @abstractmethod
-    def set_print_level(self, num: Int):
+    def set_print_level(self, num: Int) -> None:
         """
         This function set Output verbosity level.
 

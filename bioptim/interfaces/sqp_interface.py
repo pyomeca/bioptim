@@ -17,6 +17,7 @@ from ..optimization.non_linear_program import NonLinearProgram
 
 from ..misc.parameters_types import (
     Bool,
+    AnyDict,
     AnyDictOptional,
     CX,
 )
@@ -90,7 +91,7 @@ class SQPInterface(SolverInterface):
         """
         generic_online_optim(self, ocp, show_options)
 
-    def solve(self, expand_during_shake_tree) -> dict:
+    def solve(self, expand_during_shake_tree) -> AnyDict:
         """
         Solve the prepared ocp
 
@@ -100,7 +101,7 @@ class SQPInterface(SolverInterface):
         """
         return generic_solve(self, expand_during_shake_tree)
 
-    def set_lagrange_multiplier(self, sol: Solution):
+    def set_lagrange_multiplier(self, sol: Solution) -> None:
         """
         Set the lagrange multiplier from a solution structure
 
@@ -131,7 +132,7 @@ class SQPInterface(SolverInterface):
         """
         return generic_dispatch_obj_func(self)
 
-    def get_all_penalties(self, nlp: NonLinearProgram, penalties):
+    def get_all_penalties(self, nlp: NonLinearProgram, penalties) -> CX:
         """
         Parse the penalties of the full ocp to a SQP-friendly one
 

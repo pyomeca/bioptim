@@ -68,6 +68,7 @@ NpArrayOptional: TypeAlias = np.ndarray | None
 AnyTuple: TypeAlias = tuple[Any, ...]
 IntTuple: TypeAlias = tuple[int, ...]
 DoubleIntTuple: TypeAlias = tuple[int, int]
+DoubleNpArrayTuple: TypeAlias = tuple[np.ndarray, np.ndarray]
 StrTuple: TypeAlias = tuple[str, ...]
 
 IntStrorIterable: TypeAlias = int | str | AnyIterable

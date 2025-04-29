@@ -5,6 +5,7 @@ from casadi import Importer, Function
 from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 
 from bioptim.optimization.solution.solution import Solution
+from .solver_interface import SolverInterface
 from ..gui.online_callback_multiprocess import OnlineCallbackMultiprocess
 from ..gui.online_callback_multiprocess_server import OnlineCallbackMultiprocessServer
 from ..gui.online_callback_server import OnlineCallbackServer
@@ -19,6 +20,9 @@ from ..misc.parameters_types import (
     Bool,
     AnyDict,
     CX,
+    DoubleNpArrayTuple,
+    Int,
+    Range,
 )
 
 
@@ -52,7 +56,7 @@ def generic_online_optim(interface, ocp, show_options: AnyDictOptional = None):
     interface.options_common["iteration_callback"] = to_call(ocp, **show_options)
 
 
-def generic_solve(interface, expand_during_shake_tree: Bool = False) -> AnyDict:
+def generic_solve(interface: SolverInterface, expand_during_shake_tree: Bool = False) -> AnyDict:
     """
     Solve the prepared ocp
 
@@ -142,7 +146,7 @@ def generic_solve(interface, expand_during_shake_tree: Bool = False) -> AnyDict:
     return interface.out
 
 
-def _shake_tree_for_penalties(ocp, penalties_cx, v, v_bounds, expand: Bool):
+def _shake_tree_for_penalties(ocp, penalties_cx: CX, v: CX, v_bounds: DoubleNpArrayTuple, expand: Bool):
     """
     Remove the dt in the objectives and constraints if they are constant
 
@@ -368,7 +372,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scale
     return out
 
 
-def _get_weighted_function_inputs(penalty, penalty_idx, ocp, nlp, scaled):
+def _get_weighted_function_inputs(penalty, penalty_idx: Int, ocp, nlp: NonLinearProgram, scaled: Bool):
     t0 = PenaltyHelpers.t0(penalty, penalty_idx, lambda p_idx, n_idx: ocp.node_time(phase_idx=p_idx, node_idx=n_idx))
 
     weight = PenaltyHelpers.weight(penalty)
@@ -404,26 +408,26 @@ def _get_weighted_function_inputs(penalty, penalty_idx, ocp, nlp, scaled):
     return t0, x, u, p, a, d, weight, target
 
 
-def _get_x(ocp, phase_idx, node_idx, subnodes_idx, scaled):
+def _get_x(ocp, phase_idx: Int, node_idx: Int, subnodes_idx: Range, scaled: Bool):
     values = ocp.nlp[phase_idx].X_scaled if scaled else ocp.nlp[phase_idx].X
     return values[node_idx][:, subnodes_idx] if node_idx < len(values) else ocp.cx()
 
 
-def _get_u(ocp, phase_idx, node_idx, subnodes_idx, scaled):
+def _get_u(ocp, phase_idx: Int, node_idx: Int, subnodes_idx: Range, scaled: Bool):
     values = ocp.nlp[phase_idx].U_scaled if scaled else ocp.nlp[phase_idx].U
     return values[node_idx][:, subnodes_idx] if node_idx < len(values) else ocp.cx()
 
 
-def _get_p(ocp, phase_idx, node_idx, subnodes_idx, scaled):
+def _get_p(ocp, phase_idx: Int, node_idx: Int, subnodes_idx: Range, scaled: Bool):
     return ocp.parameters.scaled.cx if scaled else ocp.parameters.scaled
 
 
-def _get_a(ocp, phase_idx, node_idx, subnodes_idx, scaled):
+def _get_a(ocp, phase_idx: Int, node_idx: Int, subnodes_idx: Range, scaled: Bool):
     values = ocp.nlp[phase_idx].A_scaled if scaled else ocp.nlp[phase_idx].A
     return values[node_idx][:, subnodes_idx] if node_idx < len(values) else ocp.cx()
 
 
-def get_numerical_timeseries(ocp, phase_idx, node_idx, subnodes_idx):
+def get_numerical_timeseries(ocp, phase_idx: Int, node_idx: Int, subnodes_idx: Range):
     timeseries = ocp.nlp[phase_idx].numerical_data_timeseries
     if timeseries is None:
         return ocp.cx()

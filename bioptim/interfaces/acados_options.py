@@ -11,6 +11,7 @@ from ..misc.parameters_types import (
     IntorFloat,
     Float,
     StrOptional,
+    StrList,
 )
 
 
@@ -96,14 +97,14 @@ class ACADOS(GenericSolver):
     _acados_model_name: StrOptional = None
 
     @property
-    def qp_solver(self):
+    def qp_solver(self) -> Str:
         return self._qp_solver
 
-    def set_qp_solver(self, val: Str):
+    def set_qp_solver(self, val: Str) -> None:
         self._qp_solver = val
         self.set_only_first_options_has_changed(True)
 
-    def set_option_unsafe(self, val: IntorFloat | Str, name: Str):
+    def set_option_unsafe(self, val: IntorFloat | Str, name: Str) -> None:
         """
         This function is unsafe because we did not check if the option exist in the solver option list.
         If it's not it just will be ignored. Please make sure that the option you're asking for exist.
@@ -114,137 +115,137 @@ class ACADOS(GenericSolver):
             self.set_only_first_options_has_changed(True)
 
     @property
-    def hessian_approx(self):
+    def hessian_approx(self) -> Str:
         return self._hessian_approx
 
-    def set_hessian_approx(self, val: Str):
+    def set_hessian_approx(self, val: Str) -> None:
         self._hessian_approx = val
         self.set_only_first_options_has_changed(True)
 
     @property
-    def integrator_type(self):
+    def integrator_type(self) -> Str:
         return self._integrator_type
 
-    def set_integrator_type(self, val: Str):
+    def set_integrator_type(self, val: Str) -> None:
         self._integrator_type = val
         self.set_only_first_options_has_changed(True)
 
     @property
-    def nlp_solver_type(self):
+    def nlp_solver_type(self) -> Str:
         return self._nlp_solver_type
 
-    def set_nlp_solver_type(self, val: Str):
+    def set_nlp_solver_type(self, val: Str) -> None:
         self._nlp_solver_type = val
         self.set_only_first_options_has_changed(True)
 
     @property
-    def sim_method_newton_iter(self):
+    def sim_method_newton_iter(self) -> Int:
         return self._sim_method_newton_iter
 
-    def set_sim_method_newton_iter(self, val: Int):
+    def set_sim_method_newton_iter(self, val: Int) -> None:
         self._sim_method_newton_iter = val
         self.set_only_first_options_has_changed(True)
 
     @property
-    def sim_method_num_stages(self):
+    def sim_method_num_stages(self) -> Int:
         return self._sim_method_num_stages
 
-    def set_sim_method_num_stages(self, val: Int):
+    def set_sim_method_num_stages(self, val: Int) -> None:
         self._sim_method_num_stages = val
         self.set_only_first_options_has_changed(True)
 
     @property
-    def sim_method_num_steps(self):
+    def sim_method_num_steps(self) -> Int:
         return self._sim_method_num_steps
 
-    def set_sim_method_num_steps(self, val: Int):
+    def set_sim_method_num_steps(self, val: Int) -> None:
         self._sim_method_num_steps = val
         self.set_only_first_options_has_changed(True)
 
     @property
-    def cost_type(self):
+    def cost_type(self) -> Str:
         return self._cost_type
 
-    def set_cost_type(self, val: str):
+    def set_cost_type(self, val: str) -> None:
         self._cost_type = val
 
     @property
-    def constr_type(self):
+    def constr_type(self) -> Str:
         return self._constr_type
 
-    def set_constr_type(self, val: Str):
+    def set_constr_type(self, val: Str) -> None:
         self._constr_type = val
 
     @property
-    def acados_dir(self):
+    def acados_dir(self) -> Str:
         return self._acados_dir
 
-    def set_acados_dir(self, val: Str):
+    def set_acados_dir(self, val: Str) -> None:
         self._acados_dir = val
 
     @property
-    def nlp_solver_tol_comp(self):
+    def nlp_solver_tol_comp(self) -> Float:
         return self._nlp_solver_tol_comp
 
-    def set_nlp_solver_tol_comp(self, val: float):
+    def set_nlp_solver_tol_comp(self, val: float) -> None:
         self._nlp_solver_tol_comp = val
         self._has_tolerance_changed = True
 
     @property
-    def nlp_solver_tol_eq(self):
+    def nlp_solver_tol_eq(self) -> Float:
         return self._nlp_solver_tol_eq
 
-    def set_nlp_solver_tol_eq(self, val: Float):
+    def set_nlp_solver_tol_eq(self, val: Float) -> None:
         self._nlp_solver_tol_eq = val
         self.set_has_tolerance_changed(True)
 
     @property
-    def nlp_solver_tol_ineq(self):
+    def nlp_solver_tol_ineq(self) -> Float:
         return self._nlp_solver_tol_ineq
 
-    def set_nlp_solver_tol_ineq(self, val: Float):
+    def set_nlp_solver_tol_ineq(self, val: Float) -> None:
         self._nlp_solver_tol_ineq = val
         self.set_has_tolerance_changed(True)
 
     @property
-    def nlp_solver_tol_stat(self):
+    def nlp_solver_tol_stat(self) -> Float:
         return self._nlp_solver_tol_stat
 
-    def set_nlp_solver_tol_stat(self, val: Float):
+    def set_nlp_solver_tol_stat(self, val: Float) -> None:
         self._nlp_solver_tol_stat = val
         self.set_has_tolerance_changed(True)
 
-    def set_convergence_tolerance(self, val: IntorFloat):
+    def set_convergence_tolerance(self, val: IntorFloat) -> None:
         self.set_nlp_solver_tol_eq(val)
         self.set_nlp_solver_tol_ineq(val)
         self.set_nlp_solver_tol_comp(val)
         self.set_nlp_solver_tol_stat(val)
         self.set_has_tolerance_changed(True)
 
-    def set_constraint_tolerance(self, val: Float):
+    def set_constraint_tolerance(self, val: Float) -> None:
         self.set_nlp_solver_tol_eq(val)
         self.set_nlp_solver_tol_ineq(val)
         self.set_has_tolerance_changed(True)
 
     @property
-    def has_tolerance_changed(self):
+    def has_tolerance_changed(self) -> Bool:
         return self._has_tolerance_changed
 
-    def set_has_tolerance_changed(self, val: Bool):
+    def set_has_tolerance_changed(self, val: Bool) -> None:
         self._has_tolerance_changed = val
 
     @property
-    def only_first_options_has_changed(self):
+    def only_first_options_has_changed(self) -> Bool:
         return self._only_first_options_has_changed
 
-    def set_only_first_options_has_changed(self, val: Bool):
+    def set_only_first_options_has_changed(self, val: Bool) -> None:
         self._only_first_options_has_changed = val
 
     @property
-    def nlp_solver_max_iter(self):
+    def nlp_solver_max_iter(self) -> Int:
         return self._nlp_solver_max_iter
 
-    def set_maximum_iterations(self, num: Int):
+    def set_maximum_iterations(self, num: Int) -> None:
         self._nlp_solver_max_iter = num
         self.set_only_first_options_has_changed(True)
 
@@ -273,7 +274,7 @@ class ACADOS(GenericSolver):
         return options
 
     @property
-    def print_level(self):
+    def print_level(self) -> Int:
         return self._print_level
 
     @property
@@ -281,28 +282,28 @@ class ACADOS(GenericSolver):
         return self._c_compile
 
     @property
-    def c_generated_code_path(self):
+    def c_generated_code_path(self) -> Str:
         return self._c_generated_code_path
 
     @property
-    def acados_model_name(self):
+    def acados_model_name(self) -> StrOptional:
         return self._acados_model_name
 
-    def set_print_level(self, num: int):
+    def set_print_level(self, num: int) -> None:
         self._print_level = num
         self.set_only_first_options_has_changed(True)
 
-    def set_c_compile(self, val: Bool):
+    def set_c_compile(self, val: Bool) -> None:
         self._c_compile = val
 
-    def set_c_generated_code_path(self, val: Str):
+    def set_c_generated_code_path(self, val: Str) -> None:
         self._c_generated_code_path = val
 
-    def set_acados_model_name(self, val: Str):
+    def set_acados_model_name(self, val: Str) -> None:
         self._acados_model_name = val
 
     @staticmethod
-    def get_tolerance_keys():
+    def get_tolerance_keys() -> StrList:
         return [
             "_nlp_solver_tol_comp",
             "_nlp_solver_tol_eq",
