@@ -27,7 +27,7 @@ jobs:
 
       - name: Setup environment
         run: |
-          conda env create --name bioptim --file environment.yml
+          conda env create -f environment.yml
           conda activate bioptim
 
       - name: Print mamba info
