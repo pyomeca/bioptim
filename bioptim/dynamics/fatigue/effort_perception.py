@@ -3,6 +3,14 @@ from casadi import if_else
 from .muscle_fatigue import MuscleFatigue
 from .tau_fatigue import TauFatigue
 from ...misc.enums import VariableType
+from ...misc.parameters_types import (
+    Bool,
+    Float,
+    Str,
+    IntTuple,
+    StrTuple,
+    AnyTuple,
+)
 
 
 class EffortPerception(MuscleFatigue):
@@ -10,7 +18,7 @@ class EffortPerception(MuscleFatigue):
     A placeholder for fatigue dynamics.
     """
 
-    def __init__(self, effort_threshold: float, effort_factor: float, scaling: float = 1):
+    def __init__(self, effort_threshold: Float, effort_factor: Float, scaling: Float = 1):
         """
         Parameters
         ----------
@@ -27,23 +35,23 @@ class EffortPerception(MuscleFatigue):
         self.effort_factor = effort_factor
 
     @staticmethod
-    def suffix(variable_type: VariableType) -> tuple:
+    def suffix(variable_type: VariableType) -> StrTuple:
         if variable_type == VariableType.STATES:
             return ("mf",)
         else:
             return ("",)
 
     @staticmethod
-    def color() -> tuple:
+    def color() -> StrTuple:
         return ("tab:brown",)
 
-    def default_state_only(self) -> bool:
+    def default_state_only(self) -> Bool:
         return True
 
-    def default_initial_guess(self) -> tuple:
+    def default_initial_guess(self) -> IntTuple:
         return (0,)
 
-    def default_bounds(self, variable_type: VariableType) -> tuple:
+    def default_bounds(self, variable_type: VariableType) -> AnyTuple:
         return (0,), (1,)
 
     def apply_dynamics(self, target_load, *states):
@@ -61,11 +69,11 @@ class EffortPerception(MuscleFatigue):
         return effort_perception_dot
 
     @staticmethod
-    def dynamics_suffix() -> str:
+    def dynamics_suffix() -> Str:
         return ""
 
     @staticmethod
-    def fatigue_suffix() -> str:
+    def fatigue_suffix() -> Str:
         return "mf"
 
 
@@ -89,13 +97,13 @@ class TauEffortPerception(TauFatigue):
         )
 
     @staticmethod
-    def default_state_only():
+    def default_state_only() -> Bool:
         return True
 
     @staticmethod
-    def dynamics_suffix() -> str:
+    def dynamics_suffix() -> Str:
         return "effort"
 
     @staticmethod
-    def fatigue_suffix() -> str:
+    def fatigue_suffix() -> Str:
         return "fatigue"

@@ -5,10 +5,26 @@ from casadi import MX
 
 from ...misc.options import UniquePerPhaseOptionList, OptionDict, OptionGeneric
 from ...misc.enums import VariableType
+from ...misc.parameters_types import (
+    Bool,
+    BoolOptional,
+    Int,
+    Float,
+    Str,
+    IntTuple,
+    StrTuple,
+    AnyTuple,
+    AnyList,
+    AnyDict,
+    AnyIterable,
+    IntOrStr,
+)
 
 
 class FatigueModel(ABC):
-    def __init__(self, scaling: float = 1, state_only: bool = None, apply_to_joint_dynamics: bool = None):
+    def __init__(
+        self, scaling: Float = 1, state_only: BoolOptional = None, apply_to_joint_dynamics: BoolOptional = None
+    ):
         """
         scaling: float
             A scaling factor to apply
@@ -21,65 +37,65 @@ class FatigueModel(ABC):
 
     @staticmethod
     @abstractmethod
-    def type() -> str:
+    def type() -> Str:
         """
         The type of Fatigue
         """
 
     @staticmethod
     @abstractmethod
-    def suffix(variable_type: VariableType) -> tuple:
+    def suffix(variable_type: VariableType) -> AnyTuple:
         """
         The type of Fatigue
         """
 
     @staticmethod
     @abstractmethod
-    def color() -> tuple:
+    def color() -> AnyTuple:
         """
         The coloring when drawn
         """
 
     @abstractmethod
-    def default_state_only(self) -> bool:
+    def default_state_only(self) -> Bool:
         """
         What is the default value for state_only
         """
 
     @abstractmethod
-    def default_apply_to_joint_dynamics(self) -> bool:
+    def default_apply_to_joint_dynamics(self) -> Bool:
         """
         What is the default value for apply_to_joint_dynamics
         """
 
     @abstractmethod
-    def default_initial_guess(self) -> tuple:
+    def default_initial_guess(self) -> AnyTuple:
         """
         The initial guess the fatigue parameters are expected to have
         """
 
     @abstractmethod
-    def default_bounds(self, variable_type: VariableType) -> tuple:
+    def default_bounds(self, variable_type: VariableType) -> AnyTuple:
         """
         The bounds the fatigue parameters are expected to have
         """
 
     @staticmethod
     @abstractmethod
-    def dynamics_suffix() -> str:
+    def dynamics_suffix() -> Str:
         """
         The suffix that is appended to the variable name that describes the dynamics
         """
 
     @staticmethod
     @abstractmethod
-    def fatigue_suffix() -> str:
+    def fatigue_suffix() -> Str:
         """
         The suffix that is appended to the variable name that describes the fatigue
         """
 
     @abstractmethod
-    def dynamics(self, dxdt, nlp, index, states, controls) -> MX:
+    def dynamics(self, dxdt: MX, nlp, index: int, states, controls) -> MX:
         """
         Augment the dxdt vector with the derivative of the fatigue states
 
@@ -116,10 +132,10 @@ class FatigueModel(ABC):
 class MultiFatigueModel(OptionGeneric):
     def __init__(
         self,
-        model: FatigueModel | list,
-        state_only: bool,
-        split_controls: bool = True,
-        apply_to_joint_dynamics: bool = False,
+        model: FatigueModel | AnyList,
+        state_only: Bool,
+        split_controls: Bool = True,
+        apply_to_joint_dynamics: Bool = False,
         **extra_parameters
     ):
         """
@@ -160,32 +176,32 @@ class MultiFatigueModel(OptionGeneric):
         self.split_controls = split_controls
 
     @property
-    def shape(self):
+    def shape(self) -> Int:
         return len(self.models)
 
     @staticmethod
     @abstractmethod
-    def model_type() -> str:
+    def model_type() -> Str:
         """
         The type of Fatigue
         """
 
     @staticmethod
     @abstractmethod
-    def color() -> tuple:
+    def color() -> AnyTuple:
         """
         The color to be draw
         """
 
     @staticmethod
     @abstractmethod
-    def plot_factor() -> tuple:
+    def plot_factor() -> AnyTuple:
         """
         The factor to multiply the plots so it is not one over another
         """
 
     @abstractmethod
-    def suffix(self) -> tuple:
+    def suffix(self) -> AnyTuple:
         """
         The type of Fatigue
         """
@@ -201,14 +217,14 @@ class MultiFatigueModel(OptionGeneric):
         """
         self.models.append(fatigue)
 
-    def dynamics(self, dxdt, nlp, index, states, controls):
+    def dynamics(self, dxdt: MX, nlp, index: Int, states, controls) -> MX:
         for suffix in self.suffix():
             dxdt = self._dynamics_per_suffix(dxdt, suffix, nlp, index, states, controls)
 
         return dxdt
 
     @abstractmethod
-    def _dynamics_per_suffix(self, dxdt, suffix, nlp, index, states, controls):
+    def _dynamics_per_suffix(self, dxdt: MX, suffix, nlp, index: int, states, controls):
         """
 
         Parameters
@@ -246,7 +262,7 @@ class MultiFatigueModel(OptionGeneric):
         """
 
     @abstractmethod
-    def default_bounds(self, index: int, variable_type: VariableType) -> tuple:
+    def default_bounds(self, index: Int, variable_type: VariableType) -> AnyTuple:
         """
         The default bounds for the index element in models
 
@@ -263,7 +279,7 @@ class MultiFatigueModel(OptionGeneric):
         """
 
     @abstractmethod
-    def default_initial_guess(self, index: int, variable_type: VariableType):
+    def default_initial_guess(self, index: Int, variable_type: VariableType) -> Int:
         """
         The default initial guess for the index element in models
 
@@ -279,7 +295,7 @@ class MultiFatigueModel(OptionGeneric):
         The default initial guess
         """
 
-    def _convert_to_models_key(self, item: int | str):
+    def _convert_to_models_key(self, item: IntOrStr):
         """
         Convert the item to a key if self.models is a dictionary, based on suffix() order
 
@@ -299,32 +315,32 @@ class MultiFatigueModel(OptionGeneric):
 
 
 class MultiFatigueInterface(MultiFatigueModel, ABC):
-    def suffix(self) -> tuple:
+    def suffix(self) -> StrTuple:
         return ("fatigue",)
 
-    def default_bounds(self, index: int, variable_type: VariableType) -> tuple:
+    def default_bounds(self, index: Int, variable_type: VariableType) -> AnyTuple:
         return self.models["fatigue"].default_bounds(variable_type)
 
-    def default_initial_guess(self, index: int, variable_type: VariableType):
+    def default_initial_guess(self, index: Int, variable_type: VariableType):
         return self.models["fatigue"].default_initial_guess()
 
-    def _dynamics_per_suffix(self, dxdt, suffix, nlp, index, states, controls):
+    def _dynamics_per_suffix(self, dxdt: MX, suffix, nlp, index: Int, states, controls):
         return self.models["fatigue"].dynamics(dxdt, nlp, index, states, controls)
 
     @staticmethod
-    def color() -> tuple:
+    def color() -> StrTuple:
         return ("tab:orange",)
 
     @staticmethod
-    def plot_factor() -> tuple:
+    def plot_factor() -> IntTuple:
         return (1,)
 
 
 class FatigueUniqueList(UniquePerPhaseOptionList):
-    def print(self):
+    def print(self) -> None:
         NotImplementedError("FatigueUniqueList cannot be printed")
 
-    def __init__(self, suffix: list | tuple):
+    def __init__(self, suffix: AnyIterable):
         """
         Parameters
         ----------
@@ -351,7 +367,7 @@ class FatigueUniqueList(UniquePerPhaseOptionList):
             raise StopIteration
         return self.options[self._iter_idx - 1][0] if self.options[self._iter_idx - 1] else None
 
-    def dynamics(self, dxdt, nlp, states, controls):
+    def dynamics(self, dxdt: MX, nlp, states, controls) -> MX:
         for i, elt in enumerate(self):
             dxdt = elt.models.dynamics(dxdt, nlp, i, states, controls)
         return dxdt
@@ -361,10 +377,10 @@ class FatigueList(OptionDict):
     def add(
         self,
         model: FatigueModel | MultiFatigueModel,
-        index: int = -1,
-        state_only: bool = None,
-        apply_to_joint_dynamics: bool = None,
-    ):
+        index: Int = -1,
+        state_only: BoolOptional = None,
+        apply_to_joint_dynamics: BoolOptional = None,
+    ) -> None:
         """
         Add a muscle to the dynamic list
 
@@ -394,14 +410,14 @@ class FatigueList(OptionDict):
 
         self.options[0][model.model_type()].add(model=model, phase=index)
 
-    def dynamics(self, dxdt, nlp, index, states, controls):
+    def dynamics(self, dxdt: MX, nlp, index: Int, states, controls):
         raise NotImplementedError("FatigueDynamics is abstract")
 
-    def __contains__(self, item):
+    def __contains__(self, item) -> Bool:
         return item in self.options[0]
 
-    def __getitem__(self, item: int | str | list | tuple) -> dict | FatigueUniqueList:
+    def __getitem__(self, item: Int | Str | AnyIterable) -> AnyDict | FatigueUniqueList:
         return super(FatigueList, self).__getitem__(item)
 
-    def print(self):
+    def print(self) -> None:
         raise NotImplementedError("Printing is not implemented yet for FatigueList")

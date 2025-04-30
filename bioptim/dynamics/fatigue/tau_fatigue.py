@@ -1,10 +1,18 @@
 from abc import abstractmethod
 
-from casadi import if_else, lt, gt
+from casadi import if_else, lt, gt, MX
 
 from .fatigue_dynamics import MultiFatigueModel, FatigueModel
 from ..dynamics_functions import DynamicsFunctions
 from ...misc.enums import VariableType
+from ...misc.parameters_types import (
+    Bool,
+    Int,
+    Str,
+    StrTuple,
+    DoubleIntTuple,
+    AnyTuple,
+)
 
 
 class TauFatigue(MultiFatigueModel):
@@ -16,8 +24,8 @@ class TauFatigue(MultiFatigueModel):
         self,
         minus: FatigueModel,
         plus: FatigueModel,
-        state_only: bool = True,
-        apply_to_joint_dynamics: bool = False,
+        state_only: Bool = True,
+        apply_to_joint_dynamics: Bool = False,
         **kwargs,
     ):
         """
@@ -37,24 +45,24 @@ class TauFatigue(MultiFatigueModel):
             [minus, plus], state_only=state_only, apply_to_joint_dynamics=apply_to_joint_dynamics, **kwargs
         )
 
-    def suffix(self) -> tuple:
+    def suffix(self) -> StrTuple:
         return "minus", "plus"
 
     @staticmethod
-    def model_type() -> str:
+    def model_type() -> Str:
         return "tau"
 
     @staticmethod
-    def color() -> tuple:
+    def color() -> StrTuple:
         return "tab:orange", "tab:green"
 
     @staticmethod
-    def plot_factor() -> tuple:
+    def plot_factor() -> DoubleIntTuple:
         return -1, 1
 
     @staticmethod
     @abstractmethod
-    def dynamics_suffix() -> str:
+    def dynamics_suffix() -> Str:
         """
         Returns
         -------
@@ -63,12 +71,12 @@ class TauFatigue(MultiFatigueModel):
 
     @staticmethod
     @abstractmethod
-    def fatigue_suffix() -> str:
+    def fatigue_suffix() -> Str:
         """
         The suffix that is appended to the variable name that describes the fatigue
         """
 
-    def _dynamics_per_suffix(self, dxdt, suffix, nlp, index, states, controls):
+    def _dynamics_per_suffix(self, dxdt: MX, suffix, nlp, index: Int, states, controls) -> MX:
         var = self.models[suffix]
         target_load = self._get_target_load(var, suffix, nlp, controls, index)
         fatigue = [
@@ -82,7 +90,7 @@ class TauFatigue(MultiFatigueModel):
 
         return dxdt
 
-    def _get_target_load(self, var: FatigueModel, suffix: str, nlp, controls, index: int):
+    def _get_target_load(self, var: FatigueModel, suffix: Str, nlp, controls, index: Int):
         if self.model_type() not in nlp.controls:
             raise NotImplementedError(f"Fatigue dynamics without {self.model_type()} controls is not implemented yet")
 
@@ -95,14 +103,14 @@ class TauFatigue(MultiFatigueModel):
         return val / var.scaling
 
     @staticmethod
-    def default_state_only():
+    def default_state_only() -> Bool:
         return False
 
     @staticmethod
-    def default_apply_to_joint_dynamics():
+    def default_apply_to_joint_dynamics() -> Bool:
         return False
 
-    def default_bounds(self, index: int, variable_type: VariableType) -> tuple:
+    def default_bounds(self, index: int, variable_type: VariableType) -> AnyTuple:
         key = self._convert_to_models_key(index)
 
         if variable_type == VariableType.STATES:
@@ -114,6 +122,6 @@ class TauFatigue(MultiFatigueModel):
             else:
                 return tuple((self.models[s].scaling,) for s in self.suffix())
 
-    def default_initial_guess(self, index: int, variable_type: VariableType):
+    def default_initial_guess(self, index: Int, variable_type: VariableType):
         key = self._convert_to_models_key(index)
         return self.models[key].default_initial_guess()

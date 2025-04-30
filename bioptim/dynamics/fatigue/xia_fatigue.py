@@ -3,6 +3,13 @@ from casadi import vertcat, lt, gt, if_else
 from .muscle_fatigue import MuscleFatigue
 from .tau_fatigue import TauFatigue
 from ...misc.enums import VariableType
+from ...misc.parameters_types import (
+    Float,
+    Str,
+    StrTuple,
+    AnyTuple,
+    CX,
+)
 
 
 class XiaFatigue(MuscleFatigue):
@@ -10,7 +17,7 @@ class XiaFatigue(MuscleFatigue):
     A placeholder for fatigue dynamics.
     """
 
-    def __init__(self, LD: float, LR: float, F: float, R: float, **kwargs):
+    def __init__(self, LD: Float, LR: Float, F: Float, R: Float, **kwargs):
         """
         Parameters
         ----------
@@ -31,31 +38,31 @@ class XiaFatigue(MuscleFatigue):
         self.R = R
 
     @staticmethod
-    def suffix(variable_type: VariableType) -> tuple:
+    def suffix(variable_type: VariableType) -> StrTuple:
         if variable_type == VariableType.STATES:
             return "ma", "mr", "mf"
         else:
             return ("",)
 
     @staticmethod
-    def color() -> tuple:
+    def color() -> StrTuple:
         return "tab:green", "tab:orange", "tab:red"
 
-    def default_initial_guess(self) -> tuple:
+    def default_initial_guess(self) -> StrTuple:
         return 0, 1, 0
 
-    def default_bounds(self, variable_type: VariableType) -> tuple:
+    def default_bounds(self, variable_type: VariableType) -> AnyTuple:
         return (0, 0, 0), (1, 1, 1)
 
     @staticmethod
-    def dynamics_suffix() -> str:
+    def dynamics_suffix() -> Str:
         return "ma"
 
     @staticmethod
-    def fatigue_suffix() -> str:
+    def fatigue_suffix() -> Str:
         return "mf"
 
-    def apply_dynamics(self, target_load, *states):
+    def apply_dynamics(self, target_load: Float | CX, *states: Float | CX):
         """
         The dynamics of the fatigue model that returns the derivatives of the states.
         with Xia's model.
@@ -89,7 +96,7 @@ class XiaFatigue(MuscleFatigue):
 
 
 class XiaFatigueStabilized(XiaFatigue):
-    def __init__(self, LD: float, LR: float, F: float, R: float, stabilization_factor: float, **kwargs):
+    def __init__(self, LD: Float, LR: Float, F: Float, R: Float, stabilization_factor: Float, **kwargs):
         """
         stabilization_factor: float
             Stabilization factor so: ma + mr + mf => 1
@@ -117,9 +124,9 @@ class XiaTauFatigue(TauFatigue):
     """
 
     @staticmethod
-    def dynamics_suffix() -> str:
+    def dynamics_suffix() -> Str:
         return "ma"
 
     @staticmethod
-    def fatigue_suffix() -> str:
+    def fatigue_suffix() -> Str:
         return "mf"
