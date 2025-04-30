@@ -15,6 +15,8 @@ IntorFloat: TypeAlias = int | float
 
 AnyIterable: TypeAlias = list[Any] | tuple[Any, ...]
 AnyIterableOptional: TypeAlias = list[Any] | tuple[Any, ...] | None
+AnyIterableOrRange: TypeAlias = slice | list | range
+AnyIterableOrRangeOptional: TypeAlias = slice | list | range | None
 AnyIterableOrSlice: TypeAlias = slice | list | tuple
 AnyIterableOrSliceOptional: TypeAlias = slice | list | tuple | None
 AnySequence: TypeAlias = list | tuple | range | np.ndarray

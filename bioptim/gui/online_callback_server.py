@@ -18,6 +18,7 @@ from ..misc.parameters_types import (
     StrOptional,
     IntOptional,
     AnyIterable,
+    AnyList,
     AnyDictOptional,
     AnyTuple,
     Bool,
@@ -173,7 +174,7 @@ class PlottingServer:
             self._logger.debug(f"Received hand shake from client")
             self._initialize_plotter(client_socket, data)
 
-    def _recv_data(self, client_socket: socket.socket, send_confirmation: Bool) -> tuple[_ServerMessages, list]:
+    def _recv_data(self, client_socket: socket.socket, send_confirmation: Bool) -> tuple[_ServerMessages, AnyList]:
         """
         Waits for data from the client
 
@@ -199,7 +200,7 @@ class PlottingServer:
 
     def _recv_message_type_and_data_len(
         self, client_socket: socket.socket, send_confirmation: Bool
-    ) -> tuple[_ServerMessages, list]:
+    ) -> tuple[_ServerMessages, AnyList]:
         """
         Waits for data len from the client (first part of the protocol)
 
@@ -562,7 +563,7 @@ class OnlineCallbackServer(OnlineCallbackAbstract):
             self.ocp, only_initialize_variables=True, dummy_phase_times=dummy_phase_times, **show_options
         )
 
-    def _has_received_ok(self) -> bool:
+    def _has_received_ok(self) -> Bool:
         """
         Checks if the server has sent an OK message
 

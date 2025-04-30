@@ -8,7 +8,7 @@ import numpy as np
 from .plot import PlotOcp, OcpSerializable
 from ..optimization.optimization_vector import OptimizationVectorHelper
 from .online_callback_abstract import OnlineCallbackAbstract
-from ..misc.parameters_types import AnyIterable, AnyDictOptional, Bool
+from ..misc.parameters_types import AnyIterable, AnyDictOptional, Bool, IntList
 
 
 class OnlineCallbackMultiprocess(OnlineCallbackAbstract):
@@ -36,7 +36,7 @@ class OnlineCallbackMultiprocess(OnlineCallbackAbstract):
     def close(self):
         self.plot_process.kill()
 
-    def eval(self, arg: AnyIterable, enforce: Bool = False) -> list[int]:
+    def eval(self, arg: AnyIterable, enforce: Bool = False) -> IntList:
         # Dequeuing the data by removing previous not useful data
         while not self.queue.empty():
             self.queue.get_nowait()
@@ -98,7 +98,7 @@ class OnlineCallbackMultiprocess(OnlineCallbackAbstract):
             plt.show()
 
         @property
-        def has_at_least_one_active_figure(self) -> bool:
+        def has_at_least_one_active_figure(self) -> Bool:
             """
             If at least one figure is active
 
