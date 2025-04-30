@@ -42,6 +42,7 @@ AnyListOptional: TypeAlias = list[Any] | None
 AnyList: TypeAlias = list[Any]
 BoolList: TypeAlias = list[bool]
 IntList: TypeAlias = list[int]
+DoubleIntList: TypeAlias = list[int, int]
 FloatList: TypeAlias = list[float]
 StrList: TypeAlias = list[str]
 MXList: TypeAlias = list[MX]
@@ -90,6 +91,7 @@ IntorNodeIterable: TypeAlias = tuple[Int | Node, ...] | list[Int | Node]
 
 CX: TypeAlias = MX | SX
 CXOptional: TypeAlias = MX | SX | None
+CXorFloat: TypeAlias = CX | float
 CXorDM: TypeAlias = MX | SX | DM | float
 CXorDMorFloatIterable: TypeAlias = FloatIterableorNpArray | MX | SX | DM
 CXorDMorNpArray: TypeAlias = np.ndarray | MX | SX | DM

@@ -4,6 +4,16 @@ from casadi import Function, vertcat, horzcat, collocation_points, rootfinder, D
 from .lagrange_interpolation import LagrangeInterpolation
 from ..misc.enums import ControlType, DefectType
 from ..models.protocols.biomodel import BioModel
+from ..misc.parameters_types import (
+    Float,
+    DoubleIntList,
+    DoubleIntTuple,
+    StrList,
+    AnyDict,
+    AnyTuple,
+    NpArray,
+    CX,
+)
 
 
 class Integrator:
@@ -50,7 +60,7 @@ class Integrator:
     """
 
     # Todo change ode and ode_opt into class
-    def __init__(self, ode: dict, ode_opt: dict):
+    def __init__(self, ode: AnyDict, ode_opt: AnyDict):
         """
         Parameters
         ----------
@@ -102,14 +112,14 @@ class Integrator:
         )
 
     @property
-    def shape_xf(self) -> tuple[int, int]:
+    def shape_xf(self) -> DoubleIntTuple:
         """
         Returns the expected shape of xf
         """
         raise NotImplementedError("This method should be implemented for a given integrator")
 
     @property
-    def shape_xall(self) -> tuple[int, int]:
+    def shape_xall(self) -> DoubleIntTuple:
         """
         Returns the expected shape of xall
         """
@@ -127,22 +137,22 @@ class Integrator:
         raise NotImplementedError("This method should be implemented for a given integrator")
 
     @property
-    def _x_sym_modified(self):
+    def _x_sym_modified(self) -> CX:
         return self.x_sym
 
     @property
-    def _a_sym_modified(self):
+    def _a_sym_modified(self) -> CX:
         return self.a_sym
 
     @property
-    def _input_names(self):
+    def _input_names(self) -> StrList:
         return ["t_span", "x0", "u", "p", "a", "d"]
 
     @property
-    def _output_names(self):
+    def _output_names(self) -> StrList:
         return ["xf", "xall"]
 
-    def _initialize(self, ode: dict, ode_opt: dict):
+    def _initialize(self, ode: AnyDict, ode_opt: AnyDict):
         """
         This method is called by the constructor to initialize the integrator right before
         creating the CasADi function from compute_states_end
@@ -170,7 +180,7 @@ class Integrator:
     def _integration_time(self):
         raise NotImplementedError("This method should be implemented for a given integrator")
 
-    def get_u(self, u: np.ndarray, t: float) -> np.ndarray:
+    def get_u(self, u: NpArray, t: Float) -> NpArray:
         """
         Get the control at a given time
 
@@ -196,12 +206,12 @@ class Integrator:
 
     def compute_states_end(
         self,
-        states: MX | SX,
-        controls: MX | SX,
-        params: MX | SX,
-        algebraic_states: MX | SX,
-        numerical_timeseries: MX | SX,
-    ) -> tuple:
+        states: CX,
+        controls: CX,
+        params: CX,
+        algebraic_states: CX,
+        numerical_timeseries: CX,
+    ) -> AnyTuple:
         """
         The dynamics of the system
 
@@ -236,7 +246,7 @@ class RK(Integrator):
         Number of finite element during the integration
     """
 
-    def __init__(self, ode: dict, ode_opt: dict):
+    def __init__(self, ode: AnyDict, ode_opt: AnyDict):
         """
         Parameters
         ----------
@@ -253,11 +263,11 @@ class RK(Integrator):
         return self.t_span_sym[1] / self._n_step
 
     @property
-    def shape_xf(self):
+    def shape_xf(self) -> DoubleIntList:
         return [self.x_sym.shape[0], 1]
 
     @property
-    def shape_xall(self):
+    def shape_xall(self) -> DoubleIntList:
         return [self.x_sym.shape[0], self._n_step + 1]
 
     @property
@@ -610,18 +620,18 @@ class COLLOCATION(Integrator):
         return [0] + collocation_points(self.degree, self.method)
 
     @property
-    def shape_xf(self):
+    def shape_xf(self) -> DoubleIntList:
         return [self._x_sym_modified.shape[0], self.degree + 1]
 
     @property
-    def shape_xall(self):
+    def shape_xall(self) -> DoubleIntList:
         return [self._x_sym_modified.shape[0], self.degree + 2]
 
     @property
     def _time_xall_from_dt_func(self) -> Function:
         return Function("step_time", [self.t_span_sym], [self.t_span_sym[0] + (self._integration_time + [1]) * self.h])
 
-    def get_u(self, u: np.ndarray, t: float | MX | SX) -> np.ndarray:
+    def get_u(self, u: NpArray, t: Float | CX) -> NpArray:
         """
         Get the control at a given time
 
@@ -646,12 +656,12 @@ class COLLOCATION(Integrator):
 
     def compute_states_end(
         self,
-        states: MX | SX,
-        controls: MX | SX,
-        params: MX | SX,
-        algebraic_states: MX | SX,
-        numerical_timeseries: MX | SX,
-    ) -> tuple:
+        states: CX,
+        controls: CX,
+        params: CX,
+        algebraic_states: CX,
+        numerical_timeseries: CX,
+    ) -> AnyTuple:
 
         if self.method == "radau":
             # For Radau, the last collocation point is the same as the final point of the interval
@@ -715,15 +725,15 @@ class IRK(COLLOCATION):
         return self.x_sym[0]
 
     @property
-    def _output_names(self):
+    def _output_names(self) -> StrList:
         return ["xf", "xall"]
 
     @property
-    def shape_xf(self):
+    def shape_xf(self) -> DoubleIntList:
         return [self._x_sym_modified.shape[0], 1]
 
     @property
-    def shape_xall(self):
+    def shape_xall(self) -> DoubleIntList:
         return [self._x_sym_modified.shape[0], 2]
 
     @property
@@ -734,12 +744,12 @@ class IRK(COLLOCATION):
 
     def compute_states_end(
         self,
-        states: MX | SX,
-        controls: MX | SX,
-        params: MX | SX,
-        algebraic_states: MX | SX,
-        numerical_timeseries: MX | SX,
-    ) -> tuple:
+        states: CX,
+        controls: CX,
+        params: CX,
+        algebraic_states: CX,
+        numerical_timeseries: CX,
+    ) -> AnyTuple:
         nx = states[0].shape[0]
         _, _, defect = super(IRK, self).compute_states_end(
             states=states,

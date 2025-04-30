@@ -839,7 +839,9 @@ class ConfigureProblem:
         ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.holonomic_torque_driven)
 
     @staticmethod
-    def configure_lagrange_multipliers_function(ocp, nlp: NpArrayDictOptional, dyn_func: Callable, **extra_params) -> None:
+    def configure_lagrange_multipliers_function(
+        ocp, nlp: NpArrayDictOptional, dyn_func: Callable, **extra_params
+    ) -> None:
         """
         Configure the contact points
 
@@ -1784,7 +1786,9 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable(name, name_taudot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
-    def configure_translational_forces(ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool, n_contacts: Int = 1):
+    def configure_translational_forces(
+        ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool, n_contacts: Int = 1
+    ):
         """
         Configure contact forces as optimization variables (for now only in global reference frame with an unknown point of application))
         # TODO: Match this with ExternalForceSetTimeSeries (options: 'in_global', 'torque', ...)
@@ -1808,7 +1812,9 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_rigid_contact_forces(ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool, as_algebraic_states: Bool):
+    def configure_rigid_contact_forces(
+        ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool, as_algebraic_states: Bool
+    ):
         """
         Configure the generalized forces derivative
 
@@ -1830,7 +1836,9 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_soft_contact_forces(ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool, as_algebraic_states: Bool):
+    def configure_soft_contact_forces(
+        ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool, as_algebraic_states: Bool
+    ):
         """
         Configure the generalized forces derivative
 
@@ -2089,7 +2097,9 @@ def _check_numerical_timeseries_format(numerical_timeseries: NpArray, n_shooting
         )
 
 
-def _check_contacts_in_biomodel(contact_type: list[ContactType] | tuple[ContactType], model: BioModel, phase_idx: Int) -> None:
+def _check_contacts_in_biomodel(
+    contact_type: list[ContactType] | tuple[ContactType], model: BioModel, phase_idx: Int
+) -> None:
 
     # Check rigid contacts
     if (
