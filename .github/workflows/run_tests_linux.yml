@@ -29,7 +29,6 @@ jobs:
         uses: conda-incubator/setup-miniconda@v2
         with:
           auto-activate-base: false
-          miniforge-version: latest
           environment-file: environment.yml
           activate-environment: bioptim
 
