@@ -19,9 +19,6 @@ jobs:
         shell: bash -l {0}
 
     steps:
-      - name: Set prefix Linux
-        run: echo "PREFIX=${{ env.PREFIX_LINUX }}" >> $GITHUB_ENV
-
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -78,10 +75,6 @@ jobs:
         shell: bash -l {0}
 
     steps:
-      - name: Set prefix Linux
-        run:
-            echo "PREFIX=${{ env.PREFIX_LINUX }}" >> $GITHUB_ENV
-
       - name: Checkout code
         uses: actions/checkout@v3
 
