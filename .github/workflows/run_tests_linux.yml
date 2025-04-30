@@ -28,7 +28,6 @@ jobs:
       - name: Setup environment
         uses: conda-incubator/setup-miniconda@v2
         with:
-          auto-activate-base: false
           environment-file: environment.yml
           activate-environment: bioptim
 
