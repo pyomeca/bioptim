@@ -39,6 +39,7 @@ jobs:
           miniforge-version: "latest"
           activate-environment: bioptim
           environment-file: environment.yml
+          create-environment: true
 
       - name: Print mamba info
         run: |
