@@ -278,7 +278,7 @@ class ACADOS(GenericSolver):
         return self._print_level
 
     @property
-    def c_compile(self):
+    def c_compile(self) -> Bool:
         return self._c_compile
 
     @property

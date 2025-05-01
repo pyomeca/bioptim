@@ -89,7 +89,7 @@ class SQP_METHOD(GenericSolver):
     show_online_optim: BoolOptional = None
     online_optim: OnlineOptim | None = None
     show_options: AnyDictOptional = None
-    c_compile = False  # Type deliberately not added. Setting :Bool = False breaks the code
+    c_compile: Bool = False  # Type deliberately not added. Setting :Bool = False breaks the code
     _beta: Float = 0.8
     _c1: Float = 1e-4
     _hessian_approximation: Str = "exact"  # "exact", "limited-memory"
@@ -102,6 +102,10 @@ class SQP_METHOD(GenericSolver):
     _qpsol: Str = "qpoases"
     _tol_du: Float = 1e-6
     _tol_pr: Float = 1e-6
+
+    @property
+    def c_compile(self) -> Bool:
+        return self._c_compile
 
     @property
     def beta(self) -> Float:
@@ -248,7 +252,7 @@ class SQP_METHOD(GenericSolver):
     def as_dict(self, solver) -> AnyDict:
         solver_options = self.__dict__
         options = {}
-        non_python_options = ["type", "show_online_optim", "online_optim", "show_options"]
+        non_python_options = ["_c_compile", "type", "show_online_optim", "online_optim", "show_options"]
         for key in solver_options:
             if key not in non_python_options:
                 sqp_key = key[1:]
