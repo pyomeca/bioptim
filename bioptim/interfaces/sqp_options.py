@@ -89,7 +89,7 @@ class SQP_METHOD(GenericSolver):
     show_online_optim: BoolOptional = None
     online_optim: OnlineOptim | None = None
     show_options: AnyDictOptional = None
-    c_compile: Bool = False
+    _c_compile: Bool = False
     _beta: Float = 0.8
     _c1: Float = 1e-4
     _hessian_approximation: Str = "exact"  # "exact", "limited-memory"
@@ -105,7 +105,7 @@ class SQP_METHOD(GenericSolver):
 
     @property
     def c_compile(self) -> Bool:
-        return self.c_compile
+        return self._c_compile
 
     @property
     def beta(self) -> Float:
@@ -156,7 +156,7 @@ class SQP_METHOD(GenericSolver):
         return self._tol_pr
 
     def set_c_compile(self, c_compile: Bool) -> None:
-        self.c_compile = c_compile
+        self._c_compile = c_compile
 
     def set_beta(self, beta: Float) -> None:
         """
