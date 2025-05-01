@@ -105,7 +105,7 @@ class SQP_METHOD(GenericSolver):
 
     @property
     def c_compile(self) -> Bool:
-        return self._c_compile
+        return self.c_compile
 
     @property
     def beta(self) -> Float:
@@ -156,7 +156,7 @@ class SQP_METHOD(GenericSolver):
         return self._tol_pr
 
     def set_c_compile(self, c_compile: Bool) -> None:
-        self._c_compile = c_compile
+        self.c_compile = c_compile
 
     def set_beta(self, beta: Float) -> None:
         """
