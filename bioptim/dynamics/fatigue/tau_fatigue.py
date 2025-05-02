@@ -9,9 +9,9 @@ from ...misc.parameters_types import (
     Bool,
     Int,
     Str,
+    FloatTuple,
     StrTuple,
-    DoubleIntTuple,
-    AnyTuple,
+    CX,
 )
 
 
@@ -57,7 +57,7 @@ class TauFatigue(MultiFatigueModel):
         return "tab:orange", "tab:green"
 
     @staticmethod
-    def plot_factor() -> DoubleIntTuple:
+    def plot_factor() -> FloatTuple:
         return -1, 1
 
     @staticmethod
@@ -76,7 +76,7 @@ class TauFatigue(MultiFatigueModel):
         The suffix that is appended to the variable name that describes the fatigue
         """
 
-    def _dynamics_per_suffix(self, dxdt: MX, suffix, nlp, index: Int, states, controls) -> MX:
+    def _dynamics_per_suffix(self, dxdt: CX, suffix, nlp, index: Int, states: CX, controls: CX) -> CX:
         var = self.models[suffix]
         target_load = self._get_target_load(var, suffix, nlp, controls, index)
         fatigue = [
@@ -90,7 +90,7 @@ class TauFatigue(MultiFatigueModel):
 
         return dxdt
 
-    def _get_target_load(self, var: FatigueModel, suffix: Str, nlp, controls, index: Int):
+    def _get_target_load(self, var: FatigueModel, suffix: Str, nlp, controls: CX, index: Int) -> CX:
         if self.model_type() not in nlp.controls:
             raise NotImplementedError(f"Fatigue dynamics without {self.model_type()} controls is not implemented yet")
 
@@ -110,7 +110,7 @@ class TauFatigue(MultiFatigueModel):
     def default_apply_to_joint_dynamics() -> Bool:
         return False
 
-    def default_bounds(self, index: int, variable_type: VariableType) -> AnyTuple:
+    def default_bounds(self, index: int, variable_type: VariableType) -> tuple[FloatTuple]:
         key = self._convert_to_models_key(index)
 
         if variable_type == VariableType.STATES:

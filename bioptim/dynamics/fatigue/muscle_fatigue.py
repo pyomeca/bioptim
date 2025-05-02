@@ -45,13 +45,13 @@ class MuscleFatigue(FatigueModel):
     def multi_type(self):
         return MultiFatigueInterfaceMuscle
 
-    def _get_target_load(self, nlp, controls, index):
+    def _get_target_load(self, nlp, controls: CX, index: Int) -> CX:
         if self.type() not in nlp.controls:
             raise NotImplementedError(f"Fatigue dynamics without {self.type()} controls is not implemented yet")
 
         return DynamicsFunctions.get(nlp.controls[self.type()], controls)[index, :]
 
-    def dynamics(self, dxdt: MX, nlp, index: Int, states, controls) -> MX:
+    def dynamics(self, dxdt: CX, nlp, index: Int, states: CX, controls: CX) -> CX:
         target_load = self._get_target_load(nlp, controls, index)
         fatigue = [
             DynamicsFunctions.get(nlp.states[f"{self.type()}_{s}"], states)[index, :]

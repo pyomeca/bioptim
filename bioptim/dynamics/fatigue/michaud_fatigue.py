@@ -7,9 +7,9 @@ from ...misc.parameters_types import (
     Bool,
     Float,
     Str,
-    IntTuple,
     StrTuple,
-    AnyTuple,
+    FloatTuple,
+    CX,
 )
 
 
@@ -81,13 +81,13 @@ class MichaudFatigue(MuscleFatigue):
     def color() -> StrTuple:
         return "tab:green", "tab:orange", "tab:red", "tab:brown"
 
-    def default_initial_guess(self) -> IntTuple:
+    def default_initial_guess(self) -> FloatTuple:
         return 0, 1, 0, 0
 
-    def default_bounds(self, variable_type: VariableType) -> AnyTuple:
+    def default_bounds(self, variable_type: VariableType) -> tuple[FloatTuple]:
         return (0, 0, 0, 0), (1, 1, 1, 1)
 
-    def apply_dynamics(self, target_load, *states):
+    def apply_dynamics(self, target_load: CX, *states) -> CX:
         # Implementation of modified Xia dynamics
         ma, mr, mf, effort = states
 

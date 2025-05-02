@@ -10,6 +10,7 @@ from ...misc.parameters_types import (
     IntTuple,
     StrTuple,
     AnyTuple,
+    CX,
 )
 
 
@@ -54,7 +55,7 @@ class EffortPerception(MuscleFatigue):
     def default_bounds(self, variable_type: VariableType) -> AnyTuple:
         return (0,), (1,)
 
-    def apply_dynamics(self, target_load, *states):
+    def apply_dynamics(self, target_load: CX, *states) -> CX:
         effort = states[0]
 
         effort_perception_dot = (

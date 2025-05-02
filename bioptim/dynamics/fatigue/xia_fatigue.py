@@ -6,8 +6,8 @@ from ...misc.enums import VariableType
 from ...misc.parameters_types import (
     Float,
     Str,
+    FloatTuple,
     StrTuple,
-    AnyTuple,
     CX,
 )
 
@@ -48,10 +48,10 @@ class XiaFatigue(MuscleFatigue):
     def color() -> StrTuple:
         return "tab:green", "tab:orange", "tab:red"
 
-    def default_initial_guess(self) -> StrTuple:
+    def default_initial_guess(self) -> FloatTuple:
         return 0, 1, 0
 
-    def default_bounds(self, variable_type: VariableType) -> AnyTuple:
+    def default_bounds(self, variable_type: VariableType) -> tuple[FloatTuple]:
         return (0, 0, 0), (1, 1, 1)
 
     @staticmethod
@@ -62,7 +62,7 @@ class XiaFatigue(MuscleFatigue):
     def fatigue_suffix() -> Str:
         return "mf"
 
-    def apply_dynamics(self, target_load: Float | CX, *states: Float | CX):
+    def apply_dynamics(self, target_load: CX, *states: CX) -> CX:
         """
         The dynamics of the fatigue model that returns the derivatives of the states.
         with Xia's model.
