@@ -11,6 +11,8 @@ Float: TypeAlias = float
 Bool: TypeAlias = bool
 Bytes: TypeAlias = bytes
 
+IntorFloat: TypeAlias = int | float
+
 AnyIterable: TypeAlias = list[Any] | tuple[Any, ...]
 AnyIterableOptional: TypeAlias = list[Any] | tuple[Any, ...] | None
 AnyIterableOrSlice: TypeAlias = slice | list | tuple
@@ -23,6 +25,7 @@ StrIterable: TypeAlias = list[str] | tuple[str, ...]
 StrIterableOptional: TypeAlias = list[str] | tuple[str, ...] | None
 
 AnyDict: TypeAlias = dict[str, Any]
+AnyListorDict: TypeAlias = list[Any] | dict[str, Any]
 IntDict: TypeAlias = dict[str, int]
 
 AnyDictOptional: TypeAlias = dict[str, Any] | None
@@ -65,6 +68,7 @@ NpArrayOptional: TypeAlias = np.ndarray | None
 AnyTuple: TypeAlias = tuple[Any, ...]
 IntTuple: TypeAlias = tuple[int, ...]
 DoubleIntTuple: TypeAlias = tuple[int, int]
+DoubleNpArrayTuple: TypeAlias = tuple[np.ndarray, np.ndarray]
 StrTuple: TypeAlias = tuple[str, ...]
 
 IntStrorIterable: TypeAlias = int | str | AnyIterable

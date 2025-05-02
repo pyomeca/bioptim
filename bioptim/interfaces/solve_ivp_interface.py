@@ -5,19 +5,25 @@ from casadi import vertcat
 from scipy.integrate import solve_ivp
 from scipy.interpolate import interp1d
 
+from ..optimization.non_linear_program import NonLinearProgram
 from ..misc.enums import Shooting, ControlType, SolutionIntegrator
+from ..misc.parameters_types import (
+    NpArrayList,
+    NpArray,
+    Float,
+)
 
 
 def solve_ivp_interface(
     list_of_dynamics: list[Callable],
     shooting_type: Shooting,
-    nlp,
-    t: list[np.ndarray],
-    x: list[np.ndarray],
-    u: list[np.ndarray],
-    p: list[np.ndarray],
-    a: list[np.ndarray],
-    d: list[np.ndarray],
+    nlp: NonLinearProgram,
+    t: NpArrayList,
+    x: NpArrayList,
+    u: NpArrayList,
+    p: NpArrayList,
+    a: NpArrayList,
+    d: NpArrayList,
     method: SolutionIntegrator = SolutionIntegrator.SCIPY_RK45,
 ):
     """
@@ -103,9 +109,9 @@ def solve_ivp_interface(
 
 def _solve_ivp_scipy_interface(
     dynamics: Callable,
-    t_span: np.ndarray,
-    x0: np.ndarray,
-    t_eval: np.ndarray,
+    t_span: NpArray,
+    x0: NpArray,
+    t_eval: NpArray,
     method: SolutionIntegrator = SolutionIntegrator.SCIPY_RK45,
 ):
     result: Any = solve_ivp(dynamics, y0=x0, t_span=np.array(t_span), t_eval=t_eval, method=method)
@@ -114,14 +120,14 @@ def _solve_ivp_scipy_interface(
 
 def _solve_ivp_bioptim_interface(
     dynamics: Callable,
-    t_span: np.ndarray,
-    x0: np.ndarray,
+    t_span: NpArray,
+    x0: NpArray,
 ):
     # y always contains [x0, xf] of the interval
     return np.array(dynamics(t_span, x0))
 
 
-def _control_function(control_type, t, t_span, u) -> np.ndarray:
+def _control_function(control_type: ControlType, t: Float, t_span: NpArray, u: NpArray) -> NpArray:
     """
     This function is used to wrap the control function in a way that solve_ivp can use it
 

@@ -2,9 +2,6 @@ name: Run the tests
 
 on: [pull_request]
 
-env:
-  PREFIX_LINUX: /usr/share/miniconda3/envs/bioptim
-
 jobs:
   build:
     strategy:
@@ -19,19 +16,16 @@ jobs:
         shell: bash -l {0}
 
     steps:
-      - name: Set prefix Linux
-        run: echo "PREFIX=${{ env.PREFIX_LINUX }}" >> $GITHUB_ENV
-
       - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Setup environment
         uses: conda-incubator/setup-miniconda@v2
         with:
-          miniforge-version: latest
+          miniforge-version: 24.11.3-2
           use-mamba: true
-          activate-environment: bioptim
           environment-file: environment.yml
+          activate-environment: bioptim
 
       - name: Print mamba info
         run: |
@@ -39,7 +33,7 @@ jobs:
           conda list
 
       - name: Install extra dependencies
-        run: | 
+        run: |
           conda install pytest-cov black pytest pytest-cov codecov packaging pytest-mpl -cconda-forge
           sudo apt install -y librhash-dev
 
@@ -47,7 +41,7 @@ jobs:
         run: |
           pwd
           cd external
-          ./acados_install_linux.sh 4 ${{ env.PREFIX_LINUX }}
+          ./acados_install_linux.sh 4 $CONDA_PREFIX
           cd ..
         if: matrix.shard == 1
 
@@ -61,7 +55,7 @@ jobs:
       - name: Run tests with code coverage
         run: pytest -v --color=yes --cov-report term-missing --cov=bioptim tests/shard${{ matrix.shard }} --mpl-baseline-path=bioptim/tests/plot_reference_images
         if: matrix.os == 'ubuntu-latest'
-      
+
       - name: Archive coverage report
         id: archive
         uses: actions/upload-artifact@v4
@@ -79,10 +73,6 @@ jobs:
         shell: bash -l {0}
 
     steps:
-      - name: Set prefix Linux
-        run:
-            echo "PREFIX=${{ env.PREFIX_LINUX }}" >> $GITHUB_ENV
-
       - name: Checkout code
         uses: actions/checkout@v3
 
