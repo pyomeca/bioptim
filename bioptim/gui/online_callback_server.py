@@ -15,18 +15,18 @@ from .online_callback_abstract import OnlineCallbackAbstract
 from .plot import PlotOcp, OcpSerializable
 from ..optimization.optimization_vector import OptimizationVectorHelper
 from ..misc.parameters_types import (
+    Bool,
+    Int,
+    Str,
+    Bytes,
     StrOptional,
     IntOptional,
     AnyIterable,
     AnyList,
     AnyDictOptional,
     AnyTuple,
-    Bool,
-    Int,
-    Str,
     AnyDict,
-    Bytes,
-    IntIterable,
+    IntIterableOptional,
 )
 
 
@@ -98,17 +98,17 @@ class PlottingServer:
             log_level = logging.INFO
 
         self._prepare_logger(log_level)
-        self._get_data_interval = 1.0
-        self._update_plot_interval = 10
-        self._force_redraw = False
+        self._get_data_interval: Float = 1.0
+        self._update_plot_interval: Int = 10
+        self._force_redraw: Bool = False
 
         # Define the host and port
-        self._host = host if host else _DEFAULT_HOST
-        self._port = port if port else _DEFAULT_PORT
-        self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._host: Str = host if host else _DEFAULT_HOST
+        self._port: Int = port if port else _DEFAULT_PORT
+        self._socket: socket.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._plotter: PlotOcp = None
 
-        self._should_send_ok_to_client_on_new_data = False
+        self._should_send_ok_to_client_on_new_data: Bool = False
 
         self._run()
 
@@ -484,11 +484,11 @@ class OnlineCallbackServer(OnlineCallbackAbstract):
 
         super().__init__(ocp, opts, **show_options)
 
-        self._host = host if host else _DEFAULT_HOST
-        self._port = port if port else _DEFAULT_PORT
-        self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._host: Str = host if host else _DEFAULT_HOST
+        self._port: Int = port if port else _DEFAULT_PORT
+        self._socket: socket.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-        self._should_wait_ok_to_client_on_new_data = platform.system() == "Darwin"
+        self._should_wait_ok_to_client_on_new_data: Bool = platform.system() == "Darwin"
 
         if self.ocp.plot_ipopt_outputs:
             raise NotImplementedError("The online callback with TCP does not support the plot_ipopt_outputs option")
@@ -582,7 +582,7 @@ class OnlineCallbackServer(OnlineCallbackAbstract):
         self._socket.sendall(f"{_ServerMessages.CLOSE_CONNEXION.value}\nGoodbye from client!".encode())
         self._socket.close()
 
-    def eval(self, arg: AnyIterable, enforce: Bool = False) -> IntIterable:
+    def eval(self, arg: AnyIterable, enforce: Bool = False) -> IntIterableOptional:
         """
         Sends the current data to the plotter, this method is automatically called by the solver
 

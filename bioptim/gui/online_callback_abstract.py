@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity
 
-from ..misc.parameters_types import AnyDictOptional, AnyIterable, Str, Int, Bool, AnyTuple, IntIterable
+from ..misc.parameters_types import AnyDictOptional, AnyIterable, Str, Int, Bool, AnyTuple, IntIterableOptional
 
 
 class OnlineCallbackAbstract(Callback, ABC):
@@ -92,7 +92,7 @@ class OnlineCallbackAbstract(Callback, ABC):
         return 1
 
     @staticmethod
-    def get_name_in(i: Int) -> Int:
+    def get_name_in(i: Int) -> Str:
         """
         Get the name of a variable
 
@@ -145,7 +145,7 @@ class OnlineCallbackAbstract(Callback, ABC):
             return Sparsity(0, 0)
 
     @abstractmethod
-    def eval(self, arg: AnyIterable, enforce: Bool = False) -> IntIterable:
+    def eval(self, arg: AnyIterable, enforce: Bool = False) -> IntIterableOptional:
         """
         Send the current data to the plotter
 
