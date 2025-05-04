@@ -21,6 +21,7 @@ from ..misc.parameters_types import (
     AnyIterableOrSlice,
     DoubleIntTuple,
     StrOrIterable,
+    NpArray,
 )
 
 
@@ -31,7 +32,7 @@ class CasadiFunctionSerializable:
         self._size_in = size_in
 
     @classmethod
-    def from_casadi_function(cls, casadi_function):
+    def from_casadi_function(cls, casadi_function: Function) -> "CasadiFunctionSerializable":
         casadi_function: Function = casadi_function
 
         return cls(
@@ -44,18 +45,18 @@ class CasadiFunctionSerializable:
             }
         )
 
-    def serialize(self):
+    def serialize(self) -> AnyDict:
         return {
             "size_in": self._size_in,
         }
 
     @classmethod
-    def deserialize(cls, data):
+    def deserialize(cls, data: AnyDict) -> "CasadiFunctionSerializable":
         return cls(
             size_in=data["size_in"],
         )
 
-    def size_in(self, key: str) -> Int:
+    def size_in(self, key: Str) -> Int:
         return self._size_in[key]
 
 
@@ -66,7 +67,7 @@ class PenaltySerializable:
         self.function = function
 
     @classmethod
-    def from_penalty(cls, penalty):
+    def from_penalty(cls, penalty: PenaltyOption):
         penalty: PenaltyOption = penalty
 
         function = []
@@ -76,13 +77,13 @@ class PenaltySerializable:
             function=function,
         )
 
-    def serialize(self):
+    def serialize(self) -> AnyDict:
         return {
             "function": [None if f is None else f.serialize() for f in self.function],
         }
 
     @classmethod
-    def deserialize(cls, data):
+    def deserialize(cls, data: AnyDict) -> "PenaltySerializable":
         return cls(
             function=[None if f is None else CasadiFunctionSerializable.deserialize(f) for f in data["function"]],
         )
@@ -93,22 +94,22 @@ class MappingSerializable:
     oppose: IntList
 
     def __init__(self, map_idx: IntList, oppose: IntList):
-        self.map_idx = map_idx
-        self.oppose = oppose
+        self.map_idx: IntList = map_idx
+        self.oppose: IntList = oppose
 
-    def map(self, obj):
+    def map(self, obj: Any):
         from ..misc.mapping import Mapping
 
         return Mapping.map(self, obj)
 
     @classmethod
-    def from_mapping(cls, mapping):
+    def from_mapping(cls, mapping) -> "MappingSerializable":
         return cls(
             map_idx=mapping.map_idx,
             oppose=mapping.oppose,
         )
 
-    def serialize(self):
+    def serialize(self) -> AnyDict:
         return {
             "map_idx": list(self.map_idx),
             "oppose": self.oppose,
@@ -127,24 +128,24 @@ class BiMappingSerializable:
     to_second: MappingSerializable
 
     def __init__(self, to_first: MappingSerializable, to_second: MappingSerializable):
-        self.to_first = to_first
-        self.to_second = to_second
+        self.to_first: MappingSerializable = to_first
+        self.to_second: MappingSerializable = to_second
 
     @classmethod
-    def from_bimapping(cls, bimapping):
+    def from_bimapping(cls, bimapping) -> "BiMappingSerializable":
         return cls(
             to_first=MappingSerializable.from_mapping(bimapping.to_first),
             to_second=MappingSerializable.from_mapping(bimapping.to_second),
         )
 
-    def serialize(self):
+    def serialize(self) -> AnyDict:
         return {
             "to_first": self.to_first.serialize(),
             "to_second": self.to_second.serialize(),
         }
 
     @classmethod
-    def deserialize(cls, data: AnyDict):
+    def deserialize(cls, data: AnyDict) -> "BiMappingSerializable":
         return cls(
             to_first=MappingSerializable.deserialize(data["to_first"]),
             to_second=MappingSerializable.deserialize(data["to_second"]),
@@ -155,13 +156,13 @@ class BoundsSerializable:
     _bounds: Bounds
 
     def __init__(self, bounds: Bounds):
-        self._bounds = bounds
+        self._bounds: Bounds = bounds
 
     @classmethod
-    def from_bounds(cls, bounds):
+    def from_bounds(cls, bounds: Bounds):
         return cls(bounds=bounds)
 
-    def serialize(self):
+    def serialize(self) -> AnyDict:
         slice_list = self._bounds.min.slice_list  # min and max have the same slice_list
         slice_list_type = type(slice_list).__name__
         if isinstance(self._bounds.min.slice_list, slice):
@@ -177,7 +178,7 @@ class BoundsSerializable:
         }
 
     @classmethod
-    def deserialize(cls, data: AnyDict):
+    def deserialize(cls, data: AnyDict) -> "BoundsSerializable":
         return cls(
             bounds=Bounds(
                 key=data["key"],
@@ -192,18 +193,18 @@ class BoundsSerializable:
             ),
         )
 
-    def check_and_adjust_dimensions(self, n_elements: int, n_shooting: int):
+    def check_and_adjust_dimensions(self, n_elements: Int, n_shooting: Int) -> None:
         self._bounds.check_and_adjust_dimensions(n_elements, n_shooting)
 
-    def type(self):
+    def type(self) -> InterpolationType:
         return self._bounds.type
 
     @property
-    def min(self):
+    def min(self) -> NpArray:
         return self._bounds.min
 
     @property
-    def max(self):
+    def max(self) -> NpArray:
         return self._bounds.max
 
 
@@ -238,22 +239,22 @@ class CustomPlotSerializable:
         integration_rule: QuadratureRule,
         all_variables_in_one_subplot: Bool,
     ):
-        self.type = plot_type
-        self.phase_mappings = phase_mappings
-        self.legend = legend
-        self.combine_to = combine_to
-        self.color = color
-        self.linestyle = linestyle
-        self.ylim = ylim
-        self.bounds = bounds
-        self.node_idx = node_idx
-        self.label = label
-        self.compute_derivative = compute_derivative
-        self.integration_rule = integration_rule
-        self.all_variables_in_one_subplot = all_variables_in_one_subplot
+        self.type: PlotType = plot_type
+        self.phase_mappings: BiMapping = phase_mappings
+        self.legend: AnyIterable = legend
+        self.combine_to: Str = combine_to
+        self.color: Str = color
+        self.linestyle: Str = linestyle
+        self.ylim: AnyIterable = ylim
+        self.bounds: BoundsSerializable = bounds
+        self.node_idx: AnyIterableOrSlice = node_idx
+        self.label: AnyList = label
+        self.compute_derivative: Bool = compute_derivative
+        self.integration_rule: QuadratureRule = integration_rule
+        self.all_variables_in_one_subplot: Bool = all_variables_in_one_subplot
 
     @classmethod
-    def from_custom_plot(cls, custom_plot):
+    def from_custom_plot(cls, custom_plot) -> "CustomPlotSerializable":
         from .plot import CustomPlot
 
         custom_plot: CustomPlot = custom_plot
@@ -274,7 +275,7 @@ class CustomPlotSerializable:
             all_variables_in_one_subplot=custom_plot.all_variables_in_one_subplot,
         )
 
-    def serialize(self):
+    def serialize(self) -> AnyDict:
         return {
             "type": self.type.value,
             "phase_mappings": self.phase_mappings.serialize(),
@@ -292,7 +293,7 @@ class CustomPlotSerializable:
         }
 
     @classmethod
-    def deserialize(cls, data: AnyDict):
+    def deserialize(cls, data: AnyDict) -> "CustomPlotSerializable":
         return cls(
             plot_type=PlotType(data["type"]),
             phase_mappings=BiMappingSerializable.deserialize(data["phase_mappings"]),
@@ -309,7 +310,7 @@ class CustomPlotSerializable:
             all_variables_in_one_subplot=data["all_variables_in_one_subplot"],
         )
 
-    def function(self, *args, **kwargs):
+    def function(self, *args, **kwargs) -> callable:
         # This should not be called to get actual values, as it is evaluated at 0. This is solely to get the size of
         # the function
         return self._function
@@ -317,18 +318,18 @@ class CustomPlotSerializable:
 
 class OptimizationVariableContainerSerializable:
     node_index: Int
-    shape: tuple[int, int]
+    shape: DoubleIntTuple
 
     def __init__(self, node_index: Int, shape: DoubleIntTuple, len: Int):
-        self.node_index = node_index
-        self.shape = shape
-        self._len = len
+        self.node_index: Int = node_index
+        self.shape: DoubleIntTuple = shape
+        self._len: Int = len
 
     def __len__(self) -> Int:
         return self._len
 
     @classmethod
-    def from_container(cls, ovc):
+    def from_container(cls, ovc) -> "OptimizationVariableContainerSerializable":
         from ..optimization.optimization_variable import OptimizationVariableContainer
 
         ovc: OptimizationVariableContainer = ovc
@@ -339,7 +340,7 @@ class OptimizationVariableContainerSerializable:
             len=len(ovc),
         )
 
-    def serialize(self):
+    def serialize(self) -> AnyDict:
         return {
             "node_index": self.node_index,
             "shape": self.shape,
@@ -347,7 +348,7 @@ class OptimizationVariableContainerSerializable:
         }
 
     @classmethod
-    def deserialize(cls, data):
+    def deserialize(cls, data) -> "OptimizationVariableContainerSerializable":
         return cls(
             node_index=data["node_index"],
             shape=data["shape"],
@@ -367,7 +368,7 @@ class OdeSolverSerializable:
         self.type = type
 
     @classmethod
-    def from_ode_solver(cls, ode_solver):
+    def from_ode_solver(cls, ode_solver) -> "OdeSolverSerializable":
         from ..dynamics.ode_solvers import OdeSolver
 
         ode_solver: OdeSolver = ode_solver
@@ -386,7 +387,7 @@ class OdeSolverSerializable:
         }
 
     @classmethod
-    def deserialize(cls, data: AnyDict):
+    def deserialize(cls, data: AnyDict) -> "OdeSolverSerializable":
         return cls(
             polynomial_degree=data["polynomial_degree"],
             n_integration_steps=data["n_integration_steps"],
@@ -411,7 +412,7 @@ class SaveIterationsInfoSerializable:
         self.f_list = f_list
 
     @classmethod
-    def from_save_iterations_info(cls, save_iterations_info):
+    def from_save_iterations_info(cls, save_iterations_info) -> "SaveIterationsInfoSerializable":
         from .ipopt_output_plot import SaveIterationsInfo
 
         save_iterations_info: SaveIterationsInfo = save_iterations_info
@@ -427,7 +428,7 @@ class SaveIterationsInfoSerializable:
             f_list=save_iterations_info.f_list,
         )
 
-    def serialize(self):
+    def serialize(self) -> AnyDict:
         return {
             "path_to_results": self.path_to_results,
             "result_file_name": self.result_file_name,
@@ -437,7 +438,7 @@ class SaveIterationsInfoSerializable:
         }
 
     @classmethod
-    def deserialize(cls, data: AnyDict):
+    def deserialize(cls, data: AnyDict) -> "SaveIterationsInfoSerializable":
         return cls(
             path_to_results=data["path_to_results"],
             result_file_name=data["result_file_name"],
@@ -563,7 +564,7 @@ class OcpSerializable:
         self.save_ipopt_iterations_info = save_ipopt_iterations_info
 
     @classmethod
-    def from_ocp(cls, ocp):
+    def from_ocp(cls, ocp) -> "OcpSerializable":
         from ..optimization.optimal_control_program import OptimalControlProgram
 
         ocp: OptimalControlProgram = ocp
@@ -580,7 +581,7 @@ class OcpSerializable:
             ),
         )
 
-    def serialize(self):
+    def serialize(self) -> AnyDict:
         return {
             "n_phases": self.n_phases,
             "nlp": [nlp.serialize() for nlp in self.nlp],
@@ -593,7 +594,7 @@ class OcpSerializable:
         }
 
     @classmethod
-    def deserialize(cls, data: AnyDict):
+    def deserialize(cls, data: AnyDict) -> "OcpSerializable":
         return cls(
             n_phases=data["n_phases"],
             nlp=[NlpSerializable.deserialize(nlp) for nlp in data["nlp"]],
@@ -607,7 +608,7 @@ class OcpSerializable:
             ),
         )
 
-    def finalize_plot_phase_mappings(self):
+    def finalize_plot_phase_mappings(self) -> None:
         """
         This method can't be actually called from the serialized version, but we still can check if the work is done
         """
