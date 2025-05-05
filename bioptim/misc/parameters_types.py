@@ -9,6 +9,8 @@ Range: TypeAlias = range
 Str: TypeAlias = str
 Float: TypeAlias = float
 Bool: TypeAlias = bool
+Tuple: TypeAlias = tuple
+List: TypeAlias = list
 Bytes: TypeAlias = bytes
 
 IntorFloat: TypeAlias = int | float
@@ -40,6 +42,7 @@ IntList: TypeAlias = list[int]
 FloatList: TypeAlias = list[float]
 StrList: TypeAlias = list[str]
 MXList: TypeAlias = list[MX]
+DMList: TypeAlias = list[DM]
 NpArrayList: TypeAlias = list[np.ndarray]
 NpArray: TypeAlias = np.ndarray
 

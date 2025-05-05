@@ -22,6 +22,12 @@ from ..misc.parameters_types import (
     DoubleIntTuple,
     StrOrIterable,
     NpArray,
+    FloatList,
+    StrOptional,
+    DoubleFloatTuple,
+    IntIterableOptional,
+    StrIterableOptional,
+    StrListOptional
 )
 
 
@@ -211,14 +217,14 @@ class BoundsSerializable:
 class CustomPlotSerializable:
     type: PlotType
     phase_mappings: BiMappingSerializable
-    legend: AnyIterable
-    combine_to: Str
-    color: Str
-    linestyle: Str
-    ylim: AnyIterable
+    legend: StrIterableOptional
+    combine_to: StrOptional
+    color: StrOptional
+    linestyle: StrOptional
+    ylim: DoubleFloatTuple | FloatList
     bounds: BoundsSerializable
-    node_idx: AnyIterableOrSlice
-    label: AnyList
+    node_idx: IntIterableOptional
+    label: StrListOptional
     compute_derivative: Bool
     integration_rule: QuadratureRule
     all_variables_in_one_subplot: Bool
@@ -226,32 +232,32 @@ class CustomPlotSerializable:
     def __init__(
         self,
         plot_type: PlotType,
-        phase_mappings: BiMapping,
-        legend: AnyIterable,
-        combine_to: Str,
-        color: Str,
-        linestyle: Str,
-        ylim: AnyIterable,
+        phase_mappings: BiMappingSerializable,
+        legend: StrIterableOptional,
+        combine_to: StrOptional,
+        color: StrOptional,
+        linestyle: StrOptional,
+        ylim: DoubleFloatTuple | FloatList,
         bounds: BoundsSerializable,
-        node_idx: AnyIterableOrSlice,
-        label: AnyList,
+        node_idx: IntIterableOptional,
+        label: StrListOptional,
         compute_derivative: Bool,
         integration_rule: QuadratureRule,
         all_variables_in_one_subplot: Bool,
     ):
         self.type: PlotType = plot_type
-        self.phase_mappings: BiMapping = phase_mappings
-        self.legend: AnyIterable = legend
-        self.combine_to: Str = combine_to
-        self.color: Str = color
-        self.linestyle: Str = linestyle
-        self.ylim: AnyIterable = ylim
-        self.bounds: BoundsSerializable = bounds
-        self.node_idx: AnyIterableOrSlice = node_idx
-        self.label: AnyList = label
-        self.compute_derivative: Bool = compute_derivative
-        self.integration_rule: QuadratureRule = integration_rule
-        self.all_variables_in_one_subplot: Bool = all_variables_in_one_subplot
+        self.phase_mappings = phase_mappings
+        self.legend = legend
+        self.combine_to = combine_to
+        self.color= color
+        self.linestyle = linestyle
+        self.ylim = ylim
+        self.bounds = bounds
+        self.node_idx = node_idx
+        self.label = label
+        self.compute_derivative = compute_derivative
+        self.integration_rule = integration_rule
+        self.all_variables_in_one_subplot = all_variables_in_one_subplot
 
     @classmethod
     def from_custom_plot(cls, custom_plot) -> "CustomPlotSerializable":
@@ -489,8 +495,7 @@ class NlpSerializable:
         self.plot = plot
 
     @classmethod
-    def from_nlp(cls, nlp):
-        from ..optimization.non_linear_program import NonLinearProgram
+    def from_nlp(cls, nlp) -> "NlpSerializable":
 
         return cls(
             ns=nlp.ns,
@@ -505,7 +510,7 @@ class NlpSerializable:
             plot={key: CustomPlotSerializable.from_custom_plot(nlp.plot[key]) for key in nlp.plot},
         )
 
-    def serialize(self):
+    def serialize(self) -> AnyDict:
         return {
             "ns": self.ns,
             "phase_idx": self.phase_idx,
@@ -520,7 +525,7 @@ class NlpSerializable:
         }
 
     @classmethod
-    def deserialize(cls, data: AnyDict):
+    def deserialize(cls, data: AnyDict) -> "NlpSerializable":
         return cls(
             ns=data["ns"],
             phase_idx=data["phase_idx"],
