@@ -27,7 +27,7 @@ from ..misc.parameters_types import (
     DoubleFloatTuple,
     IntIterableOptional,
     StrIterableOptional,
-    StrListOptional
+    StrListOptional,
 )
 
 
@@ -249,7 +249,7 @@ class CustomPlotSerializable:
         self.phase_mappings = phase_mappings
         self.legend = legend
         self.combine_to = combine_to
-        self.color= color
+        self.color = color
         self.linestyle = linestyle
         self.ylim = ylim
         self.bounds = bounds

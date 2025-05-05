@@ -137,7 +137,7 @@ class CustomPlot:
             If all indices of the variables should be put on the same graph. This is not cute, but allows to display variables with a lot of entries.
         """
 
-        self.function= update_function
+        self.function = update_function
         self.type = plot_type
         if axes_idx is None:
             self.phase_mappings = None  # Will be set later
@@ -153,9 +153,7 @@ class CustomPlot:
         self.linestyle = linestyle
         self.ylim = ylim
         self.bounds = bounds
-        self.node_idx = (
-            node_idx  # If this is None, it is all nodes and will be initialize when we know the dimension of the problem
-        )
+        self.node_idx = node_idx  # If this is None, it is all nodes and will be initialize when we know the dimension of the problem
         self.label = label
         self.compute_derivative = compute_derivative
         if integration_rule == QuadratureRule.MIDPOINT or integration_rule == QuadratureRule.RECTANGLE_RIGHT:
@@ -427,7 +425,9 @@ class PlotOcp:
 
             self._create_plots_for_variable(i, nlp, variable, axes, y_min_all, y_max_all, y_range_var_idx)
 
-    def _setup_axes_for_variable(self, i: Int, nlp: NonLinearProgram, variable: Str) -> Tuple[np.ndarray[plt.Axes], Int]:
+    def _setup_axes_for_variable(
+        self, i: Int, nlp: NonLinearProgram, variable: Str
+    ) -> Tuple[np.ndarray[plt.Axes], Int]:
         """Setup axes for a specific variable"""
         if nlp.plot[variable].combine_to:
             self.axes[variable] = self.axes[nlp.plot[variable].combine_to]
@@ -638,7 +638,9 @@ class PlotOcp:
             )
         self.plots.append([PlotType.INTEGRATED, i, plots_integrated])
 
-    def _create_plot_type_step(self, i: Int, t: NpArray, ax: plt.Axes, variable: Str, color: Str, label: StrOptional) -> None:
+    def _create_plot_type_step(
+        self, i: Int, t: NpArray, ax: plt.Axes, variable: Str, color: Str, label: StrOptional
+    ) -> None:
         """Create a step plot"""
         zero = np.zeros((t.shape[0], 1))
         linestyle = self.custom_plots[variable][i].linestyle if self.custom_plots[variable][i].linestyle else "-"
@@ -650,7 +652,9 @@ class PlotOcp:
             ]
         )
 
-    def _create_plot_type_point(self, i: Int, t: NpArray, ax: plt.Axes, color: Str, label: StrOptional, variable: Str) -> None:
+    def _create_plot_type_point(
+        self, i: Int, t: NpArray, ax: plt.Axes, color: Str, label: StrOptional, variable: Str
+    ) -> None:
         """Create a point plot"""
         zero = np.zeros((t.shape[0], 1))
         self.plots.append(
@@ -925,17 +929,17 @@ class PlotOcp:
             update_conditioning_plots(args["x"], self.ocp)
 
     def _compute_y_from_plot_func(
-            self,
-            custom_plot: CustomPlot,
-            phase_idx: Int,
-            time_stepwise: DMList | NpArrayList,
-            dt: DMList | NpArrayList,
-            x_decision: DMList | NpArrayList,
-            x_stepwise: DMList | NpArrayList,
-            u: DMList | NpArrayList,
-            p: DMList | NpArrayList,
-            a: DMList | NpArrayList,
-            d: DMList | NpArrayList
+        self,
+        custom_plot: CustomPlot,
+        phase_idx: Int,
+        time_stepwise: DMList | NpArrayList,
+        dt: DMList | NpArrayList,
+        x_decision: DMList | NpArrayList,
+        x_stepwise: DMList | NpArrayList,
+        u: DMList | NpArrayList,
+        p: DMList | NpArrayList,
+        a: DMList | NpArrayList,
+        d: DMList | NpArrayList,
     ) -> list[FloatIterableorNpArray]:
         """
         Compute the y data from the plot function
@@ -1095,7 +1099,9 @@ class PlotOcp:
 
         return t0, x_node, u_node, p_node, a_node, d_node
 
-    def _format_integrated_plot_data(self, custom_plot: CustomPlot, all_y: DMList | NpArrayList) -> list[DMList | NpArrayList]:
+    def _format_integrated_plot_data(
+        self, custom_plot: CustomPlot, all_y: DMList | NpArrayList
+    ) -> list[DMList | NpArrayList]:
         """Format data for integrated plots"""
         map_idx = custom_plot.phase_mappings.to_first.map_idx
         out = [[] for _ in range(max(np.abs(map_idx)) + 1)]
@@ -1108,7 +1114,9 @@ class PlotOcp:
 
         return out
 
-    def _format_standard_plot_data(self, custom_plot: CustomPlot, all_y: DMList | NpArrayList) -> list[DMList | NpArrayList]:
+    def _format_standard_plot_data(
+        self, custom_plot: CustomPlot, all_y: DMList | NpArrayList
+    ) -> list[DMList | NpArrayList]:
         """Format data for standard plots (PLOT, STEP, POINT)"""
         map_idx = custom_plot.phase_mappings.to_first.map_idx
         all_y = np.concatenate([tp[:, 0:1] for tp in all_y], axis=1)
