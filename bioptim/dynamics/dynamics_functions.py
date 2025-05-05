@@ -5,6 +5,12 @@ from .fatigue.fatigue_dynamics import FatigueList
 from ..misc.enums import DefectType, ContactType
 from ..misc.mapping import BiMapping
 from ..optimization.optimization_variable import OptimizationVariable
+from ..misc.parameters_types import (
+    Bool,
+    AnyListOptional,
+    CX,
+    CXOptional,
+)
 
 
 class DynamicsFunctions:
@@ -91,9 +97,9 @@ class DynamicsFunctions:
         numerical_timeseries,
         nlp,
         contact_type: list[ContactType] | tuple[ContactType],
-        with_passive_torque: bool,
-        with_ligament: bool,
-        with_friction: bool,
+        with_passive_torque: Bool,
+        with_ligament: Bool,
+        with_friction: Bool,
         fatigue: FatigueList,
     ) -> DynamicsEvaluation:
         """
@@ -185,9 +191,9 @@ class DynamicsFunctions:
         algebraic_states,
         numerical_timeseries,
         nlp,
-        with_passive_torque: bool,
-        with_ligament: bool,
-        with_friction: bool,
+        with_passive_torque: Bool,
+        with_ligament: Bool,
+        with_friction: Bool,
     ) -> DynamicsEvaluation:
         """
         Forward dynamics driven by joint torques without actuation of the free floating base
@@ -263,7 +269,7 @@ class DynamicsFunctions:
         numerical_timeseries,
         nlp,
         contact_type: list[ContactType] | tuple[ContactType],
-        with_friction: bool,
+        with_friction: Bool,
     ) -> DynamicsEvaluation:
         """
         Forward dynamics subject to motor and sensory noise driven by torques
@@ -340,7 +346,7 @@ class DynamicsFunctions:
         algebraic_states,
         numerical_timeseries,
         nlp,
-        with_friction: bool,
+        with_friction: Bool,
     ) -> DynamicsEvaluation:
         """
         Forward dynamics subject to motor and sensory noise driven by joint torques
@@ -408,7 +414,7 @@ class DynamicsFunctions:
         return DynamicsEvaluation(dxdt=dxdt, defects=None)
 
     @staticmethod
-    def __get_fatigable_tau(nlp, states: MX | SX, controls: MX | SX, fatigue: FatigueList) -> MX | SX:
+    def __get_fatigable_tau(nlp, states: CX, controls: CX, fatigue: FatigueList) -> CX:
         """
         Apply the forward dynamics including (or not) the torque fatigue
 
@@ -472,9 +478,9 @@ class DynamicsFunctions:
         numerical_timeseries,
         nlp,
         contact_type: list[ContactType] | tuple[ContactType],
-        with_passive_torque: bool,
-        with_residual_torque: bool,
-        with_ligament: bool,
+        with_passive_torque: Bool,
+        with_residual_torque: Bool,
+        with_ligament: Bool,
     ):
         """
         Forward dynamics driven by joint torques activations.
@@ -541,9 +547,9 @@ class DynamicsFunctions:
         numerical_timeseries,
         nlp,
         contact_type: list[ContactType] | tuple[ContactType],
-        with_passive_torque: bool,
-        with_ligament: bool,
-        with_friction: bool,
+        with_passive_torque: Bool,
+        with_ligament: Bool,
+        with_friction: Bool,
     ) -> DynamicsEvaluation:
         """
         Forward dynamics driven by joint torques derivatives
@@ -608,9 +614,9 @@ class DynamicsFunctions:
         algebraic_states,
         numerical_timeseries: MX.sym,
         nlp,
-        with_passive_torque: bool = False,
-        with_ligament: bool = False,
-    ) -> MX | SX:
+        with_passive_torque: Bool = False,
+        with_ligament: Bool = False,
+    ) -> CX:
         """
         Contact forces of a forward dynamics driven by joint torques with contact constraints.
 
@@ -660,9 +666,9 @@ class DynamicsFunctions:
         algebraic_states,
         numerical_timeseries,
         nlp,
-        with_passive_torque: bool = False,
-        with_ligament: bool = False,
-    ) -> MX | SX:
+        with_passive_torque: Bool = False,
+        with_ligament: Bool = False,
+    ) -> CX:
         """
         Contact forces of a forward dynamics driven by joint torques with contact constraints.
 
@@ -712,10 +718,10 @@ class DynamicsFunctions:
         numerical_timeseries,
         nlp,
         contact_type: list[ContactType] | tuple[ContactType],
-        with_passive_torque: bool = False,
-        with_ligament: bool = False,
-        with_friction: bool = False,
-        with_residual_torque: bool = False,
+        with_passive_torque: Bool = False,
+        with_ligament: Bool = False,
+        with_friction: Bool = False,
+        with_residual_torque: Bool = False,
         fatigue=None,
     ) -> DynamicsEvaluation:
         """
@@ -829,9 +835,9 @@ class DynamicsFunctions:
         algebraic_states,
         numerical_timeseries,
         nlp,
-        with_passive_torque: bool = False,
-        with_ligament: bool = False,
-    ) -> MX | SX:
+        with_passive_torque: Bool = False,
+        with_ligament: Bool = False,
+    ) -> CX:
         """
         Contact forces of a forward dynamics driven by muscles activations and joint torques with contact constraints.
 
@@ -923,7 +929,7 @@ class DynamicsFunctions:
         return DynamicsEvaluation(dxdt=vertcat(qdot_mapped, qddot_mapped), defects=None)
 
     @staticmethod
-    def get(var: OptimizationVariable, cx: MX | SX):
+    def get(var: OptimizationVariable, cx: CX):
         """
         Main accessor to a variable in states or controls (cx)
 
@@ -942,7 +948,7 @@ class DynamicsFunctions:
         return var.mapping.to_second.map(cx[var.index, :])
 
     @staticmethod
-    def compute_qdot(nlp, q: MX | SX, qdot: MX | SX):
+    def compute_qdot(nlp, q: CX, qdot: CX):
         """
         Easy accessor to derivative of q
 
@@ -978,11 +984,11 @@ class DynamicsFunctions:
     @staticmethod
     def forward_dynamics(
         nlp,
-        q: MX | SX,
-        qdot: MX | SX,
-        tau: MX | SX,
+        q: CX,
+        qdot: CX,
+        tau: CX,
         contact_type: list[ContactType] | tuple[ContactType] | tuple[ContactType],
-        external_forces: list = None,
+        external_forces: AnyListOptional = None,
     ):
         """
         Easy accessor to derivative of qdot
@@ -1030,9 +1036,9 @@ class DynamicsFunctions:
     @staticmethod
     def inverse_dynamics(
         nlp,
-        q: MX | SX,
-        qdot: MX | SX,
-        qddot: MX | SX,
+        q: CX,
+        qdot: CX,
+        qddot: CX,
         contact_type: list[ContactType] | tuple[ContactType],
         external_forces: MX = None,
     ):
@@ -1072,7 +1078,7 @@ class DynamicsFunctions:
         return tau  # We ignore on purpose the mapping to keep zeros in the defects of the dynamic.
 
     @staticmethod
-    def compute_muscle_dot(nlp, muscle_excitations: MX | SX, muscle_activations: MX | SX):
+    def compute_muscle_dot(nlp, muscle_excitations: CX, muscle_activations: CX):
         """
         Easy accessor to derivative of muscle activations
 
@@ -1095,10 +1101,10 @@ class DynamicsFunctions:
     @staticmethod
     def compute_tau_from_muscle(
         nlp,
-        q: MX | SX,
-        qdot: MX | SX,
-        muscle_activations: MX | SX,
-        fatigue_states: MX | SX = None,
+        q: CX,
+        qdot: CX,
+        muscle_activations: CX,
+        fatigue_states: CXOptional = None,
     ):
         """
         Easy accessor to tau computed from muscles

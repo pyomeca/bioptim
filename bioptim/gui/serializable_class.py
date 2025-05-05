@@ -8,7 +8,20 @@ from ..limits.penalty_option import PenaltyOption
 from ..limits.path_conditions import Bounds
 from ..misc.mapping import BiMapping
 from ..misc.enums import PlotType, QuadratureRule, InterpolationType
-from ..misc.parameters_types import IntDict, IntList, AnyDict, IntOptional, StrOrIterable, AnyIterable, Bool, Str, Int
+from ..misc.parameters_types import (
+    IntDict,
+    IntList,
+    AnyDict,
+    Bool,
+    Str,
+    Int,
+    IntOptional,
+    AnyList,
+    AnyIterable,
+    AnyIterableOrSlice,
+    DoubleIntTuple,
+    StrOrIterable,
+)
 
 
 class CasadiFunctionSerializable:
@@ -42,7 +55,7 @@ class CasadiFunctionSerializable:
             size_in=data["size_in"],
         )
 
-    def size_in(self, key: str) -> int:
+    def size_in(self, key: str) -> Int:
         return self._size_in[key]
 
 
@@ -200,11 +213,11 @@ class CustomPlotSerializable:
     legend: AnyIterable
     combine_to: Str
     color: Str
-    linestyle: str
+    linestyle: Str
     ylim: AnyIterable
     bounds: BoundsSerializable
-    node_idx: list | slice | range
-    label: list
+    node_idx: AnyIterableOrSlice
+    label: AnyList
     compute_derivative: Bool
     integration_rule: QuadratureRule
     all_variables_in_one_subplot: Bool
@@ -219,8 +232,8 @@ class CustomPlotSerializable:
         linestyle: Str,
         ylim: AnyIterable,
         bounds: BoundsSerializable,
-        node_idx: list | slice | range,
-        label: list,
+        node_idx: AnyIterableOrSlice,
+        label: AnyList,
         compute_derivative: Bool,
         integration_rule: QuadratureRule,
         all_variables_in_one_subplot: Bool,
@@ -306,12 +319,12 @@ class OptimizationVariableContainerSerializable:
     node_index: Int
     shape: tuple[int, int]
 
-    def __init__(self, node_index: Int, shape: tuple[int, int], len: Int):
+    def __init__(self, node_index: Int, shape: DoubleIntTuple, len: Int):
         self.node_index = node_index
         self.shape = shape
         self._len = len
 
-    def __len__(self):
+    def __len__(self) -> Int:
         return self._len
 
     @classmethod
@@ -365,7 +378,7 @@ class OdeSolverSerializable:
             type="ode",
         )
 
-    def serialize(self):
+    def serialize(self) -> AnyDict:
         return {
             "polynomial_degree": self.polynomial_degree,
             "n_integration_steps": self.n_integration_steps,

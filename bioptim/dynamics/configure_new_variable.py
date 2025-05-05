@@ -6,22 +6,32 @@ from ..gui.plot import CustomPlot
 from ..limits.path_conditions import Bounds
 from ..misc.enums import PlotType, ControlType, VariableType, PhaseDynamics
 from ..misc.mapping import BiMapping
+from ..optimization.optimization_variable import OptimizationVariableList
+from ..misc.parameters_types import (
+    Int,
+    Str,
+    StrOptional,
+    Bool,
+    StrList,
+    NpArray,
+    CX,
+)
 
 
 class NewVariableConfiguration:
     def __init__(
         self,
-        name: str,
-        name_elements: list,
+        name: Str,
+        name_elements: StrList,
         ocp,
         nlp,
-        as_states: bool,
-        as_controls: bool,
-        as_algebraic_states: bool = False,
+        as_states: Bool,
+        as_controls: Bool,
+        as_algebraic_states: Bool = False,
         fatigue: FatigueList = None,
-        combine_name: str = None,
-        combine_state_control_plot: bool = False,
-        skip_plot: bool = False,
+        combine_name: StrOptional = None,
+        combine_state_control_plot: Bool = False,
+        skip_plot: Bool = False,
         axes_idx: BiMapping = None,
     ):
         """
@@ -89,16 +99,16 @@ class NewVariableConfiguration:
             self._declare_legend()
         self._declare_cx_and_plot()
 
-    def _check_for_n_threads_compatibility(self):
+    def _check_for_n_threads_compatibility(self) -> None:
         if self.ocp.n_threads > 1 and self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE:
             raise RuntimeError("Multiprocessing is not supported with phase_dynamics=PhaseDynamics.ONE_PER_NODE")
 
-    def _check_combine_state_control_plot(self):
+    def _check_combine_state_control_plot(self) -> None:
         """Check if combine_state_control_plot and combine_name are defined simultaneously"""
         if self.combine_state_control_plot and self.combine_name is not None:
             raise ValueError("combine_name and combine_state_control_plot cannot be defined simultaneously")
 
-    def define_cx_scaled(self, n_col: int, node_index: int) -> list[MX | SX]:
+    def define_cx_scaled(self, n_col: Int, node_index: Int) -> list[CX]:
         """
         This function defines the decision variables, either MX or SX,
         scaled to the physical world, they mean something according to the physical model considered.
@@ -128,7 +138,7 @@ class NewVariableConfiguration:
                 )
         return _cx
 
-    def define_cx_unscaled(self, _cx_scaled: list[MX | SX], scaling: np.ndarray) -> list[MX | SX]:
+    def define_cx_unscaled(self, _cx_scaled: list[CX], scaling: NpArray) -> list[CX]:
         """
         This function defines the decision variables, either MX or SX,
         unscaled means here the decision variable doesn't correspond to physical quantity.
@@ -153,14 +163,14 @@ class NewVariableConfiguration:
             _cx[j] = _cx_scaled[j] * scaling
         return _cx
 
-    def _declare_auto_variable_mapping(self):
+    def _declare_auto_variable_mapping(self) -> None:
         """Declare the mapping of the new variable if not already declared"""
         if self.name not in self.nlp.variable_mappings:
             self.nlp.variable_mappings[self.name] = BiMapping(
                 range(len(self.name_elements)), range(len(self.name_elements))
             )
 
-    def _declare_initial_guess(self):
+    def _declare_initial_guess(self) -> None:
         if self.as_states and self.name not in self.nlp.x_init:
             self.nlp.x_init.add(
                 self.name, initial_guess=np.zeros(len(self.nlp.variable_mappings[self.name].to_first.map_idx))
@@ -175,7 +185,7 @@ class NewVariableConfiguration:
                 self.name, initial_guess=np.zeros(len(self.nlp.variable_mappings[self.name].to_first.map_idx))
             )
 
-    def _declare_variable_scaling(self):
+    def _declare_variable_scaling(self) -> None:
         if self.as_states and self.name not in self.nlp.x_scaling:
             self.nlp.x_scaling.add(
                 self.name, scaling=np.ones(len(self.nlp.variable_mappings[self.name].to_first.map_idx))
@@ -189,12 +199,12 @@ class NewVariableConfiguration:
                 self.name, scaling=np.ones(len(self.nlp.variable_mappings[self.name].to_first.map_idx))
             )
 
-    def _declare_auto_axes_idx(self):
+    def _declare_auto_axes_idx(self) -> None:
         """Declare the axes index if not already declared"""
         if not self.axes_idx:
             self.axes_idx = BiMapping(to_first=range(len(self.name_elements)), to_second=range(len(self.name_elements)))
 
-    def _declare_legend(self):
+    def _declare_legend(self) -> None:
         """Declare the legend if not already declared"""
         self.legend = []
         for idx, name_el in enumerate(self.name_elements):
@@ -207,7 +217,7 @@ class NewVariableConfiguration:
                         current_legend += f"-{i}"
                 self.legend += [current_legend]
 
-    def _declare_cx_and_plot(self):
+    def _declare_cx_and_plot(self) -> None:
         if self.as_states:
 
             # States
@@ -319,12 +329,12 @@ class NewVariableConfiguration:
 
 
 def _manage_fatigue_to_new_variable(
-    name: str,
-    name_elements: list,
+    name: Str,
+    name_elements: StrList,
     ocp,
     nlp,
-    as_states: bool,
-    as_controls: bool,
+    as_states: Bool,
+    as_controls: Bool,
     fatigue: FatigueList = None,
 ):
     """
@@ -455,7 +465,7 @@ def _manage_fatigue_to_new_variable(
     return True
 
 
-def append_faked_optim_var(name: str, optim_var, keys: list):
+def append_faked_optim_var(name: Str, optim_var: OptimizationVariableList, keys: StrList):
     """
     Add a fake optim var by combining vars in keys
 

@@ -4,6 +4,11 @@ from casadi import MX, SX, integrator as casadi_integrator, horzcat, Function, v
 
 from . import integrator
 from ..misc.enums import ControlType, DefectType, PhaseDynamics
+from ..misc.parameters_types import (
+    Bool,
+    Int,
+    AnyList,
+)
 
 
 class OdeSolverBase:
@@ -18,7 +23,7 @@ class OdeSolverBase:
         Properly set the integration in an nlp
     """
 
-    def __init__(self, duplicate_starting_point: bool = False):
+    def __init__(self, duplicate_starting_point: Bool = False):
         """
         Parameters
         ----------
@@ -40,7 +45,7 @@ class OdeSolverBase:
         raise RuntimeError("This method should be implemented in the child class")
 
     @property
-    def is_direct_collocation(self) -> bool:
+    def is_direct_collocation(self) -> Bool:
         """
         indicating if the ode solver is direct collocation method
 
@@ -51,7 +56,7 @@ class OdeSolverBase:
         raise RuntimeError("This method should be implemented in the child class")
 
     @property
-    def is_direct_shooting(self) -> bool:
+    def is_direct_shooting(self) -> Bool:
         """
         indicating if the ode solver is direct shooting method
 
@@ -62,7 +67,7 @@ class OdeSolverBase:
         raise RuntimeError("This method should be implemented in the child class")
 
     @property
-    def n_required_cx(self) -> int:
+    def n_required_cx(self) -> Int:
         """
         The required number of column required in the casadi CX matrix for the state variables
 
@@ -83,7 +88,7 @@ class OdeSolverBase:
         """
         raise RuntimeError("This method should be implemented in the child class")
 
-    def t_ode(self, nlp) -> list:
+    def t_ode(self, nlp) -> AnyList:
         """
         The time span of the integration
 
@@ -175,7 +180,7 @@ class OdeSolverBase:
         raise RuntimeError("This method should be implemented in the child class")
 
     def initialize_integrator(
-        self, ocp, nlp, dynamics_index: int, node_index: int, is_extra_dynamics: bool = False, **extra_opt
+        self, ocp, nlp, dynamics_index: Int, node_index: Int, is_extra_dynamics: Bool = False, **extra_opt
     ) -> Callable:
         """
         Initialize the integrator

@@ -15,8 +15,13 @@ from ..misc.mapping import Mapping, BiMapping, BiMappingOrIterableOptional
 from ..optimization.solution.solution import Solution
 from ..optimization.solution.solution_data import SolutionMerge
 from ..misc.parameters_types import (
+    FloatList,
+    AnyList,
+    NpArray,
     StrIterableOptional,
     AnyIterable,
+    AnyIterableOptional,
+    AnyIterableOrRangeOptional,
     AnyDict,
     Str,
     Int,
@@ -77,10 +82,10 @@ class CustomPlot:
         combine_to: StrOptional = None,
         color: StrOptional = None,
         linestyle: StrOptional = None,
-        ylim: AnyIterable = None,
+        ylim: AnyIterableOptional = None,
         bounds: Bounds = None,
-        node_idx: list | slice | range = None,
-        label: AnyIterable = None,
+        node_idx: AnyIterableOrRangeOptional = None,
+        label: AnyIterableOptional = None,
         compute_derivative: BoolOptional = False,
         integration_rule: QuadratureRule = QuadratureRule.RECTANGLE_LEFT,
         all_variables_in_one_subplot: Bool = False,
@@ -221,7 +226,7 @@ class PlotOcp:
         show_bounds: Bool = False,
         shooting_type: Shooting = Shooting.MULTIPLE,
         integrator: SolutionIntegrator = SolutionIntegrator.OCP,
-        dummy_phase_times: list[list[float]] = None,
+        dummy_phase_times: list[FloatList] = None,
         only_initialize_variables: Bool = False,
     ):
         """
@@ -279,7 +284,7 @@ class PlotOcp:
             self._spread_figures_on_screen()
             self._initialize_additional_plots()
 
-    def _initialize_plot_options(self):
+    def _initialize_plot_options(self) -> AnyDict:
         """Initialize the plot options dictionary"""
         return {
             "general_options": {"use_tight_layout": False},
@@ -376,7 +381,9 @@ class PlotOcp:
             all_keys_across_phases += keys_not_in_previous_phases
         return all_keys_across_phases
 
-    def _process_plots_for_nlp(self, i, nlp, all_keys_across_phases, y_min_all, y_max_all, only_initialize_variables):
+    def _process_plots_for_nlp(
+        self, i: Int, nlp, all_keys_across_phases, y_min_all, y_max_all, only_initialize_variables
+    ):
         """Process plots for a specific NLP"""
         for variable in self.variable_sizes[i]:
             y_range_var_idx = all_keys_across_phases.index(variable)
@@ -398,7 +405,7 @@ class PlotOcp:
 
             self._create_plots_for_variable(i, nlp, variable, axes, y_min_all, y_max_all, y_range_var_idx)
 
-    def _setup_axes_for_variable(self, i, nlp, variable):
+    def _setup_axes_for_variable(self, i: Int, nlp, variable):
         """Setup axes for a specific variable"""
         if nlp.plot[variable].combine_to:
             self.axes[variable] = self.axes[nlp.plot[variable].combine_to]
@@ -440,14 +447,14 @@ class PlotOcp:
             ]
         )
 
-    def _initialize_custom_plot(self, i, variable):
+    def _initialize_custom_plot(self, i: Int, variable):
         """Initialize custom plot for a variable"""
         if variable not in self.custom_plots:
             self.custom_plots[variable] = [
                 nlp_tp.plot[variable] if variable in nlp_tp.plot else None for nlp_tp in self.ocp.nlp
             ]
 
-    def _create_plots_for_variable(self, i, nlp, variable, axes, y_min_all, y_max_all, y_range_var_idx):
+    def _create_plots_for_variable(self, i: Int, nlp, variable, axes, y_min_all, y_max_all, y_range_var_idx):
         """Create plots for a specific variable"""
         mapping_to_first_index = nlp.plot[variable].phase_mappings.to_first.map_idx
 
@@ -524,7 +531,7 @@ class PlotOcp:
 
         return y_min, y_max
 
-    def _create_plot_for_axis(self, i, nlp, variable, ax):
+    def _create_plot_for_axis(self, i: Int, nlp, variable, ax):
         """Create the actual plot for an axis"""
         plot_type = self.custom_plots[variable][i].type
         t = self.t[i][nlp.plot[variable].node_idx] if plot_type == PlotType.POINT else self.t[i]
@@ -543,13 +550,13 @@ class PlotOcp:
         else:
             raise RuntimeError(f"{plot_type} is not implemented yet")
 
-    def _get_plot_color(self, variable, i, plot_type):
+    def _get_plot_color(self, variable, i: Int, plot_type):
         """Get the color for a plot"""
         return (
             self.custom_plots[variable][i].color if self.custom_plots[variable][i].color else DEFAULT_COLORS[plot_type]
         )
 
-    def _create_plot_type_plot(self, i, t, ax, color, label):
+    def _create_plot_type_plot(self, i: Int, t, ax, color, label):
         """Create a standard line plot"""
         zero = np.zeros((t.shape[0], 1))
         self.plots.append(
@@ -567,7 +574,7 @@ class PlotOcp:
             ]
         )
 
-    def _create_plot_type_integrated(self, i, ax, color, label):
+    def _create_plot_type_integrated(self, i: Int, ax, color, label):
         """Create an integrated plot"""
         plots_integrated = []
         for cmp in range(self.ocp.nlp[i].ns):
@@ -582,7 +589,7 @@ class PlotOcp:
             )
         self.plots.append([PlotType.INTEGRATED, i, plots_integrated])
 
-    def _create_plot_type_step(self, i, t, ax, variable, color, label):
+    def _create_plot_type_step(self, i: Int, t, ax, variable, color, label):
         """Create a step plot"""
         zero = np.zeros((t.shape[0], 1))
         linestyle = self.custom_plots[variable][i].linestyle if self.custom_plots[variable][i].linestyle else "-"
@@ -594,7 +601,7 @@ class PlotOcp:
             ]
         )
 
-    def _create_plot_type_point(self, i, t, ax, color, label, variable):
+    def _create_plot_type_point(self, i: Int, t, ax, color, label, variable):
         """Create a point plot"""
         zero = np.zeros((t.shape[0], 1))
         self.plots.append(
@@ -618,7 +625,7 @@ class PlotOcp:
         if unique:
             ax.legend(*zip(*unique))
 
-    def _add_vertical_lines_and_bounds(self, i, nlp, variable, axes, mapping_to_first_index):
+    def _add_vertical_lines_and_bounds(self, i: Int, nlp, variable, axes, mapping_to_first_index):
         """Add vertical lines for phase intersections and bounds if needed"""
         for ctr, ax in enumerate(axes):
             if ctr in mapping_to_first_index:
@@ -633,7 +640,7 @@ class PlotOcp:
         for time in intersections_time:
             self.plots_vertical_lines.append(ax.axvline(float(time), **self.plot_options["vertical_lines"]))
 
-    def _add_bounds_to_plot(self, i, nlp, variable, ctr, ax, mapping_to_first_index):
+    def _add_bounds_to_plot(self, i: Int, nlp, variable, ctr, ax, mapping_to_first_index):
         """Add bounds to a specific plot"""
         if nlp.plot[variable].bounds.type == InterpolationType.EACH_FRAME:
             ns = nlp.plot[variable].bounds.min.shape[1] - 1
@@ -741,14 +748,14 @@ class PlotOcp:
         return list([t[-1][-1] for t in self.t_integrated])[:-1]
 
     @staticmethod
-    def show():
+    def show() -> None:
         """
         Force the show of the graphs. This is a blocking function
         """
 
         plt.show()
 
-    def parse_data(self, **args) -> tuple[list, list]:
+    def parse_data(self, **args) -> tuple[AnyList, AnyList]:
         """
         Parse the data to be plotted, the return of this method can be passed to update_data to update the plots
 
@@ -1093,7 +1100,7 @@ class PlotOcp:
             # TODO:  set_tight_layout function will be deprecated. Use set_layout_engine instead.
 
     @staticmethod
-    def _compute_ylim(min_val: np.ndarray | DM, max_val: np.ndarray | DM, factor: Float) -> AnyTuple:
+    def _compute_ylim(min_val: NpArray | DM, max_val: NpArray | DM, factor: Float) -> AnyTuple:
         """
         Dynamically find the ylim
 
@@ -1123,7 +1130,7 @@ class PlotOcp:
         return data_mean - y_range, data_mean + y_range
 
     @staticmethod
-    def _generate_windows_size(nb: Int) -> tuple:
+    def _generate_windows_size(nb: Int) -> AnyTuple:
         """
         Defines the number of column and rows of subplots from the number of variables to plot.
 
