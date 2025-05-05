@@ -9,7 +9,6 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     Node,
-    DefectType,
     Solver,
     BiorbdModel,
     PhaseDynamics,
