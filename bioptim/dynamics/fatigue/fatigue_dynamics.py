@@ -1,8 +1,6 @@
 from typing import Any
 from abc import ABC, abstractmethod
 
-from casadi import MX
-
 from ...misc.options import UniquePerPhaseOptionList, OptionDict, OptionGeneric
 from ...misc.enums import VariableType
 from ...misc.parameters_types import (
@@ -97,14 +95,14 @@ class FatigueModel(ABC):
         """
 
     @abstractmethod
-    def dynamics(self, dxdt: MX, nlp, index: int, states: CX, controls: CX) -> MX:
+    def dynamics(self, dxdt: CX, nlp, index: Int, states: CX, controls: CX) -> CX:
         """
         Augment the dxdt vector with the derivative of the fatigue states
 
         Parameters
         ----------
-        dxdt: MX
-            The MX vector to augment
+        dxdt: MX | SX
+            The CX vector to augment
         nlp: NonLinearProgram
             The current phase
         index: int
@@ -134,7 +132,7 @@ class FatigueModel(ABC):
 class MultiFatigueModel(OptionGeneric):
     def __init__(
         self,
-        model: list[FatigueModel],
+        model: FatigueModel | list[FatigueModel],
         state_only: Bool,
         split_controls: Bool = True,
         apply_to_joint_dynamics: Bool = False,
@@ -145,15 +143,11 @@ class MultiFatigueModel(OptionGeneric):
             The actual fatigue model
         state_only: bool
             If the added fatigue should be used in the dynamics or only computed
-        apply_to_joint_dynamics: bool
-            If the fatigue should be applied to the joint (only makes sense for muscle fatigue)
-        suffix_default: str
-            The replacement of suffix if any, for internal purpose
         split_controls: bool
-            If the tau should be separated into minus and plus part or use an if_else case
+            If the tau should be separated into minus and plus part or use an if_else case (only makes sense for muscle fatigue)
         apply_to_joint_dynamics: bool
             If the fatigue should be applied to the dynamics of the system
-        params: Any
+        extra_parameters: Any
             Any other parameters to pass to OptionGeneric
         """
 
@@ -219,20 +213,20 @@ class MultiFatigueModel(OptionGeneric):
         """
         self.models.append(fatigue)
 
-    def dynamics(self, dxdt: CX, nlp, index: Int, states: CX, controls) -> CX:
+    def dynamics(self, dxdt: CX, nlp, index: Int, states: CX, controls: CX) -> CX:
         for suffix in self.suffix():
             dxdt = self._dynamics_per_suffix(dxdt, suffix, nlp, index, states, controls)
 
         return dxdt
 
     @abstractmethod
-    def _dynamics_per_suffix(self, dxdt: CX, suffix, nlp, index: int, states: CX, controls: CX) -> CX:
+    def _dynamics_per_suffix(self, dxdt: CX, suffix: Str, nlp, index: Int, states: CX, controls: CX) -> CX:
         """
 
         Parameters
         ----------
-        dxdt: MX
-            The MX vector to augment
+        dxdt: MX |SX
+            The CX vector to augment
         suffix: str
             The str for each suffix
         nlp: NonLinearProgram
@@ -326,7 +320,7 @@ class MultiFatigueInterface(MultiFatigueModel, ABC):
     def default_initial_guess(self, index: Int, variable_type: VariableType) -> FloatTuple:
         return self.models["fatigue"].default_initial_guess()
 
-    def _dynamics_per_suffix(self, dxdt: CX, suffix, nlp, index: Int, states: CX, controls: CX) -> CX:
+    def _dynamics_per_suffix(self, dxdt: CX, suffix: Str, nlp, index: Int, states: CX, controls: CX) -> CX:
         return self.models["fatigue"].dynamics(dxdt, nlp, index, states, controls)
 
     @staticmethod
@@ -342,7 +336,7 @@ class FatigueUniqueList(UniquePerPhaseOptionList):
     def print(self) -> None:
         NotImplementedError("FatigueUniqueList cannot be printed")
 
-    def __init__(self, suffix: AnyIterable):
+    def __init__(self, suffix: StrTuple):
         """
         Parameters
         ----------

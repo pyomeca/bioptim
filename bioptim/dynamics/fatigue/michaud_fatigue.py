@@ -87,7 +87,7 @@ class MichaudFatigue(MuscleFatigue):
     def default_bounds(self, variable_type: VariableType) -> tuple[FloatTuple]:
         return (0, 0, 0, 0), (1, 1, 1, 1)
 
-    def apply_dynamics(self, target_load: CX, *states) -> CX:
+    def apply_dynamics(self, target_load: CX, *states: CX) -> CX:
         # Implementation of modified Xia dynamics
         ma, mr, mf, effort = states
 

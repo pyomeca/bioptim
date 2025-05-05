@@ -1,8 +1,6 @@
 from abc import abstractmethod
 from typing import Any
 
-from casadi import SX, MX
-
 from .fatigue_dynamics import FatigueModel, MultiFatigueInterface
 from ..dynamics_functions import DynamicsFunctions
 from ...misc.enums import VariableType

@@ -1,6 +1,6 @@
 from abc import abstractmethod
 
-from casadi import if_else, lt, gt, MX
+from casadi import if_else, lt, gt
 
 from .fatigue_dynamics import MultiFatigueModel, FatigueModel
 from ..dynamics_functions import DynamicsFunctions
@@ -76,7 +76,7 @@ class TauFatigue(MultiFatigueModel):
         The suffix that is appended to the variable name that describes the fatigue
         """
 
-    def _dynamics_per_suffix(self, dxdt: CX, suffix, nlp, index: Int, states: CX, controls: CX) -> CX:
+    def _dynamics_per_suffix(self, dxdt: CX, suffix: Str, nlp, index: Int, states: CX, controls: CX) -> CX:
         var = self.models[suffix]
         target_load = self._get_target_load(var, suffix, nlp, controls, index)
         fatigue = [
@@ -110,7 +110,7 @@ class TauFatigue(MultiFatigueModel):
     def default_apply_to_joint_dynamics() -> Bool:
         return False
 
-    def default_bounds(self, index: int, variable_type: VariableType) -> tuple[FloatTuple]:
+    def default_bounds(self, index: Int, variable_type: VariableType) -> tuple[FloatTuple]:
         key = self._convert_to_models_key(index)
 
         if variable_type == VariableType.STATES:
