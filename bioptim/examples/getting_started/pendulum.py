@@ -11,7 +11,6 @@ appreciate it). Finally, once it finished optimizing, it animates the model usin
 
 from bioptim import (
     OptimalControlProgram,
-    DynamicsFcn,
     Dynamics,
     BoundsList,
     InitialGuessList,
@@ -25,6 +24,9 @@ from bioptim import (
     ControlType,
     PhaseDynamics,
     OnlineOptim,
+    States,
+    Controls,
+    AutoConfigure,
 )
 
 
@@ -80,7 +82,11 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = Dynamics(
-        DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
+        configure=AutoConfigure(states=[States.Q, States.QDOT], controls=[Controls.TAU]),
+        ode_solver=ode_solver,
+        expand_dynamics=expand_dynamics,
+        phase_dynamics=phase_dynamics,
+        control_type=control_type,
     )
 
     # Path bounds
@@ -118,7 +124,6 @@ def prepare_ocp(
         objective_functions=objective_functions,
         use_sx=use_sx,
         n_threads=n_threads,
-        control_type=control_type,
     )
 
 
