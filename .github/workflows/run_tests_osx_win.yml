@@ -36,7 +36,7 @@ jobs:
       - name: Setup environment
         uses: conda-incubator/setup-miniconda@v2
         with:
-          miniforge-version: latest
+          miniforge-version: 24.11.3-2
           use-mamba: true
           activate-environment: bioptim
           environment-file: environment.yml

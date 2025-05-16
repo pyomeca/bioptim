@@ -1,3 +1,10 @@
+from ..misc.parameters_types import (
+    Bool,
+    AnyDict,
+    AnyListorDict,
+)
+
+
 class SolverInterface:
     """
     Abstract class for an ocp solver
@@ -51,7 +58,7 @@ class SolverInterface:
 
         raise RuntimeError("SolverInterface is an abstract class")
 
-    def solve(self, expand_during_shake_tree) -> dict:
+    def solve(self, expand_during_shake_tree: Bool) -> AnyDict:
         """
         Solve the prepared ocp
 
@@ -67,7 +74,7 @@ class SolverInterface:
 
         raise RuntimeError("SolverInterface is an abstract class")
 
-    def get_optimized_value(self) -> list | dict:
+    def get_optimized_value(self) -> AnyListorDict:
         """
         Get the previously optimized solution
 
