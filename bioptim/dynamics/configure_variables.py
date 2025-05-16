@@ -134,7 +134,7 @@ class ConfigureVariables:
 
 
     @staticmethod
-    def configure_q(ocp, nlp, as_states: bool, as_controls: bool):
+    def configure_q(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
         """
         Configure the generalized coordinates
 
@@ -146,15 +146,17 @@ class ConfigureVariables:
             If the generalized coordinates should be a state
         as_controls: bool
             If the generalized coordinates should be a control
+        as_algebraic_states: bool
+            If the generalized coordinates should be an algebraic state
         """
         name = "q"
         name_q = nlp.model.name_dof
         axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
-        ConfigureVariables.configure_new_variable(name, name_q, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
+        ConfigureVariables.configure_new_variable(name, name_q, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states, axes_idx=axes_idx)
 
 
     @staticmethod
-    def configure_qdot(ocp, nlp, as_states: bool, as_controls: bool):
+    def configure_qdot(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
         """
         Configure the generalized velocities
 
@@ -166,16 +168,18 @@ class ConfigureVariables:
             If the generalized velocities should be a state
         as_controls: bool
             If the generalized velocities should be a control
+        as_algebraic_states: bool
+            If the generalized velocities should be an algebraic state
         """
 
         name = "qdot"
         name_qdot = ConfigureVariables._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
-        ConfigureVariables.configure_new_variable(name, name_qdot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
+        ConfigureVariables.configure_new_variable(name, name_qdot, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states, axes_idx=axes_idx)
 
 
     @staticmethod
-    def configure_qddot(ocp, nlp, as_states: bool, as_controls: bool):
+    def configure_qddot(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
         """
         Configure the generalized accelerations
 
@@ -187,16 +191,18 @@ class ConfigureVariables:
             If the generalized velocities should be a state
         as_controls: bool
             If the generalized velocities should be a control
+        as_algebraic_states: bool
+            If the generalized velocities should be an algebraic state
         """
 
         name = "qddot"
         name_qddot = ConfigureVariables._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
-        ConfigureVariables.configure_new_variable(name, name_qddot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
+        ConfigureVariables.configure_new_variable(name, name_qddot, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states, axes_idx=axes_idx)
 
 
     @staticmethod
-    def configure_qdddot(ocp, nlp, as_states: bool, as_controls: bool):
+    def configure_qdddot(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
         """
         Configure the generalized accelerations
 
@@ -208,12 +214,14 @@ class ConfigureVariables:
             If the generalized velocities should be a state
         as_controls: bool
             If the generalized velocities should be a control
+        as_algebraic_states: bool
+            If the generalized velocities should be an algebraic state
         """
 
         name = "qdddot"
         name_qdddot = ConfigureVariables._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
-        ConfigureVariables.configure_new_variable(name, name_qdddot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
+        ConfigureVariables.configure_new_variable(name, name_qdddot, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states, axes_idx=axes_idx)
 
 
     @staticmethod
@@ -468,7 +476,7 @@ class ConfigureVariables:
 
 
     @staticmethod
-    def configure_tau(ocp, nlp, as_states: bool, as_controls: bool, fatigue: FatigueList = None):
+    def configure_tau(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool, fatigue: FatigueList = None):
         """
         Configure the generalized forces
 
@@ -480,6 +488,8 @@ class ConfigureVariables:
             If the generalized forces should be a state
         as_controls: bool
             If the generalized forces should be a control
+        as_algebraic_states: bool
+            If the generalized forces should be an algebraic state
         fatigue: FatigueList
             If the dynamics with fatigue should be declared
         """
@@ -488,12 +498,12 @@ class ConfigureVariables:
         name_tau = ConfigureVariables._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
         ConfigureVariables.configure_new_variable(
-            name, name_tau, ocp, nlp, as_states, as_controls, fatigue=fatigue, axes_idx=axes_idx
+            name, name_tau, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states, fatigue=fatigue, axes_idx=axes_idx
         )
 
 
     @staticmethod
-    def configure_residual_tau(ocp, nlp, as_states: bool, as_controls: bool):
+    def configure_residual_tau(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
         """
         Configure the residual forces
 
@@ -505,18 +515,20 @@ class ConfigureVariables:
             If the generalized forces should be a state
         as_controls: bool
             If the generalized forces should be a control
+        as_algebraic_states: bool
+            If the generalized forces should be an algebraic state
         """
 
         name = "residual_tau"
         name_residual_tau = ConfigureVariables._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
         ConfigureVariables.configure_new_variable(
-            name, name_residual_tau, ocp, nlp, as_states, as_controls, axes_idx=axes_idx
+            name, name_residual_tau, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states, axes_idx=axes_idx
         )
 
 
     @staticmethod
-    def configure_taudot(ocp, nlp, as_states: bool, as_controls: bool):
+    def configure_taudot(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
         """
         Configure the generalized forces derivative
 
@@ -528,16 +540,18 @@ class ConfigureVariables:
             If the generalized force derivatives should be a state
         as_controls: bool
             If the generalized force derivatives should be a control
+        as_algebraic_states: bool
+            If the generalized force derivatives should be an algebraic state
         """
 
         name = "taudot"
         name_taudot = ConfigureVariables._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
-        ConfigureVariables.configure_new_variable(name, name_taudot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
+        ConfigureVariables.configure_new_variable(name, name_taudot, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states, axes_idx=axes_idx)
 
 
     @staticmethod
-    def configure_translational_forces(ocp, nlp, as_states: bool, as_controls: bool, n_contacts: int = 1):
+    def configure_translational_forces(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool, n_contacts: int = 1):
         """
         Configure contact forces as optimization variables (for now only in global reference frame with an unknown point of application))
         # TODO: Match this with ExternalForceSetTimeSeries (options: 'in_global', 'torque', ...)
@@ -550,12 +564,14 @@ class ConfigureVariables:
             If the contact force should be a state
         as_controls: bool
             If the contact force should be a control
+        as_algebraic_states: bool
+            If the contact force should be an algebraic state
         n_contacts: int
             The number of contacts to consider (There will be 3 components for each contact)
         """
 
         name_contact_forces = [f"Force{i}_{axis}" for i in range(n_contacts) for axis in ("X", "Y", "Z")]
-        ConfigureVariables.configure_new_variable("contact_forces", name_contact_forces, ocp, nlp, as_states, as_controls)
+        ConfigureVariables.configure_new_variable("contact_forces", name_contact_forces, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states)
         ConfigureVariables.configure_new_variable(
             "contact_positions", name_contact_forces, ocp, nlp, as_states, as_controls
         )
@@ -580,7 +596,7 @@ class ConfigureVariables:
 
         name_contact_forces = [name for name in nlp.model.contact_names]
         ConfigureVariables.configure_new_variable(
-            "rigid_contact_forces", name_contact_forces, ocp, nlp, as_states, as_controls, as_algebraic_states
+            "rigid_contact_forces", name_contact_forces, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states
         )
 
 
@@ -615,7 +631,7 @@ class ConfigureVariables:
 
 
     @staticmethod
-    def configure_muscles(ocp, nlp, as_states: bool, as_controls: bool, fatigue: FatigueList = None):
+    def configure_muscles(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool, fatigue: FatigueList = None):
         """
         Configure the muscles
 
@@ -627,6 +643,8 @@ class ConfigureVariables:
             If the muscles should be a state
         as_controls: bool
             If the muscles should be a control
+        as_algebraic_states: bool
+            If the muscles should be an algebraic state
         fatigue: FatigueList
             The list of fatigue parameters
         """
@@ -637,8 +655,9 @@ class ConfigureVariables:
             muscle_names,
             ocp,
             nlp,
-            as_states,
-            as_controls,
+            as_states=as_states,
+            as_controls=as_controls,
+            as_algebraic_states=as_algebraic_states,
             combine_state_control_plot=True,
             fatigue=fatigue,
         )
@@ -672,7 +691,7 @@ class ConfigureVariables:
             ],
             [
                 dyn_func()(
-                    nlp.get_var_from_states_or_controls("q_u", nlp.states.cx, nlp.controls.cx),
+                    nlp.get_var("q_u", nlp.states.cx, nlp.controls.cx),
                     DM.zeros(nlp.model.nb_dependent_joints, 1),
                 )
             ],
@@ -731,8 +750,8 @@ class ConfigureVariables:
             ],
             [
                 dyn_func()(
-                    nlp.get_var_from_states_or_controls("q_u", nlp.states.scaled.cx, nlp.controls.scaled.cx),
-                    nlp.get_var_from_states_or_controls("qdot_u", nlp.states.scaled.cx, nlp.controls.scaled.cx),
+                    nlp.get_var("q_u", nlp.states.scaled.cx, nlp.controls.scaled.cx),
+                    nlp.get_var("qdot_u", nlp.states.scaled.cx, nlp.controls.scaled.cx),
                     DM.zeros(nlp.model.nb_dependent_joints, 1),
                 )
             ],
