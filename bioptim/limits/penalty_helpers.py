@@ -1,7 +1,7 @@
 from typing import Callable, Protocol
 
 import numpy as np
-from casadi import MX, SX, DM, vertcat
+from casadi import MX, SX, DM, vertcat, horzcat
 
 from ..misc.enums import PhaseDynamics, ControlType
 
@@ -39,7 +39,7 @@ class PenaltyHelpers:
         This method returns the t0 of a penalty.
         """
 
-        if penalty.multinode_penalty:
+        if penalty.is_multinode_penalty:
             phases, nodes, _ = _get_multinode_indices(penalty, is_constructing_penalty=False)
             phase, node = phases[0], nodes[0]
         else:
@@ -78,15 +78,34 @@ class PenaltyHelpers:
 
         node = penalty.node_idx[index]
 
-        if penalty.multinode_penalty:
+        if penalty.is_multinode_penalty:
             x = []
             phases, nodes, subnodes = _get_multinode_indices(penalty, is_constructing_penalty)
+            idx = 0
             for phase, node, sub in zip(phases, nodes, subnodes):
-                x.append(_reshape_to_vector(get_state_decision(phase, node, sub)))
+                if (
+                    not is_constructing_penalty
+                    and node == penalty.ns[idx]
+                    and (
+                        penalty.control_types[idx] != ControlType.LINEAR_CONTINUOUS
+                        and penalty.control_types[idx] != ControlType.CONSTANT_WITH_LAST_NODE
+                    )
+                ):
+                    x.append(_reshape_to_vector(get_state_decision(phase, node, range(0, 1))))
+                else:
+                    x.append(_reshape_to_vector(get_state_decision(phase, node, sub)))
+                idx += 1
             return _vertcat(x)
 
         else:
-            subnodes = slice(0, None if node < penalty.ns[0] and penalty.subnodes_are_decision_states[0] else 1)
+            subnodes = slice(
+                0,
+                (
+                    None
+                    if node < penalty.ns[0] and penalty.subnodes_are_decision_states[0] and not penalty.is_transition
+                    else 1
+                ),
+            )
             x0 = _reshape_to_vector(get_state_decision(penalty.phase, node, subnodes))
 
             if is_constructing_penalty:
@@ -99,15 +118,46 @@ class PenaltyHelpers:
             return vertcat(x0, x1)
 
     @staticmethod
+    def get_states(ocp, penalty, phase_idx: Int, node_idx: Int, subnodes_idx: range, values: CXorDMorNpArray):
+        null_element = ocp.cx() if type(values[0]) != np.ndarray else np.array([])
+        idx = 0 if not penalty.is_multinode_penalty else penalty.nodes_phase.index(phase_idx)
+        subnodes_are_decision_states = penalty.subnodes_are_decision_states[idx] and not penalty.is_transition
+        if subnodes_idx.stop == -1:
+            if subnodes_idx.start == 0:
+                x = horzcat(
+                    values[node_idx],
+                    values[node_idx + 1][:, 0] if node_idx + 1 < ocp.nlp[phase_idx].ns + 1 else null_element,
+                )
+            else:
+                raise RuntimeError("only subnodes_idx.start == 0 is supported for subnodes_idx.stop == -1")
+        else:
+            if subnodes_are_decision_states:
+                x = values[node_idx][:, subnodes_idx] if node_idx < len(values) else null_element
+            else:
+                x = values[node_idx][:, 0] if node_idx < len(values) else null_element
+        return x
+
+    @staticmethod
     def controls(penalty, index: Int, get_control_decision: Callable, is_constructing_penalty: Bool = False):
         node = penalty.node_idx[index]
 
-        if penalty.multinode_penalty:
+        if penalty.is_multinode_penalty:
             u = []
             phases, nodes, subnodes = _get_multinode_indices(penalty, is_constructing_penalty)
+            idx = 0
             for phase, node, sub in zip(phases, nodes, subnodes):
-                # No need to test for control types as this is never integrated (so we only need the starting value)
-                u.append(_reshape_to_vector(get_control_decision(phase, node, sub)))
+                if (
+                    not is_constructing_penalty
+                    and node == penalty.ns[idx]
+                    and (
+                        penalty.control_types[idx] != ControlType.LINEAR_CONTINUOUS
+                        and penalty.control_types[idx] != ControlType.CONSTANT_WITH_LAST_NODE
+                    )
+                ):
+                    u.append(_reshape_to_vector(get_control_decision(phase, node, range(0, 1))))
+                else:
+                    u.append(_reshape_to_vector(get_control_decision(phase, node, sub)))
+                idx += 1
             return _vertcat(u)
 
         if is_constructing_penalty:
@@ -133,6 +183,26 @@ class PenaltyHelpers:
         return u
 
     @staticmethod
+    def get_controls(ocp, penalty, phase_idx: Int, node_idx: Int, subnodes_idx: range, values: CXorDMorNpArray):
+        null_element = ocp.cx() if type(values[0]) != np.ndarray else np.array([])
+        idx = 0 if not penalty.is_multinode_penalty else penalty.nodes_phase.index(phase_idx)
+        subnodes_are_decision_states = penalty.subnodes_are_decision_states[idx] and not penalty.is_transition
+        if subnodes_idx.stop == -1:
+            if subnodes_idx.start == 0:
+                u = horzcat(
+                    values[node_idx] if node_idx < len(values) else null_element,
+                    values[node_idx + 1][:, 0] if node_idx + 1 < len(values) else null_element,
+                )
+            else:
+                raise RuntimeError("only subnodes_idx.start == 0 is supported for subnodes_idx.stop == -1")
+        else:
+            if subnodes_are_decision_states:
+                u = values[node_idx][:, subnodes_idx] if node_idx < len(values) else null_element
+            else:
+                u = values[node_idx][:, 0] if node_idx < len(values) else null_element
+        return u
+
+    @staticmethod
     def parameters(penalty, index: Int, get_parameter_decision: Callable):
         node = penalty.node_idx[index]
         p = get_parameter_decision(penalty.phase, node, None)
@@ -141,7 +211,8 @@ class PenaltyHelpers:
     @staticmethod
     def numerical_timeseries(penalty, index: Int, get_numerical_timeseries: Callable):
         node = penalty.node_idx[index]
-        if penalty.multinode_penalty:
+        if penalty.is_multinode_penalty:
+            # numerical timeseries are expected to be provided only at the shooting node.
             for i_phase in penalty.nodes_phase:
                 d = get_numerical_timeseries(i_phase, node, 0)  # cx_start
                 if d.shape[0] != 0:
@@ -223,24 +294,32 @@ class PenaltyHelpers:
 
 
 def _get_multinode_indices(penalty, is_constructing_penalty: Bool) -> IntList:
-    if not penalty.multinode_penalty:
+    if not penalty.is_multinode_penalty:
         raise RuntimeError("This function should only be called for multinode penalties")
 
     phases = penalty.nodes_phase
     nodes = penalty.multinode_idx
 
-    if is_constructing_penalty:
-        startings = PenaltyHelpers.get_multinode_penalty_subnodes_starting_index(penalty)
-        subnodes = []
-        for starting in startings:
-            if starting < 0:
+    startings = PenaltyHelpers.get_multinode_penalty_subnodes_starting_index(penalty)
+    subnodes = []
+    for i_starting, starting in enumerate(startings):
+        if starting < 0:  # The last cx accessible (cx_end)
+            if is_constructing_penalty:
                 subnodes.append(slice(-1, None))
             else:
-                subnodes.append(slice(starting, starting + 1))
-
-    else:
-        # No need to test for wrong sizes as it will have failed during the constructing phase already
-        subnodes = [slice(0, 1)] * len(penalty.multinode_idx)
+                subnodes.append(slice(0, 1))
+        elif starting == 2:  # Also the last cx accessible (cx_end) since there are only 3 cx available
+            if is_constructing_penalty:
+                subnodes.append(slice(2, 3))
+            else:
+                subnodes.append(slice(0, 1))
+        elif penalty.subnodes_are_decision_states[i_starting] and not penalty.is_transition:
+            if nodes[i_starting] >= penalty.ns[i_starting]:
+                subnodes.append(slice(0, 1))
+            else:
+                subnodes.append(slice(0, -1))
+        else:
+            subnodes.append(slice(starting, starting + 1))
 
     return phases, nodes, subnodes
 

@@ -113,6 +113,7 @@ class MultinodeConstraintFcn(FcnEnum):
     STATES_EQUALITY = (MultinodeConstraintFunctions.Functions.states_equality,)
     CONTROLS_EQUALITY = (MultinodeConstraintFunctions.Functions.controls_equality,)
     ALGEBRAIC_STATES_EQUALITY = (MultinodeConstraintFunctions.Functions.algebraic_states_equality,)
+    ALGEBRAIC_STATES_CONTINUITY = (MultinodeConstraintFunctions.Functions.algebraic_states_continuity,)
     CUSTOM = (MultinodeConstraintFunctions.Functions.custom,)
     COM_EQUALITY = (MultinodeConstraintFunctions.Functions.com_equality,)
     COM_VELOCITY_EQUALITY = (MultinodeConstraintFunctions.Functions.com_velocity_equality,)
