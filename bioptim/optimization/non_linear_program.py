@@ -126,7 +126,6 @@ class NonLinearProgram:
         self.casadi_func = {}
         self.rigid_contact_forces_func = None
         self.soft_contact_forces_func = None
-        self.control_type = ControlType.CONSTANT
         self.cx = None
         self.dt = None
         self.dynamics = []
@@ -333,9 +332,6 @@ class NonLinearProgram:
         """
         Declare all the casadi variables with the right size to be used during this specific phase.
         """
-        if self.control_type not in ControlType:
-            raise NotImplementedError(f"Multiple shooting problem not implemented yet for {self.control_type}")
-
         self._declare_states_shooting_points()
         self._declare_controls_shooting_points()
         self._declare_algebraic_states_shooting_points()
@@ -362,7 +358,7 @@ class NonLinearProgram:
         p = self.phase_idx
         u = []
         u_scaled = []
-        range_stop = self.ns if self.control_type == ControlType.CONSTANT else self.ns + 1
+        range_stop = self.ns if self.dynamics_type.control_type == ControlType.CONSTANT else self.ns + 1
         for k in range(range_stop):
             self.set_node_index(k)
             u_scaled.append(self.cx.sym(f"U_scaled_{p}_{k}", self.controls.scaled.shape, 1))
@@ -449,7 +445,7 @@ class NonLinearProgram:
         -------
         The number of controls
         """
-        mod = 1 if self.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE) else 0
+        mod = 1 if self.dynamics_type.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE) else 0
         return self.ns + mod
 
     def n_controls_steps(self, node_idx) -> int:
@@ -464,11 +460,11 @@ class NonLinearProgram:
         The number of states
         """
 
-        if self.control_type == ControlType.CONSTANT:
+        if self.dynamics_type.control_type == ControlType.CONSTANT:
             return 1
-        elif self.control_type == ControlType.CONSTANT_WITH_LAST_NODE:
+        elif self.dynamics_type.control_type == ControlType.CONSTANT_WITH_LAST_NODE:
             return 1
-        elif self.control_type == ControlType.LINEAR_CONTINUOUS:
+        elif self.dynamics_type.control_type == ControlType.LINEAR_CONTINUOUS:
             return 2
         else:
             raise RuntimeError("Not implemented yet")

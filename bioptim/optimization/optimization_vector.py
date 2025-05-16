@@ -89,12 +89,12 @@ class OptimizationVectorHelper:
         # For controls
         for nlp in ocp.nlp:
             nlp.set_node_index(0)
-            if nlp.control_type in (ControlType.CONSTANT,):
+            if nlp.dynamics_type.control_type in (ControlType.CONSTANT,):
                 ns = nlp.ns
-            elif nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
+            elif nlp.dynamics_type.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                 ns = nlp.ns + 1
             else:
-                raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
+                raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.dynamics_type.control_type}")
 
             for key in nlp.controls.keys():
                 if key in nlp.u_bounds.keys():
@@ -179,12 +179,12 @@ class OptimizationVectorHelper:
         # For controls
         for nlp in ocp.nlp:
             nlp.set_node_index(0)
-            if nlp.control_type in (ControlType.CONSTANT,):
+            if nlp.dynamics_type.control_type in (ControlType.CONSTANT,):
                 ns = nlp.ns - 1
-            elif nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
+            elif nlp.dynamics_type.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                 ns = nlp.ns
             else:
-                raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
+                raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.dynamics_type.control_type}")
 
             for key in nlp.controls.keys():
                 if key in nlp.u_init.keys():

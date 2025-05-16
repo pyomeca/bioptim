@@ -734,16 +734,16 @@ class PenaltyOption(OptionGeneric):
         controls.node_index = n_idx
 
         def vertcat_cx_end():
-            if nlp.control_type in (ControlType.LINEAR_CONTINUOUS,):
+            if nlp.dynamics_type.control_type in (ControlType.LINEAR_CONTINUOUS,):
                 return vertcat(u, controls.scaled.cx_end)
-            elif nlp.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
+            elif nlp.dynamics_type.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
                 if n_idx < nlp.n_controls_nodes - 1:
                     return vertcat(u, controls.scaled.cx_end)
 
                 elif n_idx == nlp.n_controls_nodes - 1:
                     # If we are at the penultimate node, we still can use the cx_end, unless we are
                     # performing some kind of integration or derivative and this last node does not exist
-                    if nlp.control_type in (ControlType.CONSTANT_WITH_LAST_NODE,):
+                    if nlp.dynamics_type.control_type in (ControlType.CONSTANT_WITH_LAST_NODE,):
                         return vertcat(u, controls.scaled.cx_end)
                     if self.integrate or self.derivative or self.explicit_derivative:
                         return u
@@ -753,7 +753,7 @@ class PenaltyOption(OptionGeneric):
                 else:
                     return u
             else:
-                raise NotImplementedError(f"Control type {nlp.control_type} not implemented yet")
+                raise NotImplementedError(f"Control type {nlp.dynamics_type.control_type} not implemented yet")
 
         u = ocp.cx()
         if sn_idx.start == 0:
