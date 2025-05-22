@@ -29,6 +29,7 @@ class Slicy:
     When subnodes are decision states, the Slicy(Node.START, None) will return cx_start + cx_intermediates + cx_end and
     the Slicy(Node.START, Node.PENULTIMATE) will return cx_start + cx_intermediates.
     """
+
     def __init__(self, start: Int | Node, stop: Int | None | Node):
         if start == 0:
             start = Node.START
@@ -158,7 +159,9 @@ class PenaltyHelpers:
                     values[node_idx + 1][:, 0] if node_idx + 1 < ocp.nlp[phase_idx].ns + 1 else null_element,
                 )
             else:
-                raise RuntimeError("only subnodes_idx.start == Node.START is supported for subnodes_idx.stop == Node.END")
+                raise RuntimeError(
+                    "only subnodes_idx.start == Node.START is supported for subnodes_idx.stop == Node.END"
+                )
         else:
             if subnodes_are_decision_states:
                 if node_idx < len(values) and values[node_idx].shape[0] > 0:
@@ -203,7 +206,9 @@ class PenaltyHelpers:
                 u = _reshape_to_vector(get_control_decision(penalty.phase, node, Slicy(Node.START, final_subnode)))
             else:
                 u = _reshape_to_vector(get_control_decision(penalty.phase, node, Slicy(Node.START, 1)))  # cx_start
-                if node < penalty.ns[0] - 1 or (node < penalty.ns[0] and penalty.control_types[0] == ControlType.CONSTANT_WITH_LAST_NODE):
+                if node < penalty.ns[0] - 1 or (
+                    node < penalty.ns[0] and penalty.control_types[0] == ControlType.CONSTANT_WITH_LAST_NODE
+                ):
                     # Concatenate the cx_start and cx_end
                     u1 = _reshape_to_vector(get_control_decision(penalty.phase, node, Slicy(Node.END, None)))
                     u = vertcat(u, u1)
@@ -231,7 +236,9 @@ class PenaltyHelpers:
                     values[node_idx + 1][:, 0] if node_idx + 1 < len(values) else null_element,
                 )
             else:
-                raise RuntimeError("only subnodes_idx.start == Node.START is supported for subnodes_idx.stop == Node.END")
+                raise RuntimeError(
+                    "only subnodes_idx.start == Node.START is supported for subnodes_idx.stop == Node.END"
+                )
         else:
             if subnodes_are_decision_states:
                 if node_idx < len(values) and values[node_idx].shape[0] > 0:
