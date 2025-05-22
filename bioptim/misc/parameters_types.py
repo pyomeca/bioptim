@@ -9,17 +9,22 @@ Range: TypeAlias = range
 Str: TypeAlias = str
 Float: TypeAlias = float
 Bool: TypeAlias = bool
+Tuple: TypeAlias = tuple
+List: TypeAlias = list
 Bytes: TypeAlias = bytes
 
 IntorFloat: TypeAlias = int | float
 
 AnyIterable: TypeAlias = list[Any] | tuple[Any, ...]
 AnyIterableOptional: TypeAlias = list[Any] | tuple[Any, ...] | None
+AnyIterableOrRange: TypeAlias = list | tuple | range
+AnyIterableOrRangeOptional: TypeAlias = list | tuple | range | None
 AnyIterableOrSlice: TypeAlias = slice | list | tuple
 AnyIterableOrSliceOptional: TypeAlias = slice | list | tuple | None
 AnySequence: TypeAlias = list | tuple | range | np.ndarray
 AnySequenceOptional: TypeAlias = list | tuple | range | np.ndarray | None
 IntIterable: TypeAlias = list[int] | tuple[int, ...]
+IntIterableOptional: TypeAlias = list[int] | tuple[int, ...] | None
 StrIterable: TypeAlias = list[str] | tuple[str, ...]
 
 StrIterableOptional: TypeAlias = list[str] | tuple[str, ...] | None
@@ -37,6 +42,7 @@ IntList: TypeAlias = list[int]
 FloatList: TypeAlias = list[float]
 StrList: TypeAlias = list[str]
 MXList: TypeAlias = list[MX]
+DMList: TypeAlias = list[DM]
 NpArrayList: TypeAlias = list[np.ndarray]
 NpArray: TypeAlias = np.ndarray
 
@@ -49,6 +55,7 @@ IntIterableorNpArrayorInt: TypeAlias = int | IntIterableorNpArray
 
 IntListOptional: TypeAlias = list[int] | None
 FloatListOptional: TypeAlias = list[float] | None
+StrListOptional: TypeAlias = list[str] | None
 NpArrayListOptional: TypeAlias = list[np.ndarray] | None
 
 StrOrIterable: TypeAlias = str | list[str]
@@ -70,6 +77,7 @@ IntTuple: TypeAlias = tuple[int, ...]
 FloatTuple: TypeAlias = tuple[float, ...]
 StrTuple: TypeAlias = tuple[str, ...]
 DoubleIntTuple: TypeAlias = tuple[int, int]
+DoubleFloatTuple: TypeAlias = tuple[float, float]
 DoubleNpArrayTuple: TypeAlias = tuple[np.ndarray, np.ndarray]
 
 
