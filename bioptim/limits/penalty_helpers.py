@@ -41,7 +41,7 @@ class Slicy:
         This method returns the index of the values in the slice
         """
         start = 0 if self.start == Node.START else self.start
-        stop = None if self.stop in [Node.END, Node.PENULTIMATE] else self.stop
+        stop = None if (self.stop == Node.END or self.stop == Node.PENULTIMATE) else self.stop
         return slice(start, stop)
 
 
@@ -362,7 +362,7 @@ def _get_multinode_indices(penalty, is_constructing_penalty: Bool) -> IntList:
             if nodes[i_starting] >= penalty.ns[i_starting]:
                 subnodes.append(Slicy(Node.START, 1))
             else:
-                subnodes.append(Slicy(Node.START, Node.PENULTIMATE))
+                subnodes.append(Slicy(Node.START, Node.END))
         else:
             subnodes.append(Slicy(starting, starting + 1))
 

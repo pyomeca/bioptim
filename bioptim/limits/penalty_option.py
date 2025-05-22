@@ -765,7 +765,7 @@ class PenaltyOption(OptionGeneric):
             u = vertcat(u, controls.scaled.cx_start)
             if sn_idx.stop == 1:
                 pass
-            elif sn_idx.stop in [Node.PENULTIMATE or Node.END]:
+            elif sn_idx.stop == Node.PENULTIMATE or sn_idx.stop == Node.END:
                 u = vertcat_cx_end()
             else:
                 raise ValueError(f"The sn_idx.stop {sn_idx.stop} was not recognized.")
