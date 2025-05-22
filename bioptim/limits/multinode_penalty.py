@@ -262,7 +262,12 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             key: str = "all",
         ):
             """
-            Continuity function, that is the algebraic states before algebraic states after
+            Continuity function, that is the algebraic states before algebraic states after.
+            This algebraic_states_continuity function does not reflect physics, but rather only avoid numerical problems arising from "free/unconstrained" implicit variables.
+
+            Please note that in collocations, the cx_start is the same variable as the cx_intermediates[0]. This is constrained for the states, but not for the algebraic_states.
+            Moreover, cx_end is not a real collocation variable (only used in the creation of the casadi function and then replace with the cx_start of the next node).
+            Thus, the last "real" variable of each interval is cx_intermediates[-1].
 
             Parameters
             ----------
@@ -283,6 +288,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             if len(controllers) != 2:
                 raise RuntimeError("This continuity function is only valid for 2 nodes")
 
+            # See docstring -> [0]cx_intermediates_list[-1] = [0]cx_end = [1]cx_start
             algebraic_states_end_interval = controllers[0].algebraic_states[key].cx_intermediates_list[-1]
             algebraic_states_next_interval = controllers[1].algebraic_states[key].cx_start
 

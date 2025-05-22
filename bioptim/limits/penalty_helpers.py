@@ -3,7 +3,7 @@ from typing import Callable, Protocol
 import numpy as np
 from casadi import MX, SX, DM, vertcat, horzcat
 
-from ..misc.enums import PhaseDynamics, ControlType
+from ..misc.enums import PhaseDynamics, ControlType, Node
 
 from ..misc.parameters_types import (
     Bool,
@@ -16,9 +16,29 @@ from ..misc.parameters_types import (
 )
 
 
+class Slicy:
+    """
+    More generic version of a slice object
+
+    If the subnode requests Slicy(Node.START, None), it actually does not expect the very last node (equal to starting
+    of the next node), if it needs so, it will actively ask for Slicy(Node.END, None) to get the last node.
+    When Slicy(Node.END, None) is requested, if it is in constructing phase of the penalty, it expects cx_end.
+    The Slicy(Node.END, None) will not be requested when the penalty is not being constructed (it will request
+    Slicy(Node.START, 1) of the following node instead).
+
+    When subnodes are decision states, the Slicy(Node.START, None) will return cx_start + cx_intermediates + cx_end and
+    the Slicy(Node.START, Node.PENULTIMATE) will return cx_start + cx_intermediates.
+    """
+    def __init__(self, start: Int | Node, stop: Int | None | Node):
+        if start == 0:
+            start = Node.START
+        self.start = start
+        self.stop = stop
+
+
 class PenaltyProtocol(Protocol):
-    transition: Bool  # If the penalty is a transition penalty
-    multinode_penalty: Bool  # If the penalty is a multinode penalty
+    is_transition: Bool  # If the penalty is a transition penalty
+    is_multinode_penalty: Bool  # If the penalty is a multinode penalty
     phase: Int  # The phase of the penalty (only for non multinode or transition penalties)
     nodes_phase: IntList  # The phases of the penalty (only for multinode penalties)
     node_idx: IntList  # The node index of the penalty (only for non multinode or transition penalties)
@@ -65,13 +85,8 @@ class PenaltyHelpers:
     @staticmethod
     def states(penalty, index: Int, get_state_decision: Callable, is_constructing_penalty: Bool = False):
         """
-        get_state_decision: Callable[int, int, slice]
+        get_state_decision: Callable[int, int, Slicy]
             A function that returns the state decision of a given phase, node and subnodes (or steps)
-            If the subnode requests slice(0, None), it actually does not expect the very last node (equal to starting
-            of the next node), if it needs so, it will actively asks for slice(-1, None) to get the last node.
-            When slice(-1, None) is requested, if it is in constructing phase of the penalty, it expects cx_end.
-            The slice(-1, None) will not be requested when the penalty is not being constructed (it will request
-            slice(0, 1) of the following node instead)
         """
         if isinstance(penalty.phase, list) and len(penalty.phase) > 1:
             raise NotImplementedError("penalty cost over multiple phases is not implemented yet")
@@ -91,17 +106,21 @@ class PenaltyHelpers:
                         and penalty.control_types[idx] != ControlType.CONSTANT_WITH_LAST_NODE
                     )
                 ):
-                    x.append(_reshape_to_vector(get_state_decision(phase, node, range(0, 1))))
+                    # When evaluating penalties, the cx_end must be replaced when calling the last node of a ControlType.CONSTANT because it does not exist
+                    # Please note that this is a small hack just to make sure that the casadi functions are called with inputs of the right shape
+                    x.append(_reshape_to_vector(get_state_decision(phase, node, Slicy(Node.START, 1))))
                 else:
+                    # When constructing penalties, all real variables are needed
                     x.append(_reshape_to_vector(get_state_decision(phase, node, sub)))
                 idx += 1
             return _vertcat(x)
 
         else:
-            subnodes = slice(
-                0,
-                (
-                    None
+            # if it's a transition we must behave as if subnodes are not decision states, otherwise cyclic phase transitions will create free variables
+            subnodes = Slicy(
+                start=Node.START,
+                stop=(
+                    Node.END
                     if node < penalty.ns[0] and penalty.subnodes_are_decision_states[0] and not penalty.is_transition
                     else 1
                 ),
@@ -110,26 +129,27 @@ class PenaltyHelpers:
 
             if is_constructing_penalty:
                 if node < penalty.ns[0]:
-                    x1 = _reshape_to_vector(get_state_decision(penalty.phase, node, slice(-1, None)))
+                    x1 = _reshape_to_vector(get_state_decision(penalty.phase, node, Slicy(Node.END, None)))
                 else:
                     x1 = type(x0).sym("dummy_x", 0, 1)
             else:
-                x1 = _reshape_to_vector(get_state_decision(penalty.phase, node + 1, slice(0, 1)))
+                x1 = _reshape_to_vector(get_state_decision(penalty.phase, node + 1, Slicy(Node.START, 1)))
             return vertcat(x0, x1)
 
     @staticmethod
-    def get_states(ocp, penalty, phase_idx: Int, node_idx: Int, subnodes_idx: range, values: CXorDMorNpArray):
+    def get_states(ocp, penalty, phase_idx: Int, node_idx: Int, subnodes_idx: Slicy, values: CXorDMorNpArray):
         null_element = ocp.cx() if type(values[0]) != np.ndarray else np.array([])
         idx = 0 if not penalty.is_multinode_penalty else penalty.nodes_phase.index(phase_idx)
         subnodes_are_decision_states = penalty.subnodes_are_decision_states[idx] and not penalty.is_transition
-        if subnodes_idx.stop == -1:
-            if subnodes_idx.start == 0:
+        if subnodes_idx.stop == Node.END:
+            if subnodes_idx.start == Node.START:
+                # get all cx_intermediates but not the cx_end
                 x = horzcat(
                     values[node_idx],
                     values[node_idx + 1][:, 0] if node_idx + 1 < ocp.nlp[phase_idx].ns + 1 else null_element,
                 )
             else:
-                raise RuntimeError("only subnodes_idx.start == 0 is supported for subnodes_idx.stop == -1")
+                raise RuntimeError("only subnodes_idx.start == Node.START is supported for subnodes_idx.stop == Node.END")
         else:
             if subnodes_are_decision_states:
                 x = values[node_idx][:, subnodes_idx] if node_idx < len(values) else null_element
@@ -154,47 +174,51 @@ class PenaltyHelpers:
                         and penalty.control_types[idx] != ControlType.CONSTANT_WITH_LAST_NODE
                     )
                 ):
-                    u.append(_reshape_to_vector(get_control_decision(phase, node, range(0, 1))))
+                    # When evaluating penalties, the cx_end must be replaced when calling the last node of a ControlType.CONSTANT because it does not exist
+                    # Please note that this is a small hack just to make sure that the casadi functions are called with inputs of the right shape
+                    u.append(_reshape_to_vector(get_control_decision(phase, node, Slicy(Node.START, 1))))
                 else:
+                    # When constructing penalties, all real variables are needed
                     u.append(_reshape_to_vector(get_control_decision(phase, node, sub)))
                 idx += 1
             return _vertcat(u)
 
         if is_constructing_penalty:
-            if penalty.control_types[0] in (ControlType.LINEAR_CONTINUOUS,):
-                final_subnode = None if node < penalty.ns[0] else 1
-                u = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, final_subnode)))
+            if penalty.control_types[0] == ControlType.LINEAR_CONTINUOUS:
+                # There is no cx_end for the last node
+                final_subnode = Node.END if node < penalty.ns[0] else 1
+                u = _reshape_to_vector(get_control_decision(penalty.phase, node, Slicy(Node.START, final_subnode)))
             else:
-                u = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, 1)))  # cx_start
-                if node < penalty.ns[0] - 1:
-                    u1 = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(-1, None)))
-                    u = vertcat(u, u1)
-                elif node < penalty.ns[0] and penalty.control_types[0] == ControlType.CONSTANT_WITH_LAST_NODE:
-                    u1 = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(-1, None)))
+                u = _reshape_to_vector(get_control_decision(penalty.phase, node, Slicy(Node.START, 1)))  # cx_start
+                if node < penalty.ns[0] - 1 or (node < penalty.ns[0] and penalty.control_types[0] == ControlType.CONSTANT_WITH_LAST_NODE):
+                    # Concatenate the cx_start and cx_end
+                    u1 = _reshape_to_vector(get_control_decision(penalty.phase, node, Slicy(Node.END, None)))
                     u = vertcat(u, u1)
                 else:
                     pass
 
         else:
-            u0 = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, 1)))
-            u1 = _reshape_to_vector(get_control_decision(penalty.phase, node + 1, slice(0, 1)))
+            u0 = _reshape_to_vector(get_control_decision(penalty.phase, node, Slicy(Node.START, 1)))
+            # When evaluating the penalty, replace cx_end with the cx_start of the next node
+            u1 = _reshape_to_vector(get_control_decision(penalty.phase, node + 1, Slicy(Node.START, 1)))
             u = _vertcat([u0, u1])
 
         return u
 
     @staticmethod
-    def get_controls(ocp, penalty, phase_idx: Int, node_idx: Int, subnodes_idx: range, values: CXorDMorNpArray):
+    def get_controls(ocp, penalty, phase_idx: Int, node_idx: Int, subnodes_idx: Slicy, values: CXorDMorNpArray):
         null_element = ocp.cx() if type(values[0]) != np.ndarray else np.array([])
         idx = 0 if not penalty.is_multinode_penalty else penalty.nodes_phase.index(phase_idx)
         subnodes_are_decision_states = penalty.subnodes_are_decision_states[idx] and not penalty.is_transition
-        if subnodes_idx.stop == -1:
-            if subnodes_idx.start == 0:
+        if subnodes_idx.stop == Node.END:
+            if subnodes_idx.start == Node.START:
+                # get all cx_intermediates but not the cx_end
                 u = horzcat(
                     values[node_idx] if node_idx < len(values) else null_element,
                     values[node_idx + 1][:, 0] if node_idx + 1 < len(values) else null_element,
                 )
             else:
-                raise RuntimeError("only subnodes_idx.start == 0 is supported for subnodes_idx.stop == -1")
+                raise RuntimeError("only subnodes_idx.start == Node.START is supported for subnodes_idx.stop == Node.END")
         else:
             if subnodes_are_decision_states:
                 u = values[node_idx][:, subnodes_idx] if node_idx < len(values) else null_element
@@ -305,21 +329,21 @@ def _get_multinode_indices(penalty, is_constructing_penalty: Bool) -> IntList:
     for i_starting, starting in enumerate(startings):
         if starting < 0:  # The last cx accessible (cx_end)
             if is_constructing_penalty:
-                subnodes.append(slice(-1, None))
+                subnodes.append(Slicy(Node.END, None))
             else:
-                subnodes.append(slice(0, 1))
+                subnodes.append(Slicy(Node.START, 1))
         elif starting == 2:  # Also the last cx accessible (cx_end) since there are only 3 cx available
             if is_constructing_penalty:
-                subnodes.append(slice(2, 3))
+                subnodes.append(Slicy(2, 3))
             else:
-                subnodes.append(slice(0, 1))
+                subnodes.append(Slicy(Node.START, 1))
         elif penalty.subnodes_are_decision_states[i_starting] and not penalty.is_transition:
             if nodes[i_starting] >= penalty.ns[i_starting]:
-                subnodes.append(slice(0, 1))
+                subnodes.append(Slicy(Node.START, 1))
             else:
-                subnodes.append(slice(0, -1))
+                subnodes.append(Slicy(Node.START, Node.PENULTIMATE))
         else:
-            subnodes.append(slice(starting, starting + 1))
+            subnodes.append(Slicy(starting, starting + 1))
 
     return phases, nodes, subnodes
 

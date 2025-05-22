@@ -5,7 +5,7 @@ from casadi import vertcat, Function, jacobian, diag
 
 from ..optimization.optimization_variable import OptimizationVariableList
 from .penalty_controller import PenaltyController
-from ..limits.penalty_helpers import PenaltyHelpers
+from ..limits.penalty_helpers import PenaltyHelpers, Slicy
 from ..misc.enums import Node, PlotType, ControlType, PenaltyType, QuadratureRule, PhaseDynamics
 from ..misc.mapping import BiMapping
 from ..misc.options import OptionGeneric
@@ -691,21 +691,21 @@ class PenaltyOption(OptionGeneric):
         return controller, t0, x, u, p, a, d
 
     @staticmethod
-    def _get_states(ocp, states: OptimizationVariableList, p_idx: Int, n_idx: Int, sn_idx: range) -> CX:
+    def _get_states(ocp, states: OptimizationVariableList, p_idx: Int, n_idx: Int, sn_idx: Slicy) -> CX:
         states.node_index = n_idx
 
         x = ocp.cx()
         if states.scaled.cx_start.shape == (0, 0):
             return x
 
-        if sn_idx.start == 0:
+        if sn_idx.start == Node.START:
             x = vertcat(x, states.scaled.cx_start)
             if sn_idx.stop == 1:
                 pass
-            elif sn_idx.stop is None:
+            elif sn_idx.stop == Node.PENULTIMATE:
                 if n_idx < ocp.nlp[p_idx].ns + 1:
                     x = vertcat(x, vertcat(*states.scaled.cx_intermediates_list))
-            elif sn_idx.stop == -1:
+            elif sn_idx.stop == Node.END:
                 if n_idx < ocp.nlp[p_idx].ns + 1:
                     x = vertcat(vertcat(x, vertcat(*states.scaled.cx_intermediates_list)), states.scaled.cx_end)
             else:
@@ -723,17 +723,17 @@ class PenaltyOption(OptionGeneric):
             else:
                 raise ValueError("The sn_idx.stop should be 3 if sn_idx.start == 2")
 
-        elif sn_idx.start == -1:
+        elif sn_idx.start == Node.END:
             x = vertcat(x, vertcat(states.scaled.cx_end))
             if sn_idx.stop is not None:
                 raise ValueError("The sn_idx.stop should be None if sn_idx.start == -1")
 
         else:
-            raise ValueError("The sn_idx.start should be 0 or -1")
+            raise ValueError(f"The sn_idx.start {sn_idx.start} not recognized.")
 
         return x
 
-    def _get_u(self, ocp, p_idx: Int, n_idx: Int, sn_idx: Int) -> CX:
+    def _get_u(self, ocp, p_idx: Int, n_idx: Int, sn_idx: Slicy) -> CX:
         nlp = ocp.nlp[p_idx]
         controls = nlp.controls
         controls.node_index = n_idx
@@ -761,50 +761,50 @@ class PenaltyOption(OptionGeneric):
                 raise NotImplementedError(f"Control type {nlp.control_type} not implemented yet")
 
         u = ocp.cx()
-        if sn_idx.start == 0:
+        if sn_idx.start == Node.START:
             u = vertcat(u, controls.scaled.cx_start)
             if sn_idx.stop == 1:
                 pass
-            elif sn_idx.stop is None or sn_idx.stop == -1:
+            elif sn_idx.stop in [Node.PENULTIMATE or Node.END]:
                 u = vertcat_cx_end()
             else:
-                raise ValueError("The sn_idx.stop should be 1, -1 or None if sn_idx.start == 0")
+                raise ValueError(f"The sn_idx.stop {sn_idx.stop} was not recognized.")
 
         elif sn_idx.start == 1:
             if sn_idx.stop == 2:
-                u = vertcat(u, controls.scaled.cx_intermediates_list[0])
+                u = vertcat(u, controls.scaled.cx_mid)
             else:
-                raise ValueError("The sn_idx.stop should be 2 if sn_idx.start == 1")
+                raise ValueError(f"The sn_idx [{sn_idx.start}, {sn_idx.stop}] was not recognized.")
 
         elif sn_idx.start == 2:
             # This is not the actual endpoint but a midpoint that must use cx_end
             if sn_idx.stop == 3:
                 u = vertcat(u, controls.scaled.cx_end)
             else:
-                raise ValueError("The sn_idx.stop should be 3 if sn_idx.start == 2")
+                raise ValueError(f"The sn_idx [{sn_idx.start}, {sn_idx.stop}] was not recognized.")
 
-        elif sn_idx.start == -1:
+        elif sn_idx.start == Node.END:
             if sn_idx.stop is not None:
-                raise ValueError("The sn_idx.stop should be None if sn_idx.start == -1")
+                raise ValueError(f"The sn_idx [{sn_idx.start}, {sn_idx.stop}] was not recognized.")
             u = vertcat_cx_end()
 
         else:
-            raise ValueError("The sn_idx.start should be 0 or -1")
+            raise ValueError(f"The sn_idx.start {sn_idx.start} not recognized.")
 
         return u
 
-    def get_numerical_timeseries(self, ocp, p_idx: Int, n_idx: Int, sn_idx: Int) -> CX:
+    def get_numerical_timeseries(self, ocp, p_idx: Int, n_idx: Int, sn_idx: Slicy) -> CX:
         nlp = ocp.nlp[p_idx]
         numerical_timeseries = nlp.numerical_timeseries
 
         if numerical_timeseries.cx_start.shape == (0, 0):
             return ocp.cx()
-        elif sn_idx == 0:
+        elif sn_idx.start == Node.START:
             return numerical_timeseries.cx_start
-        elif sn_idx == -1:
+        elif sn_idx.start == Node.END:
             return numerical_timeseries.cx_end
         else:
-            raise ValueError("The sn_idx should be 0 or -1")
+            raise ValueError(f"The sn_idx [{sn_idx.start}, {sn_idx.stop}] was not recognized.")
 
     @staticmethod
     def define_target_mapping(controller: PenaltyController, key: Str, rows):
