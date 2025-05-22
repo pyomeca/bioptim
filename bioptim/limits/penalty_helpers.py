@@ -36,14 +36,13 @@ class Slicy:
         self.start = start
         self.stop = stop
 
-    def index(self, values: CXorDMorNpArray) -> IntList:
+    def index(self) -> slice:
         """
         This method returns the index of the values in the slice
         """
         start = 0 if self.start == Node.START else self.start
-        # max(values.shape) is used to be able to handle both CX and numpy arrays (not dangerous since the shape should always be (nb_subnodes, 1), (1, nb_subnodes), or (nb_subnodes, )
-        stop = max(values.shape) if self.stop in [Node.END, Node.PENULTIMATE] else self.stop
-        return list(range(start, stop))
+        stop = None if self.stop in [Node.END, Node.PENULTIMATE] else self.stop
+        return slice(start, stop)
 
 
 class PenaltyProtocol(Protocol):
@@ -165,7 +164,7 @@ class PenaltyHelpers:
         else:
             if subnodes_are_decision_states:
                 if node_idx < len(values) and values[node_idx].shape[0] > 0:
-                    sn_indices = subnodes_idx.index(values[node_idx][0, :])
+                    sn_indices = subnodes_idx.index()
                     x = values[node_idx][:, sn_indices]
                 else:
                     x = null_element
@@ -242,7 +241,7 @@ class PenaltyHelpers:
         else:
             if subnodes_are_decision_states:
                 if node_idx < len(values) and values[node_idx].shape[0] > 0:
-                    sn_indices = subnodes_idx.index(values[node_idx][0, :])
+                    sn_indices = subnodes_idx.index()
                     u = values[node_idx][:, sn_indices]
                 else:
                     u = null_element
