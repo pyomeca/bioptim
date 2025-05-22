@@ -186,7 +186,7 @@ class PenaltyHelpers:
         if is_constructing_penalty:
             if penalty.control_types[0] == ControlType.LINEAR_CONTINUOUS:
                 # There is no cx_end for the last node
-                final_subnode = Node.END if node < penalty.ns[0] else 1
+                final_subnode = Node.PENULTIMATE if node < penalty.ns[0] else 1
                 u = _reshape_to_vector(get_control_decision(penalty.phase, node, Slicy(Node.START, final_subnode)))
             else:
                 u = _reshape_to_vector(get_control_decision(penalty.phase, node, Slicy(Node.START, 1)))  # cx_start
@@ -238,7 +238,7 @@ class PenaltyHelpers:
         if penalty.is_multinode_penalty:
             # numerical timeseries are expected to be provided only at the shooting node.
             for i_phase in penalty.nodes_phase:
-                d = get_numerical_timeseries(i_phase, node, 0)  # cx_start
+                d = get_numerical_timeseries(i_phase, node, Slicy(Node.START, 1))  # cx_start
                 if d.shape[0] != 0:
                     raise NotImplementedError(
                         "Numerical data timeseries is not implemented for multinode penalties yet."
@@ -246,7 +246,7 @@ class PenaltyHelpers:
                     # Note to the developers: We do not think this will raise an error at runtime,
                     # but the results will be wrong is cx_start or cx_end are used in multiple occasions with different values.
         else:
-            d = get_numerical_timeseries(penalty.phase, node, 0)  # cx_start
+            d = get_numerical_timeseries(penalty.phase, node, Slicy(Node.START, 1))  # cx_start
 
         if d.shape != (0, 0):
             d = _reshape_to_vector(d)
