@@ -26,12 +26,14 @@ from ..misc.parameters_types import (
 )
 
 
-def generic_online_optim(interface, ocp, show_options: AnyDictOptional = None):
+def generic_online_optim(interface: SolverInterface, ocp, show_options: AnyDictOptional = None):
     """
     Declare the online callback to update the graphs while optimizing
 
     Parameters
     ----------
+    interface: SolverInterface
+        A reference to the current interface
     ocp: OptimalControlProgram
         A reference to the current OptimalControlProgram
     show_options: dict

@@ -8,7 +8,13 @@ import numpy as np
 from .plot import PlotOcp, OcpSerializable
 from ..optimization.optimization_vector import OptimizationVectorHelper
 from .online_callback_abstract import OnlineCallbackAbstract
-from ..misc.parameters_types import AnyIterable, AnyDictOptional, Bool
+from ..misc.parameters_types import (
+    Bool,
+    Float,
+    AnyIterable,
+    AnyDictOptional,
+    IntListOptional,
+)
 
 
 class OnlineCallbackMultiprocess(OnlineCallbackAbstract):
@@ -33,10 +39,10 @@ class OnlineCallbackMultiprocess(OnlineCallbackAbstract):
         self.plot_process = mp.Process(target=self.plotter, args=(self.queue, show_options), daemon=True)
         self.plot_process.start()
 
-    def close(self):
+    def close(self) -> None:
         self.plot_process.kill()
 
-    def eval(self, arg: AnyIterable, enforce: Bool = False) -> list[int]:
+    def eval(self, arg: AnyIterable, enforce: Bool = False) -> IntListOptional:
         # Dequeuing the data by removing previous not useful data
         while not self.queue.empty():
             self.queue.get_nowait()
@@ -76,7 +82,7 @@ class OnlineCallbackMultiprocess(OnlineCallbackAbstract):
 
             self._ocp: OcpSerializable = ocp
             self._plotter: PlotOcp = None
-            self._update_time = 0.001
+            self._update_time: Float = 0.001
 
         def __call__(self, pipe: mp.Queue, show_options: AnyDictOptional):
             """
@@ -98,7 +104,7 @@ class OnlineCallbackMultiprocess(OnlineCallbackAbstract):
             plt.show()
 
         @property
-        def has_at_least_one_active_figure(self) -> bool:
+        def has_at_least_one_active_figure(self) -> Bool:
             """
             If at least one figure is active
 
