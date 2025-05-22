@@ -10,7 +10,7 @@ from ..gui.online_callback_multiprocess import OnlineCallbackMultiprocess
 from ..gui.online_callback_multiprocess_server import OnlineCallbackMultiprocessServer
 from ..gui.online_callback_server import OnlineCallbackServer
 from ..limits.path_conditions import Bounds
-from ..limits.penalty_helpers import PenaltyHelpers
+from ..limits.penalty_helpers import PenaltyHelpers, Slicy
 from ..misc.enums import InterpolationType, OnlineOptim
 from ..optimization.non_linear_program import NonLinearProgram
 
@@ -382,16 +382,22 @@ def _get_weighted_function_inputs(penalty, penalty_idx: Int, ocp, nlp: NonLinear
 
     if nlp:
         x = PenaltyHelpers.states(
-            penalty, penalty_idx, lambda p_idx, n_idx, sn_idx: _get_x(ocp, p_idx, n_idx, sn_idx, scaled)
+            penalty,
+            penalty_idx,
+            lambda p_idx, n_idx, sn_idx: _get_x(ocp, p_idx, n_idx, sn_idx, scaled, penalty),
         )
         u = PenaltyHelpers.controls(
-            penalty, penalty_idx, lambda p_idx, n_idx, sn_idx: _get_u(ocp, p_idx, n_idx, sn_idx, scaled)
+            penalty,
+            penalty_idx,
+            lambda p_idx, n_idx, sn_idx: _get_u(ocp, p_idx, n_idx, sn_idx, scaled, penalty),
         )
         p = PenaltyHelpers.parameters(
             penalty, penalty_idx, lambda p_idx, n_idx, sn_idx: _get_p(ocp, p_idx, n_idx, sn_idx, scaled)
         )
         a = PenaltyHelpers.states(
-            penalty, penalty_idx, lambda p_idx, n_idx, sn_idx: _get_a(ocp, p_idx, n_idx, sn_idx, scaled)
+            penalty,
+            penalty_idx,
+            lambda p_idx, n_idx, sn_idx: _get_a(ocp, p_idx, n_idx, sn_idx, scaled, penalty),
         )
         d = PenaltyHelpers.numerical_timeseries(
             penalty,
@@ -410,26 +416,29 @@ def _get_weighted_function_inputs(penalty, penalty_idx: Int, ocp, nlp: NonLinear
     return t0, x, u, p, a, d, weight, target
 
 
-def _get_x(ocp, phase_idx: Int, node_idx: Int, subnodes_idx: Range, scaled: Bool):
+def _get_x(ocp, phase_idx: Int, node_idx: Int, subnodes_idx: Slicy, scaled: Bool, penalty):
     values = ocp.nlp[phase_idx].X_scaled if scaled else ocp.nlp[phase_idx].X
-    return values[node_idx][:, subnodes_idx] if node_idx < len(values) else ocp.cx()
+    x = PenaltyHelpers.get_states(ocp, penalty, phase_idx, node_idx, subnodes_idx, values)
+    return x
 
 
-def _get_u(ocp, phase_idx: Int, node_idx: Int, subnodes_idx: Range, scaled: Bool):
+def _get_u(ocp, phase_idx: Int, node_idx: Int, subnodes_idx: Slicy, scaled: Bool, penalty):
     values = ocp.nlp[phase_idx].U_scaled if scaled else ocp.nlp[phase_idx].U
-    return values[node_idx][:, subnodes_idx] if node_idx < len(values) else ocp.cx()
+    u = PenaltyHelpers.get_controls(ocp, penalty, phase_idx, node_idx, subnodes_idx, values)
+    return u
 
 
-def _get_p(ocp, phase_idx: Int, node_idx: Int, subnodes_idx: Range, scaled: Bool):
+def _get_p(ocp, phase_idx: Int, node_idx: Int, subnodes_idx: Slicy, scaled: Bool):
     return ocp.parameters.scaled.cx if scaled else ocp.parameters.scaled
 
 
-def _get_a(ocp, phase_idx: Int, node_idx: Int, subnodes_idx: Range, scaled: Bool):
+def _get_a(ocp, phase_idx: Int, node_idx: Int, subnodes_idx: Slicy, scaled: Bool, penalty):
     values = ocp.nlp[phase_idx].A_scaled if scaled else ocp.nlp[phase_idx].A
-    return values[node_idx][:, subnodes_idx] if node_idx < len(values) else ocp.cx()
+    a = PenaltyHelpers.get_states(ocp, penalty, phase_idx, node_idx, subnodes_idx, values)
+    return a
 
 
-def get_numerical_timeseries(ocp, phase_idx: Int, node_idx: Int, subnodes_idx: Range):
+def get_numerical_timeseries(ocp, phase_idx: Int, node_idx: Int, subnodes_idx: Slicy):
     timeseries = ocp.nlp[phase_idx].numerical_data_timeseries
     if timeseries is None:
         return ocp.cx()
