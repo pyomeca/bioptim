@@ -164,8 +164,7 @@ class PenaltyHelpers:
         else:
             if subnodes_are_decision_states:
                 if node_idx < len(values) and values[node_idx].shape[0] > 0:
-                    sn_indices = subnodes_idx.index()
-                    x = values[node_idx][:, sn_indices]
+                    x = values[node_idx][:, subnodes_idx.index()]
                 else:
                     x = null_element
             else:
@@ -241,8 +240,7 @@ class PenaltyHelpers:
         else:
             if subnodes_are_decision_states:
                 if node_idx < len(values) and values[node_idx].shape[0] > 0:
-                    sn_indices = subnodes_idx.index()
-                    u = values[node_idx][:, sn_indices]
+                    u = values[node_idx][:, subnodes_idx.index()]
                 else:
                     u = null_element
             else:

@@ -1025,7 +1025,7 @@ class Solution:
             penalty,
             0,
             lambda p, n, sn: (
-                decision_algebraic_states[p][n][:, sn.index] if n < len(decision_algebraic_states[p]) else np.ndarray((0, 1))
+                decision_algebraic_states[p][n][:, sn.index()] if n < len(decision_algebraic_states[p]) else np.ndarray((0, 1))
             ),
         )
         d_tp = PenaltyHelpers.numerical_timeseries(
