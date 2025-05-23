@@ -117,7 +117,7 @@ class OdeSolver:
             The degree of the implicit RK
         method : str
             The method of interpolation ("legendre" or "radau")
-        _defects_type: tuple[DefectType] | list[DefectType]
+        _defects_type: DefectType
             The type of defect to use
         duplicate_starting_point: bool
             Whether an additional collocation point should be added at the shooting node (this is typically used in SOCPs)
@@ -127,10 +127,7 @@ class OdeSolver:
             self,
             polynomial_degree: int = 4,
             method: str = "legendre",
-            defects_type: tuple[DefectType] | list[DefectType] = (
-                DefectType.QDOT_EQUALS_POLYNOMIAL_SLOPE,
-                DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS,
-            ),
+            defects_type: DefectType = DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS,
             **kwargs,
         ):
             """
@@ -140,11 +137,8 @@ class OdeSolver:
                 The degree of the implicit RK
             """
 
-            if not isinstance(defects_type, (list, tuple)):
-                raise TypeError("defects_type should be a list or a tuple")
-            for elt in defects_type:
-                if not isinstance(elt, DefectType):
-                    raise TypeError(f"defects_type should be a list or a tuple of DefectType, not {type(elt)}")
+            if not isinstance(defects_type, DefectType):
+                raise TypeError("defects_type should be a DefectType")
 
             super(OdeSolver.COLLOCATION, self).__init__(**kwargs)
             self.polynomial_degree = polynomial_degree
@@ -168,7 +162,7 @@ class OdeSolver:
             return self.polynomial_degree + (1 if self.duplicate_starting_point else 0)
 
         @property
-        def defects_type(self) -> tuple[DefectType] | list[DefectType]:
+        def defects_type(self) -> DefectType:
             return self._defects_type
 
         def x_ode(self, nlp):
@@ -263,7 +257,7 @@ class OdeSolver:
             return 1
 
         @property
-        def defects_type(self) -> tuple[DefectType]:
+        def defects_type(self) -> DefectType:
             return ()
 
         def x_ode(self, nlp):

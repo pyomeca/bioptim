@@ -33,7 +33,7 @@ class RK(OdeSolverBase):
         return 1
 
     @property
-    def defects_type(self) -> tuple[DefectType]:
+    def defects_type(self) -> DefectType:
         return ()
 
     def initialize_integrator(self, *args, **kwargs):
