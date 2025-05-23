@@ -161,6 +161,7 @@ multiphase can be found in 'examples/torque_driven_ocp'. For ACADOS specific exa
 """
 
 from .dynamics.configure_problem import ConfigureProblem, DynamicsFcn, DynamicsList, Dynamics
+from .dynamics.configure_variables import AutoConfigure, States, Controls, AlgebraicStates
 from .dynamics.dynamics_evaluation import DynamicsEvaluation
 from .dynamics.dynamics_functions import DynamicsFunctions
 from .dynamics.fatigue.effort_perception import EffortPerception, TauEffortPerception
