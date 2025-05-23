@@ -86,7 +86,6 @@ def custom_configure(
     ocp: OptimalControlProgram,
     nlp: NonLinearProgram,
     numerical_data_timeseries: dict[str, np.ndarray] = None,
-    contact_type: list[ContactType] | tuple[ContactType] = (),
 ):
     """
     Tell the program which variables are states and controls.
@@ -100,8 +99,6 @@ def custom_configure(
         A reference to the phase
     numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
-    contact_type: list[ContactType] | tuple[ContactType]
-        The type of contacts to consider in the dynamics.
     """
 
     ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
@@ -138,8 +135,7 @@ def prepare_ocp(
     phase_dynamics: PhaseDynamics
         If the dynamics equation within a phase is unique or changes at each node.
         PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
-        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
-        are applied at each node
+        a phase. PhaseDynamics.ONE_PER_NODE should also be used when multi-node penalties with more than 3 nodes or with COLLOCATION (cx_intermediate_list) are added to the OCP.
     control_type: ControlType
         The type of the controls
 

@@ -784,16 +784,16 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             if (
-                ContactType.RIGID_IMPLICIT in controller.get_nlp.dynamics_type.contact_type
-                or ContactType.SOFT_IMPLICIT in controller.get_nlp.dynamics_type.contact_type
-                or ContactType.SOFT_EXPLICIT in controller.get_nlp.dynamics_type.contact_type
+                ContactType.RIGID_IMPLICIT in controller.get_nlp.model.contact_type
+                or ContactType.SOFT_IMPLICIT in controller.get_nlp.model.contact_type
+                or ContactType.SOFT_EXPLICIT in controller.get_nlp.model.contact_type
             ):
                 raise RuntimeError(
                     "minimize_explicit_rigid_contact_forces is only implemented for explicit contact (RIGID_EXPLICIT)."
                 )
 
             contact_forces = controller.cx()
-            if ContactType.RIGID_EXPLICIT in controller.get_nlp.dynamics_type.contact_type:
+            if ContactType.RIGID_EXPLICIT in controller.get_nlp.model.contact_type:
                 if controller.get_nlp.rigid_contact_forces_func is None:
                     raise RuntimeError("minimize_explicit_rigid_contact_forces requires a contact dynamics")
 

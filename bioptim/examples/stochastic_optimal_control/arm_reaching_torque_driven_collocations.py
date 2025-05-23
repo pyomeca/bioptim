@@ -188,7 +188,6 @@ def prepare_socp(
         DynamicsFcn.STOCHASTIC_TORQUE_DRIVEN,
         problem_type=problem_type,
         expand_dynamics=True,
-        with_friction=True,
     )
 
     x_bounds = BoundsList()

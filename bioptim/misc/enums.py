@@ -190,11 +190,6 @@ class QuadratureRule(Enum):
     TRAPEZOIDAL = "trapezoidal"
 
 
-class SoftContactDynamics(Enum):
-    ODE = "ode"
-    CONSTRAINT = "constraint"
-
-
 class ContactType(Enum):
     RIGID_EXPLICIT = "rigid_explicit"
     SOFT_EXPLICIT = "soft_explicit"
@@ -218,9 +213,12 @@ class ContactType(Enum):
 
 
 class DefectType(Enum):
-    EXPLICIT = "explicit"
-    IMPLICIT = "implicit"
-    NOT_APPLICABLE = "not_applicable"
+    QDOT_EQUALS_POLYNOMIAL_SLOPE = "qdot_equals_polynomial_slope"
+    QDDOT_EQUALS_FORWARD_DYNAMICS = "qddot_equals_forward_dynamics"
+    TAU_EQUALS_INVERSE_DYNAMICS = "tau_equals_inverse_dynamics"
+    CONTACT_ACCELERATION_EQUALS_ZERO = "contact_acceleration_equals_zero"
+    SOFT_CONTACT_FORCES_EQUALS_LAGRANGE_MULTIPLIERS = "soft_contact_forces_equals_lagrange_multipliers"
+    ROOT_RESIDUAL_TORQUES_EQUALS_ZERO = "root_residual_torques_equals_zero"
 
 
 class MagnitudeType(Enum):

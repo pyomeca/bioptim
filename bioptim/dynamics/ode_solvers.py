@@ -5,7 +5,7 @@ from casadi import MX, SX, integrator as casadi_integrator, horzcat, Function, v
 from . import integrator
 from .ode_solver_base import OdeSolverBase
 from .rk_base import RK
-from ..misc.enums import ControlType, DefectType, PhaseDynamics
+from ..misc.enums import ControlType, DefectType
 
 
 class OdeSolver:
@@ -77,12 +77,8 @@ class OdeSolver:
             return True
 
         @property
-        def defects_type(self) -> DefectType:
-            return DefectType.NOT_APPLICABLE
-
-        @property
-        def defect_type(self) -> DefectType:
-            return DefectType.NOT_APPLICABLE
+        def defects_type(self) -> tuple[DefectType]:
+            return ()
 
         @property
         def n_required_cx(self) -> int:
@@ -122,7 +118,7 @@ class OdeSolver:
         method : str
             The method of interpolation ("legendre" or "radau")
         _defects_type: DefectType
-            The type of defect to use (DefectType.EXPLICIT or DefectType.IMPLICIT)
+            The type of defect to use
         duplicate_starting_point: bool
             Whether an additional collocation point should be added at the shooting node (this is typically used in SOCPs)
         """
@@ -131,7 +127,7 @@ class OdeSolver:
             self,
             polynomial_degree: int = 4,
             method: str = "legendre",
-            defects_type: DefectType = DefectType.EXPLICIT,
+            defects_type: DefectType = DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS,
             **kwargs,
         ):
             """
@@ -140,6 +136,9 @@ class OdeSolver:
             polynomial_degree: int
                 The degree of the implicit RK
             """
+
+            if not isinstance(defects_type, DefectType):
+                raise TypeError("defects_type should be a DefectType")
 
             super(OdeSolver.COLLOCATION, self).__init__(**kwargs)
             self.polynomial_degree = polynomial_degree
@@ -259,7 +258,7 @@ class OdeSolver:
 
         @property
         def defects_type(self) -> DefectType:
-            return DefectType.NOT_APPLICABLE
+            return ()
 
         def x_ode(self, nlp):
             return nlp.states.scaled.cx
