@@ -75,7 +75,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
