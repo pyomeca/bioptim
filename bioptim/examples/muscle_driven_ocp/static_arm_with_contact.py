@@ -54,7 +54,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path, contact_type=[ContactType.RIGID_EXPLICIT])
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -69,7 +69,6 @@ def prepare_ocp(
     dynamics.add(
         DynamicsFcn.MUSCLE_DRIVEN,
         with_residual_torque=True,
-        contact_type=[ContactType.RIGID_EXPLICIT],
         ode_solver=ode_solver,
     )
     # raise RuntimeError("This example is broken, since contact dynamics with muscle is not implemented")

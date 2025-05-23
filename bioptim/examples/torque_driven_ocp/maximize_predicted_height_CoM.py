@@ -75,7 +75,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path, contact_type=[ContactType.RIGID_EXPLICIT])
     tau_min, tau_max = (-1, 1) if use_actuators else (-500, 500)
 
     dof_mapping = BiMappingList()
@@ -96,7 +96,6 @@ def prepare_ocp(
     if use_actuators:
         dynamics.add(
             DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
-            contact_type=[ContactType.RIGID_EXPLICIT],
             ode_solver=ode_solver,
             expand_dynamics=expand_dynamics,
             phase_dynamics=phase_dynamics,
@@ -104,7 +103,6 @@ def prepare_ocp(
     else:
         dynamics.add(
             DynamicsFcn.TORQUE_DRIVEN,
-            contact_type=[ContactType.RIGID_EXPLICIT],
             ode_solver=ode_solver,
             expand_dynamics=expand_dynamics,
             phase_dynamics=phase_dynamics,

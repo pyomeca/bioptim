@@ -123,7 +123,7 @@ def prepare_ocp(
     external_force_set = ExternalForceSetVariables()
     external_force_set.add(force_name="contact1", segment="point", use_point_of_application=True)
 
-    bio_model = BiorbdModel(biorbd_model_path, external_force_set=external_force_set)
+    bio_model = BiorbdModel(biorbd_model_path, external_force_set=external_force_set, contact_type=[ContactType.SOFT_EXPLICIT])
 
     # Problem parameters
     tau_min, tau_max = -100, 100
@@ -151,7 +151,6 @@ def prepare_ocp(
     # Dynamics
     dynamics = Dynamics(
         DynamicsFcn.TORQUE_DRIVEN,
-        contact_type=[ContactType.SOFT_EXPLICIT],
         ode_solver=ode_solver,
         phase_dynamics=phase_dynamics,
     )
