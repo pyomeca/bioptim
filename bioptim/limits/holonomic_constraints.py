@@ -104,7 +104,6 @@ class HolonomicConstraintsFcn:
 
         return constraints_func, constraints_jacobian_func, constraints_double_derivative_func
 
-
     @staticmethod
     def rigid_contacts(
         model: BioModel,
@@ -130,9 +129,10 @@ class HolonomicConstraintsFcn:
 
         contact_position = MX()
         for i_contact in range(model.nb_rigid_contacts):
-            contact_position = vertcat(contact_position,
-                                       model.rigid_contact_position(i_contact)(q_sym, parameters)[
-                                           model.rigid_contact_axes_index(i_contact)])
+            contact_position = vertcat(
+                contact_position,
+                model.rigid_contact_position(i_contact)(q_sym, parameters)[model.rigid_contact_axes_index(i_contact)],
+            )
 
         constraint = contact_position
 
@@ -143,7 +143,9 @@ class HolonomicConstraintsFcn:
         velocity_constraint = jacobian(constraint, q_sym) @ q_dot_sym
 
         # Second derivative (acceleration)
-        acceleration_constraint = jacobian(velocity_constraint, q_sym) @ q_dot_sym + jacobian(constraint, q_sym) @ q_ddot_sym
+        acceleration_constraint = (
+            jacobian(velocity_constraint, q_sym) @ q_dot_sym + jacobian(constraint, q_sym) @ q_ddot_sym
+        )
 
         constraints_func = Function(
             "holonomic_constraints",

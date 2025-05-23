@@ -670,8 +670,8 @@ class DynamicsFunctions:
 
             if ContactType.RIGID_IMPLICIT in nlp.model.contact_type:
                 rigid_contact_defect = (
-                        nlp.model.rigid_contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
-                        - nlp.algebraic_states["rigid_contact_forces"].cx
+                    nlp.model.rigid_contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
+                    - nlp.algebraic_states["rigid_contact_forces"].cx
                 )
                 _, _, acceleration_constraint_func = HolonomicConstraintsFcn.rigid_contacts(nlp.model)
                 contact_acceleration_defect = acceleration_constraint_func(q, qdot, slope_qdot, nlp.parameters.cx)
