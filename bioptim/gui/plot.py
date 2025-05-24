@@ -421,7 +421,6 @@ class PlotOcp:
 
             self._create_plots_for_variable(i, nlp, variable, axes, y_min_all, y_max_all, y_range_var_idx)
 
-
     def _setup_axes_for_variable(
         self, i: Int, nlp: NonLinearProgram, variable: Str
     ) -> Tuple[np.ndarray[plt.Axes], Int]:

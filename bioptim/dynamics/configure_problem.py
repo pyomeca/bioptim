@@ -1720,7 +1720,9 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_tau(ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool, fatigue: FatigueList = None) -> None:
+    def configure_tau(
+        ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool, fatigue: FatigueList = None
+    ) -> None:
         """
         Configure the generalized forces
 
@@ -1867,7 +1869,9 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_muscles(ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool, fatigue: FatigueList = None) -> None:
+    def configure_muscles(
+        ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool, fatigue: FatigueList = None
+    ) -> None:
         """
         Configure the muscles
 
