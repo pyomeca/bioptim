@@ -156,6 +156,9 @@ class NonLinearProgram:
         self.extra_dynamics_defects_func: AnyList = []
         self.implicit_dynamics_func: Callable | None = None
         self.dynamics_type: "DynamicsFcn" | None = None
+        self.extra_dynamics_defects = []
+        self.dynamics_defects_func = None
+        self.extra_dynamics_defects_func: list = []
         self.g: AnyList = []
         self.g_internal: AnyList = []
         self.g_implicit: AnyList = []
