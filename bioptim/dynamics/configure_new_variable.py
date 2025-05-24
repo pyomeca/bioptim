@@ -15,6 +15,7 @@ from ..misc.parameters_types import (
     StrList,
     NpArray,
     CX,
+    CXList,
 )
 
 
@@ -108,7 +109,7 @@ class NewVariableConfiguration:
         if self.combine_state_control_plot and self.combine_name is not None:
             raise ValueError("combine_name and combine_state_control_plot cannot be defined simultaneously")
 
-    def define_cx_scaled(self, n_col: Int, node_index: Int) -> list[CX]:
+    def define_cx_scaled(self, n_col: Int, node_index: Int) -> CXList:
         """
         This function defines the decision variables, either MX or SX,
         scaled to the physical world, they mean something according to the physical model considered.
@@ -138,7 +139,7 @@ class NewVariableConfiguration:
                 )
         return _cx
 
-    def define_cx_unscaled(self, _cx_scaled: list[CX], scaling: NpArray) -> list[CX]:
+    def define_cx_unscaled(self, _cx_scaled: CXList, scaling: NpArray) -> CXList:
         """
         This function defines the decision variables, either MX or SX,
         unscaled means here the decision variable doesn't correspond to physical quantity.

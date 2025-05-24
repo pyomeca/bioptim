@@ -6,7 +6,6 @@ from ..misc.enums import ControlType, DefectType
 from ..models.protocols.biomodel import BioModel
 from ..misc.parameters_types import (
     Float,
-    DoubleIntList,
     DoubleIntTuple,
     StrList,
     AnyDict,
@@ -263,12 +262,12 @@ class RK(Integrator):
         return self.t_span_sym[1] / self._n_step
 
     @property
-    def shape_xf(self) -> DoubleIntList:
-        return [self.x_sym.shape[0], 1]
+    def shape_xf(self) -> DoubleIntTuple:
+        return (self.x_sym.shape[0], 1)
 
     @property
-    def shape_xall(self) -> DoubleIntList:
-        return [self.x_sym.shape[0], self._n_step + 1]
+    def shape_xall(self) -> DoubleIntTuple:
+        return (self.x_sym.shape[0], self._n_step + 1)
 
     @property
     def _time_xall_from_dt_func(self) -> Function:
@@ -620,12 +619,12 @@ class COLLOCATION(Integrator):
         return [0] + collocation_points(self.degree, self.method)
 
     @property
-    def shape_xf(self) -> DoubleIntList:
-        return [self._x_sym_modified.shape[0], self.degree + 1]
+    def shape_xf(self) -> DoubleIntTuple:
+        return (self._x_sym_modified.shape[0], self.degree + 1)
 
     @property
-    def shape_xall(self) -> DoubleIntList:
-        return [self._x_sym_modified.shape[0], self.degree + 2]
+    def shape_xall(self) -> DoubleIntTuple:
+        return (self._x_sym_modified.shape[0], self.degree + 2)
 
     @property
     def _time_xall_from_dt_func(self) -> Function:
@@ -729,12 +728,12 @@ class IRK(COLLOCATION):
         return ["xf", "xall"]
 
     @property
-    def shape_xf(self) -> DoubleIntList:
-        return [self._x_sym_modified.shape[0], 1]
+    def shape_xf(self) -> DoubleIntTuple:
+        return (self._x_sym_modified.shape[0], 1)
 
     @property
-    def shape_xall(self) -> DoubleIntList:
-        return [self._x_sym_modified.shape[0], 2]
+    def shape_xall(self) -> DoubleIntTuple:
+        return (self._x_sym_modified.shape[0], 2)
 
     @property
     def _time_xall_from_dt_func(self) -> Function:

@@ -1398,7 +1398,7 @@ class ConfigureProblem:
             )
 
     @staticmethod
-    def configure_q(ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool):
+    def configure_q(ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool) -> None:
         """
         Configure the generalized coordinates
 
@@ -1417,7 +1417,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable(name, name_q, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
-    def configure_qdot(ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool):
+    def configure_qdot(ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool) -> None:
         """
         Configure the generalized velocities
 
@@ -1437,7 +1437,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable(name, name_qdot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
-    def configure_qddot(ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool):
+    def configure_qddot(ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool) -> None:
         """
         Configure the generalized accelerations
 
@@ -1457,7 +1457,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable(name, name_qddot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
-    def configure_qdddot(ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool):
+    def configure_qdddot(ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool) -> None:
         """
         Configure the generalized accelerations
 
@@ -1477,7 +1477,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable(name, name_qdddot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
-    def configure_stochastic_k(ocp, nlp: NonLinearProgram, n_noised_controls: Int, n_references: Int):
+    def configure_stochastic_k(ocp, nlp: NonLinearProgram, n_noised_controls: Int, n_references: Int) -> None:
         """
         Configure the optimal feedback gain matrix K.
         Parameters
@@ -1510,7 +1510,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_stochastic_c(ocp, nlp: NonLinearProgram, n_noised_states: Int, n_noise: Int):
+    def configure_stochastic_c(ocp, nlp: NonLinearProgram, n_noised_states: Int, n_noise: Int) -> None:
         """
         Configure the stochastic variable matrix C representing the injection of motor noise (df/dw).
         Parameters
@@ -1543,7 +1543,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_stochastic_a(ocp, nlp: NonLinearProgram, n_noised_states: Int):
+    def configure_stochastic_a(ocp, nlp: NonLinearProgram, n_noised_states: Int) -> None:
         """
         Configure the stochastic variable matrix A representing the propagation of motor noise (df/dx).
         Parameters
@@ -1574,7 +1574,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_stochastic_cov_explicit(ocp, nlp: NonLinearProgram, n_noised_states: Int, initial_matrix: DM):
+    def configure_stochastic_cov_explicit(ocp, nlp: NonLinearProgram, n_noised_states: Int, initial_matrix: DM) -> None:
         """
         Configure the covariance matrix P representing the motor noise.
         Parameters
@@ -1601,7 +1601,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_stochastic_cov_implicit(ocp, nlp: NonLinearProgram, n_noised_states: Int):
+    def configure_stochastic_cov_implicit(ocp, nlp: NonLinearProgram, n_noised_states: Int) -> None:
         """
         Configure the covariance matrix P representing the motor noise.
         Parameters
@@ -1630,7 +1630,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_stochastic_cholesky_cov(ocp, nlp: NonLinearProgram, n_noised_states: Int):
+    def configure_stochastic_cholesky_cov(ocp, nlp: NonLinearProgram, n_noised_states: Int) -> None:
         """
         Configure the diagonal matrix needed to reconstruct the covariance matrix using L @ L.T.
         This formulation allows insuring that the covariance matrix is always positive semi-definite.
@@ -1660,7 +1660,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_stochastic_ref(ocp, nlp: NonLinearProgram, n_references: Int):
+    def configure_stochastic_ref(ocp, nlp: NonLinearProgram, n_references: Int) -> None:
         """
         Configure the reference kinematics.
 
@@ -1687,7 +1687,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_stochastic_m(ocp, nlp: NonLinearProgram, n_noised_states: Int):
+    def configure_stochastic_m(ocp, nlp: NonLinearProgram, n_noised_states: Int) -> None:
         """
         Configure the helper matrix M (from Gillis 2013 : https://doi.org/10.1109/CDC.2013.6761121).
 
@@ -1720,7 +1720,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_tau(ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool, fatigue: FatigueList = None):
+    def configure_tau(ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool, fatigue: FatigueList = None) -> None:
         """
         Configure the generalized forces
 
@@ -1744,7 +1744,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_residual_tau(ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool):
+    def configure_residual_tau(ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool) -> None:
         """
         Configure the residual forces
 
@@ -1766,7 +1766,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_taudot(ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool):
+    def configure_taudot(ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool) -> None:
         """
         Configure the generalized forces derivative
 
@@ -1788,7 +1788,7 @@ class ConfigureProblem:
     @staticmethod
     def configure_translational_forces(
         ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool, n_contacts: Int = 1
-    ):
+    ) -> None:
         """
         Configure contact forces as optimization variables (for now only in global reference frame with an unknown point of application))
         # TODO: Match this with ExternalForceSetTimeSeries (options: 'in_global', 'torque', ...)
@@ -1814,7 +1814,7 @@ class ConfigureProblem:
     @staticmethod
     def configure_rigid_contact_forces(
         ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool, as_algebraic_states: Bool
-    ):
+    ) -> None:
         """
         Configure the generalized forces derivative
 
@@ -1838,7 +1838,7 @@ class ConfigureProblem:
     @staticmethod
     def configure_soft_contact_forces(
         ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool, as_algebraic_states: Bool
-    ):
+    ) -> None:
         """
         Configure the generalized forces derivative
 
@@ -1867,7 +1867,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_muscles(ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool, fatigue: FatigueList = None):
+    def configure_muscles(ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool, fatigue: FatigueList = None) -> None:
         """
         Configure the muscles
 
