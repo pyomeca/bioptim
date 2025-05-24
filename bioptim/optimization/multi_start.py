@@ -6,6 +6,14 @@ from ..optimization.optimal_control_program import OptimalControlProgram
 from ..interfaces import Solver
 from ..optimization.solution.solution import Solution
 
+from ..misc.parameters_types import (
+    Bool,
+    Int,
+    AnyTuple,
+    AnyDict,
+    AnyList,
+)
+
 
 class MultiStart:
     """
@@ -20,12 +28,12 @@ class MultiStart:
 
     def __init__(
         self,
-        combinatorial_parameters: dict[tuple, ...],
+        combinatorial_parameters: dict[AnyTuple, ...],
         prepare_ocp_callback: Callable[[Any], OptimalControlProgram],
-        post_optimization_callback: tuple[Callable[[Solution, Any], None], dict],
-        should_solve_callback: tuple[Callable[[Any, dict], bool], dict] = None,
+        post_optimization_callback: tuple[Callable[[Solution, Any], None], AnyDict],
+        should_solve_callback: tuple[Callable[[Any, AnyDict], Bool], AnyDict] | None = None,
         solver: Solver = None,
-        n_pools: int = 1,
+        n_pools: Int = 1,
     ):
         """
         Parameters
@@ -77,7 +85,7 @@ class MultiStart:
         # self.save_folder = save_folder
 
     @staticmethod
-    def _generate_parameters_combinations(combinatorial_parameters):
+    def _generate_parameters_combinations(combinatorial_parameters: AnyDict) -> list[AnyList]:
         """
         Combine the varying arguments of the multi-start into a list of arguments to be passed to the solve_ocp function
         inside the pools
@@ -88,14 +96,14 @@ class MultiStart:
             combined_args_to_list += [[instance for instance in combined_args[i]]]
         return combined_args_to_list
 
-    def _prepare_and_solve_ocp(self, ocp_parameters):
+    def _prepare_and_solve_ocp(self, ocp_parameters: AnyList) -> None:
         if self.should_solve_callback is None or self.should_solve_callback[0](
             *ocp_parameters, **self.should_solve_callback[1]
         ):
             sol = self.prepare_ocp_callback(*ocp_parameters).solve(self.solver)
             self.post_optimization_callback[0](sol, *ocp_parameters, **self.post_optimization_callback[1])
 
-    def solve(self):
+    def solve(self) -> None:
         """
         Run the multi-start in the pools for multi-threading
         """
