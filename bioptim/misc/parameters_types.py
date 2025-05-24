@@ -35,7 +35,6 @@ IntDict: TypeAlias = dict[str, int]
 NpArrayDict: TypeAlias = dict[str, np.ndarray]
 NpArrayDictOptional: TypeAlias = NpArrayDict | None
 
-
 AnyDictOptional: TypeAlias = dict[str, Any] | None
 AnyListOptional: TypeAlias = list[Any] | None
 
