@@ -140,29 +140,6 @@ class NonLinearProgram:
     """
 
     def __init__(self, phase_dynamics: PhaseDynamics, use_sx: bool):
-<<<<<<< HEAD
-        self.casadi_func = {}
-        self.rigid_contact_forces_func = None
-        self.soft_contact_forces_func = None
-        self.control_type = ControlType.CONSTANT
-        self.cx = None
-        self.dt = None
-        self.dynamics = []
-        self.extra_dynamics = []
-        self.extra_dynamics_defects = []
-        self.dynamics_evaluation = DynamicsEvaluation()
-        self.dynamics_func = None
-        self.extra_dynamics_func: list = []
-        self.dynamics_defects_func = None
-        self.extra_dynamics_defects_func: list = []
-        self.implicit_dynamics_func = None
-        self.dynamics_type = None
-        self.g = []
-        self.g_internal = []
-        self.g_implicit = []
-        self.J = []
-        self.J_internal = []
-=======
         self.casadi_func: AnyDict = {}
         self.rigid_contact_forces_func: Callable | None = None
         self.soft_contact_forces_func: Callable | None = None
@@ -176,12 +153,14 @@ class NonLinearProgram:
         self.extra_dynamics_func: AnyList = []
         self.implicit_dynamics_func: Callable | None = None
         self.dynamics_type: "DynamicsFcn" | None = None
+        self.extra_dynamics_defects = []
+        self.dynamics_defects_func = None
+        self.extra_dynamics_defects_func: list = []
         self.g: AnyList = []
         self.g_internal: AnyList = []
         self.g_implicit: AnyList = []
         self.J: AnyList = []
         self.J_internal: AnyList = []
->>>>>>> 44ce98e1 (Converted types in non linear program.)
         self.model: BioModel | StochasticBioModel | HolonomicBioModel | VariationalBioModel | None = None
         self.n_threads: IntOptional = None
         self.ns: IntOptional = None
