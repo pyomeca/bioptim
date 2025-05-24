@@ -23,7 +23,6 @@ from ..misc.parameters_types import (
     Range,
     Tuple,
     List,
-    BoolOptional,
     IntOptional,
     FloatOptional,
     StrOptional,
@@ -31,10 +30,7 @@ from ..misc.parameters_types import (
     FloatList,
     AnyList,
     NpArray,
-    StrIterable,
     StrIterableOptional,
-    AnyIterableOptional,
-    AnyIterableOrRangeOptional,
     IntIterableOptional,
     IntDict,
     AnyDict,
@@ -404,7 +400,7 @@ class PlotOcp:
         y_min_all: list[FloatList],
         y_max_all: list[FloatList],
         only_initialize_variables: Bool,
-    ):
+    ) -> None:
         """Process plots for a specific NLP"""
         for variable in self.variable_sizes[i]:
             y_range_var_idx = all_keys_across_phases.index(variable)

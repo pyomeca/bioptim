@@ -6,6 +6,12 @@ from . import integrator
 from .ode_solver_base import OdeSolverBase
 from .rk_base import RK
 from ..misc.enums import ControlType, DefectType, PhaseDynamics
+from ..misc.parameters_types import (
+    Bool,
+    Int,
+    Str,
+    CX,
+)
 
 
 class OdeSolver:
@@ -69,11 +75,11 @@ class OdeSolver:
             return integrator.TRAPEZOIDAL
 
         @property
-        def is_direct_collocation(self) -> bool:
+        def is_direct_collocation(self) -> Bool:
             return False
 
         @property
-        def is_direct_shooting(self) -> bool:
+        def is_direct_shooting(self) -> Bool:
             return True
 
         @property
@@ -85,7 +91,7 @@ class OdeSolver:
             return DefectType.NOT_APPLICABLE
 
         @property
-        def n_required_cx(self) -> int:
+        def n_required_cx(self) -> Int:
             return 1
 
         def x_ode(self, nlp):
@@ -108,7 +114,7 @@ class OdeSolver:
                 )
             return super(OdeSolver.TRAPEZOIDAL, self).initialize_integrator(ocp, nlp, **kwargs)
 
-        def __str__(self):
+        def __str__(self) -> Str:
             return f"{self.integrator.__name__}"
 
     class COLLOCATION(OdeSolverBase):
@@ -129,8 +135,8 @@ class OdeSolver:
 
         def __init__(
             self,
-            polynomial_degree: int = 4,
-            method: str = "legendre",
+            polynomial_degree: Int = 4,
+            method: Str = "legendre",
             defects_type: DefectType = DefectType.EXPLICIT,
             **kwargs,
         ):
@@ -151,15 +157,15 @@ class OdeSolver:
             return integrator.COLLOCATION
 
         @property
-        def is_direct_shooting(self) -> bool:
+        def is_direct_shooting(self) -> Bool:
             return False
 
         @property
-        def is_direct_collocation(self) -> bool:
+        def is_direct_collocation(self) -> Bool:
             return True
 
         @property
-        def n_required_cx(self) -> int:
+        def n_required_cx(self) -> Int:
             return self.polynomial_degree + (1 if self.duplicate_starting_point else 0)
 
         @property
@@ -210,7 +216,7 @@ class OdeSolver:
                 ocp, nlp, **kwargs, method=self.method, irk_polynomial_interpolation_degree=self.polynomial_degree
             )
 
-        def __str__(self):
+        def __str__(self) -> Str:
             return f"{self.integrator.__name__} {self.method} {self.polynomial_degree}"
 
     class IRK(COLLOCATION):
@@ -229,11 +235,11 @@ class OdeSolver:
             return integrator.IRK
 
         @property
-        def is_direct_collocation(self) -> bool:
+        def is_direct_collocation(self) -> Bool:
             return False
 
         @property
-        def is_direct_shooting(self) -> bool:
+        def is_direct_shooting(self) -> Bool:
             return True
 
     class CVODES(OdeSolverBase):
@@ -246,15 +252,15 @@ class OdeSolver:
             return integrator.CVODES
 
         @property
-        def is_direct_collocation(self) -> bool:
+        def is_direct_collocation(self) -> Bool:
             return False
 
         @property
-        def is_direct_shooting(self) -> bool:
+        def is_direct_shooting(self) -> Bool:
             return True
 
         @property
-        def n_required_cx(self) -> int:
+        def n_required_cx(self) -> Int:
             return 1
 
         @property
@@ -270,7 +276,7 @@ class OdeSolver:
         def a_ode(self, nlp):
             return nlp.algebraic_states.scaled.cx
 
-        def initialize_integrator(self, ocp, nlp, dynamics_index: int, node_index: int, **extra_opt):
+        def initialize_integrator(self, ocp, nlp, dynamics_index: Int, node_index: Int, **extra_opt):
             raise NotImplementedError("CVODES is not yet implemented")
 
             if extra_opt:
@@ -332,7 +338,7 @@ class OdeSolver:
             ]
 
         @staticmethod
-        def _adapt_integrator_output(integrator_func: Callable, x0: MX | SX, u: MX | SX):
+        def _adapt_integrator_output(integrator_func: Callable, x0: CX, u: CX):
             """
             Interface to make xf and xall as outputs
 
@@ -353,5 +359,5 @@ class OdeSolver:
             xf = integrator_func(x0=x0, u=u)["xf"]
             return xf, horzcat(x0, xf)
 
-        def __str__(self):
+        def __str__(self) -> Str:
             return self.integrator.__name__

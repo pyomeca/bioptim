@@ -1,4 +1,6 @@
-from casadi import MX, SX
+from ..misc.parameters_types import (
+    CXOptional,
+)
 
 
 class DynamicsEvaluation:
@@ -11,6 +13,6 @@ class DynamicsEvaluation:
         defects of the dynamics for implicit transcription  f(t,x,u,p,s,xdot) = 0
     """
 
-    def __init__(self, dxdt: MX | SX = None, defects: MX | SX = None):
+    def __init__(self, dxdt: CXOptional = None, defects: CXOptional = None):
         self.dxdt = dxdt
         self.defects = defects
