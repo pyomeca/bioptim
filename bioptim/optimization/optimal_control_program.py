@@ -336,7 +336,7 @@ class OptimalControlProgram:
         self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "bioptim": __version__}
         return
 
-    def _initialize_model(self, bio_model: AnyIterable | BioModel) -> List[BioModel]:
+    def _initialize_model(self, bio_model: AnyIterable | BioModel) -> list[BioModel]:
         """
         Initialize the bioptim model and check if the quaternions are used, if yes then setting them.
         Setting the number of phases.
@@ -804,7 +804,7 @@ class OptimalControlProgram:
         return phase_mappings, dof_names
 
     @staticmethod
-    def _check_quaternions_hasattr(biomodels: list[BioModel]) -> List[BioModel]:
+    def _check_quaternions_hasattr(biomodels: list[BioModel]) -> list[BioModel]:
         """
         This functions checks if the biomodels have quaternions and if not we set an attribute to nb_quaternion to 0
 
