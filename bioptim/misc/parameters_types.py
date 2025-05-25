@@ -32,6 +32,8 @@ StrIterableOptional: TypeAlias = list[str] | tuple[str, ...] | None
 AnyDict: TypeAlias = dict[str, Any]
 AnyListorDict: TypeAlias = list[Any] | dict[str, Any]
 IntDict: TypeAlias = dict[str, int]
+NpArrayDict: TypeAlias = dict[str, np.ndarray]
+NpArrayDictOptional: TypeAlias = dict[str, np.ndarray] | None
 
 AnyDictOptional: TypeAlias = dict[str, Any] | None
 AnyListOptional: TypeAlias = list[Any] | None
