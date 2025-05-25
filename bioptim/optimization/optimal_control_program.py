@@ -69,11 +69,15 @@ from ..misc.parameters_types import (
     Float,
     Bool,
     Str,
+    IntorFloat,
     List,
-    Tuple,
+    BoolList,
+    FloatList,
     NpArray,
     AnyDict,
     AnyTuple,
+    IntIterable,
+    AnyIterable,
     DoubleNpArrayTuple,
     CX,
 )
@@ -153,10 +157,10 @@ class OptimalControlProgram:
 
     def __init__(
         self,
-        bio_model: List | Tuple | BioModel,
+        bio_model: AnyIterable | BioModel,
         dynamics: Dynamics | DynamicsList,
-        n_shooting: Int | List | Tuple,
-        phase_time: Int | Float | List | Tuple,
+        n_shooting: Int | IntIterable,
+        phase_time: IntorFloat | IntIterable,
         x_bounds: BoundsList | None = None,
         u_bounds: BoundsList | None = None,
         a_bounds: BoundsList | None = None,
@@ -332,7 +336,7 @@ class OptimalControlProgram:
         self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "bioptim": __version__}
         return
 
-    def _initialize_model(self, bio_model: List | Tuple | BioModel) -> List[BioModel]:
+    def _initialize_model(self, bio_model: AnyIterable | BioModel) -> List[BioModel]:
         """
         Initialize the bioptim model and check if the quaternions are used, if yes then setting them.
         Setting the number of phases.
@@ -348,7 +352,7 @@ class OptimalControlProgram:
             raise RuntimeError("n_threads should be a positive integer greater or equal than 1")
         self.n_threads = n_threads
 
-    def _check_and_set_shooting_points(self, n_shooting: Int | List | Tuple) -> None:
+    def _check_and_set_shooting_points(self, n_shooting: Int | IntIterable) -> None:
         if not isinstance(n_shooting, int) or n_shooting < 2:
             if isinstance(n_shooting, (tuple, list)):
                 if sum([True for i in n_shooting if not isinstance(i, int) and not isinstance(i, bool)]) != 0:
@@ -357,7 +361,7 @@ class OptimalControlProgram:
                 raise RuntimeError("n_shooting should be a positive integer (or a list of) greater or equal than 2")
         self.n_shooting = n_shooting
 
-    def _check_and_set_phase_time(self, phase_time: Int | Float | List | Tuple) -> None:
+    def _check_and_set_phase_time(self, phase_time: IntorFloat | AnyIterable) -> None:
         if not isinstance(phase_time, (int, float)):
             if isinstance(phase_time, (tuple, list)):
                 if sum([True for i in phase_time if not isinstance(i, (int, float))]) != 0:
@@ -397,15 +401,15 @@ class OptimalControlProgram:
 
     def _prepare_all_decision_variables(
         self,
-        x_bounds,
-        x_init,
-        x_scaling,
-        u_bounds,
-        u_init,
-        u_scaling,
-        a_bounds,
-        a_init,
-        a_scaling,
+        x_bounds: BoundsList | None,
+        x_init: InitialGuessList | None,
+        x_scaling: VariableScalingList | None,
+        u_bounds: BoundsList | None,
+        u_init: InitialGuessList | None,
+        u_scaling: VariableScalingList | None,
+        a_bounds: BoundsList | None,
+        a_init: InitialGuessList | None,
+        a_scaling: VariableScalingList | None,
     ) -> AnyTuple:
         """
         This function checks if the decision variables are of the right type for initial guess and bounds.
@@ -435,7 +439,7 @@ class OptimalControlProgram:
         parameter_constraints: ParameterConstraintList | None,
         parameter_objectives: ParameterObjectiveList | None,
         use_sx: Bool,
-        bio_model: List[BioModel],
+        bio_model: list[BioModel],
         plot_mappings: Mapping | None,
         time_phase_mapping: BiMapping | None,
         control_type: ControlType | List,
@@ -619,7 +623,15 @@ class OptimalControlProgram:
                 )
 
     def _prepare_bounds_and_init(
-        self, x_bounds, u_bounds, parameter_bounds, a_bounds, x_init, u_init, parameter_init, a_init
+        self, 
+        x_bounds: BoundsList,
+        u_bounds: BoundsList, 
+        parameter_bounds: BoundsList, 
+        a_bounds: BoundsList, 
+        x_init: InitialGuessList, 
+        u_init: InitialGuessList, 
+        parameter_init: InitialGuessList, 
+        a_init: InitialGuessList,
     ) -> None:
         self.parameter_bounds = BoundsList()
         self.parameter_init = InitialGuessList()
@@ -648,11 +660,11 @@ class OptimalControlProgram:
 
     def _finalize_penalties(
         self,
-        constraints,
-        parameter_constraints,
-        objective_functions,
-        parameter_objectives,
-        phase_transitions,
+        constraints: ConstraintList,
+        parameter_constraints: ParameterConstraintList,
+        objective_functions: ObjectiveList,
+        parameter_objectives: ParameterObjectiveList,
+        phase_transitions: PhaseTransitionList,
     ) -> None:
         # Define continuity constraints
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
@@ -795,7 +807,7 @@ class OptimalControlProgram:
         return phase_mappings, dof_names
 
     @staticmethod
-    def _check_quaternions_hasattr(biomodels: List[BioModel]) -> List[BioModel]:
+    def _check_quaternions_hasattr(biomodels: list[BioModel]) -> List[BioModel]:
         """
         This functions checks if the biomodels have quaternions and if not we set an attribute to nb_quaternion to 0
 
@@ -1229,7 +1241,17 @@ class OptimalControlProgram:
                 color[name] = plt.cm.viridis(i / len(name_unique_objective))
             return color
 
-        def compute_penalty_values(t0, phases_dt, node_idx, x, u, p, a, d, penalty):
+        def compute_penalty_values(
+            t0: Float, 
+            phases_dt: FloatList, 
+            node_idx: Int, 
+            x: NpArray, 
+            u: NpArray, 
+            p: NpArray, 
+            a: NpArray, 
+            d: NpArray, 
+            penalty: PenaltyOption,
+        ):
             """
             Compute the penalty value for the given time, state, control, parameters, penalty and time step
 
@@ -1265,7 +1287,7 @@ class OptimalControlProgram:
             val = penalty.weighted_function_non_threaded[node_idx](t0, phases_dt, x, u, p, a, d, weight, target)
             return sum1(horzcat(val))
 
-        def add_penalty(_penalties):
+        def add_penalty(_penalties: AnyList) -> None:
             for penalty in _penalties:
                 if not penalty:
                     continue
@@ -1323,8 +1345,8 @@ class OptimalControlProgram:
 
     def prepare_plots(
         self,
-        automatically_organize: bool = True,
-        show_bounds: bool = False,
+        automatically_organize: Bool = True,
+        show_bounds: Bool = False,
         shooting_type: Shooting = Shooting.MULTIPLE,
         integrator: SolutionIntegrator = SolutionIntegrator.OCP,
     ) -> PlotOcp:
@@ -1466,8 +1488,8 @@ class OptimalControlProgram:
 
     def print(
         self,
-        to_console: bool = True,
-        to_graph: bool = True,
+        to_console: Bool = True,
+        to_graph: Bool = True,
     ) -> None:
         if to_console:
             display_console = OcpToConsole(self)
@@ -1478,7 +1500,7 @@ class OptimalControlProgram:
             display_graph.print()
 
     def _define_time(
-        self, phase_time: Int | Float | List | Tuple, objective_functions: ObjectiveList, constraints: ConstraintList
+        self, phase_time: IntorFloat | AnyIterable, objective_functions: ObjectiveList, constraints: ConstraintList
     ) -> None:
         """
         Declare the phase_time vector in v. If objective_functions or constraints defined a time optimization,
@@ -1497,8 +1519,8 @@ class OptimalControlProgram:
         def define_parameters_phase_time(
             ocp: OptimalControlProgram,
             penalty_functions: ObjectiveList | ConstraintList,
-            _has_penalty: list = None,
-        ) -> list:
+            _has_penalty: BoolList = None,
+        ) -> AnyList:
             """
             Sanity check to ensure that only one time optimization is defined per phase. It also creates the time vector
             for initial guesses and bounds
