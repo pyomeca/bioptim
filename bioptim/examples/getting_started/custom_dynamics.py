@@ -76,12 +76,21 @@ def custom_dynamics(
     # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
     dq = DynamicsFunctions.compute_qdot(nlp, q, qdot) * my_additional_factor
     ddq = nlp.model.forward_dynamics()(q, qdot, tau, [], nlp.parameters.cx)
+    dxdt = vertcat(dq, ddq)
 
     # the user has to choose if want to return the explicit dynamics dx/dt = f(x,u,p)
     # as the first argument of DynamicsEvaluation or
     # the implicit dynamics f(x,u,p,xdot)=0 as the second argument
     # which may be useful for IRK or COLLOCATION integrators
-    return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
+    defects = None
+    if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
+        # Implicit dynamics
+        slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
+        slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
+        slopes = vertcat(slope_q, slope_qdot)
+        defects = slopes * nlp.dt - dxdt * nlp.dt
+
+    return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
 
 def custom_configure(

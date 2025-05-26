@@ -50,7 +50,7 @@ class HolonomicConstraintsFcn:
         q_sym = MX.sym("q", model.nb_q, 1)
         q_dot_sym = MX.sym("q_dot", model.nb_qdot, 1)
         q_ddot_sym = MX.sym("q_ddot", model.nb_qdot, 1)
-        parameters = model.parameters.cx
+        parameters = model.parameters
 
         # symbolic markers in global frame
         marker_1_sym = model.marker(index=model.marker_index(marker_1))(q_sym, parameters)
@@ -125,7 +125,7 @@ class HolonomicConstraintsFcn:
         q_sym = MX.sym("q", model.nb_q, 1)
         q_dot_sym = MX.sym("q_dot", model.nb_qdot, 1)
         q_ddot_sym = MX.sym("q_ddot", model.nb_qdot, 1)
-        parameters = model.parameters.cx
+        parameters = model.parameters
 
         contact_position = MX()
         for i_contact in range(model.nb_rigid_contacts):

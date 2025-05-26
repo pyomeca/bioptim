@@ -127,7 +127,7 @@ class DynamicsFunctions:
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
 
-        tau = DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue)
+        tau = DynamicsFunctions.get_fatigable_tau(nlp, states, controls, fatigue)
         if nlp.model.nb_passive_joint_torques > 0:
             tau += nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx)
         if nlp.model.nb_ligaments > 0:
@@ -144,13 +144,15 @@ class DynamicsFunctions:
 
         forward_dynamics_contact_type = ContactType.get_equivalent_explicit_contacts(nlp.model.contact_type)
         ddq_fd = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, forward_dynamics_contact_type, external_forces)
+
         dxdt = vertcat(dq, ddq_fd)
 
         defects = None
         if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
 
-            slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
-            slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
+            # Do not use DynamicsFunctions.get to get the slopes because we do not want then mapped
+            slope_q = nlp.states_dot["q"].cx
+            slope_qdot = nlp.states_dot["qdot"].cx
             defects = nlp.cx()
 
             # qdot = polynomial slope
@@ -159,6 +161,7 @@ class DynamicsFunctions:
 
             if nlp.dynamics_type.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
                 ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, nlp.model.contact_type, external_forces)
+
                 qdot_defects = slope_qdot * nlp.dt - ddq * nlp.dt
                 defects = vertcat(defects, qdot_defects)
 
@@ -442,7 +445,7 @@ class DynamicsFunctions:
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
     @staticmethod
-    def __get_fatigable_tau(nlp, states: MX | SX, controls: MX | SX, fatigue: FatigueList) -> MX | SX:
+    def get_fatigable_tau(nlp, states: MX | SX, controls: MX | SX, fatigue: FatigueList) -> MX | SX:
         """
         Apply the forward dynamics including (or not) the torque fatigue
 
@@ -830,7 +833,7 @@ class DynamicsFunctions:
         q = nlp.get_var_from_states_or_controls("q", states, controls)
         qdot = nlp.get_var_from_states_or_controls("qdot", states, controls)
         residual_tau = (
-            DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue) if with_residual_torque else None
+            DynamicsFunctions.get_fatigable_tau(nlp, states, controls, fatigue) if with_residual_torque else None
         )
         mus_activations = nlp.get_var_from_states_or_controls("muscles", states, controls)
         fatigue_states = None

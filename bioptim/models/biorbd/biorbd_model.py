@@ -99,7 +99,7 @@ class BiorbdModel:
         if (
             ContactType.RIGID_IMPLICIT in self.contact_type
             or ContactType.SOFT_IMPLICIT in self.contact_type
-            or ContactType.SOFT_EXPLICIT
+            or ContactType.SOFT_EXPLICIT in self.contact_type
         ) and isinstance(external_force_set, ExternalForceSetTimeSeries):
             raise NotImplementedError(
                 f"Your contact_type {self.contact_type} is not supported yet with external_force_set of type ExternalForceSetTimeSeries."
@@ -129,8 +129,6 @@ class BiorbdModel:
                         segment=self.soft_contact_segment(i_contact),
                         use_point_of_application=True,
                     )
-            else:
-                raise NotImplementedError(f"Your contact_type {self.contact_type} is not supported yet.")
 
         external_force_set.check_segment_names(tuple([s.name().to_string() for s in self.model.segments()]))
         external_force_set.check_all_string_points_of_application(self.marker_names)
@@ -937,17 +935,17 @@ class BiorbdModel:
         """
         return tuple(self.model.rigidContacts()[contact_index].availableAxesIndices())
 
-    def rigid_contact_segment(self, contact_index) -> tuple:
+    def rigid_contact_segment(self, contact_index) -> str:
         """
         Returns the name of the segment on which this specific rigid contact is.
         """
-        return tuple(self.model.rigidContacts()[contact_index].segmentName())
+        return self.model.rigidContacts()[contact_index].segmentName()
 
-    def soft_contact_segment(self, contact_index) -> tuple:
+    def soft_contact_segment(self, contact_index) -> str:
         """
         Returns the name of the segment on which this specific rigid contact is.
         """
-        return tuple(self.model.softContacts()[contact_index].segmentName())
+        return self.model.segmentSoftContactIdx(contact_index)
 
     @cache_function
     def markers_velocities(self, reference_index=None) -> list[MX]:

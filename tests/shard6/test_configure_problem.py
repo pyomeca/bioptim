@@ -122,7 +122,7 @@ def test_configures(cx):
     npt.assert_equal(nlp.controls.shape, n_controls)
     npt.assert_equal(nlp.controls.keys(), keys_controls)
 
-    ConfigureProblem.configure_translational_forces(ocp, nlp, as_states=False, as_controls=True)
+    ConfigureProblem.configure_translational_forces(ocp, nlp, as_states=False, as_controls=True, as_algebraic_states=False)
     n_controls += 6
     keys_controls += ["contact_forces", "contact_positions"]
     npt.assert_equal(nlp.controls.shape, n_controls)
