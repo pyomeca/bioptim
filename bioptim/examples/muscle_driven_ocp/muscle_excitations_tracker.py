@@ -32,6 +32,7 @@ from bioptim import (
     Solver,
     PhaseDynamics,
     SolutionMerge,
+    Dynamics,
 )
 from bioptim.optimization.optimization_variable import OptimizationVariableContainer
 
@@ -165,6 +166,9 @@ def generate_data(
             node_index=node_index,
         )
 
+    nlp.dynamics_type = Dynamics(
+        DynamicsFcn.MUSCLE_DRIVEN,
+    )
     dynamics_func = Function(
         "ForwardDyn",
         [symbolic_time, symbolic_states, symbolic_controls, symbolic_parameters],

@@ -74,22 +74,13 @@ def prepare_ocp(
     biorbd_model_path,
     phase_time,
     n_shooting,
-    defect_type: list[DefectType],
+    defects_type: DefectType,
     contact_type: list[ContactType],
     expand_dynamics=True,
 ):
 
-    if ContactType.RIGID_IMPLICIT in contact_type:
-        # Indicate to the model creator that there will be two rigid contacts in the form of optimization variables
-        external_force_set = ExternalForceSetVariables()
-        external_force_set.add(force_name="Seg1_contact1", segment="Seg1", use_point_of_application=True)
-        external_force_set.add(force_name="Seg1_contact2", segment="Seg1", use_point_of_application=True)
-
-        # BioModel
-        bio_model = BiorbdModel(biorbd_model_path, external_force_set=external_force_set)
-    else:
-        # BioModel
-        bio_model = BiorbdModel(biorbd_model_path)
+    # BioModel
+    bio_model = BiorbdModel(biorbd_model_path, contact_type=contact_type)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -103,17 +94,16 @@ def prepare_ocp(
     dynamics.add(
         DynamicsFcn.MUSCLE_DRIVEN,
         with_residual_torque=True,
-        contact_type=contact_type,
         expand_dynamics=expand_dynamics,
         phase_dynamics=PhaseDynamics.ONE_PER_NODE,
-        ode_solver=OdeSolver.COLLOCATION(polynomial_degree=3, defects_type=defect_type),
+        ode_solver=OdeSolver.COLLOCATION(polynomial_degree=3, defects_type=defects_type),
     )
 
     # Constraints
     constraints = ConstraintList()
     multinode_constraints = MultinodeConstraintList()
     # This constraint is necessary to prevent the contacts from drifting
-    if DefectType.TAU_EQUALS_INVERSE_DYNAMICS in defect_type:
+    if defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
         constraints.add(
             contact_velocity_all_points,
             node=Node.ALL_SHOOTING,
@@ -204,13 +194,13 @@ def main():
     biorbd_model_path = "models/2segments_4dof_2contacts_1muscle.bioMod"
     t = 0.1
     ns = 100
-    defect_type = [DefectType.QDOT_EQUALS_POLYNOMICAL_SLOPE, DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS]
+    defects_type = DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS
     contact_type = [ContactType.RIGID_IMPLICIT]
     ocp = prepare_ocp(
         biorbd_model_path=biorbd_model_path,
         phase_time=t,
         n_shooting=ns,
-        defect_type=defect_type,
+        defects_type=defects_type,
         contact_type=contact_type,
     )
     # ocp.add_plot_penalty()
@@ -231,7 +221,7 @@ def main():
     tau_residual = controls["tau"]
     mus = controls["muscles"]
 
-    if DefectType.TAU_EQUALS_INVERSE_DYNAMICS in defect_type:
+    if DefectType.TAU_EQUALS_INVERSE_DYNAMICS in defects_type:
         contact_forces = algebraic_states["rigid_contact_forces"]
 
         # --- Get contact position --- #
@@ -326,7 +316,7 @@ def main():
         axs[i_dof].set_title(f"{ocp.nlp[0].model.name_dof[i_dof]}")
     axs[0].legend(bbox_to_anchor=(1.05, 1), loc="upper left")
     plt.tight_layout()
-    plt.savefig(f"reintegration_{defect_type.value}.png")
+    plt.savefig(f"reintegration_{defects_type.value}.png")
     plt.show()
 
     # --- Show results --- #

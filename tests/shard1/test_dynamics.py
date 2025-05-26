@@ -1131,12 +1131,12 @@ def test_custom_dynamics(contact_type, phase_dynamics):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=False)
     nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod",
+        contact_type=contact_type,
     )
     nlp.dynamics_type = Dynamics(
         configure,
         dynamic_function=custom_dynamic,
-        contact_type=contact_type,
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
     )

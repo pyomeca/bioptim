@@ -885,6 +885,7 @@ class DynamicsFunctions:
         )
 
         forward_dynamics_contact_type = ContactType.get_equivalent_explicit_contacts(nlp.model.contact_type)
+        # TODO: Value problem when with RIGID_EXPLICIT
         ddq_fd = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, forward_dynamics_contact_type, external_forces)
         dxdt = vertcat(dq, ddq_fd)
 
@@ -895,6 +896,8 @@ class DynamicsFunctions:
             dxdt = vertcat(dxdt, dmus)
 
         if fatigue is not None and "muscles" in fatigue:
+            # was : dxdt[nlp.states["muscles"].index, :] = horzcat(*[dmus for _ in range(ddq.shape[1])])
+            # @pariterre: I have troubles with fatigue...
             dxdt = fatigue["muscles"].dynamics(dxdt, nlp, states, controls)
 
         defects = None

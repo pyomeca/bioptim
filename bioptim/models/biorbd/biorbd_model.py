@@ -21,6 +21,8 @@ from ...misc.enums import ContactType
 from ...misc.utils import check_version
 from ...optimization.parameters import ParameterList
 
+from ...misc.parameters_types import Int, IntTuple
+
 check_version(biorbd, "1.11.1", "1.12.0")
 
 
@@ -66,9 +68,7 @@ class BiorbdModel:
                 parameters[param_key].apply_parameter(self)
         self._friction_coefficients = friction_coefficients
 
-        self.external_force_set = (
-            self._set_external_force_set(external_force_set) if external_force_set is not None else None
-        )
+        self.external_force_set = self._set_external_force_set(external_force_set)
         self._symbolic_variables()
         self.biorbd_external_forces_set = self._dispatch_forces() if external_force_set else None
 
@@ -105,36 +105,40 @@ class BiorbdModel:
                 f"Your contact_type {self.contact_type} is not supported yet with external_force_set of type ExternalForceSetTimeSeries."
             )
 
-        if len(self.contact_type) > 0:
-            if external_force_set is None:
-                external_force_set = ExternalForceSetVariables()
-            if ContactType.RIGID_IMPLICIT in self.contact_type:
-                for i_contact in range(self.nb_rigid_contacts):
-                    external_force_set.add(
-                        force_name=f"implicit_rigid_contact_{i_contact}",
-                        segment=self.rigid_contact_segment(i_contact),
-                        use_point_of_application=True,
-                    )
-            elif ContactType.SOFT_IMPLICIT in self.contact_type:
-                for i_contact in range(self.nb_soft_contacts):
-                    external_force_set.add(
-                        force_name=f"implicit_soft_contact_{i_contact}",
-                        segment=self.soft_contact_segment(i_contact),
-                        use_point_of_application=True,
-                    )
-            elif ContactType.SOFT_EXPLICIT in self.contact_type:
-                for i_contact in range(self.nb_soft_contacts):
-                    external_force_set.add(
-                        force_name=f"explicit_soft_contact_{i_contact}",
-                        segment=self.soft_contact_segment(i_contact),
-                        use_point_of_application=True,
-                    )
+        if external_force_set is None:
+            if len(self.contact_type) > 0 and ContactType.RIGID_EXPLICIT not in self.contact_type:
+                new_external_force_set = ExternalForceSetVariables()
+                if ContactType.RIGID_IMPLICIT in self.contact_type:
+                    for i_contact in range(self.nb_rigid_contacts):
+                        new_external_force_set.add(
+                            force_name=f"implicit_rigid_contact_{i_contact}",
+                            segment=self.rigid_contact_segment(i_contact),
+                            use_point_of_application=True,
+                        )
+                elif ContactType.SOFT_IMPLICIT in self.contact_type:
+                    for i_contact in range(self.nb_soft_contacts):
+                        new_external_force_set.add(
+                            force_name=f"implicit_soft_contact_{i_contact}",
+                            segment=self.soft_contact_segment(i_contact),
+                            use_point_of_application=True,
+                        )
+                elif ContactType.SOFT_EXPLICIT in self.contact_type:
+                    for i_contact in range(self.nb_soft_contacts):
+                        new_external_force_set.add(
+                            force_name=f"explicit_soft_contact_{i_contact}",
+                            segment=self.soft_contact_segment(i_contact),
+                            use_point_of_application=True,
+                        )
+            else:
+                return None
+        else:
+            new_external_force_set = external_force_set
 
-        external_force_set.check_segment_names(tuple([s.name().to_string() for s in self.model.segments()]))
-        external_force_set.check_all_string_points_of_application(self.marker_names)
-        external_force_set.bind()
+        new_external_force_set.check_segment_names(tuple([s.name().to_string() for s in self.model.segments()]))
+        new_external_force_set.check_all_string_points_of_application(self.marker_names)
+        new_external_force_set.bind()
 
-        return external_force_set
+        return new_external_force_set
 
     @property
     def name(self) -> str:
@@ -1073,13 +1077,15 @@ class BiorbdModel:
         return casadi_fun
 
     @cache_function
-    def rigid_contact_velocity(self, contact_index: int, contact_axis: list[int, ...] = None) -> Function:
+    def rigid_contact_velocity(self, contact_index: Int, contact_axis: IntTuple = None) -> Function:
         contact_axis = [0, 1, 2] if contact_axis is None else contact_axis
         q_biorbd = GeneralizedCoordinates(self.q)
         qdot_biorbd = GeneralizedVelocity(self.qdot)
-        biorbd_return = self.model.rigidContactVelocity(q_biorbd, qdot_biorbd, contact_index, True).to_mx()[
-            contact_axis
-        ]
+
+        velocity = self.model.rigidContactVelocity(q_biorbd, qdot_biorbd, contact_index, True).to_mx()
+        biorbd_return = MX()
+        for axis in contact_axis:
+            biorbd_return = vertcat(biorbd_return, velocity[axis])
         casadi_fun = Function(
             "rigid_contact_velocity",
             [self.q, self.qdot, self.parameters],

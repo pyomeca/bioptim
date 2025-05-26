@@ -152,7 +152,7 @@ def test_quadrature_rule():
     assert len(QuadratureRule) == 6
 
 
-def test_defect_type():
+def test_defects_type():
     assert DefectType.QDOT_EQUALS_POLYNOMIAL_SLOPE.value == "QDOT_EQUALS_POLYNOMIAL_SLOPE".lower()
     assert DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS.value == "QDDOT_EQUALS_FORWARD_DYNAMICS".lower()
     assert DefectType.TAU_EQUALS_INVERSE_DYNAMICS.value == "TAU_EQUALS_INVERSE_DYNAMICS".lower()

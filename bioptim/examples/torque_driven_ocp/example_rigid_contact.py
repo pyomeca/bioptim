@@ -164,8 +164,8 @@ def main():
     biorbd_model_path = "../torque_driven_ocp/models/3segments_4dof_1contact.bioMod"
     n_shooting = 30
     final_time = 1
-    defect_type = [DefectType.QDOT_EQUALS_POLYNOMIAL_SLOPE, DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS]
-    ode_solver = OdeSolver.COLLOCATION(polynomial_degree=5, defects_type=defect_type)
+    defects_type = DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS
+    ode_solver = OdeSolver.COLLOCATION(polynomial_degree=5, defects_type=defects_type)
     contact_type = [ContactType.RIGID_IMPLICIT]
 
     # Prepare OCP to reach the second marker
@@ -225,7 +225,7 @@ def main():
         axs[i_dof].set_title(f"{ocp.nlp[0].model.name_dof[i_dof]}")
     axs[0].legend(bbox_to_anchor=(1.05, 1), loc="upper left")
     plt.tight_layout()
-    plt.savefig(f"reintegration_{defect_type.value}_{contact_type}.png")
+    plt.savefig(f"reintegration_{defects_type.value}_{contact_type}.png")
     plt.show()
 
     # --- Show results --- #
