@@ -292,7 +292,9 @@ class MultiBiorbdModel:
         friction_coefficients = None
         for model in self.models:
             if model.friction_coefficients is not None:
-                raise NotImplementedError("friction_coefficients with multi-biorbd models is not implemented yet. It is simple to implement, please contact the developers if you fall on this error.")
+                raise NotImplementedError(
+                    "friction_coefficients with multi-biorbd models is not implemented yet. It is simple to implement, please contact the developers if you fall on this error."
+                )
                 if friction_coefficients is None:
                     friction_coefficients = model.friction_coefficients
                 else:
@@ -332,11 +334,11 @@ class MultiBiorbdModel:
 
     @property
     def nb_ligaments(self) -> int:
-        return sum(model.nb_ligaments  for model in self.models)
+        return sum(model.nb_ligaments for model in self.models)
 
     @property
     def nb_passive_joint_torques(self) -> int:
-        return sum(model.nb_passive_joint_torques  for model in self.models)
+        return sum(model.nb_passive_joint_torques for model in self.models)
 
     @property
     def segments(self) -> tuple[biorbd.Segment, ...]:

@@ -52,4 +52,3 @@ def test_check_external_forces_format_none():
 def test_check_external_forces_format_wrong_length():
     with pytest.raises(RuntimeError):
         _check_numerical_timeseries_format([MockData(), MockData()], 3, 0)
-
