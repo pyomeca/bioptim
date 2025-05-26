@@ -1,3 +1,4 @@
+import numpy as np
 import biorbd_casadi as biorbd
 from casadi import MX, vertcat, Function, horzcat
 from typing import Callable
@@ -93,6 +94,8 @@ class MultiBiorbdModel:
         self.activations = MX.sym("activations_mx", self.nb_muscles, 1)
         self.parameters = MX.sym("parameters_to_be_implemented", 0, 1)
 
+        self.check_contacts()
+        self.contact_type = ()
         self._cached_functions = {}
 
     def __getitem__(self, index: Int):
@@ -111,6 +114,14 @@ class MultiBiorbdModel:
 
     def serialize(self) -> tuple[Callable, AnyDict]:
         return MultiBiorbdModel, dict(bio_model=tuple(self.path[0]), extra_bio_models=tuple(self.path[1]))
+
+    def check_contacts(self):
+        for model in self.models:
+            if len(model.contact_type) > 0:
+                raise NotImplementedError(
+                    "MultiBiorbdModel does not handle contacts yet."
+                    "Please use BiorbdModel instead or contact the developers."
+                )
 
     def variable_index(self, variable: Str, model_index: Int) -> range:
         """
@@ -276,6 +287,19 @@ class MultiBiorbdModel:
         return
 
     @property
+    def friction_coefficients(self) -> np.ndarray:
+        """Get the friction coefficients of all models."""
+        friction_coefficients = None
+        for model in self.models:
+            if model.friction_coefficients is not None:
+                raise NotImplementedError("friction_coefficients with multi-biorbd models is not implemented yet. It is simple to implement, please contact the developers if you fall on this error.")
+                if friction_coefficients is None:
+                    friction_coefficients = model.friction_coefficients
+                else:
+                    friction_coefficients = np.hstack((friction_coefficients, model.friction_coefficients))
+        return friction_coefficients
+
+    @property
     def nb_tau(self) -> Int:
         return sum(model.nb_tau for model in self.models)
 
@@ -305,6 +329,14 @@ class MultiBiorbdModel:
     @property
     def nb_root(self) -> Int:
         return sum(model.nb_root for model in self.models)
+
+    @property
+    def nb_ligaments(self) -> int:
+        return sum(model.nb_ligaments  for model in self.models)
+
+    @property
+    def nb_passive_joint_torques(self) -> int:
+        return sum(model.nb_passive_joint_torques  for model in self.models)
 
     @property
     def segments(self) -> tuple[biorbd.Segment, ...]:

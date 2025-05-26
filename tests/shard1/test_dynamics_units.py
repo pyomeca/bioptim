@@ -3,7 +3,6 @@ import pytest
 
 from bioptim.dynamics.configure_problem import (
     _check_numerical_timeseries_format,
-    _check_contacts_in_biomodel,
 )
 from bioptim import ContactType, BiorbdModel
 from ..utils import TestUtils
@@ -54,51 +53,3 @@ def test_check_external_forces_format_wrong_length():
     with pytest.raises(RuntimeError):
         _check_numerical_timeseries_format([MockData(), MockData()], 3, 0)
 
-
-# Tests for _check_contacts_in_biomodel
-def test_check_contacts_in_biomodel_with_rigid_contact_explicit():
-    _check_contacts_in_biomodel([ContactType.RIGID_EXPLICIT], MODEL_RIGID_CONTACT, 0)
-
-
-def test_check_contacts_in_biomodel_with_rigid_contact_implicit():
-    _check_contacts_in_biomodel([ContactType.RIGID_IMPLICIT], MODEL_RIGID_CONTACT, 0)
-
-
-def test_check_contacts_in_biomodel_with_soft_contact_explicit():
-    _check_contacts_in_biomodel([ContactType.SOFT_EXPLICIT], MODEL_SOFT_CONTACT, 0)
-
-
-def test_check_contacts_in_biomodel_with_soft_contact_implicit():
-    _check_contacts_in_biomodel([ContactType.SOFT_IMPLICIT], MODEL_SOFT_CONTACT, 0)
-
-
-def test_check_contacts_in_biomodel_no_contact_but_flag_true_rigid_explicit():
-    with pytest.raises(ValueError):
-        _check_contacts_in_biomodel([ContactType.RIGID_EXPLICIT], MODEL_NO_CONTACT, 0)
-
-
-def test_check_contacts_in_biomodel_no_contact_but_flag_true_rigid_implicit():
-    with pytest.raises(ValueError):
-        _check_contacts_in_biomodel([ContactType.RIGID_IMPLICIT], MODEL_NO_CONTACT, 0)
-
-
-def test_check_contacts_in_biomodel_no_contact_but_flag_true_soft_explicit():
-    with pytest.raises(ValueError):
-        _check_contacts_in_biomodel([ContactType.SOFT_EXPLICIT], MODEL_NO_CONTACT, 0)
-
-
-def test_check_contacts_in_biomodel_no_contact_but_flag_true_soft_implicit():
-    with pytest.raises(ValueError):
-        _check_contacts_in_biomodel([ContactType.SOFT_IMPLICIT], MODEL_NO_CONTACT, 0)
-
-
-def test_check_contacts_in_biomodel_no_contact_and_flag_false():
-    _check_contacts_in_biomodel([], MODEL_NO_CONTACT, 0)
-
-
-def test_check_contacts_in_biomodel_rigid_contact_and_flag_false():
-    _check_contacts_in_biomodel([], MODEL_RIGID_CONTACT, 0)
-
-
-def test_check_contacts_in_biomodel_soft_contact_and_flag_false():
-    _check_contacts_in_biomodel([], MODEL_SOFT_CONTACT, 0)

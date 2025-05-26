@@ -945,6 +945,9 @@ class BiorbdModel:
         """
         Returns the name of the segment on which this specific rigid contact is.
         """
+        # self.model.softContact(0).segmentName()
+        # self.model.softContacts()[0].segmentName()
+        # @pariterre: could we add something for this ?
         return self.model.segmentSoftContactIdx(contact_index)
 
     @cache_function

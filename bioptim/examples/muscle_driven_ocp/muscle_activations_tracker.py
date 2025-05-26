@@ -34,6 +34,7 @@ from bioptim import (
     Solver,
     PhaseDynamics,
     SolutionMerge,
+    Dynamics,
 )
 from bioptim.optimization.optimization_variable import OptimizationVariableContainer
 
@@ -163,6 +164,10 @@ def generate_data(
 
     symbolic_states = vertcat(*(symbolic_q, symbolic_qdot))
     symbolic_controls = vertcat(*(symbolic_tau, symbolic_mus)) if use_residual_torque else vertcat(symbolic_mus)
+
+    nlp.dynamics_type = Dynamics(
+        DynamicsFcn.MUSCLE_DRIVEN,
+    )
 
     dynamics_func = Function(
         "ForwardDyn",

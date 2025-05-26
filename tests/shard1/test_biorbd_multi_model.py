@@ -460,3 +460,5 @@ def test_biorbd_model():
             f" and {variable_name} was sent.",
         ):
             models.local_variable_id(variable_name, 0)
+
+        assert models.friction_coefficients is None

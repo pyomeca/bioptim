@@ -50,7 +50,7 @@ class HolonomicConstraintsFcn:
         q_sym = MX.sym("q", model.nb_q, 1)
         q_dot_sym = MX.sym("q_dot", model.nb_qdot, 1)
         q_ddot_sym = MX.sym("q_ddot", model.nb_qdot, 1)
-        parameters = model.parameters
+        parameters = []
 
         # symbolic markers in global frame
         marker_1_sym = model.marker(index=model.marker_index(marker_1))(q_sym, parameters)
@@ -75,17 +75,17 @@ class HolonomicConstraintsFcn:
 
         constraints_func = Function(
             "holonomic_constraints",
-            [q_sym, parameters],
+            [q_sym],
             [constraint],
-            ["q", "parameters"],
+            ["q"],
             ["holonomic_constraint"],
         ).expand()
 
         constraints_jacobian_func = Function(
             "holonomic_constraints_jacobian",
-            [q_sym, parameters],
+            [q_sym],
             [constraints_jacobian],
-            ["q", "parameters"],
+            ["q"],
             ["holonomic_constraints_jacobian"],
         ).expand()
 
@@ -96,9 +96,9 @@ class HolonomicConstraintsFcn:
 
         constraints_double_derivative_func = Function(
             "holonomic_constraints_double_derivative",
-            [q_sym, q_dot_sym, q_ddot_sym, parameters],
+            [q_sym, q_dot_sym, q_ddot_sym],
             [constraints_double_derivative],
-            ["q", "q_dot", "q_ddot", "parameters"],
+            ["q", "q_dot", "q_ddot"],
             ["holonomic_constraints_double_derivative"],
         ).expand()
 

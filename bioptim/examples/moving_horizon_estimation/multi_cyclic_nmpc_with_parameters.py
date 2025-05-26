@@ -170,7 +170,7 @@ def prepare_nmpc(
     )
 
     dynamics = Dynamics(
-        custom_configure, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics, contact_type=()
+        custom_configure, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
     )
 
     x_bounds = BoundsList()

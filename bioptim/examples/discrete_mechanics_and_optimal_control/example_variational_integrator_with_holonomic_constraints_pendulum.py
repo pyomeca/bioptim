@@ -51,7 +51,7 @@ def prepare_ocp(
     holonomic_constraints.add(
         "holonomic_constraints",
         HolonomicConstraintsFcn.superimpose_markers,
-        biorbd_model=bio_model,
+        model=bio_model,
         marker_1="marker_1",
         index=slice(2, 3),
     )
