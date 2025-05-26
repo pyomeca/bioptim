@@ -23,6 +23,17 @@ from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 from ..models.protocols.biomodel import BioModel
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
 from ..optimization.problem_type import SocpType
+from ..misc.parameters_types import (
+    Bool,
+    Int,
+    FloatOptional,
+    Str,
+    StrOptional,
+    StrList,
+    NpArray,
+    NpArrayDictOptional,
+)
+from ..optimization.non_linear_program import NonLinearProgram
 
 
 class ConfigureProblem:
@@ -78,7 +89,7 @@ class ConfigureProblem:
     """
 
     @staticmethod
-    def _get_kinematics_based_names(nlp, var_type: str) -> list[str]:
+    def _get_kinematics_based_names(nlp: NonLinearProgram, var_type: Str) -> StrList:
         """
         To modify the names of the variables added to the plots if there is quaternions
 
@@ -118,7 +129,7 @@ class ConfigureProblem:
         return new_names
 
     @staticmethod
-    def initialize(ocp, nlp):
+    def initialize(ocp, nlp: NonLinearProgram) -> None:
         """
         Call the dynamics a first time
 
@@ -139,7 +150,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def custom(ocp, nlp, **extra_params):
+    def custom(ocp, nlp: NonLinearProgram, **extra_params) -> None:
         """
         Call the user-defined dynamics configuration function
 
@@ -156,15 +167,15 @@ class ConfigureProblem:
     @staticmethod
     def torque_driven(
         ocp,
-        nlp,
+        nlp: NonLinearProgram,
         contact_type: list[ContactType] | tuple[ContactType] = (),
-        with_passive_torque: bool = False,
-        with_ligament: bool = False,
-        with_friction: bool = False,
+        with_passive_torque: Bool = False,
+        with_ligament: Bool = False,
+        with_friction: Bool = False,
         soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
         fatigue: FatigueList = None,
-        numerical_data_timeseries: dict[str, np.ndarray] = None,
-    ):
+        numerical_data_timeseries: NpArrayDictOptional = None,
+    ) -> None:
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
 
@@ -237,13 +248,13 @@ class ConfigureProblem:
     @staticmethod
     def torque_driven_free_floating_base(
         ocp,
-        nlp,
+        nlp: NonLinearProgram,
         contact_type: list[ContactType] | tuple[ContactType],
-        with_passive_torque: bool = False,
-        with_ligament: bool = False,
-        with_friction: bool = False,
-        numerical_data_timeseries: dict[str, np.ndarray] = None,
-    ):
+        with_passive_torque: Bool = False,
+        with_ligament: Bool = False,
+        with_friction: Bool = False,
+        numerical_data_timeseries: NpArrayDictOptional = None,
+    ) -> None:
         """
         Configure the dynamics for a torque driven program with a free floating base.
         This version of the torque driven dynamics avoids defining a mapping to force the root to generate null forces and torques.
@@ -341,14 +352,14 @@ class ConfigureProblem:
     @staticmethod
     def stochastic_torque_driven(
         ocp,
-        nlp,
+        nlp: NonLinearProgram,
         problem_type,
         contact_type: list[ContactType] | tuple[ContactType] = (),
-        with_friction: bool = False,
-        with_cholesky: bool = False,
+        with_friction: Bool = False,
+        with_cholesky: Bool = False,
         initial_matrix: DM = None,
-        numerical_data_timeseries: dict[str, np.ndarray] = None,
-    ):
+        numerical_data_timeseries: NpArrayDictOptional = None,
+    ) -> None:
         """
         Configure the dynamics for a torque driven stochastic program (states are q and qdot, controls are tau)
 
@@ -420,12 +431,12 @@ class ConfigureProblem:
     @staticmethod
     def stochastic_torque_driven_free_floating_base(
         ocp,
-        nlp,
+        nlp: NonLinearProgram,
         problem_type,
-        with_friction: bool = False,
-        with_cholesky: bool = False,
+        with_friction: Bool = False,
+        with_cholesky: Bool = False,
         initial_matrix: DM = None,
-        numerical_data_timeseries: dict[str, np.ndarray] = None,
+        numerical_data_timeseries: NpArrayDictOptional = None,
         contact_type: list[ContactType] | tuple[ContactType] = (),
     ):
         """
@@ -497,14 +508,14 @@ class ConfigureProblem:
     @staticmethod
     def torque_derivative_driven(
         ocp,
-        nlp,
+        nlp: NonLinearProgram,
         contact_type: list[ContactType] | tuple[ContactType] = (),
-        with_passive_torque: bool = False,
-        with_ligament: bool = False,
-        with_friction: bool = False,
+        with_passive_torque: Bool = False,
+        with_ligament: Bool = False,
+        with_friction: Bool = False,
         soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
-        numerical_data_timeseries: dict[str, np.ndarray] = None,
-    ):
+        numerical_data_timeseries: NpArrayDictOptional = None,
+    ) -> None:
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
 
@@ -571,13 +582,13 @@ class ConfigureProblem:
     @staticmethod
     def torque_activations_driven(
         ocp,
-        nlp,
+        nlp: NonLinearProgram,
         contact_type: list[ContactType] | tuple[ContactType] = (),
-        with_passive_torque: bool = False,
-        with_residual_torque: bool = False,
-        with_ligament: bool = False,
-        numerical_data_timeseries: dict[str, np.ndarray] = None,
-    ):
+        with_passive_torque: Bool = False,
+        with_residual_torque: Bool = False,
+        with_ligament: Bool = False,
+        numerical_data_timeseries: NpArrayDictOptional = None,
+    ) -> None:
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau activations).
         The tau activations are bounded between -1 and 1 and actual tau is computed from torque-position-velocity
@@ -634,8 +645,8 @@ class ConfigureProblem:
     @staticmethod
     def joints_acceleration_driven(
         ocp,
-        nlp,
-        numerical_data_timeseries: dict[str, np.ndarray] = None,
+        nlp: NonLinearProgram,
+        numerical_data_timeseries: NpArrayDictOptional = None,
         contact_type: list[ContactType] | tuple[ContactType] = (),
     ):
         """
@@ -687,16 +698,16 @@ class ConfigureProblem:
     @staticmethod
     def muscle_driven(
         ocp,
-        nlp,
-        with_excitations: bool = False,
+        nlp: NonLinearProgram,
+        with_excitations: Bool = False,
         fatigue: FatigueList = None,
-        with_residual_torque: bool = False,
+        with_residual_torque: Bool = False,
         contact_type: list[ContactType] | tuple[ContactType] = (),
-        with_passive_torque: bool = False,
-        with_ligament: bool = False,
-        with_friction: bool = False,
-        numerical_data_timeseries: dict[str, np.ndarray] = None,
-    ):
+        with_passive_torque: Bool = False,
+        with_ligament: Bool = False,
+        with_friction: Bool = False,
+        numerical_data_timeseries: NpArrayDictOptional = None,
+    ) -> None:
         """
         Configure the dynamics for a muscle driven program.
         If with_excitations is set to True, then the muscle activations are computed from the muscle dynamics.
@@ -768,10 +779,10 @@ class ConfigureProblem:
     @staticmethod
     def holonomic_torque_driven(
         ocp,
-        nlp,
-        numerical_data_timeseries: dict[str, np.ndarray] = None,
+        nlp: NonLinearProgram,
+        numerical_data_timeseries: NpArrayDictOptional = None,
         contact_type: list[ContactType] | tuple[ContactType] = (),
-    ):
+    ) -> None:
         """
         Tell the program which variables are states and controls.
 
@@ -828,7 +839,9 @@ class ConfigureProblem:
         ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.holonomic_torque_driven)
 
     @staticmethod
-    def configure_lagrange_multipliers_function(ocp, nlp, dyn_func: Callable, **extra_params):
+    def configure_lagrange_multipliers_function(
+        ocp, nlp: NpArrayDictOptional, dyn_func: Callable, **extra_params
+    ) -> None:
         """
         Configure the contact points
 
@@ -893,7 +906,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_qv(ocp, nlp, dyn_func: Callable, **extra_params):
+    def configure_qv(ocp, nlp: NpArrayDictOptional, dyn_func: Callable, **extra_params) -> None:
         """
         Configure the qv, i.e. the dependent joint coordinates, to be plotted
 
@@ -952,7 +965,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_qdotv(ocp, nlp, dyn_func: Callable, **extra_params):
+    def configure_qdotv(ocp, nlp: NonLinearProgram, dyn_func: Callable, **extra_params) -> None:
         """
         Configure the qdot_v, i.e. the dependent joint velocities, to be plotted
 
@@ -1012,7 +1025,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_dynamics_function(ocp, nlp, dyn_func, **extra_params):
+    def configure_dynamics_function(ocp, nlp: NonLinearProgram, dyn_func, **extra_params) -> None:
         """
         Configure the dynamics of the system
 
@@ -1130,7 +1143,7 @@ class ConfigureProblem:
                     )
 
     @staticmethod
-    def configure_rigid_contact_function(ocp, nlp, contact_func: Callable, **extra_params):
+    def configure_rigid_contact_function(ocp, nlp: NonLinearProgram, contact_func: Callable, **extra_params) -> None:
         """
         Configure the contact points
 
@@ -1198,7 +1211,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_soft_contact_function(ocp, nlp):
+    def configure_soft_contact_function(ocp, nlp: NonLinearProgram) -> None:
         """
         Configure the soft contact sphere
 
@@ -1269,16 +1282,16 @@ class ConfigureProblem:
 
     @staticmethod
     def configure_new_variable(
-        name: str,
-        name_elements: list,
+        name: Str,
+        name_elements: StrList,
         ocp,
-        nlp,
-        as_states: bool,
-        as_controls: bool,
-        as_algebraic_states: bool = False,
+        nlp: NonLinearProgram,
+        as_states: Bool,
+        as_controls: Bool,
+        as_algebraic_states: Bool = False,
         fatigue: FatigueList = None,
-        combine_name: str = None,
-        combine_state_control_plot: bool = False,
+        combine_name: StrOptional = None,
+        combine_state_control_plot: Bool = False,
         skip_plot: bool = False,
         axes_idx: BiMapping = None,
     ):
@@ -1329,12 +1342,12 @@ class ConfigureProblem:
 
     @staticmethod
     def configure_integrated_value(
-        name: str,
-        name_elements: list,
+        name: Str,
+        name_elements: StrList,
         ocp,
-        nlp,
+        nlp: NonLinearProgram,
         initial_matrix: DM,
-    ):
+    ) -> None:
         """
         Add a new integrated value. This creates an MX (not an optimization variable) that is integrated using the
         integrated_value_functions function provided. This integrated_value can be used in the constraints and objectives
@@ -1385,7 +1398,7 @@ class ConfigureProblem:
             )
 
     @staticmethod
-    def configure_q(ocp, nlp, as_states: bool, as_controls: bool):
+    def configure_q(ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool) -> None:
         """
         Configure the generalized coordinates
 
@@ -1404,7 +1417,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable(name, name_q, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
-    def configure_qdot(ocp, nlp, as_states: bool, as_controls: bool):
+    def configure_qdot(ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool) -> None:
         """
         Configure the generalized velocities
 
@@ -1424,7 +1437,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable(name, name_qdot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
-    def configure_qddot(ocp, nlp, as_states: bool, as_controls: bool):
+    def configure_qddot(ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool) -> None:
         """
         Configure the generalized accelerations
 
@@ -1444,7 +1457,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable(name, name_qddot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
-    def configure_qdddot(ocp, nlp, as_states: bool, as_controls: bool):
+    def configure_qdddot(ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool) -> None:
         """
         Configure the generalized accelerations
 
@@ -1464,7 +1477,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable(name, name_qdddot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
-    def configure_stochastic_k(ocp, nlp, n_noised_controls: int, n_references: int):
+    def configure_stochastic_k(ocp, nlp: NonLinearProgram, n_noised_controls: Int, n_references: Int) -> None:
         """
         Configure the optimal feedback gain matrix K.
         Parameters
@@ -1497,7 +1510,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_stochastic_c(ocp, nlp, n_noised_states: int, n_noise: int):
+    def configure_stochastic_c(ocp, nlp: NonLinearProgram, n_noised_states: Int, n_noise: Int) -> None:
         """
         Configure the stochastic variable matrix C representing the injection of motor noise (df/dw).
         Parameters
@@ -1530,7 +1543,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_stochastic_a(ocp, nlp, n_noised_states: int):
+    def configure_stochastic_a(ocp, nlp: NonLinearProgram, n_noised_states: Int) -> None:
         """
         Configure the stochastic variable matrix A representing the propagation of motor noise (df/dx).
         Parameters
@@ -1561,7 +1574,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_stochastic_cov_explicit(ocp, nlp, n_noised_states: int, initial_matrix: DM):
+    def configure_stochastic_cov_explicit(ocp, nlp: NonLinearProgram, n_noised_states: Int, initial_matrix: DM) -> None:
         """
         Configure the covariance matrix P representing the motor noise.
         Parameters
@@ -1588,7 +1601,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_stochastic_cov_implicit(ocp, nlp, n_noised_states: int):
+    def configure_stochastic_cov_implicit(ocp, nlp: NonLinearProgram, n_noised_states: Int) -> None:
         """
         Configure the covariance matrix P representing the motor noise.
         Parameters
@@ -1617,7 +1630,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_stochastic_cholesky_cov(ocp, nlp, n_noised_states: int):
+    def configure_stochastic_cholesky_cov(ocp, nlp: NonLinearProgram, n_noised_states: Int) -> None:
         """
         Configure the diagonal matrix needed to reconstruct the covariance matrix using L @ L.T.
         This formulation allows insuring that the covariance matrix is always positive semi-definite.
@@ -1647,7 +1660,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_stochastic_ref(ocp, nlp, n_references: int):
+    def configure_stochastic_ref(ocp, nlp: NonLinearProgram, n_references: Int) -> None:
         """
         Configure the reference kinematics.
 
@@ -1674,7 +1687,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_stochastic_m(ocp, nlp, n_noised_states: int):
+    def configure_stochastic_m(ocp, nlp: NonLinearProgram, n_noised_states: Int) -> None:
         """
         Configure the helper matrix M (from Gillis 2013 : https://doi.org/10.1109/CDC.2013.6761121).
 
@@ -1707,7 +1720,9 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_tau(ocp, nlp, as_states: bool, as_controls: bool, fatigue: FatigueList = None):
+    def configure_tau(
+        ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool, fatigue: FatigueList = None
+    ) -> None:
         """
         Configure the generalized forces
 
@@ -1731,7 +1746,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_residual_tau(ocp, nlp, as_states: bool, as_controls: bool):
+    def configure_residual_tau(ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool) -> None:
         """
         Configure the residual forces
 
@@ -1753,7 +1768,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_taudot(ocp, nlp, as_states: bool, as_controls: bool):
+    def configure_taudot(ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool) -> None:
         """
         Configure the generalized forces derivative
 
@@ -1773,7 +1788,9 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable(name, name_taudot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
-    def configure_translational_forces(ocp, nlp, as_states: bool, as_controls: bool, n_contacts: int = 1):
+    def configure_translational_forces(
+        ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool, n_contacts: Int = 1
+    ) -> None:
         """
         Configure contact forces as optimization variables (for now only in global reference frame with an unknown point of application))
         # TODO: Match this with ExternalForceSetTimeSeries (options: 'in_global', 'torque', ...)
@@ -1797,7 +1814,9 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_rigid_contact_forces(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
+    def configure_rigid_contact_forces(
+        ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool, as_algebraic_states: Bool
+    ) -> None:
         """
         Configure the generalized forces derivative
 
@@ -1819,7 +1838,9 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_soft_contact_forces(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
+    def configure_soft_contact_forces(
+        ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool, as_algebraic_states: Bool
+    ) -> None:
         """
         Configure the generalized forces derivative
 
@@ -1848,7 +1869,9 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_muscles(ocp, nlp, as_states: bool, as_controls: bool, fatigue: FatigueList = None):
+    def configure_muscles(
+        ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool, fatigue: FatigueList = None
+    ) -> None:
         """
         Configure the muscles
 
@@ -1877,7 +1900,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def _apply_phase_mapping(ocp, nlp, name: str) -> BiMapping | None:
+    def _apply_phase_mapping(ocp, nlp: NonLinearProgram, name: Str) -> BiMapping | None:
         """
         Apply the phase mapping to the variable
 
@@ -1960,13 +1983,13 @@ class Dynamics(OptionGeneric):
     def __init__(
         self,
         dynamics_type: Callable | DynamicsFcn,
-        expand_dynamics: bool = True,
-        expand_continuity: bool = False,
-        skip_continuity: bool = False,
-        state_continuity_weight: float | None = None,
+        expand_dynamics: Bool = True,
+        expand_continuity: Bool = False,
+        skip_continuity: Bool = False,
+        state_continuity_weight: FloatOptional = None,
         phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
         ode_solver: OdeSolver | OdeSolverBase = OdeSolver.RK4(),
-        numerical_data_timeseries: dict[str, np.ndarray] = None,
+        numerical_data_timeseries: NpArrayDictOptional = None,
         contact_type: list[ContactType] | tuple[ContactType] = (),
         **extra_parameters: Any,
     ):
@@ -2055,14 +2078,14 @@ class DynamicsList(UniquePerPhaseOptionList):
         else:
             super(DynamicsList, self)._add(dynamics_type=dynamics_type, option_type=Dynamics, **extra_parameters)
 
-    def print(self):
+    def print(self) -> None:
         """
         Print the DynamicsList to the console
         """
         raise NotImplementedError("Printing of DynamicsList is not ready yet")
 
 
-def _check_numerical_timeseries_format(numerical_timeseries: np.ndarray, n_shooting: int, phase_idx: int):
+def _check_numerical_timeseries_format(numerical_timeseries: NpArray, n_shooting: Int, phase_idx: Int) -> None:
     """Check if the numerical_data_timeseries is of the right format"""
     if type(numerical_timeseries) is not np.ndarray:
         raise RuntimeError(
@@ -2078,7 +2101,9 @@ def _check_numerical_timeseries_format(numerical_timeseries: np.ndarray, n_shoot
         )
 
 
-def _check_contacts_in_biomodel(contact_type: list[ContactType] | tuple[ContactType], model: BioModel, phase_idx: int):
+def _check_contacts_in_biomodel(
+    contact_type: list[ContactType] | tuple[ContactType], model: BioModel, phase_idx: Int
+) -> None:
 
     # Check rigid contacts
     if (
