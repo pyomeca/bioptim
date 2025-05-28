@@ -1208,44 +1208,10 @@ def test_custom_dynamics(contact_type, phase_dynamics):
 )
 def test_with_contact_error(dynamics_fcn, phase_dynamics):
     from bioptim.examples.getting_started import pendulum as ocp_module
-    from bioptim import BoundsList, ObjectiveList, OdeSolver, OptimalControlProgram
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
-    bio_model = BiorbdModel(bioptim_folder + "/models/pendulum.bioMod")
-
-    # Add objective functions
-    objective_functions = ObjectiveList()
-
-    # Dynamics
-    dynamics = Dynamics(
-        dynamics_fcn,
-        contact_type=[ContactType.RIGID_EXPLICIT],
-        ode_solver=OdeSolver.RK4(),
-        expand_dynamics=True,
-        phase_dynamics=phase_dynamics,
-    )
-
-    # Path constraint
-    x_bounds = BoundsList()
-    x_bounds["q"] = bio_model.bounds_from_ranges("q")
-    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
-
-    # Define control path constraint
-    n_tau = bio_model.nb_tau
-    u_bounds = BoundsList()
-    u_bounds["tau"] = [100] * n_tau, [100] * n_tau
-    u_bounds["tau"][1, :] = 0  # Prevent the model from actively rotate
-
     with pytest.raises(
-        ValueError, match="No rigid contact defined in the .bioMod of phase 0, consider changing the ContactType."
+        ValueError, match="No rigid contact defined in the model, consider changing the ContactType."
     ):
-        OptimalControlProgram(
-            bio_model=bio_model,
-            dynamics=dynamics,
-            n_shooting=5,
-            phase_time=1,
-            x_bounds=x_bounds,
-            u_bounds=u_bounds,
-            objective_functions=objective_functions,
-        )
+        BiorbdModel(bioptim_folder + "/models/pendulum.bioMod", contact_type=[ContactType.RIGID_EXPLICIT],)
