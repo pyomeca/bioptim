@@ -943,16 +943,17 @@ class BiorbdModel:
         """
         Returns the name of the segment on which this specific rigid contact is.
         """
-        return self.model.rigidContacts()[contact_index].segmentName()
+        for segment in self.model.segments():
+            if segment.id() == self.model.rigidContact(contact_index).parentId():
+                return segment.name().to_string()
 
     def soft_contact_segment(self, contact_index) -> str:
         """
         Returns the name of the segment on which this specific rigid contact is.
         """
-        # self.model.softContact(0).segmentName()
-        # self.model.softContacts()[0].segmentName()
-        # @pariterre: could we add something for this ?
-        return self.model.segmentSoftContactIdx(contact_index)
+        for segment in self.model.segments():
+            if segment.id() == self.model.softContact(contact_index).parentId():
+                return segment.name().to_string()
 
     @cache_function
     def markers_velocities(self, reference_index=None) -> list[MX]:
