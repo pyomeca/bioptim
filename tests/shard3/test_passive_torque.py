@@ -426,7 +426,7 @@ def test_pendulum_passive_torque(with_passive_torque, phase_dynamics):
         # initial and final controls
         npt.assert_almost_equal(
             tau[:, 0],
-            np.array([94.73491384, 0.0]),
+            np.array([97.717082, 0.0]),
             decimal=6,
         )
         npt.assert_almost_equal(

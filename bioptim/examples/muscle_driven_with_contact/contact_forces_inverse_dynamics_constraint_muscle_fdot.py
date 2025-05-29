@@ -142,7 +142,7 @@ def contact_velocity_start(controller):
 def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True):
 
     # BioModel
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path, contact_types=[ContactType.RIGID_IMPLICIT])
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -159,7 +159,6 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
         expand_dynamics=expand_dynamics,
         phase_dynamics=PhaseDynamics.ONE_PER_NODE,
         ode_solver=OdeSolver.COLLOCATION(polynomial_degree=3),
-        contact_types=[ContactType.RIGID_IMPLICIT],
     )
 
     # Constraints

@@ -37,7 +37,7 @@ from bioptim import (
 def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True):
 
     # BioModel
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path, contact_types=[ContactType.SOFT_IMPLICIT])
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -51,7 +51,6 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
     dynamics = DynamicsList()
     dynamics.add(
         DynamicsFcn.MUSCLE_DRIVEN,
-        contact_types=[ContactType.SOFT_IMPLICIT],
         with_residual_torque=True,
         phase_dynamics=PhaseDynamics.ONE_PER_NODE,
         ode_solver=OdeSolver.COLLOCATION(polynomial_degree=3),
