@@ -1202,7 +1202,8 @@ def test_with_contact_error(dynamics_fcn, phase_dynamics):
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
-    with pytest.raises(
-        ValueError, match="No rigid contact defined in the model, consider changing the ContactType."
-    ):
-        BiorbdModel(bioptim_folder + "/models/pendulum.bioMod", contact_types=[ContactType.RIGID_EXPLICIT],)
+    with pytest.raises(ValueError, match="No rigid contact defined in the model, consider changing the ContactType."):
+        BiorbdModel(
+            bioptim_folder + "/models/pendulum.bioMod",
+            contact_types=[ContactType.RIGID_EXPLICIT],
+        )

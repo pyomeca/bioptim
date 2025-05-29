@@ -267,7 +267,12 @@ class DynamicsFunctions:
 
         forward_dynamics_contact_typess = ContactType.get_equivalent_explicit_contacts(nlp.model.contact_types)
         ddq_fd = DynamicsFunctions.forward_dynamics(
-            nlp, q_full, qdot_full, tau_full, contact_types=forward_dynamics_contact_typess, external_forces=external_forces
+            nlp,
+            q_full,
+            qdot_full,
+            tau_full,
+            contact_types=forward_dynamics_contact_typess,
+            external_forces=external_forces,
         )
 
         dxdt = nlp.cx(nlp.states.shape, ddq_fd.shape[1])
@@ -284,7 +289,9 @@ class DynamicsFunctions:
             defects[nlp.states["q"].index] = slope_q * nlp.dt - dq * nlp.dt
 
             if nlp.dynamics_type.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
-                ddq = DynamicsFunctions.forward_dynamics(nlp, q_full, qdot_full, tau_full, nlp.model.contact_types, external_forces)
+                ddq = DynamicsFunctions.forward_dynamics(
+                    nlp, q_full, qdot_full, tau_full, nlp.model.contact_types, external_forces
+                )
                 defects[nlp.states["qdot"].index] = slope_qdot * nlp.dt - ddq * nlp.dt
 
             elif nlp.dynamics_type.ode_solver.defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
@@ -310,7 +317,9 @@ class DynamicsFunctions:
                     - nlp.algebraic_states["rigid_contact_forces"].cx
                 )
                 _, _, acceleration_constraint_func = HolonomicConstraintsFcn.rigid_contacts(nlp.model)
-                contact_acceleration_defect = acceleration_constraint_func(q_full, qdot_full, slope_qdot, nlp.parameters.cx)
+                contact_acceleration_defect = acceleration_constraint_func(
+                    q_full, qdot_full, slope_qdot, nlp.parameters.cx
+                )
                 defects = vertcat(defects, rigid_contact_defect, contact_acceleration_defect)
 
             if ContactType.SOFT_IMPLICIT in nlp.model.contact_types:
@@ -371,9 +380,7 @@ class DynamicsFunctions:
             "external_forces", states, controls, algebraic_states, numerical_timeseries
         )
         if external_forces is not None:
-            raise NotImplementedError(
-                "External forces are not implemented yet with stochastic torque driven dynamics."
-            )
+            raise NotImplementedError("External forces are not implemented yet with stochastic torque driven dynamics.")
 
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
@@ -471,9 +478,7 @@ class DynamicsFunctions:
             "external_forces", states, controls, algebraic_states, numerical_timeseries
         )
         if external_forces is not None:
-            raise NotImplementedError(
-                "External forces are not implemented yet with stochastic torque driven dynamics."
-            )
+            raise NotImplementedError("External forces are not implemented yet with stochastic torque driven dynamics.")
 
         q_roots = DynamicsFunctions.get(nlp.states["q_roots"], states)
         q_joints = DynamicsFunctions.get(nlp.states["q_joints"], states)

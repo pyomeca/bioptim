@@ -119,9 +119,7 @@ def prepare_ocp(
     -------
     The OptimalControlProgram ready to be solved
     """
-    bio_model = BiorbdModel(
-        biorbd_model_path, contact_types=[ContactType.SOFT_EXPLICIT]
-    )
+    bio_model = BiorbdModel(biorbd_model_path, contact_types=[ContactType.SOFT_EXPLICIT])
 
     # Problem parameters
     tau_min, tau_max = -100, 100

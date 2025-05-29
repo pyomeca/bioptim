@@ -750,8 +750,10 @@ class Solution:
 
         for i_phase, nlp in enumerate(self.ocp.nlp):
             if nlp.dynamics_func is None:
-                raise RuntimeError("The explicit derivative of the states must be provided to be able to reintegrate the dynamics."
-                                   f"Please provide a dxdt in your DynamicsEvaluation of phase {i_phase}.")
+                raise RuntimeError(
+                    "The explicit derivative of the states must be provided to be able to reintegrate the dynamics."
+                    f"Please provide a dxdt in your DynamicsEvaluation of phase {i_phase}."
+                )
 
         params = self._parameters.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)[0][0]
         t_spans = self.t_span(time_alignment=TimeAlignment.CONTROLS)
