@@ -75,7 +75,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path, contact_type=[ContactType.RIGID_EXPLICIT])
+    bio_model = BiorbdModel(biorbd_model_path, contact_types=[ContactType.RIGID_EXPLICIT])
     tau_min, tau_max = (-1, 1) if use_actuators else (-500, 500)
 
     dof_mapping = BiMappingList()

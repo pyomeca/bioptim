@@ -215,17 +215,19 @@ class OdeSolverBase:
 
         if nlp.dynamics_func is None:
             dynamics_func = None
-        elif is_extra_dynamics:
-            dynamics_func = nlp.extra_dynamics_func[dynamics_index]
         else:
-            dynamics_func = nlp.dynamics_func
+            if is_extra_dynamics:
+                dynamics_func = nlp.extra_dynamics_func[dynamics_index]
+            else:
+                dynamics_func = nlp.dynamics_func
 
         if nlp.dynamics_defects_func is None:
             dynamics_defects_func = None
-        elif is_extra_dynamics:
-            dynamics_defects_func = nlp.extra_dynamics_defects_func[dynamics_index]
         else:
-            dynamics_defects_func = nlp.dynamics_defects_func
+            if is_extra_dynamics:
+                dynamics_defects_func = nlp.extra_dynamics_defects_func[dynamics_index]
+            else:
+                dynamics_defects_func = nlp.dynamics_defects_func
 
         ode_index = None
         if dynamics_func is not None:

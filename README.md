@@ -856,7 +856,7 @@ To decrease RAM usage and computational time, it is recommended to store `casadi
 
 The `BiorbdModel` class implements a BioModel of the biorbd dynamics library. Some methods may not be interfaced yet; it is accessible through:
 ```python
-contact_type = [ContactType.RIGID_EXPLICIT]
+contact_types = [ContactType.RIGID_EXPLICIT]
 external_force_set = ExternalForceSetTimeSeries(nb_frames=n_shooting)
 external_force_set.add(
     name="first_force",
@@ -864,12 +864,12 @@ external_force_set.add(
     value=[],  # Insert the np.ndarray of your data at each node here
     point_of_application=True,
 )
-bio_model = BiorbdModel("path/to/model.bioMod", contact_type, external_force_set)
+bio_model = BiorbdModel("path/to/model.bioMod", contact_types, external_force_set)
 bio_model.marker_names  # for example returns the marker names
 # if the methods is not interfaced, it can be accessed through
 bio_model.model.markerNames()
 ```
-The `contact_type` is a list of contact types to consider in the dynamics equations. Possible options
+The `contact_types` is a list of contact types to consider in the dynamics equations. Possible options
   - **[]**: No contacts are considered in the dynamics. 
   - **[ContactType.RIGID_EXPLICIT]**: Non-acceleration contact points are included in the dynamics equation.
   - **[ContactType.RIGID_IMPLICIT]**: Lagrange multipliers representing the contact forces are introduced as algebraic states to satisfy the non-acceleration constraint of contact points.

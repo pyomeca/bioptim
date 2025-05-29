@@ -39,7 +39,7 @@ class RK(OdeSolverBase):
 
     @property
     def defects_type(self) -> DefectType:
-        return ()
+        return DefectType.NOT_APPLICABLE
 
     def initialize_integrator(self, *args, **kwargs):
         return super(RK, self).initialize_integrator(

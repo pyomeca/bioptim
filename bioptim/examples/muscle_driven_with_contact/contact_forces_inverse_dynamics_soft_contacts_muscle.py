@@ -36,13 +36,8 @@ from bioptim import (
 
 def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True):
 
-    # Indicate to the model creator that there will be two rigid contacts in the form of optimization variables
-    external_force_set = ExternalForceSetVariables()
-    external_force_set.add(force_name="Seg1_contact1", segment="Seg1", use_point_of_application=False)
-    external_force_set.add(force_name="Seg1_contact2", segment="Seg1", use_point_of_application=False)
-
     # BioModel
-    bio_model = BiorbdModel(biorbd_model_path, external_force_set=external_force_set)
+    bio_model = BiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -56,7 +51,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
     dynamics = DynamicsList()
     dynamics.add(
         DynamicsFcn.MUSCLE_DRIVEN,
-        contact_type=[ContactType.SOFT_IMPLICIT],
+        contact_types=[ContactType.SOFT_IMPLICIT],
         with_residual_torque=True,
         phase_dynamics=PhaseDynamics.ONE_PER_NODE,
         ode_solver=OdeSolver.COLLOCATION(polynomial_degree=3),

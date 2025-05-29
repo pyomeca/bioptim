@@ -75,12 +75,12 @@ def prepare_ocp(
     phase_time,
     n_shooting,
     defects_type: DefectType,
-    contact_type: list[ContactType],
+    contact_types: list[ContactType],
     expand_dynamics=True,
 ):
 
     # BioModel
-    bio_model = BiorbdModel(biorbd_model_path, contact_type=contact_type)
+    bio_model = BiorbdModel(biorbd_model_path, contact_types=contact_types)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -155,7 +155,7 @@ def prepare_ocp(
 
     a_bounds = BoundsList()
     a_init = InitialGuessList()
-    if ContactType.RIGID_IMPLICIT in contact_type:
+    if ContactType.RIGID_IMPLICIT in contact_types:
         # Define algebraic states path constraint
         a_bounds.add(
             "rigid_contact_forces",
@@ -195,13 +195,13 @@ def main():
     t = 0.1
     ns = 100
     defects_type = DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS
-    contact_type = [ContactType.RIGID_IMPLICIT]
+    contact_types = [ContactType.RIGID_IMPLICIT]
     ocp = prepare_ocp(
         biorbd_model_path=biorbd_model_path,
         phase_time=t,
         n_shooting=ns,
         defects_type=defects_type,
-        contact_type=contact_type,
+        contact_types=contact_types,
     )
     # ocp.add_plot_penalty()
 

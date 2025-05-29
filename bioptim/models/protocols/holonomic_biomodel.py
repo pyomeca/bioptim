@@ -3,7 +3,7 @@ from typing import Protocol, Callable
 from biorbd_casadi import GeneralizedCoordinates
 from casadi import MX, Function
 from .biomodel import BioModel
-from bioptim.limits.holonomic_constraints import HolonomicConstraintsList
+from ...limits.holonomic_constraints import HolonomicConstraintsList
 from ..utils import cache_function
 
 from ...misc.parameters_types import (

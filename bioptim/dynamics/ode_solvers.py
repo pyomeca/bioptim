@@ -264,7 +264,7 @@ class OdeSolver:
 
         @property
         def defects_type(self) -> DefectType:
-            return ()
+            return DefectType.NOT_APPLICABLE
 
         def x_ode(self, nlp):
             return nlp.states.scaled.cx

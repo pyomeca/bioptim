@@ -190,7 +190,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_qddot(ocp, nlp, as_states=False, as_controls=False)
 
         ConfigureProblem.configure_contacts(
-            ocp, nlp, nlp.model.contact_type, DynamicsFunctions.forces_from_torque_driven
+            ocp, nlp, nlp.model.contact_types, DynamicsFunctions.forces_from_torque_driven
         )
 
         # Configure the actual ODE of the dynamics
@@ -451,7 +451,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_taudot(ocp, nlp, as_states=False, as_controls=True)
 
         ConfigureProblem.configure_contacts(
-            ocp, nlp, nlp.model.contact_type, DynamicsFunctions.forces_from_torque_driven
+            ocp, nlp, nlp.model.contact_types, DynamicsFunctions.forces_from_torque_driven
         )
 
         if nlp.dynamics_type.dynamic_function:
@@ -493,7 +493,7 @@ class ConfigureProblem:
             ConfigureProblem.configure_residual_tau(ocp, nlp, as_states=False, as_controls=True)
 
         ConfigureProblem.configure_contacts(
-            ocp, nlp, nlp.model.contact_type, DynamicsFunctions.forces_from_torque_activation_driven
+            ocp, nlp, nlp.model.contact_types, DynamicsFunctions.forces_from_torque_activation_driven
         )
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
@@ -586,7 +586,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_muscles(ocp, nlp, with_excitations, as_controls=True, fatigue=fatigue)
 
         ConfigureProblem.configure_contacts(
-            ocp, nlp, nlp.model.contact_type, DynamicsFunctions.forces_from_muscle_driven
+            ocp, nlp, nlp.model.contact_types, DynamicsFunctions.forces_from_muscle_driven
         )
 
         if nlp.dynamics_type.dynamic_function:
@@ -727,8 +727,8 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_contacts(ocp, nlp, contact_type, force_from_where):
-        if ContactType.RIGID_IMPLICIT in contact_type:
+    def configure_contacts(ocp, nlp, contact_types, force_from_where):
+        if ContactType.RIGID_IMPLICIT in contact_types:
             ConfigureProblem.configure_rigid_contact_forces(
                 ocp,
                 nlp,
@@ -736,13 +736,13 @@ class ConfigureProblem:
                 as_algebraic_states=True,
                 as_controls=False,
             )
-        if ContactType.RIGID_EXPLICIT in contact_type:
+        if ContactType.RIGID_EXPLICIT in contact_types:
             ConfigureProblem.configure_rigid_contact_function(ocp, nlp, force_from_where)
-        if ContactType.SOFT_IMPLICIT in contact_type:
+        if ContactType.SOFT_IMPLICIT in contact_types:
             ConfigureProblem.configure_soft_contact_forces(
                 ocp, nlp, as_states=False, as_algebraic_states=True, as_controls=False
             )
-        if ContactType.SOFT_EXPLICIT in contact_type:
+        if ContactType.SOFT_EXPLICIT in contact_types:
             ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod

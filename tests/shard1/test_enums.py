@@ -153,21 +153,15 @@ def test_quadrature_rule():
 
 
 def test_defects_type():
-    assert DefectType.QDOT_EQUALS_POLYNOMIAL_SLOPE.value == "QDOT_EQUALS_POLYNOMIAL_SLOPE".lower()
     assert DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS.value == "QDDOT_EQUALS_FORWARD_DYNAMICS".lower()
     assert DefectType.TAU_EQUALS_INVERSE_DYNAMICS.value == "TAU_EQUALS_INVERSE_DYNAMICS".lower()
-    assert DefectType.CONTACT_ACCELERATION_EQUALS_ZERO.value == "CONTACT_ACCELERATION_EQUALS_ZERO".lower()
-    assert (
-        DefectType.SOFT_CONTACT_FORCES_EQUALS_LAGRANGE_MULTIPLIERS.value
-        == "SOFT_CONTACT_FORCES_EQUALS_LAGRANGE_MULTIPLIERS".lower()
-    )
-    assert DefectType.ROOT_RESIDUAL_TORQUES_EQUALS_ZERO.value == "ROOT_RESIDUAL_TORQUES_EQUALS_ZERO".lower()
+    assert DefectType.NOT_APPLICABLE.value == "NOT_APPLICABLE".lower()
 
     # verify the number of elements
-    assert len(DefectType) == 6
+    assert len(DefectType) == 3
 
 
-def test_contact_type():
+def test_contact_types():
     assert ContactType.RIGID_EXPLICIT.value == "rigid_explicit"
     assert ContactType.RIGID_IMPLICIT.value == "rigid_implicit"
     assert ContactType.SOFT_EXPLICIT.value == "soft_explicit"

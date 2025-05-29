@@ -9,7 +9,7 @@ from biorbd_casadi import (
 from casadi import MX, DM, vertcat, horzcat, Function, solve, rootfinder, inv, nlpsol
 
 from .biorbd_model import BiorbdModel
-from bioptim.limits.holonomic_constraints import HolonomicConstraintsList
+from ...limits.holonomic_constraints import HolonomicConstraintsList
 from ...optimization.parameters import ParameterList
 
 from ...misc.parameters_types import (

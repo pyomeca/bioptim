@@ -122,7 +122,7 @@ def configure_holonomic_torque_driven(
     ocp: OptimalControlProgram,
     nlp: NonLinearProgram,
     numerical_data_timeseries=None,
-    contact_type=(),
+    contact_types=(),
 ):
     """
     Tell the program which variables are states and controls.
@@ -136,7 +136,7 @@ def configure_holonomic_torque_driven(
         A reference to the phase
     numerical_data_timeseries: NumericalDataTimeseries
         A reference to the numerical data timeseries
-    contact_type: list[ContactType] | tuple[ContactType]
+    contact_types: list[ContactType] | tuple[ContactType]
         The type of contacts to consider in the dynamics.
     """
 

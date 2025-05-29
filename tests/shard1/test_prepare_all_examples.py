@@ -1545,15 +1545,15 @@ def test_custom_model():
         DefectType.TAU_EQUALS_INVERSE_DYNAMICS,
     ],
 )
-@pytest.mark.parametrize("contact_type", [[ContactType.RIGID_EXPLICIT], [ContactType.RIGID_IMPLICIT]])
-def test_contact_forces_inverse_dynamics_constraint_muscle(defects_type, contact_type):
+@pytest.mark.parametrize("contact_types", [[ContactType.RIGID_EXPLICIT], [ContactType.RIGID_IMPLICIT]])
+def test_contact_forces_inverse_dynamics_constraint_muscle(defects_type, contact_types):
     from bioptim.examples.muscle_driven_with_contact import (
         contact_forces_inverse_dynamics_constraint_muscle as ocp_module,
     )
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
-    if defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS and ContactType.RIGID_EXPLICIT in contact_type:
+    if defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS and ContactType.RIGID_EXPLICIT in contact_types:
         with pytest.raises(
             NotImplementedError, match="Inverse dynamics, cannot be used with ContactType.RIGID_EXPLICIT yet"
         ):
@@ -1562,7 +1562,7 @@ def test_contact_forces_inverse_dynamics_constraint_muscle(defects_type, contact
                 phase_time=0.3,
                 n_shooting=10,
                 defects_type=defects_type,
-                contact_type=contact_type,
+                contact_types=contact_types,
             )
         return
 
@@ -1571,7 +1571,7 @@ def test_contact_forces_inverse_dynamics_constraint_muscle(defects_type, contact
         phase_time=0.3,
         n_shooting=10,
         defects_type=defects_type,
-        contact_type=contact_type,
+        contact_types=contact_types,
     )
 
 

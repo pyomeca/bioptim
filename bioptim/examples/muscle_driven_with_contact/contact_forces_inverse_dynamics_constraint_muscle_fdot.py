@@ -43,7 +43,7 @@ def custom_configure(
     ocp: OptimalControlProgram,
     nlp: NonLinearProgram,
     numerical_data_timeseries=None,
-    contact_type: list[ContactType] = [],
+    contact_types: list[ContactType] = [],
 ):
     # Usual variables
     ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
@@ -59,7 +59,7 @@ def custom_configure(
     )
 
     # Dynamics
-    ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamics, contact_type=contact_type)
+    ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamics, contact_types=contact_types)
 
 
 def custom_dynamics(
@@ -70,7 +70,7 @@ def custom_dynamics(
     algebraic_states: MX | SX,
     numerical_timeseries: MX | SX,
     nlp: NonLinearProgram,
-    contact_type: list[ContactType],
+    contact_types: list[ContactType],
 ) -> DynamicsEvaluation:
     """
     The defects are only evaluated at the collocation nodes, but not at the first node.
@@ -102,7 +102,7 @@ def custom_dynamics(
         slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
         slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
         slope_contacts = DynamicsFunctions.get(nlp.states_dot["rigid_contact_forces"], nlp.states_dot.scaled.cx)
-        tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, slope_qdot, contact_type=contact_type)
+        tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, slope_qdot, contact_types=contact_types)
 
         # qdot
         defects = vertcat(qdot - slope_q, tau - tau_id, rigid_contact_forces_derivatives - slope_contacts)
@@ -141,13 +141,8 @@ def contact_velocity_start(controller):
 
 def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True):
 
-    # Indicate to the model creator that there will be two rigid contacts in the form of optimization variables
-    external_force_set = ExternalForceSetVariables()
-    external_force_set.add(force_name="Seg1_contact1", segment="Seg1", use_point_of_application=True)
-    external_force_set.add(force_name="Seg1_contact2", segment="Seg1", use_point_of_application=True)
-
     # BioModel
-    bio_model = BiorbdModel(biorbd_model_path, external_force_set=external_force_set)
+    bio_model = BiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -164,7 +159,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
         expand_dynamics=expand_dynamics,
         phase_dynamics=PhaseDynamics.ONE_PER_NODE,
         ode_solver=OdeSolver.COLLOCATION(polynomial_degree=3),
-        contact_type=[ContactType.RIGID_IMPLICIT],
+        contact_types=[ContactType.RIGID_IMPLICIT],
     )
 
     # Constraints
