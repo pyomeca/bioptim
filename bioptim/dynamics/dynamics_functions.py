@@ -711,6 +711,7 @@ class DynamicsFunctions:
             states,
             nlp,
             fatigue,
+            mus_activations,
     ):
         fatigue_states = None
         if fatigue is not None and "muscles" in fatigue:
