@@ -452,7 +452,6 @@ def test_torque_derivative_driven_soft_contacts_dynamics(contact_types, cx, phas
     )
     nlp.dynamics_type = Dynamics(
         DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
-        soft_contacts_dynamics=True if ContactType.SOFT_IMPLICIT in contact_types else False,
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
     )
@@ -513,47 +512,6 @@ def test_torque_derivative_driven_soft_contacts_dynamics(contact_types, cx, phas
             0.7290072,
         ],
     )
-
-
-@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
-@pytest.mark.parametrize(
-    "dynamics",
-    [DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, DynamicsFcn.MUSCLE_DRIVEN],
-)
-def test_soft_contacts_dynamics_errors(dynamics, phase_dynamics):
-    # Prepare the program
-    nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=False)
-    nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
-    )
-    nlp.dynamics_type = Dynamics(
-        dynamics, soft_contacts_dynamics=True, expand_dynamics=True, phase_dynamics=phase_dynamics
-    )
-
-    nlp.ns = N_SHOOTING
-    nlp.cx = MX
-
-    nlp.u_bounds = np.zeros((nlp.model.nb_q * 4, 1))
-    nlp.u_scaling = VariableScalingList()
-
-    ocp = OptimalControlProgram(nlp, use_sx=True)
-    nlp.control_type = ControlType.CONSTANT
-
-    NonLinearProgram.add(
-        ocp,
-        "dynamics_type",
-        nlp.dynamics_type,
-        False,
-    )
-    phase_index = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
-
-    # Prepare the dynamics
-    with pytest.raises(
-        TypeError,
-        match=re.escape(f"{dynamics.name.lower()}() got an unexpected keyword argument " "'soft_contacts_dynamics'"),
-    ):
-        ConfigureProblem.initialize(ocp, nlp)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])

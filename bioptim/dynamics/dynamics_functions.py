@@ -593,6 +593,50 @@ class DynamicsFunctions:
         return tau
 
     @staticmethod
+    def get_fatigue_states(
+        states,
+        nlp,
+        fatigue,
+        mus_activations,
+    ):
+
+        fatigue_states = None
+        if fatigue is not None and "muscles" in fatigue:
+            mus_fatigue = fatigue["muscles"]
+            fatigue_name = mus_fatigue.suffix[0]
+
+            # Sanity check
+            n_state_only = sum([m.models.state_only for m in mus_fatigue])
+            if 0 < n_state_only < len(fatigue["muscles"]):
+                raise NotImplementedError(
+                    f"{fatigue_name} list without homogeneous state_only flag is not supported yet"
+                )
+            apply_to_joint_dynamics = sum([m.models.apply_to_joint_dynamics for m in mus_fatigue])
+            if 0 < apply_to_joint_dynamics < len(fatigue["muscles"]):
+                raise NotImplementedError(
+                    f"{fatigue_name} list without homogeneous apply_to_joint_dynamics flag is not supported yet"
+                )
+
+            dyn_suffix = mus_fatigue[0].models.models[fatigue_name].dynamics_suffix()
+            fatigue_suffix = mus_fatigue[0].models.models[fatigue_name].fatigue_suffix()
+            for m in mus_fatigue:
+                for key in m.models.models:
+                    if (
+                        m.models.models[key].dynamics_suffix() != dyn_suffix
+                        or m.models.models[key].fatigue_suffix() != fatigue_suffix
+                    ):
+                        raise ValueError(f"{fatigue_name} must be of all same types")
+
+            if n_state_only == 0:
+                mus_activations = DynamicsFunctions.get(nlp.states[f"muscles_{dyn_suffix}"], states)
+
+            if apply_to_joint_dynamics > 0:
+                fatigue_states = DynamicsFunctions.get(nlp.states[f"muscles_{fatigue_suffix}"], states)
+
+        return fatigue_states, mus_activations
+
+
+    @staticmethod
     def torque_activations_driven(
         time,
         states,
@@ -941,53 +985,14 @@ class DynamicsFunctions:
             The derivative of the states and the defects of the implicit dynamics
         """
 
-        if (
-            ContactType.SOFT_EXPLICIT in nlp.model.contact_types
-            or ContactType.SOFT_IMPLICIT in nlp.model.contact_types
-            or ContactType.RIGID_IMPLICIT in nlp.model.contact_types
-        ):
-            raise NotImplementedError(
-                "soft contacts and implicit contacts not implemented yet with stochastic torque driven dynamics."
-            )
-
         q = nlp.get_var_from_states_or_controls("q", states, controls)
         qdot = nlp.get_var_from_states_or_controls("qdot", states, controls)
         residual_tau = (
             DynamicsFunctions.get_fatigable_tau(nlp, states, controls, fatigue) if with_residual_torque else None
         )
         mus_activations = nlp.get_var_from_states_or_controls("muscles", states, controls)
-        fatigue_states = None
-        if fatigue is not None and "muscles" in fatigue:
-            mus_fatigue = fatigue["muscles"]
-            fatigue_name = mus_fatigue.suffix[0]
+        fatigue_states, mus_activations = DynamicsFunctions.get_fatigue_states(states, nlp, fatigue, mus_activations)
 
-            # Sanity check
-            n_state_only = sum([m.models.state_only for m in mus_fatigue])
-            if 0 < n_state_only < len(fatigue["muscles"]):
-                raise NotImplementedError(
-                    f"{fatigue_name} list without homogeneous state_only flag is not supported yet"
-                )
-            apply_to_joint_dynamics = sum([m.models.apply_to_joint_dynamics for m in mus_fatigue])
-            if 0 < apply_to_joint_dynamics < len(fatigue["muscles"]):
-                raise NotImplementedError(
-                    f"{fatigue_name} list without homogeneous apply_to_joint_dynamics flag is not supported yet"
-                )
-
-            dyn_suffix = mus_fatigue[0].models.models[fatigue_name].dynamics_suffix()
-            fatigue_suffix = mus_fatigue[0].models.models[fatigue_name].fatigue_suffix()
-            for m in mus_fatigue:
-                for key in m.models.models:
-                    if (
-                        m.models.models[key].dynamics_suffix() != dyn_suffix
-                        or m.models.models[key].fatigue_suffix() != fatigue_suffix
-                    ):
-                        raise ValueError(f"{fatigue_name} must be of all same types")
-
-            if n_state_only == 0:
-                mus_activations = DynamicsFunctions.get(nlp.states[f"muscles_{dyn_suffix}"], states)
-
-            if apply_to_joint_dynamics > 0:
-                fatigue_states = DynamicsFunctions.get(nlp.states[f"muscles_{fatigue_suffix}"], states)
         muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations, fatigue_states)
 
         tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
@@ -1004,14 +1009,14 @@ class DynamicsFunctions:
             "external_forces", states, controls, algebraic_states, numerical_timeseries
         )
 
-        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, nlp.model.contact_types, external_forces)
+        forward_dynamics_contact_types = ContactType.get_equivalent_explicit_contacts(nlp.model.contact_types)
+        ddq_fd = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, forward_dynamics_contact_types, external_forces)
 
         dxdt = nlp.cx(nlp.states.shape, 1)
         dxdt[nlp.states["q"].index, 0] = dq
-        dxdt[nlp.states["qdot"].index, 0] = ddq
+        dxdt[nlp.states["qdot"].index, 0] = ddq_fd
 
         has_excitation = True if "muscles" in nlp.states else False
-        dmus = None
         if has_excitation:
             mus_excitations = DynamicsFunctions.get(nlp.controls["muscles"], controls)
             dmus = DynamicsFunctions.compute_muscle_dot(nlp, mus_excitations, mus_activations)
@@ -1030,12 +1035,8 @@ class DynamicsFunctions:
             # qdot = polynomial slope
             defects[nlp.states["q"].index, 0] = slope_q * nlp.dt - dq * nlp.dt
 
-            # muscledot = polynomial slope
-            if has_excitation:
-                slope_mus = DynamicsFunctions.get(nlp.states_dot["muscles"], nlp.states_dot.scaled.cx)
-                defects[nlp.states["muscles"].index, 0] = slope_mus * nlp.dt - dmus * nlp.dt
-
             if nlp.dynamics_type.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
+                ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, nlp.model.contact_types, external_forces)
                 defects[nlp.states["qdot"].index, 0] = slope_qdot * nlp.dt - ddq * nlp.dt
 
             elif nlp.dynamics_type.ode_solver.defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
@@ -1054,6 +1055,28 @@ class DynamicsFunctions:
                 raise NotImplementedError(
                     f"The defect type {nlp.dynamics_type.ode_solver.defects_type} is not implemented yet for muscles driven dynamics."
                 )
+
+            # muscledot = polynomial slope
+            if has_excitation:
+                slope_mus = nlp.states_dot["muscles"].cx
+                defects[nlp.states["muscles"].index, 0] = slope_mus * nlp.dt - dmus * nlp.dt
+
+            # We append the defects with the algebraic states implicit constraints
+            if ContactType.RIGID_IMPLICIT in nlp.model.contact_types:
+                rigid_contact_defect = (
+                    nlp.model.rigid_contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
+                    - nlp.algebraic_states["rigid_contact_forces"].cx
+                )
+                _, _, acceleration_constraint_func = HolonomicConstraintsFcn.rigid_contacts(nlp.model)
+                contact_acceleration_defect = acceleration_constraint_func(q, qdot, slope_qdot, nlp.parameters.cx)
+                defects = vertcat(defects, rigid_contact_defect, contact_acceleration_defect)
+
+            if ContactType.SOFT_IMPLICIT in nlp.model.contact_types:
+                soft_contact_defect = (
+                    nlp.model.soft_contact_forces()(q, qdot, nlp.parameters.cx)
+                    - nlp.algebraic_states["soft_contact_forces"].cx
+                )
+                defects = vertcat(defects, soft_contact_defect)
 
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
@@ -1152,7 +1175,7 @@ class DynamicsFunctions:
         external_forces = nlp.get_external_forces(
             "external_forces", states, controls, algebraic_states, numerical_timeseries
         )
-        if external_forces is not None:
+        if external_forces.shape != (0, 1):
             raise RuntimeError("Joints acceleration driven dynamics cannot be used with external forces by definition.")
 
         q = nlp.get_var_from_states_or_controls("q", states, controls)
