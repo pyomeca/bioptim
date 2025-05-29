@@ -23,7 +23,6 @@ from ..misc.parameters_types import (
     Range,
     Tuple,
     List,
-    BoolOptional,
     IntOptional,
     FloatOptional,
     StrOptional,
@@ -31,10 +30,7 @@ from ..misc.parameters_types import (
     FloatList,
     AnyList,
     NpArray,
-    StrIterable,
     StrIterableOptional,
-    AnyIterableOptional,
-    AnyIterableOrRangeOptional,
     IntIterableOptional,
     IntDict,
     AnyDict,
@@ -404,7 +400,7 @@ class PlotOcp:
         y_min_all: list[FloatList],
         y_max_all: list[FloatList],
         only_initialize_variables: Bool,
-    ):
+    ) -> None:
         """Process plots for a specific NLP"""
         for variable in self.variable_sizes[i]:
             y_range_var_idx = all_keys_across_phases.index(variable)
@@ -1055,18 +1051,18 @@ class PlotOcp:
         x_node = PenaltyHelpers.states(
             penalty,
             idx,
-            lambda p_idx, n_idx, sn_idx: x[n_idx][:, sn_idx] if n_idx < len(x) else np.ndarray((0, 1)),
+            lambda p_idx, n_idx, sn_idx: x[n_idx][:, sn_idx.index()] if n_idx < len(x) else np.ndarray((0, 1)),
         )
         u_node = PenaltyHelpers.controls(
             penalty,
             idx,
-            lambda p_idx, n_idx, sn_idx: u[n_idx][:, sn_idx] if n_idx < len(u) else np.ndarray((0, 1)),
+            lambda p_idx, n_idx, sn_idx: u[n_idx][:, sn_idx.index()] if n_idx < len(u) else np.ndarray((0, 1)),
         )
         p_node = PenaltyHelpers.parameters(penalty, 0, lambda p_idx, n_idx, sn_idx: np.array(p))
         a_node = PenaltyHelpers.states(
             penalty,
             idx,
-            lambda p_idx, n_idx, sn_idx: a[n_idx][:, sn_idx] if n_idx < len(a) else np.ndarray((0, 1)),
+            lambda p_idx, n_idx, sn_idx: a[n_idx][:, sn_idx.index()] if n_idx < len(a) else np.ndarray((0, 1)),
         )
         d_node = PenaltyHelpers.numerical_timeseries(
             penalty,

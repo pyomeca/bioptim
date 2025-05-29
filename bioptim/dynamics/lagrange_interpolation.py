@@ -3,24 +3,31 @@ from functools import cached_property
 import matplotlib.pyplot as plt
 import numpy as np
 from casadi import collocation_points, MX, SX
+from ..misc.parameters_types import (
+    Int,
+    Str,
+    FloatList,
+    CX,
+    CXorFloat,
+)
 
 
 class LagrangeInterpolation:
     def __init__(
         self,
-        time_grid: list[float],
+        time_grid: FloatList,
     ):
         self.time_grid = time_grid
 
     @cached_property
-    def polynomial_degree(self):
+    def polynomial_degree(self) -> Int:
         return len(self.time_grid)
 
     @classmethod
-    def from_grid_type(cls, polynomial_degree: int, collocation_type: str = "radau"):
+    def from_grid_type(cls, polynomial_degree: Int, collocation_type: Str = "radau"):
         return cls(collocation_points(polynomial_degree, collocation_type))
 
-    def lagrange_polynomial(self, j: int, time_control_interval: MX | SX) -> MX | SX:
+    def lagrange_polynomial(self, j: Int, time_control_interval: CX) -> CX:
         """
         Compute the j-th Lagrange polynomial \\(L_j(\tau)\\) in symbolic form.
 
@@ -73,7 +80,7 @@ class LagrangeInterpolation:
                 _l *= (time_control_interval - self.time_grid[r]) / (self.time_grid[j] - self.time_grid[r])
         return _l
 
-    def partial_lagrange_polynomial(self, j: int, time_control_interval: MX | SX, i: int) -> MX | SX:
+    def partial_lagrange_polynomial(self, j: Int, time_control_interval: CX, i: Int) -> CX:
         """Compute the partial product of the j-th Lagrange polynomial without the i-th term."""
         _l = 1
         for r in range(self.polynomial_degree):
@@ -81,7 +88,7 @@ class LagrangeInterpolation:
                 _l *= (time_control_interval - self.time_grid[r]) / (self.time_grid[j] - self.time_grid[r])
         return _l
 
-    def lagrange_polynomial_derivative(self, j: int, time_control_interval: MX | SX) -> MX | SX:
+    def lagrange_polynomial_derivative(self, j: Int, time_control_interval: CX) -> CX:
         """
         Compute the derivative of the j-th Lagrange polynomial \\( L_j(\\tau) \\) in symbolic form.
 
@@ -131,7 +138,7 @@ class LagrangeInterpolation:
 
         return sum_term
 
-    def interpolate(self, y_values: list[MX | SX | float], time_control_interval: MX | SX | float) -> MX | SX:
+    def interpolate(self, y_values: list[CXorFloat], time_control_interval: CXorFloat) -> CX:
         """
         Compute the Lagrange interpolation of a set of values at the given time.
 
@@ -155,9 +162,7 @@ class LagrangeInterpolation:
             interpolated_value += y_values[j] * self.lagrange_polynomial(j, time_control_interval)
         return interpolated_value
 
-    def interpolate_first_derivative(
-        self, y_values: list[MX | SX | float], time_control_interval: MX | SX | float
-    ) -> MX | SX:
+    def interpolate_first_derivative(self, y_values: list[CXorFloat], time_control_interval: CXorFloat) -> CX:
         """
         Compute the first derivative of the Lagrange interpolation of a set of values at the given time.
 
@@ -181,7 +186,7 @@ class LagrangeInterpolation:
             interpolated_value += y_values[j] * self.lagrange_polynomial_derivative(j, time_control_interval)
         return interpolated_value
 
-    def _check_y_values(self, y_values):
+    def _check_y_values(self, y_values) -> None:
         if len(y_values) != self.polynomial_degree:
             raise ValueError(
                 f"Length of y_values ({len(y_values)}) must match the polynomial order ({self.polynomial_degree})"
