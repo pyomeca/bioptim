@@ -707,6 +707,46 @@ class DynamicsFunctions:
         return nlp.model.rigid_contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
 
     @staticmethod
+    def get_fatigue_states(
+            states,
+            nlp,
+            fatigue,
+    ):
+        fatigue_states = None
+        if fatigue is not None and "muscles" in fatigue:
+            mus_fatigue = fatigue["muscles"]
+            fatigue_name = mus_fatigue.suffix[0]
+
+            # Sanity check
+            n_state_only = sum([m.models.state_only for m in mus_fatigue])
+            if 0 < n_state_only < len(fatigue["muscles"]):
+                raise NotImplementedError(
+                    f"{fatigue_name} list without homogeneous state_only flag is not supported yet"
+                )
+            apply_to_joint_dynamics = sum([m.models.apply_to_joint_dynamics for m in mus_fatigue])
+            if 0 < apply_to_joint_dynamics < len(fatigue["muscles"]):
+                raise NotImplementedError(
+                    f"{fatigue_name} list without homogeneous apply_to_joint_dynamics flag is not supported yet"
+                )
+
+            dyn_suffix = mus_fatigue[0].models.models[fatigue_name].dynamics_suffix()
+            fatigue_suffix = mus_fatigue[0].models.models[fatigue_name].fatigue_suffix()
+            for m in mus_fatigue:
+                for key in m.models.models:
+                    if (
+                        m.models.models[key].dynamics_suffix() != dyn_suffix
+                        or m.models.models[key].fatigue_suffix() != fatigue_suffix
+                    ):
+                        raise ValueError(f"{fatigue_name} must be of all same types")
+
+            if n_state_only == 0:
+                mus_activations = DynamicsFunctions.get(nlp.states[f"muscles_{dyn_suffix}"], states)
+
+            if apply_to_joint_dynamics > 0:
+                fatigue_states = DynamicsFunctions.get(nlp.states[f"muscles_{fatigue_suffix}"], states)
+            return mus_activations, fatigue_states
+
+    @staticmethod
     def muscles_driven(
         time,
         states,
@@ -766,38 +806,8 @@ class DynamicsFunctions:
             DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue) if with_residual_torque else None
         )
         mus_activations = nlp.get_var_from_states_or_controls("muscles", states, controls)
-        fatigue_states = None
-        if fatigue is not None and "muscles" in fatigue:
-            mus_fatigue = fatigue["muscles"]
-            fatigue_name = mus_fatigue.suffix[0]
 
-            # Sanity check
-            n_state_only = sum([m.models.state_only for m in mus_fatigue])
-            if 0 < n_state_only < len(fatigue["muscles"]):
-                raise NotImplementedError(
-                    f"{fatigue_name} list without homogeneous state_only flag is not supported yet"
-                )
-            apply_to_joint_dynamics = sum([m.models.apply_to_joint_dynamics for m in mus_fatigue])
-            if 0 < apply_to_joint_dynamics < len(fatigue["muscles"]):
-                raise NotImplementedError(
-                    f"{fatigue_name} list without homogeneous apply_to_joint_dynamics flag is not supported yet"
-                )
-
-            dyn_suffix = mus_fatigue[0].models.models[fatigue_name].dynamics_suffix()
-            fatigue_suffix = mus_fatigue[0].models.models[fatigue_name].fatigue_suffix()
-            for m in mus_fatigue:
-                for key in m.models.models:
-                    if (
-                        m.models.models[key].dynamics_suffix() != dyn_suffix
-                        or m.models.models[key].fatigue_suffix() != fatigue_suffix
-                    ):
-                        raise ValueError(f"{fatigue_name} must be of all same types")
-
-            if n_state_only == 0:
-                mus_activations = DynamicsFunctions.get(nlp.states[f"muscles_{dyn_suffix}"], states)
-
-            if apply_to_joint_dynamics > 0:
-                fatigue_states = DynamicsFunctions.get(nlp.states[f"muscles_{fatigue_suffix}"], states)
+        fatigue_states, mus_activations = DynamicsFunctions.get_fatigue_states(states, nlp, fatigue, mus_activations)
         muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations, fatigue_states)
 
         tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
