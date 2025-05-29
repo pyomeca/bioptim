@@ -148,8 +148,8 @@ class DynamicsFunctions:
         if fatigue is not None and "tau" in fatigue:
             raise NotImplementedError("Fatigue is not implemented yet for torque driven dynamics")
 
-        forward_dynamics_contact_typess = ContactType.get_equivalent_explicit_contacts(nlp.model.contact_types)
-        ddq_fd = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, forward_dynamics_contact_typess, external_forces)
+        forward_dynamics_contact_types = ContactType.get_equivalent_explicit_contacts(nlp.model.contact_types)
+        ddq_fd = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, forward_dynamics_contact_types, external_forces)
 
         dxdt = nlp.cx(nlp.states.shape, 1)
         dxdt[nlp.states["q"].index, 0] = dq
@@ -274,10 +274,11 @@ class DynamicsFunctions:
             contact_types=forward_dynamics_contact_typess,
             external_forces=external_forces,
         )
-
+        q_index = list(nlp.states["q_roots"].index) + list(nlp.states["q_joints"].index)
+        qdot_index = list(nlp.states["qdot_roots"].index) + list(nlp.states["qdot_joints"].index)
         dxdt = nlp.cx(nlp.states.shape, ddq_fd.shape[1])
-        dxdt[nlp.states["q"].index, :] = dq
-        dxdt[nlp.states["qdot"].index, :] = ddq_fd
+        dxdt[q_index, :] = dq
+        dxdt[qdot_index, :] = ddq_fd
 
         defects = None
         if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
@@ -511,9 +512,12 @@ class DynamicsFunctions:
         ddq = DynamicsFunctions.forward_dynamics(
             nlp, q_full, qdot_full, tau_full, contact_types=[], external_forces=None
         )
+
+        q_index = list(nlp.states["q_roots"].index) + list(nlp.states["q_joints"].index)
+        qdot_index = list(nlp.states["qdot_roots"].index) + list(nlp.states["qdot_joints"].index)
         dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
-        dxdt[nlp.states["q"].index, :] = dq
-        dxdt[nlp.states["qdot"].index, :] = ddq
+        dxdt[q_index, :] = dq
+        dxdt[qdot_index, :] = ddq
 
         defects = None
         if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
