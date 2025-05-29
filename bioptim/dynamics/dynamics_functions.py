@@ -379,7 +379,7 @@ class DynamicsFunctions:
         external_forces = nlp.get_external_forces(
             "external_forces", states, controls, algebraic_states, numerical_timeseries
         )
-        if external_forces is not None:
+        if external_forces.shape != (0, 1):
             raise NotImplementedError("External forces are not implemented yet with stochastic torque driven dynamics.")
 
         q = DynamicsFunctions.get(nlp.states["q"], states)
@@ -477,7 +477,7 @@ class DynamicsFunctions:
         external_forces = nlp.get_external_forces(
             "external_forces", states, controls, algebraic_states, numerical_timeseries
         )
-        if external_forces is not None:
+        if external_forces.shape != (0, 1):
             raise NotImplementedError("External forces are not implemented yet with stochastic torque driven dynamics.")
 
         q_roots = DynamicsFunctions.get(nlp.states["q_roots"], states)

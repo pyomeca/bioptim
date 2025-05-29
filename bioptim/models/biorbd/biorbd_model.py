@@ -70,7 +70,7 @@ class BiorbdModel:
 
         self.external_force_set = self._set_external_force_set(external_force_set)
         self._symbolic_variables()
-        self.biorbd_external_forces_set = self._dispatch_forces() if external_force_set else None
+        self.biorbd_external_forces_set = self._dispatch_forces() if self.external_force_set else None
 
         # TODO: remove mx (the MX parameters should be created inside the BiorbdModel)
         self.parameters = parameters.mx if parameters else MX()

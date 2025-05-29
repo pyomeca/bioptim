@@ -467,6 +467,7 @@ class ConfigureProblem:
     def torque_activations_driven(
         ocp,
         nlp: NonLinearProgram,
+        with_residual_torque: Bool = False,
         numerical_data_timeseries: NpArrayDictOptional = None,
     ) -> None:
         """

@@ -83,7 +83,7 @@ class OdeSolver:
             return True
 
         @property
-        def defect_type(self) -> DefectType:
+        def defects_type(self) -> DefectType:
             return DefectType.NOT_APPLICABLE
 
         @property
