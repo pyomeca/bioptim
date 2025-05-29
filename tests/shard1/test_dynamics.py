@@ -1056,7 +1056,7 @@ def test_joints_acceleration_driven(cx, phase_dynamics):
 @pytest.mark.parametrize("contact_types", [(), [ContactType.RIGID_EXPLICIT]])
 def test_custom_dynamics(contact_types, phase_dynamics):
     def custom_dynamic(
-        time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp, contact_types=()
+        time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp
     ) -> DynamicsEvaluation:
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
@@ -1073,7 +1073,7 @@ def test_custom_dynamics(contact_types, phase_dynamics):
         ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
         ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic)
 
-        if ContactType.RIGID_EXPLICIT in contact_types:
+        if ContactType.RIGID_EXPLICIT in nlp.model.contact_types:
             ConfigureProblem.configure_rigid_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
 
     # Prepare the program
