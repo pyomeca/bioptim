@@ -152,7 +152,7 @@ class DynamicsFunctions:
 
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, contact_type, external_forces)
         dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
-        dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
+        dxdt[nlp.states["q"].index, :] = dq
         dxdt[nlp.states["qdot"].index, :] = ddq
 
         if fatigue is not None and "tau" in fatigue:
@@ -254,7 +254,7 @@ class DynamicsFunctions:
             nlp, q_full, qdot_full, tau_full, contact_type=(), external_forces=None
         )
         dxdt = nlp.cx(n_q + n_qdot, ddq.shape[1])
-        dxdt[:n_q, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
+        dxdt[:n_q, :] = dq
         dxdt[n_q:, :] = ddq
 
         return DynamicsEvaluation(dxdt, defects=None)
@@ -332,7 +332,7 @@ class DynamicsFunctions:
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, contact_type, external_forces=None)
         dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
-        dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
+        dxdt[nlp.states["q"].index, :] = dq
         dxdt[nlp.states["qdot"].index, :] = ddq
 
         return DynamicsEvaluation(dxdt=dxdt, defects=None)
@@ -408,7 +408,7 @@ class DynamicsFunctions:
             nlp, q_full, qdot_full, tau_full, contact_type=(), external_forces=None
         )
         dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
-        dxdt[:n_q, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
+        dxdt[:n_q, :] = dq
         dxdt[n_q:, :] = ddq
 
         return DynamicsEvaluation(dxdt=dxdt, defects=None)
@@ -533,8 +533,6 @@ class DynamicsFunctions:
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, contact_type, external_forces)
 
-        dq = horzcat(*[dq for _ in range(ddq.shape[1])])
-
         return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
 
     @staticmethod
@@ -599,9 +597,9 @@ class DynamicsFunctions:
         external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, contact_type, external_forces)
         dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
-        dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
+        dxdt[nlp.states["q"].index, :] = dq
         dxdt[nlp.states["qdot"].index, :] = ddq
-        dxdt[nlp.states["tau"].index, :] = horzcat(*[dtau for _ in range(ddq.shape[1])])
+        dxdt[nlp.states["tau"].index, :] = dtau
 
         return DynamicsEvaluation(dxdt=dxdt, defects=None)
 
@@ -812,14 +810,14 @@ class DynamicsFunctions:
         external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, contact_type, external_forces)
         dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
-        dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
+        dxdt[nlp.states["q"].index, :] = dq
         dxdt[nlp.states["qdot"].index, :] = ddq
 
         has_excitation = True if "muscles" in nlp.states else False
         if has_excitation:
             mus_excitations = DynamicsFunctions.get(nlp.controls["muscles"], controls)
             dmus = DynamicsFunctions.compute_muscle_dot(nlp, mus_excitations, mus_activations)
-            dxdt[nlp.states["muscles"].index, :] = horzcat(*[dmus for _ in range(ddq.shape[1])])
+            dxdt[nlp.states["muscles"].index, :] = dmus
 
         if fatigue is not None and "muscles" in fatigue:
             dxdt = fatigue["muscles"].dynamics(dxdt, nlp, states, controls)
