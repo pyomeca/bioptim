@@ -276,7 +276,7 @@ def main():
     muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q_sym, qdot_sym, mus_activations_sym)
     tau = muscles_tau + residual_tau_sym
 
-    soft_contact_forces_computed = nlp.model.soft_contact_forces()(q_sym, qdot_sym, nlp.parameters.cx).expand()
+    soft_contact_forces_computed = nlp.model.soft_contact_forces().expand()(q_sym, qdot_sym, nlp.parameters.cx)
 
     # Map to external forces
     external_forces = MX.zeros(9 * 2)
