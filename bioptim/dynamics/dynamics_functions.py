@@ -192,7 +192,7 @@ class DynamicsFunctions:
 
             if ContactType.SOFT_IMPLICIT in nlp.model.contact_type:
                 soft_contact_defect = (
-                    nlp.model.soft_contact_forces()(q, qdot, nlp.parameters.cx)
+                    nlp.model.soft_contact_forces()(q, qdot, nlp.parameters.cx).expand()
                     - nlp.algebraic_states["soft_contact_forces"].cx
                 )
                 defects = vertcat(defects, soft_contact_defect)
@@ -682,7 +682,7 @@ class DynamicsFunctions:
 
             if ContactType.SOFT_IMPLICIT in nlp.model.contact_type:
                 soft_contact_defect = (
-                    nlp.model.soft_contact_forces()(q, qdot, nlp.parameters.cx)
+                    nlp.model.soft_contact_forces()(q, qdot, nlp.parameters.cx).expand()
                     - nlp.algebraic_states["soft_contact_forces"].cx
                 )
                 defects = vertcat(defects, soft_contact_defect)
@@ -1138,7 +1138,7 @@ class DynamicsFunctions:
             )
 
         if ContactType.SOFT_EXPLICIT in contact_type:
-            contact_forces = nlp.model.soft_contact_forces()(q, qdot, nlp.parameters.cx)
+            contact_forces = nlp.model.soft_contact_forces()(q, qdot, nlp.parameters.cx).expand()
             external_forces = vertcat(
                 external_forces, nlp.model.map_soft_contact_forces_to_global_forces(contact_forces)
             )
