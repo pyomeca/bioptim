@@ -748,6 +748,13 @@ class Solution:
                 " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
             )
 
+        for i_phase, nlp in enumerate(self.ocp.nlp):
+            if nlp.dynamics_func is None:
+                raise RuntimeError(
+                    "The explicit derivative of the states must be provided to be able to reintegrate the dynamics."
+                    f"Please provide a dxdt in your DynamicsEvaluation of phase {i_phase}."
+                )
+
         params = self._parameters.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)[0][0]
         t_spans = self.t_span(time_alignment=TimeAlignment.CONTROLS)
         if len(self.ocp.nlp) == 1:
@@ -911,7 +918,7 @@ class Solution:
                     if sensory_noise_index is not None:
                         params_this_time[node][sensory_noise_index, :] = sensory_noise[:, node, i_random]
 
-                    if len(nlp.extra_dynamics_func) > 1:
+                    if len(nlp.extra_dynamics_func) > 1 or len(nlp.extra_dynamics_defects_func) > 1:
                         raise NotImplementedError("Noisy integration is not available for multiple extra dynamics.")
                     cas_func = Function(
                         "noised_extra_dynamics",

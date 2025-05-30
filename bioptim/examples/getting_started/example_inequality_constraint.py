@@ -68,8 +68,7 @@ def prepare_ocp(
     phase_dynamics: PhaseDynamics
         If the dynamics equation within a phase is unique or changes at each node.
         PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
-        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
-        are applied at each node
+        a phase. PhaseDynamics.ONE_PER_NODE should also be used when multi-node penalties with more than 3 nodes or with COLLOCATION (cx_intermediate_list) are added to the OCP.
     expand_dynamics: bool
         If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
         the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
@@ -82,7 +81,7 @@ def prepare_ocp(
 
     # --- Options --- #
     # BioModel path
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path, contact_types=[ContactType.RIGID_EXPLICIT])
     tau_min, tau_max = -500, 500
     dof_mapping = BiMappingList()
     dof_mapping.add("tau", to_second=[None, None, None, 0], to_first=[3])
@@ -95,7 +94,6 @@ def prepare_ocp(
     dynamics = DynamicsList()
     dynamics.add(
         DynamicsFcn.TORQUE_DRIVEN,
-        contact_type=[ContactType.RIGID_EXPLICIT],
         ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,

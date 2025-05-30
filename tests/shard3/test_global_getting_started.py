@@ -19,6 +19,7 @@ from bioptim import (
     ControlType,
     PhaseDynamics,
     SolutionMerge,
+    DefectType,
 )
 from casadi import sum1, sum2
 import numpy as np
@@ -49,7 +50,14 @@ test_memory = {}
         OdeSolver.TRAPEZOIDAL,
     ],
 )
-def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics):
+@pytest.mark.parametrize(
+    "defects_type",
+    [
+        DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS,
+        DefectType.TAU_EQUALS_INVERSE_DYNAMICS,
+    ],
+)
+def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type):
     from bioptim.examples.getting_started import pendulum as ocp_module
 
     if platform.system() == "Windows":
@@ -73,7 +81,14 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics):
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
-    ode_solver_obj = ode_solver()
+    ode_solver_obj = None
+    if ode_solver == OdeSolver.COLLOCATION or ode_solver == OdeSolver.IRK:
+        ode_solver_obj = ode_solver(defects_type=defects_type)
+    else:
+        if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
+            ode_solver_obj = ode_solver()
+        else:
+            pytest.skip("There is no defect type for non COLLOCATION OdeSolvers.")
 
     if isinstance(ode_solver_obj, OdeSolver.CVODES):
         with pytest.raises(
@@ -144,9 +159,8 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics):
     tak = time.time()  # Time after building, but before solving
     ocp.print(to_console=True, to_graph=False)
 
-    # the test is too long with CVODES
     if isinstance(ode_solver_obj, OdeSolver.CVODES):
-        return
+        pytest.skip("The test is too long with CVODES")
 
     sol = ocp.solve()
     tok = time.time()  # This after solving
@@ -179,11 +193,17 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics):
         npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [0.5536468, -0.4129719])
 
     elif isinstance(ode_solver_obj, OdeSolver.COLLOCATION):
-        npt.assert_almost_equal(f[0, 0], 46.667345680854794)
+        if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
+            optimal_cost = 46.667345680854794
+            npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [-0.1780507, 0.3254202])
+        else:
+            optimal_cost = 65.86214777650633
+            npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [0.5545747, -0.4128084])
+
+        npt.assert_almost_equal(f[0, 0], optimal_cost)
         # detailed cost values
         if detailed_cost is not None:
-            npt.assert_almost_equal(detailed_cost["cost_value_weighted"], 46.667345680854794)
-        npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [-0.1780507, 0.3254202])
+            npt.assert_almost_equal(detailed_cost["cost_value_weighted"], optimal_cost)
 
     elif isinstance(ode_solver_obj, OdeSolver.RK1):
         npt.assert_almost_equal(f[0, 0], 47.360621044913245)
@@ -243,8 +263,12 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics):
         npt.assert_almost_equal(tau[:, 0], np.array((5.40765381, 0)))
         npt.assert_almost_equal(tau[:, -1], np.array((-25.26494109, 0)))
     elif isinstance(ode_solver_obj, OdeSolver.COLLOCATION):
-        npt.assert_almost_equal(tau[:, 0], np.array((5.78386563, 0)))
-        npt.assert_almost_equal(tau[:, -1], np.array((-18.22245512, 0)))
+        if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
+            npt.assert_almost_equal(tau[:, 0], np.array((5.78386563, 0)))
+            npt.assert_almost_equal(tau[:, -1], np.array((-18.22245512, 0)))
+        else:
+            npt.assert_almost_equal(tau[:, 0], np.array((5.4231798, 0)))
+            npt.assert_almost_equal(tau[:, -1], np.array((-25.26762264, 0)))
     elif isinstance(ode_solver_obj, OdeSolver.RK1):
         npt.assert_almost_equal(tau[:, 0], np.array((5.498956, 0)))
         npt.assert_almost_equal(tau[:, -1], np.array((-17.6888209, 0)))
