@@ -37,7 +37,7 @@ class BiorbdModel:
         friction_coefficients: np.ndarray = None,
         parameters: ParameterList = None,
         external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None,
-        contact_type: list[ContactType] | tuple[ContactType] = (),
+        contact_types: list[ContactType] | tuple[ContactType] = (),
     ):
         """
         Parameters
@@ -51,7 +51,7 @@ class BiorbdModel:
             parameters. The user can use this callback to modify the model.
         external_force_set: ExternalForceSetTimeSeries
             The external forces to add to the model
-        contact_type: list[ContactType] | tuple[ContactType]
+        contact_types: list[ContactType] | tuple[ContactType]
             The type of contacts tu use in the model's dynamics
         """
 
@@ -60,8 +60,8 @@ class BiorbdModel:
 
         self.model = biorbd.Model(bio_model) if isinstance(bio_model, str) else bio_model
 
-        check_contacts(contact_type, self)
-        self.contact_type = contact_type
+        check_contacts(contact_types, self)
+        self.contact_types = contact_types
 
         if parameters is not None:
             for param_key in parameters:
@@ -70,7 +70,7 @@ class BiorbdModel:
 
         self.external_force_set = self._set_external_force_set(external_force_set)
         self._symbolic_variables()
-        self.biorbd_external_forces_set = self._dispatch_forces() if external_force_set else None
+        self.biorbd_external_forces_set = self._dispatch_forces() if self.external_force_set else None
 
         # TODO: remove mx (the MX parameters should be created inside the BiorbdModel)
         self.parameters = parameters.mx if parameters else MX()
@@ -97,32 +97,32 @@ class BiorbdModel:
         It checks the external forces and binds them to the model.
         """
         if (
-            ContactType.RIGID_IMPLICIT in self.contact_type
-            or ContactType.SOFT_IMPLICIT in self.contact_type
-            or ContactType.SOFT_EXPLICIT in self.contact_type
+            ContactType.RIGID_IMPLICIT in self.contact_types
+            or ContactType.SOFT_IMPLICIT in self.contact_types
+            or ContactType.SOFT_EXPLICIT in self.contact_types
         ) and isinstance(external_force_set, ExternalForceSetTimeSeries):
             raise NotImplementedError(
-                f"Your contact_type {self.contact_type} is not supported yet with external_force_set of type ExternalForceSetTimeSeries."
+                f"Your contact_types {self.contact_types} is not supported yet with external_force_set of type ExternalForceSetTimeSeries."
             )
 
         if external_force_set is None:
-            if len(self.contact_type) > 0 and ContactType.RIGID_EXPLICIT not in self.contact_type:
+            if len(self.contact_types) > 0 and ContactType.RIGID_EXPLICIT not in self.contact_types:
                 new_external_force_set = ExternalForceSetVariables()
-                if ContactType.RIGID_IMPLICIT in self.contact_type:
+                if ContactType.RIGID_IMPLICIT in self.contact_types:
                     for i_contact in range(self.nb_rigid_contacts):
                         new_external_force_set.add(
                             force_name=f"implicit_rigid_contact_{i_contact}",
                             segment=self.rigid_contact_segment(i_contact),
                             use_point_of_application=True,
                         )
-                elif ContactType.SOFT_IMPLICIT in self.contact_type:
+                elif ContactType.SOFT_IMPLICIT in self.contact_types:
                     for i_contact in range(self.nb_soft_contacts):
                         new_external_force_set.add(
                             force_name=f"implicit_soft_contact_{i_contact}",
                             segment=self.soft_contact_segment(i_contact),
                             use_point_of_application=True,
                         )
-                elif ContactType.SOFT_EXPLICIT in self.contact_type:
+                elif ContactType.SOFT_EXPLICIT in self.contact_types:
                     for i_contact in range(self.nb_soft_contacts):
                         new_external_force_set.add(
                             force_name=f"explicit_soft_contact_{i_contact}",
@@ -656,7 +656,6 @@ class BiorbdModel:
         external_forces = type(soft_contact_forces).zeros(9 * self.nb_soft_contacts)
         for i_contact in range(self.nb_soft_contacts):
             external_forces[i_contact * 9 : i_contact * 9 + 6] = soft_contact_forces[i_contact * 6 : i_contact * 6 + 6]
-
         return external_forces
 
     @cache_function
@@ -943,16 +942,17 @@ class BiorbdModel:
         """
         Returns the name of the segment on which this specific rigid contact is.
         """
-        return self.model.rigidContacts()[contact_index].segmentName()
+        for segment in self.model.segments():
+            if segment.id() == self.model.rigidContact(contact_index).parentId():
+                return segment.name().to_string()
 
     def soft_contact_segment(self, contact_index) -> str:
         """
         Returns the name of the segment on which this specific rigid contact is.
         """
-        # self.model.softContact(0).segmentName()
-        # self.model.softContacts()[0].segmentName()
-        # @pariterre: could we add something for this ?
-        return self.model.segmentSoftContactIdx(contact_index)
+        for segment in self.model.segments():
+            if segment.id() == self.model.softContact(contact_index).parentId():
+                return segment.name().to_string()
 
     @cache_function
     def markers_velocities(self, reference_index=None) -> list[MX]:

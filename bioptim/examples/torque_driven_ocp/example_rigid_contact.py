@@ -48,7 +48,7 @@ def prepare_ocp(
     n_shooting: int,
     final_time: float,
     ode_solver: OdeSolverBase,
-    contact_type: list[ContactType],
+    contact_types: list[ContactType],
     n_threads: int = 8,
     use_sx: bool = False,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
@@ -61,20 +61,8 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    if (
-        ContactType.RIGID_IMPLICIT in contact_type
-        or ContactType.SOFT_IMPLICIT in contact_type
-        or ContactType.SOFT_EXPLICIT in contact_type
-    ):
-        # Indicate to the model creator that there will be two rigid contacts in the form of optimization variables
-        external_force_set = ExternalForceSetVariables()
-        external_force_set.add(force_name="Seg2_contact0", segment="Seg2", use_point_of_application=True)
-
-        # BioModel
-        bio_model = BiorbdModel(biorbd_model_path, external_force_set=external_force_set)
-    else:
-        # BioModel
-        bio_model = BiorbdModel(biorbd_model_path)
+    # BioModel
+    bio_model = BiorbdModel(biorbd_model_path)
 
     tau_min, tau_max = -100, 100
 
@@ -94,7 +82,7 @@ def prepare_ocp(
     # Dynamics
     dynamics = Dynamics(
         DynamicsFcn.TORQUE_DRIVEN,
-        contact_type=contact_type,
+        contact_types=contact_types,
         phase_dynamics=phase_dynamics,
         ode_solver=ode_solver,
     )
@@ -103,11 +91,11 @@ def prepare_ocp(
     constraints = ConstraintList()
     constraints.add(ConstraintFcn.TRACK_MARKERS_VELOCITY, marker_index=0, node=Node.START)
 
-    if ContactType.RIGID_EXPLICIT in contact_type or ContactType.SOFT_EXPLICIT in contact_type:
+    if ContactType.RIGID_EXPLICIT in contact_types or ContactType.SOFT_EXPLICIT in contact_types:
         constraints.add(
             ConstraintFcn.TRACK_CONTACT_FORCES, node=Node.ALL_SHOOTING, contact_index=1, min_bound=0, max_bound=np.inf
         )
-    elif ContactType.RIGID_IMPLICIT in contact_type:
+    elif ContactType.RIGID_IMPLICIT in contact_types:
         constraints.add(
             ConstraintFcn.TRACK_ALGEBRAIC_STATE,
             node=Node.ALL_SHOOTING,
@@ -166,10 +154,10 @@ def main():
     final_time = 1
     defects_type = DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS
     ode_solver = OdeSolver.COLLOCATION(polynomial_degree=5, defects_type=defects_type)
-    contact_type = [ContactType.RIGID_IMPLICIT]
+    contact_types = [ContactType.RIGID_IMPLICIT]
 
     # Prepare OCP to reach the second marker
-    ocp = prepare_ocp(biorbd_model_path, n_shooting, final_time, ode_solver, contact_type)
+    ocp = prepare_ocp(biorbd_model_path, n_shooting, final_time, ode_solver, contact_types)
 
     # --- Solve the program --- #
     solver = Solver.IPOPT(show_online_optim=False, show_options=dict(show_bounds=True))
@@ -225,7 +213,7 @@ def main():
         axs[i_dof].set_title(f"{ocp.nlp[0].model.name_dof[i_dof]}")
     axs[0].legend(bbox_to_anchor=(1.05, 1), loc="upper left")
     plt.tight_layout()
-    plt.savefig(f"reintegration_{defects_type.value}_{contact_type}.png")
+    plt.savefig(f"reintegration_{defects_type.value}_{contact_types}.png")
     plt.show()
 
     # --- Show results --- #

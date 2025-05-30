@@ -2,6 +2,11 @@ from casadi import horzcat
 
 from .ode_solver_base import OdeSolverBase
 from ..misc.enums import ControlType, DefectType
+from ..misc.parameters_types import (
+    Bool,
+    Int,
+    Str,
+)
 
 
 class RK(OdeSolverBase):
@@ -9,7 +14,7 @@ class RK(OdeSolverBase):
     The base class for Runge-Kutta
     """
 
-    def __init__(self, n_integration_steps: int = 5, **kwargs):
+    def __init__(self, n_integration_steps: Int = 5, **kwargs):
         """
         Parameters
         ----------
@@ -21,20 +26,20 @@ class RK(OdeSolverBase):
         self.n_integration_steps = n_integration_steps
 
     @property
-    def is_direct_collocation(self) -> bool:
+    def is_direct_collocation(self) -> Bool:
         return False
 
     @property
-    def is_direct_shooting(self) -> bool:
+    def is_direct_shooting(self) -> Bool:
         return True
 
     @property
-    def n_required_cx(self) -> int:
+    def n_required_cx(self) -> Int:
         return 1
 
     @property
     def defects_type(self) -> DefectType:
-        return ()
+        return DefectType.NOT_APPLICABLE
 
     def initialize_integrator(self, *args, **kwargs):
         return super(RK, self).initialize_integrator(
@@ -63,7 +68,7 @@ class RK(OdeSolverBase):
     def d_ode(self, nlp):
         return nlp.numerical_timeseries.cx_start
 
-    def __str__(self):
+    def __str__(self) -> Str:
         ode_solver_string = f"{self.integrator.__name__} {self.n_integration_steps} step"
         if self.n_integration_steps > 1:
             ode_solver_string += "s"

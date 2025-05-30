@@ -95,7 +95,7 @@ class MultiBiorbdModel:
         self.parameters = MX.sym("parameters_to_be_implemented", 0, 1)
 
         self.check_contacts()
-        self.contact_type = ()
+        self.contact_types = ()
         self._cached_functions = {}
 
     def __getitem__(self, index: Int):
@@ -117,7 +117,7 @@ class MultiBiorbdModel:
 
     def check_contacts(self):
         for model in self.models:
-            if len(model.contact_type) > 0:
+            if len(model.contact_types) > 0:
                 raise NotImplementedError(
                     "MultiBiorbdModel does not handle contacts yet."
                     "Please use BiorbdModel instead or contact the developers."

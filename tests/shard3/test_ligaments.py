@@ -94,7 +94,6 @@ def test_torque_driven_with_ligament(with_ligament, cx, phase_dynamics):
         npt.assert_almost_equal(
             x_out[:, 0],
             [0.1559945, -9.7997078],
-            decimal=2,
         )
 
 
@@ -159,7 +158,6 @@ def test_torque_derivative_driven_with_ligament(with_ligament, cx, phase_dynamic
         npt.assert_almost_equal(
             x_out[:, 0],
             [0.1559945, -9.7997078, 0.1834045],
-            decimal=2,
         )
 
 

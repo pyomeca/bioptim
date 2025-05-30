@@ -6,8 +6,8 @@ from typing import Any, Callable
 
 from casadi import MX, Function, jacobian, vertcat
 
-from bioptim.models.protocols.biomodel import BioModel
-from bioptim.misc.options import OptionDict
+from ..models.protocols.biomodel import BioModel
+from ..misc.options import OptionDict
 
 
 class HolonomicConstraintsFcn:

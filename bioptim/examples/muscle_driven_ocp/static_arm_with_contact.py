@@ -54,7 +54,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path, contact_type=[ContactType.RIGID_EXPLICIT])
+    bio_model = BiorbdModel(biorbd_model_path, contact_types=[ContactType.RIGID_EXPLICIT])
 
     # Add objective functions
     objective_functions = ObjectiveList()
