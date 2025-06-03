@@ -745,7 +745,7 @@ class DynamicsFunctions:
 
             if apply_to_joint_dynamics > 0:
                 fatigue_states = DynamicsFunctions.get(nlp.states[f"muscles_{fatigue_suffix}"], states)
-            return mus_activations, fatigue_states
+        return fatigue_states, mus_activations
 
     @staticmethod
     def muscles_driven(
