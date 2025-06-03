@@ -708,10 +708,10 @@ class DynamicsFunctions:
 
     @staticmethod
     def get_fatigue_states(
-            states,
-            nlp,
-            fatigue,
-            mus_activations,
+        states,
+        nlp,
+        fatigue,
+        mus_activations,
     ):
         fatigue_states = None
         if fatigue is not None and "muscles" in fatigue:
