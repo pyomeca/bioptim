@@ -643,12 +643,15 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_residual_torque", [False, True])
 @pytest.mark.parametrize("with_external_force", [False, True])
-# Please note that it is a fake test, sice there are no passive torques in the model
-# TODO: Add a model with passive torques
 @pytest.mark.parametrize("with_passive_torque", [False, True])
 def test_torque_activation_driven_with_residual_torque(
     with_residual_torque, with_external_force, with_passive_torque, cx, phase_dynamics
 ):
+    if with_passive_torque:
+        model_filename = TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/2segments_2dof_2contacts_with_passive_torque.bioMod"
+    else:
+        model_filename = TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/2segments_2dof_2contacts.bioMod"
+
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.ns = N_SHOOTING
@@ -663,7 +666,7 @@ def test_torque_activation_driven_with_residual_torque(
         numerical_timeseries = {"external_forces": external_forces.to_numerical_time_series()}
 
     nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/2segments_2dof_2contacts.bioMod",
+        model_filename,
         external_force_set=external_forces,
     )
     nlp.dynamics_type = Dynamics(
@@ -718,31 +721,59 @@ def test_torque_activation_driven_with_residual_torque(
 
     if with_residual_torque:
         if with_external_force:
-            npt.assert_almost_equal(
-                x_out[:, 0],
-                [1.22038235e-01, 6.62522284e-01, 1.52446740e02, 1.79223051e03],
-                decimal=5,
-            )
+            if with_passive_torque:
+                npt.assert_almost_equal(
+                    x_out[:, 0],
+                    [1.22038235e-01, 6.62522284e-01, 1.57409975e+02, 1.83699267e+03],
+                    decimal=5,
+                )
+            else:
+                npt.assert_almost_equal(
+                    x_out[:, 0],
+                    [1.22038235e-01, 6.62522284e-01, 1.52446740e02, 1.79223051e03],
+                    decimal=5,
+                )
         else:
-            npt.assert_almost_equal(
-                x_out[:, 0],
-                [0.020584, 0.183405, 55.393940, 54.222523],
-                decimal=5,
-            )
+            if with_passive_torque:
+                npt.assert_almost_equal(
+                    x_out[:, 0],
+                    [2.05844943e-02, 1.83404510e-01, 5.81433263e+01, 8.99719007e+01],
+                    decimal=5,
+                )
+            else:
+                npt.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.020584, 0.183405, 55.393940, 54.222523],
+                    decimal=5,
+                )
 
     else:
         if with_external_force:
-            npt.assert_almost_equal(
-                x_out[:, 0],
-                [1.22038235e-01, 6.62522284e-01, 1.51341897e02, 1.77042854e03],
-                decimal=5,
-            )
+            if with_passive_torque:
+                npt.assert_almost_equal(
+                    x_out[:, 0],
+                    [1.22038235e-01, 6.62522284e-01, 1.56305132e+02, 1.81519070e+03],
+                    decimal=5,
+                )
+            else:
+                npt.assert_almost_equal(
+                    x_out[:, 0],
+                    [1.22038235e-01, 6.62522284e-01, 1.51341897e02, 1.77042854e03],
+                    decimal=5,
+                )
         else:
-            npt.assert_almost_equal(
-                x_out[:, 0],
-                [0.020584, 0.183405, 55.204243, 24.411235],
-                decimal=5,
-            )
+            if with_passive_torque:
+                npt.assert_almost_equal(
+                    x_out[:, 0],
+                    [2.05844943e-02, 1.83404510e-01, 5.79536290e+01, 6.01606126e+01],
+                    decimal=5,
+                )
+            else:
+                npt.assert_almost_equal(
+                    x_out[:, 0],
+                    [0.020584, 0.183405, 55.204243, 24.411235],
+                    decimal=5,
+                )
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
