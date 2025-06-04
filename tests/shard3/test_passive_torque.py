@@ -314,11 +314,10 @@ def test_torque_activation_driven_with_passive_torque(with_passive_torque, with_
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_passive_torque", [False, True])
 def test_muscle_driven_with_passive_torque(with_passive_torque, cx, phase_dynamics):
-
     if with_passive_torque:
-        model_filename = "/examples/muscle_driven_ocp/models/arm26_with_passive_torque.bioMod"
+        model_filename = "/examples/muscle_driven_ocp/models/arm26_with_passive_torque_and_contact.bioMod"
     else:
-        model_filename = "/examples/muscle_driven_ocp/models/arm26.bioMod"
+        model_filename = "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod"
 
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = BiorbdModel(TestUtils.bioptim_folder() + model_filename)
@@ -369,17 +368,19 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, cx, phase_dynami
         npt.assert_almost_equal(
             x_out[:, 0],
             [
-                2.05844943e-02,
-                1.83404510e-01,
-                -8.02145442e01,
-                1.20656840e02,
+                1.8340450985e-01,
+                6.1185289472e-01,
+                7.8517596139e-01,
+                -5.3408086130e00,
+                1.6890917494e02,
+                -5.4766884856e02,
             ],
             decimal=6,
         )
     else:
         npt.assert_almost_equal(
             x_out[:, 0],
-            [2.05844943e-02, 1.83404510e-01, -7.38801944e00, -9.06421422e01],
+            [1.83404510e-01, 6.11852895e-01, 7.85175961e-01, -4.37708456e00, 1.33221135e02, -4.71307550e02],
             decimal=6,
         )
 
