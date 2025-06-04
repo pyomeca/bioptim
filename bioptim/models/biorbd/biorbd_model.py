@@ -928,7 +928,7 @@ class BiorbdModel:
         """
         return self.model.nbContacts()
 
-    def rigid_contact_axes_index(self, contact_index) -> tuple:
+    def rigid_contact_axes_index(self, contact_index) -> list:
         """
         Returns the axis index of this specific rigid contact.
         Example:
@@ -936,7 +936,7 @@ class BiorbdModel:
             Second contact with axis Z
             rigid_contact_axes_index(0) = (1, 2)
         """
-        return tuple(self.model.rigidContacts()[contact_index].availableAxesIndices())
+        return list(self.model.rigidContacts()[contact_index].availableAxesIndices())
 
     def rigid_contact_segment(self, contact_index) -> str:
         """

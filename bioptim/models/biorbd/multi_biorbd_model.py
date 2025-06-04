@@ -839,7 +839,7 @@ class MultiBiorbdModel:
         """
         return sum(model.nb_contacts for model in self.models)
 
-    def rigid_contact_axes_index(self, contact_index) -> AnyTuple:
+    def rigid_contact_axes_index(self, contact_index) -> list:
         """
         Returns the axis index of this specific rigid contact.
         Example:

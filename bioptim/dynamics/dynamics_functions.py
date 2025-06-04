@@ -1085,7 +1085,7 @@ class DynamicsFunctions:
                     dmus = DynamicsFunctions.compute_muscle_dot(nlp, mus_excitations, mus_activations)
                     dxdt_defects[nlp.states["muscles"].index, 0] = dmus
                     slope_mus = nlp.states_dot["muscles"].cx
-                    slopes[nlp.states["qdot"].index, 0] = slope_mus
+                    slopes[nlp.states["muscles"].index, 0] = slope_mus
 
                 if fatigue is not None and "muscles" in fatigue:
                     dxdt_defects = fatigue["muscles"].dynamics(dxdt_defects, nlp, states, controls)

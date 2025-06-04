@@ -167,7 +167,7 @@ class HolonomicConstraintsFcn:
             "holonomic_constraints_double_derivative",
             [q_sym, q_dot_sym, q_ddot_sym, parameters],
             [acceleration_constraint],
-            ["q", "q_dot", "q_ddot"],
+            ["q", "q_dot", "q_ddot", "parameters"],
             ["holonomic_constraints_double_derivative"],
         ).expand()
 
