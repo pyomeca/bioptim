@@ -648,9 +648,14 @@ def test_torque_activation_driven_with_residual_torque(
     with_residual_torque, with_external_force, with_passive_torque, cx, phase_dynamics
 ):
     if with_passive_torque:
-        model_filename = TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/2segments_2dof_2contacts_with_passive_torque.bioMod"
+        model_filename = (
+            TestUtils.bioptim_folder()
+            + "/examples/torque_driven_ocp/models/2segments_2dof_2contacts_with_passive_torque.bioMod"
+        )
     else:
-        model_filename = TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/2segments_2dof_2contacts.bioMod"
+        model_filename = (
+            TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/2segments_2dof_2contacts.bioMod"
+        )
 
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
@@ -724,7 +729,7 @@ def test_torque_activation_driven_with_residual_torque(
             if with_passive_torque:
                 npt.assert_almost_equal(
                     x_out[:, 0],
-                    [1.22038235e-01, 6.62522284e-01, 1.57409975e+02, 1.83699267e+03],
+                    [1.22038235e-01, 6.62522284e-01, 1.57409975e02, 1.83699267e03],
                     decimal=5,
                 )
             else:
@@ -737,7 +742,7 @@ def test_torque_activation_driven_with_residual_torque(
             if with_passive_torque:
                 npt.assert_almost_equal(
                     x_out[:, 0],
-                    [2.05844943e-02, 1.83404510e-01, 5.81433263e+01, 8.99719007e+01],
+                    [2.05844943e-02, 1.83404510e-01, 5.81433263e01, 8.99719007e01],
                     decimal=5,
                 )
             else:
@@ -752,7 +757,7 @@ def test_torque_activation_driven_with_residual_torque(
             if with_passive_torque:
                 npt.assert_almost_equal(
                     x_out[:, 0],
-                    [1.22038235e-01, 6.62522284e-01, 1.56305132e+02, 1.81519070e+03],
+                    [1.22038235e-01, 6.62522284e-01, 1.56305132e02, 1.81519070e03],
                     decimal=5,
                 )
             else:
@@ -765,7 +770,7 @@ def test_torque_activation_driven_with_residual_torque(
             if with_passive_torque:
                 npt.assert_almost_equal(
                     x_out[:, 0],
-                    [2.05844943e-02, 1.83404510e-01, 5.79536290e+01, 6.01606126e+01],
+                    [2.05844943e-02, 1.83404510e-01, 5.79536290e01, 6.01606126e01],
                     decimal=5,
                 )
             else:
