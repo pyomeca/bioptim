@@ -1052,12 +1052,19 @@ class DynamicsFunctions:
 
                 if fatigue is not None and "muscles" in fatigue:
                     dxdt_defects = fatigue["muscles"].dynamics(dxdt_defects, nlp, states, controls)
-                    if nlp.states.keys() != ['q', 'qdot', 'muscles_ma', 'muscles_mr', 'muscles_mf']:
+                    state_keys = nlp.states.keys()
+                    if state_keys[0] != "q" or state_keys[1] != "qdot":
                         raise NotImplementedError("The accession of muscles fatigue states is not implemented generically yet.")
-                    slopes_fatigue = vertcat(nlp.states_dot["muscles_ma"].cx,
-                                             nlp.states_dot["muscles_mr"].cx,
-                                             nlp.states_dot["muscles_mf"].cx)
-                    fatigue_indices = list(nlp.states["muscles_ma"].index) + list(nlp.states["muscles_mr"].index) + list(nlp.states["muscles_mf"].index)
+
+                    slopes_fatigue = nlp.cx()
+                    fatigue_indices = []
+                    for key in state_keys[2:]:
+                        if not key.startswith("muscles_"):
+                            raise NotImplementedError(
+                                "The accession of muscles fatigue states is not implemented generically yet.")
+                        slopes_fatigue = vertcat(slopes_fatigue, nlp.states_dot[key].cx)
+                        fatigue_indices += list(nlp.states[key].index)
+
                     slopes[fatigue_indices, 0] = slopes_fatigue
 
                 defects = slopes * nlp.dt - dxdt_defects * nlp.dt
