@@ -1031,7 +1031,9 @@ class DynamicsFunctions:
 
         muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations, fatigue_states)
 
-        tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
+        tau = muscles_tau[:]
+        if residual_tau is not None:
+            tau += residual_tau
         if nlp.model.nb_passive_joint_torques > 0:
             tau += nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx)
         if nlp.model.nb_ligaments > 0:

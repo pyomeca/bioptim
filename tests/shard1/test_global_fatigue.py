@@ -621,10 +621,6 @@ def test_fatigable_effort_torque_split(phase_dynamics):
 
     model_path = f"{bioptim_folder}/models/pendulum.bioMod"
 
-    # if platform.system() != "Linux":
-    #     # This tst fails on the CI
-    #     return
-    #
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
         final_time=1,
