@@ -1031,14 +1031,43 @@ class DynamicsFunctions:
             slope_qdot = nlp.states_dot["qdot"].cx
             defects = nlp.cx(nlp.states.shape, 1)
 
-            # qdot = polynomial slope
-            defects[nlp.states["q"].index, 0] = slope_q * nlp.dt - dq * nlp.dt
-
             if nlp.dynamics_type.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
+
+                dxdt_defects = nlp.cx(nlp.states.shape, 1)
                 ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, nlp.model.contact_types, external_forces)
-                defects[nlp.states["qdot"].index, 0] = slope_qdot * nlp.dt - ddq * nlp.dt
+                dxdt_defects[nlp.states["q"].index, 0] = qdot
+                dxdt_defects[nlp.states["qdot"].index, 0] = ddq
+
+                slopes = nlp.cx(nlp.states.shape, 1)
+                slopes[nlp.states["q"].index, 0] = slope_q
+                slopes[nlp.states["qdot"].index, 0] = slope_qdot
+
+                has_excitation = True if "muscles" in nlp.states else False
+                if has_excitation:
+                    mus_excitations = DynamicsFunctions.get(nlp.controls["muscles"], controls)
+                    dmus = DynamicsFunctions.compute_muscle_dot(nlp, mus_excitations, mus_activations)
+                    dxdt_defects[nlp.states["muscles"].index, 0] = dmus
+                    slope_mus = nlp.states_dot["muscles"].cx
+                    slopes[nlp.states["qdot"].index, 0] = slope_mus
+
+                if fatigue is not None and "muscles" in fatigue:
+                    dxdt_defects = fatigue["muscles"].dynamics(dxdt_defects, nlp, states, controls)
+                    if nlp.states.keys() != ['q', 'qdot', 'muscles_ma', 'muscles_mr', 'muscles_mf']:
+                        raise NotImplementedError("The accession of muscles fatigue states is not implemented generically yet.")
+                    slopes_fatigue = vertcat(nlp.states_dot["muscles_ma"].cx,
+                                             nlp.states_dot["muscles_mr"].cx,
+                                             nlp.states_dot["muscles_mf"].cx)
+                    fatigue_indices = list(nlp.states["muscles_ma"].index) + list(nlp.states["muscles_mr"].index) + list(nlp.states["muscles_mf"].index)
+                    slopes[fatigue_indices, 0] = slopes_fatigue
+
+                defects = slopes * nlp.dt - dxdt_defects * nlp.dt
 
             elif nlp.dynamics_type.ode_solver.defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
+                if fatigue is not None:
+                    raise NotImplementedError("Fatigue is not implemented yet with inverse dynamics defects.")
+
+                defects[nlp.states["q"].index, 0] = slope_q * nlp.dt - dq * nlp.dt
+
                 tau_id = DynamicsFunctions.inverse_dynamics(
                     nlp,
                     q=q,
@@ -1050,15 +1079,16 @@ class DynamicsFunctions:
                 tau_defects = tau - tau_id
                 defects[nlp.states["qdot"].index, 0] = tau_defects
 
+                if has_excitation:
+                    mus_excitations = DynamicsFunctions.get(nlp.controls["muscles"], controls)
+                    dmus = DynamicsFunctions.compute_muscle_dot(nlp, mus_excitations, mus_activations)
+                    slope_mus = nlp.states_dot["muscles"].cx
+                    defects[nlp.states["muscles"].index, 0] = slope_mus * nlp.dt - dmus * nlp.dt
+
             else:
                 raise NotImplementedError(
                     f"The defect type {nlp.dynamics_type.ode_solver.defects_type} is not implemented yet for muscles driven dynamics."
                 )
-
-            # muscledot = polynomial slope
-            if has_excitation:
-                slope_mus = nlp.states_dot["muscles"].cx
-                defects[nlp.states["muscles"].index, 0] = slope_mus * nlp.dt - dmus * nlp.dt
 
             # We append the defects with the algebraic states implicit constraints
             if ContactType.RIGID_IMPLICIT in nlp.model.contact_types:
