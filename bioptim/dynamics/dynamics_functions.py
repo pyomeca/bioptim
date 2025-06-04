@@ -175,26 +175,27 @@ class DynamicsFunctions:
                 slopes[nlp.states["q"].index, 0] = slope_q
                 slopes[nlp.states["qdot"].index, 0] = slope_qdot
 
-
                 if fatigue is not None and "tau" in fatigue:
                     dxdt_defects = fatigue["tau"].dynamics(dxdt_defects, nlp, states, controls)
                     state_keys = nlp.states.keys()
                     if state_keys[0] != "q" or state_keys[1] != "qdot":
-                        raise NotImplementedError("The accession of tau fatigue states is not implemented generically yet.")
+                        raise NotImplementedError(
+                            "The accession of tau fatigue states is not implemented generically yet."
+                        )
 
                     slopes_fatigue = nlp.cx()
                     fatigue_indices = []
                     for key in state_keys[2:]:
                         if not key.startswith("tau_"):
                             raise NotImplementedError(
-                                "The accession of muscles tau states is not implemented generically yet.")
+                                "The accession of muscles tau states is not implemented generically yet."
+                            )
                         slopes_fatigue = vertcat(slopes_fatigue, nlp.states_dot[key].cx)
                         fatigue_indices += list(nlp.states[key].index)
 
                     slopes[fatigue_indices, 0] = slopes_fatigue
 
                 defects = slopes * nlp.dt - dxdt_defects * nlp.dt
-
 
             elif nlp.dynamics_type.ode_solver.defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
                 if fatigue is not None:
@@ -1084,14 +1085,17 @@ class DynamicsFunctions:
                     dxdt_defects = fatigue["muscles"].dynamics(dxdt_defects, nlp, states, controls)
                     state_keys = nlp.states.keys()
                     if state_keys[0] != "q" or state_keys[1] != "qdot":
-                        raise NotImplementedError("The accession of muscles fatigue states is not implemented generically yet.")
+                        raise NotImplementedError(
+                            "The accession of muscles fatigue states is not implemented generically yet."
+                        )
 
                     slopes_fatigue = nlp.cx()
                     fatigue_indices = []
                     for key in state_keys[2:]:
                         if not key.startswith("muscles_"):
                             raise NotImplementedError(
-                                "The accession of muscles fatigue states is not implemented generically yet.")
+                                "The accession of muscles fatigue states is not implemented generically yet."
+                            )
                         slopes_fatigue = vertcat(slopes_fatigue, nlp.states_dot[key].cx)
                         fatigue_indices += list(nlp.states[key].index)
 

@@ -5,6 +5,7 @@ import pytest
 
 from ..utils import TestUtils
 
+
 # TODO: Implement a better test as this one is too sensitive !
 # We have lost convergence on this problem.
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
