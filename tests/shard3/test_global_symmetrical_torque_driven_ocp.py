@@ -19,7 +19,10 @@ def test_symmetry_by_mapping(ode_solver, phase_dynamics):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     if ode_solver == OdeSolver.COLLOCATION or ode_solver == OdeSolver.IRK:
-        with pytest.raises(NotImplementedError, match="COLLOCATION transcription is not compatible with mapping for states.Please note that concept of states mapping in already sketchy on it's own, but is particularly not appropriate for COLLOCATION transcriptions."):
+        with pytest.raises(
+            NotImplementedError,
+            match="COLLOCATION transcription is not compatible with mapping for states.Please note that concept of states mapping in already sketchy on it's own, but is particularly not appropriate for COLLOCATION transcriptions.",
+        ):
             ocp = ocp_module.prepare_ocp(
                 biorbd_model_path=bioptim_folder + "/models/cubeSym.bioMod",
                 ode_solver=ode_solver(),
@@ -75,7 +78,10 @@ def test_symmetry_by_constraint(ode_solver, phase_dynamics):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     if ode_solver == OdeSolver.COLLOCATION or ode_solver == OdeSolver.IRK:
-        with pytest.raises(NotImplementedError, match="COLLOCATION transcription is not compatible with mapping for states.Please note that concept of states mapping in already sketchy on it's own, but is particularly not appropriate for COLLOCATION transcriptions."):
+        with pytest.raises(
+            NotImplementedError,
+            match="COLLOCATION transcription is not compatible with mapping for states.Please note that concept of states mapping in already sketchy on it's own, but is particularly not appropriate for COLLOCATION transcriptions.",
+        ):
             ocp = ocp_module.prepare_ocp(
                 biorbd_model_path=bioptim_folder + "/models/cubeSym.bioMod",
                 ode_solver=ode_solver(),
