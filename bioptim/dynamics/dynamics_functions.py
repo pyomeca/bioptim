@@ -145,15 +145,15 @@ class DynamicsFunctions:
             "external_forces", states, controls, algebraic_states, numerical_timeseries
         )
 
-        if fatigue is not None and "tau" in fatigue:
-            raise NotImplementedError("Fatigue is not implemented yet for torque driven dynamics")
-
         forward_dynamics_contact_types = ContactType.get_equivalent_explicit_contacts(nlp.model.contact_types)
         ddq_fd = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, forward_dynamics_contact_types, external_forces)
 
         dxdt = nlp.cx(nlp.states.shape, 1)
         dxdt[nlp.states["q"].index, 0] = dq
         dxdt[nlp.states["qdot"].index, 0] = ddq_fd
+
+        if fatigue is not None and "tau" in fatigue:
+            dxdt = fatigue["tau"].dynamics(dxdt, nlp, states, controls)
 
         defects = None
         if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
@@ -164,14 +164,44 @@ class DynamicsFunctions:
             slope_qdot = nlp.states_dot["qdot"].cx
             defects = nlp.cx(nlp.states.shape, 1)
 
-            # qdot = polynomial slope
-            defects[nlp.states["q"].index, 0] = slope_q * nlp.dt - dq * nlp.dt
-
             if nlp.dynamics_type.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
+
+                dxdt_defects = nlp.cx(nlp.states.shape, 1)
                 ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, nlp.model.contact_types, external_forces)
-                defects[nlp.states["qdot"].index, 0] = slope_qdot * nlp.dt - ddq * nlp.dt
+                dxdt_defects[nlp.states["q"].index, 0] = qdot
+                dxdt_defects[nlp.states["qdot"].index, 0] = ddq
+
+                slopes = nlp.cx(nlp.states.shape, 1)
+                slopes[nlp.states["q"].index, 0] = slope_q
+                slopes[nlp.states["qdot"].index, 0] = slope_qdot
+
+
+                if fatigue is not None and "tau" in fatigue:
+                    dxdt_defects = fatigue["tau"].dynamics(dxdt_defects, nlp, states, controls)
+                    state_keys = nlp.states.keys()
+                    if state_keys[0] != "q" or state_keys[1] != "qdot":
+                        raise NotImplementedError("The accession of tau fatigue states is not implemented generically yet.")
+
+                    slopes_fatigue = nlp.cx()
+                    fatigue_indices = []
+                    for key in state_keys[2:]:
+                        if not key.startswith("tau_"):
+                            raise NotImplementedError(
+                                "The accession of muscles tau states is not implemented generically yet.")
+                        slopes_fatigue = vertcat(slopes_fatigue, nlp.states_dot[key].cx)
+                        fatigue_indices += list(nlp.states[key].index)
+
+                    slopes[fatigue_indices, 0] = slopes_fatigue
+
+                defects = slopes * nlp.dt - dxdt_defects * nlp.dt
+
 
             elif nlp.dynamics_type.ode_solver.defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
+                if fatigue is not None:
+                    raise NotImplementedError("Fatigue is not implemented yet with inverse dynamics defects.")
+
+                defects[nlp.states["q"].index, 0] = slope_q * nlp.dt - dq * nlp.dt
+
                 tau_id = DynamicsFunctions.inverse_dynamics(
                     nlp,
                     q=q,
