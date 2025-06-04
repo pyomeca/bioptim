@@ -100,32 +100,26 @@ def prepare_ocp(
     )
 
     # Constraints
-    constraints = ConstraintList()
     multinode_constraints = MultinodeConstraintList()
-    # This constraint is necessary to prevent the contacts from drifting
-    if defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
-        constraints.add(
-            contact_velocity_all_points,
-            node=Node.ALL_SHOOTING,
-        )
-        for i_node in range(n_shooting - 1):
-            multinode_constraints.add(
-                MultinodeConstraintFcn.ALGEBRAIC_STATES_CONTINUITY,
-                nodes_phase=(0, 0),
-                nodes=(i_node, i_node + 1),
-                key="rigid_contact_forces",
-            )
-    else:
-        constraints.add(
-            ConstraintFcn.TRACK_MARKERS_VELOCITY,
-            node=Node.START,
-            marker_index=0,
-        )
-        constraints.add(
-            ConstraintFcn.TRACK_MARKERS_VELOCITY,
-            node=Node.START,
-            marker_index=1,
-        )
+    # for i_node in range(n_shooting - 1):
+    #     multinode_constraints.add(
+    #         MultinodeConstraintFcn.ALGEBRAIC_STATES_CONTINUITY,
+    #         nodes_phase=(0, 0),
+    #         nodes=(i_node, i_node + 1),
+    #         key="rigid_contact_forces",
+    #     )
+
+    constraints = ConstraintList()
+    constraints.add(
+        ConstraintFcn.TRACK_MARKERS_VELOCITY,
+        node=Node.START,
+        marker_index=0,
+    )
+    constraints.add(
+        ConstraintFcn.TRACK_MARKERS_VELOCITY,
+        node=Node.START,
+        marker_index=1,
+    )
 
     # Path constraint
     n_q = bio_model.nb_q
@@ -221,7 +215,7 @@ def main():
     tau_residual = controls["tau"]
     mus = controls["muscles"]
 
-    if DefectType.TAU_EQUALS_INVERSE_DYNAMICS in defects_type:
+    if defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
         contact_forces = algebraic_states["rigid_contact_forces"]
 
         # --- Get contact position --- #

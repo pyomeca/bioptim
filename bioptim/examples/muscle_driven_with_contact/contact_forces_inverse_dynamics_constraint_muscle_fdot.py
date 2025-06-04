@@ -78,9 +78,9 @@ def custom_dynamics(
     # Variables
     q = DynamicsFunctions.get(nlp.states["q"], nlp.states.scaled.cx)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], nlp.states.scaled.cx)
-    rigid_contact_forces = DynamicsFunctions.get(
-        nlp.states["rigid_contact_forces"], nlp.states.scaled.cx
-    )  # Extracterd automatically in inverse_dynamics
+    # rigid_contact_forces = DynamicsFunctions.get(
+    #     nlp.states["rigid_contact_forces"], nlp.states.scaled.cx
+    # )  # Extracterd automatically in inverse_dynamics
     residual_tau = DynamicsFunctions.get(nlp.controls["tau"], nlp.controls.scaled.cx)
     mus_activations = DynamicsFunctions.get(nlp.controls["muscles"], nlp.controls.scaled.cx)
     rigid_contact_forces_derivatives = DynamicsFunctions.get(
