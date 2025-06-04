@@ -158,8 +158,14 @@ class DynamicsFunctions:
         defects = None
         if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
 
+            for key in nlp.states.keys():
+                if nlp.variable_mappings[key].actually_does_a_mapping:
+                    raise NotImplementedError(
+                        f"COLLOCATION transcription is not compatible with mapping for states."
+                        "Please note that concept of states mapping in already sketchy on it's own, but is particularly not appropriate for COLLOCATION transcriptions."
+                    )
+
             # Do not use DynamicsFunctions.get to get the slopes because we do not want them mapped
-            # Please note that concept of states mapping in already sketchy on it's own, but is particularly not appropriate for COLLOCATION transcriptions.
             slope_q = nlp.states_dot["q"].cx
             slope_qdot = nlp.states_dot["qdot"].cx
             defects = nlp.cx(nlp.states.shape, 1)
