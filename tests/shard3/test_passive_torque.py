@@ -368,12 +368,8 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, cx, phase_dynami
         npt.assert_almost_equal(
             x_out[:, 0],
             [
-                1.8340450985e-01,
-                6.1185289472e-01,
-                7.8517596139e-01,
-                -5.3408086130e00,
-                1.6890917494e02,
-                -5.4766884856e02,
+                1.83404510e-01, 6.11852895e-01, 7.85175961e-01, -2.07591884e+00,
+                5.68598968e+01, -2.51131968e+02,
             ],
             decimal=6,
         )

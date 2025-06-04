@@ -188,8 +188,23 @@ def main():
     biorbd_model_path = "models/2segments_4dof_2contacts_1muscle.bioMod"
     t = 0.1
     ns = 100
-    defects_type = DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS
+
+    # # Long to converge but works :)
+    # defects_type = DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS
+    # contact_types = [ContactType.RIGID_IMPLICIT]
+
+    # Faster to converge and dynamics seems fine :)
+    defects_type = DefectType.TAU_EQUALS_INVERSE_DYNAMICS
     contact_types = [ContactType.RIGID_IMPLICIT]
+
+    # # Works perfectly, and the fastest case :)
+    # defects_type = DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS
+    # contact_types = [ContactType.RIGID_EXPLICIT]
+
+    # # InverseDynamics not implemented with RIGID_EXPLICIT :(
+    # defects_type = DefectType.TAU_EQUALS_INVERSE_DYNAMICS
+    # contact_types = [ContactType.RIGID_EXPLICIT]
+
     ocp = prepare_ocp(
         biorbd_model_path=biorbd_model_path,
         phase_time=t,

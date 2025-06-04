@@ -31,6 +31,7 @@ from bioptim import (
     SolutionIntegrator,
     ContactType,
     DynamicsFcn,
+    DefectType,
 )
 
 
@@ -53,7 +54,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
         DynamicsFcn.MUSCLE_DRIVEN,
         with_residual_torque=True,
         phase_dynamics=PhaseDynamics.ONE_PER_NODE,
-        ode_solver=OdeSolver.COLLOCATION(polynomial_degree=3),
+        ode_solver=OdeSolver.COLLOCATION(polynomial_degree=3, defects_type=DefectType.TAU_EQUALS_INVERSE_DYNAMICS),
     )
 
     multinode_constraints = MultinodeConstraintList()
@@ -121,6 +122,10 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
 
 
 def main():
+
+    # This example does not converge, but it is a good example of how to set up the problem
+    # And the dynamics seems fine (inf_pr = 5.66e-07) when restoration failed
+
     biorbd_model_path = "models/2segments_4dof_2soft_contacts_1muscle.bioMod"
     t = 1
     ns = 100
@@ -132,7 +137,7 @@ def main():
 
     # --- Solve the program --- #
     solver = Solver.IPOPT()
-    solver.set_maximum_iterations(1000)
+    solver.set_maximum_iterations(10000)
     sol = ocp.solve(solver)
     nlp = ocp.nlp[0]
     # sol.graphs()
