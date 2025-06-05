@@ -1111,7 +1111,9 @@ class DynamicsFunctions:
                     nlp, q, qdot, nlp.model.contact_types, external_forces
                 )
                 # TODO: We do not use DynamicsFunctions.inverse_dynamics here since tau is not in the variables (this should be refactored)
-                tau_id = nlp.model.inverse_dynamics(with_contact=False)(q, qdot, slope_qdot, external_forces, nlp.parameters.cx)
+                tau_id = nlp.model.inverse_dynamics(with_contact=False)(
+                    q, qdot, slope_qdot, external_forces, nlp.parameters.cx
+                )
                 tau_defects = tau - tau_id
                 defects[nlp.states["qdot"].index, 0] = tau_defects
 
@@ -1452,7 +1454,9 @@ class DynamicsFunctions:
             tau_var_mapping = nlp.controls["tau"].mapping.to_first
         elif "tau_joints" in nlp.controls:
             if nlp.variable_mappings["tau_joints"].actually_does_a_mapping():
-                raise NotImplementedError("Free floating base dynamics was used with a mapping. This is not implemented yet.")
+                raise NotImplementedError(
+                    "Free floating base dynamics was used with a mapping. This is not implemented yet."
+                )
             to_first = [None] * nlp.model.nb_root + list(range(nlp.model.nb_q - nlp.model.nb_root))
             to_second = list(range(nlp.model.nb_root, nlp.model.nb_q))
             tau_var_mapping = BiMapping(to_first, to_second).to_first
