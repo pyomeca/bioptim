@@ -29,7 +29,9 @@ from bioptim import (
 
 
 def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver=OdeSolver.RK4(), expand_dynamics=True):
-    bio_model = BiorbdModel(biorbd_model_path)
+
+    bio_model = BiorbdModel(biorbd_model_path, contact_types=[ContactType.RIGID_EXPLICIT])
+
     torque_min, torque_max, torque_init = -500.0, 500.0, 0.0
     activation_min, activation_max, activation_init = 0.0, 1.0, 0.5
     dof_mapping = BiMappingList()
@@ -37,7 +39,6 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
     # adds a bimapping to bimappinglist
     # dof_mapping.add("tau", [None, None, None, 0], [3])
     # easier way is to use SelectionMapping which is a subclass of biMapping
-    dof_mapping = BiMappingList()
     dof_mapping.add("tau", bimapping=None, to_second=[None, None, None, 0], to_first=[3])
 
     # Add objective functions
@@ -50,7 +51,6 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
         DynamicsFcn.MUSCLE_DRIVEN,
         with_excitations=True,
         with_residual_torque=True,
-        contact_type=[ContactType.RIGID_EXPLICIT],
         ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
     )

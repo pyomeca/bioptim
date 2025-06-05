@@ -8,12 +8,10 @@ from .dynamics_functions import DynamicsFunctions
 from .fatigue.fatigue_dynamics import FatigueList
 from .ode_solvers import OdeSolver, OdeSolverBase
 from ..gui.plot import CustomPlot
-from ..limits.constraints import ImplicitConstraintFcn
 from ..misc.enums import (
     PlotType,
     Node,
     ConstraintType,
-    SoftContactDynamics,
     PhaseDynamics,
     ContactType,
 )
@@ -145,7 +143,6 @@ class ConfigureProblem:
             ocp,
             nlp,
             numerical_data_timeseries=nlp.dynamics_type.numerical_data_timeseries,
-            contact_type=nlp.dynamics_type.contact_type,
             **nlp.dynamics_type.extra_parameters,
         )
 
@@ -168,11 +165,6 @@ class ConfigureProblem:
     def torque_driven(
         ocp,
         nlp: NonLinearProgram,
-        contact_type: list[ContactType] | tuple[ContactType] = (),
-        with_passive_torque: Bool = False,
-        with_ligament: Bool = False,
-        with_friction: Bool = False,
-        soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
         fatigue: FatigueList = None,
         numerical_data_timeseries: NpArrayDictOptional = None,
     ) -> None:
@@ -185,23 +177,11 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        contact_type: list[ContactType] | tuple[ContactType]
-            The type of contacts to consider in the dynamics
-        with_passive_torque: bool
-            If the dynamic with passive torque should be used
-        with_ligament: bool
-            If the dynamic with ligament should be used
-        with_friction: bool
-            If the dynamic with joint friction should be used (friction = coefficients * qdot)
-        soft_contacts_dynamics: SoftContactDynamics
-            which soft contact dynamic should be used
         fatigue: FatigueList
             A list of fatigue elements
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
-
-        _check_contacts_in_biomodel(contact_type, nlp.model, nlp.phase_idx)
 
         # Declared rigidbody states and controls
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
@@ -209,9 +189,9 @@ class ConfigureProblem:
         ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True, fatigue=fatigue)
         ConfigureProblem.configure_qddot(ocp, nlp, as_states=False, as_controls=False)
 
-        # Declared soft contacts controls
-        if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
-            ConfigureProblem.configure_soft_contact_forces(ocp, nlp, as_states=False, as_controls=True)
+        ConfigureProblem.configure_contacts(
+            ocp, nlp, nlp.model.contact_types, DynamicsFunctions.forces_from_torque_driven
+        )
 
         # Configure the actual ODE of the dynamics
         if nlp.dynamics_type.dynamic_function:
@@ -221,38 +201,13 @@ class ConfigureProblem:
                 ocp,
                 nlp,
                 DynamicsFunctions.torque_driven,
-                contact_type=contact_type,
                 fatigue=fatigue,
-                with_passive_torque=with_passive_torque,
-                with_ligament=with_ligament,
-                with_friction=with_friction,
-            )
-
-        # Configure the contact forces
-        if ContactType.RIGID_EXPLICIT in contact_type:
-            ConfigureProblem.configure_rigid_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
-
-        # Configure the soft contact forces
-        if ContactType.SOFT_EXPLICIT in contact_type:
-            ConfigureProblem.configure_soft_contact_function(ocp, nlp)
-
-        # Algebraic constraints of soft contact forces if needed
-        if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
-            ocp.implicit_constraints.add(
-                ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
-                node=Node.ALL_SHOOTING,
-                penalty_type=ConstraintType.IMPLICIT,
-                phase=nlp.phase_idx,
             )
 
     @staticmethod
     def torque_driven_free_floating_base(
         ocp,
         nlp: NonLinearProgram,
-        contact_type: list[ContactType] | tuple[ContactType],
-        with_passive_torque: Bool = False,
-        with_ligament: Bool = False,
-        with_friction: Bool = False,
         numerical_data_timeseries: NpArrayDictOptional = None,
     ) -> None:
         """
@@ -267,19 +222,9 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        contact_type: list[ContactType] | tuple[ContactType]
-            The type of contacts to consider in the dynamics
-        with_passive_torque: bool
-            If the dynamic with passive torque should be used
-        with_ligament: bool
-            If the dynamic with ligament should be used
-        with_friction: bool
-            If the dynamic with joint friction should be used (friction = coefficients * qdot)
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node.
         """
-        if len(contact_type) > 0:
-            raise RuntimeError("free floating base dynamics cannot be used with contacts by definition.")
 
         nb_q = nlp.model.nb_q
         nb_qdot = nlp.model.nb_qdot
@@ -344,9 +289,6 @@ class ConfigureProblem:
                 ocp,
                 nlp,
                 DynamicsFunctions.torque_driven_free_floating_base,
-                with_passive_torque=with_passive_torque,
-                with_ligament=with_ligament,
-                with_friction=with_friction,
             )
 
     @staticmethod
@@ -354,8 +296,6 @@ class ConfigureProblem:
         ocp,
         nlp: NonLinearProgram,
         problem_type,
-        contact_type: list[ContactType] | tuple[ContactType] = (),
-        with_friction: Bool = False,
         with_cholesky: Bool = False,
         initial_matrix: DM = None,
         numerical_data_timeseries: NpArrayDictOptional = None,
@@ -369,10 +309,6 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        contact_type: list[ContactType] | tuple[ContactType]
-            The type of contacts to consider in the dynamics
-        with_friction: bool
-            If the dynamic with joint friction should be used (friction = coefficient * qdot)
         with_cholesky: bool
             If the Cholesky decomposition should be used for the covariance matrix.
         initial_matrix: DM
@@ -416,16 +352,12 @@ class ConfigureProblem:
         ConfigureProblem.torque_driven(
             ocp=ocp,
             nlp=nlp,
-            contact_type=contact_type,
-            with_friction=with_friction,
         )
 
         ConfigureProblem.configure_dynamics_function(
             ocp,
             nlp,
             DynamicsFunctions.stochastic_torque_driven,
-            contact_type=contact_type,
-            with_friction=with_friction,
         )
 
     @staticmethod
@@ -433,11 +365,9 @@ class ConfigureProblem:
         ocp,
         nlp: NonLinearProgram,
         problem_type,
-        with_friction: Bool = False,
         with_cholesky: Bool = False,
         initial_matrix: DM = None,
         numerical_data_timeseries: NpArrayDictOptional = None,
-        contact_type: list[ContactType] | tuple[ContactType] = (),
     ):
         """
         Configure the dynamics for a stochastic torque driven program with a free floating base.
@@ -449,10 +379,6 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        contact_type: list[ContactType] | tuple[ContactType]
-            The type of contacts to consider in the dynamics
-        with_friction: bool
-            If the dynamic with joint friction should be used (friction = coefficient * qdot)
         with_cholesky: bool
             If the Cholesky decomposition should be used for the covariance matrix.
         initial_matrix: DM
@@ -460,9 +386,6 @@ class ConfigureProblem:
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node.
         """
-        if len(contact_type) > 0:
-            raise RuntimeError("free floating base dynamics cannot be used with contacts by definition.")
-
         n_noised_tau = nlp.model.n_noised_controls
         n_noise = nlp.model.motor_noise_magnitude.shape[0] + nlp.model.sensory_noise_magnitude.shape[0]
         n_noised_states = nlp.model.n_noised_states
@@ -495,25 +418,18 @@ class ConfigureProblem:
         ConfigureProblem.torque_driven_free_floating_base(
             ocp=ocp,
             nlp=nlp,
-            with_friction=with_friction,
         )
 
         ConfigureProblem.configure_dynamics_function(
             ocp,
             nlp,
             DynamicsFunctions.stochastic_torque_driven_free_floating_base,
-            with_friction=with_friction,
         )
 
     @staticmethod
     def torque_derivative_driven(
         ocp,
         nlp: NonLinearProgram,
-        contact_type: list[ContactType] | tuple[ContactType] = (),
-        with_passive_torque: Bool = False,
-        with_ligament: Bool = False,
-        with_friction: Bool = False,
-        soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
         numerical_data_timeseries: NpArrayDictOptional = None,
     ) -> None:
         """
@@ -525,29 +441,18 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        contact_type: list[ContactType] | tuple[ContactType]
-            The type of contacts to consider in the dynamics
-        with_passive_torque: bool
-            If the dynamic with passive torque should be used
-        with_ligament: bool
-            If the dynamic with ligament should be used
-        with_friction: bool
-            If the dynamic with joint friction should be used (friction = - coefficient * qdot)
-        soft_contacts_dynamics: SoftContactDynamics
-            which soft contact dynamic should be used
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
 
         """
-        _check_contacts_in_biomodel(contact_type, nlp.model, nlp.phase_idx)
-
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_tau(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_taudot(ocp, nlp, as_states=False, as_controls=True)
 
-        if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
-            ConfigureProblem.configure_soft_contact_forces(ocp, nlp, as_states=False, as_controls=True)
+        ConfigureProblem.configure_contacts(
+            ocp, nlp, nlp.model.contact_types, DynamicsFunctions.forces_from_torque_driven
+        )
 
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
@@ -556,37 +461,13 @@ class ConfigureProblem:
                 ocp,
                 nlp,
                 DynamicsFunctions.torque_derivative_driven,
-                contact_type=contact_type,
-                with_passive_torque=with_passive_torque,
-                with_ligament=with_ligament,
-                with_friction=with_friction,
             )
-
-        if ContactType.RIGID_EXPLICIT in contact_type:
-            ConfigureProblem.configure_rigid_contact_function(
-                ocp,
-                nlp,
-                DynamicsFunctions.forces_from_torque_driven,
-            )
-
-        if ContactType.SOFT_EXPLICIT in contact_type:
-            ConfigureProblem.configure_soft_contact_function(ocp, nlp)
-            if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
-                ocp.implicit_constraints.add(
-                    ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
-                    node=Node.ALL_SHOOTING,
-                    penalty_type=ConstraintType.IMPLICIT,
-                    phase=nlp.phase_idx,
-                )
 
     @staticmethod
     def torque_activations_driven(
         ocp,
         nlp: NonLinearProgram,
-        contact_type: list[ContactType] | tuple[ContactType] = (),
-        with_passive_torque: Bool = False,
         with_residual_torque: Bool = False,
-        with_ligament: Bool = False,
         numerical_data_timeseries: NpArrayDictOptional = None,
     ) -> None:
         """
@@ -600,20 +481,11 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        contact_type: list[ContactType] | tuple[ContactType]
-            The type of contacts to consider in the dynamics
-        with_passive_torque: bool
-            If the dynamic with passive torque should be used
         with_residual_torque: bool
             If the dynamic with a residual torque should be used
-        with_ligament: bool
-            If the dynamic with ligament should be used
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
-
-        _check_contacts_in_biomodel(contact_type, nlp.model, nlp.phase_idx)
-
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
@@ -621,6 +493,9 @@ class ConfigureProblem:
         if with_residual_torque:
             ConfigureProblem.configure_residual_tau(ocp, nlp, as_states=False, as_controls=True)
 
+        ConfigureProblem.configure_contacts(
+            ocp, nlp, nlp.model.contact_types, DynamicsFunctions.forces_from_torque_activation_driven
+        )
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
@@ -628,26 +503,14 @@ class ConfigureProblem:
                 ocp,
                 nlp,
                 DynamicsFunctions.torque_activations_driven,
-                contact_type=contact_type,
-                with_passive_torque=with_passive_torque,
                 with_residual_torque=with_residual_torque,
-                with_ligament=with_ligament,
             )
-
-        if ContactType.RIGID_EXPLICIT in contact_type:
-            ConfigureProblem.configure_rigid_contact_function(
-                ocp, nlp, DynamicsFunctions.forces_from_torque_activation_driven
-            )
-
-        if ContactType.SOFT_EXPLICIT in contact_type:
-            ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
     def joints_acceleration_driven(
         ocp,
         nlp: NonLinearProgram,
         numerical_data_timeseries: NpArrayDictOptional = None,
-        contact_type: list[ContactType] | tuple[ContactType] = (),
     ):
         """
         Configure the dynamics for a joints acceleration driven program
@@ -662,26 +525,12 @@ class ConfigureProblem:
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
-
-        if len(contact_type) > 0:
-            raise RuntimeError("joints acceleration driven dynamics cannot be used with contacts by definition.")
-
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
         # Configure qddot joints
         nb_root = nlp.model.nb_root
         if not nb_root > 0:
             raise RuntimeError("BioModel must have at least one DoF on root.")
-
-        name_qddot_roots = [str(i) for i in range(nb_root)]
-        ConfigureProblem.configure_new_variable(
-            "qddot_roots",
-            name_qddot_roots,
-            ocp,
-            nlp,
-            as_states=False,
-            as_controls=False,
-        )
 
         name_qddot_joints = [str(i + nb_root) for i in range(nlp.model.nb_qddot - nb_root)]
         ConfigureProblem.configure_new_variable(
@@ -702,10 +551,6 @@ class ConfigureProblem:
         with_excitations: Bool = False,
         fatigue: FatigueList = None,
         with_residual_torque: Bool = False,
-        contact_type: list[ContactType] | tuple[ContactType] = (),
-        with_passive_torque: Bool = False,
-        with_ligament: Bool = False,
-        with_friction: Bool = False,
         numerical_data_timeseries: NpArrayDictOptional = None,
     ) -> None:
         """
@@ -727,19 +572,9 @@ class ConfigureProblem:
             The list of fatigue parameters
         with_residual_torque: bool
             If the dynamic should be added with residual torques
-        contact_type: list[ContactType] | tuple[ContactType]
-            The type of contacts to consider in the dynamics
-        with_passive_torque: bool
-            If the dynamic with passive torque should be used
-        with_ligament: bool
-            If the dynamic with ligament should be used
-        with_friction: bool
-            If the dynamic with joint friction should be used (friction = coefficients * qdot)
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
-        _check_contacts_in_biomodel(contact_type, nlp.model, nlp.phase_idx)
-
         if fatigue is not None and "tau" in fatigue and not with_residual_torque:
             raise RuntimeError("Residual torques need to be used to apply fatigue on torques")
 
@@ -751,6 +586,10 @@ class ConfigureProblem:
             ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True, fatigue=fatigue)
         ConfigureProblem.configure_muscles(ocp, nlp, with_excitations, as_controls=True, fatigue=fatigue)
 
+        ConfigureProblem.configure_contacts(
+            ocp, nlp, nlp.model.contact_types, DynamicsFunctions.forces_from_muscle_driven
+        )
+
         if nlp.dynamics_type.dynamic_function:
             ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
         else:
@@ -758,30 +597,15 @@ class ConfigureProblem:
                 ocp,
                 nlp,
                 DynamicsFunctions.muscles_driven,
-                contact_type=contact_type,
                 fatigue=fatigue,
                 with_residual_torque=with_residual_torque,
-                with_passive_torque=with_passive_torque,
-                with_ligament=with_ligament,
-                with_friction=with_friction,
             )
-
-        if ContactType.RIGID_EXPLICIT in contact_type:
-            ConfigureProblem.configure_rigid_contact_function(
-                ocp,
-                nlp,
-                DynamicsFunctions.forces_from_muscle_driven,
-            )
-
-        if ContactType.SOFT_EXPLICIT in contact_type:
-            ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
     def holonomic_torque_driven(
         ocp,
         nlp: NonLinearProgram,
         numerical_data_timeseries: NpArrayDictOptional = None,
-        contact_type: list[ContactType] | tuple[ContactType] = (),
     ) -> None:
         """
         Tell the program which variables are states and controls.
@@ -794,8 +618,6 @@ class ConfigureProblem:
             A reference to the phase
         numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node.
-        contact_type: list[ContactType] | tuple[ContactType]
-            The type of contacts to consider in the dynamics.
         """
 
         name = "q_u"
@@ -805,9 +627,9 @@ class ConfigureProblem:
             names_u,
             ocp,
             nlp,
-            True,
-            False,
-            False,
+            as_states=True,
+            as_controls=False,
+            as_algebraic_states=False,
             # NOTE: not ready for phase mapping yet as it is based on dofnames of the class BioModel
             # see _set_kinematic_phase_mapping method
             # axes_idx=ConfigureProblem._apply_phase_mapping(ocp, nlp, name),
@@ -821,9 +643,9 @@ class ConfigureProblem:
             names_udot,
             ocp,
             nlp,
-            True,
-            False,
-            False,
+            as_states=True,
+            as_controls=False,
+            as_algebraic_states=False,
             # NOTE: not ready for phase mapping yet as it is based on dofnames of the class BioModel
             # see _set_kinematic_phase_mapping method
             # axes_idx=ConfigureProblem._apply_phase_mapping(ocp, nlp, name),
@@ -904,6 +726,25 @@ class ConfigureProblem:
             axes_idx=axes_idx,
             legend=all_multipliers_names,
         )
+
+    @staticmethod
+    def configure_contacts(ocp, nlp, contact_types, force_from_where):
+        if ContactType.RIGID_IMPLICIT in contact_types:
+            ConfigureProblem.configure_rigid_contact_forces(
+                ocp,
+                nlp,
+                as_states=False,
+                as_algebraic_states=True,
+                as_controls=False,
+            )
+        if ContactType.RIGID_EXPLICIT in contact_types:
+            ConfigureProblem.configure_rigid_contact_function(ocp, nlp, force_from_where)
+        if ContactType.SOFT_IMPLICIT in contact_types:
+            ConfigureProblem.configure_soft_contact_forces(
+                ocp, nlp, as_states=False, as_algebraic_states=True, as_controls=False
+            )
+        if ContactType.SOFT_EXPLICIT in contact_types:
+            ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
     def configure_qv(ocp, nlp: NpArrayDictOptional, dyn_func: Callable, **extra_params) -> None:
@@ -1049,71 +890,31 @@ class ConfigureProblem:
             nlp,
             **extra_params,
         )
+
+        # Check that the integrator matches the type of internal dynamics constraint
+        if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
+            if dynamics_eval.defects is None:
+                raise ValueError(
+                    f"When using OdeSolver {nlp.dynamics_type.ode_solver} you must provide implicit defects (not dxdt)."
+                )
+        else:
+            if dynamics_eval.dxdt is None:
+                raise ValueError(
+                    f"When using OdeSolver {nlp.dynamics_type.ode_solver} you must provide dxdt (not defects)."
+                )
+
         dynamics_dxdt = dynamics_eval.dxdt
         if isinstance(dynamics_dxdt, (list, tuple)):
             dynamics_dxdt = vertcat(*dynamics_dxdt)
 
+        dynamics_defects = dynamics_eval.defects
+        if isinstance(dynamics_defects, (list, tuple)):
+            dynamics_defects = vertcat(*dynamics_defects)
+
         time_span_sym = vertcat(nlp.time_cx, nlp.dt)
-        if nlp.dynamics_func is None:
-            nlp.dynamics_func = Function(
-                "ForwardDyn",
-                [
-                    time_span_sym,
-                    nlp.states.scaled.cx,
-                    nlp.controls.scaled.cx,
-                    nlp.parameters.scaled.cx,
-                    nlp.algebraic_states.scaled.cx,
-                    nlp.numerical_timeseries.cx,
-                ],
-                [dynamics_dxdt],
-                ["t_span", "x", "u", "p", "a", "d"],
-                ["xdot"],
-            )
-
-            if nlp.dynamics_type.expand_dynamics:
-                try:
-                    nlp.dynamics_func = nlp.dynamics_func.expand()
-                except Exception as me:
-                    RuntimeError(
-                        f"An error occurred while executing the 'expand()' function for the dynamic function. "
-                        f"Please review the following casadi error message for more details.\n"
-                        "Several factors could be causing this issue. One of the most likely is the inability to "
-                        "use expand=True at all. In that case, try adding expand=False to the dynamics.\n"
-                        "Original casadi error message:\n"
-                        f"{me}"
-                    )
-
-            if dynamics_eval.defects is not None:
-                nlp.implicit_dynamics_func = Function(
-                    "DynamicsDefects",
-                    [
-                        time_span_sym,
-                        nlp.states.scaled.cx,
-                        nlp.controls.scaled.cx,
-                        nlp.parameters.scaled.cx,
-                        nlp.algebraic_states.scaled.cx,
-                        nlp.numerical_timeseries.cx,
-                        nlp.states_dot.scaled.cx,
-                    ],
-                    [dynamics_eval.defects],
-                    ["t_span", "x", "u", "p", "a", "d", "xdot"],
-                    ["defects"],
-                )
-                if nlp.dynamics_type.expand_dynamics:
-                    try:
-                        nlp.implicit_dynamics_func = nlp.implicit_dynamics_func.expand()
-                    except Exception as me:
-                        RuntimeError(
-                            f"An error occurred while executing the 'expand()' function for the dynamic function. "
-                            f"Please review the following casadi error message for more details.\n"
-                            "Several factors could be causing this issue. One of the most likely is the inability to "
-                            "use expand=True at all. In that case, try adding expand=False to the dynamics.\n"
-                            "Original casadi error message:\n"
-                            f"{me}"
-                        )
-        else:
-            nlp.extra_dynamics_func.append(
-                Function(
+        if dynamics_dxdt is not None:
+            if nlp.dynamics_func is None:
+                nlp.dynamics_func = Function(
                     "ForwardDyn",
                     [
                         time_span_sym,
@@ -1126,21 +927,111 @@ class ConfigureProblem:
                     [dynamics_dxdt],
                     ["t_span", "x", "u", "p", "a", "d"],
                     ["xdot"],
-                ),
-            )
+                )
 
-            if nlp.dynamics_type.expand_dynamics:
-                try:
-                    nlp.extra_dynamics_func[-1] = nlp.extra_dynamics_func[-1].expand()
-                except Exception as me:
-                    RuntimeError(
-                        f"An error occurred while executing the 'expand()' function for the dynamic function. "
-                        f"Please review the following casadi error message for more details.\n"
-                        "Several factors could be causing this issue. One of the most likely is the inability to "
-                        "use expand=True at all. In that case, try adding expand=False to the dynamics.\n"
-                        "Original casadi error message:\n"
-                        f"{me}"
-                    )
+                if nlp.dynamics_type.expand_dynamics:
+                    try:
+                        nlp.dynamics_func = nlp.dynamics_func.expand()
+                    except Exception as me:
+                        RuntimeError(
+                            f"An error occurred while executing the 'expand()' function for the dynamic function. "
+                            f"Please review the following casadi error message for more details.\n"
+                            "Several factors could be causing this issue. One of the most likely is the inability to "
+                            "use expand=True at all. In that case, try adding expand=False to the dynamics.\n"
+                            "Original casadi error message:\n"
+                            f"{me}"
+                        )
+            else:
+                nlp.extra_dynamics_func.append(
+                    Function(
+                        "ForwardDyn",
+                        [
+                            time_span_sym,
+                            nlp.states.scaled.cx,
+                            nlp.controls.scaled.cx,
+                            nlp.parameters.scaled.cx,
+                            nlp.algebraic_states.scaled.cx,
+                            nlp.numerical_timeseries.cx,
+                        ],
+                        [dynamics_dxdt],
+                        ["t_span", "x", "u", "p", "a", "d"],
+                        ["xdot"],
+                    ),
+                )
+
+                if nlp.dynamics_type.expand_dynamics:
+                    try:
+                        nlp.extra_dynamics_func[-1] = nlp.extra_dynamics_func[-1].expand()
+                    except Exception as me:
+                        RuntimeError(
+                            f"An error occurred while executing the 'expand()' function for the dynamic function. "
+                            f"Please review the following casadi error message for more details.\n"
+                            "Several factors could be causing this issue. One of the most likely is the inability to "
+                            "use expand=True at all. In that case, try adding expand=False to the dynamics.\n"
+                            "Original casadi error message:\n"
+                            f"{me}"
+                        )
+
+        if dynamics_eval.defects is not None:
+            if nlp.dynamics_defects_func is None:
+                nlp.dynamics_defects_func = Function(
+                    "DynamicsDefects",
+                    [
+                        time_span_sym,
+                        nlp.states.scaled.cx,
+                        nlp.controls.scaled.cx,
+                        nlp.parameters.scaled.cx,
+                        nlp.algebraic_states.scaled.cx,
+                        nlp.numerical_timeseries.cx,
+                        nlp.states_dot.scaled.cx,
+                    ],
+                    [dynamics_defects],
+                    ["t_span", "x", "u", "p", "a", "d", "xdot"],
+                    ["defects"],
+                )
+                if nlp.dynamics_type.expand_dynamics:
+                    try:
+                        nlp.dynamics_defects_func = nlp.dynamics_defects_func.expand()
+                    except Exception as me:
+                        RuntimeError(
+                            f"An error occurred while executing the 'expand()' function for the dynamic function. "
+                            f"Please review the following casadi error message for more details.\n"
+                            "Several factors could be causing this issue. One of the most likely is the inability to "
+                            "use expand=True at all. In that case, try adding expand=False to the dynamics.\n"
+                            "Original casadi error message:\n"
+                            f"{me}"
+                        )
+            else:
+                nlp.extra_dynamics_defects_func.append(
+                    Function(
+                        "DynamicsDefects",
+                        [
+                            time_span_sym,
+                            nlp.states.scaled.cx,
+                            nlp.controls.scaled.cx,
+                            nlp.parameters.scaled.cx,
+                            nlp.algebraic_states.scaled.cx,
+                            nlp.numerical_timeseries.cx,
+                            nlp.states_dot.scaled.cx,
+                        ],
+                        [dynamics_eval.defects],
+                        ["t_span", "x", "u", "p", "a", "d", "xdot"],
+                        ["defects"],
+                    ),
+                )
+
+                if nlp.dynamics_type.expand_dynamics:
+                    try:
+                        nlp.extra_dynamics_defects_func[-1] = nlp.extra_dynamics_defects_func[-1].expand()
+                    except Exception as me:
+                        RuntimeError(
+                            f"An error occurred while executing the 'expand()' function for the dynamic function. "
+                            f"Please review the following casadi error message for more details.\n"
+                            "Several factors could be causing this issue. One of the most likely is the inability to "
+                            "use expand=True at all. In that case, try adding expand=False to the dynamics.\n"
+                            "Original casadi error message:\n"
+                            f"{me}"
+                        )
 
     @staticmethod
     def configure_rigid_contact_function(ocp, nlp: NonLinearProgram, contact_func: Callable, **extra_params) -> None:
@@ -1186,16 +1077,16 @@ class ConfigureProblem:
 
         all_contact_names = []
         for elt in ocp.nlp:
-            all_contact_names.extend([name for name in elt.model.contact_names if name not in all_contact_names])
+            all_contact_names.extend([name for name in elt.model.rigid_contact_names if name not in all_contact_names])
 
         if "rigid_contact_forces" in nlp.plot_mapping:
-            contact_names_in_phase = [name for name in nlp.model.contact_names]
+            contact_names_in_phase = [name for name in nlp.model.rigid_contact_names]
             axes_idx = BiMapping(
                 to_first=nlp.plot_mapping["rigid_contact_forces"].map_idx,
                 to_second=[i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase],
             )
         else:
-            contact_names_in_phase = [name for name in nlp.model.contact_names]
+            contact_names_in_phase = [name for name in nlp.model.rigid_contact_names]
             axes_idx = BiMapping(
                 to_first=[i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase],
                 to_second=[i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase],
@@ -1234,7 +1125,7 @@ class ConfigureProblem:
                 nlp.algebraic_states.scaled.cx,
                 nlp.numerical_timeseries.cx,
             ],
-            [nlp.model.soft_contact_forces()(nlp.states["q"].cx, nlp.states["qdot"].cx, nlp.parameters.cx)],
+            [nlp.model.soft_contact_forces().expand()(nlp.states["q"].cx, nlp.states["qdot"].cx, nlp.parameters.cx)],
             ["t_span", "x", "u", "p", "a", "d"],
             ["soft_contact_forces"],
         ).expand()
@@ -1414,7 +1305,9 @@ class ConfigureProblem:
         name = "q"
         name_q = nlp.model.name_dof
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
-        ConfigureProblem.configure_new_variable(name, name_q, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
+        ConfigureProblem.configure_new_variable(
+            name, name_q, ocp, nlp, as_states=as_states, as_controls=as_controls, axes_idx=axes_idx
+        )
 
     @staticmethod
     def configure_qdot(ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool) -> None:
@@ -1434,7 +1327,9 @@ class ConfigureProblem:
         name = "qdot"
         name_qdot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
-        ConfigureProblem.configure_new_variable(name, name_qdot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
+        ConfigureProblem.configure_new_variable(
+            name, name_qdot, ocp, nlp, as_states=as_states, as_controls=as_controls, axes_idx=axes_idx
+        )
 
     @staticmethod
     def configure_qddot(ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool) -> None:
@@ -1454,7 +1349,9 @@ class ConfigureProblem:
         name = "qddot"
         name_qddot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
-        ConfigureProblem.configure_new_variable(name, name_qddot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
+        ConfigureProblem.configure_new_variable(
+            name, name_qddot, ocp, nlp, as_states=as_states, as_controls=as_controls, axes_idx=axes_idx
+        )
 
     @staticmethod
     def configure_qdddot(ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool) -> None:
@@ -1474,7 +1371,9 @@ class ConfigureProblem:
         name = "qdddot"
         name_qdddot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
-        ConfigureProblem.configure_new_variable(name, name_qdddot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
+        ConfigureProblem.configure_new_variable(
+            name, name_qdddot, ocp, nlp, as_states=as_states, as_controls=as_controls, axes_idx=axes_idx
+        )
 
     @staticmethod
     def configure_stochastic_k(ocp, nlp: NonLinearProgram, n_noised_controls: Int, n_references: Int) -> None:
@@ -1610,6 +1509,8 @@ class ConfigureProblem:
             A reference to the phase
         """
         name = "cov"
+        if "cov" in nlp.variable_mappings and nlp.variable_mappings["cov"].actually_does_a_mapping:
+            raise NotImplementedError(f"Algebraic states and mapping cannot be use together for now.")
 
         if name in nlp.variable_mappings:
             raise NotImplementedError(f"Algebraic states and mapping cannot be use together for now.")
@@ -1742,7 +1643,7 @@ class ConfigureProblem:
         name_tau = ConfigureProblem._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(
-            name, name_tau, ocp, nlp, as_states, as_controls, fatigue=fatigue, axes_idx=axes_idx
+            name, name_tau, ocp, nlp, as_states=as_states, as_controls=as_controls, fatigue=fatigue, axes_idx=axes_idx
         )
 
     @staticmethod
@@ -1764,7 +1665,7 @@ class ConfigureProblem:
         name_residual_tau = ConfigureProblem._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(
-            name, name_residual_tau, ocp, nlp, as_states, as_controls, axes_idx=axes_idx
+            name, name_residual_tau, ocp, nlp, as_states=as_states, as_controls=as_controls, axes_idx=axes_idx
         )
 
     @staticmethod
@@ -1785,11 +1686,13 @@ class ConfigureProblem:
         name = "taudot"
         name_taudot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
-        ConfigureProblem.configure_new_variable(name, name_taudot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
+        ConfigureProblem.configure_new_variable(
+            name, name_taudot, ocp, nlp, as_states=as_states, as_controls=as_controls, axes_idx=axes_idx
+        )
 
     @staticmethod
     def configure_translational_forces(
-        ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool, n_contacts: Int = 1
+        ocp, nlp: NonLinearProgram, as_states: Bool, as_controls: Bool, as_algebraic_states: Bool, n_contacts: Int = 1
     ) -> None:
         """
         Configure contact forces as optimization variables (for now only in global reference frame with an unknown point of application))
@@ -1808,9 +1711,23 @@ class ConfigureProblem:
         """
 
         name_contact_forces = [f"Force{i}_{axis}" for i in range(n_contacts) for axis in ("X", "Y", "Z")]
-        ConfigureProblem.configure_new_variable("contact_forces", name_contact_forces, ocp, nlp, as_states, as_controls)
         ConfigureProblem.configure_new_variable(
-            "contact_positions", name_contact_forces, ocp, nlp, as_states, as_controls
+            "contact_forces",
+            name_contact_forces,
+            ocp,
+            nlp,
+            as_states=as_states,
+            as_controls=as_controls,
+            as_algebraic_states=as_algebraic_states,
+        )
+        ConfigureProblem.configure_new_variable(
+            "contact_positions",
+            name_contact_forces,
+            ocp,
+            nlp,
+            as_states=as_states,
+            as_controls=as_controls,
+            as_algebraic_states=as_algebraic_states,
         )
 
     @staticmethod
@@ -1825,16 +1742,22 @@ class ConfigureProblem:
         nlp: NonLinearProgram
             A reference to the phase
         as_states: bool
-            If the generalized force derivatives should be a state
+            If the generalized force should be a state
         as_controls: bool
-            If the generalized force derivatives should be a control
+            If the generalized force should be a control
         as_algebraic_states: bool
-            If the generalized force derivatives should be an algebraic state
+            If the generalized force should be an algebraic state
         """
 
-        name_contact_forces = [name for name in nlp.model.contact_names]
+        name_contact_forces = [name for name in nlp.model.rigid_contact_names]
         ConfigureProblem.configure_new_variable(
-            "rigid_contact_forces", name_contact_forces, ocp, nlp, as_states, as_controls, as_algebraic_states
+            "rigid_contact_forces",
+            name_contact_forces,
+            ocp,
+            nlp,
+            as_states=as_states,
+            as_controls=as_controls,
+            as_algebraic_states=as_algebraic_states,
         )
 
     @staticmethod
@@ -1849,11 +1772,11 @@ class ConfigureProblem:
         nlp: NonLinearProgram
             A reference to the phase
         as_states: bool
-            If the generalized force derivatives should be a state
+            If the generalized force should be a state
         as_controls: bool
-            If the generalized force derivatives should be a control
+            If the generalized force should be a control
         as_algebraic_states: bool
-            If the generalized force derivatives should be an algebraic state
+            If the generalized force should be an algebraic state
         """
         name_soft_contact_forces = [
             f"{name}_{axis}" for name in nlp.model.soft_contact_names for axis in ("MX", "MY", "MZ", "FX", "FY", "FZ")
@@ -1893,8 +1816,8 @@ class ConfigureProblem:
             muscle_names,
             ocp,
             nlp,
-            as_states,
-            as_controls,
+            as_states=as_states,
+            as_controls=as_controls,
             combine_state_control_plot=True,
             fatigue=fatigue,
         )
@@ -1990,7 +1913,6 @@ class Dynamics(OptionGeneric):
         phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
         ode_solver: OdeSolver | OdeSolverBase = OdeSolver.RK4(),
         numerical_data_timeseries: NpArrayDictOptional = None,
-        contact_type: list[ContactType] | tuple[ContactType] = (),
         **extra_parameters: Any,
     ):
         """
@@ -2015,8 +1937,6 @@ class Dynamics(OptionGeneric):
             The integrator to use to integrate this dynamics.
         numerical_data_timeseries: dict[str, np.ndarray]
             The numerical timeseries at each node. ex: the experimental external forces data should go here.
-        contact_type: list[ContactType] | tuple[ContactType]
-            The type of contact to consider in the dynamics
         """
 
         configure = None
@@ -2046,7 +1966,6 @@ class Dynamics(OptionGeneric):
         self.phase_dynamics = phase_dynamics
         self.ode_solver = ode_solver
         self.numerical_data_timeseries = numerical_data_timeseries
-        self.contact_type = contact_type
 
 
 class DynamicsList(UniquePerPhaseOptionList):
@@ -2099,28 +2018,3 @@ def _check_numerical_timeseries_format(numerical_timeseries: NpArray, n_shooting
             f"The numerical_data_timeseries should be of format dict[str, np.ndarray] "
             f"where the list is the number of shooting points of the phase "
         )
-
-
-def _check_contacts_in_biomodel(
-    contact_type: list[ContactType] | tuple[ContactType], model: BioModel, phase_idx: Int
-) -> None:
-
-    # Check rigid contacts
-    if (
-        ContactType.RIGID_EXPLICIT in contact_type or ContactType.RIGID_IMPLICIT in contact_type
-    ) and model.nb_contacts == 0:
-        raise ValueError(
-            f"No rigid contact defined in the .bioMod of phase {phase_idx}, consider changing the ContactType."
-        )
-
-    # Check soft contacts
-    if (
-        ContactType.SOFT_EXPLICIT in contact_type or ContactType.SOFT_IMPLICIT in contact_type
-    ) and model.nb_soft_contacts == 0:
-        raise ValueError(
-            f"No soft contact defined in the .bioMod of phase {phase_idx}, consider changing the ContactType."
-        )
-
-    # Check that contact types are not declared at the same time
-    if len(contact_type) > 1:
-        raise NotImplementedError("It is not possible to use multiple ContactType at the same time yet.")

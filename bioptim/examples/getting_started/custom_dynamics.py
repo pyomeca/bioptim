@@ -76,12 +76,21 @@ def custom_dynamics(
     # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
     dq = DynamicsFunctions.compute_qdot(nlp, q, qdot) * my_additional_factor
     ddq = nlp.model.forward_dynamics()(q, qdot, tau, [], nlp.parameters.cx)
+    dxdt = vertcat(dq, ddq)
 
     # the user has to choose if want to return the explicit dynamics dx/dt = f(x,u,p)
     # as the first argument of DynamicsEvaluation or
     # the implicit dynamics f(x,u,p,xdot)=0 as the second argument
     # which may be useful for IRK or COLLOCATION integrators
-    return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
+    defects = None
+    if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
+        # Implicit dynamics
+        slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
+        slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
+        slopes = vertcat(slope_q, slope_qdot)
+        defects = slopes * nlp.dt - dxdt * nlp.dt
+
+    return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
 
 def custom_configure(
@@ -89,7 +98,6 @@ def custom_configure(
     nlp: NonLinearProgram,
     my_additional_factor=1,
     numerical_data_timeseries=None,
-    contact_type: list[ContactType] | tuple[ContactType] = (),
 ):
     """
     Tell the program which variables are states and controls.
@@ -136,8 +144,7 @@ def prepare_ocp(
     phase_dynamics: PhaseDynamics
         If the dynamics equation within a phase is unique or changes at each node.
         PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
-        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
-        are applied at each node
+        a phase. PhaseDynamics.ONE_PER_NODE should also be used when multi-node penalties with more than 3 nodes or with COLLOCATION (cx_intermediate_list) are added to the OCP.
     expand_dynamics: bool
         If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
         the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work

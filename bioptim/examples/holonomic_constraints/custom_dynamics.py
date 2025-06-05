@@ -7,6 +7,7 @@ from bioptim import (
     NonLinearProgram,
     OptimalControlProgram,
     ConfigureProblem,
+    OdeSolver,
 )
 
 
@@ -106,14 +107,22 @@ def holonomic_torque_driven_with_qv(
     q_v = DynamicsFunctions.get(nlp.algebraic_states["q_v"], algebraic_states)
     qddot_u = nlp.model.partitioned_forward_dynamics_with_qv()(q_u, q_v, qdot_u, tau)
 
-    return DynamicsEvaluation(dxdt=vertcat(qdot_u, qddot_u), defects=None)
+    dxdt = vertcat(qdot_u, qddot_u)
+
+    defects = None
+    if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
+        slope_q_u = DynamicsFunctions.get(nlp.states_dot["q_u"], nlp.states_dot.scaled.cx)
+        slope_qdot_u = DynamicsFunctions.get(nlp.states_dot["qdot_u"], nlp.states_dot.scaled.cx)
+        defects = vertcat(slope_q_u, slope_qdot_u) * nlp.dt - dxdt * nlp.dt
+
+    return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
 
 def configure_holonomic_torque_driven(
     ocp: OptimalControlProgram,
     nlp: NonLinearProgram,
     numerical_data_timeseries=None,
-    contact_type=(),
+    contact_types=(),
 ):
     """
     Tell the program which variables are states and controls.
@@ -127,7 +136,7 @@ def configure_holonomic_torque_driven(
         A reference to the phase
     numerical_data_timeseries: NumericalDataTimeseries
         A reference to the numerical data timeseries
-    contact_type: list[ContactType] | tuple[ContactType]
+    contact_types: list[ContactType] | tuple[ContactType]
         The type of contacts to consider in the dynamics.
     """
 

@@ -31,7 +31,6 @@ class OptimalControlProgram:
         parameters_list = ParameterList(use_sx=use_sx)
         self.parameters = ParameterContainer(use_sx=use_sx)
         self.parameters.initialize(parameters_list)
-        self.implicit_constraints = ConstraintList()
         self.n_threads = 1
 
 
@@ -39,12 +38,15 @@ class OptimalControlProgram:
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_ligament", [False, True])
 def test_torque_driven_with_ligament(with_ligament, cx, phase_dynamics):
-    # Prepare the program
+
+    if with_ligament:
+        model_filename = "/examples/torque_driven_ocp/models/mass_point_with_ligament.bioMod"
+    else:
+        model_filename = "/examples/torque_driven_ocp/models/mass_point_without_ligament.bioMod"
+
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
-    nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/mass_point_with_ligament.bioMod"
-    )
-    nlp.dynamics_type = Dynamics(DynamicsFcn.TORQUE_DRIVEN, with_ligament=with_ligament)
+    nlp.model = BiorbdModel(TestUtils.bioptim_folder() + model_filename)
+    nlp.dynamics_type = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 
     nlp.ns = 5
     nlp.cx = cx
@@ -99,12 +101,15 @@ def test_torque_driven_with_ligament(with_ligament, cx, phase_dynamics):
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_ligament", [False, True])
 def test_torque_derivative_driven_with_ligament(with_ligament, cx, phase_dynamics):
-    # Prepare the program
+
+    if with_ligament:
+        model_filename = "/examples/torque_driven_ocp/models/mass_point_with_ligament.bioMod"
+    else:
+        model_filename = "/examples/torque_driven_ocp/models/mass_point_without_ligament.bioMod"
+
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
-    nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/mass_point_with_ligament.bioMod"
-    )
-    nlp.dynamics_type = Dynamics(DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN, with_ligament=with_ligament)
+    nlp.model = BiorbdModel(TestUtils.bioptim_folder() + model_filename)
+    nlp.dynamics_type = Dynamics(DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN)
 
     nlp.ns = 5
     nlp.cx = cx
@@ -160,12 +165,15 @@ def test_torque_derivative_driven_with_ligament(with_ligament, cx, phase_dynamic
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_ligament", [False, True])
 def test_torque_activation_driven_with_ligament(with_ligament, cx, phase_dynamics):
-    # Prepare the program
+
+    if with_ligament:
+        model_filename = "/examples/torque_driven_ocp/models/mass_point_with_ligament.bioMod"
+    else:
+        model_filename = "/examples/torque_driven_ocp/models/mass_point_without_ligament.bioMod"
+
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
-    nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/mass_point_with_ligament.bioMod"
-    )
-    nlp.dynamics_type = Dynamics(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_ligament=with_ligament)
+    nlp.model = BiorbdModel(TestUtils.bioptim_folder() + model_filename)
+    nlp.dynamics_type = Dynamics(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN)
 
     nlp.ns = 5
     nlp.cx = cx
@@ -219,14 +227,16 @@ def test_torque_activation_driven_with_ligament(with_ligament, cx, phase_dynamic
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_ligament", [False, True])
 def test_muscle_driven_with_ligament(with_ligament, cx, phase_dynamics):
-    # Prepare the program
+
+    if with_ligament:
+        model_filename = "/examples/muscle_driven_ocp/models/arm26_with_ligament.bioMod"
+    else:
+        model_filename = "/examples/muscle_driven_ocp/models/arm26.bioMod"
+
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
-    nlp.model = BiorbdModel(
-        TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_ligament.bioMod"
-    )
+    nlp.model = BiorbdModel(TestUtils.bioptim_folder() + model_filename)
     nlp.dynamics_type = Dynamics(
         DynamicsFcn.MUSCLE_DRIVEN,
-        with_ligament=with_ligament,
     )
 
     nlp.ns = 5

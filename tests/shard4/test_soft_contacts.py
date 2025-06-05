@@ -27,6 +27,9 @@ def test_soft_contact(phase_dynamics):
     ocp.print(to_console=True, to_graph=False)
     sol = ocp.solve()
 
+    # Check that it converged
+    assert sol.status == 0
+
     # Check objective function value
     f = np.array(sol.cost)
     npt.assert_equal(f.shape, (1, 1))

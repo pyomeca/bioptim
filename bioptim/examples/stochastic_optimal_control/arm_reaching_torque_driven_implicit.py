@@ -195,7 +195,6 @@ def prepare_socp(
         with_cholesky=with_cholesky,
         expand_dynamics=False,
         phase_dynamics=PhaseDynamics.ONE_PER_NODE,
-        with_friction=True,
         numerical_data_timeseries=None,
     )
 

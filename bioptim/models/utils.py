@@ -1,6 +1,7 @@
 from functools import wraps
 from ..limits.path_conditions import Bounds
 from ..misc.mapping import BiMapping, BiMappingList
+from ..misc.enums import ContactType
 
 
 def _dof_mapping(key, model, mapping: BiMapping = None) -> dict:
@@ -101,3 +102,27 @@ def cache_function(method):
         return casadi_fun
 
     return wrapper
+
+
+def check_contacts(contact_types: list[ContactType] | tuple[ContactType], model):
+
+    # Check the type and that there is only one of them
+    if not isinstance(contact_types, (list, tuple)):
+        raise RuntimeError(f"The contact_types should be a list or a tuple of ContactType, not {contact_types}.")
+    for contact in contact_types:
+        if not isinstance(contact, ContactType):
+            raise RuntimeError(f"The contact_types should be a list or a tuple of ContactType, not {contact}.")
+    if len(contact_types) > 1:
+        raise NotImplementedError("Only one ContactType is supported at the moment.")
+
+    # Check rigid contacts
+    if (
+        ContactType.RIGID_EXPLICIT in contact_types or ContactType.RIGID_IMPLICIT in contact_types
+    ) and model.nb_contacts == 0:
+        raise ValueError(f"No rigid contact defined in the model, consider changing the ContactType.")
+
+    # Check soft contacts
+    if (
+        ContactType.SOFT_EXPLICIT in contact_types or ContactType.SOFT_IMPLICIT in contact_types
+    ) and model.nb_soft_contacts == 0:
+        raise ValueError(f"No soft contact defined in the model, consider changing the ContactType.")
