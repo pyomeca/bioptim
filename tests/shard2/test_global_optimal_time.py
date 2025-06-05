@@ -1,6 +1,7 @@
 """
 Test for file IO
 """
+
 import platform
 
 from bioptim import (
