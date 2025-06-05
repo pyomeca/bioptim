@@ -161,7 +161,7 @@ class DynamicsFunctions:
             for key in nlp.states.keys():
                 if nlp.variable_mappings[key].actually_does_a_mapping():
                     raise NotImplementedError(
-                        f"COLLOCATION transcription is not compatible with mapping for states."
+                        f"COLLOCATION transcription is not compatible with mapping for states. "
                         "Please note that concept of states mapping in already sketchy on it's own, but is particularly not appropriate for COLLOCATION transcriptions."
                     )
 

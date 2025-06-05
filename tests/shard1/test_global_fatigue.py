@@ -415,7 +415,7 @@ def test_fatigable_xia_torque_split(phase_dynamics):
 def test_fatigable_xia_stabilized_torque_split(phase_dynamics):
     from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
-    if platform == "win32":
+    if platform.system() == "Windows":
         pytest.skip("These tests do not pass on Windows.")
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
@@ -518,7 +518,7 @@ def test_fatigable_michaud_torque_non_split(phase_dynamics):
 def test_fatigable_michaud_torque_split(phase_dynamics):
     from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
-    if platform == "win32":
+    if platform.system() == "Windows":
         pytest.skip("These tests do not pass on Windows.")
 
     bioptim_folder = TestUtils.module_folder(ocp_module)

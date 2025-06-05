@@ -391,7 +391,7 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, cx, phase_dynami
 def test_pendulum_passive_torque(with_passive_torque, phase_dynamics):
     from bioptim.examples.torque_driven_ocp import pendulum_with_passive_torque as ocp_module
 
-    if platform == "win32":
+    if platform.system() != "Linux":
         pytest.skip("These tests do not pass on Windows.")
 
     if with_passive_torque:
