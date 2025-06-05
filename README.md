@@ -25,6 +25,14 @@ The current status of `bioptim` on conda-forge is
 | --- | --- | --- | --- | --- |
 | [![Conda Recipe](https://img.shields.io/badge/recipe-bioptim-green.svg)](https://anaconda.org/conda-forge/bioptim) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/bioptim.svg)](https://anaconda.org/conda-forge/bioptim) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/bioptim.svg)](https://anaconda.org/conda-forge/bioptim) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/bioptim.svg)](https://anaconda.org/conda-forge/bioptim) | [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/pyomeca/bioptim-tutorial/HEAD?urlpath=lab) |
 
+
+## Contact
+You can join us on Discord 
+[![Discord](https://img.shields.io/discord/1340640457327247460.svg?label=chat&logo=discord&color=7289DA)](https://discord.gg/Ux7BkdjQFW)
+or open an Issue on GitHub.
+We would be trilled to discuss with you about `bioptim` and biomechanics/optimal control in general!
+
+
 # Try bioptim
 
 Anyone can play with bioptim with a working (but slightly limited in terms of graphics) MyBinder by clicking the following badge
