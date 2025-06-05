@@ -624,7 +624,7 @@ class BiorbdModel:
         """
         Takes the rigid contact forces and dispatch is to match the external forces.
         """
-        external_forces = MX.zeros(self.external_force_set.nb_external_forces_components)
+        external_forces = type(q).zeros(self.external_force_set.nb_external_forces_components)
 
         current_index = 0
         contacts_to_add = 0
@@ -947,6 +947,7 @@ class BiorbdModel:
         for segment in self.model.segments():
             if segment.id() == self.model.rigidContact(contact_index).parentId():
                 return segment.name().to_string()
+        raise RuntimeError(f"The segment for the rigid contact index {contact_index} was not found.")
 
     def soft_contact_segment(self, contact_index) -> str:
         """
@@ -955,6 +956,7 @@ class BiorbdModel:
         for segment in self.model.segments():
             if segment.id() == self.model.softContact(contact_index).parentId():
                 return segment.name().to_string()
+        raise RuntimeError(f"The segment for the soft contact index {contact_index} was not found.")
 
     @cache_function
     def markers_velocities(self, reference_index=None) -> list[MX]:

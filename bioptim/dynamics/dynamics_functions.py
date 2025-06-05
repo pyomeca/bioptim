@@ -309,24 +309,24 @@ class DynamicsFunctions:
         )
         q_index = list(nlp.states["q_roots"].index) + list(nlp.states["q_joints"].index)
         qdot_index = list(nlp.states["qdot_roots"].index) + list(nlp.states["qdot_joints"].index)
-        dxdt = nlp.cx(nlp.states.shape, ddq_fd.shape[1])
+        dxdt = nlp.cx(nlp.states.shape, 1)
         dxdt[q_index, :] = dq
         dxdt[qdot_index, :] = ddq_fd
 
         defects = None
         if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
-            slope_q = nlp.states_dot["q"].cx
-            slope_qdot = nlp.states_dot["qdot"].cx
-            defects = nlp.cx(nlp.states.shape)
+            slope_q = vertcat(nlp.states_dot["q_roots"].cx, nlp.states_dot["q_joints"].cx)
+            slope_qdot = vertcat(nlp.states_dot["qdot_roots"].cx, nlp.states_dot["qdot_joints"].cx)
+            defects = nlp.cx(nlp.states.shape, 1)
 
             # qdot = polynomial slope
-            defects[nlp.states["q"].index] = slope_q * nlp.dt - dq * nlp.dt
+            defects[q_index] = slope_q * nlp.dt - dq * nlp.dt
 
             if nlp.dynamics_type.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
                 ddq = DynamicsFunctions.forward_dynamics(
                     nlp, q_full, qdot_full, tau_full, nlp.model.contact_types, external_forces
                 )
-                defects[nlp.states["qdot"].index] = slope_qdot * nlp.dt - ddq * nlp.dt
+                defects[qdot_index] = slope_qdot * nlp.dt - ddq * nlp.dt
 
             elif nlp.dynamics_type.ode_solver.defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
                 tau_id = DynamicsFunctions.inverse_dynamics(
@@ -338,7 +338,7 @@ class DynamicsFunctions:
                     external_forces=external_forces,
                 )
                 tau_defects = tau_full - tau_id
-                defects[nlp.states["qdot"].index] = tau_defects
+                defects[qdot_index] = tau_defects
             else:
                 raise NotImplementedError(
                     f"The defect type {nlp.dynamics_type.ode_solver.defects_type} is not implemented yet for torque driven dynamics."
@@ -1102,17 +1102,16 @@ class DynamicsFunctions:
             elif nlp.dynamics_type.ode_solver.defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
                 if fatigue is not None:
                     raise NotImplementedError("Fatigue is not implemented yet with inverse dynamics defects.")
+                if ContactType.RIGID_EXPLICIT in nlp.model.contact_types:
+                    raise NotImplementedError("Inverse dynamics, cannot be used with ContactType.RIGID_EXPLICIT yet")
 
                 defects[nlp.states["q"].index, 0] = slope_q * nlp.dt - dq * nlp.dt
 
-                tau_id = DynamicsFunctions.inverse_dynamics(
-                    nlp,
-                    q=q,
-                    qdot=qdot,
-                    qddot=slope_qdot,
-                    contact_types=nlp.model.contact_types,
-                    external_forces=external_forces,
+                external_forces = DynamicsFunctions.get_external_forces_from_contacts(
+                    nlp, q, qdot, nlp.model.contact_types, external_forces
                 )
+                # TODO: We do not use DynamicsFunctions.inverse_dynamics here since tau is not in the variables (this should be refactored)
+                tau_id = nlp.model.inverse_dynamics(with_contact=False)(q, qdot, slope_qdot, external_forces, nlp.parameters.cx)
                 tau_defects = tau - tau_id
                 defects[nlp.states["qdot"].index, 0] = tau_defects
 
@@ -1451,6 +1450,12 @@ class DynamicsFunctions:
             tau_var_mapping = nlp.states["tau"].mapping.to_first
         elif "tau" in nlp.controls:
             tau_var_mapping = nlp.controls["tau"].mapping.to_first
+        elif "tau_joints" in nlp.controls:
+            if nlp.variable_mappings["tau_joints"].actually_does_a_mapping():
+                raise NotImplementedError("Free floating base dynamics was used with a mapping. This is not implemented yet.")
+            to_first = [None] * nlp.model.nb_root + list(range(nlp.model.nb_q - nlp.model.nb_root))
+            to_second = list(range(nlp.model.nb_root, nlp.model.nb_q))
+            tau_var_mapping = BiMapping(to_first, to_second).to_first
         else:
             raise RuntimeError("The key 'tau' was not found in states or controls")
 

@@ -126,14 +126,3 @@ def check_contacts(contact_types: list[ContactType] | tuple[ContactType], model)
         ContactType.SOFT_EXPLICIT in contact_types or ContactType.SOFT_IMPLICIT in contact_types
     ) and model.nb_soft_contacts == 0:
         raise ValueError(f"No soft contact defined in the model, consider changing the ContactType.")
-
-    # Check that contacts are a list or tuple of ContactType
-    if not isinstance(contact_types, (list, tuple)):
-        raise TypeError("contact_types should be a list or a tuple")
-    for elt in contact_types:
-        if not isinstance(elt, ContactType):
-            raise TypeError(f"contact_types should be a list or a tuple of ContactType, not {type(elt)}")
-
-    # Check that contact types are not declared at the same time
-    if len(contact_types) > 1:
-        raise NotImplementedError("It is not possible to use multiple ContactType at the same time yet.")
