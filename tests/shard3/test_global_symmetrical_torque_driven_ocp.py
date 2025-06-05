@@ -21,7 +21,7 @@ def test_symmetry_by_mapping(ode_solver, phase_dynamics):
     if ode_solver == OdeSolver.COLLOCATION or ode_solver == OdeSolver.IRK:
         with pytest.raises(
             NotImplementedError,
-            match="COLLOCATION transcription is not compatible with mapping for states.Please note that concept of states mapping in already sketchy on it's own, but is particularly not appropriate for COLLOCATION transcriptions.",
+            match="COLLOCATION transcription is not compatible with mapping for states. Please note that concept of states mapping in already sketchy on it's own, but is particularly not appropriate for COLLOCATION transcriptions.",
         ):
             ocp = ocp_module.prepare_ocp(
                 biorbd_model_path=bioptim_folder + "/models/cubeSym.bioMod",

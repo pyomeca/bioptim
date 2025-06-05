@@ -201,15 +201,15 @@ class ContactType(Enum):
         """
         In DMS and during reintegration of COLLOCATION, the implicit contacts must be swapped for explicit contacts.
         """
-        forward_dynamics_contact_typess = []
+        forward_dynamics_contact_types = []
         for contact in contact_types:
             if contact == ContactType.SOFT_IMPLICIT:
-                forward_dynamics_contact_typess += [ContactType.SOFT_EXPLICIT]
+                forward_dynamics_contact_types += [ContactType.SOFT_EXPLICIT]
             elif contact == ContactType.RIGID_IMPLICIT:
-                forward_dynamics_contact_typess += [ContactType.RIGID_EXPLICIT]
+                forward_dynamics_contact_types += [ContactType.RIGID_EXPLICIT]
             else:
-                forward_dynamics_contact_typess += [contact]
-        return forward_dynamics_contact_typess
+                forward_dynamics_contact_types += [contact]
+        return forward_dynamics_contact_types
 
 
 class DefectType(Enum):

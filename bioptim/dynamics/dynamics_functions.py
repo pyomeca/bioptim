@@ -298,13 +298,13 @@ class DynamicsFunctions:
             "external_forces", states, controls, algebraic_states, numerical_timeseries
         )
 
-        forward_dynamics_contact_typess = ContactType.get_equivalent_explicit_contacts(nlp.model.contact_types)
+        forward_dynamics_contact_types = ContactType.get_equivalent_explicit_contacts(nlp.model.contact_types)
         ddq_fd = DynamicsFunctions.forward_dynamics(
             nlp,
             q_full,
             qdot_full,
             tau_full,
-            contact_types=forward_dynamics_contact_typess,
+            contact_types=forward_dynamics_contact_types,
             external_forces=external_forces,
         )
         q_index = list(nlp.states["q_roots"].index) + list(nlp.states["q_joints"].index)
