@@ -588,73 +588,44 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
         )
         if with_contact:
             if with_external_force:
-                if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
-                    npt.assert_almost_equal(
-                        x_defects[:, 0],
-                        np.array(
-                            [
-                                -0.04383072,
-                                -0.04283728,
-                                0.10537375,
-                                -0.04831128,
-                                0.52484935,
-                                0.18769219,
-                                -1.00117517,
-                                0.87117926,
-                            ]
-                        ),
-                    )
+                npt.assert_almost_equal(
+                    x_defects[:, 0],
+                    np.array([-0.0140995 , -0.0071009 , -0.00592597, -0.00486693,  0.04135072,
+                        0.02020007, -0.06055008,  0.06666342, -0.00814222,  0.00134606,
+                        0.00986419, -0.01324398]),
+                )
             else:
-                if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
-                    npt.assert_almost_equal(
-                        x_defects[:, 0],
-                        np.array(
-                            [
-                                -0.31172315,
-                                -0.07805808,
-                                0.23040588,
-                                0.07221787,
-                                0.17309483,
-                                0.4613264,
-                                0.63518686,
-                                0.05627764,
-                            ]
-                        ),
-                    )
+                npt.assert_almost_equal(
+                    x_defects[:, 0],
+                    np.array(
+                        [
+                            -0.31172315,
+                            -0.07805808,
+                            0.23040588,
+                            0.07221787,
+                            0.17309483,
+                            0.4613264,
+                            0.63518686,
+                            0.05627764,
+                        ]
+                    ),
+                )
 
         else:
             if with_external_force:
                 if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
                     npt.assert_almost_equal(
                         x_defects[:, 0],
-                        np.array(
-                            [
-                                -0.04383072,
-                                -0.04283728,
-                                0.10537375,
-                                -0.04831128,
-                                0.28869817,
-                                2.36916856,
-                                -1.15701705,
-                                -3.82699645,
-                            ]
-                        ),
+                        np.array([-0.0140995 , -0.0071009 , -0.00592597, -0.00486693,  0.02289304,
+                            0.18246443, -0.06771473, -0.21721173, -0.00814222,  0.00134606,
+                            0.00986419, -0.01324398]),
                     )
                 else:
                     npt.assert_almost_equal(
                         x_defects[:, 0],
-                        np.array(
-                            [
-                                -4.38307239e-02,
-                                -4.28372820e-02,
-                                1.05373750e-01,
-                                -4.83112831e-02,
-                                -1.07342160e00,
-                                -1.39608973e02,
-                                -5.36386140e00,
-                                -9.73899501e-01,
-                            ]
-                        ),
+                        np.array([-1.40994950e-02, -7.10089523e-03, -5.92597043e-03, -4.86693294e-03,
+                           -5.70258892e+00, -1.45376254e+02, -7.08538520e+00, -1.08402622e+00,
+                           -8.14221682e-03,  1.34606351e-03,  9.86418739e-03, -1.32439805e-02]),
                         decimal=6,
                     )
             else:

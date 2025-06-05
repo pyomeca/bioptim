@@ -1575,20 +1575,6 @@ def test_contact_forces_inverse_dynamics_constraint_muscle(defects_type, contact
     )
 
 
-def test_contact_forces_inverse_dynamics_constraint_muscle_fdot():
-    from bioptim.examples.muscle_driven_with_contact import (
-        contact_forces_inverse_dynamics_constraint_muscle_fdot as ocp_module,
-    )
-
-    bioptim_folder = TestUtils.module_folder(ocp_module)
-
-    ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts_1muscle.bioMod",
-        phase_time=0.3,
-        n_shooting=10,
-    )
-
-
 def test_contact_forces_inverse_dynamics_soft_contacts_muscle():
     from bioptim.examples.muscle_driven_with_contact import (
         contact_forces_inverse_dynamics_soft_contacts_muscle as ocp_module,
