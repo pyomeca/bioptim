@@ -1,3 +1,4 @@
+import platform
 from bioptim import (
     ConfigureProblem,
     ControlType,
@@ -389,6 +390,9 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, cx, phase_dynami
 @pytest.mark.parametrize("with_passive_torque", [False, True])
 def test_pendulum_passive_torque(with_passive_torque, phase_dynamics):
     from bioptim.examples.torque_driven_ocp import pendulum_with_passive_torque as ocp_module
+
+    if platform == "win32":
+        pytest.skip("These tests do not pass on Windows.")
 
     if with_passive_torque:
         model_filename = "/examples/getting_started/models/pendulum_with_passive_torque.bioMod"

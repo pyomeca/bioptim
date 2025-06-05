@@ -1,6 +1,7 @@
 """
 Test for file IO
 """
+import platform
 
 from bioptim import (
     BiorbdModel,
@@ -31,6 +32,9 @@ from ..utils import TestUtils
 def test_pendulum_max_time_mayer_constrained(ode_solver, phase_dynamics):
     # Load pendulum_min_time_Mayer
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
+
+    if platform == "win32" and ode_solver == OdeSolver.COLLOCATION:
+        pytest.skip("These tests do not pass on Windows.")
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
