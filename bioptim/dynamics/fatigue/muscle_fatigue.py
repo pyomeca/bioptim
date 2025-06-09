@@ -1,11 +1,16 @@
 from abc import abstractmethod
 from typing import Any
 
-from casadi import SX, MX
-
 from .fatigue_dynamics import FatigueModel, MultiFatigueInterface
 from ..dynamics_functions import DynamicsFunctions
 from ...misc.enums import VariableType
+from ...misc.parameters_types import (
+    Bool,
+    Int,
+    Float,
+    Str,
+    CX,
+)
 
 
 class MuscleFatigue(FatigueModel):
@@ -14,7 +19,7 @@ class MuscleFatigue(FatigueModel):
     """
 
     @abstractmethod
-    def apply_dynamics(self, target_load: float | MX | SX, *states: Any):
+    def apply_dynamics(self, target_load: Float | CX, *states: Any):
         """
         Apply the dynamics to the system (return dx/dt)
 
@@ -31,20 +36,20 @@ class MuscleFatigue(FatigueModel):
         """
 
     @staticmethod
-    def type() -> str:
+    def type() -> Str:
         return "muscles"
 
     @property
     def multi_type(self):
         return MultiFatigueInterfaceMuscle
 
-    def _get_target_load(self, nlp, controls, index):
+    def _get_target_load(self, nlp, controls: CX, index: Int) -> CX:
         if self.type() not in nlp.controls:
             raise NotImplementedError(f"Fatigue dynamics without {self.type()} controls is not implemented yet")
 
         return DynamicsFunctions.get(nlp.controls[self.type()], controls)[index, :]
 
-    def dynamics(self, dxdt, nlp, index, states, controls):
+    def dynamics(self, dxdt: CX, nlp, index: Int, states: CX, controls: CX) -> CX:
         target_load = self._get_target_load(nlp, controls, index)
         fatigue = [
             DynamicsFunctions.get(nlp.states[f"{self.type()}_{s}"], states)[index, :]
@@ -57,23 +62,23 @@ class MuscleFatigue(FatigueModel):
 
         return dxdt
 
-    def default_state_only(self) -> bool:
+    def default_state_only(self) -> Bool:
         return False
 
-    def default_apply_to_joint_dynamics(self) -> bool:
+    def default_apply_to_joint_dynamics(self) -> Bool:
         return False
 
 
 class MultiFatigueInterfaceMuscle(MultiFatigueInterface):
     @staticmethod
-    def model_type() -> str:
+    def model_type() -> Str:
         """
         The type of Fatigue
         """
         return "muscles"
 
-    def default_state_only(self) -> bool:
+    def default_state_only(self) -> Bool:
         return False
 
-    def default_apply_to_joint_dynamics(self) -> bool:
+    def default_apply_to_joint_dynamics(self) -> Bool:
         return False

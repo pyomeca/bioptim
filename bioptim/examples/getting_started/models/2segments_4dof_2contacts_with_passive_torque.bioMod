@@ -1,0 +1,128 @@
+version 4
+
+
+segment Seg0
+    translations	yz
+    rotations	x
+    ranges  -10 10
+            -10 10
+            -2 1
+    mass    12
+    inertia
+        0.15    0.00    0.00
+        0.00    0.15    0.00
+        0.00    0.00    0.04
+	com 0 0 -0.25
+	mesh 0 0 0
+	mesh  0 0 -0.5
+endsegment
+
+    // Actuators Seg0
+    actuator    Seg0
+        type    Constant
+        dof    TransY
+        direction    positive
+        Tmax    100.000000
+    endactuator
+	actuator    Seg0
+        type    Constant
+        dof    TransY
+        direction    negative
+        Tmax    50.000000
+    endactuator
+
+    actuator    Seg0
+        type    Constant
+        dof    TransZ
+        direction    positive
+        Tmax    100.000000
+    endactuator
+	actuator    Seg0
+        type    Constant
+        dof    TransZ
+        direction    negative
+        Tmax    50.000000
+    endactuator
+
+    actuator    Seg0
+        type    Constant
+        dof    RotX
+        direction    positive
+        Tmax    100.000000
+    endactuator
+	actuator    Seg0
+        type    Constant
+        dof    RotX
+        direction    negative
+        Tmax    50.000000
+    endactuator
+
+
+segment Seg1
+    parent Seg0
+    RT 0 0 0 xyz 0 0 -0.5
+    rotations	x
+    ranges  -0.8 0.8
+    mass    1.6
+    inertia
+        0.004    0.000    0.000
+        0.000    0.004    0.000
+        0.000    0.000    0.002
+	com 0 0.12 0
+	mesh 0 0 0
+	mesh  0 0.35 0
+endsegment
+
+    // Actuators Seg1
+    actuator    Seg1
+        type    Constant
+        dof    RotX
+        direction    positive
+        Tmax    100.000000
+    endactuator
+	actuator    Seg1
+        type    Constant
+        dof    RotX
+        direction    negative
+        Tmax    50.000000
+    endactuator
+
+
+    // Contact
+    contact    Seg1_contact1
+        parent    Seg1
+        position    0 0 0
+        axis    yz
+    endcontact
+
+    contact    Seg1_contact2
+        parent    Seg1
+        position    0 0.35 0
+        axis    z
+    endcontact
+
+// Markers
+marker    Seg1_contact_marker1
+    parent    Seg1
+    position    0 0 0
+endmarker
+
+marker    Seg1_contact_marker2
+    parent    Seg1
+    position    0 0.35 0
+endmarker
+
+passivetorque Seg0
+	type exponential
+	dof RotX
+	k1 -100
+	k2 0
+	b1 -0.002
+	b2 0
+	taueq 4
+	wmax 16
+	qmid 0
+	deltap 0
+	sv 1
+	pbeta 8
+endpassivetorque

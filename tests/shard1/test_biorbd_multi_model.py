@@ -64,7 +64,7 @@ def test_biorbd_model():
     assert models.nb_extra_models == 3
 
     assert models.name_dof == ("Seg1_RotX", "Seg2_RotX", "Seg3_RotX", "Seg1_RotX", "Seg2_RotX", "Seg3_RotX")
-    assert models.contact_names == ()
+    assert models.rigid_contact_names == ()
     assert models.soft_contact_names == ()
     assert models.marker_names == (
         "marker_1",
@@ -460,3 +460,5 @@ def test_biorbd_model():
             f" and {variable_name} was sent.",
         ):
             models.local_variable_id(variable_name, 0)
+
+        assert models.friction_coefficients is None

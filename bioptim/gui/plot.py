@@ -6,6 +6,7 @@ from casadi import DM
 from matplotlib import pyplot as plt, lines
 from matplotlib.ticker import FuncFormatter
 
+from ..optimization.non_linear_program import NonLinearProgram
 from .serializable_class import OcpSerializable
 from ..dynamics.ode_solvers import OdeSolver
 from ..limits.path_conditions import Bounds
@@ -15,17 +16,32 @@ from ..misc.mapping import Mapping, BiMapping, BiMappingOrIterableOptional
 from ..optimization.solution.solution import Solution
 from ..optimization.solution.solution_data import SolutionMerge
 from ..misc.parameters_types import (
-    StrIterableOptional,
-    AnyIterable,
-    AnyDict,
-    Str,
-    Int,
-    StrOptional,
-    BoolOptional,
     Bool,
+    Int,
     Float,
+    Str,
+    Range,
+    Tuple,
+    List,
+    IntOptional,
+    FloatOptional,
+    StrOptional,
+    IntList,
+    FloatList,
+    AnyList,
+    NpArray,
+    StrIterableOptional,
+    IntIterableOptional,
+    IntDict,
+    AnyDict,
     AnyTuple,
+    DoubleFloatTuple,
     FloatIterableorNpArray,
+    StrList,
+    StrListOptional,
+    DMList,
+    NpArrayList,
+    DoubleIntTuple,
 )
 
 DEFAULT_COLORS = {
@@ -77,11 +93,11 @@ class CustomPlot:
         combine_to: StrOptional = None,
         color: StrOptional = None,
         linestyle: StrOptional = None,
-        ylim: AnyIterable = None,
-        bounds: Bounds = None,
-        node_idx: list | slice | range = None,
-        label: AnyIterable = None,
-        compute_derivative: BoolOptional = False,
+        ylim: DoubleFloatTuple | FloatList = None,
+        bounds: Bounds | None = None,
+        node_idx: IntIterableOptional = None,
+        label: StrListOptional = None,
+        compute_derivative: Bool = False,
         integration_rule: QuadratureRule = QuadratureRule.RECTANGLE_LEFT,
         all_variables_in_one_subplot: Bool = False,
         **parameters: Any,
@@ -121,7 +137,7 @@ class CustomPlot:
         self.type = plot_type
         if axes_idx is None:
             self.phase_mappings = None  # Will be set later
-        elif isinstance(axes_idx, (tuple, list)):
+        elif isinstance(axes_idx, (Tuple, List)):
             self.phase_mappings = BiMapping(to_second=Mapping(axes_idx), to_first=Mapping(axes_idx))
         elif isinstance(axes_idx, BiMapping):
             self.phase_mappings = axes_idx
@@ -138,8 +154,8 @@ class CustomPlot:
         self.compute_derivative = compute_derivative
         if integration_rule == QuadratureRule.MIDPOINT or integration_rule == QuadratureRule.RECTANGLE_RIGHT:
             raise NotImplementedError(f"{integration_rule} has not been implemented yet.")
-        self.integration_rule = integration_rule
-        self.parameters = parameters
+        self.integration_rule: QuadratureRule = integration_rule
+        self.parameters: Any = parameters
         self.all_variables_in_one_subplot = all_variables_in_one_subplot
 
 
@@ -221,7 +237,7 @@ class PlotOcp:
         show_bounds: Bool = False,
         shooting_type: Shooting = Shooting.MULTIPLE,
         integrator: SolutionIntegrator = SolutionIntegrator.OCP,
-        dummy_phase_times: list[list[float]] = None,
+        dummy_phase_times: NpArrayList | DMList | None = None,
         only_initialize_variables: Bool = False,
     ):
         """
@@ -246,26 +262,26 @@ class PlotOcp:
             on the server side and on the client side)
         """
         self.ocp = ocp
-        self.plot_options = self._initialize_plot_options()
-        self.n_nodes = 0
-        self.t = []
-        self.t_integrated = []
-        self.integrator = integrator
-        self.axes = {}
-        self.plots = []
-        self.plots_vertical_lines = []
-        self.plots_bounds = []
-        self.all_figures = []
-        self.automatically_organize = automatically_organize
-        self.n_vertical_windows = None
-        self.n_horizontal_windows = None
-        self.top_margin = None
-        self.height_step = None
-        self.width_step = None
-        self.custom_plots = {}
-        self.variable_sizes = []
-        self.show_bounds = show_bounds
-        self.shooting_type = shooting_type
+        self.plot_options: AnyDict = self._initialize_plot_options()
+        self.n_nodes: Int = 0
+        self.t: DMList | NpArrayList = []
+        self.t_integrated: DMList | NpArrayList = []
+        self.integrator: SolutionIntegrator = integrator
+        self.axes: dict[Str, [CustomPlot, np.ndarray[plt.Axes]]] = {}
+        self.plots: AnyList = []
+        self.plots_vertical_lines: AnyList = []
+        self.plots_bounds: AnyList = []
+        self.all_figures: AnyList = []
+        self.automatically_organize: Bool = automatically_organize
+        self.n_vertical_windows: IntOptional = None
+        self.n_horizontal_windows: IntOptional = None
+        self.top_margin: FloatOptional = None
+        self.height_step: FloatOptional = None
+        self.width_step: FloatOptional = None
+        self.custom_plots: AnyDict = {}
+        self.variable_sizes: list[IntDict] = []
+        self.show_bounds: Bool = show_bounds
+        self.shooting_type: Shooting = shooting_type
 
         # Initialize the plot
         self._update_time_vector(dummy_phase_times)
@@ -279,7 +295,7 @@ class PlotOcp:
             self._spread_figures_on_screen()
             self._initialize_additional_plots()
 
-    def _initialize_plot_options(self):
+    def _initialize_plot_options(self) -> AnyDict:
         """Initialize the plot options dictionary"""
         return {
             "general_options": {"use_tight_layout": False},
@@ -291,7 +307,7 @@ class PlotOcp:
             "vertical_lines": {"color": "k", "linestyle": "--", "linewidth": 1.2},
         }
 
-    def _initialize_additional_plots(self):
+    def _initialize_additional_plots(self) -> None:
         """Initialize additional plots if needed"""
         if self.ocp.plot_ipopt_outputs:
             from ..gui.ipopt_output_plot import create_ipopt_output_plot
@@ -305,7 +321,7 @@ class PlotOcp:
 
             create_conditioning_plots(self.ocp)
 
-    def _update_time_vector(self, phase_times):
+    def _update_time_vector(self, phase_times: NpArrayList | DMList) -> None:
         """
         Setup the time and time integrated vector, which is the x-axes of the graphs
         """
@@ -316,7 +332,7 @@ class PlotOcp:
             self.t_integrated.append(time)
             self.t.append(np.linspace(float(time[0][0]), float(time[-1][-1]), nlp.n_states_nodes))
 
-    def _create_plots(self, only_initialize_variables: Bool):
+    def _create_plots(self, only_initialize_variables: Bool) -> None:
         """
         Setup the plots
 
@@ -341,7 +357,7 @@ class PlotOcp:
         for i, nlp in enumerate(self.ocp.nlp):
             self._process_plots_for_nlp(i, nlp, all_keys_across_phases, y_min_all, y_max_all, only_initialize_variables)
 
-    def _initialize_variable_sizes(self):
+    def _initialize_variable_sizes(self) -> list[IntDict]:
         """Initialize variable sizes for all phases and plots"""
         variable_sizes = []
         self.ocp.finalize_plot_phase_mappings()
@@ -350,7 +366,7 @@ class PlotOcp:
             variable_sizes.append({})
             if nlp.plot:
                 for key in nlp.plot:
-                    if isinstance(nlp.plot[key], tuple):
+                    if isinstance(nlp.plot[key], Tuple):
                         nlp.plot[key] = nlp.plot[key][0]
 
                     # This is the point where we can safely define node_idx of the plot
@@ -366,7 +382,7 @@ class PlotOcp:
 
         return variable_sizes
 
-    def _collect_all_keys_across_phases(self):
+    def _collect_all_keys_across_phases(self) -> StrList:
         """Collect all unique keys across all phases"""
         all_keys_across_phases = []
         for variable_sizes in self.variable_sizes:
@@ -376,13 +392,20 @@ class PlotOcp:
             all_keys_across_phases += keys_not_in_previous_phases
         return all_keys_across_phases
 
-    def _process_plots_for_nlp(self, i, nlp, all_keys_across_phases, y_min_all, y_max_all, only_initialize_variables):
+    def _process_plots_for_nlp(
+        self,
+        i: Int,
+        nlp: NonLinearProgram,
+        all_keys_across_phases: StrList,
+        y_min_all: list[FloatList],
+        y_max_all: list[FloatList],
+        only_initialize_variables: Bool,
+    ) -> None:
         """Process plots for a specific NLP"""
         for variable in self.variable_sizes[i]:
             y_range_var_idx = all_keys_across_phases.index(variable)
 
             axes = None
-            nb_subplots = 0
 
             if not only_initialize_variables:
                 axes, nb_subplots = self._setup_axes_for_variable(i, nlp, variable)
@@ -398,7 +421,9 @@ class PlotOcp:
 
             self._create_plots_for_variable(i, nlp, variable, axes, y_min_all, y_max_all, y_range_var_idx)
 
-    def _setup_axes_for_variable(self, i, nlp, variable):
+    def _setup_axes_for_variable(
+        self, i: Int, nlp: NonLinearProgram, variable: Str
+    ) -> Tuple[np.ndarray[plt.Axes], Int]:
         """Setup axes for a specific variable"""
         if nlp.plot[variable].combine_to:
             self.axes[variable] = self.axes[nlp.plot[variable].combine_to]
@@ -424,7 +449,7 @@ class PlotOcp:
 
         return axes, nb_subplots
 
-    def _calculate_max_subplots(self, variable):
+    def _calculate_max_subplots(self, variable: Str) -> Int:
         """Calculate the maximum number of subplots needed for a variable across all NLPs"""
         return max(
             [
@@ -440,14 +465,23 @@ class PlotOcp:
             ]
         )
 
-    def _initialize_custom_plot(self, i, variable):
+    def _initialize_custom_plot(self, i: Int, variable: Str) -> None:
         """Initialize custom plot for a variable"""
         if variable not in self.custom_plots:
             self.custom_plots[variable] = [
                 nlp_tp.plot[variable] if variable in nlp_tp.plot else None for nlp_tp in self.ocp.nlp
             ]
 
-    def _create_plots_for_variable(self, i, nlp, variable, axes, y_min_all, y_max_all, y_range_var_idx):
+    def _create_plots_for_variable(
+        self,
+        i: Int,
+        nlp: NonLinearProgram,
+        variable: Str,
+        axes: np.ndarray[plt.Axes],
+        y_min_all: list[FloatList],
+        y_max_all: list[FloatList],
+        y_range_var_idx: Range,
+    ) -> None:
         """Create plots for a specific variable"""
         mapping_to_first_index = nlp.plot[variable].phase_mappings.to_first.map_idx
 
@@ -468,7 +502,14 @@ class PlotOcp:
         self._add_legend_to_axes(axes)
         self._add_vertical_lines_and_bounds(i, nlp, variable, axes, mapping_to_first_index)
 
-    def _get_axis_for_plot(self, nlp, variable, axes, ctr, mapping_to_first_index):
+    def _get_axis_for_plot(
+        self,
+        nlp: NonLinearProgram,
+        variable: Str,
+        axes: np.ndarray[plt.Axes],
+        ctr: Int,
+        mapping_to_first_index: IntList,
+    ) -> plt.Axes:
         """Get the appropriate axis for a plot"""
         if not nlp.plot[variable].all_variables_in_one_subplot:
             ax = axes[ctr]
@@ -480,16 +521,25 @@ class PlotOcp:
             ax = axes[0]
         return ax
 
-    def _setup_axis_properties(self, ax):
+    def _setup_axis_properties(self, ax: plt.Axes) -> None:
         """Setup basic properties for an axis"""
         ax.grid(**self.plot_options["grid"])
         ax.set_xlim(self.t[-1][[0, -1]])
 
-    def _should_set_bounds(self, nlp, variable):
+    def _should_set_bounds(self, nlp: NonLinearProgram, variable: Str) -> Bool:
         """Check if bounds should be set for a variable"""
         return self.show_bounds and nlp.plot[variable].bounds and not nlp.plot[variable].all_variables_in_one_subplot
 
-    def _set_bounds_for_axis(self, nlp, variable, ctr, mapping_to_first_index, y_min_all, y_max_all, y_range_var_idx):
+    def _set_bounds_for_axis(
+        self,
+        nlp: NonLinearProgram,
+        variable: Str,
+        ctr: Int,
+        mapping_to_first_index: IntList,
+        y_min_all: list[FloatList],
+        y_max_all: list[FloatList],
+        y_range_var_idx: Range,
+    ):
         """Set bounds for an axis"""
         idx = mapping_to_first_index.index(ctr)
 
@@ -511,7 +561,9 @@ class PlotOcp:
             1.25,
         )
 
-    def _get_custom_bounds(self, nlp, variable, ctr, mapping_to_first_index):
+    def _get_custom_bounds(
+        self, nlp: NonLinearProgram, variable: Str, ctr: Int, mapping_to_first_index: IntList
+    ) -> DoubleFloatTuple:
         """Get custom bounds for a variable"""
         repeat = 1
         if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
@@ -524,7 +576,7 @@ class PlotOcp:
 
         return y_min, y_max
 
-    def _create_plot_for_axis(self, i, nlp, variable, ax):
+    def _create_plot_for_axis(self, i: Int, nlp: NonLinearProgram, variable: Str, ax: plt.Axes) -> None:
         """Create the actual plot for an axis"""
         plot_type = self.custom_plots[variable][i].type
         t = self.t[i][nlp.plot[variable].node_idx] if plot_type == PlotType.POINT else self.t[i]
@@ -543,13 +595,13 @@ class PlotOcp:
         else:
             raise RuntimeError(f"{plot_type} is not implemented yet")
 
-    def _get_plot_color(self, variable, i, plot_type):
+    def _get_plot_color(self, variable, i: Int, plot_type: PlotType) -> Str:
         """Get the color for a plot"""
         return (
             self.custom_plots[variable][i].color if self.custom_plots[variable][i].color else DEFAULT_COLORS[plot_type]
         )
 
-    def _create_plot_type_plot(self, i, t, ax, color, label):
+    def _create_plot_type_plot(self, i: Int, t: NpArray, ax: plt.Axes, color: StrOptional, label: StrOptional) -> None:
         """Create a standard line plot"""
         zero = np.zeros((t.shape[0], 1))
         self.plots.append(
@@ -567,7 +619,7 @@ class PlotOcp:
             ]
         )
 
-    def _create_plot_type_integrated(self, i, ax, color, label):
+    def _create_plot_type_integrated(self, i: Int, ax: plt.Axes, color: Str, label: StrOptional) -> None:
         """Create an integrated plot"""
         plots_integrated = []
         for cmp in range(self.ocp.nlp[i].ns):
@@ -582,7 +634,9 @@ class PlotOcp:
             )
         self.plots.append([PlotType.INTEGRATED, i, plots_integrated])
 
-    def _create_plot_type_step(self, i, t, ax, variable, color, label):
+    def _create_plot_type_step(
+        self, i: Int, t: NpArray, ax: plt.Axes, variable: Str, color: Str, label: StrOptional
+    ) -> None:
         """Create a step plot"""
         zero = np.zeros((t.shape[0], 1))
         linestyle = self.custom_plots[variable][i].linestyle if self.custom_plots[variable][i].linestyle else "-"
@@ -594,7 +648,9 @@ class PlotOcp:
             ]
         )
 
-    def _create_plot_type_point(self, i, t, ax, color, label, variable):
+    def _create_plot_type_point(
+        self, i: Int, t: NpArray, ax: plt.Axes, color: Str, label: StrOptional, variable: Str
+    ) -> None:
         """Create a point plot"""
         zero = np.zeros((t.shape[0], 1))
         self.plots.append(
@@ -606,19 +662,21 @@ class PlotOcp:
             ]
         )
 
-    def _add_legend_to_axes(self, axes):
+    def _add_legend_to_axes(self, axes: np.ndarray[plt.Axes]) -> None:
         """Add legend to all axes"""
         for ax in axes:
             self._legend_without_duplicate_labels(ax)
 
-    def _legend_without_duplicate_labels(self, ax):
+    def _legend_without_duplicate_labels(self, ax: plt.Axes) -> None:
         """Add legend to axis without duplicate labels"""
         handles, labels = ax.get_legend_handles_labels()
         unique = [(h, l) for i, (h, l) in enumerate(zip(handles, labels)) if l not in labels[:i]]
         if unique:
             ax.legend(*zip(*unique))
 
-    def _add_vertical_lines_and_bounds(self, i, nlp, variable, axes, mapping_to_first_index):
+    def _add_vertical_lines_and_bounds(
+        self, i: Int, nlp: NonLinearProgram, variable: Str, axes: np.ndarray[plt.Axes], mapping_to_first_index: IntList
+    ) -> None:
         """Add vertical lines for phase intersections and bounds if needed"""
         for ctr, ax in enumerate(axes):
             if ctr in mapping_to_first_index:
@@ -627,13 +685,15 @@ class PlotOcp:
                 if nlp.plot[variable].bounds and self.show_bounds:
                     self._add_bounds_to_plot(i, nlp, variable, ctr, ax, mapping_to_first_index)
 
-    def _add_vertical_lines(self, ax):
+    def _add_vertical_lines(self, ax: plt.Axes):
         """Add vertical lines for phase intersections"""
         intersections_time = self.find_phases_intersections()
         for time in intersections_time:
             self.plots_vertical_lines.append(ax.axvline(float(time), **self.plot_options["vertical_lines"]))
 
-    def _add_bounds_to_plot(self, i, nlp, variable, ctr, ax, mapping_to_first_index):
+    def _add_bounds_to_plot(
+        self, i: Int, nlp: NonLinearProgram, variable: Str, ctr: Int, ax: plt.Axes, mapping_to_first_index: IntList
+    ) -> None:
         """Add bounds to a specific plot"""
         if nlp.plot[variable].bounds.type == InterpolationType.EACH_FRAME:
             ns = nlp.plot[variable].bounds.min.shape[1] - 1
@@ -655,7 +715,7 @@ class PlotOcp:
         self.plots_bounds.append([ax.step(self.t[i], bounds_min, where="post", **self.plot_options["bounds"]), i])
         self.plots_bounds.append([ax.step(self.t[i], bounds_max, where="post", **self.plot_options["bounds"]), i])
 
-    def _add_new_axis(self, variable: Str, nb: Int, n_rows: Int, n_cols: Int):
+    def _add_new_axis(self, variable: Str, nb: Int, n_rows: Int, n_cols: Int) -> np.ndarray[plt.Axes]:
         """
         Add a new axis to the axes pool
 
@@ -696,7 +756,7 @@ class PlotOcp:
 
         return axes
 
-    def _organize_windows(self, n_windows: Int):
+    def _organize_windows(self, n_windows: Int) -> None:
         """
         Automatically organize the figure across the screen.
 
@@ -714,7 +774,7 @@ class PlotOcp:
             self.height_step = (height - self.top_margin) / self.n_horizontal_windows
             self.width_step = width / self.n_vertical_windows
 
-    def _spread_figures_on_screen(self):
+    def _spread_figures_on_screen(self) -> None:
         horz = 0
         vert = 1 if len(self.all_figures) < self.n_vertical_windows * self.n_horizontal_windows else 0
         for i, fig in enumerate(self.all_figures):
@@ -733,7 +793,7 @@ class PlotOcp:
             if self.plot_options["general_options"]["use_tight_layout"]:
                 fig.tight_layout()
 
-    def find_phases_intersections(self):
+    def find_phases_intersections(self) -> FloatList:
         """
         Finds the intersection between the phases
         """
@@ -741,14 +801,14 @@ class PlotOcp:
         return list([t[-1][-1] for t in self.t_integrated])[:-1]
 
     @staticmethod
-    def show():
+    def show() -> None:
         """
         Force the show of the graphs. This is a blocking function
         """
 
         plt.show()
 
-    def parse_data(self, **args) -> tuple[list, list]:
+    def parse_data(self, **args) -> Tuple[NpArrayList, NpArrayList]:
         """
         Parse the data to be plotted, the return of this method can be passed to update_data to update the plots
 
@@ -828,10 +888,10 @@ class PlotOcp:
 
     def update_data(
         self,
-        xdata: AnyIterable,
-        ydata: AnyIterable,
+        xdata: NpArray,
+        ydata: NpArray,
         **args: AnyDict,
-    ):
+    ) -> None:
         """
         Update xdata and ydata. The input are the output of the parse_data method
 
@@ -865,7 +925,17 @@ class PlotOcp:
             update_conditioning_plots(args["x"], self.ocp)
 
     def _compute_y_from_plot_func(
-        self, custom_plot: CustomPlot, phase_idx: Int, time_stepwise, dt, x_decision, x_stepwise, u, p, a, d
+        self,
+        custom_plot: CustomPlot,
+        phase_idx: Int,
+        time_stepwise: DMList | NpArrayList,
+        dt: DMList | NpArrayList,
+        x_decision: DMList | NpArrayList,
+        x_stepwise: DMList | NpArrayList,
+        u: DMList | NpArrayList,
+        p: DMList | NpArrayList,
+        a: DMList | NpArrayList,
+        d: DMList | NpArrayList,
     ) -> list[FloatIterableorNpArray]:
         """
         Compute the y data from the plot function
@@ -920,8 +990,18 @@ class PlotOcp:
             raise RuntimeError(f"Plot type {custom_plot.type} not implemented yet")
 
     def _compute_values_at_nodes(
-        self, custom_plot, phase_idx, time_stepwise, dt, x, u, p, a, d, get_numerical_timeseries
-    ):
+        self,
+        custom_plot: CustomPlot,
+        phase_idx: Int,
+        time_stepwise: DMList | NpArrayList,
+        dt: DMList | NpArrayList,
+        x: DMList | NpArrayList,
+        u: DMList | NpArrayList,
+        p: DMList | NpArrayList,
+        a: DMList | NpArrayList,
+        d: DMList | NpArrayList,
+        get_numerical_timeseries,
+    ) -> NpArrayList:
         """Helper method to compute plot values at each node"""
         all_y = []
         map_idx = custom_plot.phase_mappings.to_first.map_idx
@@ -952,7 +1032,17 @@ class PlotOcp:
 
         return all_y
 
-    def _get_penalty_node_data(self, custom_plot, idx, time_stepwise, x, u, p, a, get_numerical_timeseries):
+    def _get_penalty_node_data(
+        self,
+        custom_plot: CustomPlot,
+        idx: Int,
+        time_stepwise: DMList | NpArrayList,
+        x: DMList | NpArrayList,
+        u: DMList | NpArrayList,
+        p: DMList | NpArrayList,
+        a: DMList | NpArrayList,
+        get_numerical_timeseries,
+    ) -> Tuple[DM | NpArray]:
         """Extract data for penalty-based plots"""
         penalty = custom_plot.parameters["penalty"]
 
@@ -961,18 +1051,18 @@ class PlotOcp:
         x_node = PenaltyHelpers.states(
             penalty,
             idx,
-            lambda p_idx, n_idx, sn_idx: x[n_idx][:, sn_idx] if n_idx < len(x) else np.ndarray((0, 1)),
+            lambda p_idx, n_idx, sn_idx: x[n_idx][:, sn_idx.index()] if n_idx < len(x) else np.ndarray((0, 1)),
         )
         u_node = PenaltyHelpers.controls(
             penalty,
             idx,
-            lambda p_idx, n_idx, sn_idx: u[n_idx][:, sn_idx] if n_idx < len(u) else np.ndarray((0, 1)),
+            lambda p_idx, n_idx, sn_idx: u[n_idx][:, sn_idx.index()] if n_idx < len(u) else np.ndarray((0, 1)),
         )
         p_node = PenaltyHelpers.parameters(penalty, 0, lambda p_idx, n_idx, sn_idx: np.array(p))
         a_node = PenaltyHelpers.states(
             penalty,
             idx,
-            lambda p_idx, n_idx, sn_idx: a[n_idx][:, sn_idx] if n_idx < len(a) else np.ndarray((0, 1)),
+            lambda p_idx, n_idx, sn_idx: a[n_idx][:, sn_idx.index()] if n_idx < len(a) else np.ndarray((0, 1)),
         )
         d_node = PenaltyHelpers.numerical_timeseries(
             penalty,
@@ -984,7 +1074,17 @@ class PlotOcp:
 
         return t0, x_node, u_node, p_node, a_node, d_node
 
-    def _get_direct_node_data(self, phase_idx, node_idx, time_stepwise, x, u, p, a, d):
+    def _get_direct_node_data(
+        self,
+        phase_idx: Int,
+        node_idx: Int,
+        time_stepwise: DMList | NpArrayList,
+        x: DMList | NpArrayList,
+        u: DMList | NpArrayList,
+        p: DMList | NpArrayList,
+        a: DMList | NpArrayList,
+        d: DMList | NpArrayList,
+    ) -> AnyTuple:
         """Extract data directly from the provided arrays"""
         t0 = time_stepwise[phase_idx][node_idx][0]
         x_node = x[node_idx]
@@ -995,7 +1095,9 @@ class PlotOcp:
 
         return t0, x_node, u_node, p_node, a_node, d_node
 
-    def _format_integrated_plot_data(self, custom_plot, all_y):
+    def _format_integrated_plot_data(
+        self, custom_plot: CustomPlot, all_y: DMList | NpArrayList
+    ) -> list[DMList | NpArrayList]:
         """Format data for integrated plots"""
         map_idx = custom_plot.phase_mappings.to_first.map_idx
         out = [[] for _ in range(max(np.abs(map_idx)) + 1)]
@@ -1008,7 +1110,9 @@ class PlotOcp:
 
         return out
 
-    def _format_standard_plot_data(self, custom_plot, all_y):
+    def _format_standard_plot_data(
+        self, custom_plot: CustomPlot, all_y: DMList | NpArrayList
+    ) -> list[DMList | NpArrayList]:
         """Format data for standard plots (PLOT, STEP, POINT)"""
         map_idx = custom_plot.phase_mappings.to_first.map_idx
         all_y = np.concatenate([tp[:, 0:1] for tp in all_y], axis=1)
@@ -1019,7 +1123,7 @@ class PlotOcp:
 
         return out
 
-    def _update_xdata(self, phase_times):
+    def _update_xdata(self, phase_times: NpArrayList | DMList) -> None:
         """
         Update of the time axes in plots
         """
@@ -1052,7 +1156,7 @@ class PlotOcp:
                 for i, time in enumerate(intersections_time):
                     self.plots_vertical_lines[p * n + i].set_xdata([float(time), float(time)])
 
-    def _update_ydata(self, ydata: AnyIterable):
+    def _update_ydata(self, ydata: DMList | NpArrayList) -> None:
         """
         Update the plotted data from ydata
         """
@@ -1093,7 +1197,7 @@ class PlotOcp:
             # TODO:  set_tight_layout function will be deprecated. Use set_layout_engine instead.
 
     @staticmethod
-    def _compute_ylim(min_val: np.ndarray | DM, max_val: np.ndarray | DM, factor: Float) -> AnyTuple:
+    def _compute_ylim(min_val: NpArray | DM, max_val: NpArray | DM, factor: Float) -> AnyTuple:
         """
         Dynamically find the ylim
 
@@ -1123,7 +1227,7 @@ class PlotOcp:
         return data_mean - y_range, data_mean + y_range
 
     @staticmethod
-    def _generate_windows_size(nb: Int) -> tuple:
+    def _generate_windows_size(nb: Int) -> DoubleIntTuple:
         """
         Defines the number of column and rows of subplots from the number of variables to plot.
 

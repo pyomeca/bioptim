@@ -181,6 +181,7 @@ from .limits.path_conditions import BoundsList, InitialGuessList, Bounds, Initia
 from .limits.penalty_controller import PenaltyController
 from .limits.penalty_helpers import PenaltyHelpers
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
+from .limits.holonomic_constraints import HolonomicConstraintsFcn, HolonomicConstraintsList
 from .misc.__version__ import __version__
 from .misc.enums import (
     Axis,
@@ -193,7 +194,6 @@ from .misc.enums import (
     VariableType,
     SolutionIntegrator,
     QuadratureRule,
-    SoftContactDynamics,
     DefectType,
     MagnitudeType,
     MultiCyclicCycleSolutions,
@@ -208,7 +208,6 @@ from .models.biorbd.holonomic_biorbd_model import HolonomicBiorbdModel
 from .models.biorbd.multi_biorbd_model import MultiBiorbdModel
 from .models.biorbd.stochastic_biorbd_model import StochasticBiorbdModel
 from .models.biorbd.variational_biorbd_model import VariationalBiorbdModel
-from .models.holonomic_constraints import HolonomicConstraintsFcn, HolonomicConstraintsList
 from .models.protocols.biomodel import BioModel
 from .models.protocols.stochastic_biomodel import StochasticBioModel
 from .optimization.multi_start import MultiStart

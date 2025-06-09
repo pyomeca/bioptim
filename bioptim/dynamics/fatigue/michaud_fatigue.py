@@ -3,6 +3,14 @@ from casadi import vertcat, lt, gt, if_else
 from .muscle_fatigue import MuscleFatigue, MultiFatigueInterfaceMuscle
 from .tau_fatigue import TauFatigue
 from ...misc.enums import VariableType
+from ...misc.parameters_types import (
+    Bool,
+    Float,
+    Str,
+    StrTuple,
+    FloatTuple,
+    CX,
+)
 
 
 class MichaudFatigue(MuscleFatigue):
@@ -11,22 +19,22 @@ class MichaudFatigue(MuscleFatigue):
     """
 
     @staticmethod
-    def dynamics_suffix() -> str:
+    def dynamics_suffix() -> Str:
         return "ma"
 
     @staticmethod
-    def fatigue_suffix() -> str:
+    def fatigue_suffix() -> Str:
         return "mf"
 
     def __init__(
         self,
-        LD: float,
-        LR: float,
-        F: float,
-        R: float,
-        effort_threshold: float,
-        effort_factor: float,
-        stabilization_factor: float = 1,
+        LD: Float,
+        LR: Float,
+        F: Float,
+        R: Float,
+        effort_threshold: Float,
+        effort_factor: Float,
+        stabilization_factor: Float = 1,
         **kwargs
     ):
         """
@@ -63,23 +71,23 @@ class MichaudFatigue(MuscleFatigue):
         self.effort_threshold = effort_threshold
 
     @staticmethod
-    def suffix(variable_type: VariableType) -> tuple:
+    def suffix(variable_type: VariableType) -> StrTuple:
         if variable_type == VariableType.STATES:
             return "ma", "mr", "mf_xia", "mf"
         else:
             return ("",)
 
     @staticmethod
-    def color() -> tuple:
+    def color() -> StrTuple:
         return "tab:green", "tab:orange", "tab:red", "tab:brown"
 
-    def default_initial_guess(self) -> tuple:
+    def default_initial_guess(self) -> FloatTuple:
         return 0, 1, 0, 0
 
-    def default_bounds(self, variable_type: VariableType) -> tuple:
+    def default_bounds(self, variable_type: VariableType) -> tuple[FloatTuple]:
         return (0, 0, 0, 0), (1, 1, 1, 1)
 
-    def apply_dynamics(self, target_load, *states):
+    def apply_dynamics(self, target_load: CX, *states: CX) -> CX:
         # Implementation of modified Xia dynamics
         ma, mr, mf, effort = states
 
@@ -117,19 +125,19 @@ class MichaudTauFatigue(TauFatigue):
     """
 
     @staticmethod
-    def dynamics_suffix() -> str:
+    def dynamics_suffix() -> Str:
         return "ma"
 
     @staticmethod
-    def fatigue_suffix() -> str:
+    def fatigue_suffix() -> Str:
         return "mf"
 
     def __init__(
         self,
         minus: MichaudFatigue,
         plus: MichaudFatigue,
-        state_only: bool = False,
-        apply_to_joint_dynamics: bool = False,
+        state_only: Bool = False,
+        apply_to_joint_dynamics: Bool = False,
         **kwargs
     ):
         """

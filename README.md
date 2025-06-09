@@ -25,6 +25,14 @@ The current status of `bioptim` on conda-forge is
 | --- | --- | --- | --- | --- |
 | [![Conda Recipe](https://img.shields.io/badge/recipe-bioptim-green.svg)](https://anaconda.org/conda-forge/bioptim) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/bioptim.svg)](https://anaconda.org/conda-forge/bioptim) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/bioptim.svg)](https://anaconda.org/conda-forge/bioptim) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/bioptim.svg)](https://anaconda.org/conda-forge/bioptim) | [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/pyomeca/bioptim-tutorial/HEAD?urlpath=lab) |
 
+
+## Contact
+You can join us on Discord 
+[![Discord](https://img.shields.io/discord/1340640457327247460.svg?label=chat&logo=discord&color=7289DA)](https://discord.gg/Ux7BkdjQFW)
+or open an Issue on GitHub.
+We would be trilled to discuss with you about `bioptim` and biomechanics/optimal control in general!
+
+
 # Try bioptim
 
 Anyone can play with bioptim with a working (but slightly limited in terms of graphics) MyBinder by clicking the following badge
@@ -177,7 +185,6 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
     - [CostType](#enum-costtype)
     - [SolutionIntegrator](#enum-solutionintegrator)
     - [QuadratureRule](#enum-quadraturerule)
-    - [SoftContactDynamics](#enum-softcontactdynamics)
     - [DefectType](#enum-defecttype)
 
     </details>
@@ -857,11 +864,28 @@ To decrease RAM usage and computational time, it is recommended to store `casadi
 
 The `BiorbdModel` class implements a BioModel of the biorbd dynamics library. Some methods may not be interfaced yet; it is accessible through:
 ```python
-bio_model = BiorbdModel("path/to/model.bioMod")
+contact_types = [ContactType.RIGID_EXPLICIT]
+external_force_set = ExternalForceSetTimeSeries(nb_frames=n_shooting)
+external_force_set.add(
+    name="first_force",
+    segment="first_segment",
+    value=[],  # Insert the np.ndarray of your data at each node here
+    point_of_application=True,
+)
+bio_model = BiorbdModel("path/to/model.bioMod", contact_types, external_force_set)
 bio_model.marker_names  # for example returns the marker names
 # if the methods is not interfaced, it can be accessed through
 bio_model.model.markerNames()
 ```
+The `contact_types` is a list of contact types to consider in the dynamics equations. Possible options
+  - **[]**: No contacts are considered in the dynamics. 
+  - **[ContactType.RIGID_EXPLICIT]**: Non-acceleration contact points are included in the dynamics equation.
+  - **[ContactType.RIGID_IMPLICIT]**: Lagrange multipliers representing the contact forces are introduced as algebraic states to satisfy the non-acceleration constraint of contact points.
+  - **[ContactType.SOFT_EXPLICIT]**: The contact forces resulting from the penetration of spheres in the ground (located on the OXY plane) are included in the dynamics equation.
+  - **[ContactType.SOFT_IMPLICIT]**: Lagrange multipliers representing the contact forces resulting from the penetration of spheres in the ground (located on the OXY plane) are introduced as algebraic states to satisfy the penetration-force relationship.
+
+The `external_force_set: ExternalForceSetTimeSeries` is a list of external forces to consider in the dynamics equations.
+If you want to handle external forces as optimization variables in your custom dynamics, you can also define an `external_force_set: ExternalForceSetVariables`. 
 
 ### Class: MultiBiorbdModel
 
@@ -947,7 +971,7 @@ The `DynamicsFcn` is the one presented in the corresponding section below.
 #### The options
 The full signature of Dynamics is as follows:
 ```python
-Dynamics(dynamics_type, configure: Callable, dynamic_function: Callable, phase: int, ode_solver: OdeSolver, contact_type: list[ContactType], numerical_timeseries: dict[str, np.ndarray])
+Dynamics(dynamics_type, configure: Callable, dynamic_function: Callable, phase: int, ode_solver: OdeSolver, numerical_timeseries: dict[str, np.ndarray])
 ```
 The `dynamics_type` is the selected `DynamicsFcn`. 
 It automatically defines both `configure` and `dynamic_function`. 
@@ -956,7 +980,6 @@ If one is interested in changing the behavior of a particular `DynamicsFcn`, the
 
 The `phase` is the index of the phase the dynamics applies to. 
 The `ode_solver` is the ode to use to "integrate" the dynamics function.
-The `contact_type` is a list of contact types to consider in the dynamics equations.
 The `numerical_timeseries` is a list of numerical values (one per node) to use in the dynamics. For example, it can be used to define experimental ground reaction forces.
 The `add()` method of `DynamicsList` usually takes care of this, but it can be useful when declaring the dynamics out of order.
 
@@ -1006,29 +1029,14 @@ For more information on this, please refer to the Dynamics and DynamicsList sect
 The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as *tau*. 
 The derivative of *q* is trivially *qdot*.
 The derivative of *qdot* is given by the biorbd function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`.
-If external forces are provided, they are added to the ForwardDynamics function. Possible options:
-- **contact_type** 
-  - **[]**: No contacts are considered in the dynamics. 
-  - **[ContactType.RIGID_EXPLICIT]**: Non-acceleration contact points are included in the dynamics equation.
-  - **[ContactType.RIGID_IMPLICIT]**: Lagrange multipliers representing the contact forces are introduced as algebraic states to satisfy the non-acceleration constraint of contact points.
-  - **[ContactType.SOFT_EXPLICIT]**: The contact forces resulting from the penetration of spheres in the ground (located on the OXY plane) are included in the dynamics equation.
-  - **[ContactType.SOFT_IMPLICIT]**: Lagrange multipliers representing the contact forces resulting from the penetration of spheres in the ground (located on the OXY plane) are introduced as algebraic states to satisfy the penetration-force relationship.
-- **with_passive_torque = True:** The passive torque is taken into account in the *tau*.
-- **with_ligament = True:** The tau generated by the ligament is taken into account in the *tau*.
+If external forces are provided, they are added to the ForwardDynamics function.
 
 #### TORQUE_DERIVATIVE_DRIVEN
 The torque derivative driven defines the states (x) as *q*, *qdot*, *tau* and the controls (u) as *taudot*. 
 The derivative of *q* is trivially *qdot*.
 The derivative of *qdot* is given by the biorbd function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`.
 The derivative of *tau* is trivially *taudot*. 
-If external forces are provided, they are added to the ForwardDynamics function. Possible options:
-- **contact_type** 
-  - **[]**: No contacts are considered in the dynamics. 
-  - **[ContactType.RIGID_EXPLICIT]**: Non-acceleration contact points are included in the dynamics equation.
-  - **[ContactType.RIGID_IMPLICIT]**: Lagrange multipliers representing the contact forces are introduced as algebraic states to satisfy the non-acceleration constraint of contact points.
-  - **[ContactType.SOFT_EXPLICIT]**: The contact forces resulting from the penetration of spheres in the ground (located on the OXY plane) are included in the dynamics equation.
-  - **[ContactType.SOFT_IMPLICIT]**: Lagrange multipliers representing the contact forces resulting from the penetration of spheres in the ground (located on the OXY plane) are introduced as algebraic states to satisfy the penetration-force relationship.- **with_passive_torque = True:** The passive torque is taken into account in the *tau*.
-- **with_ligament = True:** The tau generated by the ligament is taken into account in the *tau*.
+If external forces are provided, they are added to the ForwardDynamics function.
 
 #### TORQUE_ACTIVATIONS_DRIVEN
 The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as the level of activation of *tau*. 
@@ -1038,14 +1046,7 @@ Then, the derivative of *qdot* is given by the `biorbd` function: `qddot = bio_m
 
 Please note, this dynamics is expected to be very slow to converge, if it ever does. 
 One is therefore encourage using TORQUE_DRIVEN instead, and to add the TORQUE_MAX_FROM_ACTUATORS constraint.
-This has been shown to be more efficient and allows defining minimum torque. Possible options:
-- **contact_type** 
-  - **[]**: No contacts are considered in the dynamics. 
-  - **[ContactType.RIGID_EXPLICIT]**: Non-acceleration contact points are included in the dynamics equation.
-  - **[ContactType.RIGID_IMPLICIT]**: Lagrange multipliers representing the contact forces are introduced as algebraic states to satisfy the non-acceleration constraint of contact points.
-  - **[ContactType.SOFT_EXPLICIT]**: The contact forces resulting from the penetration of spheres in the ground (located on the OXY plane) are included in the dynamics equation.
-  - **[ContactType.SOFT_IMPLICIT]**: Lagrange multipliers representing the contact forces resulting from the penetration of spheres in the ground (located on the OXY plane) are introduced as algebraic states to satisfy the penetration-force relationship.- **with_passive_torque = True:** The passive torque is taken into account in the *tau*.
-- **with_ligament = True:** The tau generated by the ligament is taken into account in the *tau*.
+This has been shown to be more efficient and allows defining minimum torque. 
 - **with_residual_torque = True:** The residual torque is taken into account in the *tau*.
 
 #### JOINTS_ACCELERATION_DRIVEN
@@ -1061,13 +1062,6 @@ The torque driven defines the states (x) as *q* and *qdot* and the controls (u) 
 The derivative of *q* is trivially *qdot*. Possible options:
 The actual *tau* is computed from the muscle activation converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(muscles_states, q, qdot)`.
 The derivative of *qdot* is given by the `biorbd` function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`. The actual *tau* is computed from the sum of *tau* to the *a* converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(a, q, qdot)`.
-- **contact_type** 
-  - **[]**: No contacts are considered in the dynamics. 
-  - **[ContactType.RIGID_EXPLICIT]**: Non-acceleration contact points are included in the dynamics equation.
-  - **[ContactType.RIGID_IMPLICIT]**: Lagrange multipliers representing the contact forces are introduced as algebraic states to satisfy the non-acceleration constraint of contact points.
-  - **[ContactType.SOFT_EXPLICIT]**: The contact forces resulting from the penetration of spheres in the ground (located on the OXY plane) are included in the dynamics equation.
-  - **[ContactType.SOFT_IMPLICIT]**: Lagrange multipliers representing the contact forces resulting from the penetration of spheres in the ground (located on the OXY plane) are introduced as algebraic states to satisfy the penetration-force relationship.- **with_passive_torque = True:** The passive torque is taken into account in the *tau*.
-- **with_ligament = True:** The tau generated by the ligament is taken into account in the *tau*.
 - **with_residual_torque = True:** The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as the *tau* and the muscle activations (*a*). 
 The actual *tau* is computed from the sum of *tau* to the muscle activation converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(a, q, qdot)`.
 - **with_excitations = True:** The torque driven defines the states (x) as *q*, *qdot* and muscle activations (*a*) and the controls (u) as the *tau* and the *EMG*.
@@ -1397,42 +1391,36 @@ Even though a parameter is time-independent, one biorbd_model is loaded per phas
 Since parameters are associated to a specific bio_model, one must define a parameter per phase.
 
 ## The multinode constraints
-`Bioptim` can declare multiphase optimisation programs. The goal of a multiphase ocp is usually to handle changing dynamics. 
-The user must understand that each phase is, therefore, a full ocp by itself, with constraints that links the end of which with the beginning of the following.
+Multinode constraints are constraints that involve variables from different nodes. 
+For example, phase transitions are multi-node constraints because they link the variable from the end of a phase to the variables at the beginning of the next phase.
+*** WARNING *** : Multi-nodes used with OdeSolver.COLLOCATION are handled differently than with other ode solvers because they have intermediary optimisation variables for each node. 
 
-### Class: BinodeConstraintList
-The BinodeConstraintList provides a class that prepares the binode constraints.
-When constructing an `OptimalControlProgram()`, BinodeConstraintList is the expected class for the `binode_constraints` parameter. 
-
-The BinodeConstraintList class is the main class to define parameters.
-Please note that, unlike other lists, `BinodeConstraint` is not accessible since binode constraints do not make sense for single-phase ocp.
-Therefore, one should not call the PhaseTransition constructor directly. 
+### Class: MultinodeConstraintList
+The MultinodeConstraintList provides a class that prepares the multinode constraints.
+When constructing an `OptimalControlProgram()`, MultinodeConstraintList is the expected class for the `multinode_constraints` parameter.
 
 Here is the full signature of the `add()` method of the `BinodeConstraintList`:
 ```python
-BinodeConstraintList.add(BinodeConstraintFcn, phase_first_idx, phase_second_idx, first_node, second_node, **extra_parameters)
+MultinodeConstraintList.add(MultinodeConstraintFcn, nodes_phase: tuple[int], nodes: tuple[int | Node, ...], **extra_parameters)
 ```
-The `BinodeConstraintFcn` is binode constraints function to use.
-The default is EQUALITY.
-When declaring a custom transition phase, BinodeConstraintFcn is the function handler to the custom function.
-The signature of the custom function is: `custom_function(binode_constraint:BinodeConstraint, nlp_pre: NonLinearProgram, nlp_post: NonLinearProgram, **extra_parameters)`,
-where `nlp_pre` is the non linear program of the considered phase, `nlp_post` is the non linear program of the second considered phase, and the `**extra_parameters` are those sent to the add() method.
-This function is expected to return the cost of the binode constraint computed in the form of an MX. Please note that MX type is a CasADi type.
-Anyone who wants to define binode constraints should be at least familiar with this type beforehand.
-The `phase_first_idx` is the index of the first phase. 
-The `phase_second_idx` is the index of the second phase. 
-The `first_node` is the first node considered. 
-The `second_node` is the second node considered. 
+The `MultinodeConstraintFcn` is the multinode constraint function to use.
+The signature of the custom function is: `custom_function(multinode_constraint:MultinodeConstraint, nodes_phase: tuple[int], nodes: tuple[int | Node, ...], **extra_parameters)`.
+This function is expected to return the cost of the multinode constraint computed in the form of an MX or SX. Please note that MX/SX type is a CasADi type.
+Anyone who wants to define multinode constraints should be at least familiar with this type beforehand.
+The `nodes_phase` is a tuple of the index of the phases from which you want to extract variables. 
+The `nodes` is a tuple of the index of the nodes from which you want to extract variables. 
+Please note that the order of `nodes_phase` and `nodes` are linked together.
+For example, if you declare `nodes_phase=(0, 1)` and `nodes=(Node.END, Node.START)`, then the multinode constraint's penalty_controller (`[PenaltyController, PenaltyController]`) will contain the variables from the last node of the first phase and the first node of the second phase.
 
-### Class: BinodeConstraintFcn
-The `BinodeConstraintFcn` class is the already available binode constraint in `bioptim`. 
+### Class: MultinodeConstraintFcn
+The `MultinodeConstraintFcn` class contains multinode constraints already available in `bioptim`. 
 Since this is an Enum, it is possible to use the tab key on the keyboard to dynamically list them all, depending on the capabilities of your IDE. 
 
 - **EQUALITY**   &mdash; The states are equals.
 - **COM_EQUALITY**   &mdash; The positions of centers of mass are equals.
 - **COM_VELOCITY_EQUALITY**   &mdash; The velocities of centers of mass are equals.
 - **CUSTOM**   &mdash; CUSTOM should not be directly sent by the user, but the user should pass the custom_transition function directly. 
-You can look at the BinodeConstraintList section for more information about defining a custom transition function.
+You can look at the MultinodeConstraintList section for more information about defining a custom multinode function.
 
 ## The phase transitions
 `Bioptim` can declare multiphase optimisation programs. 
@@ -1776,14 +1764,13 @@ The type of integration used to integrate the cost function terms of Lagrange:
 - APPROXIMATE_TRAPEZOIDAL: The integral is approximated by a trapezoidal rule using the state at the beginning of the next interval.
 - TRAPEZOIDAL: The integral is approximated by a trapezoidal rule using the state at the end of the current interval.
 
-### Enum: SoftContactDynamics
-The type of transcription of any dynamics (e.g., rigidbody_dynamics or soft_contact_dynamics):
-- ODE: soft contact dynamics is handled explicitly.
-- CONSTRAINT: an extra control *fext* is added, and it ensures respecting soft contact_dynamics on nodes through a constraint.
-
 ### Enum: DefectType
-- EXPLICIT: The defect comes from the explicit formulation.
-- IMPLICIT: The defect comes from the implicit formulation.
+- QDOT_EQUALS_SLOPE: The slope of the COLLOCATION polynomial must be equal to the qdot.
+- QDDOT_EQUALS_FORWARD_DYNAMICS: The slope of the COLLOCATION polynomial must be equal to the result from the forward dynamics.
+- TAU_EQUALS_INVERSE_DYNAMICS: The slope of the COLLOCATION polynomial is used to compute the inverse dynamics, which must be equal to the tau. 
+- CONTACT_ACCELERATION_EQUALS_ZERO: The contacts point acceleration must be null (useful for ContactType.RIGID_IMPLICIT). 
+- SOFT_CONTACT_FORCES_EQUALS_LAGRANGE_MULTIPLIERS: The soft contact forces are equal to the Lagrange multipliers (useful for ContactType.SOFT_IMPLICIT).
+- ROOT_RESIDUAL_TORQUES_EQUALS_ZERO: The root residual torques must be null (useful for DynamicsFcn.JOINT_ACCELERATION_DRIVEN).
 - NOT_APPLICABLE: The defect is not applicable.
 
 ### Enum: ContactType

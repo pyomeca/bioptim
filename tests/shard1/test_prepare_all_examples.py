@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from bioptim import InterpolationType, PhaseDynamics, OdeSolver, ContactType
+from bioptim import InterpolationType, PhaseDynamics, OdeSolver, ContactType, DefectType
 from ..utils import TestUtils
 
 
@@ -1536,3 +1536,54 @@ def test_custom_model():
     from bioptim.examples.custom_model.main import main as ocp_module
 
     ocp_module()
+
+
+@pytest.mark.parametrize(
+    "defects_type",
+    [
+        DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS,
+        DefectType.TAU_EQUALS_INVERSE_DYNAMICS,
+    ],
+)
+@pytest.mark.parametrize("contact_types", [[ContactType.RIGID_EXPLICIT], [ContactType.RIGID_IMPLICIT]])
+def test_contact_forces_inverse_dynamics_constraint_muscle(defects_type, contact_types):
+    from bioptim.examples.muscle_driven_with_contact import (
+        contact_forces_inverse_dynamics_constraint_muscle as ocp_module,
+    )
+
+    bioptim_folder = TestUtils.module_folder(ocp_module)
+
+    if defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS and ContactType.RIGID_EXPLICIT in contact_types:
+        with pytest.raises(
+            NotImplementedError, match="Inverse dynamics, cannot be used with ContactType.RIGID_EXPLICIT yet"
+        ):
+            ocp_module.prepare_ocp(
+                biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts_1muscle.bioMod",
+                phase_time=0.3,
+                n_shooting=10,
+                defects_type=defects_type,
+                contact_types=contact_types,
+            )
+        return
+
+    ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts_1muscle.bioMod",
+        phase_time=0.3,
+        n_shooting=10,
+        defects_type=defects_type,
+        contact_types=contact_types,
+    )
+
+
+def test_contact_forces_inverse_dynamics_soft_contacts_muscle():
+    from bioptim.examples.muscle_driven_with_contact import (
+        contact_forces_inverse_dynamics_soft_contacts_muscle as ocp_module,
+    )
+
+    bioptim_folder = TestUtils.module_folder(ocp_module)
+
+    ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2soft_contacts_1muscle.bioMod",
+        phase_time=1,
+        n_shooting=100,
+    )

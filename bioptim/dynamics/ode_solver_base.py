@@ -1,9 +1,14 @@
 from typing import Callable
 
-from casadi import MX, SX, integrator as casadi_integrator, horzcat, Function, vertcat
+from casadi import MX, vertcat
 
 from . import integrator
 from ..misc.enums import ControlType, DefectType, PhaseDynamics
+from ..misc.parameters_types import (
+    Bool,
+    Int,
+    AnyList,
+)
 
 
 class OdeSolverBase:
@@ -18,7 +23,7 @@ class OdeSolverBase:
         Properly set the integration in an nlp
     """
 
-    def __init__(self, duplicate_starting_point: bool = False):
+    def __init__(self, duplicate_starting_point: Bool = False):
         """
         Parameters
         ----------
@@ -40,7 +45,7 @@ class OdeSolverBase:
         raise RuntimeError("This method should be implemented in the child class")
 
     @property
-    def is_direct_collocation(self) -> bool:
+    def is_direct_collocation(self) -> Bool:
         """
         indicating if the ode solver is direct collocation method
 
@@ -51,7 +56,7 @@ class OdeSolverBase:
         raise RuntimeError("This method should be implemented in the child class")
 
     @property
-    def is_direct_shooting(self) -> bool:
+    def is_direct_shooting(self) -> Bool:
         """
         indicating if the ode solver is direct shooting method
 
@@ -62,7 +67,7 @@ class OdeSolverBase:
         raise RuntimeError("This method should be implemented in the child class")
 
     @property
-    def n_required_cx(self) -> int:
+    def n_required_cx(self) -> Int:
         """
         The required number of column required in the casadi CX matrix for the state variables
 
@@ -83,7 +88,7 @@ class OdeSolverBase:
         """
         raise RuntimeError("This method should be implemented in the child class")
 
-    def t_ode(self, nlp) -> list:
+    def t_ode(self, nlp) -> AnyList:
         """
         The time span of the integration
 
@@ -175,7 +180,7 @@ class OdeSolverBase:
         raise RuntimeError("This method should be implemented in the child class")
 
     def initialize_integrator(
-        self, ocp, nlp, dynamics_index: int, node_index: int, is_extra_dynamics: bool = False, **extra_opt
+        self, ocp, nlp, dynamics_index: Int, node_index: Int, is_extra_dynamics: Bool = False, **extra_opt
     ) -> Callable:
         """
         Initialize the integrator
@@ -207,13 +212,33 @@ class OdeSolverBase:
         nlp.states_dot.node_index = node_index
         nlp.controls.node_index = node_index
         nlp.algebraic_states.node_index = node_index
-        dynamics_func = nlp.dynamics_func if not is_extra_dynamics else nlp.extra_dynamics_func[dynamics_index]
+
+        if nlp.dynamics_func is None:
+            dynamics_func = None
+        else:
+            if is_extra_dynamics:
+                dynamics_func = nlp.extra_dynamics_func[dynamics_index]
+            else:
+                dynamics_func = nlp.dynamics_func
+
+        if nlp.dynamics_defects_func is None:
+            dynamics_defects_func = None
+        else:
+            if is_extra_dynamics:
+                dynamics_defects_func = nlp.extra_dynamics_defects_func[dynamics_index]
+            else:
+                dynamics_defects_func = nlp.dynamics_defects_func
+
+        ode_index = None
+        if dynamics_func is not None:
+            ode_index = node_index if dynamics_func.size2_out("xdot") > 1 else 0
+
         ode_opt = {
             "model": nlp.model,
             "cx": nlp.cx,
             "control_type": nlp.dynamics_type.control_type,
             "defects_type": self.defects_type,
-            "ode_index": node_index if dynamics_func.size2_out("xdot") > 1 else 0,
+            "ode_index": ode_index,
             "duplicate_starting_point": self.duplicate_starting_point,
             **extra_opt,
         }
@@ -226,7 +251,7 @@ class OdeSolverBase:
             "d": self.d_ode(nlp),
             "param": self.param_ode(nlp),
             "ode": dynamics_func,
-            "implicit_ode": nlp.implicit_dynamics_func,
+            "implicit_ode": dynamics_defects_func,
         }
 
         return nlp.dynamics_type.ode_solver.integrator(ode, ode_opt)
@@ -274,3 +299,22 @@ class OdeSolverBase:
                         )
                     ]
             nlp.extra_dynamics.append(extra_dynamics)
+
+        # Extra defects
+        extra_dynamics_defects = []
+        for i in range(len(nlp.extra_dynamics_defects_func)):
+            extra_dynamics_defects += [
+                nlp.dynamics_type.ode_solver.initialize_integrator(
+                    ocp, nlp, dynamics_index=i, node_index=0, is_extra_dynamics=True
+                )
+            ]
+            if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
+                extra_dynamics_defects = extra_dynamics_defects * nlp.ns
+            else:
+                for node_index in range(1, nlp.ns):
+                    extra_dynamics_defects += [
+                        nlp.dynamics_type.ode_solver.initialize_integrator(
+                            ocp, nlp, dynamics_index=i, node_index=node_index, is_extra_dynamics=True
+                        )
+                    ]
+            nlp.extra_dynamics_defects.append(extra_dynamics_defects)

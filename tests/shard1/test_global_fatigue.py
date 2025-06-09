@@ -303,13 +303,10 @@ def test_effort_fatigable_muscles(phase_dynamics):
 def test_fatigable_xia_torque_non_split(phase_dynamics):
     from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
-    # it doesn't pass on macos
-    if platform.system() == "Darwin":
-        return
-
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     model_path = f"{bioptim_folder}/models/pendulum.bioMod"
+
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
         final_time=1,
@@ -343,6 +340,7 @@ def test_fatigable_xia_torque_split(phase_dynamics):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     model_path = f"{bioptim_folder}/models/pendulum.bioMod"
+
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
         final_time=1,
@@ -418,12 +416,11 @@ def test_fatigable_xia_stabilized_torque_split(phase_dynamics):
     from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
     if platform.system() == "Windows":
-        # This is a long test and CI is already long for Windows
-        return
+        pytest.skip("These tests do not pass on Windows.")
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
-
     model_path = f"{bioptim_folder}/models/pendulum.bioMod"
+
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
         final_time=1,
@@ -487,13 +484,10 @@ def test_fatigable_xia_stabilized_torque_split(phase_dynamics):
 def test_fatigable_michaud_torque_non_split(phase_dynamics):
     from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
-    if platform.system() == "Windows":
-        # This is a long test and CI is already long for Windows
-        return
-
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     model_path = f"{bioptim_folder}/models/pendulum.bioMod"
+
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
         final_time=1,
@@ -525,12 +519,12 @@ def test_fatigable_michaud_torque_split(phase_dynamics):
     from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
     if platform.system() == "Windows":
-        # This tst fails on the CI
-        return
+        pytest.skip("These tests do not pass on Windows.")
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     model_path = f"{bioptim_folder}/models/pendulum.bioMod"
+
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
         final_time=1,
@@ -595,13 +589,10 @@ def test_fatigable_michaud_torque_split(phase_dynamics):
 def test_fatigable_effort_torque_non_split(phase_dynamics):
     from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
-    if platform.system() == "Windows":
-        # This tst fails on the CI
-        return
-
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     model_path = f"{bioptim_folder}/models/pendulum.bioMod"
+
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
         final_time=1,
@@ -632,13 +623,10 @@ def test_fatigable_effort_torque_non_split(phase_dynamics):
 def test_fatigable_effort_torque_split(phase_dynamics):
     from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
-    if platform.system() != "Linux":
-        # This tst fails on the CI
-        return
-
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     model_path = f"{bioptim_folder}/models/pendulum.bioMod"
+
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
         final_time=1,

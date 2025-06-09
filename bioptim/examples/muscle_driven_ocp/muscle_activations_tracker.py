@@ -34,6 +34,7 @@ from bioptim import (
     Solver,
     PhaseDynamics,
     SolutionMerge,
+    Dynamics,
 )
 from bioptim.optimization.optimization_variable import OptimizationVariableContainer
 
@@ -61,8 +62,7 @@ def generate_data(
     phase_dynamics: PhaseDynamics
         If the dynamics equation within a phase is unique or changes at each node.
         PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
-        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
-        are applied at each node
+        a phase. PhaseDynamics.ONE_PER_NODE should also be used when multi-node penalties with more than 3 nodes or with COLLOCATION (cx_intermediate_list) are added to the OCP.
 
     Returns
     -------
@@ -165,6 +165,10 @@ def generate_data(
     symbolic_states = vertcat(*(symbolic_q, symbolic_qdot))
     symbolic_controls = vertcat(*(symbolic_tau, symbolic_mus)) if use_residual_torque else vertcat(symbolic_mus)
 
+    nlp.dynamics_type = Dynamics(
+        DynamicsFcn.MUSCLE_DRIVEN,
+    )
+
     dynamics_func = Function(
         "ForwardDyn",
         [symbolic_states, symbolic_controls, symbolic_parameters],
@@ -177,7 +181,6 @@ def generate_data(
                 algebraic_states=MX(),
                 numerical_timeseries=MX(),
                 nlp=nlp,
-                contact_type=(),
             ).dxdt
         ],
     )
@@ -252,8 +255,7 @@ def prepare_ocp(
     phase_dynamics: PhaseDynamics
         If the dynamics equation within a phase is unique or changes at each node.
         PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
-        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
-        are applied at each node
+        a phase. PhaseDynamics.ONE_PER_NODE should also be used when multi-node penalties with more than 3 nodes or with COLLOCATION (cx_intermediate_list) are added to the OCP.
     expand_dynamics: bool
         If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
         the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
