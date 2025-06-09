@@ -11,22 +11,23 @@ from ..models.protocols.stochastic_biomodel import StochasticBioModel
 from ..dynamics.ode_solvers import OdeSolver
 from ..gui.plot import CustomPlot
 
+
 class ConfigureVariables:
 
     @staticmethod
     def configure_new_variable(
-            name: str,
-            name_elements: list,
-            ocp,
-            nlp,
-            as_states: bool,
-            as_controls: bool,
-            as_algebraic_states: bool = False,
-            fatigue: FatigueList = None,
-            combine_name: str = None,
-            combine_state_control_plot: bool = False,
-            skip_plot: bool = False,
-            axes_idx: BiMapping = None,
+        name: str,
+        name_elements: list,
+        ocp,
+        nlp,
+        as_states: bool,
+        as_controls: bool,
+        as_algebraic_states: bool = False,
+        fatigue: FatigueList = None,
+        combine_name: str = None,
+        combine_state_control_plot: bool = False,
+        skip_plot: bool = False,
+        axes_idx: BiMapping = None,
     ):
         """
         Add a new variable to the states/controls pool
@@ -73,14 +74,13 @@ class ConfigureVariables:
             axes_idx,
         )
 
-
     @staticmethod
     def configure_integrated_value(
-            name: str,
-            name_elements: list,
-            ocp,
-            nlp,
-            initial_matrix: DM,
+        name: str,
+        name_elements: list,
+        ocp,
+        nlp,
+        initial_matrix: DM,
     ):
         """
         Add a new integrated value. This creates an MX (not an optimization variable) that is integrated using the
@@ -131,7 +131,6 @@ class ConfigureVariables:
                 node_index,
             )
 
-
     @staticmethod
     def configure_q(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
         """
@@ -151,7 +150,16 @@ class ConfigureVariables:
         name = "q"
         name_q = nlp.model.name_dof
         axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
-        ConfigureVariables.configure_new_variable(name, name_q, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states, axes_idx=axes_idx)
+        ConfigureVariables.configure_new_variable(
+            name,
+            name_q,
+            ocp,
+            nlp,
+            as_states=as_states,
+            as_controls=as_controls,
+            as_algebraic_states=as_algebraic_states,
+            axes_idx=axes_idx,
+        )
 
     @staticmethod
     def configure_q_roots(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
@@ -172,8 +180,16 @@ class ConfigureVariables:
         name = "q_roots"
         name_q_roots = [nlp.model.name_dof[i] for i in range(nlp.model.nb_roots)]
         axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
-        ConfigureVariables.configure_new_variable(name, name_q_roots, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states, axes_idx=axes_idx)
-
+        ConfigureVariables.configure_new_variable(
+            name,
+            name_q_roots,
+            ocp,
+            nlp,
+            as_states=as_states,
+            as_controls=as_controls,
+            as_algebraic_states=as_algebraic_states,
+            axes_idx=axes_idx,
+        )
 
     @staticmethod
     def configure_q_joints(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
@@ -194,8 +210,16 @@ class ConfigureVariables:
         name = "q_joints"
         name_q_joints = [nlp.model.name_dof[i] for i in range(nlp.model.nb_roots, nlp.model.nb_q)]
         axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
-        ConfigureVariables.configure_new_variable(name, name_q_joints, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states, axes_idx=axes_idx)
-
+        ConfigureVariables.configure_new_variable(
+            name,
+            name_q_joints,
+            ocp,
+            nlp,
+            as_states=as_states,
+            as_controls=as_controls,
+            as_algebraic_states=as_algebraic_states,
+            axes_idx=axes_idx,
+        )
 
     @staticmethod
     def configure_qdot(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
@@ -217,8 +241,16 @@ class ConfigureVariables:
         name = "qdot"
         name_qdot = ConfigureVariables._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
-        ConfigureVariables.configure_new_variable(name, name_qdot, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states, axes_idx=axes_idx)
-
+        ConfigureVariables.configure_new_variable(
+            name,
+            name_qdot,
+            ocp,
+            nlp,
+            as_states=as_states,
+            as_controls=as_controls,
+            as_algebraic_states=as_algebraic_states,
+            axes_idx=axes_idx,
+        )
 
     @staticmethod
     def configure_qdot_roots(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
@@ -240,8 +272,16 @@ class ConfigureVariables:
         name_qdot = ConfigureVariables._get_kinematics_based_names(nlp, name)
         name_qdot_roots = [name_qdot[i] for i in range(nlp.model.nb_roots)]
         axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
-        ConfigureVariables.configure_new_variable(name, name_qdot_roots, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states, axes_idx=axes_idx)
-
+        ConfigureVariables.configure_new_variable(
+            name,
+            name_qdot_roots,
+            ocp,
+            nlp,
+            as_states=as_states,
+            as_controls=as_controls,
+            as_algebraic_states=as_algebraic_states,
+            axes_idx=axes_idx,
+        )
 
     @staticmethod
     def configure_qdot_joints(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
@@ -263,8 +303,16 @@ class ConfigureVariables:
         name_qdot = ConfigureVariables._get_kinematics_based_names(nlp, name)
         name_qdot_joints = [name_qdot[i] for i in range(nlp.model.nb_roots, nlp.model.nb_q)]
         axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
-        ConfigureVariables.configure_new_variable(name, name_qdot_joints, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states, axes_idx=axes_idx)
-
+        ConfigureVariables.configure_new_variable(
+            name,
+            name_qdot_joints,
+            ocp,
+            nlp,
+            as_states=as_states,
+            as_controls=as_controls,
+            as_algebraic_states=as_algebraic_states,
+            axes_idx=axes_idx,
+        )
 
     @staticmethod
     def configure_qddot(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
@@ -286,8 +334,16 @@ class ConfigureVariables:
         name = "qddot"
         name_qddot = ConfigureVariables._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
-        ConfigureVariables.configure_new_variable(name, name_qddot, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states, axes_idx=axes_idx)
-
+        ConfigureVariables.configure_new_variable(
+            name,
+            name_qddot,
+            ocp,
+            nlp,
+            as_states=as_states,
+            as_controls=as_controls,
+            as_algebraic_states=as_algebraic_states,
+            axes_idx=axes_idx,
+        )
 
     @staticmethod
     def configure_qddot_joints(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
@@ -309,8 +365,16 @@ class ConfigureVariables:
         name_qddot = ConfigureVariables._get_kinematics_based_names(nlp, name)
         name_qddot_joints = [name_qddot[i] for i in range(nlp.model.nb_roots, nlp.model.nb_q)]
         axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
-        ConfigureVariables.configure_new_variable(name, name_qddot_joints, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states, axes_idx=axes_idx)
-
+        ConfigureVariables.configure_new_variable(
+            name,
+            name_qddot_joints,
+            ocp,
+            nlp,
+            as_states=as_states,
+            as_controls=as_controls,
+            as_algebraic_states=as_algebraic_states,
+            axes_idx=axes_idx,
+        )
 
     @staticmethod
     def configure_qdddot(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
@@ -332,8 +396,16 @@ class ConfigureVariables:
         name = "qdddot"
         name_qdddot = ConfigureVariables._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
-        ConfigureVariables.configure_new_variable(name, name_qdddot, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states, axes_idx=axes_idx)
-
+        ConfigureVariables.configure_new_variable(
+            name,
+            name_qdddot,
+            ocp,
+            nlp,
+            as_states=as_states,
+            as_controls=as_controls,
+            as_algebraic_states=as_algebraic_states,
+            axes_idx=axes_idx,
+        )
 
     @staticmethod
     def configure_stochastic_k(ocp, nlp, n_noised_controls: int, n_references: int):
@@ -368,7 +440,6 @@ class ConfigureVariables:
             as_algebraic_states=False,
         )
 
-
     @staticmethod
     def configure_stochastic_c(ocp, nlp, n_noised_states: int, n_noise: int):
         """
@@ -402,7 +473,6 @@ class ConfigureVariables:
             skip_plot=True,
         )
 
-
     @staticmethod
     def configure_stochastic_a(ocp, nlp, n_noised_states: int):
         """
@@ -421,7 +491,7 @@ class ConfigureVariables:
         for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
             for name_2 in [f"X_{i}" for i in range(n_noised_states)]:
                 name_a += [name_1 + "_&_" + name_2]
-        nlp.variable_mappings[name] = BiMapping(list(range(n_noised_states ** 2)), list(range(n_noised_states ** 2)))
+        nlp.variable_mappings[name] = BiMapping(list(range(n_noised_states**2)), list(range(n_noised_states**2)))
 
         ConfigureVariables.configure_new_variable(
             name,
@@ -433,7 +503,6 @@ class ConfigureVariables:
             as_algebraic_states=False,
             skip_plot=True,
         )
-
 
     @staticmethod
     def configure_stochastic_cov_implicit(ocp, nlp, n_noised_states: int):
@@ -453,7 +522,7 @@ class ConfigureVariables:
         for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
             for name_2 in [f"X_{i}" for i in range(n_noised_states)]:
                 name_cov += [name_1 + "_&_" + name_2]
-        nlp.variable_mappings[name] = BiMapping(list(range(n_noised_states ** 2)), list(range(n_noised_states ** 2)))
+        nlp.variable_mappings[name] = BiMapping(list(range(n_noised_states**2)), list(range(n_noised_states**2)))
         ConfigureVariables.configure_new_variable(
             name,
             name_cov,
@@ -463,7 +532,6 @@ class ConfigureVariables:
             as_controls=True,
             as_algebraic_states=False,
         )
-
 
     @staticmethod
     def configure_stochastic_cholesky_cov(ocp, nlp, n_noised_states: int):
@@ -495,7 +563,6 @@ class ConfigureVariables:
             as_algebraic_states=False,
         )
 
-
     @staticmethod
     def configure_stochastic_ref(ocp, nlp, n_references: int):
         """
@@ -522,7 +589,6 @@ class ConfigureVariables:
             as_controls=True,
             as_algebraic_states=False,
         )
-
 
     @staticmethod
     def configure_stochastic_m(ocp, nlp, n_noised_states: int):
@@ -557,9 +623,10 @@ class ConfigureVariables:
             as_algebraic_states=True,
         )
 
-
     @staticmethod
-    def configure_tau(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool, fatigue: FatigueList = None):
+    def configure_tau(
+        ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool, fatigue: FatigueList = None
+    ):
         """
         Configure the generalized forces
 
@@ -581,9 +648,16 @@ class ConfigureVariables:
         name_tau = ConfigureVariables._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
         ConfigureVariables.configure_new_variable(
-            name, name_tau, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states, fatigue=fatigue, axes_idx=axes_idx
+            name,
+            name_tau,
+            ocp,
+            nlp,
+            as_states=as_states,
+            as_controls=as_controls,
+            as_algebraic_states=as_algebraic_states,
+            fatigue=fatigue,
+            axes_idx=axes_idx,
         )
-
 
     @staticmethod
     def configure_tau_joints(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
@@ -605,8 +679,16 @@ class ConfigureVariables:
         name_tau = ConfigureVariables._get_kinematics_based_names(nlp, name)
         name_tau_joints = [name_tau[i] for i in range(nlp.model.nb_roots, nlp.model.nb_q)]
         axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
-        ConfigureVariables.configure_new_variable(name, name_tau_joints, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states, axes_idx=axes_idx)
-
+        ConfigureVariables.configure_new_variable(
+            name,
+            name_tau_joints,
+            ocp,
+            nlp,
+            as_states=as_states,
+            as_controls=as_controls,
+            as_algebraic_states=as_algebraic_states,
+            axes_idx=axes_idx,
+        )
 
     @staticmethod
     def configure_residual_tau(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
@@ -629,9 +711,15 @@ class ConfigureVariables:
         name_residual_tau = ConfigureVariables._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
         ConfigureVariables.configure_new_variable(
-            name, name_residual_tau, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states, axes_idx=axes_idx
+            name,
+            name_residual_tau,
+            ocp,
+            nlp,
+            as_states=as_states,
+            as_controls=as_controls,
+            as_algebraic_states=as_algebraic_states,
+            axes_idx=axes_idx,
         )
-
 
     @staticmethod
     def configure_taudot(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
@@ -653,11 +741,21 @@ class ConfigureVariables:
         name = "taudot"
         name_taudot = ConfigureVariables._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
-        ConfigureVariables.configure_new_variable(name, name_taudot, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states, axes_idx=axes_idx)
-
+        ConfigureVariables.configure_new_variable(
+            name,
+            name_taudot,
+            ocp,
+            nlp,
+            as_states=as_states,
+            as_controls=as_controls,
+            as_algebraic_states=as_algebraic_states,
+            axes_idx=axes_idx,
+        )
 
     @staticmethod
-    def configure_translational_forces(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool, n_contacts: int = 1):
+    def configure_translational_forces(
+        ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool, n_contacts: int = 1
+    ):
         """
         Configure contact forces as optimization variables (for now only in global reference frame with an unknown point of application))
         # TODO: Match this with ExternalForceSetTimeSeries (options: 'in_global', 'torque', ...)
@@ -677,11 +775,18 @@ class ConfigureVariables:
         """
 
         name_contact_forces = [f"Force{i}_{axis}" for i in range(n_contacts) for axis in ("X", "Y", "Z")]
-        ConfigureVariables.configure_new_variable("contact_forces", name_contact_forces, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states)
+        ConfigureVariables.configure_new_variable(
+            "contact_forces",
+            name_contact_forces,
+            ocp,
+            nlp,
+            as_states=as_states,
+            as_controls=as_controls,
+            as_algebraic_states=as_algebraic_states,
+        )
         ConfigureVariables.configure_new_variable(
             "contact_positions", name_contact_forces, ocp, nlp, as_states, as_controls
         )
-
 
     @staticmethod
     def configure_rigid_contact_forces(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
@@ -702,9 +807,14 @@ class ConfigureVariables:
 
         name_contact_forces = [name for name in nlp.model.contact_names]
         ConfigureVariables.configure_new_variable(
-            "rigid_contact_forces", name_contact_forces, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states
+            "rigid_contact_forces",
+            name_contact_forces,
+            ocp,
+            nlp,
+            as_states=as_states,
+            as_controls=as_controls,
+            as_algebraic_states=as_algebraic_states,
         )
-
 
     @staticmethod
     def configure_soft_contact_forces(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
@@ -735,9 +845,10 @@ class ConfigureVariables:
             as_controls=as_controls,
         )
 
-
     @staticmethod
-    def configure_muscles(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool, fatigue: FatigueList = None):
+    def configure_muscles(
+        ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool, fatigue: FatigueList = None
+    ):
         """
         Configure the muscles
 
@@ -767,7 +878,6 @@ class ConfigureVariables:
             combine_state_control_plot=True,
             fatigue=fatigue,
         )
-
 
     @staticmethod
     def configure_qv(ocp, nlp, dyn_func: Callable, **extra_params):
@@ -967,33 +1077,36 @@ class ConfigureVariables:
             axes_idx = None
         return axes_idx
 
+
 class States(FcnEnum):
-    Q = (ConfigureVariables.configure_q, )
-    Q_ROOTS = (ConfigureVariables.configure_q_roots, )
-    Q_JOINTS = (ConfigureVariables.configure_q_joints, )
-    QDOT = (ConfigureVariables.configure_qdot, )
-    QDOT_ROOTS = (ConfigureVariables.configure_qdot_roots, )
-    QDOT_JOINTS = (ConfigureVariables.configure_qdot_joints, )
-    TAU = (ConfigureVariables.configure_tau, )
-    MUSCLE_ACTIVATION = (ConfigureVariables.configure_muscles, )
+    Q = (ConfigureVariables.configure_q,)
+    Q_ROOTS = (ConfigureVariables.configure_q_roots,)
+    Q_JOINTS = (ConfigureVariables.configure_q_joints,)
+    QDOT = (ConfigureVariables.configure_qdot,)
+    QDOT_ROOTS = (ConfigureVariables.configure_qdot_roots,)
+    QDOT_JOINTS = (ConfigureVariables.configure_qdot_joints,)
+    TAU = (ConfigureVariables.configure_tau,)
+    MUSCLE_ACTIVATION = (ConfigureVariables.configure_muscles,)
+
 
 class Controls(FcnEnum):
-    QDDOT_JOINTS = (ConfigureVariables.configure_qddot_joints, )
-    TAU = (ConfigureVariables.configure_tau, )
-    TAU_JOINTS = (ConfigureVariables.configure_tau_joints, )
-    TAUDOT = (ConfigureVariables.configure_taudot, )
-    MUSCLE_EXCITATION = (ConfigureVariables.configure_muscles, )
-    K = (ConfigureVariables.configure_stochastic_k, )
-    C = (ConfigureVariables.configure_stochastic_c, )
-    A = (ConfigureVariables.configure_stochastic_a, )
-    COV = (ConfigureVariables.configure_stochastic_cov_implicit, )
-    CHOLESKY_COV = (ConfigureVariables.configure_stochastic_cholesky_cov, )
-    REF = (ConfigureVariables.configure_stochastic_ref, )
+    QDDOT_JOINTS = (ConfigureVariables.configure_qddot_joints,)
+    TAU = (ConfigureVariables.configure_tau,)
+    TAU_JOINTS = (ConfigureVariables.configure_tau_joints,)
+    TAUDOT = (ConfigureVariables.configure_taudot,)
+    MUSCLE_EXCITATION = (ConfigureVariables.configure_muscles,)
+    K = (ConfigureVariables.configure_stochastic_k,)
+    C = (ConfigureVariables.configure_stochastic_c,)
+    A = (ConfigureVariables.configure_stochastic_a,)
+    COV = (ConfigureVariables.configure_stochastic_cov_implicit,)
+    CHOLESKY_COV = (ConfigureVariables.configure_stochastic_cholesky_cov,)
+    REF = (ConfigureVariables.configure_stochastic_ref,)
+
 
 class AlgebraicStates(FcnEnum):
-    M = (ConfigureVariables.configure_stochastic_m, )
-    RIGID_CONTACT_FORCES = (ConfigureVariables.configure_rigid_contact_forces, )
-    SOFT_CONTACT_FORCES = (ConfigureVariables.configure_soft_contact_forces, )
+    M = (ConfigureVariables.configure_stochastic_m,)
+    RIGID_CONTACT_FORCES = (ConfigureVariables.configure_rigid_contact_forces,)
+    SOFT_CONTACT_FORCES = (ConfigureVariables.configure_soft_contact_forces,)
 
 
 class AutoConfigure:
@@ -1015,7 +1128,6 @@ class AutoConfigure:
         self.states = states
         self.controls = controls
         self.algebraic_states = algebraic_states
-
 
     def configure_contacts(self, ocp, nlp):
 
@@ -1039,11 +1151,10 @@ class AutoConfigure:
         if ContactType.SOFT_EXPLICIT in nlp.model.contact_types:
             ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
-
     def initialize(
-            self,
-            ocp,
-            nlp,
+        self,
+        ocp,
+        nlp,
     ):
 
         self.configure_contacts(ocp, nlp)
@@ -1056,4 +1167,3 @@ class AutoConfigure:
 
         for algebraic_state in self.algebraic_states:
             algebraic_state(ocp, nlp, as_states=False, as_controls=False, as_algebraic_states=True)
-

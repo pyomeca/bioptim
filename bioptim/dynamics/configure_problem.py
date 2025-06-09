@@ -137,9 +137,9 @@ class ConfigureProblem:
                 **nlp.dynamics_type.extra_parameters,
             )
         else:
-            AutoConfigure(states=nlp.model.state_type,
-                          controls=nlp.model.control_type,
-                          algebraic_states=nlp.model.algebraic_type).initialize(ocp, nlp)
+            AutoConfigure(
+                states=nlp.model.state_type, controls=nlp.model.control_type, algebraic_states=nlp.model.algebraic_type
+            ).initialize(ocp, nlp)
 
         ConfigureProblem.configure_dynamics_function(ocp, nlp, nlp.model.dynamics, **nlp.dynamics_type.extra_parameters)
 
@@ -1186,9 +1186,12 @@ class Dynamics(OptionGeneric):
         control_type: ControlType
             The type of control to consider in the dynamics
         """
-        if ((configure_function is None and dynamic_function is not None) or
-            (configure_function is not None and dynamic_function is None)):
-            raise RuntimeError("Either both configure_function and dynamics_function should be provided, or none of them.")
+        if (configure_function is None and dynamic_function is not None) or (
+            configure_function is not None and dynamic_function is None
+        ):
+            raise RuntimeError(
+                "Either both configure_function and dynamics_function should be provided, or none of them."
+            )
 
         super(Dynamics, self).__init__(**extra_parameters)
 

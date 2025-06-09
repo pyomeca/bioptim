@@ -116,7 +116,7 @@ def configure_stochastic_optimal_control_problem(
     for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
         for name_2 in [f"X_{i}" for i in range(n_noised_states)]:
             name_cov += [name_1 + "_&_" + name_2]
-    nlp.variable_mappings["cov"] = BiMapping(list(range(n_noised_states ** 2)), list(range(n_noised_states ** 2)))
+    nlp.variable_mappings["cov"] = BiMapping(list(range(n_noised_states**2)), list(range(n_noised_states**2)))
     ConfigureVariables.configure_integrated_value(
         "cov_explicit",
         name_cov,

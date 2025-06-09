@@ -24,33 +24,34 @@ from ...optimization.problem_type import SocpType
 
 class TorqueBiorbdModel(BiorbdModel, TorqueDynamics):
     def __init__(
-            self,
-            bio_model: Str | biorbd.Model,
-            friction_coefficients: np.ndarray = None,
-            parameters: ParameterList = None,
-            external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None):
+        self,
+        bio_model: Str | biorbd.Model,
+        friction_coefficients: np.ndarray = None,
+        parameters: ParameterList = None,
+        external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None,
+    ):
         BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set)
         TorqueDynamics.__init__(self)
 
 
 class StochasticTorqueBiorbdModel(StochasticBiorbdModel, StochasticTorqueDynamics):
     def __init__(
-            self,
-            bio_model: Str | biorbd.Model,
-            problem_type: SocpType,
-            with_cholesky: Bool,
-            n_references: Int,
-            n_feedbacks: Int,
-            n_noised_states: Int,
-            n_noised_controls: Int,
-            sensory_noise_magnitude: NpArray | DM,
-            motor_noise_magnitude: NpArray | DM,
-            sensory_reference: Callable,
-            compute_torques_from_noise_and_feedback: Callable = None,
-            motor_noise_mapping: BiMappingList = BiMappingList(),
-            use_sx: Bool = False,
-            parameters: ParameterList = None,
-            friction_coefficients: NpArray = None,
+        self,
+        bio_model: Str | biorbd.Model,
+        problem_type: SocpType,
+        with_cholesky: Bool,
+        n_references: Int,
+        n_feedbacks: Int,
+        n_noised_states: Int,
+        n_noised_controls: Int,
+        sensory_noise_magnitude: NpArray | DM,
+        motor_noise_magnitude: NpArray | DM,
+        sensory_reference: Callable,
+        compute_torques_from_noise_and_feedback: Callable = None,
+        motor_noise_mapping: BiMappingList = BiMappingList(),
+        use_sx: Bool = False,
+        parameters: ParameterList = None,
+        friction_coefficients: NpArray = None,
     ):
         StochasticBiorbdModel.__init__(
             self,
@@ -77,7 +78,9 @@ class StochasticTorqueBiorbdModel(StochasticBiorbdModel, StochasticTorqueDynamic
         n_noise = self.motor_noise_magnitude.shape[0] + self.sensory_noise_magnitude.shape[0]
         n_noised_states = 2 * n_noised_tau
 
-        StochasticTorqueDynamics.__init__(self, problem_type, with_cholesky, n_noised_tau, n_noise, n_noised_states, n_references)
+        StochasticTorqueDynamics.__init__(
+            self, problem_type, with_cholesky, n_noised_tau, n_noise, n_noised_states, n_references
+        )
 
 
 # class HolonomicTorqueBiorbdModel(HolonomicBiorbdModel, HolonomicTorqueDynamics):

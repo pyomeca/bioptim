@@ -94,7 +94,9 @@ class OptimizationVectorHelper:
             elif nlp.dynamics_type.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                 ns = nlp.ns + 1
             else:
-                raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.dynamics_type.control_type}")
+                raise NotImplementedError(
+                    f"Multiple shooting problem not implemented yet for {nlp.dynamics_type.control_type}"
+                )
 
             for key in nlp.controls.keys():
                 if key in nlp.u_bounds.keys():
@@ -184,7 +186,9 @@ class OptimizationVectorHelper:
             elif nlp.dynamics_type.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                 ns = nlp.ns
             else:
-                raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.dynamics_type.control_type}")
+                raise NotImplementedError(
+                    f"Multiple shooting problem not implemented yet for {nlp.dynamics_type.control_type}"
+                )
 
             for key in nlp.controls.keys():
                 if key in nlp.u_init.keys():

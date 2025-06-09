@@ -620,8 +620,9 @@ def _check_multi_threading_and_problem_type(problem_type, bio_model, **kwargs):
                     "n_thread is set to 1 by default."
                 )
     if bio_model.problem_type != problem_type:
-        raise RuntimeError("The problem type should be the same in the StochasticModel as in the StochasticOptimalControlProblem.")
-
+        raise RuntimeError(
+            "The problem type should be the same in the StochasticModel as in the StochasticOptimalControlProblem."
+        )
 
 
 def _check_has_no_phase_dynamics_shared_during_the_phase(problem_type, **kwargs):

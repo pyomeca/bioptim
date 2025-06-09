@@ -72,7 +72,10 @@ class StochasticBiorbdModel(BiorbdModel):
             scaling=VariableScaling("sensory_noise", [1.0] * sensory_noise_magnitude.shape[0]),
         )
         super().__init__(
-            bio_model=(bio_model if isinstance(bio_model, str) else bio_model.model), parameters=parameters, friction_coefficients=friction_coefficients, **kwargs
+            bio_model=(bio_model if isinstance(bio_model, str) else bio_model.model),
+            parameters=parameters,
+            friction_coefficients=friction_coefficients,
+            **kwargs,
         )
         self.problem_type = problem_type
 

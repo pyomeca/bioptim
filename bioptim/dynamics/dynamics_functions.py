@@ -7,14 +7,7 @@ from ..limits.holonomic_constraints import HolonomicConstraintsFcn
 from ..misc.enums import DefectType, ContactType
 from ..misc.mapping import BiMapping
 from ..optimization.optimization_variable import OptimizationVariable
-from ..misc.parameters_types import (
-    Bool,
-    AnyListOptional,
-    CX,
-    CXOptional,
-    Str,
-    Tuple
-)
+from ..misc.parameters_types import Bool, AnyListOptional, CX, CXOptional, Str, Tuple
 
 
 class DynamicsFunctions:
@@ -1179,7 +1172,6 @@ class DynamicsFunctions:
             raise RuntimeError("Your q key combination was not found in states or controls")
         return mapping.to_first.map(nlp.model.reshape_qdot()(q, qdot, nlp.parameters.cx))
 
-
     @staticmethod
     def compute_qddot(nlp, q: CX, qdot: CX, tau: CX, external_forces: CX):
         """
@@ -1223,7 +1215,15 @@ class DynamicsFunctions:
         return mapping.to_first.map(ddq_fd)
 
     @staticmethod
-    def collect_tau(nlp, q: CX, qdot: CX, parameters: CX, states: OptimizationVariable, controls: OptimizationVariable, fatigue: FatigueList | None = None):
+    def collect_tau(
+        nlp,
+        q: CX,
+        qdot: CX,
+        parameters: CX,
+        states: OptimizationVariable,
+        controls: OptimizationVariable,
+        fatigue: FatigueList | None = None,
+    ):
         """
         Collect the additional joint torques to add to the torques from controls.
 
@@ -1275,14 +1275,16 @@ class DynamicsFunctions:
 
         if ContactType.SOFT_IMPLICIT in nlp.model.contact_types:
             soft_contact_defect = (
-                    nlp.model.soft_contact_forces().expand()(q, qdot, nlp.parameters.cx)
-                    - nlp.algebraic_states["soft_contact_forces"].cx
+                nlp.model.soft_contact_forces().expand()(q, qdot, nlp.parameters.cx)
+                - nlp.algebraic_states["soft_contact_forces"].cx
             )
             contact_defects = vertcat(contact_defects, soft_contact_defect)
         return contact_defects
 
     @staticmethod
-    def get_fatigue_defects(key: Str, dxdt_defects: CX, slopes: CX, nlp, states: CX, controls: CX, fatigue: FatigueList) -> Tuple[CX, CX]:
+    def get_fatigue_defects(
+        key: Str, dxdt_defects: CX, slopes: CX, nlp, states: CX, controls: CX, fatigue: FatigueList
+    ) -> Tuple[CX, CX]:
         """
         Get the dxdt and slopes associated with fatigue elements.
         These are added to compute the defects in the case where there is fatigue.
@@ -1308,17 +1310,13 @@ class DynamicsFunctions:
             dxdt_defects = fatigue[key].dynamics(dxdt_defects, nlp, states, controls)
             state_keys = nlp.states.keys()
             if state_keys[0] != "q" or state_keys[1] != "qdot":
-                raise NotImplementedError(
-                    "The accession of fatigue states is not implemented generically yet."
-                )
+                raise NotImplementedError("The accession of fatigue states is not implemented generically yet.")
 
             slopes_fatigue = nlp.cx()
             fatigue_indices = []
             for key in state_keys[2:]:
                 if not key.startswith("tau_"):
-                    raise NotImplementedError(
-                        "The accession of states is not implemented generically yet."
-                    )
+                    raise NotImplementedError("The accession of states is not implemented generically yet.")
                 slopes_fatigue = vertcat(slopes_fatigue, nlp.states_dot[key].cx)
                 fatigue_indices += list(nlp.states[key].index)
 

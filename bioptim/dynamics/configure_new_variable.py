@@ -283,7 +283,11 @@ class NewVariableConfiguration:
                     node_index,
                 )
 
-                plot_type = PlotType.PLOT if self.nlp.dynamics_type.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
+                plot_type = (
+                    PlotType.PLOT
+                    if self.nlp.dynamics_type.control_type == ControlType.LINEAR_CONTINUOUS
+                    else PlotType.STEP
+                )
                 if not self.skip_plot:
                     self.nlp.plot[f"{self.name}_controls"] = CustomPlot(
                         lambda t0, phases_dt, node_idx, x, u, p, a, d: (

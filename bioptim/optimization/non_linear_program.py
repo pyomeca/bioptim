@@ -449,7 +449,11 @@ class NonLinearProgram:
         -------
         The number of controls
         """
-        mod = 1 if self.dynamics_type.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE) else 0
+        mod = (
+            1
+            if self.dynamics_type.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE)
+            else 0
+        )
         return self.ns + mod
 
     def n_controls_steps(self, node_idx) -> int:
@@ -591,9 +595,7 @@ class NonLinearProgram:
             return ValueError(f"node_index out of range [0:{self.ns}]")
         return self.dt * node_idx
 
-    def get_var(
-        self, key: str, states: MX.sym, controls: MX.sym, algebraic_states: MX.sym = None
-    ) -> MX:
+    def get_var(self, key: str, states: MX.sym, controls: MX.sym, algebraic_states: MX.sym = None) -> MX:
         """
         This function returns the requested variable from the states, controls, or algebraic_states.
         If the variable is present in more than one type of variables, it returns the following priority:

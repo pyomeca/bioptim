@@ -1,4 +1,3 @@
-
 from casadi import vertcat, horzcat
 
 from ...dynamics.configure_variables import States, Controls, AlgebraicStates
@@ -16,13 +15,16 @@ class TorqueDynamics:
     x = [q, qdot]
     u = [tau]
     """
+
     def __init__(self):
         self.state_type = [States.Q, States.QDOT]
         self.control_type = [Controls.TAU]
         self.algebraic_type = []
 
     @staticmethod
-    def get_basic_variables(nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue: FatigueList):
+    def get_basic_variables(
+        nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue: FatigueList
+    ):
 
         # Get variables from the right place
         q = DynamicsFunctions.get(nlp.states["q"], states)
@@ -33,25 +35,27 @@ class TorqueDynamics:
         tau += DynamicsFunctions.collect_tau(nlp, q, qdot, parameters, states, controls, fatigue)
 
         # Get external forces
-        external_forces = nlp.get_external_forces("external_forces", states, controls, algebraic_states,
-                                                  numerical_timeseries)
+        external_forces = nlp.get_external_forces(
+            "external_forces", states, controls, algebraic_states, numerical_timeseries
+        )
         return q, qdot, tau, external_forces
 
-
     def dynamics(
-            self,
-            time,
-            states,
-            controls,
-            parameters,
-            algebraic_states,
-            numerical_timeseries,
-            nlp,
-            fatigue: FatigueList = None,
+        self,
+        time,
+        states,
+        controls,
+        parameters,
+        algebraic_states,
+        numerical_timeseries,
+        nlp,
+        fatigue: FatigueList = None,
     ):
 
         # Get variables
-        q, qdot, tau, external_forces = self.get_basic_variables(nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue)
+        q, qdot, tau, external_forces = self.get_basic_variables(
+            nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue
+        )
 
         # Initialize dxdt
         dxdt = nlp.cx(nlp.states.shape, 1)
@@ -77,7 +81,9 @@ class TorqueDynamics:
 
                 dxdt_defects = nlp.cx(nlp.states.shape, 1)
                 dxdt_defects[nlp.states["q"].index, 0] = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-                dxdt_defects[nlp.states["qdot"].index, 0] = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, nlp.model.contact_types, external_forces)
+                dxdt_defects[nlp.states["qdot"].index, 0] = DynamicsFunctions.forward_dynamics(
+                    nlp, q, qdot, tau, nlp.model.contact_types, external_forces
+                )
 
                 slopes = nlp.cx(nlp.states.shape, 1)
                 slopes[nlp.states["q"].index, 0] = slope_q
@@ -85,7 +91,13 @@ class TorqueDynamics:
 
                 # Get fatigue defects
                 dxdt_defects, slopes = DynamicsFunctions.get_fatigue_defects(
-                    "tau", dxdt_defects, slopes, nlp, states, controls, fatigue,
+                    "tau",
+                    dxdt_defects,
+                    slopes,
+                    nlp,
+                    states,
+                    controls,
+                    fatigue,
                 )
 
                 defects = slopes * nlp.dt - dxdt_defects * nlp.dt
@@ -115,11 +127,13 @@ class TorqueDynamics:
 
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
-    def get_rigid_contact_forces(self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue: FatigueList = None):
-        q, qdot, tau, external_forces = self.get_basic_variables(nlp, states, controls, parameters, algebraic_states,
-                                                           numerical_timeseries, fatigue)
+    def get_rigid_contact_forces(
+        self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue: FatigueList = None
+    ):
+        q, qdot, tau, external_forces = self.get_basic_variables(
+            nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue
+        )
         return nlp.model.rigid_contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
-
 
 
 class StochasticTorqueDynamics(TorqueDynamics):
@@ -129,14 +143,21 @@ class StochasticTorqueDynamics(TorqueDynamics):
     x = [q, qdot, stochastic_variables]
     u = [tau]
     """
+
     def __init__(self, problem_type, with_cholesky, n_noised_tau, n_noise, n_noised_states, n_references):
         super().__init__()
         self.control_type += [
-            lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.K(ocp, nlp, n_noised_controls=n_noised_tau, n_references=n_references),
-            lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.REF(ocp, nlp, n_references=n_references),
+            lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.K(
+                ocp, nlp, n_noised_controls=n_noised_tau, n_references=n_references
+            ),
+            lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.REF(
+                ocp, nlp, n_references=n_references
+            ),
         ]
         self.algebraic_type = [
-            lambda ocp, nlp, as_states, as_controls, as_algebraic_states: AlgebraicStates.M(ocp, nlp, n_noised_states=n_noised_states),
+            lambda ocp, nlp, as_states, as_controls, as_algebraic_states: AlgebraicStates.M(
+                ocp, nlp, n_noised_states=n_noised_states
+            ),
         ]
 
         if isinstance(problem_type, SocpType.TRAPEZOIDAL_EXPLICIT):
@@ -145,29 +166,36 @@ class StochasticTorqueDynamics(TorqueDynamics):
             )
         if with_cholesky:
             self.control_type += [
-                lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.CHOLESKY_COV(ocp, nlp, n_noised_states=n_noised_states)
+                lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.CHOLESKY_COV(
+                    ocp, nlp, n_noised_states=n_noised_states
+                )
             ]
         else:
             self.control_type += [
-                lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.COV(ocp, nlp, n_noised_states=n_noised_states)
+                lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.COV(
+                    ocp, nlp, n_noised_states=n_noised_states
+                )
             ]
 
         if isinstance(problem_type, SocpType.TRAPEZOIDAL_IMPLICIT):
             self.control_type += [
-                lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.A(ocp, nlp, n_noised_states=n_noised_states),
-                lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.C(ocp, nlp, n_noised_states=n_noised_states, n_noise=n_noise)
+                lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.A(
+                    ocp, nlp, n_noised_states=n_noised_states
+                ),
+                lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.C(
+                    ocp, nlp, n_noised_states=n_noised_states, n_noise=n_noise
+                ),
             ]
 
-
     def dynamics(
-            self,
-            time,
-            states,
-            controls,
-            parameters,
-            algebraic_states,
-            numerical_timeseries,
-            nlp,
+        self,
+        time,
+        states,
+        controls,
+        parameters,
+        algebraic_states,
+        numerical_timeseries,
+        nlp,
     ):
 
         if (
@@ -196,13 +224,8 @@ class StochasticTorqueDynamics(TorqueDynamics):
 
         # Get variables
         q, qdot, tau, external_forces = self.get_basic_variables(
-            nlp,
-            states,
-            controls,
-            parameters,
-            algebraic_states,
-            numerical_timeseries,
-            fatigue=None)
+            nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue=None
+        )
 
         if external_forces.shape != (0, 1):
             raise NotImplementedError("External forces are not implemented yet with stochastic torque driven dynamics.")
@@ -233,7 +256,9 @@ class StochasticTorqueDynamics(TorqueDynamics):
 
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
-    def get_rigid_contact_forces(self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue: FatigueList = None):
+    def get_rigid_contact_forces(
+        self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue: FatigueList = None
+    ):
         raise NotImplementedError("Stochastic torque dynamics does not support rigid contact forces yet. ")
 
 
