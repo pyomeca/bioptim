@@ -139,128 +139,12 @@ class ConfigureProblem:
         nlp: NonLinearProgram
             A reference to the phase
         """
-        # nlp.dynamics_type.type(
-        #     ocp,
-        #     nlp,
-        #     numerical_data_timeseries=nlp.dynamics_type.numerical_data_timeseries,
-        #     contact_type=nlp.dynamics_type.contact_type,
-        #     **nlp.dynamics_type.extra_parameters,
-        # )
         nlp.dynamics_type.configure.initialize(
             ocp,
             nlp,
             **nlp.dynamics_type.extra_parameters,
         )
-        # dyn_eval = ConfigureProblem.initialize_dynamics(
-        #     ocp,
-        #     nlp,
-        #     numerical_data_timeseries=nlp.dynamics_type.numerical_data_timeseries,
-        #     contact_type=nlp.dynamics_type.contact_type,
-        #     **nlp.dynamics_type.extra_parameters,
-        # )
-        ConfigureProblem.configure_dynamics_function(ocp, nlp, ConfigureProblem.initialize_dynamics)
-
-    @staticmethod
-    def initialize_dynamics(
-            time,
-            states,
-            controls,
-            parameters,
-            algebraic_states,
-            numerical_timeseries,
-            nlp,
-        ):
-
-        # Collect variables
-        q = nlp.get_var("q", states, controls, algebraic_states)
-        qdot = nlp.get_var("qdot", states, controls, algebraic_states)
-        tau = nlp.get_var("tau", states, controls, algebraic_states)
-
-        # TODO: get all the other variables (None is doe not exists)
-        ConfigureProblem.check_variables(q, qdot, tau) # TODO: add others
-        dxdt = nlp.cx()
-        defects = None
-
-        # TODO: def collect_fext for the contact forces
-        external_forces = nlp.get_external_forces(states, controls, algebraic_states, numerical_timeseries)
-
-        fatigue = None # TODO: remove
-        tau = ConfigureProblem.collect_tau(nlp,
-                                            q,
-                                            qdot,
-                                            tau,
-                                            states,
-                                            controls,
-                                            fatigue,
-                                            with_passive_torque=False,
-                                            with_ligament=False,
-                                            with_friction=False)
-
-        # if fatigue is not None and "tau" in fatigue:
-        #     dxdt = fatigue["tau"].dynamics(dxdt, nlp, states, controls)
-
-        # TODO: if muscles, ...
-        # TODO: if taudot, ...
-        # ... append dynamics and defects accordingly
-
-        dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-        dxdt = vertcat(dxdt, dq)
-
-        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, nlp.dynamics_type.contact_type, external_forces)
-        dxdt = vertcat(dxdt, ddq)
-
-        # if nlp.dynamics_type.ode_solver.defects_type == DefectType.IMPLICIT:
-        #     if len(contact_type) == 0 and fatigue is None:
-        #         qddot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
-        #         tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, contact_type, external_forces)
-        #         defects = nlp.cx(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
-        #
-        #         dq_defects = []
-        #         for _ in range(tau_id.shape[1]):
-        #             dq_defects.append(
-        #                 dq
-        #                 - DynamicsFunctions.compute_qdot(
-        #                     nlp,
-        #                     q,
-        #                     DynamicsFunctions.get(nlp.states_dot.scaled["qdot"], nlp.states_dot.scaled.cx),
-        #                 )
-        #             )
-        #         defects[: dq.shape[0], :] = horzcat(*dq_defects)
-        #         # We modified on purpose the size of the tau to keep the zero in the defects in order to respect the dynamics
-        #         defects[dq.shape[0] :, :] = tau - tau_id
-
-        return DynamicsEvaluation(dxdt, defects)
-
-    @staticmethod
-    def check_variables(
-            q,
-            qdot,
-            tau,
-    ):
-        if q is None or qdot is None:
-            raise NotImplementedError("All of bioptim's dynamics require q and qdot to be defined")
-        # TODO: check combinations, ...
-
-    @staticmethod
-    def collect_tau(nlp,
-                    q,
-                    qdot,
-                    tau,
-                    states,
-                    controls,
-                    fatigue,
-                    with_passive_torque,
-                    with_ligament,
-                    with_friction):
-        # TODO: get_fatigable_tau should be modified so that it does not take states and controls as input
-        # TODO: with_passive_torque, with_ligament, with_friction will be removed in PR #
-        if tau is not None:
-            tau = DynamicsFunctions.get_fatigable_tau(nlp, states, controls, fatigue)
-            tau = tau + nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx) if with_passive_torque else tau
-            tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
-            tau = tau - nlp.model.friction_coefficients @ qdot if with_friction else tau
-        return tau
-
+        ConfigureProblem.configure_dynamics_function(ocp, nlp, nlp.model.dynamics, **nlp.dynamics_type.extra_parameters)
 
     @staticmethod
     def custom(ocp, nlp: NonLinearProgram, **extra_params) -> None:

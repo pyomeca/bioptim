@@ -20,7 +20,7 @@ from bioptim import (
     OdeSolverBase,
     CostType,
     Solver,
-    BiorbdModel,
+    TorqueBiorbdModel,
     ControlType,
     PhaseDynamics,
     OnlineOptim,

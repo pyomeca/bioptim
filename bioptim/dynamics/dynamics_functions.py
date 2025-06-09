@@ -12,6 +12,8 @@ from ..misc.parameters_types import (
     AnyListOptional,
     CX,
     CXOptional,
+    Str,
+    Tuple
 )
 
 
@@ -1321,14 +1323,177 @@ class DynamicsFunctions:
                 to_second=list(nlp.states["q_roots"].mapping.to_second.map_idx)
                 + [i + nlp.model.nb_root for i in nlp.states["q_joints"].mapping.to_second.map_idx],
             )
-        elif q in nlp.controls:
+        elif "q" in nlp.controls:
             mapping = nlp.controls["q"].mapping
         else:
             raise RuntimeError("Your q key combination was not found in states or controls")
         return mapping.to_first.map(nlp.model.reshape_qdot()(q, qdot, nlp.parameters.cx))
 
+
+    @staticmethod
+    def compute_qddot(nlp, q: CX, qdot: CX, tau: CX, external_forces: CX):
+        """
+        Easy accessor to derivative of qdot
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            The phase of the program
+        q: MX | SX
+            The value of q from "get"
+        qdot: MX | SX
+            The value of qdot from "get"
+        tau: MX | SX
+            The value of tau from "get"
+        external_forces: MX | SX
+            The value of external forces to apply to the model
+
+        Returns
+        -------
+        The derivative of qdot
+        """
+
+        if "qdot" in nlp.states:
+            mapping = nlp.states["qdot"].mapping
+        elif "qdot_roots" and "qdot_joints" in nlp.states:
+            mapping = BiMapping(
+                to_first=list(nlp.states["qdot_roots"].mapping.to_first.map_idx)
+                + [i + nlp.model.nb_root for i in nlp.states["qdot_joints"].mapping.to_first.map_idx],
+                to_second=list(nlp.states["qdot_roots"].mapping.to_second.map_idx)
+                + [i + nlp.model.nb_root for i in nlp.states["qdot_joints"].mapping.to_second.map_idx],
+            )
+        elif "qdot" in nlp.controls:
+            mapping = nlp.controls["qdot"].mapping
+        else:
+            raise RuntimeError("Your qdot key combination was not found in states or controls")
+
+        forward_dynamics_contact_types = ContactType.get_equivalent_explicit_contacts(nlp.model.contact_types)
+        ddq_fd = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, forward_dynamics_contact_types, external_forces)
+
+        return mapping.to_first.map(ddq_fd)
+
+    @staticmethod
+    def collect_tau(nlp, q: CX, qdot: CX, parameters: CX, states: OptimizationVariable, controls: OptimizationVariable, fatigue: FatigueList | None = None):
+        """
+        Collect the additional joint torques to add to the torques from controls.
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            The phase of the program
+        q: MX | SX
+            The value of q from "get"
+        qdot: MX | SX
+            The value of qdot from "get"
+        parameters: MX | SX
+            The parameters of the system
+        fatigue: FatigueList | None
+            The fatigue elements to consider in the dynamics. If None, no fatigue will be considered.
+        """
+        tau = DynamicsFunctions.get_fatigable_tau(nlp, states, controls, fatigue)
+        if nlp.model.nb_passive_joint_torques > 0:
+            tau += nlp.model.passive_joint_torque()(q, qdot, parameters.cx)
+        if nlp.model.nb_ligaments > 0:
+            tau += nlp.model.ligament_joint_torque()(q, qdot, parameters.cx)
+        if nlp.model.friction_coefficients is not None:
+            tau -= nlp.model.friction_coefficients @ qdot
+        return tau
+
+    @staticmethod
+    def get_contact_defects(nlp, q: CX, qdot: CX, slope_qdot: CX):
+        """
+        Get the defects associated with implicit contacts.
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            The phase of the program
+        q: MX | SX
+            The value of q from "get"
+        qdot: MX | SX
+            The value of qdot from "get"
+        slope_qdot: MX | SX
+            The slope of qdot from "get" states_dot
+        """
+
+        contact_defects = nlp.cx()
+        # We append the defects with the algebraic states implicit constraints
+        if ContactType.RIGID_IMPLICIT in nlp.model.contact_types:
+            _, _, acceleration_constraint_func = HolonomicConstraintsFcn.rigid_contacts(nlp.model)
+            contact_acceleration_defect = acceleration_constraint_func(q, qdot, slope_qdot, nlp.parameters.cx)
+            contact_defects = vertcat(contact_defects, contact_acceleration_defect)
+
+        if ContactType.SOFT_IMPLICIT in nlp.model.contact_types:
+            soft_contact_defect = (
+                    nlp.model.soft_contact_forces().expand()(q, qdot, nlp.parameters.cx)
+                    - nlp.algebraic_states["soft_contact_forces"].cx
+            )
+            contact_defects = vertcat(contact_defects, soft_contact_defect)
+        return contact_defects
+
+    @staticmethod
+    def get_fatigue_defects(key: Str, dxdt_defects: CX, slopes: CX, nlp, states: CX, controls: CX, fatigue: FatigueList) -> Tuple[CX, CX]:
+        """
+        Get the dxdt and slopes associated with fatigue elements.
+        These are added to compute the defects in the case where there is fatigue.
+
+        Parameters
+        ----------
+        key: str
+            The name of the fatigue element to consider
+        dxdt_defects: MX | SX
+            The states derivative before fatigue is applied
+        slopes : MX | SX
+            The slopes of the states before fatigue is applied
+        nlp: NonLinearProgram
+            The phase of the program
+        states: MX | SX
+            The states of the system
+        controls: MX | SX
+            The controls of the system
+        fatigue: FatigueList
+            The fatigue elements to consider in the dynamics. If None, no fatigue will be considered.
+        """
+        if fatigue is not None and key in fatigue:
+            dxdt_defects = fatigue[key].dynamics(dxdt_defects, nlp, states, controls)
+            state_keys = nlp.states.keys()
+            if state_keys[0] != "q" or state_keys[1] != "qdot":
+                raise NotImplementedError(
+                    "The accession of fatigue states is not implemented generically yet."
+                )
+
+            slopes_fatigue = nlp.cx()
+            fatigue_indices = []
+            for key in state_keys[2:]:
+                if not key.startswith("tau_"):
+                    raise NotImplementedError(
+                        "The accession of states is not implemented generically yet."
+                    )
+                slopes_fatigue = vertcat(slopes_fatigue, nlp.states_dot[key].cx)
+                fatigue_indices += list(nlp.states[key].index)
+
+            slopes[fatigue_indices, 0] = slopes_fatigue
+
+        return dxdt_defects, slopes
+
     @staticmethod
     def get_external_forces_from_contacts(nlp, q, qdot, contact_types, external_forces: MX | SX):
+        """
+        Get the external forces associated with the contacts defined in the model.
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            The phase of the program
+        q: MX | SX
+            The value of q from "get"
+        qdot: MX | SX
+            The value of qdot from "get"
+        contact_types: list[ContactType] | tuple[ContactType]
+            The type of contacts to consider in the dynamics
+        external_forces: MX | SX
+            The external forces to consider in the dynamics. If None, it will be initialized as an empty vector.
+        """
 
         external_forces = nlp.cx() if external_forces is None else external_forces
         if ContactType.RIGID_IMPLICIT in contact_types:

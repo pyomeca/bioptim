@@ -208,6 +208,7 @@ from .models.biorbd.holonomic_biorbd_model import HolonomicBiorbdModel
 from .models.biorbd.multi_biorbd_model import MultiBiorbdModel
 from .models.biorbd.stochastic_biorbd_model import StochasticBiorbdModel
 from .models.biorbd.variational_biorbd_model import VariationalBiorbdModel
+from .models.biorbd.model_dynamics import TorqueBiorbdModel
 from .models.protocols.biomodel import BioModel
 from .models.protocols.stochastic_biomodel import StochasticBioModel
 from .optimization.multi_start import MultiStart
