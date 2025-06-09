@@ -35,7 +35,7 @@ class TorqueDynamics:
         # Get variables from the right place
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-        tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
+        tau = DynamicsFunctions.get_fatigable_tau(nlp, states, controls, fatigue)
 
         # Add additional torques
         tau += DynamicsFunctions.collect_tau(nlp, q, qdot, parameters, states, controls, fatigue)
