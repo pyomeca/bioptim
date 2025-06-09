@@ -72,7 +72,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         problem_type=SocpType.TRAPEZOIDAL_IMPLICIT,
         **kwargs,
     ):
-        _check_multi_threading_and_problem_type(problem_type, **kwargs)
+        _check_multi_threading_and_problem_type(problem_type, bio_model, **kwargs)
         _check_has_no_phase_dynamics_shared_during_the_phase(problem_type, **kwargs)
 
         self.problem_type = problem_type
@@ -611,7 +611,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         NLP.add(self, "is_stochastic", True, True)
 
 
-def _check_multi_threading_and_problem_type(problem_type, **kwargs):
+def _check_multi_threading_and_problem_type(problem_type, bio_model, **kwargs):
     if not isinstance(problem_type, SocpType.COLLOCATION):
         if "n_thread" in kwargs:
             if kwargs["n_thread"] != 1:
@@ -619,6 +619,9 @@ def _check_multi_threading_and_problem_type(problem_type, **kwargs):
                     "Multi-threading is not possible yet while solving a trapezoidal stochastic ocp."
                     "n_thread is set to 1 by default."
                 )
+    if bio_model.problem_type != problem_type:
+        raise RuntimeError("The problem type should be the same in the StochasticModel as in the StochasticOptimalControlProblem.")
+
 
 
 def _check_has_no_phase_dynamics_shared_during_the_phase(problem_type, **kwargs):

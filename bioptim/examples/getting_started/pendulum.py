@@ -81,7 +81,6 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = Dynamics(
-        configure=AutoConfigure(states=[States.Q, States.QDOT], controls=[Controls.TAU]),
         ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,

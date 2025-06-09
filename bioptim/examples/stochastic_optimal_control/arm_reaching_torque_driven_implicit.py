@@ -17,10 +17,11 @@ from bioptim import (
     StochasticOptimalControlProgram,
     ObjectiveFcn,
     Solver,
-    StochasticBiorbdModel,
+    StochasticTorqueBiorbdModel,
     ObjectiveList,
     NonLinearProgram,
     DynamicsList,
+    Dynamics,
     BoundsList,
     InterpolationType,
     SocpType,
@@ -105,8 +106,10 @@ def prepare_socp(
 
     problem_type = SocpType.TRAPEZOIDAL_IMPLICIT(with_cholesky)
 
-    bio_model = StochasticBiorbdModel(
+    bio_model = StochasticTorqueBiorbdModel(
         biorbd_model_path,
+        problem_type=problem_type,
+        with_cholesky=with_cholesky,
         sensory_noise_magnitude=sensory_noise_magnitude,
         motor_noise_magnitude=motor_noise_magnitude,
         sensory_reference=sensory_reference,
@@ -189,14 +192,11 @@ def prepare_socp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(
-        DynamicsFcn.STOCHASTIC_TORQUE_DRIVEN,
-        problem_type=problem_type,
-        with_cholesky=with_cholesky,
+    dynamics.add(Dynamics(
         expand_dynamics=False,
         phase_dynamics=PhaseDynamics.ONE_PER_NODE,
         numerical_data_timeseries=None,
-    )
+    ))
 
     x_bounds = BoundsList()
     x_bounds.add(

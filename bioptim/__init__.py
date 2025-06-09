@@ -161,7 +161,7 @@ multiphase can be found in 'examples/torque_driven_ocp'. For ACADOS specific exa
 """
 
 from .dynamics.configure_problem import ConfigureProblem, DynamicsFcn, DynamicsList, Dynamics
-from .dynamics.configure_variables import AutoConfigure, States, Controls, AlgebraicStates
+from .dynamics.configure_variables import AutoConfigure, States, Controls, AlgebraicStates, ConfigureVariables
 from .dynamics.dynamics_evaluation import DynamicsEvaluation
 from .dynamics.dynamics_functions import DynamicsFunctions
 from .dynamics.fatigue.effort_perception import EffortPerception, TauEffortPerception
@@ -208,7 +208,7 @@ from .models.biorbd.holonomic_biorbd_model import HolonomicBiorbdModel
 from .models.biorbd.multi_biorbd_model import MultiBiorbdModel
 from .models.biorbd.stochastic_biorbd_model import StochasticBiorbdModel
 from .models.biorbd.variational_biorbd_model import VariationalBiorbdModel
-from .models.biorbd.model_dynamics import TorqueBiorbdModel
+from .models.biorbd.model_dynamics import TorqueBiorbdModel, StochasticTorqueBiorbdModel
 from .models.protocols.biomodel import BioModel
 from .models.protocols.stochastic_biomodel import StochasticBioModel
 from .optimization.multi_start import MultiStart

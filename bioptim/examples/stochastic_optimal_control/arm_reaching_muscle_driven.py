@@ -30,6 +30,7 @@ from bioptim import (
     DynamicsEvaluation,
     DynamicsFunctions,
     ConfigureProblem,
+    ConfigureVariables,
     DynamicsList,
     BoundsList,
     InterpolationType,
@@ -42,6 +43,7 @@ from bioptim import (
     MultinodeObjectiveList,
     ControlType,
     ContactType,
+    BiMapping,
 )
 from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
 from bioptim.examples.stochastic_optimal_control.models.leuven_arm_model import LeuvenArmModel
@@ -141,6 +143,10 @@ def configure_stochastic_optimal_control_problem(
     numerical_data_timeseries=None,
     contact_types: list[ContactType] | tuple[ContactType] = (),
 ):
+    n_noised_states = 10
+    n_references = 4
+    n_noised_controls = 6
+
     ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
     ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
     ConfigureProblem.configure_muscles(
@@ -148,11 +154,26 @@ def configure_stochastic_optimal_control_problem(
     )  # Muscles activations as states + muscles excitations as controls
 
     # Algebraic variables
-    ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=6, n_references=4)
-    ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=4)
-    ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=10)
+    ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=n_noised_controls, n_references=n_references)
+    ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=n_references)
+    ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=n_noised_states)
     mat_cov_init = cas.DM_eye(10) * np.array([1e-4, 1e-4, 1e-7, 1e-7, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6])
-    ConfigureProblem.configure_stochastic_cov_explicit(ocp, nlp, n_noised_states=10, initial_matrix=mat_cov_init)
+
+    # Configure explicit cov as an integrated value
+    name_cov = []
+    for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
+        for name_2 in [f"X_{i}" for i in range(n_noised_states)]:
+            name_cov += [name_1 + "_&_" + name_2]
+    nlp.variable_mappings["cov"] = BiMapping(list(range(n_noised_states ** 2)), list(range(n_noised_states ** 2)))
+    ConfigureVariables.configure_integrated_value(
+        "cov_explicit",
+        name_cov,
+        ocp,
+        nlp,
+        initial_matrix=mat_cov_init,
+    )
+
+    # Configure dynamics
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,

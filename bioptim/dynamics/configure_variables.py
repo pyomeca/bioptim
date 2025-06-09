@@ -4,10 +4,9 @@ from casadi import DM, vertcat, Function
 
 from .configure_new_variable import NewVariableConfiguration
 from .fatigue.fatigue_dynamics import FatigueList
-from ..misc.enums import PlotType
+from ..misc.enums import PlotType, ContactType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.mapping import BiMapping, Mapping
-from ..misc.options import OptionGeneric
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
 from ..dynamics.ode_solvers import OdeSolver
 from ..gui.plot import CustomPlot
@@ -154,6 +153,49 @@ class ConfigureVariables:
         axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
         ConfigureVariables.configure_new_variable(name, name_q, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states, axes_idx=axes_idx)
 
+    @staticmethod
+    def configure_q_roots(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
+        """
+        Configure the generalized coordinates for the root segment
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        as_states: bool
+            If the generalized coordinates should be a state
+        as_controls: bool
+            If the generalized coordinates should be a control
+        as_algebraic_states: bool
+            If the generalized coordinates should be an algebraic state
+        """
+        name = "q_roots"
+        name_q_roots = [nlp.model.name_dof[i] for i in range(nlp.model.nb_roots)]
+        axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
+        ConfigureVariables.configure_new_variable(name, name_q_roots, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states, axes_idx=axes_idx)
+
+
+    @staticmethod
+    def configure_q_joints(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
+        """
+        Configure the generalized coordinates for the segments other than the root segment
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        as_states: bool
+            If the generalized coordinates should be a state
+        as_controls: bool
+            If the generalized coordinates should be a control
+        as_algebraic_states: bool
+            If the generalized coordinates should be an algebraic state
+        """
+        name = "q_joints"
+        name_q_joints = [nlp.model.name_dof[i] for i in range(nlp.model.nb_roots, nlp.model.nb_q)]
+        axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
+        ConfigureVariables.configure_new_variable(name, name_q_joints, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states, axes_idx=axes_idx)
+
 
     @staticmethod
     def configure_qdot(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
@@ -179,6 +221,52 @@ class ConfigureVariables:
 
 
     @staticmethod
+    def configure_qdot_roots(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
+        """
+        Configure the generalized velocities for the root segment
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        as_states: bool
+            If the generalized coordinates should be a state
+        as_controls: bool
+            If the generalized coordinates should be a control
+        as_algebraic_states: bool
+            If the generalized coordinates should be an algebraic state
+        """
+        name = "qdot_roots"
+        name_qdot = ConfigureVariables._get_kinematics_based_names(nlp, name)
+        name_qdot_roots = [name_qdot[i] for i in range(nlp.model.nb_roots)]
+        axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
+        ConfigureVariables.configure_new_variable(name, name_qdot_roots, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states, axes_idx=axes_idx)
+
+
+    @staticmethod
+    def configure_qdot_joints(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
+        """
+        Configure the generalized velocities for the segments other than the root segment
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        as_states: bool
+            If the generalized coordinates should be a state
+        as_controls: bool
+            If the generalized coordinates should be a control
+        as_algebraic_states: bool
+            If the generalized coordinates should be an algebraic state
+        """
+        name = "qdot_joints"
+        name_qdot = ConfigureVariables._get_kinematics_based_names(nlp, name)
+        name_qdot_joints = [name_qdot[i] for i in range(nlp.model.nb_roots, nlp.model.nb_q)]
+        axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
+        ConfigureVariables.configure_new_variable(name, name_qdot_joints, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states, axes_idx=axes_idx)
+
+
+    @staticmethod
     def configure_qddot(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
         """
         Configure the generalized accelerations
@@ -199,6 +287,29 @@ class ConfigureVariables:
         name_qddot = ConfigureVariables._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
         ConfigureVariables.configure_new_variable(name, name_qddot, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states, axes_idx=axes_idx)
+
+
+    @staticmethod
+    def configure_qddot_joints(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
+        """
+        Configure the generalized acceleration for the segments other than the root segment
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        as_states: bool
+            If the generalized coordinates should be a state
+        as_controls: bool
+            If the generalized coordinates should be a control
+        as_algebraic_states: bool
+            If the generalized coordinates should be an algebraic state
+        """
+        name = "qddot_joints"
+        name_qddot = ConfigureVariables._get_kinematics_based_names(nlp, name)
+        name_qddot_joints = [name_qddot[i] for i in range(nlp.model.nb_roots, nlp.model.nb_q)]
+        axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
+        ConfigureVariables.configure_new_variable(name, name_qddot_joints, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states, axes_idx=axes_idx)
 
 
     @staticmethod
@@ -321,34 +432,6 @@ class ConfigureVariables:
             as_controls=True,
             as_algebraic_states=False,
             skip_plot=True,
-        )
-
-
-    @staticmethod
-    def configure_stochastic_cov_explicit(ocp, nlp, n_noised_states: int, initial_matrix: DM):
-        """
-        Configure the covariance matrix P representing the motor noise.
-        Parameters
-        ----------
-        nlp: NonLinearProgram
-            A reference to the phase
-        """
-        name = "cov"
-
-        if name in nlp.variable_mappings:
-            raise NotImplementedError(f"Algebraic states and mapping cannot be use together for now.")
-
-        name_cov = []
-        for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
-            for name_2 in [f"X_{i}" for i in range(n_noised_states)]:
-                name_cov += [name_1 + "_&_" + name_2]
-        nlp.variable_mappings[name] = BiMapping(list(range(n_noised_states ** 2)), list(range(n_noised_states ** 2)))
-        ConfigureVariables.configure_integrated_value(
-            name,
-            name_cov,
-            ocp,
-            nlp,
-            initial_matrix=initial_matrix,
         )
 
 
@@ -500,6 +583,29 @@ class ConfigureVariables:
         ConfigureVariables.configure_new_variable(
             name, name_tau, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states, fatigue=fatigue, axes_idx=axes_idx
         )
+
+
+    @staticmethod
+    def configure_tau_joints(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
+        """
+        Configure the generalized forces for the segments other than the root segment
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        as_states: bool
+            If the generalized coordinates should be a state
+        as_controls: bool
+            If the generalized coordinates should be a control
+        as_algebraic_states: bool
+            If the generalized coordinates should be an algebraic state
+        """
+        name = "tau_joints"
+        name_tau = ConfigureVariables._get_kinematics_based_names(nlp, name)
+        name_tau_joints = [name_tau[i] for i in range(nlp.model.nb_roots, nlp.model.nb_q)]
+        axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
+        ConfigureVariables.configure_new_variable(name, name_tau_joints, ocp, nlp, as_states=as_states, as_controls=as_controls, as_algebraic_states=as_algebraic_states, axes_idx=axes_idx)
 
 
     @staticmethod
@@ -863,40 +969,39 @@ class ConfigureVariables:
 
 class States(FcnEnum):
     Q = (ConfigureVariables.configure_q, )
-    Q_ROOTS = "q_roots"
-    Q_JOINTS = "q_joints"
+    Q_ROOTS = (ConfigureVariables.configure_q_roots, )
+    Q_JOINTS = (ConfigureVariables.configure_q_joints, )
     QDOT = (ConfigureVariables.configure_qdot, )
-    QDOT_ROOTS = "qdot_roots"
-    QDOT_JOINTS = "qdot_joints"
+    QDOT_ROOTS = (ConfigureVariables.configure_qdot_roots, )
+    QDOT_JOINTS = (ConfigureVariables.configure_qdot_joints, )
     TAU = (ConfigureVariables.configure_tau, )
-    MUSCLE_ACTIVATION = "muscle_activation"
+    MUSCLE_ACTIVATION = (ConfigureVariables.configure_muscles, )
 
 class Controls(FcnEnum):
-    QDDOT_JOINTS = "qddot_joints"
+    QDDOT_JOINTS = (ConfigureVariables.configure_qddot_joints, )
     TAU = (ConfigureVariables.configure_tau, )
-    TAU_JOINTS = "tau_joints"
-    TAUDOT = "taudot"
-    MUSCLE_EXCITATION = "muscle_excitation"
-    K = "k"
-    C = "c"
-    A = "a"
-    COV = "cov"
-    CHOLESKY_COV = "cholesky_cov"
-    REF = "ref"
-    SOFT_CONTACT_FORCES = "soft_contact_forces"  # This should be removed after PR #964
+    TAU_JOINTS = (ConfigureVariables.configure_tau_joints, )
+    TAUDOT = (ConfigureVariables.configure_taudot, )
+    MUSCLE_EXCITATION = (ConfigureVariables.configure_muscles, )
+    K = (ConfigureVariables.configure_stochastic_k, )
+    C = (ConfigureVariables.configure_stochastic_c, )
+    A = (ConfigureVariables.configure_stochastic_a, )
+    COV = (ConfigureVariables.configure_stochastic_cov_implicit, )
+    CHOLESKY_COV = (ConfigureVariables.configure_stochastic_cholesky_cov, )
+    REF = (ConfigureVariables.configure_stochastic_ref, )
 
 class AlgebraicStates(FcnEnum):
-    RIGID_CONTACT_FORCES = "rigid_contact_forces"
-    SOFT_CONTACT_FORCES = "soft_contact_forces"
-
+    M = (ConfigureVariables.configure_stochastic_m, )
+    RIGID_CONTACT_FORCES = (ConfigureVariables.configure_rigid_contact_forces, )
+    SOFT_CONTACT_FORCES = (ConfigureVariables.configure_soft_contact_forces, )
 
 
 class AutoConfigure:
     def __init__(
         self,
-        states: list[States] | tuple[States] = (States.Q, States.QDOT),
-        controls: list[Controls] | tuple[Controls] = (Controls.TAU),
-        algebraic_states: list[AlgebraicStates] | tuple[Controls] = (),
+        states: list[States],
+        controls: list[Controls] = None,
+        algebraic_states: list[AlgebraicStates] = None,
         **extra_parameters: Any,
     ):
         """
@@ -911,11 +1016,38 @@ class AutoConfigure:
         self.controls = controls
         self.algebraic_states = algebraic_states
 
+
+    def configure_contacts(self, ocp, nlp):
+
+        # Add algebraic states for implicit contacts
+        if ContactType.RIGID_IMPLICIT in nlp.model.contact_types:
+            if self.algebraic_states is None:
+                self.algebraic_states = [AlgebraicStates.RIGID_CONTACT_FORCES]
+            else:
+                self.algebraic_states += [AlgebraicStates.RIGID_CONTACT_FORCES]
+
+        if ContactType.SOFT_IMPLICIT in nlp.model.contact_types:
+            if self.algebraic_states is None:
+                self.algebraic_states = [AlgebraicStates.SOFT_CONTACT_FORCES]
+            else:
+                self.algebraic_states += [AlgebraicStates.SOFT_CONTACT_FORCES]
+
+        # Define the contact function for explicit contacts
+        if ContactType.RIGID_EXPLICIT in nlp.model.contact_types:
+            ConfigureProblem.configure_rigid_contact_function(ocp, nlp)
+
+        if ContactType.SOFT_EXPLICIT in nlp.model.contact_types:
+            ConfigureProblem.configure_soft_contact_function(ocp, nlp)
+
+
     def initialize(
             self,
             ocp,
             nlp,
     ):
+
+        self.configure_contacts(ocp, nlp)
+
         for state in self.states:
             state(ocp, nlp, as_states=True, as_controls=False, as_algebraic_states=False)
 
@@ -924,5 +1056,4 @@ class AutoConfigure:
 
         for algebraic_state in self.algebraic_states:
             algebraic_state(ocp, nlp, as_states=False, as_controls=False, as_algebraic_states=True)
-
 

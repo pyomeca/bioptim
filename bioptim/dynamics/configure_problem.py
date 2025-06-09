@@ -3,32 +3,23 @@ from typing import Callable, Any
 import numpy as np
 from casadi import vertcat, Function, DM, horzcat
 
-from .dynamics_evaluation import DynamicsEvaluation
+from .configure_variables import AutoConfigure
 from .dynamics_functions import DynamicsFunctions
 from .fatigue.fatigue_dynamics import FatigueList
 from .ode_solvers import OdeSolver, OdeSolverBase
 from ..gui.plot import CustomPlot
 from ..misc.enums import (
     PlotType,
-    Node,
-    ConstraintType,
     PhaseDynamics,
-    ContactType,
     ControlType,
-    DefectType,
 )
 from ..misc.fcn_enum import FcnEnum
 from ..misc.mapping import BiMapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
-from ..models.protocols.biomodel import BioModel
 from ..optimization.problem_type import SocpType
 from ..misc.parameters_types import (
     Bool,
     Int,
-    FloatOptional,
-    Str,
-    StrOptional,
-    StrList,
     NpArray,
     NpArrayDictOptional,
 )
@@ -139,11 +130,17 @@ class ConfigureProblem:
         nlp: NonLinearProgram
             A reference to the phase
         """
-        nlp.dynamics_type.configure.initialize(
-            ocp,
-            nlp,
-            **nlp.dynamics_type.extra_parameters,
-        )
+        if nlp.dynamics_type.configure_function is not None:
+            nlp.dynamics_type.configure_function.initialize(
+                ocp,
+                nlp,
+                **nlp.dynamics_type.extra_parameters,
+            )
+        else:
+            AutoConfigure(states=nlp.model.state_type,
+                          controls=nlp.model.control_type,
+                          algebraic_states=nlp.model.algebraic_type).initialize(ocp, nlp)
+
         ConfigureProblem.configure_dynamics_function(ocp, nlp, nlp.model.dynamics, **nlp.dynamics_type.extra_parameters)
 
     @staticmethod
@@ -160,49 +157,6 @@ class ConfigureProblem:
         """
 
         nlp.dynamics_type.configure(ocp, nlp, **extra_params)
-
-    @staticmethod
-    def torque_driven(
-        ocp,
-        nlp: NonLinearProgram,
-        fatigue: FatigueList = None,
-        numerical_data_timeseries: NpArrayDictOptional = None,
-    ) -> None:
-        """
-        Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the phase
-        fatigue: FatigueList
-            A list of fatigue elements
-        numerical_data_timeseries: dict[str, np.ndarray]
-            A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
-        """
-
-        # Declared rigidbody states and controls
-        ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
-        ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
-        ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True, fatigue=fatigue)
-        ConfigureProblem.configure_qddot(ocp, nlp, as_states=False, as_controls=False)
-
-        ConfigureProblem.configure_contacts(
-            ocp, nlp, nlp.model.contact_types, DynamicsFunctions.forces_from_torque_driven
-        )
-
-        # Configure the actual ODE of the dynamics
-        if nlp.dynamics_type.dynamic_function:
-            ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
-        else:
-            ConfigureProblem.configure_dynamics_function(
-                ocp,
-                nlp,
-                DynamicsFunctions.torque_driven,
-                fatigue=fatigue,
-            )
 
     @staticmethod
     def torque_driven_free_floating_base(
@@ -728,25 +682,6 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_contacts(ocp, nlp, contact_types, force_from_where):
-        if ContactType.RIGID_IMPLICIT in contact_types:
-            ConfigureProblem.configure_rigid_contact_forces(
-                ocp,
-                nlp,
-                as_states=False,
-                as_algebraic_states=True,
-                as_controls=False,
-            )
-        if ContactType.RIGID_EXPLICIT in contact_types:
-            ConfigureProblem.configure_rigid_contact_function(ocp, nlp, force_from_where)
-        if ContactType.SOFT_IMPLICIT in contact_types:
-            ConfigureProblem.configure_soft_contact_forces(
-                ocp, nlp, as_states=False, as_algebraic_states=True, as_controls=False
-            )
-        if ContactType.SOFT_EXPLICIT in contact_types:
-            ConfigureProblem.configure_soft_contact_function(ocp, nlp)
-
-    @staticmethod
     def configure_qv(ocp, nlp: NpArrayDictOptional, dyn_func: Callable, **extra_params) -> None:
         """
         Configure the qv, i.e. the dependent joint coordinates, to be plotted
@@ -1034,7 +969,7 @@ class ConfigureProblem:
                         )
 
     @staticmethod
-    def configure_rigid_contact_function(ocp, nlp: NonLinearProgram, contact_func: Callable, **extra_params) -> None:
+    def configure_rigid_contact_function(ocp, nlp: NonLinearProgram, **extra_params) -> None:
         """
         Configure the contact points
 
@@ -1060,7 +995,7 @@ class ConfigureProblem:
                 nlp.numerical_timeseries.cx,
             ],
             [
-                contact_func(
+                nlp.model.get_rigid_contact_forces(
                     time_span_sym,
                     nlp.states.scaled.cx,
                     nlp.controls.scaled.cx,
@@ -1177,7 +1112,6 @@ class DynamicsFcn(FcnEnum):
     Selection of valid dynamics functions
     """
 
-    TORQUE_DRIVEN = (ConfigureProblem.torque_driven,)
     TORQUE_DRIVEN_FREE_FLOATING_BASE = (ConfigureProblem.torque_driven_free_floating_base,)
     STOCHASTIC_TORQUE_DRIVEN = (ConfigureProblem.stochastic_torque_driven,)
     STOCHASTIC_TORQUE_DRIVEN_FREE_FLOATING_BASE = (ConfigureProblem.stochastic_torque_driven_free_floating_base,)
@@ -1215,7 +1149,8 @@ class Dynamics(OptionGeneric):
 
     def __init__(
         self,
-        configure: Callable | "AutoConfigure",
+        configure_function: Callable = None,
+        dynamic_function: Callable = None,
         expand_dynamics: bool = True,
         expand_continuity: bool = False,
         skip_continuity: bool = False,
@@ -1251,27 +1186,14 @@ class Dynamics(OptionGeneric):
         control_type: ControlType
             The type of control to consider in the dynamics
         """
+        if ((configure_function is None and dynamic_function is not None) or
+            (configure_function is not None and dynamic_function is None)):
+            raise RuntimeError("Either both configure_function and dynamics_function should be provided, or none of them.")
 
-        # configure = None
-        # if not isinstance(dynamics_type, DynamicsFcn):
-        #     configure = dynamics_type
-        #     dynamics_type = DynamicsFcn.CUSTOM
-        # else:
-        #     if "configure" in extra_parameters:
-        #         configure = extra_parameters["configure"]
-        #         del extra_parameters["configure"]
+        super(Dynamics, self).__init__(**extra_parameters)
 
-        dynamic_function = None
-        if "dynamic_function" in extra_parameters:
-            dynamic_function = extra_parameters["dynamic_function"]
-            del extra_parameters["dynamic_function"]
-
-        if not isinstance(ode_solver, OdeSolverBase):
-            raise RuntimeError("ode_solver should be built an instance of OdeSolver")
-
-        super(Dynamics, self).__init__(type=configure, **extra_parameters)
         self.dynamic_function = dynamic_function
-        self.configure = configure
+        self.configure_function = configure_function
         self.expand_dynamics = expand_dynamics
         self.expand_continuity = expand_continuity
         self.skip_continuity = skip_continuity
@@ -1294,14 +1216,12 @@ class DynamicsList(UniquePerPhaseOptionList):
         Print the DynamicsList to the console
     """
 
-    def add(self, dynamics_type: Callable, **extra_parameters: Any):
+    def add(self, dynamics_type, **extra_parameters: Any):
         """
         Add a new Dynamics to the list
 
         Parameters
         ----------
-        dynamics_type: Callable | Dynamics | DynamicsFcn
-            The chosen dynamic functions
         extra_parameters: dict
             Any parameters to pass to Dynamics
         """
