@@ -92,156 +92,6 @@ class DynamicsFunctions:
         )
 
     @staticmethod
-    def torque_driven(
-        time,
-        states,
-        controls,
-        parameters,
-        algebraic_states,
-        numerical_timeseries,
-        nlp,
-        fatigue: FatigueList,
-    ) -> DynamicsEvaluation:
-        """
-        Forward dynamics driven by joint torques
-
-        Parameters
-        ----------
-        time: MX.sym | SX.sym
-            The time of the system
-        states: MX.sym | SX.sym
-            The state of the system
-        controls: MX.sym | SX.sym
-            The controls of the system
-        parameters: MX.sym | SX.sym
-            The parameters of the system
-        algebraic_states: MX.sym | SX.sym
-            The algebraic states of the system
-        numerical_timeseries: MX.sym | SX.sym
-            The numerical timeseries of the system
-        nlp: NonLinearProgram
-            The definition of the system
-        fatigue : FatigueList
-            A list of fatigue elements
-
-        Returns
-        ----------
-        DynamicsEvaluation
-            The derivative of the states and the defects of the implicit dynamics
-        """
-
-        q = DynamicsFunctions.get(nlp.states["q"], states)
-        qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-
-        dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-
-        tau = DynamicsFunctions.get_fatigable_tau(nlp, states, controls, fatigue)
-        if nlp.model.nb_passive_joint_torques > 0:
-            tau += nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx)
-        if nlp.model.nb_ligaments > 0:
-            tau += nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx)
-        if nlp.model.friction_coefficients is not None:
-            tau -= nlp.model.friction_coefficients @ qdot
-
-        external_forces = nlp.get_external_forces(
-            "external_forces", states, controls, algebraic_states, numerical_timeseries
-        )
-
-        forward_dynamics_contact_types = ContactType.get_equivalent_explicit_contacts(nlp.model.contact_types)
-        ddq_fd = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, forward_dynamics_contact_types, external_forces)
-
-        dxdt = nlp.cx(nlp.states.shape, 1)
-        dxdt[nlp.states["q"].index, 0] = dq
-        dxdt[nlp.states["qdot"].index, 0] = ddq_fd
-
-        if fatigue is not None and "tau" in fatigue:
-            dxdt = fatigue["tau"].dynamics(dxdt, nlp, states, controls)
-
-        defects = None
-        if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
-
-            for key in nlp.states.keys():
-                if nlp.variable_mappings[key].actually_does_a_mapping():
-                    raise NotImplementedError(
-                        f"COLLOCATION transcription is not compatible with mapping for states. "
-                        "Please note that concept of states mapping in already sketchy on it's own, but is particularly not appropriate for COLLOCATION transcriptions."
-                    )
-
-            # Do not use DynamicsFunctions.get to get the slopes because we do not want them mapped
-            slope_q = nlp.states_dot["q"].cx
-            slope_qdot = nlp.states_dot["qdot"].cx
-            defects = nlp.cx(nlp.states.shape, 1)
-
-            if nlp.dynamics_type.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
-
-                dxdt_defects = nlp.cx(nlp.states.shape, 1)
-                ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, nlp.model.contact_types, external_forces)
-                dxdt_defects[nlp.states["q"].index, 0] = qdot
-                dxdt_defects[nlp.states["qdot"].index, 0] = ddq
-
-                slopes = nlp.cx(nlp.states.shape, 1)
-                slopes[nlp.states["q"].index, 0] = slope_q
-                slopes[nlp.states["qdot"].index, 0] = slope_qdot
-
-                if fatigue is not None and "tau" in fatigue:
-                    dxdt_defects = fatigue["tau"].dynamics(dxdt_defects, nlp, states, controls)
-                    state_keys = nlp.states.keys()
-                    if state_keys[0] != "q" or state_keys[1] != "qdot":
-                        raise NotImplementedError(
-                            "The accession of tau fatigue states is not implemented generically yet."
-                        )
-
-                    slopes_fatigue = nlp.cx()
-                    fatigue_indices = []
-                    for key in state_keys[2:]:
-                        if not key.startswith("tau_"):
-                            raise NotImplementedError(
-                                "The accession of muscles tau states is not implemented generically yet."
-                            )
-                        slopes_fatigue = vertcat(slopes_fatigue, nlp.states_dot[key].cx)
-                        fatigue_indices += list(nlp.states[key].index)
-
-                    slopes[fatigue_indices, 0] = slopes_fatigue
-
-                defects = slopes * nlp.dt - dxdt_defects * nlp.dt
-
-            elif nlp.dynamics_type.ode_solver.defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
-                if fatigue is not None:
-                    raise NotImplementedError("Fatigue is not implemented yet with inverse dynamics defects.")
-
-                defects[nlp.states["q"].index, 0] = slope_q * nlp.dt - dq * nlp.dt
-
-                tau_id = DynamicsFunctions.inverse_dynamics(
-                    nlp,
-                    q=q,
-                    qdot=qdot,
-                    qddot=slope_qdot,
-                    contact_types=nlp.model.contact_types,
-                    external_forces=external_forces,
-                )
-                tau_defects = tau - tau_id
-                defects[nlp.states["qdot"].index, 0] = tau_defects
-            else:
-                raise NotImplementedError(
-                    f"The defect type {nlp.dynamics_type.ode_solver.defects_type} is not implemented yet for torque driven dynamics."
-                )
-
-            # We append the defects with the algebraic states implicit constraints
-            if ContactType.RIGID_IMPLICIT in nlp.model.contact_types:
-                _, _, acceleration_constraint_func = HolonomicConstraintsFcn.rigid_contacts(nlp.model)
-                contact_acceleration_defect = acceleration_constraint_func(q, qdot, slope_qdot, nlp.parameters.cx)
-                defects = vertcat(defects, contact_acceleration_defect)
-
-            if ContactType.SOFT_IMPLICIT in nlp.model.contact_types:
-                soft_contact_defect = (
-                    nlp.model.soft_contact_forces().expand()(q, qdot, nlp.parameters.cx)
-                    - nlp.algebraic_states["soft_contact_forces"].cx
-                )
-                defects = vertcat(defects, soft_contact_defect)
-
-        return DynamicsEvaluation(dxdt=dxdt, defects=defects)
-
-    @staticmethod
     def torque_driven_free_floating_base(
         time,
         states,
@@ -1754,3 +1604,12 @@ class DynamicsFunctions:
                 )
 
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
+
+    @staticmethod
+    def no_states_mapping(nlp):
+        for key in nlp.states.keys():
+            if nlp.variable_mappings[key].actually_does_a_mapping():
+                raise NotImplementedError(
+                    f"COLLOCATION transcription is not compatible with mapping for states. "
+                    "Please note that concept of states mapping in already sketchy on it's own, but is particularly not appropriate for COLLOCATION transcriptions."
+                )

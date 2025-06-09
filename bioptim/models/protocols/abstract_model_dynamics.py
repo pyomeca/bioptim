@@ -54,33 +54,27 @@ class TorqueDynamics:
         defects = None
         if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
 
+            DynamicsFunctions.no_states_mapping(nlp)
+
             # Initialize defects
             defects = nlp.cx(nlp.states.shape, 1)
-
-            for key in nlp.states.keys():
-                if nlp.variable_mappings[key].actually_does_a_mapping():
-                    raise NotImplementedError(
-                        f"COLLOCATION transcription is not compatible with mapping for states. "
-                        "Please note that concept of states mapping in already sketchy on it's own, but is particularly not appropriate for COLLOCATION transcriptions."
-                    )
 
             # Do not use DynamicsFunctions.get to get the slopes because we do not want them mapped
             slope_q = nlp.states_dot["q"].cx
             slope_qdot = nlp.states_dot["qdot"].cx
 
-
             if nlp.dynamics_type.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
 
                 dxdt_defects = nlp.cx(nlp.states.shape, 1)
-                ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, nlp.model.contact_types, external_forces)
-                dxdt_defects[nlp.states["qdot"].index, 0] = ddq
+                dxdt_defects[nlp.states["q"].index, 0] = DynamicsFunctions.compute_qdot(nlp, q, qdot)
+                dxdt_defects[nlp.states["qdot"].index, 0] = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, nlp.model.contact_types, external_forces)
 
                 slopes = nlp.cx(nlp.states.shape, 1)
                 slopes[nlp.states["q"].index, 0] = slope_q
                 slopes[nlp.states["qdot"].index, 0] = slope_qdot
 
                 # Get fatigue defects
-                slopes, dxdt_defects = DynamicsFunctions.get_fatigue_defects(
+                dxdt_defects, slopes = DynamicsFunctions.get_fatigue_defects(
                     "tau", dxdt_defects, slopes, nlp, states, controls, fatigue,
                 )
 
