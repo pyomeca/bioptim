@@ -445,8 +445,71 @@ class TorqueActivationDynamics(TorqueDynamics):
         )
         return q, qdot, tau, external_forces
 
-#
-# class TorqueDerivativeDynamics:
+
+class TorqueDerivativeDynamics(TorqueDynamics):
+    def __init__(self):
+        super().__init__()
+        self.state_type += [States.TAU]
+        self.control_type += [Controls.TAUDOT]
+
+    @staticmethod
+    def get_basic_variables(
+        nlp, states, controls, parameters, algebraic_states, numerical_timeseries
+    ):
+
+        # Get variables from the right place
+        q = DynamicsFunctions.get(nlp.states["q"], states)
+        qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+        tau = DynamicsFunctions.get(nlp.states["tau"], states)
+
+        # Add additional torques
+        tau += DynamicsFunctions.collect_tau(nlp, q, qdot, parameters, states, controls, fatigue=None)
+
+        # Get external forces
+        external_forces = nlp.get_external_forces(
+            "external_forces", states, controls, algebraic_states, numerical_timeseries
+        )
+        return q, qdot, tau, external_forces
+
+    @staticmethod
+    def dynamics(self,
+        time,
+        states,
+        controls,
+        parameters,
+        algebraic_states,
+        numerical_timeseries,
+        nlp,
+                 ):
+
+        # Get the torque driven dynamics
+        tau_dynamics_evaluation = self.dynamics(
+            time,
+            states,
+            controls,
+            parameters,
+            algebraic_states,
+            numerical_timeseries,
+            nlp,
+            fatigue=None,
+        )
+
+        # Append it with the torque derivative
+        taudot = DynamicsFunctions.get(nlp.controls["taudot"], controls)
+        slope_tau = DynamicsFunctions.get(nlp.states_dot["tau"], nlp.states_dot.scaled.cx)
+
+        taudot_dxdt = nlp.cx(nlp.states.shape, 1)
+        taudot_dxdt[nlp.states["q"].index, 0] = tau_dynamics_evaluation.dxdt[nlp.states["q"].index, 0]
+        taudot_dxdt[nlp.states["qdot"].index, 0] = tau_dynamics_evaluation.dxdt[nlp.states["qdot"].index, 0]
+        taudot_dxdt[nlp.states["tau"].index, 0] = taudot
+
+        taudot_defects = nlp.cx(nlp.states.shape, 1)
+        taudot_defects[nlp.states["q"].index, 0] = tau_dynamics_evaluation.defects[nlp.states["q"].index, 0]
+        taudot_defects[nlp.states["qdot"].index, 0] = tau_dynamics_evaluation.defects[nlp.states["qdot"].index, 0]
+        taudot_defects[nlp.states["tau"].index, 0] = slope_tau * nlp.dt - taudot * nlp.dt
+
+        return DynamicsEvaluation(dxdt=taudot_dxdt, defects=taudot_defects)
+
 #
 # class MusclesDynamics:
 #

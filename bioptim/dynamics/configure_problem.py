@@ -167,159 +167,6 @@ class ConfigureProblem:
         nlp.dynamics_type.configure(ocp, nlp, **extra_params)
 
     @staticmethod
-    def torque_driven_free_floating_base(
-        ocp,
-        nlp: NonLinearProgram,
-        numerical_data_timeseries: NpArrayDictOptional = None,
-    ) -> None:
-        """
-        Configure the dynamics for a torque driven program with a free floating base.
-        This version of the torque driven dynamics avoids defining a mapping to force the root to generate null forces and torques.
-        (states are q_root, q_joints, qdot_root, and qdot_joints, controls are tau_joints)
-        Please note that it was not meant to be used with quaternions yet.
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the phase
-        numerical_data_timeseries: dict[str, np.ndarray]
-            A list of values to pass to the dynamics at each node.
-        """
-
-        nb_q = nlp.model.nb_q
-        nb_qdot = nlp.model.nb_qdot
-        nb_root = nlp.model.nb_root
-
-        # Declared rigidbody states and controls
-        name_q_roots = [str(i) for i in range(nb_root)]
-        ConfigureProblem.configure_new_variable(
-            "q_roots",
-            name_q_roots,
-            ocp,
-            nlp,
-            as_states=True,
-            as_controls=False,
-        )
-
-        name_q_joints = [str(i) for i in range(nb_root, nb_q)]
-        ConfigureProblem.configure_new_variable(
-            "q_joints",
-            name_q_joints,
-            ocp,
-            nlp,
-            as_states=True,
-            as_controls=False,
-        )
-
-        ConfigureProblem.configure_new_variable(
-            "qdot_roots",
-            name_q_roots,
-            ocp,
-            nlp,
-            as_states=True,
-            as_controls=False,
-        )
-
-        name_qdot_joints = [str(i) for i in range(nb_root, nb_qdot)]
-        ConfigureProblem.configure_new_variable(
-            "qdot_joints",
-            name_qdot_joints,
-            ocp,
-            nlp,
-            as_states=True,
-            as_controls=False,
-        )
-
-        ConfigureProblem.configure_new_variable(
-            "tau_joints",
-            name_qdot_joints,
-            ocp,
-            nlp,
-            as_states=False,
-            as_controls=True,
-        )
-
-        # TODO: add implicit constraints + soft contacts + fatigue
-
-        # Configure the actual ODE of the dynamics
-        if nlp.dynamics_type.dynamic_function:
-            ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
-        else:
-            ConfigureProblem.configure_dynamics_function(
-                ocp,
-                nlp,
-                DynamicsFunctions.torque_driven_free_floating_base,
-            )
-
-    @staticmethod
-    def stochastic_torque_driven_free_floating_base(
-        ocp,
-        nlp: NonLinearProgram,
-        problem_type,
-        with_cholesky: Bool = False,
-        initial_matrix: DM = None,
-        numerical_data_timeseries: NpArrayDictOptional = None,
-    ):
-        """
-        Configure the dynamics for a stochastic torque driven program with a free floating base.
-        (states are q_roots, q_joints, qdot_roots, and qdot_joints, controls are tau_joints)
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the phase
-        with_cholesky: bool
-            If the Cholesky decomposition should be used for the covariance matrix.
-        initial_matrix: DM
-            The initial value for the covariance matrix
-        numerical_data_timeseries: dict[str, np.ndarray]
-            A list of values to pass to the dynamics at each node.
-        """
-        n_noised_tau = nlp.model.n_noised_controls
-        n_noise = nlp.model.motor_noise_magnitude.shape[0] + nlp.model.sensory_noise_magnitude.shape[0]
-        n_noised_states = nlp.model.n_noised_states
-
-        # Stochastic variables
-        ConfigureProblem.configure_stochastic_k(
-            ocp, nlp, n_noised_controls=n_noised_tau, n_references=nlp.model.n_references
-        )
-        ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=nlp.model.n_references)
-        ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=n_noised_states)
-
-        if isinstance(problem_type, SocpType.TRAPEZOIDAL_EXPLICIT):
-            if initial_matrix is None:
-                raise RuntimeError(
-                    "The initial value for the covariance matrix must be provided for TRAPEZOIDAL_EXPLICIT"
-                )
-            ConfigureProblem.configure_stochastic_cov_explicit(
-                ocp, nlp, n_noised_states=n_noised_states, initial_matrix=initial_matrix
-            )
-        else:
-            if with_cholesky:
-                ConfigureProblem.configure_stochastic_cholesky_cov(ocp, nlp, n_noised_states=n_noised_states)
-            else:
-                ConfigureProblem.configure_stochastic_cov_implicit(ocp, nlp, n_noised_states=n_noised_states)
-
-        if isinstance(problem_type, SocpType.TRAPEZOIDAL_IMPLICIT):
-            ConfigureProblem.configure_stochastic_a(ocp, nlp, n_noised_states=n_noised_states)
-            ConfigureProblem.configure_stochastic_c(ocp, nlp, n_noised_states=n_noised_states, n_noise=n_noise)
-
-        ConfigureProblem.torque_driven_free_floating_base(
-            ocp=ocp,
-            nlp=nlp,
-        )
-
-        ConfigureProblem.configure_dynamics_function(
-            ocp,
-            nlp,
-            DynamicsFunctions.stochastic_torque_driven_free_floating_base,
-        )
-
-    @staticmethod
     def torque_derivative_driven(
         ocp,
         nlp: NonLinearProgram,
@@ -356,48 +203,6 @@ class ConfigureProblem:
                 DynamicsFunctions.torque_derivative_driven,
             )
 
-    @staticmethod
-    def torque_activations_driven(
-        ocp,
-        nlp: NonLinearProgram,
-        with_residual_torque: Bool = False,
-        numerical_data_timeseries: NpArrayDictOptional = None,
-    ) -> None:
-        """
-        Configure the dynamics for a torque driven program (states are q and qdot, controls are tau activations).
-        The tau activations are bounded between -1 and 1 and actual tau is computed from torque-position-velocity
-        relationship
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the phase
-        with_residual_torque: bool
-            If the dynamic with a residual torque should be used
-        numerical_data_timeseries: dict[str, np.ndarray]
-            A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
-        """
-        ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
-        ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
-        ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
-
-        if with_residual_torque:
-            ConfigureProblem.configure_residual_tau(ocp, nlp, as_states=False, as_controls=True)
-
-        ConfigureProblem.configure_contacts(
-            ocp, nlp, nlp.model.contact_types, DynamicsFunctions.forces_from_torque_activation_driven
-        )
-        if nlp.dynamics_type.dynamic_function:
-            ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
-        else:
-            ConfigureProblem.configure_dynamics_function(
-                ocp,
-                nlp,
-                DynamicsFunctions.torque_activations_driven,
-                with_residual_torque=with_residual_torque,
-            )
 
     @staticmethod
     def joints_acceleration_driven(
@@ -493,65 +298,6 @@ class ConfigureProblem:
                 fatigue=fatigue,
                 with_residual_torque=with_residual_torque,
             )
-
-    @staticmethod
-    def holonomic_torque_driven(
-        ocp,
-        nlp: NonLinearProgram,
-        numerical_data_timeseries: NpArrayDictOptional = None,
-    ) -> None:
-        """
-        Tell the program which variables are states and controls.
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the phase
-        numerical_data_timeseries: dict[str, np.ndarray]
-            A list of values to pass to the dynamics at each node.
-        """
-
-        name = "q_u"
-        names_u = [nlp.model.name_dof[i] for i in nlp.model.independent_joint_index]
-        ConfigureProblem.configure_new_variable(
-            name,
-            names_u,
-            ocp,
-            nlp,
-            as_states=True,
-            as_controls=False,
-            as_algebraic_states=False,
-            # NOTE: not ready for phase mapping yet as it is based on dofnames of the class BioModel
-            # see _set_kinematic_phase_mapping method
-            # axes_idx=ConfigureProblem._apply_phase_mapping(ocp, nlp, name),
-        )
-
-        name = "qdot_u"
-        names_qdot = ConfigureProblem._get_kinematics_based_names(nlp, "qdot")
-        names_udot = [names_qdot[i] for i in nlp.model.independent_joint_index]
-        ConfigureProblem.configure_new_variable(
-            name,
-            names_udot,
-            ocp,
-            nlp,
-            as_states=True,
-            as_controls=False,
-            as_algebraic_states=False,
-            # NOTE: not ready for phase mapping yet as it is based on dofnames of the class BioModel
-            # see _set_kinematic_phase_mapping method
-            # axes_idx=ConfigureProblem._apply_phase_mapping(ocp, nlp, name),
-        )
-
-        ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
-
-        # extra plots
-        ConfigureProblem.configure_qv(ocp, nlp)
-        ConfigureProblem.configure_qdotv(ocp, nlp)
-        ConfigureProblem.configure_lagrange_multipliers_function(ocp, nlp)
-
-        ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.holonomic_torque_driven)
 
     @staticmethod
     def configure_dynamics_function(ocp, nlp: NonLinearProgram, dyn_func, **extra_params) -> None:
@@ -727,10 +473,7 @@ class DynamicsFcn(FcnEnum):
     Selection of valid dynamics functions
     """
 
-    TORQUE_DRIVEN_FREE_FLOATING_BASE = (ConfigureProblem.torque_driven_free_floating_base,)
-    STOCHASTIC_TORQUE_DRIVEN_FREE_FLOATING_BASE = (ConfigureProblem.stochastic_torque_driven_free_floating_base,)
     TORQUE_DERIVATIVE_DRIVEN = (ConfigureProblem.torque_derivative_driven,)
-    TORQUE_ACTIVATIONS_DRIVEN = (ConfigureProblem.torque_activations_driven,)
     JOINTS_ACCELERATION_DRIVEN = (ConfigureProblem.joints_acceleration_driven,)
     MUSCLE_DRIVEN = (ConfigureProblem.muscle_driven,)
     CUSTOM = (ConfigureProblem.custom,)

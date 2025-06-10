@@ -17,6 +17,7 @@ from ..protocols.abstract_model_dynamics import (
     TorqueFreeFloatingBaseDynamics,
     StochasticTorqueFreeFloatingBaseDynamics,
     TorqueActivationDynamics,
+    TorqueDerivativeDynamics,
 )
 from ...misc.parameters_types import (
     Str,
@@ -170,17 +171,17 @@ class TorqueActivationBiorbdModel(BiorbdModel, TorqueActivationDynamics):
         BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set)
         TorqueActivationDynamics.__init__(self)
 
-#
-# class TorqueDerivativeBiorbdModel(BiorbdModel, TorqueDerivativeDynamics):
-#     def __init__(
-#             self,
-#             bio_model: str | biorbd.Model,
-#             friction_coefficients: np.ndarray = None,
-#             parameters: ParameterList = None,
-#             external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None):
-#         BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set)
-#         TorqueDerivativeDynamics.__init__(self)
-#
+
+class TorqueDerivativeBiorbdModel(BiorbdModel, TorqueDerivativeDynamics):
+    def __init__(
+            self,
+            bio_model: str | biorbd.Model,
+            friction_coefficients: np.ndarray = None,
+            parameters: ParameterList = None,
+            external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None):
+        BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set)
+        TorqueDerivativeDynamics.__init__(self)
+
 # class MusclesBiorbdModel(BiorbdModel, MusclesDynamics):
 #     def __init__(
 #             self,
