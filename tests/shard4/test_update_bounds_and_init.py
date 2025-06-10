@@ -48,7 +48,7 @@ def test_double_update_bounds_and_init(phase_dynamics):
     ns = 10
 
     dynamics = DynamicsList()
-    dynamics.add( phase_dynamics=phase_dynamics)
+    dynamics.add(phase_dynamics=phase_dynamics)
     x_init = InitialGuessList()
     x_init["q"] = [0] * bio_model.nb_q
     x_init["qdot"] = [0] * bio_model.nb_qdot

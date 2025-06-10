@@ -141,7 +141,15 @@ class TorqueDynamics:
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
     def get_rigid_contact_forces(
-        self, time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp, fatigue: FatigueList = None
+        self,
+        time,
+        states,
+        controls,
+        parameters,
+        algebraic_states,
+        numerical_timeseries,
+        nlp,
+        fatigue: FatigueList = None,
     ):
         q, qdot, tau, external_forces = self.get_basic_variables(
             nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue
@@ -286,7 +294,15 @@ class StochasticTorqueDynamics(TorqueDynamics):
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
     def get_rigid_contact_forces(
-        self, time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp, fatigue: FatigueList = None
+        self,
+        time,
+        states,
+        controls,
+        parameters,
+        algebraic_states,
+        numerical_timeseries,
+        nlp,
+        fatigue: FatigueList = None,
     ):
         raise NotImplementedError("Stochastic torque dynamics does not support rigid contact forces yet. ")
 
@@ -509,7 +525,6 @@ class TorqueDerivativeDynamics(TorqueDynamics):
 
 
 class MusclesDynamics(TorqueDynamics):
-
     """
     This class is used to create a model actuated through muscle activation.
 
@@ -533,7 +548,6 @@ class MusclesDynamics(TorqueDynamics):
         self.extra_dynamics = None
         self.with_residual_torque = with_residual_torque
         self.with_excitation = with_excitation
-
 
     def get_basic_variables(
         self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue: FatigueList
@@ -684,7 +698,15 @@ class MusclesDynamics(TorqueDynamics):
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
     def get_rigid_contact_forces(
-        self, time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp, fatigue: FatigueList = None
+        self,
+        time,
+        states,
+        controls,
+        parameters,
+        algebraic_states,
+        numerical_timeseries,
+        nlp,
+        fatigue: FatigueList = None,
     ):
         q, qdot, tau, external_forces, mus_activations = self.get_basic_variables(
             nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue
@@ -693,7 +715,6 @@ class MusclesDynamics(TorqueDynamics):
 
 
 class JointAccelerationDynamics:
-
     """
     This class is used to create a model actuated through joint torques.
 
@@ -735,7 +756,6 @@ class JointAccelerationDynamics:
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
         qddot_joints = DynamicsFunctions.get(nlp.controls["qddot_joints"], controls)
 
-
         qddot_root = nlp.model.forward_dynamics_free_floating_base()(q, qdot, qddot_joints, nlp.parameters.cx)
         qddot_reordered = nlp.model.reorder_qddot_root_joints(qddot_root, qddot_joints)
 
@@ -765,9 +785,5 @@ class JointAccelerationDynamics:
 
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
-
-    def get_rigid_contact_forces(
-        self, time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp
-    ):
+    def get_rigid_contact_forces(self, time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp):
         raise RuntimeError("Joints acceleration driven dynamics cannot be used with contacts by definition.")
-

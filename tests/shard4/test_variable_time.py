@@ -41,7 +41,11 @@ def prepare_ocp(phase_time_constraint, use_parameter, phase_dynamics):
     n_phases = len(ns)
 
     # BioModel path
-    bio_model = (TorqueBiorbdModel(biorbd_model_path), TorqueBiorbdModel(biorbd_model_path), TorqueBiorbdModel(biorbd_model_path))
+    bio_model = (
+        TorqueBiorbdModel(biorbd_model_path),
+        TorqueBiorbdModel(biorbd_model_path),
+        TorqueBiorbdModel(biorbd_model_path),
+    )
 
     # Problem parameters
     tau_min, tau_max = -100, 100

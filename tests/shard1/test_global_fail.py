@@ -77,7 +77,7 @@ def test_custom_constraint_mx_fail(phase_dynamics):
 
     ocp = OptimalControlProgram(
         BiorbdModel(model_path),
-        Dynamics( expand_dynamics=True, phase_dynamics=phase_dynamics),
+        Dynamics(expand_dynamics=True, phase_dynamics=phase_dynamics),
         30,
         2,
         constraints=constraints,

@@ -1,4 +1,3 @@
-
 import numpy as np
 import numpy.testing as npt
 import pytest
@@ -17,7 +16,8 @@ from bioptim import (
     ParameterList,
     PhaseDynamics,
     ExternalForceSetTimeSeries,
-    ContactType, JointAccelerationBiorbdModel,
+    ContactType,
+    JointAccelerationBiorbdModel,
 )
 
 from ..utils import TestUtils
@@ -100,10 +100,13 @@ EXTERNAL_FORCE_ARRAY[:, 4] = [
     "with_external_force",
     [False, True],
 )
-@pytest.mark.parametrize("with_contact", [
-    # False,
-    True,
-])
+@pytest.mark.parametrize(
+    "with_contact",
+    [
+        # False,
+        True,
+    ],
+)
 def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
@@ -1029,7 +1032,9 @@ def test_muscle_driven(with_excitations, with_contact, with_residual_torque, wit
 def test_joints_acceleration_driven(cx, phase_dynamics):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
-    nlp.model = JointAccelerationBiorbdModel(TestUtils.bioptim_folder() + "/examples/getting_started/models/double_pendulum.bioMod")
+    nlp.model = JointAccelerationBiorbdModel(
+        TestUtils.bioptim_folder() + "/examples/getting_started/models/double_pendulum.bioMod"
+    )
     nlp.dynamics_type = Dynamics(
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,

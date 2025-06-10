@@ -21,7 +21,9 @@ from bioptim import (
     PhaseDynamics,
     ConstraintList,
     ExternalForceSetTimeSeries,
-    ContactType, MusclesBiorbdModel, TorqueActivationBiorbdModel,
+    ContactType,
+    MusclesBiorbdModel,
+    TorqueActivationBiorbdModel,
 )
 from bioptim.limits.penalty import PenaltyOption
 from bioptim.limits.penalty_controller import PenaltyController
@@ -112,11 +114,11 @@ def prepare_test_ocp(
     if with_muscles and with_contact or with_muscles and with_actuator or with_contact and with_actuator:
         raise RuntimeError("With muscles and with contact and with_actuator together is not defined")
     elif with_muscles:
-        bio_model = MusclesBiorbdModel(bioptim_folder + "/examples/muscle_driven_ocp/models/arm26.bioMod",
-                                       with_residual_torque=True)
-        dynamics = DynamicsList()
-        dynamics.add(expand_dynamics=True, phase_dynamics=phase_dynamics
+        bio_model = MusclesBiorbdModel(
+            bioptim_folder + "/examples/muscle_driven_ocp/models/arm26.bioMod", with_residual_torque=True
         )
+        dynamics = DynamicsList()
+        dynamics.add(expand_dynamics=True, phase_dynamics=phase_dynamics)
     elif with_contact:
         dynamics = DynamicsList()
         if with_external_forces:
@@ -126,21 +128,25 @@ def prepare_test_ocp(
                 contact_types=[ContactType.RIGID_EXPLICIT],
                 external_force_set=external_forces,
             )
-            dynamics.add(Dynamics(
-                expand_dynamics=True,
-                phase_dynamics=phase_dynamics,
-                numerical_data_timeseries=numerical_time_series,
-            ))
+            dynamics.add(
+                Dynamics(
+                    expand_dynamics=True,
+                    phase_dynamics=phase_dynamics,
+                    numerical_data_timeseries=numerical_time_series,
+                )
+            )
         else:
             bio_model = MusclesBiorbdModel(
                 bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod",
                 with_residual_torque=True,
                 contact_types=[ContactType.RIGID_EXPLICIT],
             )
-            dynamics.add(Dynamics(
-                expand_dynamics=True,
-                phase_dynamics=phase_dynamics,
-            ))
+            dynamics.add(
+                Dynamics(
+                    expand_dynamics=True,
+                    phase_dynamics=phase_dynamics,
+                )
+            )
     elif with_actuator:
         bio_model = TorqueActivationBiorbdModel(bioptim_folder + "/examples/torque_driven_ocp/models/cube.bioMod")
         dynamics = Dynamics(expand_dynamics=True, phase_dynamics=phase_dynamics)

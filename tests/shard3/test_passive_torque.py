@@ -201,8 +201,9 @@ def test_torque_activation_driven_with_passive_torque(with_passive_torque, with_
         model_filename = "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
 
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
-    nlp.model = TorqueActivationBiorbdModel(TestUtils.bioptim_folder() + model_filename,
-                                            with_residual_torque=with_residual_torque)
+    nlp.model = TorqueActivationBiorbdModel(
+        TestUtils.bioptim_folder() + model_filename, with_residual_torque=with_residual_torque
+    )
     nlp.dynamics_type = Dynamics(
         phase_dynamics=phase_dynamics,
     )

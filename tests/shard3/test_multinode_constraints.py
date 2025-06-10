@@ -17,7 +17,11 @@ from tests.utils import TestUtils
 
 
 def prepare_ocp(biorbd_model_path, phase_1, phase_2, phase_dynamics) -> OptimalControlProgram:
-    bio_model = (TorqueBiorbdModel(biorbd_model_path), TorqueBiorbdModel(biorbd_model_path), TorqueBiorbdModel(biorbd_model_path))
+    bio_model = (
+        TorqueBiorbdModel(biorbd_model_path),
+        TorqueBiorbdModel(biorbd_model_path),
+        TorqueBiorbdModel(biorbd_model_path),
+    )
 
     # Problem parameters
     n_shooting = (100, 300, 100)
@@ -32,7 +36,6 @@ def prepare_ocp(biorbd_model_path, phase_1, phase_2, phase_dynamics) -> OptimalC
     dynamics.add(Dynamics(ode_solver=OdeSolver.RK4(), expand_dynamics=True, phase_dynamics=phase_dynamics))
     dynamics.add(Dynamics(ode_solver=OdeSolver.RK4(), expand_dynamics=True, phase_dynamics=phase_dynamics))
     dynamics.add(Dynamics(ode_solver=OdeSolver.RK4(), expand_dynamics=True, phase_dynamics=phase_dynamics))
-
 
     multinode_constraints = MultinodeConstraintList()
     # hard constraint
