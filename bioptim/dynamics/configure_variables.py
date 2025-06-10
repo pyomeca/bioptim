@@ -1411,6 +1411,7 @@ class States(FcnEnum):
 class Controls(FcnEnum):
     QDDOT_JOINTS = (ConfigureVariables.configure_qddot_joints,)
     TAU = (ConfigureVariables.configure_tau,)
+    RESIDUAL_TAU = (ConfigureVariables.configure_residual_tau,)
     TAU_JOINTS = (ConfigureVariables.configure_tau_joints,)
     TAUDOT = (ConfigureVariables.configure_taudot,)
     MUSCLE_EXCITATION = (ConfigureVariables.configure_muscles,)
@@ -1480,13 +1481,14 @@ class AutoConfigure:
         nlp,
     ):
 
-        self.configure_contacts(ocp, nlp)
-
         for state in self.states:
             state(ocp, nlp, as_states=True, as_controls=False, as_algebraic_states=False)
 
         for control in self.controls:
             control(ocp, nlp, as_states=False, as_controls=True, as_algebraic_states=False)
+
+        # Contacts must be defined after states and controls, but before algebraic states
+        self.configure_contacts(ocp, nlp)
 
         for algebraic_state in self.algebraic_states:
             algebraic_state(ocp, nlp, as_states=False, as_controls=False, as_algebraic_states=True)

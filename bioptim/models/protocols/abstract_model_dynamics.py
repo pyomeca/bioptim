@@ -32,9 +32,8 @@ class TorqueDynamics:
         """
         return nlp.states["q"].index, nlp.states["qdot"].index
 
-    @staticmethod
     def get_basic_variables(
-        nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue: FatigueList
+        self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue: FatigueList
     ):
 
         # Get variables from the right place
@@ -142,7 +141,7 @@ class TorqueDynamics:
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
     def get_rigid_contact_forces(
-        self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue: FatigueList = None
+        self, time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp, fatigue: FatigueList = None
     ):
         q, qdot, tau, external_forces = self.get_basic_variables(
             nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue
@@ -287,7 +286,7 @@ class StochasticTorqueDynamics(TorqueDynamics):
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
     def get_rigid_contact_forces(
-        self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue: FatigueList = None
+        self, time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp, fatigue: FatigueList = None
     ):
         raise NotImplementedError("Stochastic torque dynamics does not support rigid contact forces yet. ")
 
@@ -339,7 +338,7 @@ class HolonomicTorqueDynamics:
 
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
-    def get_rigid_contact_forces(self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries):
+    def get_rigid_contact_forces(self, time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp):
         return
 
 
@@ -368,9 +367,8 @@ class TorqueFreeFloatingBaseDynamics(TorqueDynamics):
             nlp.states["qdot_roots"].index
         ) + list(nlp.states["qdot_joints"].index)
 
-    @staticmethod
     def get_basic_variables(
-        nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue: FatigueList
+        self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue: FatigueList
     ):
 
         if fatigue is not None:
@@ -414,12 +412,15 @@ class StochasticTorqueFreeFloatingBaseDynamics(TorqueFreeFloatingBaseDynamics, S
 
 
 class TorqueActivationDynamics(TorqueDynamics):
-    def __init__(self):
+    def __init__(self, with_residual_torque: Bool):
         super().__init__()
 
-    @staticmethod
+        if with_residual_torque:
+            self.control_type += [Controls.RESIDUAL_TAU]
+        self.with_residual_torque = with_residual_torque
+
     def get_basic_variables(
-        nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue: FatigueList
+        self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue: FatigueList
     ):
         if fatigue is not None:
             raise NotImplementedError("Fatigue is not implemented yet for torque activation dynamics.")
@@ -431,6 +432,8 @@ class TorqueActivationDynamics(TorqueDynamics):
 
         # Convert tau activations to joint torque
         tau = nlp.model.torque()(tau_activation, q, qdot, nlp.parameters.cx)
+        if self.residual_tau:
+            tau += DynamicsFunctions.get(nlp.controls["residual_tau"], controls)
 
         # Add additional torques
         tau += DynamicsFunctions.collect_tau(nlp, q, qdot, parameters, states, controls, fatigue)
@@ -448,8 +451,7 @@ class TorqueDerivativeDynamics(TorqueDynamics):
         self.state_type += [States.TAU]
         self.control_type += [Controls.TAUDOT]
 
-    @staticmethod
-    def get_basic_variables(nlp, states, controls, parameters, algebraic_states, numerical_timeseries):
+    def get_basic_variables(self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries):
 
         # Get variables from the right place
         q = DynamicsFunctions.get(nlp.states["q"], states)
@@ -682,12 +684,90 @@ class MusclesDynamics(TorqueDynamics):
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
     def get_rigid_contact_forces(
-        self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue: FatigueList = None
+        self, time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp, fatigue: FatigueList = None
     ):
         q, qdot, tau, external_forces, mus_activations = self.get_basic_variables(
             nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue
         )
         return nlp.model.rigid_contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
 
-#
-# class JointAccelerationDynamics:
+
+class JointAccelerationDynamics:
+
+    """
+    This class is used to create a model actuated through joint torques.
+
+    x = [q, qdot]
+    u = [tau]
+    """
+
+    def __init__(self):
+        self.state_type = [States.Q, States.QDOT]
+        self.control_type = [Controls.QDDOT_JOINTS]
+        self.algebraic_type = []
+        self.functions = []
+        self.extra_dynamics = None
+
+    @staticmethod
+    def get_q_qdot_indices(nlp):
+        """
+        Get the indices of the states and controls in the normal dynamics
+        """
+        return nlp.states["q"].index, nlp.states["qdot"].index
+
+    def dynamics(
+        self,
+        time,
+        states,
+        controls,
+        parameters,
+        algebraic_states,
+        numerical_timeseries,
+        nlp,
+        fatigue: FatigueList = None,
+    ):
+
+        # Get states indices
+        q_indices, qdot_indices = self.get_q_qdot_indices(nlp)
+
+        # Get variables from the right place
+        q = DynamicsFunctions.get(nlp.states["q"], states)
+        qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+        qddot_joints = DynamicsFunctions.get(nlp.controls["qddot_joints"], controls)
+
+
+        qddot_root = nlp.model.forward_dynamics_free_floating_base()(q, qdot, qddot_joints, nlp.parameters.cx)
+        qddot_reordered = nlp.model.reorder_qddot_root_joints(qddot_root, qddot_joints)
+
+        qdot_mapped = nlp.variable_mappings["qdot"].to_first.map(qdot)
+        qddot_mapped = nlp.variable_mappings["qdot"].to_first.map(qddot_reordered)
+
+        dxdt = nlp.cx(nlp.states.shape, 1)
+        dxdt[q_indices, 0] = qdot_mapped
+        dxdt[qdot_indices, 0] = qddot_mapped
+
+        defects = None
+        if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
+            slope_q = nlp.states_dot["q"].cx
+            slope_qdot = nlp.states_dot["qdot"].cx
+            defects = nlp.cx(nlp.states.shape, 1)
+
+            # qdot = polynomial slope
+            defects[q_indices, 0] = slope_q * nlp.dt - qdot_mapped * nlp.dt
+
+            if nlp.dynamics_type.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
+                defects[qdot_indices, 0] = slope_qdot * nlp.dt - qddot_mapped * nlp.dt
+
+            else:
+                raise NotImplementedError(
+                    f"The defect type {nlp.dynamics_type.ode_solver.defects_type} is not implemented yet for joints acceleration driven dynamics."
+                )
+
+        return DynamicsEvaluation(dxdt=dxdt, defects=defects)
+
+
+    def get_rigid_contact_forces(
+        self, time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp
+    ):
+        raise RuntimeError("Joints acceleration driven dynamics cannot be used with contacts by definition.")
+
