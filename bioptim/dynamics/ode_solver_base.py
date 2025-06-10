@@ -236,7 +236,7 @@ class OdeSolverBase:
         ode_opt = {
             "model": nlp.model,
             "cx": nlp.cx,
-            "control_type": nlp.dynamics_type.control_type,
+            "control_type": nlp.control_type,
             "defects_type": self.defects_type,
             "ode_index": ode_index,
             "duplicate_starting_point": self.duplicate_starting_point,

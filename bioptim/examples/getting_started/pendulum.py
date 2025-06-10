@@ -84,7 +84,6 @@ def prepare_ocp(
         ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
-        control_type=control_type,
     )
 
     # Path bounds
@@ -120,6 +119,7 @@ def prepare_ocp(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
+        control_type=control_type,
         use_sx=use_sx,
         n_threads=n_threads,
     )

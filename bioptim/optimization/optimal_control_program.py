@@ -558,6 +558,8 @@ class OptimalControlProgram:
 
         # Prepare path constraints and dynamics of the program
         NLP.add(self, "dynamics_type", dynamics, False)
+        NLP.add(self, "control_type", control_type, True)
+
 
         # Prepare the variable mappings
         if variable_mappings is None:

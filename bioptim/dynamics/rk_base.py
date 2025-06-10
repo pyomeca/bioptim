@@ -50,17 +50,17 @@ class RK(OdeSolverBase):
         return nlp.states.scaled.cx_start
 
     def p_ode(self, nlp):
-        if nlp.dynamics_type.control_type in (
+        if nlp.control_type in (
             ControlType.CONSTANT,
             ControlType.CONSTANT_WITH_LAST_NODE,
         ):
             return nlp.controls.scaled.cx_start
-        elif nlp.dynamics_type.control_type == ControlType.LINEAR_CONTINUOUS:
+        elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
             return horzcat(nlp.controls.scaled.cx_start, nlp.controls.scaled.cx_end)
-        elif nlp.dynamics_type.control_type == ControlType.NONE:
+        elif nlp.control_type == ControlType.NONE:
             return nlp.cx()
         else:
-            raise NotImplementedError(f"The control_type {nlp.dynamics_type.control_type} is not implemented.")
+            raise NotImplementedError(f"The control_type {nlp.control_type} is not implemented.")
 
     def a_ode(self, nlp):
         return nlp.algebraic_states.scaled.cx_start

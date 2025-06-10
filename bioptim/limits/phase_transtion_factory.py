@@ -44,7 +44,7 @@ class PhaseTransitionFactory:
         This is a special case where the controls are continuous"""
 
         for phase, nlp in enumerate(self.ocp.nlp[:-1]):
-            if nlp.dynamics_type.control_type == ControlType.LINEAR_CONTINUOUS:
+            if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 self.full_phase_transitions.append(
                     PhaseTransition(
                         phase_pre_idx=phase,

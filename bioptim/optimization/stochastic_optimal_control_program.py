@@ -517,11 +517,11 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 )
 
             # concatenate u_init into a single matrix
-            if nlp.dynamics_type.control_type == ControlType.CONSTANT:
+            if nlp.control_type == ControlType.CONSTANT:
                 u_guess = np.zeros((0, nlp.ns))
-            elif nlp.dynamics_type.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
+            elif nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                 u_guess = np.zeros((0, nlp.ns + 1))
-            elif nlp.dynamics_type.control_type == ControlType.NONE:
+            elif nlp.control_type == ControlType.NONE:
                 u_guess = np.zeros((0, 0))
             else:
                 raise RuntimeError(

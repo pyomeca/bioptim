@@ -127,6 +127,7 @@ class NonLinearProgram:
         self.casadi_func = {}
         self.rigid_contact_forces_func = None
         self.soft_contact_forces_func = None
+        self.control_type = ControlType.CONSTANT
         self.cx = None
         self.dt = None
         self.dynamics = []
@@ -362,7 +363,7 @@ class NonLinearProgram:
         p = self.phase_idx
         u = []
         u_scaled = []
-        range_stop = self.ns if self.dynamics_type.control_type == ControlType.CONSTANT else self.ns + 1
+        range_stop = self.ns if self.control_type == ControlType.CONSTANT else self.ns + 1
         for k in range(range_stop):
             self.set_node_index(k)
             u_scaled.append(self.cx.sym(f"U_scaled_{p}_{k}", self.controls.scaled.shape, 1))
@@ -451,7 +452,7 @@ class NonLinearProgram:
         """
         mod = (
             1
-            if self.dynamics_type.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE)
+            if self.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE)
             else 0
         )
         return self.ns + mod
@@ -468,11 +469,11 @@ class NonLinearProgram:
         The number of states
         """
 
-        if self.dynamics_type.control_type == ControlType.CONSTANT:
+        if self.control_type == ControlType.CONSTANT:
             return 1
-        elif self.dynamics_type.control_type == ControlType.CONSTANT_WITH_LAST_NODE:
+        elif self.control_type == ControlType.CONSTANT_WITH_LAST_NODE:
             return 1
-        elif self.dynamics_type.control_type == ControlType.LINEAR_CONTINUOUS:
+        elif self.control_type == ControlType.LINEAR_CONTINUOUS:
             return 2
         else:
             raise RuntimeError("Not implemented yet")

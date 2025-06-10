@@ -480,17 +480,17 @@ class Solution:
                             raise ValueError("Unrecognized time_resolution")
 
                 elif time_alignment == TimeAlignment.CONTROLS:
-                    if nlp.dynamics_type.control_type == ControlType.LINEAR_CONTINUOUS:
+                    if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                         times.append([(t if t.shape == (1, 1) else t[[0, -1]]) for t in times_tp[nlp.phase_idx]])
                         if len(times) < len(self.ocp.nlp):
                             # The point is duplicated for internal phases, but not the last one
                             times[-1][-1] = times[-1][-1][[0, 0]].T
-                    elif nlp.dynamics_type.control_type == ControlType.CONSTANT_WITH_LAST_NODE:
+                    elif nlp.control_type == ControlType.CONSTANT_WITH_LAST_NODE:
                         times.append([t[0] for t in times_tp[nlp.phase_idx]])
-                    elif nlp.dynamics_type.control_type == ControlType.CONSTANT:
+                    elif nlp.control_type == ControlType.CONSTANT:
                         times.append([t[0] for t in times_tp[nlp.phase_idx]][:-1])
                     else:
-                        raise ValueError(f"Unrecognized control type {nlp.dynamics_type.control_type}")
+                        raise ValueError(f"Unrecognized control type {nlp.control_type}")
 
                 else:
                     raise ValueError("time_alignment should be either TimeAlignment.STATES or TimeAlignment.CONTROLS")

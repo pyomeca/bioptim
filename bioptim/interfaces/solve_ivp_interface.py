@@ -57,7 +57,7 @@ def solve_ivp_interface(
     """
 
     y = []
-    control_type = nlp.dynamics_type.control_type
+    control_type = nlp.control_type
 
     for node in range(nlp.ns):
         if method == SolutionIntegrator.OCP:

@@ -285,7 +285,7 @@ class NewVariableConfiguration:
 
                 plot_type = (
                     PlotType.PLOT
-                    if self.nlp.dynamics_type.control_type == ControlType.LINEAR_CONTINUOUS
+                    if self.nlp.control_type == ControlType.LINEAR_CONTINUOUS
                     else PlotType.STEP
                 )
                 if not self.skip_plot:

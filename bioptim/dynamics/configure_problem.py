@@ -1158,7 +1158,6 @@ class Dynamics(OptionGeneric):
         phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
         ode_solver: OdeSolver | OdeSolverBase = OdeSolver.RK4(),
         numerical_data_timeseries: dict[str, np.ndarray] = None,
-        control_type: ControlType = ControlType.CONSTANT,
         **extra_parameters: Any,
     ):
         """
@@ -1183,8 +1182,6 @@ class Dynamics(OptionGeneric):
             The integrator to use to integrate this dynamics.
         numerical_data_timeseries: dict[str, np.ndarray]
             The numerical timeseries at each node. ex: the experimental external forces data should go here.
-        control_type: ControlType
-            The type of control to consider in the dynamics
         """
         if (configure_function is None and dynamic_function is not None) or (
             configure_function is not None and dynamic_function is None
@@ -1204,7 +1201,6 @@ class Dynamics(OptionGeneric):
         self.phase_dynamics = phase_dynamics
         self.ode_solver = ode_solver
         self.numerical_data_timeseries = numerical_data_timeseries
-        self.control_type = control_type
 
 
 class DynamicsList(UniquePerPhaseOptionList):

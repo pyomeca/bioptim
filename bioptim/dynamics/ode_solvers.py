@@ -103,7 +103,7 @@ class OdeSolver:
             return horzcat(nlp.numerical_timeseries.cx_start, nlp.numerical_timeseries.cx_end)
 
         def initialize_integrator(self, ocp, nlp, **kwargs):
-            if nlp.dynamics_type.control_type == ControlType.CONSTANT:
+            if nlp.control_type == ControlType.CONSTANT:
                 raise RuntimeError(
                     "TRAPEZOIDAL cannot be used with piece-wise constant controls, please use "
                     "ControlType.CONSTANT_WITH_LAST_NODE or ControlType.LINEAR_CONTINUOUS instead."
@@ -179,17 +179,17 @@ class OdeSolver:
             return out
 
         def p_ode(self, nlp):
-            if nlp.dynamics_type.control_type in (
+            if nlp.control_type in (
                 ControlType.CONSTANT,
                 ControlType.CONSTANT_WITH_LAST_NODE,
             ):
                 return nlp.controls.scaled.cx_start
-            elif nlp.dynamics_type.control_type == ControlType.LINEAR_CONTINUOUS:
+            elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 return horzcat(nlp.controls.scaled.cx_start, nlp.controls.scaled.cx_end)
-            elif nlp.dynamics_type.control_type == ControlType.NONE:
+            elif nlp.control_type == ControlType.NONE:
                 return nlp.cx()
             else:
-                raise NotImplementedError(f"The control_type {nlp.dynamics_type.control_type} is not implemented.")
+                raise NotImplementedError(f"The control_type {nlp.control_type} is not implemented.")
 
         def a_ode(self, nlp):
             out = [nlp.algebraic_states.scaled.cx_start]
@@ -202,7 +202,7 @@ class OdeSolver:
             return nlp.numerical_timeseries.cx_start
 
         def initialize_integrator(self, ocp, nlp, **kwargs):
-            if ocp.n_threads > 1 and nlp.dynamics_type.control_type == ControlType.LINEAR_CONTINUOUS:
+            if ocp.n_threads > 1 and nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 raise RuntimeError("Piece-wise linear continuous controls cannot be used with multiple threads")
 
             if nlp.model.nb_quaternions > 0:
@@ -291,7 +291,7 @@ class OdeSolver:
                 raise RuntimeError("CVODES cannot be used while optimizing algebraic_states variables")
             if nlp.numerical_timeseries:
                 raise RuntimeError("CVODES cannot be used with external_forces or other numerical_timeseries")
-            if nlp.dynamics_type.control_type == ControlType.LINEAR_CONTINUOUS:
+            if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 raise RuntimeError("CVODES cannot be used with piece-wise linear controls (only RK4)")
             if nlp.algebraic_states.shape != 0:
                 raise RuntimeError("CVODES cannot be used with algebraic_states variables")

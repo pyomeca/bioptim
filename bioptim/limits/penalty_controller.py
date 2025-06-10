@@ -106,7 +106,7 @@ class PenaltyController:
 
     @property
     def control_type(self) -> ControlType:
-        return self._nlp.dynamics_type.control_type
+        return self._nlp.control_type
 
     @property
     def ode_solver(self) -> OdeSolver:
