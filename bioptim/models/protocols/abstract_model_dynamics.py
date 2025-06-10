@@ -152,7 +152,13 @@ class StochasticTorqueDynamics(TorqueDynamics):
         super().__init__()
         self.control_type += [
             lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.K(
-                ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_controls=n_noised_tau, n_references=n_references
+                ocp,
+                nlp,
+                as_states,
+                as_controls,
+                as_algebraic_states,
+                n_noised_controls=n_noised_tau,
+                n_references=n_references,
             ),
             lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.REF(
                 ocp, nlp, as_states, as_controls, as_algebraic_states, n_references=n_references
@@ -187,7 +193,13 @@ class StochasticTorqueDynamics(TorqueDynamics):
                     ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_states=n_noised_states
                 ),
                 lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.C(
-                    ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_states=n_noised_states, n_noise=n_noise
+                    ocp,
+                    nlp,
+                    as_states,
+                    as_controls,
+                    as_algebraic_states,
+                    n_noised_states=n_noised_states,
+                    n_noise=n_noise,
                 ),
             ]
 
@@ -273,10 +285,10 @@ class HolonomicTorqueDynamics:
         self.control_type = [Controls.TAU]
         self.algebraic_type = []
         self.functions = [
-                lambda ocp, nlp: ConfigureVariables.configure_qv(ocp, nlp),
-                lambda ocp, nlp: ConfigureVariables.configure_qdotv(ocp, nlp),
-                lambda ocp, nlp: ConfigureVariables.configure_lagrange_multipliers_function(ocp, nlp)
-                ]
+            lambda ocp, nlp: ConfigureVariables.configure_qv(ocp, nlp),
+            lambda ocp, nlp: ConfigureVariables.configure_qdotv(ocp, nlp),
+            lambda ocp, nlp: ConfigureVariables.configure_lagrange_multipliers_function(ocp, nlp),
+        ]
         self.extra_dynamics = None
 
     def dynamics(
@@ -313,9 +325,7 @@ class HolonomicTorqueDynamics:
 
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
-    def get_rigid_contact_forces(
-        self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries
-    ):
+    def get_rigid_contact_forces(self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries):
         return
 
 

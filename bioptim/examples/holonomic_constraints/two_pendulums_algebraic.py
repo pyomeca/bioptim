@@ -142,10 +142,12 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(Dynamics(
-        ode_solver=ode_solver,
-        expand_dynamics=expand_dynamics,
-    ))
+    dynamics.add(
+        Dynamics(
+            ode_solver=ode_solver,
+            expand_dynamics=expand_dynamics,
+        )
+    )
 
     # Boundaries
     u_variable_bimapping = BiMappingList()

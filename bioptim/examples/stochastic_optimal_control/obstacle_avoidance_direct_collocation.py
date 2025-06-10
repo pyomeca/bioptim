@@ -47,7 +47,10 @@ from bioptim.examples.stochastic_optimal_control.common import (
     test_eigen_values,
     reshape_to_matrix,
 )
-from bioptim.examples.stochastic_optimal_control.models.mass_point_model import MassPointDynamicsModel, StochasticMassPointDynamicsModel
+from bioptim.examples.stochastic_optimal_control.models.mass_point_model import (
+    MassPointDynamicsModel,
+    StochasticMassPointDynamicsModel,
+)
 
 
 def plot_results(
@@ -384,15 +387,11 @@ def prepare_socp(
 
     if is_stochastic:
         bio_model = StochasticMassPointDynamicsModel(
-            problem_type=socp_type,
-            motor_noise_magnitude=motor_noise_magnitude,
-            polynomial_degree=polynomial_degree
+            problem_type=socp_type, motor_noise_magnitude=motor_noise_magnitude, polynomial_degree=polynomial_degree
         )
     else:
         bio_model = MassPointDynamicsModel(
-            problem_type=socp_type,
-            motor_noise_magnitude=motor_noise_magnitude,
-            polynomial_degree=polynomial_degree
+            problem_type=socp_type, motor_noise_magnitude=motor_noise_magnitude, polynomial_degree=polynomial_degree
         )
 
     nb_q = bio_model.nb_q
@@ -467,10 +466,12 @@ def prepare_socp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(Dynamics(
-        phase_dynamics=phase_dynamics,
-        expand_dynamics=expand_dynamics,
-    ))
+    dynamics.add(
+        Dynamics(
+            phase_dynamics=phase_dynamics,
+            expand_dynamics=expand_dynamics,
+        )
+    )
 
     if is_stochastic:
         phase_transitions.add(PhaseTransitionFcn.COVARIANCE_CYCLIC)

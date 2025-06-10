@@ -480,7 +480,15 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_stochastic_k(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool, n_noised_controls: int, n_references: int):
+    def configure_stochastic_k(
+        ocp,
+        nlp,
+        as_states: bool,
+        as_controls: bool,
+        as_algebraic_states: bool,
+        n_noised_controls: int,
+        n_references: int,
+    ):
         """
         Configure the optimal feedback gain matrix K.
         Parameters
@@ -516,7 +524,9 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_stochastic_c(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool, n_noised_states: int, n_noise: int):
+    def configure_stochastic_c(
+        ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool, n_noised_states: int, n_noise: int
+    ):
         """
         Configure the stochastic variable matrix C representing the injection of motor noise (df/dw).
         Parameters
@@ -553,7 +563,9 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_stochastic_a(ocp, nlp, as_states: Bool, as_controls: Bool, as_algebraic_states: Bool, n_noised_states: Int):
+    def configure_stochastic_a(
+        ocp, nlp, as_states: Bool, as_controls: Bool, as_algebraic_states: Bool, n_noised_states: Int
+    ):
         """
         Configure the stochastic variable matrix A representing the propagation of motor noise (df/dx).
         Parameters
@@ -588,7 +600,9 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_stochastic_cov_implicit(ocp, nlp, as_states: Bool, as_controls: Bool, as_algebraic_states: Bool,  n_noised_states: Int):
+    def configure_stochastic_cov_implicit(
+        ocp, nlp, as_states: Bool, as_controls: Bool, as_algebraic_states: Bool, n_noised_states: Int
+    ):
         """
         Configure the covariance matrix P representing the motor noise.
         Parameters
@@ -621,7 +635,9 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_stochastic_cholesky_cov(ocp, nlp, as_states: Bool, as_controls: Bool, as_algebraic_states: Bool, n_noised_states: Int):
+    def configure_stochastic_cholesky_cov(
+        ocp, nlp, as_states: Bool, as_controls: Bool, as_algebraic_states: Bool, n_noised_states: Int
+    ):
         """
         Configure the diagonal matrix needed to reconstruct the covariance matrix using L @ L.T.
         This formulation allows insuring that the covariance matrix is always positive semi-definite.
@@ -655,7 +671,9 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_stochastic_ref(ocp, nlp, as_states: Bool, as_controls: Bool, as_algebraic_states: Bool, n_references: Int):
+    def configure_stochastic_ref(
+        ocp, nlp, as_states: Bool, as_controls: Bool, as_algebraic_states: Bool, n_references: Int
+    ):
         """
         Configure the reference kinematics.
 
@@ -686,7 +704,9 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_stochastic_m(ocp, nlp, as_states: Bool, as_controls: Bool, as_algebraic_states: Bool, n_noised_states: Int):
+    def configure_stochastic_m(
+        ocp, nlp, as_states: Bool, as_controls: Bool, as_algebraic_states: Bool, n_noised_states: Int
+    ):
         """
         Configure the helper matrix M (from Gillis 2013 : https://doi.org/10.1109/CDC.2013.6761121).
 
@@ -978,7 +998,6 @@ class ConfigureVariables:
             fatigue=fatigue,
         )
 
-
     @staticmethod
     def configure_rigid_contact_function(ocp, nlp, **extra_params) -> None:
         """
@@ -1234,9 +1253,7 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_lagrange_multipliers_function(
-        ocp, nlp: NpArrayDictOptional, **extra_params
-    ) -> None:
+    def configure_lagrange_multipliers_function(ocp, nlp: NpArrayDictOptional, **extra_params) -> None:
         """
         Configure the contact points
 
@@ -1297,7 +1314,6 @@ class ConfigureVariables:
             axes_idx=axes_idx,
             legend=all_multipliers_names,
         )
-
 
     @staticmethod
     def _get_kinematics_based_names(nlp, var_type: str) -> list[str]:

@@ -9,6 +9,7 @@ from bioptim.examples.stochastic_optimal_control.models.mass_point_model import 
 
 bio_model = MassPointDynamicsModel(problem_type=SocpType.COLLOCATION)
 
+
 # Tests for _check_multi_threading_and_problem_type()
 def test_check_multi_threading_and_problem_type_no_n_thread():
     _check_multi_threading_and_problem_type(problem_type=SocpType.COLLOCATION, bio_model=bio_model)
@@ -22,8 +23,12 @@ def test_check_multi_threading_and_problem_type_n_thread_not_1():
     with pytest.raises(ValueError, match="Multi-threading is not possible yet"):
         _check_multi_threading_and_problem_type(problem_type=SocpType.COLLOCATION, bio_model=bio_model, n_threads=2)
 
+
 def test_check_multi_threading_and_problem_type_not_the_same():
-    with pytest.raises(RuntimeError, match="The problem type should be the same in the StochasticModel as in the StochasticOptimalControlProblem."):
+    with pytest.raises(
+        RuntimeError,
+        match="The problem type should be the same in the StochasticModel as in the StochasticOptimalControlProblem.",
+    ):
         _check_multi_threading_and_problem_type(problem_type=SocpType.TRAPEZOIDAL_IMPLICIT, bio_model=bio_model)
 
 

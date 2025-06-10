@@ -134,10 +134,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(Dynamics(
-        ode_solver=OdeSolver.RK4(),
-        expand_dynamics=expand_dynamics
-    ))
+    dynamics.add(Dynamics(ode_solver=OdeSolver.RK4(), expand_dynamics=expand_dynamics))
 
     # Path Constraints
     constraints = ConstraintList()

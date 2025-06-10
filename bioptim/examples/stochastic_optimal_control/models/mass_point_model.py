@@ -9,7 +9,8 @@ import numpy as np
 from bioptim import (
     DynamicsEvaluation,
     DynamicsFunctions,
-    OdeSolver, States,
+    OdeSolver,
+    States,
     Controls,
     AlgebraicStates,
     ConfigureVariables,
@@ -81,26 +82,23 @@ class MassPointModel:
         return ["Ux", "Uy"]
 
     def configure_u(self, ocp, nlp, as_states, as_controls, as_algebraic_states):
-        return ConfigureVariables.configure_new_variable("u", self.name_u, ocp, nlp, as_states=False, as_controls=True, as_algebraic_states=False)
+        return ConfigureVariables.configure_new_variable(
+            "u", self.name_u, ocp, nlp, as_states=False, as_controls=True, as_algebraic_states=False
+        )
 
 
 class MassPointDynamicsModel(MassPointModel):
-    def __init__(self, problem_type: SocpType, motor_noise_magnitude: np.ndarray | DM = None, polynomial_degree: int = 1):
-        super().__init__(problem_type=problem_type,
-                                motor_noise_magnitude=motor_noise_magnitude,
-                                polynomial_degree=polynomial_degree)
+    def __init__(
+        self, problem_type: SocpType, motor_noise_magnitude: np.ndarray | DM = None, polynomial_degree: int = 1
+    ):
+        super().__init__(
+            problem_type=problem_type, motor_noise_magnitude=motor_noise_magnitude, polynomial_degree=polynomial_degree
+        )
         self.state_type = [States.Q, States.QDOT]
         self.control_type = [self.configure_u]
         self.algebraic_type = []
 
-    def dynamics(self,
-                 time,
-                 states,
-                 controls,
-                 parameters,
-                 algebraic_states,
-                 numerical_timeseries,
-                 nlp):
+    def dynamics(self, time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp):
         """
         The dynamics from equation (22).
         """
@@ -121,10 +119,7 @@ class MassPointDynamicsModel(MassPointModel):
 
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
-    def dynamics_numerical(self,
-                           states,
-                           controls,
-                           motor_noise=0):
+    def dynamics_numerical(self, states, controls, motor_noise=0):
         """
         The dynamics from equation (22).
         """
@@ -141,25 +136,26 @@ class MassPointDynamicsModel(MassPointModel):
 
 
 class StochasticMassPointDynamicsModel(MassPointModel):
-    def __init__(self, problem_type: SocpType, motor_noise_magnitude: np.ndarray | DM = None, polynomial_degree: int = 1):
+    def __init__(
+        self, problem_type: SocpType, motor_noise_magnitude: np.ndarray | DM = None, polynomial_degree: int = 1
+    ):
         super().__init__(
-            problem_type=problem_type,
-            motor_noise_magnitude=motor_noise_magnitude,
-            polynomial_degree=polynomial_degree
+            problem_type=problem_type, motor_noise_magnitude=motor_noise_magnitude, polynomial_degree=polynomial_degree
         )
         self.state_type = [States.Q, States.QDOT]
-        self.control_type = [self.configure_u,
-                             lambda ocp, nlp, as_states, as_controls, as_algebraic_states : Controls.COV(ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_states=4)]
-        self.algebraic_type = [lambda ocp, nlp, as_states, as_controls, as_algebraic_states : AlgebraicStates.M(ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_states=4)]
+        self.control_type = [
+            self.configure_u,
+            lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.COV(
+                ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_states=4
+            ),
+        ]
+        self.algebraic_type = [
+            lambda ocp, nlp, as_states, as_controls, as_algebraic_states: AlgebraicStates.M(
+                ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_states=4
+            )
+        ]
 
-    def dynamics(self,
-                 time,
-                 states,
-                 controls,
-                 parameters,
-                 algebraic_states,
-                 numerical_timeseries,
-                 nlp):
+    def dynamics(self, time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp):
         """
         The dynamics from equation (22).
         """
@@ -180,10 +176,7 @@ class StochasticMassPointDynamicsModel(MassPointModel):
 
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
-    def dynamics_numerical(self,
-                           states,
-                           controls,
-                           motor_noise=0):
+    def dynamics_numerical(self, states, controls, motor_noise=0):
         """
         The dynamics from equation (22).
         """
@@ -198,14 +191,7 @@ class StochasticMassPointDynamicsModel(MassPointModel):
 
         return vertcat(qdot, qddot)
 
-    def extra_dynamics(self,
-                 time,
-                 states,
-                 controls,
-                 parameters,
-                 algebraic_states,
-                 numerical_timeseries,
-                 nlp):
+    def extra_dynamics(self, time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp):
         """
         The dynamics from equation (22).
         """
@@ -214,7 +200,7 @@ class StochasticMassPointDynamicsModel(MassPointModel):
         u = DynamicsFunctions.get(nlp.controls["u"], controls)
         motor_noise = DynamicsFunctions.get(nlp.parameters["motor_noise"], parameters)
 
-        qddot = -self.kapa * (q - u) - self.beta * qdot * sqrt(qdot[0] ** 2 + qdot[1] ** 2 + self.c ** 2) + motor_noise
+        qddot = -self.kapa * (q - u) - self.beta * qdot * sqrt(qdot[0] ** 2 + qdot[1] ** 2 + self.c**2) + motor_noise
 
         dxdt = vertcat(qdot, qddot)
         defects = None

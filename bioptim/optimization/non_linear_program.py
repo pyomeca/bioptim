@@ -450,11 +450,7 @@ class NonLinearProgram:
         -------
         The number of controls
         """
-        mod = (
-            1
-            if self.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE)
-            else 0
-        )
+        mod = 1 if self.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE) else 0
         return self.ns + mod
 
     def n_controls_steps(self, node_idx) -> int:

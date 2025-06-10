@@ -85,12 +85,11 @@ class StochasticTorqueBiorbdModel(StochasticBiorbdModel, StochasticTorqueDynamic
 
 class HolonomicTorqueBiorbdModel(HolonomicBiorbdModel, HolonomicTorqueDynamics):
     def __init__(
-            self,
-            bio_model: str | biorbd.Model,
-            friction_coefficients: np.ndarray = None,
-            parameters: ParameterList = None):
+        self, bio_model: str | biorbd.Model, friction_coefficients: np.ndarray = None, parameters: ParameterList = None
+    ):
         HolonomicBiorbdModel.__init__(self, bio_model, friction_coefficients, parameters)
         HolonomicTorqueDynamics.__init__(self)
+
 
 #
 # class TorqueFreeFloatingBaseBiorbdModel(BiorbdModel, TorqueFreeFloatingBaseDynamics):

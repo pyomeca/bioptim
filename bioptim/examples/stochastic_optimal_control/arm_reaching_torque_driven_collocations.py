@@ -186,9 +186,10 @@ def prepare_socp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(Dynamics(
-        expand_dynamics=True,
-    )
+    dynamics.add(
+        Dynamics(
+            expand_dynamics=True,
+        )
     )
 
     x_bounds = BoundsList()

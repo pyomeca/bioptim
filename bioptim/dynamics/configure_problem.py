@@ -138,14 +138,18 @@ class ConfigureProblem:
             )
         else:
             AutoConfigure(
-                states=nlp.model.state_type, controls=nlp.model.control_type, algebraic_states=nlp.model.algebraic_type, functions=nlp.model.functions,
+                states=nlp.model.state_type,
+                controls=nlp.model.control_type,
+                algebraic_states=nlp.model.algebraic_type,
+                functions=nlp.model.functions,
             ).initialize(ocp, nlp)
 
         ConfigureProblem.configure_dynamics_function(ocp, nlp, nlp.model.dynamics, **nlp.dynamics_type.extra_parameters)
 
         if nlp.model.extra_dynamics is not None:
-            ConfigureProblem.configure_dynamics_function(ocp, nlp, nlp.model.extra_dynamics,
-                                                         **nlp.dynamics_type.extra_parameters)
+            ConfigureProblem.configure_dynamics_function(
+                ocp, nlp, nlp.model.extra_dynamics, **nlp.dynamics_type.extra_parameters
+            )
 
     @staticmethod
     def custom(ocp, nlp: NonLinearProgram, **extra_params) -> None:
@@ -248,7 +252,6 @@ class ConfigureProblem:
                 nlp,
                 DynamicsFunctions.torque_driven_free_floating_base,
             )
-
 
     @staticmethod
     def stochastic_torque_driven_free_floating_base(
