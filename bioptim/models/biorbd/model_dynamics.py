@@ -99,52 +99,54 @@ class HolonomicTorqueBiorbdModel(HolonomicBiorbdModel, HolonomicTorqueDynamics):
         HolonomicTorqueDynamics.__init__(self)
 
 
-
 class TorqueFreeFloatingBaseBiorbdModel(BiorbdModel, TorqueFreeFloatingBaseDynamics):
     def __init__(
-            self,
-            bio_model: str | biorbd.Model,
-            friction_coefficients: np.ndarray = None,
-            parameters: ParameterList = None,
-            external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None):
+        self,
+        bio_model: str | biorbd.Model,
+        friction_coefficients: np.ndarray = None,
+        parameters: ParameterList = None,
+        external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None,
+    ):
         BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set)
         TorqueFreeFloatingBaseDynamics.__init__(self)
 
 
 class StochasticTorqueFreeFloatingBaseBiorbdModel(StochasticBiorbdModel, StochasticTorqueFreeFloatingBaseDynamics):
     def __init__(
-            self,
-            bio_model: Str | biorbd.Model,
-            problem_type: SocpType,
-            with_cholesky: Bool,
-            n_references: Int,
-            n_feedbacks: Int,
-            n_noised_states: Int,
-            n_noised_controls: Int,
-            sensory_noise_magnitude: NpArray | DM,
-            motor_noise_magnitude: NpArray | DM,
-            sensory_reference: Callable,
-            compute_torques_from_noise_and_feedback: Callable = None,
-            motor_noise_mapping: BiMappingList = BiMappingList(),
-            use_sx: Bool = False,
-            parameters: ParameterList = None,
-            friction_coefficients: NpArray = None,
+        self,
+        bio_model: Str | biorbd.Model,
+        problem_type: SocpType,
+        with_cholesky: Bool,
+        n_references: Int,
+        n_feedbacks: Int,
+        n_noised_states: Int,
+        n_noised_controls: Int,
+        sensory_noise_magnitude: NpArray | DM,
+        motor_noise_magnitude: NpArray | DM,
+        sensory_reference: Callable,
+        compute_torques_from_noise_and_feedback: Callable = None,
+        motor_noise_mapping: BiMappingList = BiMappingList(),
+        use_sx: Bool = False,
+        parameters: ParameterList = None,
+        friction_coefficients: NpArray = None,
     ):
-        StochasticBiorbdModel.__init__(self,
-                                       bio_model,
-                                       problem_type,
-                                       n_references,
-                                       n_feedbacks,
-                                       n_noised_states,
-                                       n_noised_controls,
-                                       sensory_noise_magnitude,
-                                       motor_noise_magnitude,
-                                       sensory_reference,
-                                       compute_torques_from_noise_and_feedback,
-                                       motor_noise_mapping,
-                                       use_sx,
-                                       parameters,
-                                       friction_coefficients,)
+        StochasticBiorbdModel.__init__(
+            self,
+            bio_model,
+            problem_type,
+            n_references,
+            n_feedbacks,
+            n_noised_states,
+            n_noised_controls,
+            sensory_noise_magnitude,
+            motor_noise_magnitude,
+            sensory_reference,
+            compute_torques_from_noise_and_feedback,
+            motor_noise_mapping,
+            use_sx,
+            parameters,
+            friction_coefficients,
+        )
 
         if "tau_joints" in self.motor_noise_mapping:
             n_noised_tau = len(self.motor_noise_mapping["tau_joints"].to_first.map_idx)
@@ -153,34 +155,34 @@ class StochasticTorqueFreeFloatingBaseBiorbdModel(StochasticBiorbdModel, Stochas
         n_noise = self.motor_noise_magnitude.shape[0] + self.sensory_noise_magnitude.shape[0]
         n_noised_states = 2 * n_noised_tau
 
-        StochasticTorqueFreeFloatingBaseDynamics.__init__(self,
-                                                          problem_type,
-                                                          with_cholesky,
-                                                          n_noised_tau,
-                                                          n_noise,
-                                                          n_noised_states,
-                                                          n_references)
+        StochasticTorqueFreeFloatingBaseDynamics.__init__(
+            self, problem_type, with_cholesky, n_noised_tau, n_noise, n_noised_states, n_references
+        )
+
 
 class TorqueActivationBiorbdModel(BiorbdModel, TorqueActivationDynamics):
     def __init__(
-            self,
-            bio_model: str | biorbd.Model,
-            friction_coefficients: np.ndarray = None,
-            parameters: ParameterList = None,
-            external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None):
+        self,
+        bio_model: str | biorbd.Model,
+        friction_coefficients: np.ndarray = None,
+        parameters: ParameterList = None,
+        external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None,
+    ):
         BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set)
         TorqueActivationDynamics.__init__(self)
 
 
 class TorqueDerivativeBiorbdModel(BiorbdModel, TorqueDerivativeDynamics):
     def __init__(
-            self,
-            bio_model: str | biorbd.Model,
-            friction_coefficients: np.ndarray = None,
-            parameters: ParameterList = None,
-            external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None):
+        self,
+        bio_model: str | biorbd.Model,
+        friction_coefficients: np.ndarray = None,
+        parameters: ParameterList = None,
+        external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None,
+    ):
         BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set)
         TorqueDerivativeDynamics.__init__(self)
+
 
 # class MusclesBiorbdModel(BiorbdModel, MusclesDynamics):
 #     def __init__(

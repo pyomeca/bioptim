@@ -182,7 +182,6 @@ class DynamicsFunctions:
 
         return fatigue_states, mus_activations
 
-
     @staticmethod
     def torque_derivative_driven(
         time,

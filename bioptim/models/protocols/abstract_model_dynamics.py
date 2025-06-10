@@ -343,7 +343,6 @@ class HolonomicTorqueDynamics:
 
 
 class TorqueFreeFloatingBaseDynamics(TorqueDynamics):
-
     """
     This class is used to create a model actuated through joint torques with a free floating base.
 
@@ -364,7 +363,9 @@ class TorqueFreeFloatingBaseDynamics(TorqueDynamics):
         """
         Get the indices of the states and controls in the free floating base dynamics
         """
-        return list(nlp.states["q_roots"].index) + list(nlp.states["q_joints"].index), list(nlp.states["qdot_roots"].index) + list(nlp.states["qdot_joints"].index)
+        return list(nlp.states["q_roots"].index) + list(nlp.states["q_joints"].index), list(
+            nlp.states["qdot_roots"].index
+        ) + list(nlp.states["qdot_joints"].index)
 
     @staticmethod
     def get_basic_variables(
@@ -396,7 +397,6 @@ class TorqueFreeFloatingBaseDynamics(TorqueDynamics):
 
 
 class StochasticTorqueFreeFloatingBaseDynamics(TorqueFreeFloatingBaseDynamics, StochasticTorqueDynamics):
-
     """
     This class is used to create a model actuated through joint torques with a free floating base with stochastic variables.
 
@@ -408,13 +408,8 @@ class StochasticTorqueFreeFloatingBaseDynamics(TorqueFreeFloatingBaseDynamics, S
     def __init__(self, problem_type, with_cholesky, n_noised_tau, n_noise, n_noised_states, n_references):
         super().__init__()
         StochasticTorqueDynamics.__init__(
-            self,
-            problem_type,
-            with_cholesky,
-            n_noised_tau,
-            n_noise,
-            n_noised_states,
-            n_references)
+            self, problem_type, with_cholesky, n_noised_tau, n_noise, n_noised_states, n_references
+        )
 
 
 class TorqueActivationDynamics(TorqueDynamics):
@@ -453,9 +448,7 @@ class TorqueDerivativeDynamics(TorqueDynamics):
         self.control_type += [Controls.TAUDOT]
 
     @staticmethod
-    def get_basic_variables(
-        nlp, states, controls, parameters, algebraic_states, numerical_timeseries
-    ):
+    def get_basic_variables(nlp, states, controls, parameters, algebraic_states, numerical_timeseries):
 
         # Get variables from the right place
         q = DynamicsFunctions.get(nlp.states["q"], states)
@@ -472,7 +465,8 @@ class TorqueDerivativeDynamics(TorqueDynamics):
         return q, qdot, tau, external_forces
 
     @staticmethod
-    def dynamics(self,
+    def dynamics(
+        self,
         time,
         states,
         controls,
@@ -480,7 +474,7 @@ class TorqueDerivativeDynamics(TorqueDynamics):
         algebraic_states,
         numerical_timeseries,
         nlp,
-                 ):
+    ):
 
         # Get the torque driven dynamics
         tau_dynamics_evaluation = self.dynamics(
@@ -509,6 +503,7 @@ class TorqueDerivativeDynamics(TorqueDynamics):
         taudot_defects[nlp.states["tau"].index, 0] = slope_tau * nlp.dt - taudot * nlp.dt
 
         return DynamicsEvaluation(dxdt=taudot_dxdt, defects=taudot_defects)
+
 
 #
 # class MusclesDynamics:

@@ -203,7 +203,6 @@ class ConfigureProblem:
                 DynamicsFunctions.torque_derivative_driven,
             )
 
-
     @staticmethod
     def joints_acceleration_driven(
         ocp,
