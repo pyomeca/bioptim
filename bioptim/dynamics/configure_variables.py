@@ -9,9 +9,10 @@ from ..misc.fcn_enum import FcnEnum
 from ..misc.mapping import BiMapping, Mapping
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
 from ..dynamics.ode_solvers import OdeSolver
+from ..dynamics.dynamics_functions import DynamicsFunctions
 from ..gui.plot import CustomPlot
 
-from ..misc.parameters_types import Bool, Int
+from ..misc.parameters_types import Bool, Int, NpArrayDictOptional
 
 
 class ConfigureVariables:
@@ -221,6 +222,75 @@ class ConfigureVariables:
             as_controls=as_controls,
             as_algebraic_states=as_algebraic_states,
             axes_idx=axes_idx,
+        )
+
+    @staticmethod
+    def configure_q_u(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
+        """
+        Configure the generalized coordinates for the independent dofs in the case of holonomic dynamics
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        as_states: bool
+            If the generalized coordinates should be a state
+        as_controls: bool
+            If the generalized coordinates should be a control
+        as_algebraic_states: bool
+            If the generalized coordinates should be an algebraic state
+        """
+        if as_states != True or as_controls != False or as_algebraic_states != False:
+            raise RuntimeError("configure_q_u is intended to be used as a state.")
+
+        name = "q_u"
+        names_u = [nlp.model.name_dof[i] for i in nlp.model.independent_joint_index]
+        ConfigureVariables.configure_new_variable(
+            name,
+            names_u,
+            ocp,
+            nlp,
+            as_states=True,
+            as_controls=False,
+            as_algebraic_states=False,
+            # NOTE: not ready for phase mapping yet as it is based on dofnames of the class BioModel
+            # see _set_kinematic_phase_mapping method
+            # axes_idx=ConfigureProblem._apply_phase_mapping(ocp, nlp, name),
+        )
+
+    @staticmethod
+    def configure_qdot_u(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
+        """
+        Configure the generalized coordinates for the independent velocities in the case of holonomic dynamics
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        as_states: bool
+            If the generalized coordinates should be a state
+        as_controls: bool
+            If the generalized coordinates should be a control
+        as_algebraic_states: bool
+            If the generalized coordinates should be an algebraic state
+        """
+        if as_states != True or as_controls != False or as_algebraic_states != False:
+            raise RuntimeError("configure_q_u is intended to be used as a state.")
+
+        name = "qdot_u"
+        names_qdot = ConfigureVariables._get_kinematics_based_names(nlp, "qdot")
+        names_udot = [names_qdot[i] for i in nlp.model.independent_joint_index]
+        ConfigureVariables.configure_new_variable(
+            name,
+            names_udot,
+            ocp,
+            nlp,
+            as_states=True,
+            as_controls=False,
+            as_algebraic_states=False,
+            # NOTE: not ready for phase mapping yet as it is based on dofnames of the class BioModel
+            # see _set_kinematic_phase_mapping method
+            # axes_idx=ConfigureProblem._apply_phase_mapping(ocp, nlp, name),
         )
 
     @staticmethod
@@ -1048,7 +1118,7 @@ class ConfigureVariables:
             )
 
     @staticmethod
-    def configure_qv(ocp, nlp, dyn_func: Callable, **extra_params):
+    def configure_qv(ocp, nlp, **extra_params) -> None:
         """
         Configure the qv, i.e. the dependent joint coordinates, to be plotted
 
@@ -1058,11 +1128,10 @@ class ConfigureVariables:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        dyn_func: Callable[time, states, controls, param, algebraic_states, numerical_timeseries]
-            The function to get the values of contact forces from the dynamics
         """
 
         time_span_sym = vertcat(nlp.time_cx, nlp.dt)
+
         nlp.q_v_function = Function(
             "qv_function",
             [
@@ -1074,8 +1143,8 @@ class ConfigureVariables:
                 nlp.numerical_timeseries.cx,
             ],
             [
-                dyn_func()(
-                    nlp.get_var("q_u", nlp.states.cx, nlp.controls.cx),
+                nlp.model.compute_q_v()(
+                    nlp.states["q_u"].cx,
                     DM.zeros(nlp.model.nb_dependent_joints, 1),
                 )
             ],
@@ -1107,7 +1176,7 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_qdotv(ocp, nlp, dyn_func: Callable, **extra_params):
+    def configure_qdotv(ocp, nlp, **extra_params) -> None:
         """
         Configure the qdot_v, i.e. the dependent joint velocities, to be plotted
 
@@ -1117,8 +1186,6 @@ class ConfigureVariables:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        dyn_func: Callable[time, states, controls, param, algebraic_states, numerical_timeseries]
-            The function to get the values of contact forces from the dynamics
         """
 
         time_span_sym = vertcat(nlp.time_cx, nlp.dt)
@@ -1133,9 +1200,9 @@ class ConfigureVariables:
                 nlp.numerical_timeseries.cx,
             ],
             [
-                dyn_func()(
-                    nlp.get_var("q_u", nlp.states.scaled.cx, nlp.controls.scaled.cx),
-                    nlp.get_var("qdot_u", nlp.states.scaled.cx, nlp.controls.scaled.cx),
+                nlp.model._compute_qdot_v()(
+                    nlp.states.scaled["q_u"].cx,
+                    nlp.states.scaled["qdot_u"].cx,
                     DM.zeros(nlp.model.nb_dependent_joints, 1),
                 )
             ],
@@ -1165,6 +1232,72 @@ class ConfigureVariables:
             axes_idx=axes_idx,
             legend=all_multipliers_names,
         )
+
+    @staticmethod
+    def configure_lagrange_multipliers_function(
+        ocp, nlp: NpArrayDictOptional, **extra_params
+    ) -> None:
+        """
+        Configure the contact points
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
+        """
+
+        time_span_sym = vertcat(nlp.time_cx, nlp.dt)
+        nlp.lagrange_multipliers_function = Function(
+            "lagrange_multipliers_function",
+            [
+                time_span_sym,
+                nlp.states.scaled.cx,
+                nlp.controls.scaled.cx,
+                nlp.parameters.scaled.cx,
+                nlp.algebraic_states.scaled.cx,
+                nlp.numerical_timeseries.cx,
+            ],
+            [
+                nlp.model.compute_the_lagrangian_multipliers()(
+                    nlp.states.scaled["q_u"].cx,
+                    nlp.states.scaled["qdot_u"].cx,
+                    DM.zeros(nlp.model.nb_dependent_joints, 1),
+                    DynamicsFunctions.get(nlp.controls["tau"], nlp.controls.scaled.cx),
+                )
+            ],
+            ["t_span", "x", "u", "p", "a", "d"],
+            ["lagrange_multipliers"],
+        )
+
+        all_multipliers_names = []
+        for nlp_i in ocp.nlp:
+            if hasattr(nlp_i.model, "has_holonomic_constraints"):  # making sure we have a HolonomicBiorbdModel
+                nlp_i_multipliers_names = [nlp_i.model.name_dof[i] for i in nlp_i.model.dependent_joint_index]
+                all_multipliers_names.extend(
+                    [name for name in nlp_i_multipliers_names if name not in all_multipliers_names]
+                )
+
+        all_multipliers_names = [f"lagrange_multiplier_{name}" for name in all_multipliers_names]
+        all_multipliers_names_in_phase = [
+            f"lagrange_multiplier_{nlp.model.name_dof[i]}" for i in nlp.model.dependent_joint_index
+        ]
+
+        axes_idx = BiMapping(
+            to_first=[i for i, c in enumerate(all_multipliers_names) if c in all_multipliers_names_in_phase],
+            to_second=[i for i, c in enumerate(all_multipliers_names) if c in all_multipliers_names_in_phase],
+        )
+
+        nlp.plot["lagrange_multipliers"] = CustomPlot(
+            lambda t0, phases_dt, node_idx, x, u, p, a, d: nlp.lagrange_multipliers_function(
+                np.concatenate([t0, t0 + phases_dt[nlp.phase_idx]]), x, u, p, a, d
+            ),
+            plot_type=PlotType.INTEGRATED,
+            axes_idx=axes_idx,
+            legend=all_multipliers_names,
+        )
+
 
     @staticmethod
     def _get_kinematics_based_names(nlp, var_type: str) -> list[str]:
@@ -1253,6 +1386,8 @@ class States(FcnEnum):
     QDOT = (ConfigureVariables.configure_qdot,)
     QDOT_ROOTS = (ConfigureVariables.configure_qdot_roots,)
     QDOT_JOINTS = (ConfigureVariables.configure_qdot_joints,)
+    Q_U = (ConfigureVariables.configure_q_u,)
+    QDOT_U = (ConfigureVariables.configure_qdot_u,)
     TAU = (ConfigureVariables.configure_tau,)
     MUSCLE_ACTIVATION = (ConfigureVariables.configure_muscles,)
 
@@ -1283,6 +1418,7 @@ class AutoConfigure:
         states: list[States],
         controls: list[Controls] = None,
         algebraic_states: list[AlgebraicStates] = None,
+        functions: list[Callable] = None,
         **extra_parameters: Any,
     ):
         """
@@ -1292,10 +1428,13 @@ class AutoConfigure:
             The controls to consider in the dynamics
         algebraic_states: list[AlgebraicStates] | tuple[Controls]
             The algebraic states to consider in the dynamics
+        functions: list[Callable] | tuple[Callable]
+            Additional functions to add to the nlp (mainly for live plots)
         """
         self.states = states
         self.controls = controls
         self.algebraic_states = algebraic_states
+        self.functions = functions
 
     def configure_contacts(self, ocp, nlp):
 
@@ -1335,3 +1474,6 @@ class AutoConfigure:
 
         for algebraic_state in self.algebraic_states:
             algebraic_state(ocp, nlp, as_states=False, as_controls=False, as_algebraic_states=True)
+
+        for function in self.functions:
+            function(ocp, nlp)

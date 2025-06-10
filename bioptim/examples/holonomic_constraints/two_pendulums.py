@@ -12,9 +12,9 @@ from bioptim import (
     BiMappingList,
     BoundsList,
     ConstraintList,
-    DynamicsFcn,
+    Dynamics,
     DynamicsList,
-    HolonomicBiorbdModel,
+    HolonomicTorqueBiorbdModel,
     HolonomicConstraintsFcn,
     HolonomicConstraintsList,
     InitialGuessList,
@@ -27,13 +27,13 @@ from bioptim import (
 )
 
 
-def compute_all_states(sol, bio_model: HolonomicBiorbdModel):
+def compute_all_states(sol, bio_model: HolonomicTorqueBiorbdModel):
     """
     Compute all the states from the solution of the optimal control program
 
     Parameters
     ----------
-    bio_model: HolonomicBiorbdModel
+    bio_model: HolonomicTorqueBiorbdModel
         The biorbd model
     sol:
         The solution of the optimal control program
@@ -87,7 +87,7 @@ def prepare_ocp(
     n_shooting: int = 30,
     final_time: float = 1,
     expand_dynamics: bool = False,
-) -> (HolonomicBiorbdModel, OptimalControlProgram):
+) -> (HolonomicTorqueBiorbdModel, OptimalControlProgram):
     """
     Prepare the program
 
@@ -108,7 +108,8 @@ def prepare_ocp(
     -------
     The ocp ready to be solved
     """
-    bio_model = HolonomicBiorbdModel(biorbd_model_path)
+    bio_model = HolonomicTorqueBiorbdModel(biorbd_model_path)
+
     # Create a holonomic constraint to create a double pendulum from two single pendulums
     holonomic_constraints = HolonomicConstraintsList()
     holonomic_constraints.add(
@@ -133,7 +134,10 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.HOLONOMIC_TORQUE_DRIVEN, ode_solver=OdeSolver.RK4(), expand_dynamics=expand_dynamics)
+    dynamics.add(Dynamics(
+        ode_solver=OdeSolver.RK4(),
+        expand_dynamics=expand_dynamics
+    ))
 
     # Path Constraints
     constraints = ConstraintList()

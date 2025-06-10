@@ -14,6 +14,7 @@ from bioptim import (
     BoundsList,
     ConstraintList,
     DynamicsList,
+    Dynamics,
     HolonomicBiorbdModel,
     HolonomicConstraintsFcn,
     HolonomicConstraintsList,
@@ -28,8 +29,7 @@ from bioptim import (
     OdeSolver,
 )
 from .custom_dynamics import (
-    holonomic_torque_driven_with_qv,
-    configure_holonomic_torque_driven,
+    ModifiedHolonomicTorqueBiorbdModel,
     constraint_holonomic,
     constraint_holonomic_end,
 )
@@ -116,7 +116,8 @@ def prepare_ocp(
     -------
     The ocp ready to be solved
     """
-    bio_model = HolonomicBiorbdModel(biorbd_model_path)
+    bio_model = ModifiedHolonomicTorqueBiorbdModel(biorbd_model_path)
+
     # Create a holonomic constraint to create a double pendulum from two single pendulums
     holonomic_constraints = HolonomicConstraintsList()
     holonomic_constraints.add(
@@ -141,13 +142,10 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    # dynamics.add(DynamicsFcn.HOLONOMIC_TORQUE_DRIVEN, expand_dynamics=expand_dynamics)
-    dynamics.add(
-        configure_holonomic_torque_driven,
+    dynamics.add(Dynamics(
         ode_solver=ode_solver,
-        dynamic_function=holonomic_torque_driven_with_qv,
         expand_dynamics=expand_dynamics,
-    )
+    ))
 
     # Boundaries
     u_variable_bimapping = BiMappingList()

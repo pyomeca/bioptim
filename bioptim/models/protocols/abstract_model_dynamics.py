@@ -1,7 +1,8 @@
-from casadi import vertcat, horzcat
+from casadi import vertcat, DM
 
 from ...dynamics.configure_variables import States, Controls, AlgebraicStates
 from ...dynamics.dynamics_functions import DynamicsFunctions, DynamicsEvaluation
+from ...dynamics.configure_variables import ConfigureVariables
 from ...dynamics.fatigue.fatigue_dynamics import FatigueList
 from ...dynamics.ode_solvers import OdeSolver
 from ...misc.enums import DefectType, ContactType
@@ -20,6 +21,8 @@ class TorqueDynamics:
         self.state_type = [States.Q, States.QDOT]
         self.control_type = [Controls.TAU]
         self.algebraic_type = []
+        self.functions = []
+        self.extra_dynamics = None
 
     @staticmethod
     def get_basic_variables(
@@ -127,18 +130,6 @@ class TorqueDynamics:
 
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
-    def extra_dynamics(
-            self,
-            time,
-            states,
-            controls,
-            parameters,
-            algebraic_states,
-            numerical_timeseries,
-            nlp,
-    ):
-        return
-
     def get_rigid_contact_forces(
         self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue: FatigueList = None
     ):
@@ -152,8 +143,9 @@ class StochasticTorqueDynamics(TorqueDynamics):
     """
     This class is used to create a model actuated through joint torques with stochastic variables.
 
-    x = [q, qdot, stochastic_variables]
-    u = [tau]
+    x = [q, qdot, ]
+    u = [tau, stochastic_variables]
+    a = [stochastic_variables]
     """
 
     def __init__(self, problem_type, with_cholesky, n_noised_tau, n_noise, n_noised_states, n_references):
@@ -274,8 +266,59 @@ class StochasticTorqueDynamics(TorqueDynamics):
         raise NotImplementedError("Stochastic torque dynamics does not support rigid contact forces yet. ")
 
 
-# class HolonomicTorqueDynamics:
-#
+class HolonomicTorqueDynamics:
+
+    def __init__(self):
+        self.state_type = [States.Q_U, States.QDOT_U]
+        self.control_type = [Controls.TAU]
+        self.algebraic_type = []
+        self.functions = [
+                lambda ocp, nlp: ConfigureVariables.configure_qv(ocp, nlp),
+                lambda ocp, nlp: ConfigureVariables.configure_qdotv(ocp, nlp),
+                lambda ocp, nlp: ConfigureVariables.configure_lagrange_multipliers_function(ocp, nlp)
+                ]
+        self.extra_dynamics = None
+
+    def dynamics(
+        self,
+        time,
+        states,
+        controls,
+        parameters,
+        algebraic_states,
+        numerical_timeseries,
+        nlp,
+    ):
+
+        q_u = DynamicsFunctions.get(nlp.states["q_u"], states)
+        qdot_u = DynamicsFunctions.get(nlp.states["qdot_u"], states)
+        tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
+        q_v_init = DM.zeros(nlp.model.nb_dependent_joints)
+
+        qddot_u = nlp.model.partitioned_forward_dynamics()(q_u, qdot_u, q_v_init, tau)
+        dxdt = vertcat(qdot_u, qddot_u)
+
+        defects = None
+        if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
+            slope_q = DynamicsFunctions.get(nlp.states_dot["qdot_u"], nlp.states_dot.scaled.cx)
+            slope_qdot = DynamicsFunctions.get(nlp.states_dot["qddot_u"], nlp.states_dot.scaled.cx)
+            if nlp.dynamics_type.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
+                qddot_u = nlp.model.partitioned_forward_dynamics()(q_u, qdot_u, q_v_init, tau)
+                derivative = vertcat(qdot_u, qddot_u)
+                defects = vertcat(slope_q, slope_qdot) * nlp.dt - derivative * nlp.dt
+            else:
+                raise NotImplementedError(
+                    f"The defect type {nlp.dynamics_type.ode_solver.defects_type} is not implemented yet for holonomic torque driven dynamics."
+                )
+
+        return DynamicsEvaluation(dxdt=dxdt, defects=defects)
+
+    def get_rigid_contact_forces(
+        self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries
+    ):
+        return
+
+
 # class TorqueFreeFloatingBaseDynamics:
 #
 # class StochasticBiorbdModel:

@@ -138,7 +138,7 @@ class ConfigureProblem:
             )
         else:
             AutoConfigure(
-                states=nlp.model.state_type, controls=nlp.model.control_type, algebraic_states=nlp.model.algebraic_type
+                states=nlp.model.state_type, controls=nlp.model.control_type, algebraic_states=nlp.model.algebraic_type, functions=nlp.model.functions,
             ).initialize(ocp, nlp)
 
         ConfigureProblem.configure_dynamics_function(ocp, nlp, nlp.model.dynamics, **nlp.dynamics_type.extra_parameters)
@@ -249,74 +249,6 @@ class ConfigureProblem:
                 DynamicsFunctions.torque_driven_free_floating_base,
             )
 
-    @staticmethod
-    def stochastic_torque_driven(
-        ocp,
-        nlp: NonLinearProgram,
-        problem_type,
-        with_cholesky: Bool = False,
-        initial_matrix: DM = None,
-        numerical_data_timeseries: NpArrayDictOptional = None,
-    ) -> None:
-        """
-        Configure the dynamics for a torque driven stochastic program (states are q and qdot, controls are tau)
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the phase
-        with_cholesky: bool
-            If the Cholesky decomposition should be used for the covariance matrix.
-        initial_matrix: DM
-            The initial value for the covariance matrix
-        numerical_data_timeseries: dict[str, np.ndarray]
-            A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
-        """
-
-        if "tau" in nlp.model.motor_noise_mapping:
-            n_noised_tau = len(nlp.model.motor_noise_mapping["tau"].to_first.map_idx)
-        else:
-            n_noised_tau = nlp.model.nb_tau
-        n_noise = nlp.model.motor_noise_magnitude.shape[0] + nlp.model.sensory_noise_magnitude.shape[0]
-        n_noised_states = 2 * n_noised_tau
-
-        # Algebraic states variables
-        ConfigureProblem.configure_stochastic_k(
-            ocp, nlp, n_noised_controls=n_noised_tau, n_references=nlp.model.n_references
-        )
-        ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=nlp.model.n_references)
-        ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=n_noised_states)
-
-        if isinstance(problem_type, SocpType.TRAPEZOIDAL_EXPLICIT):
-            if initial_matrix is None:
-                raise RuntimeError(
-                    "The initial value for the covariance matrix must be provided for TRAPEZOIDAL_EXPLICIT"
-                )
-            ConfigureProblem.configure_stochastic_cov_explicit(
-                ocp, nlp, n_noised_states=n_noised_states, initial_matrix=initial_matrix
-            )
-        else:
-            if with_cholesky:
-                ConfigureProblem.configure_stochastic_cholesky_cov(ocp, nlp, n_noised_states=n_noised_states)
-            else:
-                ConfigureProblem.configure_stochastic_cov_implicit(ocp, nlp, n_noised_states=n_noised_states)
-
-        if isinstance(problem_type, SocpType.TRAPEZOIDAL_IMPLICIT):
-            ConfigureProblem.configure_stochastic_a(ocp, nlp, n_noised_states=n_noised_states)
-            ConfigureProblem.configure_stochastic_c(ocp, nlp, n_noised_states=n_noised_states, n_noise=n_noise)
-
-        ConfigureProblem.torque_driven(
-            ocp=ocp,
-            nlp=nlp,
-        )
-
-        ConfigureProblem.configure_dynamics_function(
-            ocp,
-            nlp,
-            DynamicsFunctions.stochastic_torque_driven,
-        )
 
     @staticmethod
     def stochastic_torque_driven_free_floating_base(
@@ -612,197 +544,11 @@ class ConfigureProblem:
         ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
 
         # extra plots
-        ConfigureProblem.configure_qv(ocp, nlp, nlp.model.compute_q_v)
-        ConfigureProblem.configure_qdotv(ocp, nlp, nlp.model._compute_qdot_v)
-        ConfigureProblem.configure_lagrange_multipliers_function(ocp, nlp, nlp.model.compute_the_lagrangian_multipliers)
+        ConfigureProblem.configure_qv(ocp, nlp)
+        ConfigureProblem.configure_qdotv(ocp, nlp)
+        ConfigureProblem.configure_lagrange_multipliers_function(ocp, nlp)
 
         ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.holonomic_torque_driven)
-
-    @staticmethod
-    def configure_lagrange_multipliers_function(
-        ocp, nlp: NpArrayDictOptional, dyn_func: Callable, **extra_params
-    ) -> None:
-        """
-        Configure the contact points
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the phase
-        dyn_func: Callable[time, states, controls, param, algebraic_states, numerical_timeseries]
-            The function to get the values of contact forces from the dynamics
-        """
-
-        time_span_sym = vertcat(nlp.time_cx, nlp.dt)
-        nlp.lagrange_multipliers_function = Function(
-            "lagrange_multipliers_function",
-            [
-                time_span_sym,
-                nlp.states.scaled.cx,
-                nlp.controls.scaled.cx,
-                nlp.parameters.scaled.cx,
-                nlp.algebraic_states.scaled.cx,
-                nlp.numerical_timeseries.cx,
-            ],
-            [
-                dyn_func()(
-                    nlp.get_var("q_u", nlp.states.scaled.cx, nlp.controls.scaled.cx),
-                    nlp.get_var("qdot_u", nlp.states.scaled.cx, nlp.controls.scaled.cx),
-                    DM.zeros(nlp.model.nb_dependent_joints, 1),
-                    DynamicsFunctions.get(nlp.controls["tau"], nlp.controls.scaled.cx),
-                )
-            ],
-            ["t_span", "x", "u", "p", "a", "d"],
-            ["lagrange_multipliers"],
-        )
-
-        all_multipliers_names = []
-        for nlp_i in ocp.nlp:
-            if hasattr(nlp_i.model, "has_holonomic_constraints"):  # making sure we have a HolonomicBiorbdModel
-                nlp_i_multipliers_names = [nlp_i.model.name_dof[i] for i in nlp_i.model.dependent_joint_index]
-                all_multipliers_names.extend(
-                    [name for name in nlp_i_multipliers_names if name not in all_multipliers_names]
-                )
-
-        all_multipliers_names = [f"lagrange_multiplier_{name}" for name in all_multipliers_names]
-        all_multipliers_names_in_phase = [
-            f"lagrange_multiplier_{nlp.model.name_dof[i]}" for i in nlp.model.dependent_joint_index
-        ]
-
-        axes_idx = BiMapping(
-            to_first=[i for i, c in enumerate(all_multipliers_names) if c in all_multipliers_names_in_phase],
-            to_second=[i for i, c in enumerate(all_multipliers_names) if c in all_multipliers_names_in_phase],
-        )
-
-        nlp.plot["lagrange_multipliers"] = CustomPlot(
-            lambda t0, phases_dt, node_idx, x, u, p, a, d: nlp.lagrange_multipliers_function(
-                np.concatenate([t0, t0 + phases_dt[nlp.phase_idx]]), x, u, p, a, d
-            ),
-            plot_type=PlotType.INTEGRATED,
-            axes_idx=axes_idx,
-            legend=all_multipliers_names,
-        )
-
-    @staticmethod
-    def configure_qv(ocp, nlp: NpArrayDictOptional, dyn_func: Callable, **extra_params) -> None:
-        """
-        Configure the qv, i.e. the dependent joint coordinates, to be plotted
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the phase
-        dyn_func: Callable[time, states, controls, param, algebraic_states, numerical_timeseries]
-            The function to get the values of contact forces from the dynamics
-        """
-
-        time_span_sym = vertcat(nlp.time_cx, nlp.dt)
-        nlp.q_v_function = Function(
-            "qv_function",
-            [
-                time_span_sym,
-                nlp.states.cx,
-                nlp.controls.cx,
-                nlp.parameters.cx,
-                nlp.algebraic_states.cx,
-                nlp.numerical_timeseries.cx,
-            ],
-            [
-                dyn_func()(
-                    nlp.get_var_from_states_or_controls("q_u", nlp.states.cx, nlp.controls.cx),
-                    DM.zeros(nlp.model.nb_dependent_joints, 1),
-                )
-            ],
-            ["t_span", "x", "u", "p", "a", "d"],
-            ["q_v"],
-        )
-
-        all_multipliers_names = []
-        for nlp_i in ocp.nlp:
-            if hasattr(nlp_i.model, "has_holonomic_constraints"):  # making sure we have a HolonomicBiorbdModel
-                nlp_i_multipliers_names = [nlp_i.model.name_dof[i] for i in nlp_i.model.dependent_joint_index]
-                all_multipliers_names.extend(
-                    [name for name in nlp_i_multipliers_names if name not in all_multipliers_names]
-                )
-
-        all_multipliers_names_in_phase = [nlp.model.name_dof[i] for i in nlp.model.dependent_joint_index]
-        axes_idx = BiMapping(
-            to_first=[i for i, c in enumerate(all_multipliers_names) if c in all_multipliers_names_in_phase],
-            to_second=[i for i, c in enumerate(all_multipliers_names) if c in all_multipliers_names_in_phase],
-        )
-
-        nlp.plot["q_v"] = CustomPlot(
-            lambda t0, phases_dt, node_idx, x, u, p, a, d: nlp.q_v_function(
-                np.concatenate([t0, t0 + phases_dt[nlp.phase_idx]]), x, u, p, a, d
-            ),
-            plot_type=PlotType.INTEGRATED,
-            axes_idx=axes_idx,
-            legend=all_multipliers_names,
-        )
-
-    @staticmethod
-    def configure_qdotv(ocp, nlp: NonLinearProgram, dyn_func: Callable, **extra_params) -> None:
-        """
-        Configure the qdot_v, i.e. the dependent joint velocities, to be plotted
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the phase
-        dyn_func: Callable[time, states, controls, param, algebraic_states, numerical_timeseries]
-            The function to get the values of contact forces from the dynamics
-        """
-
-        time_span_sym = vertcat(nlp.time_cx, nlp.dt)
-        nlp.q_v_function = Function(
-            "qdot_v_function",
-            [
-                time_span_sym,
-                nlp.states.scaled.cx,
-                nlp.controls.scaled.cx,
-                nlp.parameters.scaled.cx,
-                nlp.algebraic_states.scaled.cx,
-                nlp.numerical_timeseries.cx,
-            ],
-            [
-                dyn_func()(
-                    nlp.get_var_from_states_or_controls("q_u", nlp.states.scaled.cx, nlp.controls.scaled.cx),
-                    nlp.get_var_from_states_or_controls("qdot_u", nlp.states.scaled.cx, nlp.controls.scaled.cx),
-                    DM.zeros(nlp.model.nb_dependent_joints, 1),
-                )
-            ],
-            ["t_span", "x", "u", "p", "a", "d"],
-            ["qdot_v"],
-        )
-
-        all_multipliers_names = []
-        for nlp_i in ocp.nlp:
-            if hasattr(nlp_i.model, "has_holonomic_constraints"):  # making sure we have a HolonomicBiorbdModel
-                nlp_i_multipliers_names = [nlp_i.model.name_dof[i] for i in nlp_i.model.dependent_joint_index]
-                all_multipliers_names.extend(
-                    [name for name in nlp_i_multipliers_names if name not in all_multipliers_names]
-                )
-
-        all_multipliers_names_in_phase = [nlp.model.name_dof[i] for i in nlp.model.dependent_joint_index]
-        axes_idx = BiMapping(
-            to_first=[i for i, c in enumerate(all_multipliers_names) if c in all_multipliers_names_in_phase],
-            to_second=[i for i, c in enumerate(all_multipliers_names) if c in all_multipliers_names_in_phase],
-        )
-
-        nlp.plot["qdot_v"] = CustomPlot(
-            lambda t0, phases_dt, node_idx, x, u, p, a, d: nlp.q_v_function(
-                np.concatenate([t0, t0 + phases_dt[nlp.phase_idx]]), x, u, p, a, d
-            ),
-            plot_type=PlotType.INTEGRATED,
-            axes_idx=axes_idx,
-            legend=all_multipliers_names,
-        )
 
     @staticmethod
     def configure_dynamics_function(ocp, nlp: NonLinearProgram, dyn_func, **extra_params) -> None:
@@ -979,7 +725,6 @@ class DynamicsFcn(FcnEnum):
     """
 
     TORQUE_DRIVEN_FREE_FLOATING_BASE = (ConfigureProblem.torque_driven_free_floating_base,)
-    STOCHASTIC_TORQUE_DRIVEN = (ConfigureProblem.stochastic_torque_driven,)
     STOCHASTIC_TORQUE_DRIVEN_FREE_FLOATING_BASE = (ConfigureProblem.stochastic_torque_driven_free_floating_base,)
     TORQUE_DERIVATIVE_DRIVEN = (ConfigureProblem.torque_derivative_driven,)
     TORQUE_ACTIVATIONS_DRIVEN = (ConfigureProblem.torque_activations_driven,)
