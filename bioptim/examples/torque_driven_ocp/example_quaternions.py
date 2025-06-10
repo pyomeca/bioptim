@@ -12,10 +12,10 @@ import numpy as np
 from casadi import MX, Function
 
 from bioptim import (
-    BiorbdModel,
+    TorqueFreeFloatingBaseBiorbdModel,
     OptimalControlProgram,
     DynamicsList,
-    DynamicsFcn,
+    Dynamics,
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,
@@ -180,7 +180,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueFreeFloatingBaseBiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -205,12 +205,11 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(
-        DynamicsFcn.TORQUE_DRIVEN_FREE_FLOATING_BASE,
+    dynamics.add(Dynamics(
         ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
-    )
+    ))
 
     # Define control path constraint
     n_root = bio_model.nb_root

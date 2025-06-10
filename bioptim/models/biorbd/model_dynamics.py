@@ -10,7 +10,12 @@ from ...optimization.parameters import ParameterList
 from .biorbd_model import BiorbdModel
 from .stochastic_biorbd_model import StochasticBiorbdModel
 from .holonomic_biorbd_model import HolonomicBiorbdModel
-from ..protocols.abstract_model_dynamics import TorqueDynamics, StochasticTorqueDynamics, HolonomicTorqueDynamics
+from ..protocols.abstract_model_dynamics import (
+    TorqueDynamics,
+    StochasticTorqueDynamics,
+    HolonomicTorqueDynamics,
+    TorqueFreeFloatingBaseDynamics
+)
 from ...misc.parameters_types import (
     Str,
     Int,
@@ -91,16 +96,16 @@ class HolonomicTorqueBiorbdModel(HolonomicBiorbdModel, HolonomicTorqueDynamics):
         HolonomicTorqueDynamics.__init__(self)
 
 
-#
-# class TorqueFreeFloatingBaseBiorbdModel(BiorbdModel, TorqueFreeFloatingBaseDynamics):
-#     def __init__(
-#             self,
-#             bio_model: str | biorbd.Model,
-#             friction_coefficients: np.ndarray = None,
-#             parameters: ParameterList = None,
-#             external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None):
-#         BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set)
-#         TorqueFreeFloatingBaseDynamics.__init__(self)
+
+class TorqueFreeFloatingBaseBiorbdModel(BiorbdModel, TorqueFreeFloatingBaseDynamics):
+    def __init__(
+            self,
+            bio_model: str | biorbd.Model,
+            friction_coefficients: np.ndarray = None,
+            parameters: ParameterList = None,
+            external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None):
+        BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set)
+        TorqueFreeFloatingBaseDynamics.__init__(self)
 #
 #
 # class StochasticTorqueFreeFloatingBaseBiorbdModel(StochasticBiorbdModel, StochasticTorqueFreeFloatingBaseDynamics):

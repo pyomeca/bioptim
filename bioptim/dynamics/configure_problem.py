@@ -733,7 +733,6 @@ class DynamicsFcn(FcnEnum):
     TORQUE_ACTIVATIONS_DRIVEN = (ConfigureProblem.torque_activations_driven,)
     JOINTS_ACCELERATION_DRIVEN = (ConfigureProblem.joints_acceleration_driven,)
     MUSCLE_DRIVEN = (ConfigureProblem.muscle_driven,)
-    HOLONOMIC_TORQUE_DRIVEN = (ConfigureProblem.holonomic_torque_driven,)
     CUSTOM = (ConfigureProblem.custom,)
 
 

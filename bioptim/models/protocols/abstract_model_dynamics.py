@@ -25,6 +25,16 @@ class TorqueDynamics:
         self.extra_dynamics = None
 
     @staticmethod
+    def get_q_qdot_indices(nlp):
+        """
+        Get the indices of the states and controls in the normal dynamics
+        """
+        return {
+            "q": nlp.states["q"].index,
+            "qdot": nlp.states["qdot"].index
+        }
+
+    @staticmethod
     def get_basic_variables(
         nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue: FatigueList
     ):
@@ -55,6 +65,9 @@ class TorqueDynamics:
         fatigue: FatigueList = None,
     ):
 
+        # Get states indices
+        q_indices, qdot_indices = self.get_q_qdot_indices(nlp)
+
         # Get variables
         q, qdot, tau, external_forces = self.get_basic_variables(
             nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue
@@ -62,8 +75,8 @@ class TorqueDynamics:
 
         # Initialize dxdt
         dxdt = nlp.cx(nlp.states.shape, 1)
-        dxdt[nlp.states["q"].index, 0] = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-        dxdt[nlp.states["qdot"].index, 0] = DynamicsFunctions.compute_qddot(nlp, q, qdot, tau, external_forces)
+        dxdt[q_indices, 0] = DynamicsFunctions.compute_qdot(nlp, q, qdot)
+        dxdt[qdot_indices, 0] = DynamicsFunctions.compute_qddot(nlp, q, qdot, tau, external_forces)
 
         if fatigue is not None and "tau" in fatigue:
             dxdt = fatigue["tau"].dynamics(dxdt, nlp, states, controls)
@@ -83,14 +96,14 @@ class TorqueDynamics:
             if nlp.dynamics_type.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
 
                 dxdt_defects = nlp.cx(nlp.states.shape, 1)
-                dxdt_defects[nlp.states["q"].index, 0] = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-                dxdt_defects[nlp.states["qdot"].index, 0] = DynamicsFunctions.forward_dynamics(
+                dxdt_defects[q_indices, 0] = DynamicsFunctions.compute_qdot(nlp, q, qdot)
+                dxdt_defects[qdot_indices, 0] = DynamicsFunctions.forward_dynamics(
                     nlp, q, qdot, tau, nlp.model.contact_types, external_forces
                 )
 
                 slopes = nlp.cx(nlp.states.shape, 1)
-                slopes[nlp.states["q"].index, 0] = slope_q
-                slopes[nlp.states["qdot"].index, 0] = slope_qdot
+                slopes[q_indices, 0] = slope_q
+                slopes[qdot_indices, 0] = slope_qdot
 
                 # Get fatigue defects
                 dxdt_defects, slopes = DynamicsFunctions.get_fatigue_defects(
@@ -109,7 +122,7 @@ class TorqueDynamics:
                 if fatigue is not None:
                     raise NotImplementedError("Fatigue is not implemented yet with inverse dynamics defects.")
 
-                defects[nlp.states["q"].index, 0] = slope_q * nlp.dt - qdot * nlp.dt
+                defects[q_indices, 0] = slope_q * nlp.dt - qdot * nlp.dt
 
                 tau_id = DynamicsFunctions.inverse_dynamics(
                     nlp,
@@ -120,7 +133,7 @@ class TorqueDynamics:
                     external_forces=external_forces,
                 )
                 tau_defects = tau - tau_id
-                defects[nlp.states["qdot"].index, 0] = tau_defects
+                defects[qdot_indices, 0] = tau_defects
             else:
                 raise NotImplementedError(
                     f"The defect type {nlp.dynamics_type.ode_solver.defects_type} is not implemented yet for torque driven dynamics."
@@ -329,7 +342,63 @@ class HolonomicTorqueDynamics:
         return
 
 
-# class TorqueFreeFloatingBaseDynamics:
+class TorqueFreeFloatingBaseDynamics(TorqueDynamics):
+
+    """
+    This class is used to create a model actuated through joint torques with a free floating base.
+
+    x = [q_roots, q_joints, qdot_roots, qdot_joints]
+    u = [tau_joints]
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.state_type = [States.Q_ROOTS, States.Q_JOINTS, States.QDOT_ROOTS, States.QDOT_JOINTS]
+        self.control_type = [Controls.TAU_JOINTS]
+        self.algebraic_type = []
+        self.functions = []
+        self.extra_dynamics = None
+
+    @staticmethod
+    def get_q_qdot_indices(nlp):
+        """
+        Get the indices of the states and controls in the free floating base dynamics
+        """
+        return {
+            "q": list(nlp.states["q_roots"].index) + list(nlp.states["q_joints"].index),
+            "qdot": list(nlp.states["qdot_roots"].index) + list(nlp.states["qdot_joints"].index)
+        }
+
+    @staticmethod
+    def get_basic_variables(
+        nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue: FatigueList
+    ):
+
+        if fatigue is not None:
+            raise RuntimeError("Fatigue is not implemented yet for free floating base dynamics.")
+
+        # Get variables from the right place
+        q_roots = DynamicsFunctions.get(nlp.states["q_roots"], states)
+        q_joints = DynamicsFunctions.get(nlp.states["q_joints"], states)
+        qdot_roots = DynamicsFunctions.get(nlp.states["qdot_roots"], states)
+        qdot_joints = DynamicsFunctions.get(nlp.states["qdot_joints"], states)
+        tau_joints = DynamicsFunctions.get(nlp.controls["tau_joints"], controls)
+
+        q_full = vertcat(q_roots, q_joints)
+        qdot_full = vertcat(qdot_roots, qdot_joints)
+        tau_full = vertcat(nlp.cx(nlp.model.nb_roots, 1), tau_joints)
+
+        # Add additional torques
+        tau_full += DynamicsFunctions.collect_tau(nlp, q_full, qdot_full, parameters, states, controls, fatigue)
+
+        # Get external forces
+        external_forces = nlp.get_external_forces(
+            "external_forces", states, controls, algebraic_states, numerical_timeseries
+        )
+        return q_full, qdot_full, tau_full, external_forces
+
+
+
 #
 # class StochasticBiorbdModel:
 #
