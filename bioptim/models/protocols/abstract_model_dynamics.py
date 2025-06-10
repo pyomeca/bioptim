@@ -251,6 +251,9 @@ class StochasticTorqueDynamics(TorqueDynamics):
             motor_noise=motor_noise,
         )
 
+        # Get states indices
+        q_indices, qdot_indices = self.get_q_qdot_indices(nlp)
+
         # Get variables
         q, qdot, tau, external_forces = self.get_basic_variables(
             nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue=None
@@ -264,8 +267,8 @@ class StochasticTorqueDynamics(TorqueDynamics):
         dxdt = nlp.cx(nlp.states.shape, 1)
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         ddq = DynamicsFunctions.compute_qddot(nlp, q, qdot, tau, external_forces)
-        dxdt[nlp.states["q"].index, 0] = dq
-        dxdt[nlp.states["qdot"].index, 0] = ddq
+        dxdt[q_indices, 0] = dq
+        dxdt[qdot_indices, 0] = ddq
 
         defects = None
         if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
@@ -280,8 +283,8 @@ class StochasticTorqueDynamics(TorqueDynamics):
             slope_qdot = nlp.states_dot["qdot"].cx
 
             defects = nlp.cx(nlp.states.shape, 1)
-            defects[nlp.states["q"].index, 0] = slope_q * nlp.dt - dq * nlp.dt
-            defects[nlp.states["qdot"].index, 0] = slope_qdot * nlp.dt - ddq * nlp.dt
+            defects[q_indices, 0] = slope_q * nlp.dt - dq * nlp.dt
+            defects[qdot_indices, 0] = slope_qdot * nlp.dt - ddq * nlp.dt
 
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
@@ -398,10 +401,28 @@ class TorqueFreeFloatingBaseDynamics(TorqueDynamics):
         return q_full, qdot_full, tau_full, external_forces
 
 
+class StochasticTorqueFreeFloatingBaseDynamics(TorqueFreeFloatingBaseDynamics, StochasticTorqueDynamics):
 
-#
-# class StochasticBiorbdModel:
-#
+    """
+    This class is used to create a model actuated through joint torques with a free floating base with stochastic variables.
+
+    x = [q_roots, q_joints, qdot_roots, qdot_joints]
+    u = [tau_joints, stochastic_variables]
+    a = [stochastic_variables]
+    """
+
+    def __init__(self, problem_type, with_cholesky, n_noised_tau, n_noise, n_noised_states, n_references):
+        super().__init__()
+        StochasticTorqueDynamics.__init__(
+            self,
+            problem_type,
+            with_cholesky,
+            n_noised_tau,
+            n_noise,
+            n_noised_states,
+            n_references)
+
+
 # class TorqueActivationDynamics:
 #
 # class TorqueDerivativeDynamics:
