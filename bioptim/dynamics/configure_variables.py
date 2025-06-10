@@ -11,6 +11,8 @@ from ..models.protocols.stochastic_biomodel import StochasticBioModel
 from ..dynamics.ode_solvers import OdeSolver
 from ..gui.plot import CustomPlot
 
+from ..misc.parameters_types import Bool, Int
+
 
 class ConfigureVariables:
 
@@ -408,7 +410,7 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_stochastic_k(ocp, nlp, n_noised_controls: int, n_references: int):
+    def configure_stochastic_k(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool, n_noised_controls: int, n_references: int):
         """
         Configure the optimal feedback gain matrix K.
         Parameters
@@ -416,6 +418,9 @@ class ConfigureVariables:
         nlp: NonLinearProgram
             A reference to the phase
         """
+        if as_states != False or as_controls != True or as_algebraic_states != False:
+            raise RuntimeError("configure_stochastic_k is intended to be used as a control.")
+
         name = "k"
 
         if name in nlp.variable_mappings:
@@ -441,7 +446,7 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_stochastic_c(ocp, nlp, n_noised_states: int, n_noise: int):
+    def configure_stochastic_c(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool, n_noised_states: int, n_noise: int):
         """
         Configure the stochastic variable matrix C representing the injection of motor noise (df/dw).
         Parameters
@@ -449,6 +454,10 @@ class ConfigureVariables:
         nlp: NonLinearProgram
             A reference to the phase
         """
+
+        if as_states != False or as_controls != True or as_algebraic_states != False:
+            raise RuntimeError("configure_stochastic_c is intended to be used as a control.")
+
         name = "c"
 
         if name in nlp.variable_mappings:
@@ -474,7 +483,7 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_stochastic_a(ocp, nlp, n_noised_states: int):
+    def configure_stochastic_a(ocp, nlp, as_states: Bool, as_controls: Bool, as_algebraic_states: Bool, n_noised_states: Int):
         """
         Configure the stochastic variable matrix A representing the propagation of motor noise (df/dx).
         Parameters
@@ -482,6 +491,10 @@ class ConfigureVariables:
         nlp: NonLinearProgram
             A reference to the phase
         """
+
+        if as_states != False or as_controls != True or as_algebraic_states != False:
+            raise RuntimeError("configure_stochastic_a is intended to be used as a control.")
+
         name = "a"
 
         if name in nlp.variable_mappings:
@@ -505,7 +518,7 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_stochastic_cov_implicit(ocp, nlp, n_noised_states: int):
+    def configure_stochastic_cov_implicit(ocp, nlp, as_states: Bool, as_controls: Bool, as_algebraic_states: Bool,  n_noised_states: Int):
         """
         Configure the covariance matrix P representing the motor noise.
         Parameters
@@ -513,6 +526,10 @@ class ConfigureVariables:
         nlp: NonLinearProgram
             A reference to the phase
         """
+
+        if as_states != False or as_controls != True or as_algebraic_states != False:
+            raise RuntimeError("configure_stochastic_cov_implicit is intended to be used as a control.")
+
         name = "cov"
 
         if name in nlp.variable_mappings:
@@ -534,7 +551,7 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_stochastic_cholesky_cov(ocp, nlp, n_noised_states: int):
+    def configure_stochastic_cholesky_cov(ocp, nlp, as_states: Bool, as_controls: Bool, as_algebraic_states: Bool, n_noised_states: Int):
         """
         Configure the diagonal matrix needed to reconstruct the covariance matrix using L @ L.T.
         This formulation allows insuring that the covariance matrix is always positive semi-definite.
@@ -543,6 +560,10 @@ class ConfigureVariables:
         nlp: NonLinearProgram
             A reference to the phase
         """
+
+        if as_states != False or as_controls != True or as_algebraic_states != False:
+            raise RuntimeError("configure_stochastic_cholesky_cov is intended to be used as a control.")
+
         name = "cholesky_cov"
 
         if name in nlp.variable_mappings:
@@ -564,7 +585,7 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_stochastic_ref(ocp, nlp, n_references: int):
+    def configure_stochastic_ref(ocp, nlp, as_states: Bool, as_controls: Bool, as_algebraic_states: Bool, n_references: Int):
         """
         Configure the reference kinematics.
 
@@ -573,6 +594,10 @@ class ConfigureVariables:
         nlp: NonLinearProgram
             A reference to the phase
         """
+
+        if as_states != False or as_controls != True or as_algebraic_states != False:
+            raise RuntimeError("configure_stochastic_ref is intended to be used as a control.")
+
         name = "ref"
 
         if name in nlp.variable_mappings:
@@ -591,7 +616,7 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_stochastic_m(ocp, nlp, n_noised_states: int):
+    def configure_stochastic_m(ocp, nlp, as_states: Bool, as_controls: Bool, as_algebraic_states: Bool, n_noised_states: Int):
         """
         Configure the helper matrix M (from Gillis 2013 : https://doi.org/10.1109/CDC.2013.6761121).
 
@@ -600,6 +625,10 @@ class ConfigureVariables:
         nlp: NonLinearProgram
             A reference to the phase
         """
+
+        if as_states != False or as_controls != False or as_algebraic_states != True:
+            raise RuntimeError("configure_stochastic_m is intended to be used as an algebraic state.")
+
         name = "m"
 
         if "m" in nlp.variable_mappings and nlp.variable_mappings["m"].actually_does_a_mapping:
@@ -879,6 +908,145 @@ class ConfigureVariables:
             fatigue=fatigue,
         )
 
+
+    @staticmethod
+    def configure_rigid_contact_function(ocp, nlp, **extra_params) -> None:
+        """
+        Configure the contact points
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
+        contact_func: Callable[time, states, controls, param, algebraic_states, numerical_timeseries]
+            The function to get the values of contact forces from the dynamics
+        """
+
+        time_span_sym = vertcat(nlp.time_cx, nlp.dt)
+        nlp.rigid_contact_forces_func = Function(
+            "rigid_contact_forces_func",
+            [
+                time_span_sym,
+                nlp.states.scaled.cx,
+                nlp.controls.scaled.cx,
+                nlp.parameters.scaled.cx,
+                nlp.algebraic_states.scaled.cx,
+                nlp.numerical_timeseries.cx,
+            ],
+            [
+                nlp.model.get_rigid_contact_forces(
+                    time_span_sym,
+                    nlp.states.scaled.cx,
+                    nlp.controls.scaled.cx,
+                    nlp.parameters.scaled.cx,
+                    nlp.algebraic_states.scaled.cx,
+                    nlp.numerical_timeseries.cx,
+                    nlp,
+                    **extra_params,
+                )
+            ],
+            ["t_span", "x", "u", "p", "a", "d"],
+            ["rigid_contact_forces"],
+        ).expand()
+
+        all_contact_names = []
+        for elt in ocp.nlp:
+            all_contact_names.extend([name for name in elt.model.rigid_contact_names if name not in all_contact_names])
+
+        if "rigid_contact_forces" in nlp.plot_mapping:
+            contact_names_in_phase = [name for name in nlp.model.rigid_contact_names]
+            axes_idx = BiMapping(
+                to_first=nlp.plot_mapping["rigid_contact_forces"].map_idx,
+                to_second=[i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase],
+            )
+        else:
+            contact_names_in_phase = [name for name in nlp.model.rigid_contact_names]
+            axes_idx = BiMapping(
+                to_first=[i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase],
+                to_second=[i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase],
+            )
+
+        nlp.plot["rigid_contact_forces"] = CustomPlot(
+            lambda t0, phases_dt, node_idx, x, u, p, a, d: nlp.rigid_contact_forces_func(
+                np.concatenate([t0, t0 + phases_dt[nlp.phase_idx]]), x, u, p, a, d
+            ),
+            plot_type=PlotType.INTEGRATED,
+            axes_idx=axes_idx,
+            legend=all_contact_names,
+        )
+
+    @staticmethod
+    def configure_soft_contact_function(ocp, nlp) -> None:
+        """
+        Configure the soft contact sphere
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
+        """
+
+        time_span_sym = vertcat(nlp.time_cx, nlp.dt)
+        nlp.soft_contact_forces_func = Function(
+            "soft_contact_forces_func",
+            [
+                time_span_sym,
+                nlp.states.scaled.cx,
+                nlp.controls.scaled.cx,
+                nlp.parameters.scaled.cx,
+                nlp.algebraic_states.scaled.cx,
+                nlp.numerical_timeseries.cx,
+            ],
+            [nlp.model.soft_contact_forces().expand()(nlp.states["q"].cx, nlp.states["qdot"].cx, nlp.parameters.cx)],
+            ["t_span", "x", "u", "p", "a", "d"],
+            ["soft_contact_forces"],
+        ).expand()
+
+        component_list = ["Mx", "My", "Mz", "Fx", "Fy", "Fz"]
+
+        for i_sc in range(nlp.model.nb_soft_contacts):
+            all_soft_contact_names = []
+            all_soft_contact_names.extend(
+                [
+                    f"{nlp.model.soft_contact_names[i_sc]}_{name}"
+                    for name in component_list
+                    if nlp.model.soft_contact_names[i_sc] not in all_soft_contact_names
+                ]
+            )
+
+            if "soft_contact_forces" in nlp.plot_mapping:
+                soft_contact_names_in_phase = [
+                    f"{nlp.model.soft_contact_names[i_sc]}_{name}"
+                    for name in component_list
+                    if nlp.model.soft_contact_names[i_sc] not in all_soft_contact_names
+                ]
+                phase_mappings = BiMapping(
+                    to_first=nlp.plot_mapping["soft_contact_forces"].map_idx,
+                    to_second=[i for i, c in enumerate(all_soft_contact_names) if c in soft_contact_names_in_phase],
+                )
+            else:
+                soft_contact_names_in_phase = [
+                    f"{nlp.model.soft_contact_names[i_sc]}_{name}"
+                    for name in component_list
+                    if nlp.model.soft_contact_names[i_sc] not in all_soft_contact_names
+                ]
+                phase_mappings = BiMapping(
+                    to_first=[i for i, c in enumerate(all_soft_contact_names) if c in soft_contact_names_in_phase],
+                    to_second=[i for i, c in enumerate(all_soft_contact_names) if c in soft_contact_names_in_phase],
+                )
+            nlp.plot[f"soft_contact_forces_{nlp.model.soft_contact_names[i_sc]}"] = CustomPlot(
+                lambda t0, phases_dt, node_idx, x, u, p, a, d: nlp.soft_contact_forces_func(
+                    np.concatenate([t0, t0 + phases_dt[nlp.phase_idx]]), x, u, p, a, d
+                )[(i_sc * 6) : ((i_sc + 1) * 6), :],
+                plot_type=PlotType.INTEGRATED,
+                axes_idx=phase_mappings,
+                legend=all_soft_contact_names,
+            )
+
     @staticmethod
     def configure_qv(ocp, nlp, dyn_func: Callable, **extra_params):
         """
@@ -1146,10 +1314,10 @@ class AutoConfigure:
 
         # Define the contact function for explicit contacts
         if ContactType.RIGID_EXPLICIT in nlp.model.contact_types:
-            ConfigureProblem.configure_rigid_contact_function(ocp, nlp)
+            ConfigureVariables.configure_rigid_contact_function(ocp, nlp)
 
         if ContactType.SOFT_EXPLICIT in nlp.model.contact_types:
-            ConfigureProblem.configure_soft_contact_function(ocp, nlp)
+            ConfigureVariables.configure_soft_contact_function(ocp, nlp)
 
     def initialize(
         self,

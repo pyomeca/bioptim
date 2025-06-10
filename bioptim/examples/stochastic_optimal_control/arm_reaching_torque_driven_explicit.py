@@ -2,6 +2,8 @@
 This example is adapted from arm_reaching_muscle_driven.py to make it torque driven.
 The states dynamics is implicit. which allows to minimize the uncertainty on the acceleration of joints.
 The algebraic states dynamics is explicit.
+
+WARNING: These examples are not maintained anymore, please use SocpType.COLLOCATION for a safer, faster, better alternative.
 """
 
 import pickle

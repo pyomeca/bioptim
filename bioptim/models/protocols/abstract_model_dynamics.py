@@ -127,6 +127,18 @@ class TorqueDynamics:
 
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
+    def extra_dynamics(
+            self,
+            time,
+            states,
+            controls,
+            parameters,
+            algebraic_states,
+            numerical_timeseries,
+            nlp,
+    ):
+        return
+
     def get_rigid_contact_forces(
         self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue: FatigueList = None
     ):
@@ -148,15 +160,15 @@ class StochasticTorqueDynamics(TorqueDynamics):
         super().__init__()
         self.control_type += [
             lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.K(
-                ocp, nlp, n_noised_controls=n_noised_tau, n_references=n_references
+                ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_controls=n_noised_tau, n_references=n_references
             ),
             lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.REF(
-                ocp, nlp, n_references=n_references
+                ocp, nlp, as_states, as_controls, as_algebraic_states, n_references=n_references
             ),
         ]
         self.algebraic_type = [
             lambda ocp, nlp, as_states, as_controls, as_algebraic_states: AlgebraicStates.M(
-                ocp, nlp, n_noised_states=n_noised_states
+                ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_states=n_noised_states
             ),
         ]
 
@@ -167,27 +179,27 @@ class StochasticTorqueDynamics(TorqueDynamics):
         if with_cholesky:
             self.control_type += [
                 lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.CHOLESKY_COV(
-                    ocp, nlp, n_noised_states=n_noised_states
+                    ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_states=n_noised_states
                 )
             ]
         else:
             self.control_type += [
                 lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.COV(
-                    ocp, nlp, n_noised_states=n_noised_states
+                    ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_states=n_noised_states
                 )
             ]
 
         if isinstance(problem_type, SocpType.TRAPEZOIDAL_IMPLICIT):
             self.control_type += [
                 lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.A(
-                    ocp, nlp, n_noised_states=n_noised_states
+                    ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_states=n_noised_states
                 ),
                 lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.C(
-                    ocp, nlp, n_noised_states=n_noised_states, n_noise=n_noise
+                    ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_states=n_noised_states, n_noise=n_noise
                 ),
             ]
 
-    def dynamics(
+    def extra_dynamics(
         self,
         time,
         states,

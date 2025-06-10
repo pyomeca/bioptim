@@ -5,6 +5,8 @@ This formulation allow to decouple the covariance matrix with the previous state
 but increases largely the number of variables to optimize.
 Decomposing the covariance matrix using Cholesky L @ @.T allows to reduce the number of variables and ensures that the
 covariance matrix always stays positive semi-definite.
+
+WARNING: These examples are not maintained anymore, please use SocpType.COLLOCATION for a safer, faster, better alternative.
 """
 
 import pickle

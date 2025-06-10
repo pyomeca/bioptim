@@ -9,6 +9,8 @@ reduce uncertainty. This covariance matrix is computed from the expected states.
 Note: In the original paper, the continuity constraint was weighted (*1e3), but as we do not encourage users to weight
 constraint, this feature is not implemented in bioptim (if you really want this feature, please notify the developers
 by opening an issue on GitHub). However, the equivalence of our implementation has been tested.
+
+WARNING: These examples are not maintained anymore, please use SocpType.COLLOCATION for a safer, faster, better alternative.
 """
 
 import pickle

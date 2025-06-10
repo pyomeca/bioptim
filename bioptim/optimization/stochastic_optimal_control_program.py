@@ -613,11 +613,11 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
 
 def _check_multi_threading_and_problem_type(problem_type, bio_model, **kwargs):
     if not isinstance(problem_type, SocpType.COLLOCATION):
-        if "n_thread" in kwargs:
-            if kwargs["n_thread"] != 1:
+        if "n_threads" in kwargs:
+            if kwargs["n_threads"] != 1:
                 raise ValueError(
                     "Multi-threading is not possible yet while solving a trapezoidal stochastic ocp."
-                    "n_thread is set to 1 by default."
+                    "n_threads is set to 1 by default."
                 )
     if bio_model.problem_type != problem_type:
         raise RuntimeError(
