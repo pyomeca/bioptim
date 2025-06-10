@@ -18,6 +18,7 @@ from ..protocols.abstract_model_dynamics import (
     StochasticTorqueFreeFloatingBaseDynamics,
     TorqueActivationDynamics,
     TorqueDerivativeDynamics,
+    MusclesDynamics,
 )
 from ...misc.parameters_types import (
     Str,
@@ -184,16 +185,19 @@ class TorqueDerivativeBiorbdModel(BiorbdModel, TorqueDerivativeDynamics):
         TorqueDerivativeDynamics.__init__(self)
 
 
-# class MusclesBiorbdModel(BiorbdModel, MusclesDynamics):
-#     def __init__(
-#             self,
-#             bio_model: str | biorbd.Model,
-#             friction_coefficients: np.ndarray = None,
-#             parameters: ParameterList = None,
-#             external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None):
-#         BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set)
-#         MusclesDynamics.__init__(self)
-#
+class MusclesBiorbdModel(BiorbdModel, MusclesDynamics):
+    def __init__(
+            self,
+            bio_model: Str | biorbd.Model,
+            with_residual_torque: Bool = False,
+            with_excitation: Bool = False,
+            friction_coefficients: np.ndarray = None,
+            parameters: ParameterList = None,
+            external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None):
+        BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set)
+        MusclesDynamics.__init__(self, with_residual_torque, with_excitation)
+
+
 # class JointAccelerationBiorbdModel(BiorbdModel, JointAccelerationDynamics):
 #     def __init__(
 #             self,

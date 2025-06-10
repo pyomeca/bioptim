@@ -215,6 +215,7 @@ from .models.biorbd.model_dynamics import (
     TorqueFreeFloatingBaseBiorbdModel,
     StochasticTorqueFreeFloatingBaseBiorbdModel,
     TorqueActivationBiorbdModel,
+    MusclesBiorbdModel,
 )
 from .models.protocols.biomodel import BioModel
 from .models.protocols.stochastic_biomodel import StochasticBioModel

@@ -10,14 +10,13 @@ The difference between muscle activation and excitation is that the latter is th
 
 import platform
 
-import biorbd_casadi as biorbd
 import numpy as np
 from casadi import MX, vertcat, Function
 from matplotlib import pyplot as plt
 from scipy.integrate import solve_ivp
 
 from bioptim import (
-    BiorbdModel,
+    MusclesBiorbdModel,
     OptimalControlProgram,
     NonLinearProgram,
     BiMapping,
@@ -40,7 +39,7 @@ from bioptim.optimization.optimization_variable import OptimizationVariableConta
 
 
 def generate_data(
-    bio_model: BiorbdModel,
+    bio_model: MusclesBiorbdModel,
     final_time: float,
     n_shooting: int,
     use_residual_torque: bool = True,
@@ -51,7 +50,7 @@ def generate_data(
 
     Parameters
     ----------
-    bio_model: BiorbdModel
+    bio_model: MusclesBiorbdModel
         The loaded biorbd model
     final_time: float
         The time at final node
@@ -160,14 +159,12 @@ def generate_data(
 
     if use_residual_torque:
         nlp.variable_mappings["tau"] = BiMapping(range(n_tau), range(n_tau))
-    dyn_func = DynamicsFunctions.muscles_driven
+    dyn_func = bio_model.dynamics
 
     symbolic_states = vertcat(*(symbolic_q, symbolic_qdot))
     symbolic_controls = vertcat(*(symbolic_tau, symbolic_mus)) if use_residual_torque else vertcat(symbolic_mus)
 
-    nlp.dynamics_type = Dynamics(
-        DynamicsFcn.MUSCLE_DRIVEN,
-    )
+    nlp.dynamics_type = Dynamics()
 
     dynamics_func = Function(
         "ForwardDyn",
@@ -214,7 +211,7 @@ def generate_data(
 
 
 def prepare_ocp(
-    bio_model: BiorbdModel,
+    bio_model: MusclesBiorbdModel,
     final_time: float,
     n_shooting: int,
     markers_ref: np.ndarray,
@@ -232,7 +229,7 @@ def prepare_ocp(
 
     Parameters
     ----------
-    bio_model: BiorbdModel
+    bio_model: MusclesBiorbdModel
         The loaded biorbd model
     final_time: float
         The time at final node
@@ -284,13 +281,11 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(
-        DynamicsFcn.MUSCLE_DRIVEN,
+    dynamics.add(Dynamics(
         ode_solver=ode_solver,
-        with_residual_torque=use_residual_torque,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
-    )
+    ))
 
     # Path constraint
     x_bounds = BoundsList()
@@ -328,10 +323,10 @@ def main():
     """
 
     # Define the problem
-    bio_model = BiorbdModel("models/arm26.bioMod")
+    use_residual_torque = True
+    bio_model = MusclesBiorbdModel("models/arm26.bioMod", with_excitation=False, with_residual_torque=use_residual_torque)
     final_time = 0.5
     n_shooting_points = 50
-    use_residual_torque = True
 
     # Generate random data to fit
     t, markers_ref, x_ref, muscle_activations_ref = generate_data(
@@ -342,7 +337,7 @@ def main():
     )
 
     # Track these data
-    bio_model = BiorbdModel("models/arm26.bioMod")  # To allow for non free variable, the model must be reloaded
+    bio_model = MusclesBiorbdModel("models/arm26.bioMod", with_excitation=False, with_residual_torque=use_residual_torque)  # To allow for non free variable, the model must be reloaded
     ocp = prepare_ocp(
         bio_model,
         final_time,

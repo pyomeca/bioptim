@@ -16,7 +16,7 @@ from matplotlib import pyplot as plt
 from scipy.integrate import solve_ivp
 
 from bioptim import (
-    BiorbdModel,
+    MusclesBiorbdModel,
     OptimalControlProgram,
     NonLinearProgram,
     BiMapping,
@@ -38,7 +38,7 @@ from bioptim.optimization.optimization_variable import OptimizationVariableConta
 
 
 def generate_data(
-    bio_model: BiorbdModel,
+    bio_model: MusclesBiorbdModel,
     final_time: float,
     n_shooting: int,
     use_residual_torque: bool = True,
@@ -50,7 +50,7 @@ def generate_data(
 
     Parameters
     ----------
-    bio_model: BiorbdModel
+    bio_model: MusclesBiorbdModel
         The loaded biorbd model
     final_time: float
         The time at final node
@@ -212,7 +212,7 @@ def generate_data(
 
 
 def prepare_ocp(
-    bio_model: BiorbdModel,
+    bio_model: MusclesBiorbdModel,
     final_time: float,
     n_shooting: int,
     markers_ref: np.ndarray,
@@ -229,7 +229,7 @@ def prepare_ocp(
 
     Parameters
     ----------
-    bio_model: BiorbdModel
+    bio_model: MusclesBiorbdModel
         The loaded biorbd model
     final_time: float
         The time at final node
@@ -284,14 +284,11 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(
-        DynamicsFcn.MUSCLE_DRIVEN,
-        with_excitations=True,
-        with_residual_torque=use_residual_torque,
+    dynamics.add(Dynamics(
         ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
-    )
+    ))
 
     # Path constraint
     x_bounds = BoundsList()
@@ -333,10 +330,10 @@ def main():
     """
 
     # Define the problem
-    bio_model = BiorbdModel("models/arm26.bioMod")
+    use_residual_torque = True
+    bio_model = MusclesBiorbdModel("models/arm26.bioMod", with_residual_torque=use_residual_torque, with_excitation=True)
     final_time = 0.5
     n_shooting_points = 30
-    use_residual_torque = True
     phase_dynamics = PhaseDynamics.SHARED_DURING_THE_PHASE
 
     # Generate random data to fit
@@ -345,7 +342,8 @@ def main():
     )
 
     # Track these data
-    bio_model = BiorbdModel("models/arm26.bioMod")  # To allow for non free variable, the model must be reloaded
+    # To allow for non free variable, the model must be reloaded
+    bio_model = MusclesBiorbdModel("models/arm26.bioMod", with_residual_torque=use_residual_torque, with_excitation=True)
     ocp = prepare_ocp(
         bio_model,
         final_time,
