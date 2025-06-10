@@ -84,8 +84,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
-    )
+    dynamics.add(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()

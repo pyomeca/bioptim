@@ -82,7 +82,11 @@ def prepare_ocp(
         time_phase_mapping = BiMapping(to_second=[0, 1, 0], to_first=[0, 1])
 
     # BioModel path
-    bio_model = (TorqueBiorbdModel(biorbd_model_path), TorqueBiorbdModel(biorbd_model_path), TorqueBiorbdModel(biorbd_model_path))
+    bio_model = (
+        TorqueBiorbdModel(biorbd_model_path),
+        TorqueBiorbdModel(biorbd_model_path),
+        TorqueBiorbdModel(biorbd_model_path),
+    )
 
     # Problem parameters
     tau_min, tau_max = -100, 100
@@ -96,25 +100,31 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(Dynamics(
-        phase=0,
-        ode_solver=ode_solver,
-        expand_dynamics=expand_dynamics,
-        phase_dynamics=phase_dynamics,
-    ))
+    dynamics.add(
+        Dynamics(
+            phase=0,
+            ode_solver=ode_solver,
+            expand_dynamics=expand_dynamics,
+            phase_dynamics=phase_dynamics,
+        )
+    )
     if n_phases == 3:
-        dynamics.add(Dynamics(
-            phase=1,
-            ode_solver=ode_solver,
-            expand_dynamics=expand_dynamics,
-            phase_dynamics=phase_dynamics,
-        ))
-        dynamics.add(Dynamics(
-            phase=2,
-            ode_solver=ode_solver,
-            expand_dynamics=expand_dynamics,
-            phase_dynamics=phase_dynamics,
-        ))
+        dynamics.add(
+            Dynamics(
+                phase=1,
+                ode_solver=ode_solver,
+                expand_dynamics=expand_dynamics,
+                phase_dynamics=phase_dynamics,
+            )
+        )
+        dynamics.add(
+            Dynamics(
+                phase=2,
+                ode_solver=ode_solver,
+                expand_dynamics=expand_dynamics,
+                phase_dynamics=phase_dynamics,
+            )
+        )
 
     # Constraints
     constraints = ConstraintList()

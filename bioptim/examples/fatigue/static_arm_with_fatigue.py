@@ -81,7 +81,10 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = MusclesBiorbdModel(biorbd_model_path, with_residual_torque=torque_level > 0,)
+    bio_model = MusclesBiorbdModel(
+        biorbd_model_path,
+        with_residual_torque=torque_level > 0,
+    )
 
     n_tau = bio_model.nb_tau
     n_muscles = bio_model.nb_muscles

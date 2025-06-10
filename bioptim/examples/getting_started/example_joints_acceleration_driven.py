@@ -20,7 +20,8 @@ from bioptim import (
     OdeSolver,
     OdeSolverBase,
     CostType,
-    Solver, JointAccelerationBiorbdModel,
+    Solver,
+    JointAccelerationBiorbdModel,
 )
 
 

@@ -194,14 +194,14 @@ class TorqueDerivativeBiorbdModel(BiorbdModel, TorqueDerivativeDynamics):
 
 class MusclesBiorbdModel(BiorbdModel, MusclesDynamics):
     def __init__(
-            self,
-            bio_model: Str | biorbd.Model,
-            with_residual_torque: Bool = False,
-            with_excitation: Bool = False,
-            friction_coefficients: np.ndarray = None,
-            parameters: ParameterList = None,
-            external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None,
-            contact_types: list[ContactType] | tuple[ContactType] = (),
+        self,
+        bio_model: Str | biorbd.Model,
+        with_residual_torque: Bool = False,
+        with_excitation: Bool = False,
+        friction_coefficients: np.ndarray = None,
+        parameters: ParameterList = None,
+        external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None,
+        contact_types: list[ContactType] | tuple[ContactType] = (),
     ):
         BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set, contact_types)
         MusclesDynamics.__init__(self, with_residual_torque, with_excitation)
@@ -209,13 +209,12 @@ class MusclesBiorbdModel(BiorbdModel, MusclesDynamics):
 
 class JointAccelerationBiorbdModel(BiorbdModel, JointAccelerationDynamics):
     def __init__(
-            self,
-            bio_model: str | biorbd.Model,
-            friction_coefficients: np.ndarray = None,
-            parameters: ParameterList = None,
-            external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None,
-            contact_types: list[ContactType] | tuple[ContactType] = (),
+        self,
+        bio_model: str | biorbd.Model,
+        friction_coefficients: np.ndarray = None,
+        parameters: ParameterList = None,
+        external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None,
+        contact_types: list[ContactType] | tuple[ContactType] = (),
     ):
         BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set, contact_types)
         JointAccelerationDynamics.__init__(self)
-

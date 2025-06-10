@@ -101,7 +101,11 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = (TorqueBiorbdModel(biorbd_model_path), TorqueBiorbdModel(biorbd_model_path), TorqueBiorbdModel(biorbd_model_path))
+    bio_model = (
+        TorqueBiorbdModel(biorbd_model_path),
+        TorqueBiorbdModel(biorbd_model_path),
+        TorqueBiorbdModel(biorbd_model_path),
+    )
 
     # Problem parameters
     final_time = (2, 5, 4)
