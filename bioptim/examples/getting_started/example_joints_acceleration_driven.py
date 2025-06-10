@@ -10,9 +10,8 @@ appreciate it). Finally, once it finished optimizing, it animates the model usin
 import platform
 
 from bioptim import (
-    BiorbdModel,
+    JointAccelerationBiorbdModel,
     OptimalControlProgram,
-    DynamicsFcn,
     Dynamics,
     BoundsList,
     InitialGuessList,
@@ -21,7 +20,7 @@ from bioptim import (
     OdeSolver,
     OdeSolverBase,
     CostType,
-    Solver,
+    Solver, JointAccelerationBiorbdModel,
 )
 
 
@@ -56,13 +55,13 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = JointAccelerationBiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="qddot_joints")
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.JOINTS_ACCELERATION_DRIVEN, ode_solver=ode_solver)
+    dynamics = Dynamics(ode_solver=ode_solver)
 
     # Path constraint
     x_bounds = BoundsList()

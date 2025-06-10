@@ -11,11 +11,10 @@ import platform
 import numpy as np
 
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     Node,
     OptimalControlProgram,
-    DynamicsList,
-    DynamicsFcn,
+    Dynamics,
     ObjectiveList,
     ObjectiveFcn,
     ConstraintList,
@@ -73,7 +72,7 @@ def prepare_ocp(
     # External forces
     external_force_set = setup_external_forces(n_shooting, external_force_method, use_point_of_applications)
 
-    bio_model = BiorbdModel(biorbd_model_path, external_force_set=external_force_set)
+    bio_model = TorqueBiorbdModel(biorbd_model_path, external_force_set=external_force_set)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -82,9 +81,7 @@ def prepare_ocp(
     # Dynamics
     numerical_time_series = {"external_forces": external_force_set.to_numerical_time_series()}
 
-    dynamics = DynamicsList()
-    dynamics.add(
-        DynamicsFcn.TORQUE_DRIVEN,
+    dynamics = Dynamics(
         ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,

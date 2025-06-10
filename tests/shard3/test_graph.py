@@ -10,7 +10,6 @@ from bioptim import (
     OptimalControlProgram,
     Dynamics,
     DynamicsList,
-    DynamicsFcn,
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,
@@ -93,10 +92,10 @@ def prepare_ocp_phase_transitions(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics)
+    dynamics.add(Dynamics(expand_dynamics=True, phase_dynamics=phase_dynamics))
+    dynamics.add(Dynamics(expand_dynamics=True, phase_dynamics=phase_dynamics))
+    dynamics.add(Dynamics(expand_dynamics=True, phase_dynamics=phase_dynamics))
+    dynamics.add(Dynamics(expand_dynamics=True, phase_dynamics=phase_dynamics))
 
     # Constraints
     constraints = ConstraintList()
@@ -312,7 +311,7 @@ def prepare_ocp_parameters(
         )
 
     # --- Options --- #
-    bio_model = BiorbdModel(biorbd_model_path, parameters=parameters)
+    bio_model = TorqueBiorbdModel(biorbd_model_path, parameters=parameters)
     n_tau = bio_model.nb_tau
 
     # Add objective functions
@@ -321,8 +320,7 @@ def prepare_ocp_parameters(
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=10)
 
     # Dynamics
-    dynamics = Dynamics(
-        DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver, expand_dynamics=True, phase_dynamics=phase_dynamics
+    dynamics = Dynamics(ode_solver=ode_solver, expand_dynamics=True, phase_dynamics=phase_dynamics
     )
 
     # Path constraint
@@ -379,7 +377,7 @@ def prepare_ocp_custom_objectives(
 
     # --- Options --- #
     # BioModel path
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
 
     # Problem parameters
     n_shooting = 30
@@ -416,8 +414,7 @@ def prepare_ocp_custom_objectives(
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_MARKERS, list_index=7, index=[1, 2], target=target)
 
     # Dynamics
-    dynamics = Dynamics(
-        DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver, expand_dynamics=True, phase_dynamics=phase_dynamics
+    dynamics = Dynamics(ode_solver=ode_solver, expand_dynamics=True, phase_dynamics=phase_dynamics
     )
 
     # Path constraint

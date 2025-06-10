@@ -8,9 +8,8 @@ import os
 import shutil
 
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     OptimalControlProgram,
-    DynamicsFcn,
     Dynamics,
     BoundsList,
     InitialGuessList,
@@ -56,13 +55,13 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(bio_model_path)
+    bio_model = TorqueBiorbdModel(bio_model_path)
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, phase_dynamics=phase_dynamics)
+    dynamics = Dynamics( phase_dynamics=phase_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()

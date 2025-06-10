@@ -10,7 +10,6 @@ from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
     Dynamics,
-    DynamicsFcn,
     Objective,
     ObjectiveFcn,
     Constraint,

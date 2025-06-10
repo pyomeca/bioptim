@@ -10,7 +10,6 @@ from bioptim import (
     ControlType,
     BiorbdModel,
     NonLinearProgram,
-    DynamicsFcn,
     Dynamics,
     ConstraintList,
     Solver,
@@ -45,8 +44,8 @@ def test_torque_driven_with_ligament(with_ligament, cx, phase_dynamics):
         model_filename = "/examples/torque_driven_ocp/models/mass_point_without_ligament.bioMod"
 
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
-    nlp.model = BiorbdModel(TestUtils.bioptim_folder() + model_filename)
-    nlp.dynamics_type = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
+    nlp.model = TorqueBiorbdModel(TestUtils.bioptim_folder() + model_filename)
+    nlp.dynamics_type = Dynamics()
 
     nlp.ns = 5
     nlp.cx = cx
@@ -108,8 +107,8 @@ def test_torque_derivative_driven_with_ligament(with_ligament, cx, phase_dynamic
         model_filename = "/examples/torque_driven_ocp/models/mass_point_without_ligament.bioMod"
 
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
-    nlp.model = BiorbdModel(TestUtils.bioptim_folder() + model_filename)
-    nlp.dynamics_type = Dynamics(DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN)
+    nlp.model = TorqueDerivativeBiorbdModel(TestUtils.bioptim_folder() + model_filename)
+    nlp.dynamics_type = Dynamics()
 
     nlp.ns = 5
     nlp.cx = cx
@@ -172,8 +171,8 @@ def test_torque_activation_driven_with_ligament(with_ligament, cx, phase_dynamic
         model_filename = "/examples/torque_driven_ocp/models/mass_point_without_ligament.bioMod"
 
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
-    nlp.model = BiorbdModel(TestUtils.bioptim_folder() + model_filename)
-    nlp.dynamics_type = Dynamics(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN)
+    nlp.model = TorqueActivationBiorbdModel(TestUtils.bioptim_folder() + model_filename)
+    nlp.dynamics_type = Dynamics()
 
     nlp.ns = 5
     nlp.cx = cx
@@ -234,10 +233,8 @@ def test_muscle_driven_with_ligament(with_ligament, cx, phase_dynamics):
         model_filename = "/examples/muscle_driven_ocp/models/arm26.bioMod"
 
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
-    nlp.model = BiorbdModel(TestUtils.bioptim_folder() + model_filename)
-    nlp.dynamics_type = Dynamics(
-        DynamicsFcn.MUSCLE_DRIVEN,
-    )
+    nlp.model = MusclesBiorbdModel(TestUtils.bioptim_folder() + model_filename)
+    nlp.dynamics_type = Dynamics()
 
     nlp.ns = 5
     nlp.cx = cx

@@ -8,7 +8,6 @@ from casadi import MX, sum1
 
 from bioptim import (
     OptimalControlProgram,
-    DynamicsFcn,
     Dynamics,
     BoundsList,
     PhaseDynamics,
@@ -75,7 +74,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
 
     # Add objective functions
     multinode_objectives = MultinodeObjectiveList()
@@ -89,8 +88,7 @@ def prepare_ocp(
     )
 
     # Dynamics
-    dynamics = Dynamics(
-        DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
+    dynamics = Dynamics(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
     )
 
     # Path constraint

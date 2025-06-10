@@ -23,7 +23,6 @@ from bioptim import (
     Node,
     MovingHorizonEstimator,
     Dynamics,
-    DynamicsFcn,
     InterpolationType,
     Solver,
     BoundsList,
@@ -767,7 +766,7 @@ def test_acados_bounds_not_implemented(failing):
 
     mhe = MovingHorizonEstimator(
         bio_model,
-        Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True),
+        Dynamics(expand_dynamics=True),
         window_len,
         window_duration,
         x_bounds=x_bounds,

@@ -15,7 +15,6 @@ from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
     Dynamics,
-    DynamicsFcn,
     BoundsList,
     InitialGuessList,
     ObjectiveFcn,

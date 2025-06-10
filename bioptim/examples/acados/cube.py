@@ -10,7 +10,6 @@ from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
     Dynamics,
-    DynamicsFcn,
     ObjectiveFcn,
     ObjectiveList,
     BoundsList,
@@ -21,10 +20,10 @@ from bioptim import (
 
 def prepare_ocp(biorbd_model_path, n_shooting, tf, ode_solver=OdeSolver.RK4(), use_sx=True, expand_dynamics=True):
     # BioModel path
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver, expand_dynamics=expand_dynamics)
+    dynamics = Dynamics(ode_solver=ode_solver, expand_dynamics=expand_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()

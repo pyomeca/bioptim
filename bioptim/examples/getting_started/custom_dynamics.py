@@ -17,7 +17,6 @@ from bioptim import (
     OptimalControlProgram,
     DynamicsList,
     ConfigureProblem,
-    DynamicsFcn,
     DynamicsFunctions,
     Objective,
     ObjectiveFcn,
@@ -179,8 +178,6 @@ def prepare_ocp(
         )
     else:
         dynamics.add(
-            DynamicsFcn.TORQUE_DRIVEN,
-            dynamic_function=custom_dynamics,
             ode_solver=ode_solver,
             expand_dynamics=expand_dynamics,
             phase_dynamics=phase_dynamics,

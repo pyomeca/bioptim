@@ -7,7 +7,6 @@ from bioptim import (
     Node,
     OptimalControlProgram,
     Dynamics,
-    DynamicsFcn,
     ConstraintList,
     InitialGuessList,
     PenaltyController,
@@ -47,7 +46,7 @@ def test_custom_constraint_multiple_nodes_fail():
     ):
         OptimalControlProgram(
             BiorbdModel(model_path),
-            Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=PhaseDynamics.ONE_PER_NODE),
+            Dynamics(expand_dynamics=True, phase_dynamics=PhaseDynamics.ONE_PER_NODE),
             30,
             2,
             constraints=constraints,
@@ -78,7 +77,7 @@ def test_custom_constraint_mx_fail(phase_dynamics):
 
     ocp = OptimalControlProgram(
         BiorbdModel(model_path),
-        Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics),
+        Dynamics( expand_dynamics=True, phase_dynamics=phase_dynamics),
         30,
         2,
         constraints=constraints,

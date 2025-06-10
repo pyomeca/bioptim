@@ -19,10 +19,9 @@ import numpy as np
 from casadi import sqrt
 
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     OptimalControlProgram,
     Node,
-    DynamicsFcn,
     Dynamics,
     BoundsList,
     InterpolationType,
@@ -98,7 +97,7 @@ def prepare_ocp_first_pass(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -108,7 +107,6 @@ def prepare_ocp_first_pass(
 
     # Dynamics
     dynamics = Dynamics(
-        DynamicsFcn.TORQUE_DRIVEN,
         state_continuity_weight=state_continuity_weight,
         ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
@@ -201,7 +199,7 @@ def prepare_ocp_second_pass(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -210,7 +208,7 @@ def prepare_ocp_second_pass(
         objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=100 / n_shooting)
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver)
+    dynamics = Dynamics(ode_solver=ode_solver)
 
     # Path constraint
     x_bounds = BoundsList()

@@ -13,7 +13,6 @@ from bioptim import (
     OptimalControlProgram,
     PenaltyController,
     DynamicsList,
-    DynamicsFcn,
     ObjectiveList,
     ObjectiveFcn,
     ConstraintList,
@@ -74,7 +73,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path))
+    bio_model = (TorqueBiorbdModel(biorbd_model_path), TorqueBiorbdModel(biorbd_model_path), TorqueBiorbdModel(biorbd_model_path))
 
     # Problem parameters
     if long_optim:
@@ -121,24 +120,21 @@ def prepare_ocp(
     if not isinstance(ode_solver, list):
         ode_solver = [ode_solver] * 3
     dynamics = DynamicsList()
-    dynamics.add(
-        DynamicsFcn.TORQUE_DRIVEN,
+    dynamics.add(Dynamics(
         ode_solver=ode_solver[0],
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
-    )
-    dynamics.add(
-        DynamicsFcn.TORQUE_DRIVEN,
+    ))
+    dynamics.add(Dynamics(
         ode_solver=ode_solver[1],
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
-    )
-    dynamics.add(
-        DynamicsFcn.TORQUE_DRIVEN,
+    ))
+    dynamics.add(Dynamics(
         ode_solver=ode_solver[2],
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
-    )
+    ))
 
     # Constraints
     constraints = ConstraintList()

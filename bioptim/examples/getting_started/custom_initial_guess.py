@@ -20,7 +20,6 @@ from bioptim import (
     Node,
     OptimalControlProgram,
     Dynamics,
-    DynamicsFcn,
     Objective,
     ObjectiveFcn,
     ConstraintList,
@@ -115,7 +114,7 @@ def prepare_ocp(
 
     # --- Options --- #
     # BioModel path
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
     nq = bio_model.nb_q
     nqdot = bio_model.nb_qdot
     ntau = bio_model.nb_tau
@@ -125,8 +124,7 @@ def prepare_ocp(
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100)
 
     # Dynamics
-    dynamics = Dynamics(
-        DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
+    dynamics = Dynamics(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
     )
 
     # Constraints

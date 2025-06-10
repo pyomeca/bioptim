@@ -15,7 +15,7 @@ import platform
 
 import numpy as np
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     Node,
     OptimalControlProgram,
     ConstraintList,
@@ -23,7 +23,6 @@ from bioptim import (
     ObjectiveList,
     ObjectiveFcn,
     DynamicsList,
-    DynamicsFcn,
     BiMappingList,
     BoundsList,
     InitialGuessList,
@@ -81,7 +80,7 @@ def prepare_ocp(
 
     # --- Options --- #
     # BioModel path
-    bio_model = BiorbdModel(biorbd_model_path, contact_types=[ContactType.RIGID_EXPLICIT])
+    bio_model = TorqueBiorbdModel(biorbd_model_path, contact_types=[ContactType.RIGID_EXPLICIT])
     tau_min, tau_max = -500, 500
     dof_mapping = BiMappingList()
     dof_mapping.add("tau", to_second=[None, None, None, 0], to_first=[3])
@@ -93,7 +92,6 @@ def prepare_ocp(
     # Dynamics
     dynamics = DynamicsList()
     dynamics.add(
-        DynamicsFcn.TORQUE_DRIVEN,
         ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,

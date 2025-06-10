@@ -9,12 +9,11 @@ mesh points.
 import platform
 
 from bioptim import (
-    BiorbdModel,
+    MusclesBiorbdModel,
     OptimalControlProgram,
     ObjectiveList,
     ObjectiveFcn,
     Dynamics,
-    DynamicsFcn,
     InitialGuessList,
     OdeSolver,
     OdeSolverBase,
@@ -82,7 +81,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = MusclesBiorbdModel(biorbd_model_path, with_residual_torque=torque_level > 0,)
 
     n_tau = bio_model.nb_tau
     n_muscles = bio_model.nb_muscles
@@ -151,10 +150,8 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = Dynamics(
-        DynamicsFcn.MUSCLE_DRIVEN,
         expand_dynamics=expand_dynamics,
         fatigue=fatigue_dynamics,
-        with_residual_torque=torque_level > 0,
         ode_solver=ode_solver,
         phase_dynamics=phase_dynamics,
     )

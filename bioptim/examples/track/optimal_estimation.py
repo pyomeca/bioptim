@@ -16,7 +16,6 @@ from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
     DynamicsList,
-    DynamicsFcn,
     BoundsList,
     ObjectiveList,
     ObjectiveFcn,
@@ -105,7 +104,7 @@ def prepare_ocp_to_track(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver)
+    dynamics.add(ode_solver=ode_solver)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -169,7 +168,7 @@ def prepare_optimal_estimation(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver)
+    dynamics.add(ode_solver=ode_solver)
 
     # Path constraint
     x_bounds = BoundsList()

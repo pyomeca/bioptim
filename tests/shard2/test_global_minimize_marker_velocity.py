@@ -8,7 +8,6 @@ from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
     DynamicsList,
-    DynamicsFcn,
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,
@@ -67,7 +66,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
 
     # Add objective functions
     if marker_in_first_coordinates_system:
@@ -101,7 +100,6 @@ def prepare_ocp(
     # Dynamics
     dynamics = DynamicsList()
     dynamics.add(
-        DynamicsFcn.TORQUE_DRIVEN,
         expand_dynamics=not isinstance(ode_solver, OdeSolver.IRK),
         phase_dynamics=phase_dynamics,
         ode_solver=ode_solver,

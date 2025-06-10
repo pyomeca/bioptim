@@ -11,10 +11,9 @@ import platform
 
 import numpy as np
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     OptimalControlProgram,
     DynamicsList,
-    DynamicsFcn,
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,
@@ -74,7 +73,7 @@ def prepare_ocp(
     """
 
     # --- Options --- #
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
     tau_min, tau_max = -100, 100
     n_tau = bio_model.nb_tau
 
@@ -85,8 +84,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(
-        DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
+    dynamics.add(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
     )
 
     # Path constraint

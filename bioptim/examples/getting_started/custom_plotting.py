@@ -5,10 +5,9 @@ plots and how to expand pre-existing one with new information
 
 from casadi import MX
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     OptimalControlProgram,
     Dynamics,
-    DynamicsFcn,
     BoundsList,
     PlotType,
     Solver,
@@ -63,10 +62,10 @@ def prepare_ocp(
         (for instance IRK is not compatible with expanded dynamics)
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    dynamics = Dynamics(expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()

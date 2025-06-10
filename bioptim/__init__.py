@@ -58,10 +58,6 @@ Dynamics
     A placeholder for the chosen dynamics by the user
 DynamicsList
     A list of Dynamics if more than one is required, typically when more than one phases are declared
-DynamicsFcn
-    Selection of valid dynamics functions
-DynamicsFunctions
-    Implementation of all the dynamic functions
 DynamicsEvaluation
     A placeholder for the dynamics evaluation in explicit dxdt or in implicit defects
 
@@ -160,7 +156,7 @@ multiphase can be found in 'examples/torque_driven_ocp'. For ACADOS specific exa
 
 """
 
-from .dynamics.configure_problem import ConfigureProblem, DynamicsFcn, DynamicsList, Dynamics
+from .dynamics.configure_problem import ConfigureProblem, DynamicsList, Dynamics
 from .dynamics.configure_variables import AutoConfigure, States, Controls, AlgebraicStates, ConfigureVariables
 from .dynamics.dynamics_evaluation import DynamicsEvaluation
 from .dynamics.dynamics_functions import DynamicsFunctions
@@ -216,6 +212,7 @@ from .models.biorbd.model_dynamics import (
     StochasticTorqueFreeFloatingBaseBiorbdModel,
     TorqueActivationBiorbdModel,
     MusclesBiorbdModel,
+    JointAccelerationBiorbdModel,
 )
 from .models.protocols.biomodel import BioModel
 from .models.protocols.stochastic_biomodel import StochasticBioModel

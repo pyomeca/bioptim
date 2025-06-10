@@ -15,7 +15,6 @@ import platform
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
-    DynamicsFcn,
     Dynamics,
     InitialGuessList,
     Objective,
@@ -78,7 +77,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
     n_tau = bio_model.nb_tau
     tau_min, tau_max, tau_init = -100, 100, 0
 
@@ -146,7 +145,6 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = Dynamics(
-        DynamicsFcn.TORQUE_DRIVEN,
         fatigue=fatigue_dynamics,
         phase_dynamics=phase_dynamics,
         expand_dynamics=expand_dynamics,

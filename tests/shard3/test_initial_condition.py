@@ -12,7 +12,6 @@ from bioptim import (
     BiorbdModel,
     Objective,
     Dynamics,
-    DynamicsFcn,
     ObjectiveFcn,
     OptimalControlProgram,
     InitialGuessList,
@@ -315,11 +314,11 @@ def test_initial_guess_error_messages(phase_dynamics):
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, phase_dynamics=phase_dynamics)
+    dynamics = Dynamics(phase_dynamics=phase_dynamics)
 
     # check the error messages
     with pytest.raises(RuntimeError, match="x_init should be built from a InitialGuessList"):
-        bio_model = BiorbdModel(biorbd_model_path)
+        bio_model = TorqueBiorbdModel(biorbd_model_path)
         OptimalControlProgram(
             bio_model,
             dynamics,
@@ -330,7 +329,7 @@ def test_initial_guess_error_messages(phase_dynamics):
         )
 
     with pytest.raises(RuntimeError, match="u_init should be built from a InitialGuessList"):
-        bio_model = BiorbdModel(biorbd_model_path)
+        bio_model = TorqueBiorbdModel(biorbd_model_path)
         OptimalControlProgram(
             bio_model,
             dynamics,
@@ -348,7 +347,7 @@ def test_initial_guess_error_messages(phase_dynamics):
     ):
         x_init = InitialGuessList()
         x_init.add("bad_key", [1, 2])
-        bio_model = BiorbdModel(biorbd_model_path)
+        bio_model = TorqueBiorbdModel(biorbd_model_path)
         OptimalControlProgram(
             bio_model,
             dynamics,
@@ -367,7 +366,7 @@ def test_initial_guess_error_messages(phase_dynamics):
     ):
         u_init = InitialGuessList()
         u_init.add("bad_key", [1, 2])
-        bio_model = BiorbdModel(biorbd_model_path)
+        bio_model = TorqueBiorbdModel(biorbd_model_path)
         OptimalControlProgram(
             bio_model,
             dynamics,

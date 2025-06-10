@@ -167,138 +167,6 @@ class ConfigureProblem:
         nlp.dynamics_type.configure(ocp, nlp, **extra_params)
 
     @staticmethod
-    def torque_derivative_driven(
-        ocp,
-        nlp: NonLinearProgram,
-        numerical_data_timeseries: NpArrayDictOptional = None,
-    ) -> None:
-        """
-        Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the phase
-        numerical_data_timeseries: dict[str, np.ndarray]
-            A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
-
-        """
-        ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
-        ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
-        ConfigureProblem.configure_tau(ocp, nlp, as_states=True, as_controls=False)
-        ConfigureProblem.configure_taudot(ocp, nlp, as_states=False, as_controls=True)
-
-        ConfigureProblem.configure_contacts(
-            ocp, nlp, nlp.model.contact_types, DynamicsFunctions.forces_from_torque_driven
-        )
-
-        if nlp.dynamics_type.dynamic_function:
-            ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
-        else:
-            ConfigureProblem.configure_dynamics_function(
-                ocp,
-                nlp,
-                DynamicsFunctions.torque_derivative_driven,
-            )
-
-    @staticmethod
-    def joints_acceleration_driven(
-        ocp,
-        nlp: NonLinearProgram,
-        numerical_data_timeseries: NpArrayDictOptional = None,
-    ):
-        """
-        Configure the dynamics for a joints acceleration driven program
-        (states are q and qdot, controls are qddot_joints)
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the phase
-        numerical_data_timeseries: dict[str, np.ndarray]
-            A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
-        """
-        ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
-        ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
-        # Configure qddot joints
-        nb_root = nlp.model.nb_root
-        if not nb_root > 0:
-            raise RuntimeError("BioModel must have at least one DoF on root.")
-
-        name_qddot_joints = [str(i + nb_root) for i in range(nlp.model.nb_qddot - nb_root)]
-        ConfigureProblem.configure_new_variable(
-            "qddot_joints",
-            name_qddot_joints,
-            ocp,
-            nlp,
-            as_states=False,
-            as_controls=True,
-        )
-
-        ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.joints_acceleration_driven)
-
-    @staticmethod
-    def muscle_driven(
-        ocp,
-        nlp: NonLinearProgram,
-        with_excitations: Bool = False,
-        fatigue: FatigueList = None,
-        with_residual_torque: Bool = False,
-        numerical_data_timeseries: NpArrayDictOptional = None,
-    ) -> None:
-        """
-        Configure the dynamics for a muscle driven program.
-        If with_excitations is set to True, then the muscle activations are computed from the muscle dynamics.
-        The tau from muscle is computed using the muscle activations.
-        If with_residual_torque is set to True, then tau are used as supplementary force in the
-        case muscles are too weak.
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the phase
-        with_excitations: bool
-            If the dynamic should include the muscle dynamics
-        fatigue: FatigueList
-            The list of fatigue parameters
-        with_residual_torque: bool
-            If the dynamic should be added with residual torques
-        numerical_data_timeseries: dict[str, np.ndarray]
-            A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
-        """
-        if fatigue is not None and "tau" in fatigue and not with_residual_torque:
-            raise RuntimeError("Residual torques need to be used to apply fatigue on torques")
-
-        ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
-        ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
-        ConfigureProblem.configure_qddot(ocp, nlp, as_states=False, as_controls=False)
-
-        if with_residual_torque:
-            ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True, fatigue=fatigue)
-        ConfigureProblem.configure_muscles(ocp, nlp, with_excitations, as_controls=True, fatigue=fatigue)
-
-        ConfigureProblem.configure_contacts(
-            ocp, nlp, nlp.model.contact_types, DynamicsFunctions.forces_from_muscle_driven
-        )
-
-        if nlp.dynamics_type.dynamic_function:
-            ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
-        else:
-            ConfigureProblem.configure_dynamics_function(
-                ocp,
-                nlp,
-                DynamicsFunctions.muscles_driven,
-                fatigue=fatigue,
-                with_residual_torque=with_residual_torque,
-            )
-
-    @staticmethod
     def configure_dynamics_function(ocp, nlp: NonLinearProgram, dyn_func, **extra_params) -> None:
         """
         Configure the dynamics of the system
@@ -467,17 +335,6 @@ class ConfigureProblem:
                         )
 
 
-class DynamicsFcn(FcnEnum):
-    """
-    Selection of valid dynamics functions
-    """
-
-    TORQUE_DERIVATIVE_DRIVEN = (ConfigureProblem.torque_derivative_driven,)
-    JOINTS_ACCELERATION_DRIVEN = (ConfigureProblem.joints_acceleration_driven,)
-    MUSCLE_DRIVEN = (ConfigureProblem.muscle_driven,)
-    CUSTOM = (ConfigureProblem.custom,)
-
-
 class Dynamics(OptionGeneric):
     """
     A placeholder for the chosen dynamics by the user
@@ -518,7 +375,7 @@ class Dynamics(OptionGeneric):
         """
         Parameters
         ----------
-        dynamics_type: Callable | DynamicsFcn
+        dynamics_type: Callable
             The chosen dynamic functions
         params: Any
             Any parameters to pass to the dynamic and configure functions
@@ -564,7 +421,7 @@ class DynamicsList(UniquePerPhaseOptionList):
 
     Methods
     -------
-    add(dynamics: DynamicsFcn, **extra_parameters)
+    add(dynamics: Dynamics, **extra_parameters)
         Add a new Dynamics to the list
     print(self)
         Print the DynamicsList to the console
@@ -581,7 +438,6 @@ class DynamicsList(UniquePerPhaseOptionList):
         """
         if isinstance(dynamics_type, Dynamics):
             self.copy(dynamics_type)
-
         else:
             super(DynamicsList, self)._add(dynamics_type=dynamics_type, option_type=Dynamics, **extra_parameters)
 

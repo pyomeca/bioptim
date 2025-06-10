@@ -7,7 +7,6 @@ from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
     DynamicsList,
-    DynamicsFcn,
     Objective,
     ObjectiveFcn,
     Axis,
@@ -22,7 +21,7 @@ from bioptim import (
     PhaseDynamics,
     ConstraintList,
     ExternalForceSetTimeSeries,
-    ContactType,
+    ContactType, MusclesBiorbdModel, TorqueActivationBiorbdModel,
 )
 from bioptim.limits.penalty import PenaltyOption
 from bioptim.limits.penalty_controller import PenaltyController
@@ -113,43 +112,41 @@ def prepare_test_ocp(
     if with_muscles and with_contact or with_muscles and with_actuator or with_contact and with_actuator:
         raise RuntimeError("With muscles and with contact and with_actuator together is not defined")
     elif with_muscles:
-        bio_model = BiorbdModel(bioptim_folder + "/examples/muscle_driven_ocp/models/arm26.bioMod")
+        bio_model = MusclesBiorbdModel(bioptim_folder + "/examples/muscle_driven_ocp/models/arm26.bioMod",
+                                       with_residual_torque=True)
         dynamics = DynamicsList()
-        dynamics.add(
-            DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, expand_dynamics=True, phase_dynamics=phase_dynamics
+        dynamics.add(expand_dynamics=True, phase_dynamics=phase_dynamics
         )
     elif with_contact:
         dynamics = DynamicsList()
         if with_external_forces:
-            bio_model = BiorbdModel(
+            bio_model = MusclesBiorbdModel(
                 bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod",
+                with_residual_torque=True,
                 contact_types=[ContactType.RIGID_EXPLICIT],
                 external_force_set=external_forces,
             )
-            dynamics.add(
-                DynamicsFcn.TORQUE_DRIVEN,
+            dynamics.add(Dynamics(
                 expand_dynamics=True,
                 phase_dynamics=phase_dynamics,
                 numerical_data_timeseries=numerical_time_series,
-            )
+            ))
         else:
-            bio_model = BiorbdModel(
+            bio_model = MusclesBiorbdModel(
                 bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod",
+                with_residual_torque=True,
                 contact_types=[ContactType.RIGID_EXPLICIT],
             )
-            dynamics.add(
-                DynamicsFcn.TORQUE_DRIVEN,
+            dynamics.add(Dynamics(
                 expand_dynamics=True,
                 phase_dynamics=phase_dynamics,
-            )
+            ))
     elif with_actuator:
-        bio_model = BiorbdModel(bioptim_folder + "/examples/torque_driven_ocp/models/cube.bioMod")
-        dynamics = DynamicsList()
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics)
+        bio_model = TorqueActivationBiorbdModel(bioptim_folder + "/examples/torque_driven_ocp/models/cube.bioMod")
+        dynamics = Dynamics(expand_dynamics=True, phase_dynamics=phase_dynamics)
     else:
-        bio_model = BiorbdModel(bioptim_folder + "/examples/track/models/cube_and_line.bioMod")
-        dynamics = DynamicsList()
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics)
+        bio_model = TorqueBiorbdModel(bioptim_folder + "/examples/track/models/cube_and_line.bioMod")
+        dynamics = DynamicsList(expand_dynamics=True, phase_dynamics=phase_dynamics)
 
     objective_functions = Objective(ObjectiveFcn.Mayer.MINIMIZE_TIME)
 
@@ -1576,9 +1573,8 @@ def test_bad_shape_output_penalty():
     def prepare_test_ocp_error():
         bioptim_folder = TestUtils.bioptim_folder()
 
-        bio_model = BiorbdModel(bioptim_folder + "/examples/track/models/cube_and_line.bioMod")
-        dynamics = DynamicsList()
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+        bio_model = TorqueBiorbdModel(bioptim_folder + "/examples/track/models/cube_and_line.bioMod")
+        dynamics = Dynamics()
 
         constraints = ConstraintList()
         constraints.add(bad_custom_function, node=Node.START)

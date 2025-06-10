@@ -15,7 +15,6 @@ from bioptim import (
     Objective,
     ObjectiveFcn,
     Dynamics,
-    DynamicsFcn,
     BoundsList,
     Solver,
     PhaseDynamics,
@@ -67,7 +66,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
 
     # Add objective functions
     if objective == "torque":
@@ -86,8 +85,7 @@ def prepare_ocp(
         raise ValueError("Wrong objective")
 
     # Dynamics
-    dynamics = Dynamics(
-        DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver, expand_dynamics=True, phase_dynamics=phase_dynamics
+    dynamics = Dynamics( ode_solver=ode_solver, expand_dynamics=True, phase_dynamics=phase_dynamics
     )
 
     # Path constraint

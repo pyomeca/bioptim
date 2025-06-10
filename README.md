@@ -93,7 +93,6 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
 
     - [Dynamics](#class-dynamics)
     - [DynamicsList](#class-dynamicslist)
-    - [DynamicsFcn](#class-dynamicsfcn)
 
     </details>
 
@@ -360,7 +359,6 @@ We will not spend time explaining the import since every one of them will be exp
 from bioptim import (
   BiorbdModel,
   OptimalControlProgram,
-  DynamicsFcn,
   Dynamics,
   BoundsList,
   InitialGuessList,
@@ -572,7 +570,6 @@ import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
-    DynamicsFcn,
     Dynamics,
     BoundsList,    
     InitialGuessList,

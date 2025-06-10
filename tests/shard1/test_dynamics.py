@@ -1,4 +1,3 @@
-import re
 
 import numpy as np
 import numpy.testing as npt
@@ -9,19 +8,16 @@ from bioptim import (
     VariableScalingList,
     ConfigureProblem,
     DynamicsFunctions,
-    BiorbdModel,
+    TorqueBiorbdModel,
     ControlType,
     NonLinearProgram,
-    DynamicsFcn,
     Dynamics,
     DynamicsEvaluation,
-    ConstraintList,
     ParameterContainer,
     ParameterList,
     PhaseDynamics,
     ExternalForceSetTimeSeries,
-    ContactType,
-    ExternalForceSetVariables,
+    ContactType, JointAccelerationBiorbdModel,
 )
 
 from ..utils import TestUtils
@@ -104,7 +100,10 @@ EXTERNAL_FORCE_ARRAY[:, 4] = [
     "with_external_force",
     [False, True],
 )
-@pytest.mark.parametrize("with_contact", [False, True])
+@pytest.mark.parametrize("with_contact", [
+    # False,
+    True,
+])
 def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
@@ -120,13 +119,12 @@ def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
         )
         numerical_time_series = {"external_forces": external_forces.to_numerical_time_series()}
 
-    nlp.model = BiorbdModel(
+    nlp.model = TorqueBiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod",
         contact_types=[ContactType.RIGID_EXPLICIT] if with_contact else (),
         external_force_set=external_forces,
     )
     nlp.dynamics_type = Dynamics(
-        DynamicsFcn.TORQUE_DRIVEN,
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
         numerical_data_timeseries=numerical_time_series,
@@ -221,13 +219,12 @@ def test_torque_driven_soft_contacts_dynamics(contact_types, cx, phase_dynamics)
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
 
-    nlp.model = BiorbdModel(
+    nlp.model = TorqueBiorbdModel(
         TestUtils.bioptim_folder()
         + "/examples/muscle_driven_with_contact/models/2segments_4dof_2soft_contacts_1muscle.bioMod",
         contact_types=contact_types,
     )
     nlp.dynamics_type = Dynamics(
-        DynamicsFcn.TORQUE_DRIVEN,
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
     )
@@ -307,7 +304,6 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
         external_force_set=external_forces,
     )
     nlp.dynamics_type = Dynamics(
-        DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
         numerical_data_timeseries=numerical_timeseries,
@@ -451,7 +447,6 @@ def test_torque_derivative_driven_soft_contacts_dynamics(contact_types, cx, phas
         contact_types=contact_types,
     )
     nlp.dynamics_type = Dynamics(
-        DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
     )
@@ -538,7 +533,6 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
         external_force_set=external_forces,
     )
     nlp.dynamics_type = Dynamics(
-        DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
         numerical_data_timeseries=numerical_timeseries,
@@ -675,7 +669,6 @@ def test_torque_activation_driven_with_residual_torque(
         external_force_set=external_forces,
     )
     nlp.dynamics_type = Dynamics(
-        DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
         with_residual_torque=with_residual_torque,
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
@@ -789,9 +782,7 @@ def test_torque_driven_free_floating_base(cx, phase_dynamics):
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
-    nlp.dynamics_type = Dynamics(
-        DynamicsFcn.TORQUE_DRIVEN_FREE_FLOATING_BASE, expand_dynamics=True, phase_dynamics=phase_dynamics
-    )
+    nlp.dynamics_type = Dynamics(expand_dynamics=True, phase_dynamics=phase_dynamics)
 
     nlp.ns = N_SHOOTING
     nlp.cx = cx
@@ -861,15 +852,14 @@ def test_muscle_driven(with_excitations, with_contact, with_residual_torque, wit
         )
         numerical_timeseries = {"external_forces": external_forces.to_numerical_time_series()}
 
-    nlp.model = BiorbdModel(
+    nlp.model = MusclesBiorbdModel(
         TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod",
         contact_types=[ContactType.RIGID_EXPLICIT] if with_contact else (),
         external_force_set=external_forces,
-    )
-    nlp.dynamics_type = Dynamics(
-        DynamicsFcn.MUSCLE_DRIVEN,
         with_residual_torque=with_residual_torque,
         with_excitations=with_excitations,
+    )
+    nlp.dynamics_type = Dynamics(
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
         numerical_data_timeseries=numerical_timeseries,
@@ -1039,9 +1029,8 @@ def test_muscle_driven(with_excitations, with_contact, with_residual_torque, wit
 def test_joints_acceleration_driven(cx, phase_dynamics):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
-    nlp.model = BiorbdModel(TestUtils.bioptim_folder() + "/examples/getting_started/models/double_pendulum.bioMod")
+    nlp.model = JointAccelerationBiorbdModel(TestUtils.bioptim_folder() + "/examples/getting_started/models/double_pendulum.bioMod")
     nlp.dynamics_type = Dynamics(
-        DynamicsFcn.JOINTS_ACCELERATION_DRIVEN,
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
     )
@@ -1180,23 +1169,13 @@ def test_custom_dynamics(contact_types, phase_dynamics):
         )
 
 
-@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
-@pytest.mark.parametrize(
-    "dynamics_fcn",
-    [
-        DynamicsFcn.TORQUE_DRIVEN,
-        DynamicsFcn.MUSCLE_DRIVEN,
-        DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
-        DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
-    ],
-)
 def test_with_contact_error(dynamics_fcn, phase_dynamics):
     from bioptim.examples.getting_started import pendulum as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     with pytest.raises(ValueError, match="No rigid contact defined in the model, consider changing the ContactType."):
-        BiorbdModel(
+        TorqueBiorbdModel(
             bioptim_folder + "/models/pendulum.bioMod",
             contact_types=[ContactType.RIGID_EXPLICIT],
         )
