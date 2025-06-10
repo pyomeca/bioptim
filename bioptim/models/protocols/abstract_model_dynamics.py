@@ -29,10 +29,7 @@ class TorqueDynamics:
         """
         Get the indices of the states and controls in the normal dynamics
         """
-        return {
-            "q": nlp.states["q"].index,
-            "qdot": nlp.states["qdot"].index
-        }
+        return nlp.states["q"].index, nlp.states["qdot"].index
 
     @staticmethod
     def get_basic_variables(
@@ -367,10 +364,7 @@ class TorqueFreeFloatingBaseDynamics(TorqueDynamics):
         """
         Get the indices of the states and controls in the free floating base dynamics
         """
-        return {
-            "q": list(nlp.states["q_roots"].index) + list(nlp.states["q_joints"].index),
-            "qdot": list(nlp.states["qdot_roots"].index) + list(nlp.states["qdot_joints"].index)
-        }
+        return list(nlp.states["q_roots"].index) + list(nlp.states["q_joints"].index), list(nlp.states["qdot_roots"].index) + list(nlp.states["qdot_joints"].index)
 
     @staticmethod
     def get_basic_variables(
@@ -423,7 +417,34 @@ class StochasticTorqueFreeFloatingBaseDynamics(TorqueFreeFloatingBaseDynamics, S
             n_references)
 
 
-# class TorqueActivationDynamics:
+class TorqueActivationDynamics(TorqueDynamics):
+    def __init__(self):
+        super().__init__()
+
+    @staticmethod
+    def get_basic_variables(
+        nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue: FatigueList
+    ):
+        if fatigue is not None:
+            raise NotImplementedError("Fatigue is not implemented yet for torque activation dynamics.")
+
+        # Get variables from the right place
+        q = DynamicsFunctions.get(nlp.states["q"], states)
+        qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+        tau_activation = DynamicsFunctions.get(nlp.controls["tau"], controls)
+
+        # Convert tau activations to joint torque
+        tau = nlp.model.torque()(tau_activation, q, qdot, nlp.parameters.cx)
+
+        # Add additional torques
+        tau += DynamicsFunctions.collect_tau(nlp, q, qdot, parameters, states, controls, fatigue)
+
+        # Get external forces
+        external_forces = nlp.get_external_forces(
+            "external_forces", states, controls, algebraic_states, numerical_timeseries
+        )
+        return q, qdot, tau, external_forces
+
 #
 # class TorqueDerivativeDynamics:
 #
