@@ -17,6 +17,7 @@ from bioptim import (
     Solver,
     DynamicsList,
     PhaseDynamics,
+    Dynamics,
 )
 
 # import the custom model
@@ -69,13 +70,11 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(
-        configure_dynamics,
-        dynamic_function=dynamics,
+    dynamics.add(Dynamics(
         ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
-    )
+    ))
 
     # Path constraint
     # the pendulum is constrained to point down with zero velocity at the beginning
@@ -121,17 +120,11 @@ def main():
     If main.py is run as a script, it will perform the optimization
     """
 
-    # import the custom dynamics and configuration
-    from bioptim.examples.custom_model.custom_package.custom_dynamics import (
-        custom_configure_my_dynamics,
-    )
-
     # --- Prepare the ocp --- #
     ocp = prepare_ocp(
         model=MyModel(),
         final_time=1,
         n_shooting=30,
-        configure_dynamics=custom_configure_my_dynamics,
     )
 
     # Custom plots

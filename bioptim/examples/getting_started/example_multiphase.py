@@ -27,6 +27,7 @@ from bioptim import (
     PhaseDynamics,
     ControlType,
     QuadratureRule,
+    Dynamics,
 )
 
 

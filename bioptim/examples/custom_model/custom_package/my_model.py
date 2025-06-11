@@ -6,8 +6,9 @@ but it is possible to use bioptim without biorbd. This is an example of how to u
 from typing import Callable
 
 import numpy as np
-from casadi import sin, MX, Function
+from casadi import sin, MX, Function, vertcat
 from typing import Callable
+from bioptim import NonLinearProgram, DynamicsEvaluation
 
 
 class MyModel:
@@ -72,5 +73,34 @@ class MyModel:
         casadi_fun = Function("forward_dynamics", [self.q, self.qdot, self.tau, MX()], [casadi_return])
         return casadi_fun
 
-    # def system_dynamics(self, *args):
-    # This is where you can implement your system dynamics with casadi if you are dealing with other systems
+    def dynamics(
+        self,
+        time: MX,
+        states: MX,
+        controls: MX,
+        parameters: MX,
+        algebraic_states: MX,
+        numerical_timeseries: MX,
+        nlp: NonLinearProgram,
+    ) -> DynamicsEvaluation:
+        """
+        Parameters
+        ----------
+        states: MX | SX
+            The state of the system
+        controls: MX | SX
+            The controls of the system
+        parameters: MX | SX
+            The parameters acting on the system
+        nlp: NonLinearProgram
+            A reference to the phase
+        Returns
+        -------
+        The derivative of the states in the tuple[MX | SX] format
+        """
+
+        return DynamicsEvaluation(
+            dxdt=vertcat(states[1], self.forward_dynamics(with_contact=False)(states[0], states[1], controls[0], [])),
+            defects=None,
+        )
+

@@ -16,14 +16,13 @@ import numpy as np
 from casadi import MX, SX, sin, vertcat
 
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     BoundsList,
-    ConfigureProblem,
     ControlType,
     CostType,
     DynamicsEvaluation,
     DynamicsFunctions,
-    DynamicsList,
+    Dynamics,
     InitialGuessList,
     Objective,
     ObjectiveFcn,
@@ -33,79 +32,55 @@ from bioptim import (
     NonLinearProgram,
     Solver,
     PhaseDynamics,
-    ContactType,
 )
 
 
-def time_dependent_dynamic(
-    time: MX | SX,
-    states: MX | SX,
-    controls: MX | SX,
-    parameters: MX | SX,
-    algebraic_states: MX | SX,
-    numerical_timeseries: MX | SX,
-    nlp: NonLinearProgram,
-) -> DynamicsEvaluation:
-    """
-    The custom dynamics function that provides the derivative of the states: dxdt = f(t, x, u, p, a, d)
+class TimeDependentModel(TorqueBiorbdModel):
+    def dynamic(
+        self,
+        time: MX | SX,
+        states: MX | SX,
+        controls: MX | SX,
+        parameters: MX | SX,
+        algebraic_states: MX | SX,
+        numerical_timeseries: MX | SX,
+        nlp: NonLinearProgram,
+    ) -> DynamicsEvaluation:
+        """
+        The custom dynamics function that provides the derivative of the states: dxdt = f(t, x, u, p, a, d)
 
-    Parameters
-    ----------
-    time: MX | SX
-        The time of the system
-    states: MX | SX
-        The state of the system
-    controls: MX | SX
-        The controls of the system
-    parameters: MX | SX
-        The parameters acting on the system
-    algebraic_states: MX | SX
-        The algebraic states variables of the system
-    numerical_timeseries: MX | SX
-        The numerical timeseries of the system
-    nlp: NonLinearProgram
-        A reference to the phase
+        Parameters
+        ----------
+        time: MX | SX
+            The time of the system
+        states: MX | SX
+            The state of the system
+        controls: MX | SX
+            The controls of the system
+        parameters: MX | SX
+            The parameters acting on the system
+        algebraic_states: MX | SX
+            The algebraic states variables of the system
+        numerical_timeseries: MX | SX
+            The numerical timeseries of the system
+        nlp: NonLinearProgram
+            A reference to the phase
 
-    Returns
-    -------
-    The derivative of the states in the tuple[MX | SX] format
-    """
+        Returns
+        -------
+        The derivative of the states in the tuple[MX | SX] format
+        """
 
-    q = DynamicsFunctions.get(nlp.states["q"], states)
-    qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-    tau = DynamicsFunctions.get(nlp.controls["tau"], controls) * (sin(time) * time.ones(nlp.model.nb_tau) * 10)
+        q = DynamicsFunctions.get(nlp.states["q"], states)
+        qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+        tau = DynamicsFunctions.get(nlp.controls["tau"], controls) * (sin(time) * time.ones(nlp.model.nb_tau) * 10)
 
-    # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
-    dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-    ddq = nlp.model.forward_dynamics(q, qdot, tau, [])
+        # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
+        dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
+        ddq = nlp.model.forward_dynamics(q, qdot, tau, [])
 
-    return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
+        return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
 
-
-def custom_configure(
-    ocp: OptimalControlProgram,
-    nlp: NonLinearProgram,
-    numerical_data_timeseries: dict[str, np.ndarray] = None,
-):
-    """
-    Tell the program which variables are states and controls.
-    The user is expected to use the ConfigureProblem.configure_xxx functions.
-
-    Parameters
-    ----------
-    ocp: OptimalControlProgram
-        A reference to the ocp
-    nlp: NonLinearProgram
-        A reference to the phase
-    numerical_data_timeseries: dict[str, np.ndarray]
-            A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
-    """
-
-    ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
-
-    ConfigureProblem.configure_dynamics_function(ocp, nlp, time_dependent_dynamic)
 
 
 def prepare_ocp(
@@ -144,17 +119,14 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TimeDependentModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
     # Dynamics
-    dynamics = DynamicsList()
     expand = not isinstance(ode_solver, OdeSolver.IRK)
-    dynamics.add(
-        custom_configure,
-        dynamic_function=time_dependent_dynamic,
+    dynamics = Dynamics(
         ode_solver=ode_solver,
         expand_dynamics=expand,
         phase_dynamics=phase_dynamics,

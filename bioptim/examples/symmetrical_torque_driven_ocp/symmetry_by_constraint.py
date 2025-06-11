@@ -16,11 +16,10 @@ solving with IPOPT.
 import platform
 
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     Node,
     OptimalControlProgram,
-    DynamicsList,
-    DynamicsFcn,
+    Dynamics,
     ObjectiveList,
     ObjectiveFcn,
     ConstraintList,
@@ -62,7 +61,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
 
     # Problem parameters
     n_shooting = 30
@@ -74,10 +73,7 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, index=[0, 1, 3], key="tau", weight=100)
 
     # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(
-        DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
-    )
+    dynamics = Dynamics(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     # Constraints
     constraints = ConstraintList()

@@ -7,30 +7,23 @@ from matplotlib import pyplot as plt
 import numpy as np
 from casadi import MX, SX, vertcat
 from bioptim import (
-    BiorbdModel,
+    MusclesBiorbdModel,
     OptimalControlProgram,
     ObjectiveList,
     ObjectiveFcn,
-    DynamicsList,
+    Dynamics,
     BoundsList,
     InitialGuessList,
     Solver,
     SolutionMerge,
-    NonLinearProgram,
-    ConfigureProblem,
-    DynamicsEvaluation,
     DynamicsFunctions,
-    ExternalForceSetVariables,
     OdeSolver,
     InterpolationType,
     PhaseDynamics,
     MultinodeConstraintList,
     MultinodeConstraintFcn,
     ControlType,
-    Shooting,
-    SolutionIntegrator,
     ContactType,
-    DynamicsFcn,
     DefectType,
 )
 
@@ -38,7 +31,7 @@ from bioptim import (
 def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True):
 
     # BioModel
-    bio_model = BiorbdModel(biorbd_model_path, contact_types=[ContactType.SOFT_IMPLICIT])
+    bio_model = MusclesBiorbdModel(biorbd_model_path, with_residual_torque=True, contact_types=[ContactType.SOFT_IMPLICIT])
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -49,10 +42,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_COM_POSITION, weight=100)
 
     # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(
-        DynamicsFcn.MUSCLE_DRIVEN,
-        with_residual_torque=True,
+    dynamics = Dynamics(
         phase_dynamics=PhaseDynamics.ONE_PER_NODE,
         ode_solver=OdeSolver.COLLOCATION(polynomial_degree=3, defects_type=DefectType.TAU_EQUALS_INVERSE_DYNAMICS),
     )

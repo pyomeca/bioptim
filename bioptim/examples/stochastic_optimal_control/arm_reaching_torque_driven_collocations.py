@@ -185,12 +185,7 @@ def prepare_socp(
     )
 
     # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(
-        Dynamics(
-            expand_dynamics=True,
-        )
-    )
+    dynamics = Dynamics(expand_dynamics=True)
 
     x_bounds = BoundsList()
     x_bounds.add("q", min_bound=[-cas.inf] * n_q, max_bound=[cas.inf] * n_q, interpolation=InterpolationType.CONSTANT)

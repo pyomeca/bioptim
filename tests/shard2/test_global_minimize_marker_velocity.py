@@ -5,9 +5,9 @@ Test for file IO
 import platform
 
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     OptimalControlProgram,
-    DynamicsList,
+    Dynamics,
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,
@@ -98,8 +98,7 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", node=Node.ALL, index=[2, 3], weight=-1)
 
     # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(
+    dynamics = Dynamics(
         expand_dynamics=not isinstance(ode_solver, OdeSolver.IRK),
         phase_dynamics=phase_dynamics,
         ode_solver=ode_solver,

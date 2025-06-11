@@ -8,6 +8,7 @@ from bioptim.models.biorbd.external_forces import (
 )
 from ...optimization.parameters import ParameterList
 from .biorbd_model import BiorbdModel
+from .multi_biorbd_model import MultiBiorbdModel
 from .stochastic_biorbd_model import StochasticBiorbdModel
 from .holonomic_biorbd_model import HolonomicBiorbdModel
 from ..protocols.abstract_model_dynamics import (
@@ -164,6 +165,18 @@ class StochasticTorqueFreeFloatingBaseBiorbdModel(StochasticBiorbdModel, Stochas
             self, problem_type, with_cholesky, n_noised_tau, n_noise, n_noised_states, n_references
         )
 
+
+class TorqueMultiBiorbdModel(MultiBiorbdModel, TorqueDynamics):
+    def __init__(
+        self,
+        bio_model: Str | biorbd.Model,
+        friction_coefficients: np.ndarray = None,
+        parameters: ParameterList = None,
+        external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None,
+        contact_types: list[ContactType] | tuple[ContactType] = (),
+    ):
+        MultiBiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set, contact_types)
+        TorqueDynamics.__init__(self)
 
 class TorqueActivationBiorbdModel(BiorbdModel, TorqueActivationDynamics):
     def __init__(

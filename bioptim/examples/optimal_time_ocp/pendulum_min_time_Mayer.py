@@ -13,7 +13,7 @@ import numpy as np
 from bioptim import (
     TorqueBiorbdModel,
     OptimalControlProgram,
-    DynamicsList,
+    Dynamics,
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,
@@ -83,8 +83,7 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=weight, min_bound=min_time, max_bound=max_time)
 
     # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    dynamics = Dynamics(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()

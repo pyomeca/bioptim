@@ -31,6 +31,7 @@ from bioptim import (
     Solver,
     PhaseDynamics,
     ContactType,
+    Dynamics,
 )
 
 
@@ -91,11 +92,11 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(
+    dynamics.add(Dynamics(
         ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
-    )
+    ))
 
     # Constraints
     constraints = ConstraintList()

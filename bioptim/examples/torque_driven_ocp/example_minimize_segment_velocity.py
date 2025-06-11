@@ -7,10 +7,9 @@ Note that there are other ways to do this, here it is used to examplify how to u
 import numpy as np
 
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     OptimalControlProgram,
-    DynamicsList,
-    DynamicsFcn,
+    Dynamics,
     ObjectiveList,
     BoundsList,
     ObjectiveFcn,
@@ -25,7 +24,7 @@ def prepare_ocp(
     expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
     # Adding the models to the same phase
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
 
     # Problem parameters
     final_time = 1.5
@@ -41,8 +40,7 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1e-6)
 
     # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    dynamics = Dynamics(expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()

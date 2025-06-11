@@ -6,7 +6,6 @@ It uses the Lyapunov differential equation to approximate state covariance along
 import matplotlib.pyplot as plt
 import casadi as cas
 import numpy as np
-import pickle
 
 from bioptim import (
     StochasticOptimalControlProgram,
@@ -14,8 +13,7 @@ from bioptim import (
     Solver,
     ObjectiveList,
     OptimalControlProgram,
-    NonLinearProgram,
-    DynamicsList,
+    Dynamics,
     BoundsList,
     InterpolationType,
     SocpType,
@@ -24,59 +22,18 @@ from bioptim import (
     ConstraintFcn,
     InitialGuessList,
     PenaltyController,
-    ConfigureProblem,
     OdeSolver,
     StochasticBioModel,
     PhaseDynamics,
     SolutionMerge,
 )
-from bioptim.examples.stochastic_optimal_control.models.rockit_model import RockitModel
+from bioptim.examples.stochastic_optimal_control.models.rockit_model import RockitModel, RockitDynamicsOCP, RockitDynamicsSOCP
 from bioptim.examples.stochastic_optimal_control.common import (
     test_matrix_semi_definite_positiveness,
     test_eigen_values,
     reshape_to_matrix,
 )
 from scipy.integrate import solve_ivp
-
-
-def configure_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram):
-    ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_new_variable("u", nlp.model.name_u, ocp, nlp, as_states=False, as_controls=True)
-
-    ConfigureProblem.configure_dynamics_function(
-        ocp,
-        nlp,
-        dyn_func=lambda time, states, controls, parameters, algebraic_states, nlp: nlp.dynamics_type.dynamic_function(
-            time, states, controls, parameters, algebraic_states, nlp, with_noise=False
-        ),
-    )
-
-
-def configure_stochastic_optimal_control_problem(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None, contact_types=()
-):
-    ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_new_variable("u", nlp.model.name_u, ocp, nlp, as_states=False, as_controls=True)
-
-    # Algebraic states variables
-    ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=2)
-    ConfigureProblem.configure_stochastic_cov_implicit(ocp, nlp, n_noised_states=2)
-    ConfigureProblem.configure_dynamics_function(
-        ocp,
-        nlp,
-        dyn_func=lambda time, states, controls, parameters, algebraic_states, nlp: nlp.dynamics_type.dynamic_function(
-            time, states, controls, parameters, algebraic_states, nlp, with_noise=False
-        ),
-    )
-    ConfigureProblem.configure_dynamics_function(
-        ocp,
-        nlp,
-        dyn_func=lambda time, states, controls, parameters, algebraic_states, nlp: nlp.dynamics_type.dynamic_function(
-            time, states, controls, parameters, algebraic_states, nlp, with_noise=True
-        ),
-    )
 
 
 def cost(controller: PenaltyController):
@@ -114,11 +71,18 @@ def prepare_socp(
 ) -> StochasticOptimalControlProgram | OptimalControlProgram:
     problem_type = socp_type
 
-    bio_model = RockitModel(
-        socp_type=problem_type,
-        motor_noise_magnitude=motor_noise_magnitude,
-        polynomial_degree=polynomial_degree,
-    )
+    if is_stochastic:
+        bio_model = RockitDynamicsOCP(
+            socp_type=problem_type,
+            motor_noise_magnitude=motor_noise_magnitude,
+            polynomial_degree=polynomial_degree,
+        )
+    else:
+        bio_model = RockitDynamicsSOCP(
+            socp_type=problem_type,
+            motor_noise_magnitude=motor_noise_magnitude,
+            polynomial_degree=polynomial_degree,
+        )
 
     nb_q = bio_model.nb_q
     nb_u = bio_model.nb_tau
@@ -146,22 +110,10 @@ def prepare_socp(
     u_bounds["u"] = [-40] * nb_u, [40] * nb_u
 
     # Dynamics
-    dynamics = DynamicsList()
+    ode_solver = OdeSolver.COLLOCATION(polynomial_degree=socp_type.polynomial_degree, method=socp_type.method)
+    dynamics = Dynamics(phase_dynamics=phase_dynamics, expand_dynamics=expand_dynamics, ode_solver=ode_solver)
 
     if is_stochastic:
-        dynamics.add(
-            configure_stochastic_optimal_control_problem,
-            dynamic_function=lambda time, states, controls, parameters, algebraic_states, nlp, with_noise: bio_model.dynamics(
-                states,
-                controls,
-                parameters,
-                algebraic_states,
-                nlp,
-                with_noise=with_noise,
-            ),
-            phase_dynamics=phase_dynamics,
-            expand_dynamics=expand_dynamics,
-        )
 
         a_init = InitialGuessList()
         a_init.add(
@@ -196,22 +148,7 @@ def prepare_socp(
         )
 
     else:
-        ode_solver = OdeSolver.COLLOCATION(polynomial_degree=socp_type.polynomial_degree, method=socp_type.method)
 
-        dynamics.add(
-            configure_optimal_control_problem,
-            dynamic_function=lambda time, states, controls, parameters, algebraic_states, nlp, with_noise: bio_model.dynamics(
-                states,
-                controls,
-                parameters,
-                algebraic_states,
-                nlp,
-                with_noise=with_noise,
-            ),
-            phase_dynamics=phase_dynamics,
-            expand_dynamics=expand_dynamics,
-            ode_solver=ode_solver,
-        )
         return OptimalControlProgram(
             bio_model,
             dynamics,

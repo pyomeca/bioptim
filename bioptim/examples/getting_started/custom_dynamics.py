@@ -16,7 +16,7 @@ from bioptim import (
     Node,
     OptimalControlProgram,
     DynamicsList,
-    ConfigureProblem,
+    Dynamics,
     DynamicsFunctions,
     Objective,
     ObjectiveFcn,
@@ -29,93 +29,79 @@ from bioptim import (
     Solver,
     DynamicsEvaluation,
     PhaseDynamics,
-    ContactType,
+    States,
+    Controls,
 )
 
 
-def custom_dynamics(
-    time: MX | SX,
-    states: MX | SX,
-    controls: MX | SX,
-    parameters: MX | SX,
-    algebraic_states: MX | SX,
-    numerical_timeseries: MX | SX,
-    nlp: NonLinearProgram,
-    my_additional_factor=1,
-) -> DynamicsEvaluation:
-    """
-    The custom dynamics function that provides the derivative of the states: dxdt = f(x, u, p)
+class CustomBiorbdModel(BiorbdModel):
+    def __init__(self):
+        super().__init__(self)
 
-    Parameters
-    ----------
-    time: MX | SX
-        The time of the system
-    states: MX | SX
-        The state of the system
-    controls: MX | SX
-        The controls of the system
-    parameters: MX | SX
-        The parameters acting on the system
-    algebraic_states: MX | SX
-        The algebraic states of the system
-    nlp: NonLinearProgram
-        A reference to the phase
-    my_additional_factor: int
-        An example of an extra parameter sent by the user
+        # Define the variables to configure here
+        self.state_types = [States.Q, States.QDOT]
+        self.control_types = [Controls.TAU]
+        self.algebraic_types = []
+        self.extra_dynamics = None
 
-    Returns
-    -------
-    The derivative of the states in the tuple[MX | SX] format
-    """
+    def dynamics(
+        self,
+        time: MX | SX,
+        states: MX | SX,
+        controls: MX | SX,
+        parameters: MX | SX,
+        algebraic_states: MX | SX,
+        numerical_timeseries: MX | SX,
+        nlp: NonLinearProgram,
+        my_additional_factor=1,
+    ) -> DynamicsEvaluation:
+        """
+        The custom dynamics function that provides the derivative of the states: dxdt = f(x, u, p)
 
-    q = DynamicsFunctions.get(nlp.states["q"], states)
-    qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-    tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
+        Parameters
+        ----------
+        time: MX | SX
+            The time of the system
+        states: MX | SX
+            The state of the system
+        controls: MX | SX
+            The controls of the system
+        parameters: MX | SX
+            The parameters acting on the system
+        algebraic_states: MX | SX
+            The algebraic states of the system
+        nlp: NonLinearProgram
+            A reference to the phase
+        my_additional_factor: int
+            An example of an extra parameter sent by the user
 
-    # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
-    dq = DynamicsFunctions.compute_qdot(nlp, q, qdot) * my_additional_factor
-    ddq = nlp.model.forward_dynamics()(q, qdot, tau, [], nlp.parameters.cx)
-    dxdt = vertcat(dq, ddq)
+        Returns
+        -------
+        The derivative of the states in the tuple[MX | SX] format
+        """
 
-    # the user has to choose if want to return the explicit dynamics dx/dt = f(x,u,p)
-    # as the first argument of DynamicsEvaluation or
-    # the implicit dynamics f(x,u,p,xdot)=0 as the second argument
-    # which may be useful for IRK or COLLOCATION integrators
-    defects = None
-    if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
-        # Implicit dynamics
-        slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
-        slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
-        slopes = vertcat(slope_q, slope_qdot)
-        defects = slopes * nlp.dt - dxdt * nlp.dt
+        q = DynamicsFunctions.get(nlp.states["q"], states)
+        qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+        tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
-    return DynamicsEvaluation(dxdt=dxdt, defects=defects)
+        # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
+        dq = DynamicsFunctions.compute_qdot(nlp, q, qdot) * my_additional_factor
+        ddq = nlp.model.forward_dynamics()(q, qdot, tau, [], nlp.parameters.cx)
+        dxdt = vertcat(dq, ddq)
 
+        # the user has to choose if want to return the explicit dynamics dx/dt = f(x,u,p)
+        # as the first argument of DynamicsEvaluation or
+        # the implicit dynamics f(x,u,p,xdot)=0 as the second argument
+        # which may be useful for IRK or COLLOCATION integrators
+        defects = None
+        if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
+            # Implicit dynamics
+            slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
+            slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
+            slopes = vertcat(slope_q, slope_qdot)
+            defects = slopes * nlp.dt - dxdt * nlp.dt
 
-def custom_configure(
-    ocp: OptimalControlProgram,
-    nlp: NonLinearProgram,
-    my_additional_factor=1,
-    numerical_data_timeseries=None,
-):
-    """
-    Tell the program which variables are states and controls.
-    The user is expected to use the ConfigureProblem.configure_xxx functions.
-
-    Parameters
-    ----------
-    ocp: OptimalControlProgram
-        A reference to the ocp
-    nlp: NonLinearProgram
-        A reference to the phase
-    my_additional_factor: int
-        An example of an extra parameter sent by the user
-    """
-
-    ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
-    ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamics, my_additional_factor=my_additional_factor)
+        return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
 
 def prepare_ocp(
@@ -156,7 +142,7 @@ def prepare_ocp(
 
     # --- Options --- #
     # BioModel path
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = CustomBiorbdModel(biorbd_model_path)
 
     # Problem parameters
     n_shooting = 30
@@ -168,20 +154,19 @@ def prepare_ocp(
     # Dynamics
     dynamics = DynamicsList()
     if problem_type_custom:
-        dynamics.add(
-            custom_configure,
-            dynamic_function=custom_dynamics,
+        dynamics.add(Dynamics(
             my_additional_factor=1,
             ode_solver=ode_solver,
             expand_dynamics=expand_dynamics,
             phase_dynamics=phase_dynamics,
-        )
+        ))
     else:
         dynamics.add(
+            Dynamics(
             ode_solver=ode_solver,
             expand_dynamics=expand_dynamics,
             phase_dynamics=phase_dynamics,
-        )
+        ))
 
     # Constraints
     constraints = ConstraintList()

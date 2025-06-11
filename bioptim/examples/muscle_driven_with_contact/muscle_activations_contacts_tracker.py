@@ -10,10 +10,9 @@ from pathlib import Path
 import numpy as np
 
 from bioptim import (
-    BiorbdModel,
+    MusclesBiorbdModel,
     OptimalControlProgram,
-    DynamicsList,
-    DynamicsFcn,
+    Dynamics,
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,
@@ -37,7 +36,7 @@ def prepare_ocp(
     biorbd_model_path, phase_time, n_shooting, muscle_activations_ref, contact_forces_ref, ode_solver=OdeSolver.RK4()
 ):
     # BioModel path
-    bio_model = BiorbdModel(biorbd_model_path, contact_types=[ContactType.RIGID_EXPLICIT])
+    bio_model = MusclesBiorbdModel(biorbd_model_path, with_residual_torque=True, contact_types=[ContactType.RIGID_EXPLICIT])
     tau_min, tau_max, tau_init = -500.0, 500.0, 0.0
     activation_min, activation_max, activation_init = 0.0, 1.0, 0.5
 
@@ -55,10 +54,7 @@ def prepare_ocp(
     # objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="torque", weight=0.001)
 
     # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(
-        DynamicsFcn.MUSCLE_DRIVEN,
-        with_residual_torque=True,
+    dynamics = Dynamics(
         ode_solver=ode_solver,
     )
 

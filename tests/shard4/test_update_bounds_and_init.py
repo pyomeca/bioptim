@@ -9,6 +9,7 @@ from bioptim import (
     TorqueBiorbdModel,
     OptimalControlProgram,
     DynamicsList,
+    Dynamics,
     BoundsList,
     ParameterList,
     InterpolationType,
@@ -47,8 +48,7 @@ def test_double_update_bounds_and_init(phase_dynamics):
     nq = bio_model.nb_q
     ns = 10
 
-    dynamics = DynamicsList()
-    dynamics.add(phase_dynamics=phase_dynamics)
+    dynamics = Dynamics(phase_dynamics=phase_dynamics)
     x_init = InitialGuessList()
     x_init["q"] = [0] * bio_model.nb_q
     x_init["qdot"] = [0] * bio_model.nb_qdot
@@ -186,8 +186,7 @@ def test_update_bounds_and_init_with_param(phase_dynamics):
     ns = 10
     g_min, g_max, g_init = -10, -6, -8
 
-    dynamics = DynamicsList()
-    dynamics.add(phase_dynamics=phase_dynamics)
+    dynamics = Dynamics(phase_dynamics=phase_dynamics)
 
     parameters = ParameterList(use_sx=False)
     parameter_bounds = BoundsList()
