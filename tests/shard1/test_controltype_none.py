@@ -137,7 +137,6 @@ class NonControlledMethod:
         )
 
 
-
 def prepare_ocp(
     n_phase: int,
     time_min: list,
@@ -188,12 +187,14 @@ def prepare_ocp(
     # Creates the system's dynamic for my n phases
     dynamics = DynamicsList()
     for i in range(n_phase):
-        dynamics.add(Dynamics(
-            phase=i,
-            expand_dynamics=True,
-            ode_solver=ode_solver,
-            phase_dynamics=phase_dynamics,
-        ))
+        dynamics.add(
+            Dynamics(
+                phase=i,
+                expand_dynamics=True,
+                ode_solver=ode_solver,
+                phase_dynamics=phase_dynamics,
+            )
+        )
 
     # Creates the constraint for my n phases
     constraints = ConstraintList()

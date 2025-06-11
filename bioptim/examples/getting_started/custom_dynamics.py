@@ -154,19 +154,22 @@ def prepare_ocp(
     # Dynamics
     dynamics = DynamicsList()
     if problem_type_custom:
-        dynamics.add(Dynamics(
-            my_additional_factor=1,
-            ode_solver=ode_solver,
-            expand_dynamics=expand_dynamics,
-            phase_dynamics=phase_dynamics,
-        ))
+        dynamics.add(
+            Dynamics(
+                my_additional_factor=1,
+                ode_solver=ode_solver,
+                expand_dynamics=expand_dynamics,
+                phase_dynamics=phase_dynamics,
+            )
+        )
     else:
         dynamics.add(
             Dynamics(
-            ode_solver=ode_solver,
-            expand_dynamics=expand_dynamics,
-            phase_dynamics=phase_dynamics,
-        ))
+                ode_solver=ode_solver,
+                expand_dynamics=expand_dynamics,
+                phase_dynamics=phase_dynamics,
+            )
+        )
 
     # Constraints
     constraints = ConstraintList()

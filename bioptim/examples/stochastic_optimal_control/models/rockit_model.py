@@ -6,7 +6,15 @@ from typing import Callable
 from casadi import vertcat, MX, DM, sqrt
 import numpy as np
 
-from bioptim import DynamicsEvaluation, DynamicsFunctions, SocpType, States, Controls, AlgebraicStates, ConfigureVariables
+from bioptim import (
+    DynamicsEvaluation,
+    DynamicsFunctions,
+    SocpType,
+    States,
+    Controls,
+    AlgebraicStates,
+    ConfigureVariables,
+)
 
 
 class RockitModel:
@@ -73,26 +81,28 @@ class RockitModel:
 
 
 class RockitDynamicsOCP(RockitModel):
-    def __init__(self,
-        motor_noise_magnitude: np.ndarray | DM = None,
-        polynomial_degree: int = 1,
-        socp_type=None):
+    def __init__(self, motor_noise_magnitude: np.ndarray | DM = None, polynomial_degree: int = 1, socp_type=None):
 
         super().__init__(self, motor_noise_magnitude, polynomial_degree, socp_type)
 
         # Variables to configure
         self.state_types = [States.Q, States.QDOT]
-        self.control_types = [lambda ocp, nlp, as_states, as_controls, as_algebraic_states: ConfigureVariables.configure_new_variable("u", nlp.model.name_u, ocp, nlp, as_states=False, as_controls=True)]
+        self.control_types = [
+            lambda ocp, nlp, as_states, as_controls, as_algebraic_states: ConfigureVariables.configure_new_variable(
+                "u", nlp.model.name_u, ocp, nlp, as_states=False, as_controls=True
+            )
+        ]
 
-    def dynamics(self,
-                 time,
-                 states,
-                 controls,
-                 parameters,
-                 algebraic_states,
-                 numerical_timeseries,
-                 nlp,
-                 ):
+    def dynamics(
+        self,
+        time,
+        states,
+        controls,
+        parameters,
+        algebraic_states,
+        numerical_timeseries,
+        nlp,
+    ):
         """
         The dynamics from equation (line 42).
         """
@@ -106,10 +116,7 @@ class RockitDynamicsOCP(RockitModel):
 
 
 class RockitDynamicsSOCP(RockitDynamicsOCP):
-    def __init__(self,
-        motor_noise_magnitude: np.ndarray | DM = None,
-        polynomial_degree: int = 1,
-        socp_type=None):
+    def __init__(self, motor_noise_magnitude: np.ndarray | DM = None, polynomial_degree: int = 1, socp_type=None):
         super().__init__(self, motor_noise_magnitude, polynomial_degree, socp_type)
 
         n_noised_states = 2
@@ -117,21 +124,30 @@ class RockitDynamicsSOCP(RockitDynamicsOCP):
         # Variables to configure
         self.state_types = [States.Q, States.QDOT]
         self.control_types = [
-            lambda ocp, nlp, as_states, as_controls, as_algebraic_states: ConfigureVariables.configure_new_variable("u", nlp.model.name_u, ocp, nlp, as_states=False, as_controls=True),
-            lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.COV(ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_states)
+            lambda ocp, nlp, as_states, as_controls, as_algebraic_states: ConfigureVariables.configure_new_variable(
+                "u", nlp.model.name_u, ocp, nlp, as_states=False, as_controls=True
+            ),
+            lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.COV(
+                ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_states
+            ),
         ]
 
-        self.algebraic_types = [lambda ocp, nlp, as_states, as_controls, as_algebraic_states: AlgebraicStates.M(ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_states)]
+        self.algebraic_types = [
+            lambda ocp, nlp, as_states, as_controls, as_algebraic_states: AlgebraicStates.M(
+                ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_states
+            )
+        ]
 
-    def extra_dynamics(self,
-                 time,
-                 states,
-                 controls,
-                 parameters,
-                 algebraic_states,
-                 numerical_timeseries,
-                 nlp,
-                 ):
+    def extra_dynamics(
+        self,
+        time,
+        states,
+        controls,
+        parameters,
+        algebraic_states,
+        numerical_timeseries,
+        nlp,
+    ):
         """
         The dynamics from equation (line 42).
         """

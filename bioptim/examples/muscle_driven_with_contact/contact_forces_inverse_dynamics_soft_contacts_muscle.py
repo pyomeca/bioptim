@@ -31,7 +31,9 @@ from bioptim import (
 def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True):
 
     # BioModel
-    bio_model = MusclesBiorbdModel(biorbd_model_path, with_residual_torque=True, contact_types=[ContactType.SOFT_IMPLICIT])
+    bio_model = MusclesBiorbdModel(
+        biorbd_model_path, with_residual_torque=True, contact_types=[ContactType.SOFT_IMPLICIT]
+    )
 
     # Add objective functions
     objective_functions = ObjectiveList()

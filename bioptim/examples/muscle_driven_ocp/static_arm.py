@@ -20,7 +20,8 @@ from bioptim import (
     OdeSolverBase,
     Solver,
     PhaseDynamics,
-    ControlType, MusclesBiorbdModel,
+    ControlType,
+    MusclesBiorbdModel,
 )
 
 

@@ -82,7 +82,6 @@ class TimeDependentModel(TorqueBiorbdModel):
         return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
 
 
-
 def prepare_ocp(
     biorbd_model_path: str,
     final_time: float,

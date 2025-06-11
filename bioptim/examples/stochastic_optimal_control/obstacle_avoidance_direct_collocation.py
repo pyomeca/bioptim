@@ -466,9 +466,9 @@ def prepare_socp(
 
     # Dynamics
     dynamics = Dynamics(
-            phase_dynamics=phase_dynamics,
-            expand_dynamics=expand_dynamics,
-        )
+        phase_dynamics=phase_dynamics,
+        expand_dynamics=expand_dynamics,
+    )
 
     if is_stochastic:
         phase_transitions.add(PhaseTransitionFcn.COVARIANCE_CYCLIC)

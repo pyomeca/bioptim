@@ -178,6 +178,7 @@ class TorqueMultiBiorbdModel(MultiBiorbdModel, TorqueDynamics):
         MultiBiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set, contact_types)
         TorqueDynamics.__init__(self)
 
+
 class TorqueActivationBiorbdModel(BiorbdModel, TorqueActivationDynamics):
     def __init__(
         self,

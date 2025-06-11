@@ -29,7 +29,9 @@ from bioptim import (
 def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound, expand_dynamics=True):
     # --- Options --- #
     # BioModel path
-    bio_model = MusclesBiorbdModel(biorbd_model_path, with_residual_torque=True, contact_types=[ContactType.RIGID_EXPLICIT])
+    bio_model = MusclesBiorbdModel(
+        biorbd_model_path, with_residual_torque=True, contact_types=[ContactType.RIGID_EXPLICIT]
+    )
     tau_min, tau_max, tau_init = -500.0, 500.0, 0.0
     activation_min, activation_max, activation_init = 0.0, 1.0, 0.5
     dof_mapping = BiMappingList()
