@@ -99,7 +99,7 @@ def prepare_ocp(
         biorbd_model,
         n_shooting,
         final_time,
-        dynamics=dynamics
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         x_scaling=x_scaling,

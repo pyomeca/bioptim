@@ -243,4 +243,5 @@ class MultiTorqueBiorbdModel(MultiBiorbdModel, TorqueDynamics):
         MultiBiorbdModel.__init__(self, bio_model, extra_bio_models)
         TorqueDynamics.__init__(self)
 
+
 # TODO: add variational

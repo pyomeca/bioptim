@@ -24,7 +24,10 @@ def prepare_ocp(
     expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
 
-    bio_model = (TorqueBiorbdModel(biorbd_model_path_with_translations), TorqueBiorbdModel(biorbd_model_path_with_translations))
+    bio_model = (
+        TorqueBiorbdModel(biorbd_model_path_with_translations),
+        TorqueBiorbdModel(biorbd_model_path_with_translations),
+    )
 
     # Problem parameters
     final_time = (1.5, 2.5)

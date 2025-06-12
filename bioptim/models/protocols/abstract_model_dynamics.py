@@ -790,7 +790,14 @@ class JointAccelerationDynamics:
         raise RuntimeError("Joints acceleration driven dynamics cannot be used with contacts by definition.")
 
 
-DynamicalModel: TorqueDynamics | StochasticTorqueDynamics | \
-    TorqueFreeFloatingBaseDynamics | StochasticTorqueFreeFloatingBaseDynamics | \
-    MusclesDynamics | TorqueActivationDynamics | TorqueDerivativeDynamics | \
-    JointAccelerationDynamics | HolonomicTorqueDynamics
+DynamicalModel: (
+    TorqueDynamics
+    | StochasticTorqueDynamics
+    | TorqueFreeFloatingBaseDynamics
+    | StochasticTorqueFreeFloatingBaseDynamics
+    | MusclesDynamics
+    | TorqueActivationDynamics
+    | TorqueDerivativeDynamics
+    | JointAccelerationDynamics
+    | HolonomicTorqueDynamics
+)

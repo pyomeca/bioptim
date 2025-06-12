@@ -61,7 +61,11 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = (TorqueBiorbdModel(biorbd_model_path), TorqueBiorbdModel(biorbd_model_path), TorqueBiorbdModel(biorbd_model_path))
+    bio_model = (
+        TorqueBiorbdModel(biorbd_model_path),
+        TorqueBiorbdModel(biorbd_model_path),
+        TorqueBiorbdModel(biorbd_model_path),
+    )
 
     # Problem parameters
     # final_time = (0.2, 0.2, 0.2)
@@ -75,12 +79,9 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsOptionsList()
-    dynamics.add(DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
-    ))
-    dynamics.add(DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
-    ))
-    dynamics.add(DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
-    ))
+    dynamics.add(DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics))
+    dynamics.add(DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics))
+    dynamics.add(DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics))
 
     # Constraints
     constraints = ConstraintList()

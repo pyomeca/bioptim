@@ -43,7 +43,8 @@ class Model:
         self.time_as_states = time_as_states
         self.pulse_apparition_time = None
 
-        self.state_type = [lambda ocp, nlp, as_states, as_controls, as_algebraic_states: ConfigureVariables.configure_new_variable(
+        self.state_type = [
+            lambda ocp, nlp, as_states, as_controls, as_algebraic_states: ConfigureVariables.configure_new_variable(
                 "Cn",
                 ["Cn"],
                 ocp,
@@ -51,24 +52,27 @@ class Model:
                 as_states=True,
                 as_controls=False,
             ),
-                            lambda ocp, nlp, as_states, as_controls, as_algebraic_states: ConfigureVariables.configure_new_variable(
+            lambda ocp, nlp, as_states, as_controls, as_algebraic_states: ConfigureVariables.configure_new_variable(
                 "F",
                 ["F"],
                 ocp,
                 nlp,
                 as_states=True,
                 as_controls=False,
-            )]
+            ),
+        ]
 
         if self.time_as_states:
-            self.state_type += [lambda ocp, nlp, as_states, as_controls, as_algebraic_states: ConfigureVariables.configure_new_variable(
-                "time",
-                ["time"],
-                ocp,
-                nlp,
-                as_states=True,
-                as_controls=False,
-            )]
+            self.state_type += [
+                lambda ocp, nlp, as_states, as_controls, as_algebraic_states: ConfigureVariables.configure_new_variable(
+                    "time",
+                    ["time"],
+                    ocp,
+                    nlp,
+                    as_states=True,
+                    as_controls=False,
+                )
+            ]
         self.control_type = []
         self.algebraic_type = []
         self.extra_dynamics = None

@@ -49,7 +49,9 @@ class CustomModel(BiorbdModel, TorqueDynamics):
 
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-        tau = DynamicsFunctions.get(nlp.controls["tau"], controls) * (sin(nlp.tf - time) * time.ones(nlp.model.nb_tau) * 10)
+        tau = DynamicsFunctions.get(nlp.controls["tau"], controls) * (
+            sin(nlp.tf - time) * time.ones(nlp.model.nb_tau) * 10
+        )
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         ddq = nlp.model.forward_dynamics()(q, qdot, tau, [], parameters)

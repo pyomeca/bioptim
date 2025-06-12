@@ -55,8 +55,7 @@ def prepare_nmpc(
     ode_solver: OdeSolver = OdeSolver.RK4(),
 ):
     model = TorqueBiorbdModel(model_path)
-    dynamics = DynamicsOptions(expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics, ode_solver=ode_solver
-    )
+    dynamics = DynamicsOptions(expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics, ode_solver=ode_solver)
 
     x_bounds = BoundsList()
     x_bounds["q"] = model.bounds_from_ranges("q")
