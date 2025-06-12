@@ -104,13 +104,22 @@ def prepare_ocp(
     # The following multinode contraint is only there so that the graphs show continuous algebraic states.
     # Please note that it does not have any impact on the solution. Since the first algebraic state (at the node) and
     # the last algebraic state (at the next node) are not used to compute the defects.
-    for i_node in range(n_shooting - 1):
-        multinode_constraints.add(
-            MultinodeConstraintFcn.ALGEBRAIC_STATES_CONTINUITY,
-            nodes_phase=(0, 0),
-            nodes=(i_node, i_node + 1),
-            key="rigid_contact_forces",
-        )
+    if ContactType.RIGID_IMPLICIT in contact_types:
+        for i_node in range(n_shooting - 1):
+            multinode_constraints.add(
+                MultinodeConstraintFcn.ALGEBRAIC_STATES_CONTINUITY,
+                nodes_phase=(0, 0),
+                nodes=(i_node, i_node + 1),
+                key="rigid_contact_forces",
+            )
+    if ContactType.SOFT_IMPLICIT in contact_types:
+        for i_node in range(n_shooting - 1):
+            multinode_constraints.add(
+                MultinodeConstraintFcn.ALGEBRAIC_STATES_CONTINUITY,
+                nodes_phase=(0, 0),
+                nodes=(i_node, i_node + 1),
+                key="soft_contact_forces",
+            )
 
     constraints = ConstraintList()
     constraints.add(
