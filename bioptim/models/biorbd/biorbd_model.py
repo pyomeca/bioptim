@@ -626,7 +626,7 @@ class BiorbdModel:
             return SX
         else:
             raise TypeError(f"The type of the variable should be either MX or SX, not {type(var)}.")
-    
+
     def map_rigid_contact_forces_to_global_forces(
         self, rigid_contact_forces: MX | SX, q: MX | SX, parameters: MX | SX
     ) -> MX | SX:
