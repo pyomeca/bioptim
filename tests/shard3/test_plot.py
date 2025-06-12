@@ -2,10 +2,8 @@ import numpy as np
 from casadi import DM
 
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     OptimalControlProgram,
-    Dynamics,
-    DynamicsFcn,
     Objective,
     ObjectiveFcn,
     ConstraintList,
@@ -40,7 +38,7 @@ def test_plot_ocp_creation():
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
     model_path = bioptim_folder + "/models/cube.bioMod"
-    biorbd_model = BiorbdModel(model_path)
+    biorbd_model = TorqueBiorbdModel(model_path)
     n_shooting = 10
     final_time = 1.0
 
@@ -60,7 +58,6 @@ def test_plot_ocp_creation():
 
     ocp = OptimalControlProgram(
         biorbd_model,
-        DynamicsOptions(DynamicsFcn.TORQUE_DRIVEN),
         n_shooting,
         final_time,
         objective_functions=Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau"),
@@ -102,7 +99,7 @@ def test_plot_options():
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
     model_path = bioptim_folder + "/models/cube.bioMod"
-    biorbd_model = BiorbdModel(model_path)
+    biorbd_model = TorqueBiorbdModel(model_path)
     n_shooting = 10
     final_time = 1.0
 
@@ -115,7 +112,6 @@ def test_plot_options():
 
     ocp = OptimalControlProgram(
         biorbd_model,
-        DynamicsOptions(DynamicsFcn.TORQUE_DRIVEN),
         n_shooting,
         final_time,
         x_bounds=x_bounds,

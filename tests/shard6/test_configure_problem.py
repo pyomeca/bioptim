@@ -13,8 +13,7 @@ from bioptim import (
     VariableScalingList,
     FatigueList,
     XiaFatigue,
-    Dynamics,
-    DynamicsFcn,
+    DynamicsOptions,
 )
 from ..utils import TestUtils
 
@@ -35,9 +34,7 @@ class OptimalControlProgram:
         self.parameters = ParameterContainer(use_sx=use_sx)
         self.parameters.initialize(parameters_list)
         self.n_threads = 1
-        nlp.dynamics_type = DynamicsOptions(
-            DynamicsFcn.TORQUE_DRIVEN,
-        )
+        nlp.dynamics_type = DynamicsOptions()
         NonLinearProgram.add(
             self,
             "dynamics_type",

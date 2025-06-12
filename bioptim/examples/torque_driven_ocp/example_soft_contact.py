@@ -7,10 +7,9 @@ One could use ContactType.SOFT_IMPLICIT to ease the convergence.
 
 import numpy as np
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     OptimalControlProgram,
-    Dynamics,
-    DynamicsFcn,
+    DynamicsOptions,
     ObjectiveList,
     ObjectiveFcn,
     ConstraintList,
@@ -27,7 +26,6 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
     ContactType,
-    ExternalForceSetVariables,
 )
 
 
@@ -46,11 +44,10 @@ def prepare_single_shooting(
     -------
     The OptimalControlProgram ready to be solved
     """
-    bio_model = BiorbdModel(biorbd_model_path, contact_types=[ContactType.SOFT_EXPLICIT])
+    bio_model = TorqueBiorbdModel(biorbd_model_path, contact_types=[ContactType.SOFT_EXPLICIT])
 
     # Dynamics
     dynamics = DynamicsOptions(
-        DynamicsFcn.TORQUE_DRIVEN,
         ode_solver=ode_solver,
     )
 
@@ -119,7 +116,7 @@ def prepare_ocp(
     -------
     The OptimalControlProgram ready to be solved
     """
-    bio_model = BiorbdModel(biorbd_model_path, contact_types=[ContactType.SOFT_EXPLICIT])
+    bio_model = TorqueBiorbdModel(biorbd_model_path, contact_types=[ContactType.SOFT_EXPLICIT])
 
     # Problem parameters
     tau_min, tau_max = -100, 100
@@ -146,7 +143,6 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsOptions(
-        DynamicsFcn.TORQUE_DRIVEN,
         ode_solver=ode_solver,
         phase_dynamics=phase_dynamics,
     )

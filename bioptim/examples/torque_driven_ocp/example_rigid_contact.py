@@ -10,10 +10,9 @@ from casadi import MX
 from scipy.odr import quadratic
 
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     OptimalControlProgram,
-    Dynamics,
-    DynamicsFcn,
+    DynamicsOptions,
     ObjectiveList,
     ObjectiveFcn,
     ConstraintList,
@@ -62,7 +61,7 @@ def prepare_ocp(
     """
 
     # BioModel
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
 
     tau_min, tau_max = -100, 100
 
@@ -81,7 +80,6 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsOptions(
-        DynamicsFcn.TORQUE_DRIVEN,
         contact_types=contact_types,
         phase_dynamics=phase_dynamics,
         ode_solver=ode_solver,

@@ -8,15 +8,14 @@ import platform
 
 from bioptim import (
     OptimalControlProgram,
-    DynamicsFcn,
-    Dynamics,
+    DynamicsOptions,
     ObjectiveFcn,
     Objective,
     OdeSolver,
     OdeSolverBase,
     CostType,
     Solver,
-    BiorbdModel,
+    TorqueBiorbdModel,
     BoundsList,
     PhaseDynamics,
 )
@@ -57,14 +56,13 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
     # Dynamics
     dynamics = DynamicsOptions(
-        DynamicsFcn.TORQUE_DRIVEN,
         ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,

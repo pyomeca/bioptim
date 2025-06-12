@@ -9,10 +9,9 @@ import platform
 
 import numpy as np
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     MultiCyclicNonlinearModelPredictiveControl,
-    Dynamics,
-    DynamicsFcn,
+    DynamicsOptions,
     Objective,
     ObjectiveFcn,
     ConstraintList,
@@ -55,9 +54,8 @@ def prepare_nmpc(
     expand_dynamics: bool = True,
     ode_solver: OdeSolver = OdeSolver.RK4(),
 ):
-    model = BiorbdModel(model_path)
-    dynamics = DynamicsOptions(
-        DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics, ode_solver=ode_solver
+    model = TorqueBiorbdModel(model_path)
+    dynamics = DynamicsOptions(expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics, ode_solver=ode_solver
     )
 
     x_bounds = BoundsList()

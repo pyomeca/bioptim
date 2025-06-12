@@ -23,10 +23,9 @@ from scipy.integrate import solve_ivp
 
 from bioptim import (
     BioModel,
-    BiorbdModel,
+    TorqueBiorbdModel,
     MovingHorizonEstimator,
-    Dynamics,
-    DynamicsFcn,
+    DynamicsOptions,
     Objective,
     ObjectiveFcn,
     BoundsList,
@@ -148,9 +147,9 @@ def prepare_mhe(
 
     return MovingHorizonEstimator(
         bio_model,
-        DynamicsOptions(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics),
         window_len,
         window_duration,
+        dynamics=DynamicsOptions(expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics),
         common_objective_functions=new_objectives,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
@@ -186,7 +185,7 @@ def get_solver_options(solver):
 
 def main():
     biorbd_model_path = "models/cart_pendulum.bioMod"
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
 
     solver = Solver.IPOPT()  # or Solver.ACADOS()  # If ACADOS is used, it must be manually installed
     final_time = 5
@@ -206,7 +205,7 @@ def main():
     u_init = np.zeros((bio_model.nb_q, window_len))
     torque_max = 5  # Give a bit of slack on the max torque
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
     mhe = prepare_mhe(
         bio_model,
         window_len=window_len,

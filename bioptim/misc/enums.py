@@ -215,7 +215,6 @@ class ContactType(Enum):
 class DefectType(Enum):
     QDDOT_EQUALS_FORWARD_DYNAMICS = "qddot_equals_forward_dynamics"
     TAU_EQUALS_INVERSE_DYNAMICS = "tau_equals_inverse_dynamics"
-    # ROOT_RESIDUAL_TORQUES_EQUALS_ZERO = "root_residual_torques_equals_zero"
     NOT_APPLICABLE = "not_applicable"
 
 

@@ -11,10 +11,9 @@ import numpy as np
 from casadi import MX
 
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     OptimalControlProgram,
-    Dynamics,
-    DynamicsFcn,
+    DynamicsOptions,
     BoundsList,
     InitialGuessList,
     ObjectiveFcn,
@@ -70,7 +69,7 @@ def generate_dat_to_track(
     The ocp ready to be solved
     """
     # --- Options --- #
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
     n_tau = bio_model.nb_tau
 
     # Add objective functions
@@ -79,8 +78,7 @@ def generate_dat_to_track(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q", weight=1)
 
     # Dynamics
-    dynamics = DynamicsOptions(
-        DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
+    dynamics = DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
     )
 
     # Path constraint
@@ -197,14 +195,13 @@ def prepare_ocp(
     )
 
     # --- Options --- #
-    bio_model = BiorbdModel(biorbd_model_path, parameters=parameters)
+    bio_model = TorqueBiorbdModel(biorbd_model_path, parameters=parameters)
 
     # Add objective functions
     objective_functions = ObjectiveList()
 
     # Dynamics
     dynamics = DynamicsOptions(
-        DynamicsFcn.TORQUE_DRIVEN,
         state_continuity_weight=100,
         ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
