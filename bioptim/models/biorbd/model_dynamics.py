@@ -232,3 +232,15 @@ class JointAccelerationBiorbdModel(BiorbdModel, JointAccelerationDynamics):
     ):
         BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set, contact_types)
         JointAccelerationDynamics.__init__(self)
+
+
+class MultiTorqueBiorbdModel(MultiBiorbdModel, TorqueDynamics):
+    def __init__(
+        self,
+        bio_model: Str | biorbd.Model,
+        extra_bio_models: tuple[str | biorbd.Model | BiorbdModel, ...] = (),
+    ):
+        MultiBiorbdModel.__init__(self, bio_model, extra_bio_models)
+        TorqueDynamics.__init__(self)
+
+# TODO: add variational

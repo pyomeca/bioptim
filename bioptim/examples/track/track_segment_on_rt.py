@@ -12,6 +12,7 @@ from bioptim import (
     Node,
     OptimalControlProgram,
     DynamicsList,
+    Dynamics,
     ObjectiveList,
     ObjectiveFcn,
     ConstraintList,

@@ -139,9 +139,9 @@ class OptimalControlProgram:
     def __init__(
         self,
         bio_model: list | tuple | BioModel,
-        dynamics: Dynamics | DynamicsList,
         n_shooting: int | list | tuple,
         phase_time: int | float | list | tuple,
+        dynamics: Dynamics | DynamicsList = None,
         x_bounds: BoundsList = None,
         u_bounds: BoundsList = None,
         a_bounds: BoundsList = None,
@@ -174,12 +174,12 @@ class OptimalControlProgram:
         ----------
         bio_model: list | tuple | BioModel
             The bio_model to use for the optimization
-        dynamics: Dynamics | DynamicsList
-            The dynamics of the phases
         n_shooting: int | list[int]
             The number of shooting point of the phases
         phase_time: int | float | list | tuple
             The phase time of the phases
+        dynamics: Dynamics | DynamicsList
+            The dynamics of the phases
         x_init: InitialGuess | InitialGuessList
             The initial guesses for the states
         u_init: InitialGuess | InitialGuessList
@@ -496,6 +496,10 @@ class OptimalControlProgram:
         if not isinstance(use_sx, bool):
             raise RuntimeError("use_sx should be a bool")
 
+        if dynamics is None:
+            dynamics = DynamicsList()
+            for i_phase in range (self.n_phases):
+                dynamics.add(Dynamics())
         if isinstance(dynamics, Dynamics):
             tp = dynamics
             dynamics = DynamicsList()

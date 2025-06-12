@@ -427,19 +427,23 @@ class DynamicsList(UniquePerPhaseOptionList):
         Print the DynamicsList to the console
     """
 
-    def add(self, dynamics_type, **extra_parameters: Any):
+    def add(self, dynamics=None, **extra_parameters: Any):
         """
         Add a new Dynamics to the list
 
         Parameters
         ----------
+        dynamics: Dynamics | None
+            The dynamics to add to the list. If None, a Dynamics will be created using the extra_parameters.
         extra_parameters: dict
             Any parameters to pass to Dynamics
         """
-        if isinstance(dynamics_type, Dynamics):
-            self.copy(dynamics_type)
+        if dynamics is None:
+            self.add(Dynamics(**extra_parameters))
+        elif isinstance(dynamics, Dynamics):
+            self.copy(dynamics)
         else:
-            super(DynamicsList, self)._add(dynamics_type=dynamics_type, option_type=Dynamics, **extra_parameters)
+            raise ValueError("The dynamics must be of type Dynamics.")
 
     def print(self) -> None:
         """

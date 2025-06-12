@@ -11,8 +11,7 @@ import biorbd_casadi as biorbd
 from casadi import MX
 from bioptim import (
     OptimalControlProgram,
-    DynamicsList,
-    DynamicsFcn,
+    Dynamics,
     ObjectiveList,
     ConstraintList,
     ConstraintFcn,
@@ -23,7 +22,7 @@ from bioptim import (
     BiMappingList,
     ParameterList,
     InterpolationType,
-    BiorbdModel,
+    TorqueBiorbdModel,
     PenaltyController,
     ParameterObjectiveList,
     VariableScaling,
@@ -73,7 +72,7 @@ def prepare_ocp(
     parameter_objectives.add(ObjectiveFcn.Parameter.MINIMIZE_PARAMETER, key="min_tau", weight=10, quadratic=True)
 
     # Define the model
-    bio_model = BiorbdModel(bio_model_path, parameters=parameters)
+    bio_model = TorqueBiorbdModel(bio_model_path, parameters=parameters)
 
     # Mapping
     tau_mappings = BiMappingList()
@@ -93,8 +92,7 @@ def prepare_ocp(
     constraints.add(custom_constraint_min_tau, phase=0, node=Node.ALL_SHOOTING, min_bound=tau_min, max_bound=0)
 
     # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+    dynamics = Dynamics()
 
     # Path constraint
     x_bounds = BoundsList()

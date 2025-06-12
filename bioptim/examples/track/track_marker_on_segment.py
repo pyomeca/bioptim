@@ -7,11 +7,12 @@ to show how one can use the tracking function to track a marker with a body segm
 import platform
 
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     Node,
     Axis,
     OptimalControlProgram,
     DynamicsList,
+    Dynamics,
     ObjectiveList,
     ObjectiveFcn,
     ConstraintList,
@@ -69,7 +70,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = ObjectiveList()

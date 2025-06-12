@@ -4,7 +4,7 @@ import pytest
 from casadi import DM, MX, vertcat, horzcat, Function
 
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     OptimalControlProgram,
     DynamicsList,
     Objective,
@@ -24,6 +24,7 @@ from bioptim import (
     ContactType,
     MusclesBiorbdModel,
     TorqueActivationBiorbdModel,
+    Dynamics,
 )
 from bioptim.limits.penalty import PenaltyOption
 from bioptim.limits.penalty_controller import PenaltyController

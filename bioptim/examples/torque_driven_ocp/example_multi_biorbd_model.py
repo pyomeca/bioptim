@@ -24,6 +24,7 @@ def prepare_ocp(
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
+
     # Adding the models to the same phase
     bio_models = MultiTorqueBiorbdModel((biorbd_model_path, biorbd_model_path_modified_inertia))
 
@@ -63,9 +64,9 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         bio_models,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,

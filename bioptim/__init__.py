@@ -213,9 +213,21 @@ from .models.biorbd.model_dynamics import (
     TorqueActivationBiorbdModel,
     MusclesBiorbdModel,
     JointAccelerationBiorbdModel,
+    MultiTorqueBiorbdModel,
 )
 from .models.protocols.biomodel import BioModel
 from .models.protocols.stochastic_biomodel import StochasticBioModel
+from .models.protocols.abstract_model_dynamics import (
+    TorqueDynamics,
+    StochasticTorqueDynamics,
+    HolonomicTorqueDynamics,
+    TorqueFreeFloatingBaseDynamics,
+    StochasticTorqueFreeFloatingBaseDynamics,
+    TorqueActivationDynamics,
+    TorqueDerivativeDynamics,
+    MusclesDynamics,
+    JointAccelerationDynamics,
+)
 from .optimization.multi_start import MultiStart
 from .optimization.non_linear_program import NonLinearProgram
 from .optimization.optimal_control_program import OptimalControlProgram
