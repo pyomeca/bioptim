@@ -1,3 +1,4 @@
+from typing import TypeAlias
 from casadi import vertcat, DM
 
 from ...dynamics.configure_variables import States, Controls, AlgebraicStates
@@ -787,3 +788,9 @@ class JointAccelerationDynamics:
 
     def get_rigid_contact_forces(self, time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp):
         raise RuntimeError("Joints acceleration driven dynamics cannot be used with contacts by definition.")
+
+
+DynamicalModel: TorqueDynamics | StochasticTorqueDynamics | \
+    TorqueFreeFloatingBaseDynamics | StochasticTorqueFreeFloatingBaseDynamics | \
+    MusclesDynamics | TorqueActivationDynamics | TorqueDerivativeDynamics | \
+    JointAccelerationDynamics | HolonomicTorqueDynamics

@@ -94,14 +94,14 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
-        objective_functions,
+        dynamics=dynamics,
+        x_init=x_init,
+        u_init=u_init,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        objective_functions=objective_functions,
     )
 
 

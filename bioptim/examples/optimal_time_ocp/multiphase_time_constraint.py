@@ -177,9 +177,9 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         bio_model[:n_phases],
-        dynamics,
         n_shooting,
         final_time[:n_phases],
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,

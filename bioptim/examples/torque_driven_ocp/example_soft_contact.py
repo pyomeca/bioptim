@@ -56,9 +56,9 @@ def prepare_single_shooting(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         use_sx=use_sx,
         n_threads=n_threads,
     )
@@ -181,9 +181,9 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         x_init=x_init,

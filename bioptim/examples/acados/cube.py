@@ -37,9 +37,9 @@ def prepare_ocp(biorbd_model_path, n_shooting, tf, ode_solver=OdeSolver.RK4(), u
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         tf,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         use_sx=use_sx,

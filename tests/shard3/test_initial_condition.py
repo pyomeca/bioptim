@@ -9,7 +9,7 @@ from bioptim import (
     Solution,
     Shooting,
     SolutionIntegrator,
-    BiorbdModel,
+    TorqueBiorbdModel,
     Objective,
     Dynamics,
     ObjectiveFcn,
@@ -321,7 +321,7 @@ def test_initial_guess_error_messages(phase_dynamics):
         bio_model = TorqueBiorbdModel(biorbd_model_path)
         OptimalControlProgram(
             bio_model,
-            dynamics,
+            dynamics=dynamics,
             n_shooting=5,
             phase_time=1,
             x_init=1,
@@ -332,7 +332,7 @@ def test_initial_guess_error_messages(phase_dynamics):
         bio_model = TorqueBiorbdModel(biorbd_model_path)
         OptimalControlProgram(
             bio_model,
-            dynamics,
+            dynamics=dynamics,
             n_shooting=5,
             phase_time=1,
             u_init=1,
@@ -350,7 +350,7 @@ def test_initial_guess_error_messages(phase_dynamics):
         bio_model = TorqueBiorbdModel(biorbd_model_path)
         OptimalControlProgram(
             bio_model,
-            dynamics,
+            dynamics=dynamics,
             n_shooting=5,
             phase_time=1,
             x_init=x_init,
@@ -369,7 +369,7 @@ def test_initial_guess_error_messages(phase_dynamics):
         bio_model = TorqueBiorbdModel(biorbd_model_path)
         OptimalControlProgram(
             bio_model,
-            dynamics,
+            dynamics=dynamics,
             n_shooting=5,
             phase_time=1,
             u_init=u_init,

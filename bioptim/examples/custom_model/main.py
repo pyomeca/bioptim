@@ -104,9 +104,9 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         x_init=x_init,

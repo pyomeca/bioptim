@@ -241,7 +241,7 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         m,
-        dynamics,
+        dynamics=dynamics,
         n_shooting=n_shooting,
         phase_time=phase_time,
         x_bounds=x_bounds,

@@ -227,6 +227,7 @@ from .models.protocols.abstract_model_dynamics import (
     TorqueDerivativeDynamics,
     MusclesDynamics,
     JointAccelerationDynamics,
+    DynamicalModel,
 )
 from .optimization.multi_start import MultiStart
 from .optimization.non_linear_program import NonLinearProgram

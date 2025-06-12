@@ -174,9 +174,9 @@ def prepare_ocp_phase_transitions(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
@@ -338,9 +338,9 @@ def prepare_ocp_parameters(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
@@ -431,9 +431,9 @@ def prepare_ocp_custom_objectives(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,

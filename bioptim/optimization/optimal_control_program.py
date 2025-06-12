@@ -10,7 +10,6 @@ from matplotlib import pyplot as plt
 from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVectorHelper
 from ..dynamics.configure_problem import DynamicsList, Dynamics, ConfigureProblem
-from ..dynamics.ode_solvers import OdeSolver
 from ..gui.check_conditioning import check_conditioning
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..gui.ipopt_output_plot import SaveIterationsInfo
@@ -57,6 +56,7 @@ from ..misc.mapping import BiMappingList, Mapping, BiMapping
 from ..misc.options import OptionDict
 from ..models.biorbd.variational_biorbd_model import VariationalBiorbdModel
 from ..models.protocols.biomodel import BioModel
+from ..models.protocols.abstract_model_dynamics import DynamicalModel
 from ..optimization.optimization_variable import OptimizationVariableList
 from ..optimization.parameters import ParameterList, Parameter, ParameterContainer
 from ..optimization.solution.solution import Solution
@@ -138,7 +138,7 @@ class OptimalControlProgram:
 
     def __init__(
         self,
-        bio_model: list | tuple | BioModel,
+        bio_model: list | tuple | DynamicalModel,
         n_shooting: int | list | tuple,
         phase_time: int | float | list | tuple,
         dynamics: Dynamics | DynamicsList = None,

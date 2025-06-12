@@ -460,7 +460,7 @@ For simplicity's sake, I copied all the pieces of code previously visited in the
 ```python
 ocp = OptimalControlProgram(
         bio_model,
-        dynamics,
+        dynamics=dynamics,
         n_shooting=25,
         phase_time=3,
         x_bounds=x_bounds,
@@ -602,7 +602,7 @@ u_init = [0, 0]
 
 ocp = OptimalControlProgram(
         bio_model,
-        dynamics,
+        dynamics=dynamics,
         n_shooting=25,
         phase_time=3,
         x_bounds=x_bounds,
@@ -701,9 +701,9 @@ Here it is:
 ```python
 OptimalControlProgram(
     bio_model: [list, BioModel],
-    dynamics: [Dynamics, DynamicsList],
     n_shooting: [int, list],
     phase_time: [float, list], 
+    dynamics: [Dynamics, DynamicsList],
     x_bounds: BoundsList,
     u_bounds: BoundsList,
     x_init: InitialGuessList
@@ -755,9 +755,9 @@ Please note that a common ocp will usually define only these parameters:
 ```python
 ocp = OptimalControlProgram(
     bio_model: [list, BioModel],
-    dynamics: [Dynamics, DynamicsList],
     n_shooting: [int, list],
     phase_time: [float, list],
+    dynamics: [Dynamics, DynamicsList],
     x_init: InitialGuessList
     u_init: InitialGuessList, 
     x_bounds: BoundsList,
