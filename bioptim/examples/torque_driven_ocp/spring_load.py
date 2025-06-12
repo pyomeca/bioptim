@@ -221,7 +221,7 @@ def prepare_ocp(
     )
 
     # Dynamics
-    dynamics = Dynamics(
+    dynamics = DynamicsOptions(
         custom_configure,
         dynamic_function=custom_dynamic,
         expand_dynamics=expand_dynamics,

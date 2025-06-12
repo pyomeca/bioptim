@@ -48,7 +48,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound,
     )
 
     # Dynamics
-    dynamics = Dynamics(
+    dynamics = DynamicsOptions(
         expand_dynamics=expand_dynamics,
     )
 

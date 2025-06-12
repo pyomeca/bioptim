@@ -12,7 +12,7 @@ from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
     PenaltyController,
-    DynamicsList,
+    DynamicsOptionsList,
     ObjectiveList,
     ObjectiveFcn,
     ConstraintList,
@@ -27,7 +27,7 @@ from bioptim import (
     PhaseDynamics,
     ControlType,
     QuadratureRule,
-    Dynamics,
+    DynamicsOptions,
 )
 
 
@@ -124,23 +124,23 @@ def prepare_ocp(
     # Dynamics
     if not isinstance(ode_solver, list):
         ode_solver = [ode_solver] * 3
-    dynamics = DynamicsList()
+    dynamics = DynamicsOptionsList()
     dynamics.add(
-        Dynamics(
+        DynamicsOptions(
             ode_solver=ode_solver[0],
             expand_dynamics=expand_dynamics,
             phase_dynamics=phase_dynamics,
         )
     )
     dynamics.add(
-        Dynamics(
+        DynamicsOptions(
             ode_solver=ode_solver[1],
             expand_dynamics=expand_dynamics,
             phase_dynamics=phase_dynamics,
         )
     )
     dynamics.add(
-        Dynamics(
+        DynamicsOptions(
             ode_solver=ode_solver[2],
             expand_dynamics=expand_dynamics,
             phase_dynamics=phase_dynamics,

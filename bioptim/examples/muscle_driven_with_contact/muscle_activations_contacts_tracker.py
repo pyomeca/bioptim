@@ -56,7 +56,7 @@ def prepare_ocp(
     # objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="torque", weight=0.001)
 
     # Dynamics
-    dynamics = Dynamics(
+    dynamics = DynamicsOptions(
         ode_solver=ode_solver,
     )
 

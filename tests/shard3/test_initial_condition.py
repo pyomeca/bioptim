@@ -314,7 +314,7 @@ def test_initial_guess_error_messages(phase_dynamics):
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
     # Dynamics
-    dynamics = Dynamics(phase_dynamics=phase_dynamics)
+    dynamics = DynamicsOptions(phase_dynamics=phase_dynamics)
 
     # check the error messages
     with pytest.raises(RuntimeError, match="x_init should be built from a InitialGuessList"):

@@ -56,7 +56,7 @@ def prepare_nmpc(
     ode_solver: OdeSolver = OdeSolver.RK4(),
 ):
     model = BiorbdModel(model_path)
-    dynamics = Dynamics(
+    dynamics = DynamicsOptions(
         DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics, ode_solver=ode_solver
     )
 

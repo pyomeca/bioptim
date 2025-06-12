@@ -62,7 +62,7 @@ def prepare_ocp(
         )
 
     # Dynamics
-    dynamics = Dynamics(expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    dynamics = DynamicsOptions(expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     # Path constraint
     n_q = biorbd_model.nb_q

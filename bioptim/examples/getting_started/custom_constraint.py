@@ -14,7 +14,7 @@ from bioptim import (
     BiorbdModel,
     Node,
     OptimalControlProgram,
-    Dynamics,
+    DynamicsOptions,
     Objective,
     ObjectiveFcn,
     ConstraintList,
@@ -98,8 +98,8 @@ def prepare_ocp(
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100)
 
-    # Dynamics
-    dynamics = Dynamics(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    # DynamicsOptions
+    dynamics = DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     # Constraints
     constraints = ConstraintList()

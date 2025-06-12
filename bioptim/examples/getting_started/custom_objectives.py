@@ -11,10 +11,10 @@ import platform
 
 from casadi import MX
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     Node,
     OptimalControlProgram,
-    Dynamics,
+    DynamicsOptions,
     ObjectiveFcn,
     ObjectiveList,
     BoundsList,
@@ -117,8 +117,8 @@ def prepare_ocp(
         weight=1000,
     )
 
-    # Dynamics
-    dynamics = Dynamics(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    # DynamicsOptions
+    dynamics = DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()

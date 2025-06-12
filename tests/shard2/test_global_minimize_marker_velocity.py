@@ -98,7 +98,7 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", node=Node.ALL, index=[2, 3], weight=-1)
 
     # Dynamics
-    dynamics = Dynamics(
+    dynamics = DynamicsOptions(
         expand_dynamics=not isinstance(ode_solver, OdeSolver.IRK),
         phase_dynamics=phase_dynamics,
         ode_solver=ode_solver,

@@ -14,7 +14,7 @@ from casadi import MX, Function
 from bioptim import (
     TorqueFreeFloatingBaseBiorbdModel,
     OptimalControlProgram,
-    DynamicsList,
+    DynamicsOptionsList,
     Dynamics,
     ObjectiveList,
     ObjectiveFcn,
@@ -204,9 +204,9 @@ def prepare_ocp(
     )
 
     # Dynamics
-    dynamics = DynamicsList()
+    dynamics = DynamicsOptionsList()
     dynamics.add(
-        Dynamics(
+        DynamicsOptions(
             ode_solver=ode_solver,
             expand_dynamics=expand_dynamics,
             phase_dynamics=phase_dynamics,

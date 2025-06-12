@@ -148,7 +148,7 @@ def prepare_mhe(
 
     return MovingHorizonEstimator(
         bio_model,
-        Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics),
+        DynamicsOptions(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics),
         window_len,
         window_duration,
         common_objective_functions=new_objectives,

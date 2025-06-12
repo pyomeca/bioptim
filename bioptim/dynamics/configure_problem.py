@@ -335,17 +335,12 @@ class ConfigureProblem:
                         )
 
 
-class Dynamics(OptionGeneric):
+class DynamicsOptions(OptionGeneric):
     """
     A placeholder for the chosen dynamics by the user
 
     Attributes
     ----------
-    dynamic_function: Callable
-        The custom dynamic function provided by the user
-    configure: Callable
-        The configuration function provided by the user that declares the NLP (states and controls),
-        usually only necessary when defining custom functions
     expand_dynamics: bool
         If the dynamics function should be expanded
     expand_continuity: bool
@@ -361,8 +356,6 @@ class Dynamics(OptionGeneric):
 
     def __init__(
         self,
-        configure_function: Callable = None,
-        dynamic_function: Callable = None,
         expand_dynamics: bool = True,
         expand_continuity: bool = False,
         skip_continuity: bool = False,
@@ -370,15 +363,10 @@ class Dynamics(OptionGeneric):
         phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
         ode_solver: OdeSolver | OdeSolverBase = OdeSolver.RK4(),
         numerical_data_timeseries: dict[str, np.ndarray] = None,
-        **extra_parameters: Any,
     ):
         """
         Parameters
         ----------
-        dynamics_type: Callable
-            The chosen dynamic functions
-        params: Any
-            Any parameters to pass to the dynamic and configure functions
         expand_dynamics: bool
             If the dynamics function should be expanded
         expand_continuity: bool
@@ -395,17 +383,6 @@ class Dynamics(OptionGeneric):
         numerical_data_timeseries: dict[str, np.ndarray]
             The numerical timeseries at each node. ex: the experimental external forces data should go here.
         """
-        if (configure_function is None and dynamic_function is not None) or (
-            configure_function is not None and dynamic_function is None
-        ):
-            raise RuntimeError(
-                "Either both configure_function and dynamics_function should be provided, or none of them."
-            )
-
-        super(Dynamics, self).__init__(**extra_parameters)
-
-        self.dynamic_function = dynamic_function
-        self.configure_function = configure_function
         self.expand_dynamics = expand_dynamics
         self.expand_continuity = expand_continuity
         self.skip_continuity = skip_continuity
@@ -415,41 +392,41 @@ class Dynamics(OptionGeneric):
         self.numerical_data_timeseries = numerical_data_timeseries
 
 
-class DynamicsList(UniquePerPhaseOptionList):
+class DynamicsOptionsList(UniquePerPhaseOptionList):
     """
-    A list of Dynamics if more than one is required, typically when more than one phases are declared
+    A list of DynamicsOptions if more than one is required, typically when more than one phases are declared
 
     Methods
     -------
-    add(dynamics: Dynamics, **extra_parameters)
-        Add a new Dynamics to the list
+    add(dynamics: DynamicsOptions, **extra_parameters)
+        Add a new DynamicsOptions to the list
     print(self)
-        Print the DynamicsList to the console
+        Print the DynamicsOptionsList to the console
     """
 
     def add(self, dynamics=None, **extra_parameters: Any):
         """
-        Add a new Dynamics to the list
+        Add a new DynamicsOptions to the list
 
         Parameters
         ----------
-        dynamics: Dynamics | None
-            The dynamics to add to the list. If None, a Dynamics will be created using the extra_parameters.
+        dynamics: DynamicsOptions | None
+            The dynamics to add to the list. If None, a DynamicsOptions will be created using the extra_parameters.
         extra_parameters: dict
-            Any parameters to pass to Dynamics
+            Any parameters to pass to DynamicsOptions
         """
         if dynamics is None:
-            self.add(Dynamics(**extra_parameters))
-        elif isinstance(dynamics, Dynamics):
+            self.add(DynamicsOptions(**extra_parameters))
+        elif isinstance(dynamics, DynamicsOptions):
             self.copy(dynamics)
         else:
-            raise ValueError("The dynamics must be of type Dynamics.")
+            raise ValueError("The dynamics must be of type DynamicsOptions.")
 
     def print(self) -> None:
         """
-        Print the DynamicsList to the console
+        Print the DynamicsOptionsList to the console
         """
-        raise NotImplementedError("Printing of DynamicsList is not ready yet")
+        raise NotImplementedError("Printing of DynamicsOptionsList is not ready yet")
 
 
 def _check_numerical_timeseries_format(numerical_timeseries: NpArray, n_shooting: Int, phase_idx: Int) -> None:

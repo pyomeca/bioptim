@@ -35,7 +35,7 @@ class OptimalControlProgram:
         self.parameters = ParameterContainer(use_sx=use_sx)
         self.parameters.initialize(parameters_list)
         self.n_threads = 1
-        nlp.dynamics_type = Dynamics(
+        nlp.dynamics_type = DynamicsOptions(
             DynamicsFcn.TORQUE_DRIVEN,
         )
         NonLinearProgram.add(

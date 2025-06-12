@@ -15,7 +15,7 @@ import biorbd_casadi as biorbd
 from casadi import MX
 from bioptim import (
     OptimalControlProgram,
-    DynamicsList,
+    DynamicsOptionsList,
     Dynamics,
     ObjectiveList,
     ConstraintList,

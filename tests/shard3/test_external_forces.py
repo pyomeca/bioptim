@@ -4,7 +4,7 @@ from bioptim import (
     TorqueBiorbdModel,
     Node,
     OptimalControlProgram,
-    DynamicsList,
+    DynamicsOptionsList,
     ObjectiveList,
     ObjectiveFcn,
     ConstraintList,
@@ -191,7 +191,7 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100)
 
     # Dynamics
-    dynamics = DynamicsList()
+    dynamics = DynamicsOptionsList()
     dynamics.add(
         numerical_data_timeseries=numerical_data_timeseries,
     )

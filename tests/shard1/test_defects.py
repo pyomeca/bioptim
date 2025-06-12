@@ -135,7 +135,7 @@ def test_torque_driven(contact_types, with_external_force, cx, phase_dynamics, d
             contact_types=contact_types,
             external_force_set=external_forces,
         )
-        nlp.dynamics_type = Dynamics(
+        nlp.dynamics_type = DynamicsOptions(
             DynamicsFcn.TORQUE_DRIVEN,
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
@@ -362,7 +362,7 @@ def test_torque_driven_soft_contacts_dynamics(contact_types, cx, phase_dynamics,
         + "/examples/muscle_driven_with_contact/models/2segments_4dof_2soft_contacts_1muscle.bioMod",
         contact_types=contact_types,
     )
-    nlp.dynamics_type = Dynamics(
+    nlp.dynamics_type = DynamicsOptions(
         DynamicsFcn.TORQUE_DRIVEN,
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
@@ -523,7 +523,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
         contact_types=[ContactType.RIGID_EXPLICIT] if with_contact else (),
         external_force_set=external_forces,
     )
-    nlp.dynamics_type = Dynamics(
+    nlp.dynamics_type = DynamicsOptions(
         DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
@@ -721,7 +721,7 @@ def test_torque_derivative_driven_soft_contacts_dynamics(contact_types, cx, phas
         + "/examples/muscle_driven_with_contact/models/2segments_4dof_2soft_contacts_1muscle.bioMod",
         contact_types=contact_types,
     )
-    nlp.dynamics_type = Dynamics(
+    nlp.dynamics_type = DynamicsOptions(
         DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
@@ -907,7 +907,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
         contact_types=[ContactType.RIGID_EXPLICIT] if with_contact else (),
         external_force_set=external_forces,
     )
-    nlp.dynamics_type = Dynamics(
+    nlp.dynamics_type = DynamicsOptions(
         DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
@@ -1089,7 +1089,7 @@ def test_torque_activation_driven_with_residual_torque(
         model_filename,
         external_force_set=external_forces,
     )
-    nlp.dynamics_type = Dynamics(
+    nlp.dynamics_type = DynamicsOptions(
         DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
         with_residual_torque=with_residual_torque,
         expand_dynamics=True,
@@ -1215,7 +1215,7 @@ def test_torque_driven_free_floating_base(cx, phase_dynamics, defects_type):
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
-    nlp.dynamics_type = Dynamics(
+    nlp.dynamics_type = DynamicsOptions(
         DynamicsFcn.TORQUE_DRIVEN_FREE_FLOATING_BASE,
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
@@ -1334,7 +1334,7 @@ def test_muscle_driven(
             contact_types=contact_types,
             external_force_set=external_forces,
         )
-        nlp.dynamics_type = Dynamics(
+        nlp.dynamics_type = DynamicsOptions(
             DynamicsFcn.MUSCLE_DRIVEN,
             with_residual_torque=with_residual_torque,
             with_excitations=with_excitations,
@@ -1919,7 +1919,7 @@ def test_joints_acceleration_driven(cx, phase_dynamics, defects_type):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = BiorbdModel(TestUtils.bioptim_folder() + "/examples/getting_started/models/double_pendulum.bioMod")
-    nlp.dynamics_type = Dynamics(
+    nlp.dynamics_type = DynamicsOptions(
         DynamicsFcn.JOINTS_ACCELERATION_DRIVEN,
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,

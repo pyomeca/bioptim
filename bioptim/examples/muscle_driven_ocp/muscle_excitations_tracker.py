@@ -20,7 +20,7 @@ from bioptim import (
     OptimalControlProgram,
     NonLinearProgram,
     BiMapping,
-    DynamicsList,
+    DynamicsOptionsList,
     DynamicsFunctions,
     ObjectiveList,
     ObjectiveFcn,
@@ -165,7 +165,7 @@ def generate_data(
             node_index=node_index,
         )
 
-    nlp.dynamics_type = Dynamics(
+    nlp.dynamics_type = DynamicsOptions(
         DynamicsFcn.MUSCLE_DRIVEN,
     )
     dynamics_func = Function(
@@ -282,9 +282,9 @@ def prepare_ocp(
         raise RuntimeError("Wrong choice of kin_data_to_track")
 
     # Dynamics
-    dynamics = DynamicsList()
+    dynamics = DynamicsOptionsList()
     dynamics.add(
-        Dynamics(
+        DynamicsOptions(
             ode_solver=ode_solver,
             expand_dynamics=expand_dynamics,
             phase_dynamics=phase_dynamics,

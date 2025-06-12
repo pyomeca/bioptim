@@ -8,7 +8,7 @@ from bioptim import (
     BiorbdModel,
     ConstraintList,
     ConstraintFcn,
-    DynamicsList,
+    DynamicsOptionsList,
     InitialGuessList,
     BoundsList,
     Node,
@@ -413,11 +413,11 @@ def partial_ocp_parameters(n_phases, phase_dynamics):
     time_min = [1, 3, 0.1]
     time_max = [2, 4, 0.8]
     tau_min, tau_max, tau_init = -100, 100, 0
-    dynamics = DynamicsList()
-    dynamics.add(Dynamics(phase_dynamics=phase_dynamics))
+    dynamics = DynamicsOptionsList()
+    dynamics.add(DynamicsOptions(phase_dynamics=phase_dynamics))
     if n_phases > 1:
-        dynamics.add(Dynamics(phase_dynamics=phase_dynamics))
-        dynamics.add(Dynamics(phase_dynamics=phase_dynamics))
+        dynamics.add(DynamicsOptions(phase_dynamics=phase_dynamics))
+        dynamics.add(DynamicsOptions(phase_dynamics=phase_dynamics))
 
     x_bounds = BoundsList()
     x_bounds["q"] = bio_model[0].bounds_from_ranges("q")

@@ -13,7 +13,7 @@ from bioptim import (
     BiMappingList,
     BoundsList,
     ConstraintList,
-    DynamicsList,
+    DynamicsOptionsList,
     Dynamics,
     HolonomicBiorbdModel,
     HolonomicConstraintsFcn,
@@ -141,9 +141,9 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1, min_bound=0.5, max_bound=0.6)
 
     # Dynamics
-    dynamics = DynamicsList()
+    dynamics = DynamicsOptionsList()
     dynamics.add(
-        Dynamics(
+        DynamicsOptions(
             ode_solver=ode_solver,
             expand_dynamics=expand_dynamics,
         )

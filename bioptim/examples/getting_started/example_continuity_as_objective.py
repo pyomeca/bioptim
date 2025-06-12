@@ -22,7 +22,7 @@ from bioptim import (
     TorqueBiorbdModel,
     OptimalControlProgram,
     Node,
-    Dynamics,
+    DynamicsOptions,
     BoundsList,
     InterpolationType,
     InitialGuessList,
@@ -106,7 +106,7 @@ def prepare_ocp_first_pass(
         objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=100 / n_shooting)
 
     # Dynamics
-    dynamics = Dynamics(
+    dynamics = DynamicsOptions(
         state_continuity_weight=state_continuity_weight,
         ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
@@ -208,7 +208,7 @@ def prepare_ocp_second_pass(
         objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=100 / n_shooting)
 
     # Dynamics
-    dynamics = Dynamics(ode_solver=ode_solver)
+    dynamics = DynamicsOptions(ode_solver=ode_solver)
 
     # Path constraint
     x_bounds = BoundsList()

@@ -15,7 +15,7 @@ from casadi import MX, horzcat, DM
 from bioptim import (
     TorqueBiorbdModel,
     OptimalControlProgram,
-    DynamicsList,
+    DynamicsOptionsList,
     BoundsList,
     ObjectiveList,
     ObjectiveFcn,
@@ -103,7 +103,7 @@ def prepare_ocp_to_track(
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=-1, quadratic=True)
 
     # Dynamics
-    dynamics = DynamicsList()
+    dynamics = DynamicsOptionsList()
     dynamics.add(ode_solver=ode_solver)
 
     # Path constraint
@@ -167,7 +167,7 @@ def prepare_optimal_estimation(
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1, target=time_ref, quadratic=True)
 
     # Dynamics
-    dynamics = DynamicsList()
+    dynamics = DynamicsOptionsList()
     dynamics.add(ode_solver=ode_solver)
 
     # Path constraint

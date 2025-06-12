@@ -125,7 +125,7 @@ def prepare_ocp(
 
     # Dynamics
     expand = not isinstance(ode_solver, OdeSolver.IRK)
-    dynamics = Dynamics(
+    dynamics = DynamicsOptions(
         ode_solver=ode_solver,
         expand_dynamics=expand,
         phase_dynamics=phase_dynamics,

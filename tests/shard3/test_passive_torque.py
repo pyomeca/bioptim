@@ -45,7 +45,7 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, phase_dynami
     nlp.model = TorqueBiorbdModel(
         TestUtils.bioptim_folder() + model_filename,
     )
-    nlp.dynamics_type = Dynamics(
+    nlp.dynamics_type = DynamicsOptions(
         phase_dynamics=phase_dynamics,
     )
 
@@ -109,7 +109,7 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx, p
 
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = TorqueDerivativeBiorbdModel(TestUtils.bioptim_folder() + model_filename)
-    nlp.dynamics_type = Dynamics(
+    nlp.dynamics_type = DynamicsOptions(
         phase_dynamics=phase_dynamics,
     )
 
@@ -204,7 +204,7 @@ def test_torque_activation_driven_with_passive_torque(with_passive_torque, with_
     nlp.model = TorqueActivationBiorbdModel(
         TestUtils.bioptim_folder() + model_filename, with_residual_torque=with_residual_torque
     )
-    nlp.dynamics_type = Dynamics(
+    nlp.dynamics_type = DynamicsOptions(
         phase_dynamics=phase_dynamics,
     )
 
@@ -319,7 +319,7 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, cx, phase_dynami
 
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = MusclesBiorbdModel(TestUtils.bioptim_folder() + model_filename)
-    nlp.dynamics_type = Dynamics(
+    nlp.dynamics_type = DynamicsOptions(
         phase_dynamics=phase_dynamics,
     )
 

@@ -127,7 +127,7 @@ def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
         contact_types=[ContactType.RIGID_EXPLICIT] if with_contact else (),
         external_force_set=external_forces,
     )
-    nlp.dynamics_type = Dynamics(
+    nlp.dynamics_type = DynamicsOptions(
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
         numerical_data_timeseries=numerical_time_series,
@@ -227,7 +227,7 @@ def test_torque_driven_soft_contacts_dynamics(contact_types, cx, phase_dynamics)
         + "/examples/muscle_driven_with_contact/models/2segments_4dof_2soft_contacts_1muscle.bioMod",
         contact_types=contact_types,
     )
-    nlp.dynamics_type = Dynamics(
+    nlp.dynamics_type = DynamicsOptions(
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
     )
@@ -306,7 +306,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
         contact_types=[ContactType.RIGID_EXPLICIT] if with_contact else (),
         external_force_set=external_forces,
     )
-    nlp.dynamics_type = Dynamics(
+    nlp.dynamics_type = DynamicsOptions(
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
         numerical_data_timeseries=numerical_timeseries,
@@ -449,7 +449,7 @@ def test_torque_derivative_driven_soft_contacts_dynamics(contact_types, cx, phas
         + "/examples/muscle_driven_with_contact/models/2segments_4dof_2soft_contacts_1muscle.bioMod",
         contact_types=contact_types,
     )
-    nlp.dynamics_type = Dynamics(
+    nlp.dynamics_type = DynamicsOptions(
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
     )
@@ -535,7 +535,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
         contact_types=[ContactType.RIGID_EXPLICIT] if with_contact else (),
         external_force_set=external_forces,
     )
-    nlp.dynamics_type = Dynamics(
+    nlp.dynamics_type = DynamicsOptions(
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
         numerical_data_timeseries=numerical_timeseries,
@@ -671,7 +671,7 @@ def test_torque_activation_driven_with_residual_torque(
         model_filename,
         external_force_set=external_forces,
     )
-    nlp.dynamics_type = Dynamics(
+    nlp.dynamics_type = DynamicsOptions(
         with_residual_torque=with_residual_torque,
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
@@ -785,7 +785,7 @@ def test_torque_driven_free_floating_base(cx, phase_dynamics):
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
-    nlp.dynamics_type = Dynamics(expand_dynamics=True, phase_dynamics=phase_dynamics)
+    nlp.dynamics_type = DynamicsOptions(expand_dynamics=True, phase_dynamics=phase_dynamics)
 
     nlp.ns = N_SHOOTING
     nlp.cx = cx
@@ -862,7 +862,7 @@ def test_muscle_driven(with_excitations, with_contact, with_residual_torque, wit
         with_residual_torque=with_residual_torque,
         with_excitations=with_excitations,
     )
-    nlp.dynamics_type = Dynamics(
+    nlp.dynamics_type = DynamicsOptions(
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
         numerical_data_timeseries=numerical_timeseries,
@@ -1035,7 +1035,7 @@ def test_joints_acceleration_driven(cx, phase_dynamics):
     nlp.model = JointAccelerationBiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/double_pendulum.bioMod"
     )
-    nlp.dynamics_type = Dynamics(
+    nlp.dynamics_type = DynamicsOptions(
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
     )
@@ -1112,7 +1112,7 @@ def test_custom_dynamics(contact_types, phase_dynamics):
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod",
         contact_types=contact_types,
     )
-    nlp.dynamics_type = Dynamics(
+    nlp.dynamics_type = DynamicsOptions(
         configure,
         dynamic_function=custom_dynamic,
         expand_dynamics=True,

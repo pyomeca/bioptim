@@ -12,7 +12,7 @@ import platform
 from bioptim import (
     JointAccelerationBiorbdModel,
     OptimalControlProgram,
-    Dynamics,
+    DynamicsOptions,
     BoundsList,
     InitialGuessList,
     ObjectiveFcn,
@@ -61,8 +61,8 @@ def prepare_ocp(
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="qddot_joints")
 
-    # Dynamics
-    dynamics = Dynamics(ode_solver=ode_solver)
+    # DynamicsOptions
+    dynamics = DynamicsOptions(ode_solver=ode_solver)
 
     # Path constraint
     x_bounds = BoundsList()

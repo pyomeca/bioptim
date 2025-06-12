@@ -8,7 +8,7 @@ from bioptim import (
     ConstraintList,
     ControlType,
     DynamicsEvaluation,
-    DynamicsList,
+    DynamicsOptionsList,
     InitialGuessList,
     InterpolationType,
     Node,
@@ -281,7 +281,7 @@ def prepare_ocp(
     for i in range(n_stim):
         constraints.add(CustomConstraint.equal_to_first_pulse_interval_time, node=Node.START, target=0, phase=i)
 
-    dynamics = DynamicsList()
+    dynamics = DynamicsOptionsList()
     for i in range(n_stim):
         dynamics.add(
             expand_dynamics=True,

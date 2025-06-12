@@ -92,7 +92,7 @@ def prepare_ocp(
     constraints.add(custom_constraint_min_tau, phase=0, node=Node.ALL_SHOOTING, min_bound=tau_min, max_bound=0)
 
     # Dynamics
-    dynamics = Dynamics()
+    dynamics = DynamicsOptions()
 
     # Path constraint
     x_bounds = BoundsList()

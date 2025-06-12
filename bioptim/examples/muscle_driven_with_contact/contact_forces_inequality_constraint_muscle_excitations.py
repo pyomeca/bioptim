@@ -47,7 +47,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1)
 
     # Dynamics
-    dynamics = Dynamics(
+    dynamics = DynamicsOptions(
         ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
     )

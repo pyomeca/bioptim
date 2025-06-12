@@ -11,7 +11,7 @@ from bioptim import (
     OptimalControlProgram,
     ObjectiveList,
     ObjectiveFcn,
-    Dynamics,
+    DynamicsOptions,
     BoundsList,
     InitialGuessList,
     Solver,
@@ -44,8 +44,8 @@ def prepare_ocp(
         ObjectiveFcn.Mayer.SUPERIMPOSE_MARKERS, weight=100000, first_marker="target", second_marker="COM_hand"
     )
 
-    # Dynamics
-    dynamics = Dynamics(expand_dynamics=expand_dynamics)
+    # DynamicsOptions
+    dynamics = DynamicsOptions(expand_dynamics=expand_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()

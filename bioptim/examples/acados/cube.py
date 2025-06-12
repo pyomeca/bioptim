@@ -7,9 +7,9 @@ ACADOS and Ipotpt.
 
 import numpy as np
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     OptimalControlProgram,
-    Dynamics,
+    DynamicsOptions,
     ObjectiveFcn,
     ObjectiveList,
     BoundsList,
@@ -22,8 +22,8 @@ def prepare_ocp(biorbd_model_path, n_shooting, tf, ode_solver=OdeSolver.RK4(), u
     # BioModel path
     bio_model = TorqueBiorbdModel(biorbd_model_path)
 
-    # Dynamics
-    dynamics = Dynamics(ode_solver=ode_solver, expand_dynamics=expand_dynamics)
+    # DynamicsOptions
+    dynamics = DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()

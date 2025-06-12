@@ -44,7 +44,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_COM_POSITION, weight=100)
 
     # Dynamics
-    dynamics = Dynamics(
+    dynamics = DynamicsOptions(
         phase_dynamics=PhaseDynamics.ONE_PER_NODE,
         ode_solver=OdeSolver.COLLOCATION(polynomial_degree=3, defects_type=DefectType.TAU_EQUALS_INVERSE_DYNAMICS),
     )

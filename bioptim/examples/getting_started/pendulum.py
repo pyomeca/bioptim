@@ -11,7 +11,7 @@ appreciate it). Finally, once it finished optimizing, it animates the model usin
 
 from bioptim import (
     OptimalControlProgram,
-    Dynamics,
+    DynamicsOptions,
     BoundsList,
     InitialGuessList,
     ObjectiveFcn,
@@ -79,8 +79,8 @@ def prepare_ocp(
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
-    # Dynamics
-    dynamics = Dynamics(
+    # DynamicsOptions
+    dynamics = DynamicsOptions(
         ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,

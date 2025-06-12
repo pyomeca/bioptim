@@ -54,10 +54,10 @@ ACADOS
 # --- Managing the dynamics --- #
 ConfigureProblem
     Dynamics configuration for the most common ocp
-Dynamics
+DynamicsOptions
     A placeholder for the chosen dynamics by the user
-DynamicsList
-    A list of Dynamics if more than one is required, typically when more than one phases are declared
+DynamicsOptionsList
+    A list of DynamicsOptions if more than one is required, typically when more than one phases are declared
 DynamicsEvaluation
     A placeholder for the dynamics evaluation in explicit dxdt or in implicit defects
 
@@ -156,7 +156,7 @@ multiphase can be found in 'examples/torque_driven_ocp'. For ACADOS specific exa
 
 """
 
-from .dynamics.configure_problem import ConfigureProblem, DynamicsList, Dynamics
+from .dynamics.configure_problem import ConfigureProblem, DynamicsOptionsList, DynamicsOptions
 from .dynamics.configure_variables import AutoConfigure, States, Controls, AlgebraicStates, ConfigureVariables
 from .dynamics.dynamics_evaluation import DynamicsEvaluation
 from .dynamics.dynamics_functions import DynamicsFunctions

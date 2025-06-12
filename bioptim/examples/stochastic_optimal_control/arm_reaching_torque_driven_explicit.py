@@ -25,7 +25,7 @@ from bioptim import (
     DynamicsFunctions,
     ConfigureProblem,
     ConfigureVariables,
-    DynamicsList,
+    DynamicsOptionsList,
     BoundsList,
     InterpolationType,
     SocpType,
@@ -470,7 +470,7 @@ def prepare_socp(
     )
 
     # Dynamics
-    dynamics = DynamicsList()
+    dynamics = DynamicsOptionsList()
     dynamics.add(
         configure_stochastic_optimal_control_problem,
         dynamic_function=stochastic_forward_dynamics,

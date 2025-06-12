@@ -20,7 +20,7 @@ from bioptim import (
     ObjectiveList,
     OptimalControlProgram,
     NonLinearProgram,
-    DynamicsList,
+    DynamicsOptionsList,
     Dynamics,
     InterpolationType,
     SocpType,
@@ -465,7 +465,7 @@ def prepare_socp(
     )
 
     # Dynamics
-    dynamics = Dynamics(
+    dynamics = DynamicsOptions(
         phase_dynamics=phase_dynamics,
         expand_dynamics=expand_dynamics,
     )

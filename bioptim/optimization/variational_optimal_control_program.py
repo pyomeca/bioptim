@@ -6,7 +6,7 @@ import numpy as np
 from casadi import Function, vertcat
 
 from .optimal_control_program import OptimalControlProgram
-from ..dynamics.configure_problem import ConfigureProblem, DynamicsList
+from ..dynamics.configure_problem import ConfigureProblem, DynamicsOptionsList
 from ..dynamics.dynamics_evaluation import DynamicsEvaluation
 from ..dynamics.ode_solvers import OdeSolver
 from ..limits.constraints import ParameterConstraintList
@@ -78,7 +78,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         n_qdot = n_q = self.bio_model.nb_q
 
         # Dynamics
-        dynamics = DynamicsList()
+        dynamics = DynamicsOptionsList()
         expand = True
         dynamics.add(
             self.configure_torque_driven,

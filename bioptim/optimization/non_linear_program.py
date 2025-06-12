@@ -44,7 +44,7 @@ class NonLinearProgram:
         The extra dynamic function used during the current phase dxdt = f(x,u,p)
     implicit_dynamics_func: Callable
         The implicit dynamic function used during the current phase f(x,u,p,xdot) = 0
-    dynamics_type: Dynamics
+    dynamics_type: DynamicsOptions
         The dynamic option declared by the user for the current phase
     g: list[list[Constraint]]
         All the constraints at each of the node of the phase

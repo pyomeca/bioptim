@@ -13,8 +13,8 @@ from bioptim import (
     TorqueBiorbdModel,
     Node,
     OptimalControlProgram,
-    DynamicsList,
-    Dynamics,
+    DynamicsOptionsList,
+    DynamicsOptions,
     ObjectiveFcn,
     ObjectiveList,
     ConstraintFcn,
@@ -112,12 +112,12 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=2)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=3)
 
-    # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(Dynamics(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics))
-    dynamics.add(Dynamics(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics))
-    dynamics.add(Dynamics(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics))
-    dynamics.add(Dynamics(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics))
+    # DynamicsOptions
+    dynamics = DynamicsOptionsList()
+    dynamics.add(DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics))
+    dynamics.add(DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics))
+    dynamics.add(DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics))
+    dynamics.add(DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics))
 
     # Constraints
     constraints = ConstraintList()

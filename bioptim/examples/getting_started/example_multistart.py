@@ -10,7 +10,7 @@ import shutil
 from bioptim import (
     TorqueBiorbdModel,
     OptimalControlProgram,
-    Dynamics,
+    DynamicsOptions,
     BoundsList,
     InitialGuessList,
     ObjectiveFcn,
@@ -60,8 +60,8 @@ def prepare_ocp(
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
-    # Dynamics
-    dynamics = Dynamics(phase_dynamics=phase_dynamics)
+    # DynamicsOptions
+    dynamics = DynamicsOptions(phase_dynamics=phase_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()

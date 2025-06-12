@@ -17,10 +17,10 @@ InterpolationType.CUSTOM: Provide a user-defined interpolation function
 
 import numpy as np
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     Node,
     OptimalControlProgram,
-    Dynamics,
+    DynamicsOptions,
     Objective,
     ObjectiveFcn,
     ConstraintList,
@@ -176,8 +176,8 @@ def prepare_ocp(
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
-    # Dynamics
-    dynamics = Dynamics(expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    # DynamicsOptions
+    dynamics = DynamicsOptions(expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     # Constraints
     constraints = ConstraintList()

@@ -13,7 +13,7 @@ from bioptim import (
     ControlType,
     DynamicsEvaluation,
     DynamicsFunctions,
-    DynamicsList,
+    DynamicsOptionsList,
     InitialGuessList,
     ObjectiveFcn,
     ObjectiveList,
@@ -85,7 +85,7 @@ def prepare_ocp_state_as_time(
             )
 
     # Dynamics
-    dynamics = DynamicsList()
+    dynamics = DynamicsOptionsList()
     for i in range(len(bio_model)):
         dynamics.add(
             phase=i,

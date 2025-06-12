@@ -16,7 +16,7 @@ from casadi import MX, horzcat, DM
 from bioptim import (
     TorqueBiorbdModel,
     OptimalControlProgram,
-    DynamicsList,
+    DynamicsOptionsList,
     BoundsList,
     ObjectiveList,
     ObjectiveFcn,
@@ -115,7 +115,7 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.TRACK_CONTROL, key="tau", target=tau_ref)
 
     # Dynamics
-    dynamics = DynamicsList()
+    dynamics = DynamicsOptionsList()
     dynamics.add(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
     )
 

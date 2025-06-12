@@ -43,7 +43,7 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1e-6)
 
     # Dynamics
-    dynamics = Dynamics(expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    dynamics = DynamicsOptions(expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()

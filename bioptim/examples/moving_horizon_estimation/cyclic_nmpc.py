@@ -42,7 +42,7 @@ def prepare_nmpc(
     expand_dynamics=True,
 ):
     model = BiorbdModel(model_path)
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    dynamics = DynamicsOptions(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     x_bound = BoundsList()
     x_bound["q"] = model.bounds_from_ranges("q")

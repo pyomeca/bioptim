@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 
 from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVectorHelper
-from ..dynamics.configure_problem import DynamicsList, Dynamics, ConfigureProblem
+from ..dynamics.configure_problem import DynamicsOptionsList, DynamicsOptions, ConfigureProblem
 from ..gui.check_conditioning import check_conditioning
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..gui.ipopt_output_plot import SaveIterationsInfo
@@ -141,7 +141,7 @@ class OptimalControlProgram:
         bio_model: list | tuple | DynamicalModel,
         n_shooting: int | list | tuple,
         phase_time: int | float | list | tuple,
-        dynamics: Dynamics | DynamicsList = None,
+        dynamics: DynamicsOptions | DynamicsOptionsList = None,
         x_bounds: BoundsList = None,
         u_bounds: BoundsList = None,
         a_bounds: BoundsList = None,
@@ -178,7 +178,7 @@ class OptimalControlProgram:
             The number of shooting point of the phases
         phase_time: int | float | list | tuple
             The phase time of the phases
-        dynamics: Dynamics | DynamicsList
+        dynamics: Dynamics | DynamicsOptionsList
             The dynamics of the phases
         x_init: InitialGuess | InitialGuessList
             The initial guesses for the states
@@ -497,15 +497,15 @@ class OptimalControlProgram:
             raise RuntimeError("use_sx should be a bool")
 
         if dynamics is None:
-            dynamics = DynamicsList()
+            dynamics = DynamicsOptionsList()
             for i_phase in range (self.n_phases):
-                dynamics.add(Dynamics())
+                dynamics.add(DynamicsOptions())
         if isinstance(dynamics, Dynamics):
             tp = dynamics
-            dynamics = DynamicsList()
+            dynamics = DynamicsOptionsList()
             dynamics.add(tp)
-        if not isinstance(dynamics, DynamicsList):
-            raise ValueError("dynamics must be of type DynamicsList or Dynamics")
+        if not isinstance(dynamics, DynamicsOptionsList):
+            raise ValueError("dynamics must be of type DynamicsOptionsList or Dynamics")
 
         # Type of CasADi graph
         self.cx = SX if use_sx else MX

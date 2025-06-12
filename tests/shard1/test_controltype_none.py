@@ -13,7 +13,7 @@ from bioptim import (
     ConstraintFcn,
     ConstraintList,
     DynamicsEvaluation,
-    DynamicsList,
+    DynamicsOptionsList,
     Dynamics,
     ObjectiveFcn,
     ObjectiveList,
@@ -185,10 +185,10 @@ def prepare_ocp(
     final_time = [0.01 for i in range(n_phase)]  # Set the final time for all my n phases
 
     # Creates the system's dynamic for my n phases
-    dynamics = DynamicsList()
+    dynamics = DynamicsOptionsList()
     for i in range(n_phase):
         dynamics.add(
-            Dynamics(
+            DynamicsOptions(
                 phase=i,
                 expand_dynamics=True,
                 ode_solver=ode_solver,

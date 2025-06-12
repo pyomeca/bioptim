@@ -14,7 +14,7 @@ from bioptim import (
     ControlType,
     DynamicsEvaluation,
     DynamicsFunctions,
-    DynamicsList,
+    DynamicsOptionsList,
     InitialGuessList,
     ObjectiveFcn,
     ObjectiveList,
@@ -147,7 +147,7 @@ def prepare_ocp(
             )
 
     # Dynamics
-    dynamics = DynamicsList()
+    dynamics = DynamicsOptionsList()
     expand = not isinstance(ode_solver, OdeSolver.IRK)
     for i in range(len(bio_model)):
         dynamics.add(

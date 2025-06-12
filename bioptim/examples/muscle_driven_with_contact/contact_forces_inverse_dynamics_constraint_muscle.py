@@ -17,7 +17,7 @@ from bioptim import (
     ConstraintFcn,
     ObjectiveList,
     ObjectiveFcn,
-    DynamicsList,
+    DynamicsOptionsList,
     Dynamics,
     BoundsList,
     InitialGuessList,
@@ -90,7 +90,7 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_COM_POSITION, weight=100)
 
     # Dynamics
-    dynamics = Dynamics(
+    dynamics = DynamicsOptions(
         expand_dynamics=expand_dynamics,
         phase_dynamics=PhaseDynamics.ONE_PER_NODE,
         ode_solver=OdeSolver.COLLOCATION(polynomial_degree=3, defects_type=defects_type),

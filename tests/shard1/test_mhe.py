@@ -104,7 +104,7 @@ def test_mhe_redim_xbounds_and_init(phase_dynamics):
 
     mhe = MovingHorizonEstimator(
         bio_model,
-        Dynamics(phase_dynamics=phase_dynamics),
+        DynamicsOptions(phase_dynamics=phase_dynamics),
         window_len,
         window_duration,
         x_bounds=x_bounds,
@@ -146,7 +146,7 @@ def test_mhe_redim_xbounds_not_implemented(phase_dynamics):
 
     mhe = MovingHorizonEstimator(
         bio_model,
-        Dynamics(phase_dynamics=phase_dynamics),
+        DynamicsOptions(phase_dynamics=phase_dynamics),
         window_len,
         window_duration,
         x_bounds=x_bounds,

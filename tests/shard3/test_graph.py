@@ -9,7 +9,7 @@ from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
     Dynamics,
-    DynamicsList,
+    DynamicsOptionsList,
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,
@@ -91,11 +91,11 @@ def prepare_ocp_phase_transitions(
         )
 
     # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(Dynamics(expand_dynamics=True, phase_dynamics=phase_dynamics))
-    dynamics.add(Dynamics(expand_dynamics=True, phase_dynamics=phase_dynamics))
-    dynamics.add(Dynamics(expand_dynamics=True, phase_dynamics=phase_dynamics))
-    dynamics.add(Dynamics(expand_dynamics=True, phase_dynamics=phase_dynamics))
+    dynamics = DynamicsOptionsList()
+    dynamics.add(DynamicsOptions(expand_dynamics=True, phase_dynamics=phase_dynamics))
+    dynamics.add(DynamicsOptions(expand_dynamics=True, phase_dynamics=phase_dynamics))
+    dynamics.add(DynamicsOptions(expand_dynamics=True, phase_dynamics=phase_dynamics))
+    dynamics.add(DynamicsOptions(expand_dynamics=True, phase_dynamics=phase_dynamics))
 
     # Constraints
     constraints = ConstraintList()
@@ -320,7 +320,7 @@ def prepare_ocp_parameters(
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=10)
 
     # Dynamics
-    dynamics = Dynamics(ode_solver=ode_solver, expand_dynamics=True, phase_dynamics=phase_dynamics)
+    dynamics = DynamicsOptions(ode_solver=ode_solver, expand_dynamics=True, phase_dynamics=phase_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -413,7 +413,7 @@ def prepare_ocp_custom_objectives(
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_MARKERS, list_index=7, index=[1, 2], target=target)
 
     # Dynamics
-    dynamics = Dynamics(ode_solver=ode_solver, expand_dynamics=True, phase_dynamics=phase_dynamics)
+    dynamics = DynamicsOptions(ode_solver=ode_solver, expand_dynamics=True, phase_dynamics=phase_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()

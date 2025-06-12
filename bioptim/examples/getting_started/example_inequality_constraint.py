@@ -22,7 +22,7 @@ from bioptim import (
     ConstraintFcn,
     ObjectiveList,
     ObjectiveFcn,
-    DynamicsList,
+    DynamicsOptionsList,
     BiMappingList,
     BoundsList,
     InitialGuessList,
@@ -31,7 +31,7 @@ from bioptim import (
     Solver,
     PhaseDynamics,
     ContactType,
-    Dynamics,
+    DynamicsOptions,
 )
 
 
@@ -91,9 +91,9 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1)
 
     # Dynamics
-    dynamics = DynamicsList()
+    dynamics = DynamicsOptionsList()
     dynamics.add(
-        Dynamics(
+        DynamicsOptions(
             ode_solver=ode_solver,
             expand_dynamics=expand_dynamics,
             phase_dynamics=phase_dynamics,

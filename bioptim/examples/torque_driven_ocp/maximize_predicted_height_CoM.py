@@ -96,7 +96,7 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1 / 100)
 
     # Dynamics
-    dynamics = Dynamics(
+    dynamics = DynamicsOptions(
         ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,

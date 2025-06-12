@@ -15,8 +15,8 @@ from bioptim import (
     BiorbdModel,
     Node,
     OptimalControlProgram,
-    DynamicsList,
-    Dynamics,
+    DynamicsOptionsList,
+    DynamicsOptions,
     DynamicsFunctions,
     Objective,
     ObjectiveFcn,
@@ -151,11 +151,11 @@ def prepare_ocp(
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, multi_thread=False)
 
-    # Dynamics
-    dynamics = DynamicsList()
+    # DynamicsOptions
+    dynamics = DynamicsOptionsList()
     if problem_type_custom:
         dynamics.add(
-            Dynamics(
+            DynamicsOptions(
                 my_additional_factor=1,
                 ode_solver=ode_solver,
                 expand_dynamics=expand_dynamics,
@@ -164,7 +164,7 @@ def prepare_ocp(
         )
     else:
         dynamics.add(
-            Dynamics(
+            DynamicsOptions(
                 ode_solver=ode_solver,
                 expand_dynamics=expand_dynamics,
                 phase_dynamics=phase_dynamics,

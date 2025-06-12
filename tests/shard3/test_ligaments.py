@@ -45,7 +45,7 @@ def test_torque_driven_with_ligament(with_ligament, cx, phase_dynamics):
 
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = TorqueBiorbdModel(TestUtils.bioptim_folder() + model_filename)
-    nlp.dynamics_type = Dynamics()
+    nlp.dynamics_type = DynamicsOptions()
 
     nlp.ns = 5
     nlp.cx = cx
@@ -108,7 +108,7 @@ def test_torque_derivative_driven_with_ligament(with_ligament, cx, phase_dynamic
 
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = TorqueDerivativeBiorbdModel(TestUtils.bioptim_folder() + model_filename)
-    nlp.dynamics_type = Dynamics()
+    nlp.dynamics_type = DynamicsOptions()
 
     nlp.ns = 5
     nlp.cx = cx
@@ -172,7 +172,7 @@ def test_torque_activation_driven_with_ligament(with_ligament, cx, phase_dynamic
 
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = TorqueActivationBiorbdModel(TestUtils.bioptim_folder() + model_filename)
-    nlp.dynamics_type = Dynamics()
+    nlp.dynamics_type = DynamicsOptions()
 
     nlp.ns = 5
     nlp.cx = cx
@@ -234,7 +234,7 @@ def test_muscle_driven_with_ligament(with_ligament, cx, phase_dynamics):
 
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = MusclesBiorbdModel(TestUtils.bioptim_folder() + model_filename)
-    nlp.dynamics_type = Dynamics()
+    nlp.dynamics_type = DynamicsOptions()
 
     nlp.ns = 5
     nlp.cx = cx

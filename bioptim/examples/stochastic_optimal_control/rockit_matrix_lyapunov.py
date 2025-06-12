@@ -115,7 +115,7 @@ def prepare_socp(
 
     # Dynamics
     ode_solver = OdeSolver.COLLOCATION(polynomial_degree=socp_type.polynomial_degree, method=socp_type.method)
-    dynamics = Dynamics(phase_dynamics=phase_dynamics, expand_dynamics=expand_dynamics, ode_solver=ode_solver)
+    dynamics = DynamicsOptions(phase_dynamics=phase_dynamics, expand_dynamics=expand_dynamics, ode_solver=ode_solver)
 
     if is_stochastic:
 

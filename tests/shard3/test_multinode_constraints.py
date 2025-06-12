@@ -9,7 +9,7 @@ from bioptim import (
     Node,
     OdeSolver,
     OptimalControlProgram,
-    DynamicsList,
+    DynamicsOptionsList,
     ObjectiveList,
     BoundsList,
     PhaseDynamics,
@@ -33,10 +33,10 @@ def prepare_ocp(biorbd_model_path, phase_1, phase_2, phase_dynamics) -> OptimalC
     objective_functions = ObjectiveList()
 
     # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(Dynamics(ode_solver=OdeSolver.RK4(), expand_dynamics=True, phase_dynamics=phase_dynamics))
-    dynamics.add(Dynamics(ode_solver=OdeSolver.RK4(), expand_dynamics=True, phase_dynamics=phase_dynamics))
-    dynamics.add(Dynamics(ode_solver=OdeSolver.RK4(), expand_dynamics=True, phase_dynamics=phase_dynamics))
+    dynamics = DynamicsOptionsList()
+    dynamics.add(DynamicsOptions(ode_solver=OdeSolver.RK4(), expand_dynamics=True, phase_dynamics=phase_dynamics))
+    dynamics.add(DynamicsOptions(ode_solver=OdeSolver.RK4(), expand_dynamics=True, phase_dynamics=phase_dynamics))
+    dynamics.add(DynamicsOptions(ode_solver=OdeSolver.RK4(), expand_dynamics=True, phase_dynamics=phase_dynamics))
 
     multinode_constraints = MultinodeConstraintList()
     # hard constraint

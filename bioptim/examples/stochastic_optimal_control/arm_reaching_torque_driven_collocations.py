@@ -16,7 +16,7 @@ from bioptim import (
     StochasticTorqueBiorbdModel,
     ObjectiveList,
     NonLinearProgram,
-    DynamicsList,
+    DynamicsOptionsList,
     BoundsList,
     InterpolationType,
     SocpType,
@@ -185,7 +185,7 @@ def prepare_socp(
     )
 
     # Dynamics
-    dynamics = Dynamics(expand_dynamics=True)
+    dynamics = DynamicsOptions(expand_dynamics=True)
 
     x_bounds = BoundsList()
     x_bounds.add("q", min_bound=[-cas.inf] * n_q, max_bound=[cas.inf] * n_q, interpolation=InterpolationType.CONSTANT)

@@ -20,7 +20,7 @@ from bioptim import (
     OptimalControlProgram,
     NonLinearProgram,
     BiMapping,
-    DynamicsList,
+    DynamicsOptionsList,
     DynamicsFcn,
     DynamicsFunctions,
     ObjectiveList,
@@ -164,7 +164,7 @@ def generate_data(
     symbolic_states = vertcat(*(symbolic_q, symbolic_qdot))
     symbolic_controls = vertcat(*(symbolic_tau, symbolic_mus)) if use_residual_torque else vertcat(symbolic_mus)
 
-    nlp.dynamics_type = Dynamics()
+    nlp.dynamics_type = DynamicsOptions()
 
     dynamics_func = Function(
         "ForwardDyn",
@@ -280,9 +280,9 @@ def prepare_ocp(
         raise RuntimeError("Wrong choice of kin_data_to_track")
 
     # Dynamics
-    dynamics = DynamicsList()
+    dynamics = DynamicsOptionsList()
     dynamics.add(
-        Dynamics(
+        DynamicsOptions(
             ode_solver=ode_solver,
             expand_dynamics=expand_dynamics,
             phase_dynamics=phase_dynamics,

@@ -49,7 +49,7 @@ def prepare_single_shooting(
     bio_model = BiorbdModel(biorbd_model_path, contact_types=[ContactType.SOFT_EXPLICIT])
 
     # Dynamics
-    dynamics = Dynamics(
+    dynamics = DynamicsOptions(
         DynamicsFcn.TORQUE_DRIVEN,
         ode_solver=ode_solver,
     )
@@ -145,7 +145,7 @@ def prepare_ocp(
     )
 
     # Dynamics
-    dynamics = Dynamics(
+    dynamics = DynamicsOptions(
         DynamicsFcn.TORQUE_DRIVEN,
         ode_solver=ode_solver,
         phase_dynamics=phase_dynamics,

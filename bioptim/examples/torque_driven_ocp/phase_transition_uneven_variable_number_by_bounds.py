@@ -1,7 +1,7 @@
 from bioptim import (
     TorqueBiorbdModel,
     OptimalControlProgram,
-    DynamicsList,
+    DynamicsOptionsList,
     Dynamics,
     ObjectiveList,
     ConstraintList,
@@ -54,9 +54,9 @@ def prepare_ocp(
     constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, min_bound=0.3, max_bound=3, phase=1)
 
     # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(Dynamics(expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics))
-    dynamics.add(Dynamics(expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics))
+    dynamics = DynamicsOptionsList()
+    dynamics.add(DynamicsOptions(expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics))
+    dynamics.add(DynamicsOptions(expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics))
 
     # Path constraint
     x_bounds = BoundsList()

@@ -13,7 +13,7 @@ from bioptim import (
     OptimalControlProgram,
     ObjectiveList,
     ObjectiveFcn,
-    Dynamics,
+    DynamicsOptions,
     BoundsList,
     Solver,
 )
@@ -64,8 +64,8 @@ def prepare_ocp(
         ObjectiveFcn.Mayer.MINIMIZE_STATE, weight=500, key="qdot", target=target[nq:, :], multi_thread=False
     )
 
-    # Dynamics
-    dynamics = Dynamics(expand_dynamics=expand_dynamics)
+    # DynamicsOptions
+    dynamics = DynamicsOptions(expand_dynamics=expand_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()

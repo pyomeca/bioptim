@@ -14,7 +14,7 @@ from casadi import MX
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
-    Dynamics,
+    DynamicsOptions,
     BoundsList,
     InitialGuessList,
     ObjectiveFcn,
@@ -218,8 +218,8 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q", weight=1)
 
-    # Dynamics
-    dynamics = Dynamics(
+    # DynamicsOptions
+    dynamics = DynamicsOptions(
         DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
     )
 

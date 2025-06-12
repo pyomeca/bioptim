@@ -7,7 +7,7 @@ from casadi import MX
 from bioptim import (
     TorqueBiorbdModel,
     OptimalControlProgram,
-    Dynamics,
+    DynamicsOptions,
     BoundsList,
     PlotType,
     Solver,
@@ -64,8 +64,8 @@ def prepare_ocp(
 
     bio_model = TorqueBiorbdModel(biorbd_model_path)
 
-    # Dynamics
-    dynamics = Dynamics(expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    # DynamicsOptions
+    dynamics = DynamicsOptions(expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()

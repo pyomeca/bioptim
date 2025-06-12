@@ -13,7 +13,7 @@ from bioptim import (
     OptimalControlProgram,
     ObjectiveList,
     ObjectiveFcn,
-    Dynamics,
+    DynamicsOptions,
     InitialGuessList,
     OdeSolver,
     OdeSolverBase,
@@ -151,8 +151,8 @@ def prepare_ocp(
             else:
                 raise ValueError("fatigue_type not implemented")
 
-    # Dynamics
-    dynamics = Dynamics(
+    # DynamicsOptions
+    dynamics = DynamicsOptions(
         expand_dynamics=expand_dynamics,
         fatigue=fatigue_dynamics,
         ode_solver=ode_solver,

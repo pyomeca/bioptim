@@ -22,7 +22,7 @@ from bioptim import (
     StochasticTorqueBiorbdModel,
     ObjectiveList,
     NonLinearProgram,
-    DynamicsList,
+    DynamicsOptionsList,
     Dynamics,
     BoundsList,
     InterpolationType,
@@ -193,7 +193,7 @@ def prepare_socp(
     )
 
     # Dynamics
-    dynamics = Dynamics(
+    dynamics = DynamicsOptions(
         expand_dynamics=False,
         phase_dynamics=PhaseDynamics.ONE_PER_NODE,
         numerical_data_timeseries=None,

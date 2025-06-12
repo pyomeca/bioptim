@@ -80,7 +80,7 @@ def prepare_ocp(
     )
 
     # Dynamics
-    dynamics = Dynamics(
+    dynamics = DynamicsOptions(
         DynamicsFcn.TORQUE_DRIVEN,
         contact_types=contact_types,
         phase_dynamics=phase_dynamics,

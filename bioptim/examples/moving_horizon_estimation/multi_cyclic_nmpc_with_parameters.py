@@ -169,7 +169,7 @@ def prepare_nmpc(
         interpolation=InterpolationType.CONSTANT,
     )
 
-    dynamics = Dynamics(custom_configure, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    dynamics = DynamicsOptions(custom_configure, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     x_bounds = BoundsList()
     x_bounds["q"] = model.bounds_from_ranges("q")

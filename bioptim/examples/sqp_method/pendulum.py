@@ -5,9 +5,9 @@ Note that this example is there for reference and unfortunately doest not conver
 """
 
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     OptimalControlProgram,
-    Dynamics,
+    DynamicsOptions,
     BoundsList,
     ObjectiveFcn,
     Objective,
@@ -65,8 +65,8 @@ def prepare_ocp(
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
-    # Dynamics
-    dynamics = Dynamics(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    # DynamicsOptions
+    dynamics = DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()

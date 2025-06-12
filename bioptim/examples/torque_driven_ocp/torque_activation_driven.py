@@ -7,7 +7,7 @@ import platform
 from bioptim import (
     TorqueActivationBiorbdModel,
     OptimalControlProgram,
-    DynamicsList,
+    DynamicsOptionsList,
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,
@@ -64,7 +64,7 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="residual_tau", weight=100)
 
     # Dynamics
-    dynamics = DynamicsList()
+    dynamics = DynamicsOptionsList()
     dynamics.add(
         ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,

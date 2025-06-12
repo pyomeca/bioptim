@@ -60,7 +60,7 @@ def test_plot_ocp_creation():
 
     ocp = OptimalControlProgram(
         biorbd_model,
-        Dynamics(DynamicsFcn.TORQUE_DRIVEN),
+        DynamicsOptions(DynamicsFcn.TORQUE_DRIVEN),
         n_shooting,
         final_time,
         objective_functions=Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau"),
@@ -115,7 +115,7 @@ def test_plot_options():
 
     ocp = OptimalControlProgram(
         biorbd_model,
-        Dynamics(DynamicsFcn.TORQUE_DRIVEN),
+        DynamicsOptions(DynamicsFcn.TORQUE_DRIVEN),
         n_shooting,
         final_time,
         x_bounds=x_bounds,
