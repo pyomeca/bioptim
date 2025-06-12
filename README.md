@@ -25,6 +25,14 @@ The current status of `bioptim` on conda-forge is
 | --- | --- | --- | --- | --- |
 | [![Conda Recipe](https://img.shields.io/badge/recipe-bioptim-green.svg)](https://anaconda.org/conda-forge/bioptim) | [![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/bioptim.svg)](https://anaconda.org/conda-forge/bioptim) | [![Conda Version](https://img.shields.io/conda/vn/conda-forge/bioptim.svg)](https://anaconda.org/conda-forge/bioptim) | [![Conda Platforms](https://img.shields.io/conda/pn/conda-forge/bioptim.svg)](https://anaconda.org/conda-forge/bioptim) | [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/pyomeca/bioptim-tutorial/HEAD?urlpath=lab) |
 
+
+## Contact
+You can join us on Discord 
+[![Discord](https://img.shields.io/discord/1340640457327247460.svg?label=chat&logo=discord&color=7289DA)](https://discord.gg/Ux7BkdjQFW)
+or open an Issue on GitHub.
+We would be trilled to discuss with you about `bioptim` and biomechanics/optimal control in general!
+
+
 # Try bioptim
 
 Anyone can play with bioptim with a working (but slightly limited in terms of graphics) MyBinder by clicking the following badge
@@ -177,7 +185,6 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
     - [CostType](#enum-costtype)
     - [SolutionIntegrator](#enum-solutionintegrator)
     - [QuadratureRule](#enum-quadraturerule)
-    - [SoftContactDynamics](#enum-softcontactdynamics)
     - [DefectType](#enum-defecttype)
 
     </details>
@@ -857,11 +864,28 @@ To decrease RAM usage and computational time, it is recommended to store `casadi
 
 The `BiorbdModel` class implements a BioModel of the biorbd dynamics library. Some methods may not be interfaced yet; it is accessible through:
 ```python
-bio_model = BiorbdModel("path/to/model.bioMod")
+contact_types = [ContactType.RIGID_EXPLICIT]
+external_force_set = ExternalForceSetTimeSeries(nb_frames=n_shooting)
+external_force_set.add(
+    name="first_force",
+    segment="first_segment",
+    value=[],  # Insert the np.ndarray of your data at each node here
+    point_of_application=True,
+)
+bio_model = BiorbdModel("path/to/model.bioMod", contact_types, external_force_set)
 bio_model.marker_names  # for example returns the marker names
 # if the methods is not interfaced, it can be accessed through
 bio_model.model.markerNames()
 ```
+The `contact_types` is a list of contact types to consider in the dynamics equations. Possible options
+  - **[]**: No contacts are considered in the dynamics. 
+  - **[ContactType.RIGID_EXPLICIT]**: Non-acceleration contact points are included in the dynamics equation.
+  - **[ContactType.RIGID_IMPLICIT]**: Lagrange multipliers representing the contact forces are introduced as algebraic states to satisfy the non-acceleration constraint of contact points.
+  - **[ContactType.SOFT_EXPLICIT]**: The contact forces resulting from the penetration of spheres in the ground (located on the OXY plane) are included in the dynamics equation.
+  - **[ContactType.SOFT_IMPLICIT]**: Lagrange multipliers representing the contact forces resulting from the penetration of spheres in the ground (located on the OXY plane) are introduced as algebraic states to satisfy the penetration-force relationship.
+
+The `external_force_set: ExternalForceSetTimeSeries` is a list of external forces to consider in the dynamics equations.
+If you want to handle external forces as optimization variables in your custom dynamics, you can also define an `external_force_set: ExternalForceSetVariables`. 
 
 ### Class: MultiBiorbdModel
 
@@ -947,7 +971,7 @@ The `DynamicsFcn` is the one presented in the corresponding section below.
 #### The options
 The full signature of Dynamics is as follows:
 ```python
-Dynamics(dynamics_type, configure: Callable, dynamic_function: Callable, phase: int, ode_solver: OdeSolver, contact_type: list[ContactType], numerical_timeseries: dict[str, np.ndarray])
+Dynamics(dynamics_type, configure: Callable, dynamic_function: Callable, phase: int, ode_solver: OdeSolver, numerical_timeseries: dict[str, np.ndarray])
 ```
 The `dynamics_type` is the selected `DynamicsFcn`. 
 It automatically defines both `configure` and `dynamic_function`. 
@@ -956,7 +980,6 @@ If one is interested in changing the behavior of a particular `DynamicsFcn`, the
 
 The `phase` is the index of the phase the dynamics applies to. 
 The `ode_solver` is the ode to use to "integrate" the dynamics function.
-The `contact_type` is a list of contact types to consider in the dynamics equations.
 The `numerical_timeseries` is a list of numerical values (one per node) to use in the dynamics. For example, it can be used to define experimental ground reaction forces.
 The `add()` method of `DynamicsList` usually takes care of this, but it can be useful when declaring the dynamics out of order.
 
@@ -1006,29 +1029,14 @@ For more information on this, please refer to the Dynamics and DynamicsList sect
 The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as *tau*. 
 The derivative of *q* is trivially *qdot*.
 The derivative of *qdot* is given by the biorbd function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`.
-If external forces are provided, they are added to the ForwardDynamics function. Possible options:
-- **contact_type** 
-  - **[]**: No contacts are considered in the dynamics. 
-  - **[ContactType.RIGID_EXPLICIT]**: Non-acceleration contact points are included in the dynamics equation.
-  - **[ContactType.RIGID_IMPLICIT]**: Lagrange multipliers representing the contact forces are introduced as algebraic states to satisfy the non-acceleration constraint of contact points.
-  - **[ContactType.SOFT_EXPLICIT]**: The contact forces resulting from the penetration of spheres in the ground (located on the OXY plane) are included in the dynamics equation.
-  - **[ContactType.SOFT_IMPLICIT]**: Lagrange multipliers representing the contact forces resulting from the penetration of spheres in the ground (located on the OXY plane) are introduced as algebraic states to satisfy the penetration-force relationship.
-- **with_passive_torque = True:** The passive torque is taken into account in the *tau*.
-- **with_ligament = True:** The tau generated by the ligament is taken into account in the *tau*.
+If external forces are provided, they are added to the ForwardDynamics function.
 
 #### TORQUE_DERIVATIVE_DRIVEN
 The torque derivative driven defines the states (x) as *q*, *qdot*, *tau* and the controls (u) as *taudot*. 
 The derivative of *q* is trivially *qdot*.
 The derivative of *qdot* is given by the biorbd function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`.
 The derivative of *tau* is trivially *taudot*. 
-If external forces are provided, they are added to the ForwardDynamics function. Possible options:
-- **contact_type** 
-  - **[]**: No contacts are considered in the dynamics. 
-  - **[ContactType.RIGID_EXPLICIT]**: Non-acceleration contact points are included in the dynamics equation.
-  - **[ContactType.RIGID_IMPLICIT]**: Lagrange multipliers representing the contact forces are introduced as algebraic states to satisfy the non-acceleration constraint of contact points.
-  - **[ContactType.SOFT_EXPLICIT]**: The contact forces resulting from the penetration of spheres in the ground (located on the OXY plane) are included in the dynamics equation.
-  - **[ContactType.SOFT_IMPLICIT]**: Lagrange multipliers representing the contact forces resulting from the penetration of spheres in the ground (located on the OXY plane) are introduced as algebraic states to satisfy the penetration-force relationship.- **with_passive_torque = True:** The passive torque is taken into account in the *tau*.
-- **with_ligament = True:** The tau generated by the ligament is taken into account in the *tau*.
+If external forces are provided, they are added to the ForwardDynamics function.
 
 #### TORQUE_ACTIVATIONS_DRIVEN
 The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as the level of activation of *tau*. 
@@ -1038,14 +1046,7 @@ Then, the derivative of *qdot* is given by the `biorbd` function: `qddot = bio_m
 
 Please note, this dynamics is expected to be very slow to converge, if it ever does. 
 One is therefore encourage using TORQUE_DRIVEN instead, and to add the TORQUE_MAX_FROM_ACTUATORS constraint.
-This has been shown to be more efficient and allows defining minimum torque. Possible options:
-- **contact_type** 
-  - **[]**: No contacts are considered in the dynamics. 
-  - **[ContactType.RIGID_EXPLICIT]**: Non-acceleration contact points are included in the dynamics equation.
-  - **[ContactType.RIGID_IMPLICIT]**: Lagrange multipliers representing the contact forces are introduced as algebraic states to satisfy the non-acceleration constraint of contact points.
-  - **[ContactType.SOFT_EXPLICIT]**: The contact forces resulting from the penetration of spheres in the ground (located on the OXY plane) are included in the dynamics equation.
-  - **[ContactType.SOFT_IMPLICIT]**: Lagrange multipliers representing the contact forces resulting from the penetration of spheres in the ground (located on the OXY plane) are introduced as algebraic states to satisfy the penetration-force relationship.- **with_passive_torque = True:** The passive torque is taken into account in the *tau*.
-- **with_ligament = True:** The tau generated by the ligament is taken into account in the *tau*.
+This has been shown to be more efficient and allows defining minimum torque. 
 - **with_residual_torque = True:** The residual torque is taken into account in the *tau*.
 
 #### JOINTS_ACCELERATION_DRIVEN
@@ -1061,13 +1062,6 @@ The torque driven defines the states (x) as *q* and *qdot* and the controls (u) 
 The derivative of *q* is trivially *qdot*. Possible options:
 The actual *tau* is computed from the muscle activation converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(muscles_states, q, qdot)`.
 The derivative of *qdot* is given by the `biorbd` function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`. The actual *tau* is computed from the sum of *tau* to the *a* converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(a, q, qdot)`.
-- **contact_type** 
-  - **[]**: No contacts are considered in the dynamics. 
-  - **[ContactType.RIGID_EXPLICIT]**: Non-acceleration contact points are included in the dynamics equation.
-  - **[ContactType.RIGID_IMPLICIT]**: Lagrange multipliers representing the contact forces are introduced as algebraic states to satisfy the non-acceleration constraint of contact points.
-  - **[ContactType.SOFT_EXPLICIT]**: The contact forces resulting from the penetration of spheres in the ground (located on the OXY plane) are included in the dynamics equation.
-  - **[ContactType.SOFT_IMPLICIT]**: Lagrange multipliers representing the contact forces resulting from the penetration of spheres in the ground (located on the OXY plane) are introduced as algebraic states to satisfy the penetration-force relationship.- **with_passive_torque = True:** The passive torque is taken into account in the *tau*.
-- **with_ligament = True:** The tau generated by the ligament is taken into account in the *tau*.
 - **with_residual_torque = True:** The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as the *tau* and the muscle activations (*a*). 
 The actual *tau* is computed from the sum of *tau* to the muscle activation converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(a, q, qdot)`.
 - **with_excitations = True:** The torque driven defines the states (x) as *q*, *qdot* and muscle activations (*a*) and the controls (u) as the *tau* and the *EMG*.
@@ -1770,14 +1764,13 @@ The type of integration used to integrate the cost function terms of Lagrange:
 - APPROXIMATE_TRAPEZOIDAL: The integral is approximated by a trapezoidal rule using the state at the beginning of the next interval.
 - TRAPEZOIDAL: The integral is approximated by a trapezoidal rule using the state at the end of the current interval.
 
-### Enum: SoftContactDynamics
-The type of transcription of any dynamics (e.g., rigidbody_dynamics or soft_contact_dynamics):
-- ODE: soft contact dynamics is handled explicitly.
-- CONSTRAINT: an extra control *fext* is added, and it ensures respecting soft contact_dynamics on nodes through a constraint.
-
 ### Enum: DefectType
-- EXPLICIT: The defect comes from the explicit formulation.
-- IMPLICIT: The defect comes from the implicit formulation.
+- QDOT_EQUALS_SLOPE: The slope of the COLLOCATION polynomial must be equal to the qdot.
+- QDDOT_EQUALS_FORWARD_DYNAMICS: The slope of the COLLOCATION polynomial must be equal to the result from the forward dynamics.
+- TAU_EQUALS_INVERSE_DYNAMICS: The slope of the COLLOCATION polynomial is used to compute the inverse dynamics, which must be equal to the tau. 
+- CONTACT_ACCELERATION_EQUALS_ZERO: The contacts point acceleration must be null (useful for ContactType.RIGID_IMPLICIT). 
+- SOFT_CONTACT_FORCES_EQUALS_LAGRANGE_MULTIPLIERS: The soft contact forces are equal to the Lagrange multipliers (useful for ContactType.SOFT_IMPLICIT).
+- ROOT_RESIDUAL_TORQUES_EQUALS_ZERO: The root residual torques must be null (useful for DynamicsFcn.JOINT_ACCELERATION_DRIVEN).
 - NOT_APPLICABLE: The defect is not applicable.
 
 ### Enum: ContactType

@@ -111,18 +111,3 @@ marker    Seg1_contact_marker2
     parent    Seg1
     position    0 0.35 0
 endmarker
-
-passivetorque Seg0
-	type exponential
-	dof RotX
-	k1 -100
-	k2 0
-	b1 -0.002
-	b2 0
-	taueq 4
-	wmax 16
-	qmid 0
-	deltap 0
-	sv 1
-	pbeta 8
-endpassivetorque

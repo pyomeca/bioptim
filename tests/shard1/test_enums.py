@@ -12,7 +12,6 @@ from bioptim import (
     ControlType,
     SolutionIntegrator,
     QuadratureRule,
-    SoftContactDynamics,
     ContactType,
 )
 
@@ -153,24 +152,16 @@ def test_quadrature_rule():
     assert len(QuadratureRule) == 6
 
 
-def test_soft_contact_dynamics():
-    assert SoftContactDynamics.ODE.value == "ode"
-    assert SoftContactDynamics.CONSTRAINT.value == "constraint"
-
-    # verify the number of elements
-    assert len(SoftContactDynamics) == 2
-
-
-def test_defect_type():
-    assert DefectType.EXPLICIT.value == "explicit"
-    assert DefectType.IMPLICIT.value == "implicit"
-    assert DefectType.NOT_APPLICABLE.value == "not_applicable"
+def test_defects_type():
+    assert DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS.value == "QDDOT_EQUALS_FORWARD_DYNAMICS".lower()
+    assert DefectType.TAU_EQUALS_INVERSE_DYNAMICS.value == "TAU_EQUALS_INVERSE_DYNAMICS".lower()
+    assert DefectType.NOT_APPLICABLE.value == "NOT_APPLICABLE".lower()
 
     # verify the number of elements
     assert len(DefectType) == 3
 
 
-def test_contact_type():
+def test_contact_types():
     assert ContactType.RIGID_EXPLICIT.value == "rigid_explicit"
     assert ContactType.RIGID_IMPLICIT.value == "rigid_implicit"
     assert ContactType.SOFT_EXPLICIT.value == "soft_explicit"

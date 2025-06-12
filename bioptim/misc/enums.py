@@ -190,11 +190,6 @@ class QuadratureRule(Enum):
     TRAPEZOIDAL = "trapezoidal"
 
 
-class SoftContactDynamics(Enum):
-    ODE = "ode"
-    CONSTRAINT = "constraint"
-
-
 class ContactType(Enum):
     RIGID_EXPLICIT = "rigid_explicit"
     SOFT_EXPLICIT = "soft_explicit"
@@ -202,24 +197,25 @@ class ContactType(Enum):
     SOFT_IMPLICIT = "soft_implicit"
 
     @staticmethod
-    def get_equivalent_explicit_contacts(contact_type):
+    def get_equivalent_explicit_contacts(contact_types):
         """
         In DMS and during reintegration of COLLOCATION, the implicit contacts must be swapped for explicit contacts.
         """
-        forward_dynamics_contact_type = []
-        for contact in contact_type:
+        forward_dynamics_contact_types = []
+        for contact in contact_types:
             if contact == ContactType.SOFT_IMPLICIT:
-                forward_dynamics_contact_type += [ContactType.SOFT_EXPLICIT]
+                forward_dynamics_contact_types += [ContactType.SOFT_EXPLICIT]
             elif contact == ContactType.RIGID_IMPLICIT:
-                forward_dynamics_contact_type += [ContactType.RIGID_EXPLICIT]
+                forward_dynamics_contact_types += [ContactType.RIGID_EXPLICIT]
             else:
-                forward_dynamics_contact_type += [contact]
-        return forward_dynamics_contact_type
+                forward_dynamics_contact_types += [contact]
+        return forward_dynamics_contact_types
 
 
 class DefectType(Enum):
-    EXPLICIT = "explicit"
-    IMPLICIT = "implicit"
+    QDDOT_EQUALS_FORWARD_DYNAMICS = "qddot_equals_forward_dynamics"
+    TAU_EQUALS_INVERSE_DYNAMICS = "tau_equals_inverse_dynamics"
+    # ROOT_RESIDUAL_TORQUES_EQUALS_ZERO = "root_residual_torques_equals_zero"
     NOT_APPLICABLE = "not_applicable"
 
 

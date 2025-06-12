@@ -87,10 +87,6 @@ class OdeSolver:
             return DefectType.NOT_APPLICABLE
 
         @property
-        def defect_type(self) -> DefectType:
-            return DefectType.NOT_APPLICABLE
-
-        @property
         def n_required_cx(self) -> Int:
             return 1
 
@@ -128,7 +124,7 @@ class OdeSolver:
         method : str
             The method of interpolation ("legendre" or "radau")
         _defects_type: DefectType
-            The type of defect to use (DefectType.EXPLICIT or DefectType.IMPLICIT)
+            The type of defect to use
         duplicate_starting_point: bool
             Whether an additional collocation point should be added at the shooting node (this is typically used in SOCPs)
         """
@@ -137,7 +133,7 @@ class OdeSolver:
             self,
             polynomial_degree: Int = 4,
             method: Str = "legendre",
-            defects_type: DefectType = DefectType.EXPLICIT,
+            defects_type: DefectType = DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS,
             **kwargs,
         ):
             """
@@ -146,6 +142,9 @@ class OdeSolver:
             polynomial_degree: int
                 The degree of the implicit RK
             """
+
+            if not isinstance(defects_type, DefectType):
+                raise TypeError("defects_type should be a DefectType")
 
             super(OdeSolver.COLLOCATION, self).__init__(**kwargs)
             self.polynomial_degree = polynomial_degree
