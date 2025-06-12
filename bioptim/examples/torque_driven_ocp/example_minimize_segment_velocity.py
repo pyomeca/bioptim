@@ -9,7 +9,7 @@ import numpy as np
 from bioptim import (
     TorqueBiorbdModel,
     OptimalControlProgram,
-    Dynamics,
+    DynamicsOptions,
     ObjectiveList,
     BoundsList,
     ObjectiveFcn,

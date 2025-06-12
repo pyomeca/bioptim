@@ -33,7 +33,7 @@ from bioptim import (
     Solver,
     PhaseDynamics,
     SolutionMerge,
-    Dynamics,
+    DynamicsOptions,
 )
 from bioptim.optimization.optimization_variable import OptimizationVariableContainer
 

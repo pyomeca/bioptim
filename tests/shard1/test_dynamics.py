@@ -10,7 +10,7 @@ from bioptim import (
     TorqueBiorbdModel,
     ControlType,
     NonLinearProgram,
-    Dynamics,
+    DynamicsOptions,
     DynamicsEvaluation,
     ParameterContainer,
     ParameterList,

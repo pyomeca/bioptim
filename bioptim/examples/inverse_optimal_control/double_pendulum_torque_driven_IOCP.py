@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 from bioptim import (
     OptimalControlProgram,
-    Dynamics,
+    DynamicsOptions,
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,

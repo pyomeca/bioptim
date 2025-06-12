@@ -14,7 +14,7 @@ from bioptim import (
     OptimalControlProgram,
     ObjectiveList,
     ObjectiveFcn,
-    Dynamics,
+    DynamicsOptions,
     BoundsList,
     InitialGuessList,
     OdeSolver,
@@ -66,7 +66,7 @@ def prepare_ocp(
     )
 
     # Dynamics
-    dynamics = Dynamic(
+    dynamics = DynamicsOptions(
         ode_solver=ode_solver,
     )
 

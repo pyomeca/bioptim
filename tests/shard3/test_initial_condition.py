@@ -11,7 +11,7 @@ from bioptim import (
     SolutionIntegrator,
     TorqueBiorbdModel,
     Objective,
-    Dynamics,
+    DynamicsOptions,
     ObjectiveFcn,
     OptimalControlProgram,
     InitialGuessList,

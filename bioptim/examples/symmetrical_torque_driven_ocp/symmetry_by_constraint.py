@@ -19,7 +19,7 @@ from bioptim import (
     TorqueBiorbdModel,
     Node,
     OptimalControlProgram,
-    Dynamics,
+    DynamicsOptions,
     ObjectiveList,
     ObjectiveFcn,
     ConstraintList,

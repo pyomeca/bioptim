@@ -8,7 +8,7 @@ from bioptim import (
     BiorbdModel,
     Solver,
     MovingHorizonEstimator,
-    Dynamics,
+    DynamicsOptions,
     InterpolationType,
     BoundsList,
     PhaseDynamics,

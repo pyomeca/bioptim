@@ -178,7 +178,7 @@ class OptimalControlProgram:
             The number of shooting point of the phases
         phase_time: int | float | list | tuple
             The phase time of the phases
-        dynamics: Dynamics | DynamicsOptionsList
+        dynamics: DynamicsOptions | DynamicsOptionsList
             The dynamics of the phases
         x_init: InitialGuess | InitialGuessList
             The initial guesses for the states
@@ -505,7 +505,7 @@ class OptimalControlProgram:
             dynamics = DynamicsOptionsList()
             dynamics.add(tp)
         if not isinstance(dynamics, DynamicsOptionsList):
-            raise ValueError("dynamics must be of type DynamicsOptionsList or Dynamics")
+            raise ValueError("dynamics must be of type DynamicsOptionsList or DynamicsOptions")
 
         # Type of CasADi graph
         self.cx = SX if use_sx else MX

@@ -13,7 +13,7 @@ from bioptim import (
     OptimalControlProgram,
     ObjectiveList,
     ObjectiveFcn,
-    Dynamics,
+    DynamicsOptions,
     BoundsList,
     InitialGuessList,
     OdeSolver,

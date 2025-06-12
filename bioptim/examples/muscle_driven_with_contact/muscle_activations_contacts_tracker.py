@@ -12,7 +12,7 @@ import numpy as np
 from bioptim import (
     MusclesBiorbdModel,
     OptimalControlProgram,
-    Dynamics,
+    DynamicsOptions,
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,

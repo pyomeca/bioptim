@@ -14,7 +14,7 @@ from bioptim import (
     OptimalControlProgram,
     ObjectiveList,
     ObjectiveFcn,
-    Dynamics,
+    DynamicsOptions,
     BiMappingList,
     BoundsList,
     InitialGuessList,

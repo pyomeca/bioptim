@@ -6,7 +6,7 @@ from bioptim import (
     BiorbdModel,
     Node,
     OptimalControlProgram,
-    Dynamics,
+    DynamicsOptions,
     ConstraintList,
     InitialGuessList,
     PenaltyController,

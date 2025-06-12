@@ -19,7 +19,7 @@ from bioptim import (
     ControlType,
     PhaseDynamics,
     SolutionMerge,
-    Dynamics,
+    DynamicsOptions,
 )
 import numpy as np
 import numpy.testing as npt

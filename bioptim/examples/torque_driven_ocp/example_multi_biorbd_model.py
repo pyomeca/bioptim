@@ -7,7 +7,7 @@ import numpy as np
 from bioptim import (
     MultiTorqueBiorbdModel,
     OptimalControlProgram,
-    Dynamics,
+    DynamicsOptions,
     ObjectiveList,
     BoundsList,
     ObjectiveFcn,

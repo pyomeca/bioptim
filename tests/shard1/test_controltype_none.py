@@ -14,7 +14,7 @@ from bioptim import (
     ConstraintList,
     DynamicsEvaluation,
     DynamicsOptionsList,
-    Dynamics,
+    DynamicsOptions,
     ObjectiveFcn,
     ObjectiveList,
     OdeSolver,

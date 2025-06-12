@@ -30,7 +30,7 @@ from bioptim import (
     TorqueBiorbdModel,
     Node,
     OptimalControlProgram,
-    Dynamics,
+    DynamicsOptions,
     BiMappingList,
     SelectionMapping,
     Dependency,

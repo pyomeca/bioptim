@@ -570,7 +570,7 @@ import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
-    Dynamics,
+    DynamicsOptions,
     BoundsList,    
     InitialGuessList,
     ObjectiveFcn,
@@ -703,7 +703,7 @@ OptimalControlProgram(
     bio_model: [list, BioModel],
     n_shooting: [int, list],
     phase_time: [float, list], 
-    dynamics: [Dynamics, DynamicsOptionsList],
+    dynamics: [DynamicsOptions, DynamicsOptionsList],
     x_bounds: BoundsList,
     u_bounds: BoundsList,
     x_init: InitialGuessList
@@ -757,7 +757,7 @@ ocp = OptimalControlProgram(
     bio_model: [list, BioModel],
     n_shooting: [int, list],
     phase_time: [float, list],
-    dynamics: [Dynamics, DynamicsOptionsList],
+    dynamics: [DynamicsOptions, DynamicsOptionsList],
     x_init: InitialGuessList
     u_init: InitialGuessList, 
     x_bounds: BoundsList,
@@ -957,16 +957,16 @@ States and controls are linked through Ordinary differential equations: dx/dt = 
 The following section investigates how to instruct `bioptim` of the dynamic equations the system should follow.
 
  
-### Class: Dynamics
+### Class: DynamicsOptions
 This class is the main class to define a dynamics. 
 It, therefore, contains all the information necessary to configure (i.e., determining which variables are states or controls) and perform the dynamics. 
-When constructing an `OptimalControlProgram()`, Dynamics is the expected class for the `dynamics` parameter. 
+When constructing an `OptimalControlProgram()`, DynamicsOptions is the expected class for the `dynamics` parameter. 
 
-The user can minimally define a Dynamics as: `dyn = DynamicsOptions(DynamicsFcn)`.
+The user can minimally define a DynamicsOptions as: `dyn = DynamicsOptions(DynamicsFcn)`.
 The `DynamicsFcn` is the one presented in the corresponding section below. 
 
 #### The options
-The full signature of Dynamics is as follows:
+The full signature of DynamicsOptions is as follows:
 ```python
 DynamicsOptions(dynamics_type, configure: Callable, dynamic_function: Callable, phase: int, ode_solver: OdeSolver, numerical_timeseries: dict[str, np.ndarray])
 ```
@@ -996,7 +996,7 @@ where `as_states` add the variable to the states vector and `as_controls` to the
 Please note that this is not necessarily mutually exclusive.
 Finally, the user is expected to configure the dynamic by calling `ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamics)`
 
-Defining the dynamic function must be done when one provides a custom configuration, but it can also be defined by providing a function handler to the `dynamic_function` parameter for `Dynamics`. 
+Defining the dynamic function must be done when one provides a custom configuration, but it can also be defined by providing a function handler to the `dynamic_function` parameter for `DynamicsOptions`. 
 The signature of this custom dynamic function is as follows: `custom_dynamic(states: MX, controls: MX, parameters: MX, nlp: NonLinearProgram`.
 This function is expected to return a tuple[MX] of the derivative of the states. 
 Some methods defined in the class `DynamicsFunctions` can be useful, but will not be covered here since it is initially designed for internal use.
@@ -1005,8 +1005,8 @@ Anyone who wants to define custom dynamics should be at least familiar with this
 
 
 ### Class: DynamicsOptionsList
-A DynamicsOptionsList is simply a list of Dynamics. 
-The `add()` method can be called exactly as if one was calling the `Dynamics` constructor. 
+A DynamicsOptionsList is simply a list of DynamicsOptions. 
+The `add()` method can be called exactly as if one was calling the `DynamicsOptions` constructor. 
 If the `add()` method is used more than one, the `phase` parameter is automatically incremented. 
 
 So a minimal use is as follows:
@@ -1020,7 +1020,7 @@ The `DynamicsFcn` class is the configuration and declaration of all the already 
 Since this is an Enum, it is possible to use tab key on the keyboard to dynamically list them all, depending on the capabilities of your IDE. 
 
 Please note that one can change the dynamic function associated to any of the configuration by providing a custom dynamics_function. 
-For more information on this, please refer to the Dynamics and DynamicsOptionsList section right before. 
+For more information on this, please refer to the DynamicsOptions and DynamicsOptionsList section right before. 
 
 #### TORQUE_DRIVEN 
 The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as *tau*. 
@@ -1074,7 +1074,7 @@ degrees of freedom.
 #### CUSTOM
 This leaves the user to define both the configuration (what are the states and controls) and to define the dynamic function. 
 CUSTOM should not be called by the user, but the user should pass the configure_function directly. 
-You can have a look at Dynamics and DynamicsOptionsList sections for more information about how to configure and define custom dynamics.
+You can have a look at DynamicsOptions and DynamicsOptionsList sections for more information about how to configure and define custom dynamics.
 
 
 ## The bounds

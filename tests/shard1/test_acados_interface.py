@@ -22,7 +22,7 @@ from bioptim import (
     ConstraintFcn,
     Node,
     MovingHorizonEstimator,
-    Dynamics,
+    DynamicsOptions,
     InterpolationType,
     Solver,
     BoundsList,

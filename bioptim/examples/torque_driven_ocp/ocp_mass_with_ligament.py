@@ -5,7 +5,7 @@ damping, it uses the model mass_point_with_ligament.bioMod
 
 from bioptim import (
     OptimalControlProgram,
-    Dynamics,
+    DynamicsOptions,
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,
