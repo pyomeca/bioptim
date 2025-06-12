@@ -97,6 +97,7 @@ class MassPointDynamicsModel(MassPointModel):
         self.state_type = [States.Q, States.QDOT]
         self.control_type = [self.configure_u]
         self.algebraic_type = []
+        self.functions = []
 
     def dynamics(self, time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp):
         """
@@ -154,6 +155,7 @@ class StochasticMassPointDynamicsModel(MassPointModel):
                 ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_states=4
             )
         ]
+        self.functions = []
 
     def dynamics(self, time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp):
         """

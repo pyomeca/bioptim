@@ -130,19 +130,12 @@ class ConfigureProblem:
         nlp: NonLinearProgram
             A reference to the phase
         """
-        if nlp.dynamics_type.configure_function is not None:
-            nlp.dynamics_type.configure_function.initialize(
-                ocp,
-                nlp,
-                **nlp.dynamics_type.extra_parameters,
-            )
-        else:
-            AutoConfigure(
-                states=nlp.model.state_type,
-                controls=nlp.model.control_type,
-                algebraic_states=nlp.model.algebraic_type,
-                functions=nlp.model.functions,
-            ).initialize(ocp, nlp)
+        AutoConfigure(
+            states=nlp.model.state_type,
+            controls=nlp.model.control_type,
+            algebraic_states=nlp.model.algebraic_type,
+            functions=nlp.model.functions,
+        ).initialize(ocp, nlp)
 
         ConfigureProblem.configure_dynamics_function(ocp, nlp, nlp.model.dynamics, **nlp.dynamics_type.extra_parameters)
 
@@ -363,6 +356,7 @@ class DynamicsOptions(OptionGeneric):
         phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
         ode_solver: OdeSolver | OdeSolverBase = OdeSolver.RK4(),
         numerical_data_timeseries: dict[str, np.ndarray] = None,
+        **extra_parameters: Any,
     ):
         """
         Parameters
@@ -382,7 +376,10 @@ class DynamicsOptions(OptionGeneric):
             The integrator to use to integrate this dynamics.
         numerical_data_timeseries: dict[str, np.ndarray]
             The numerical timeseries at each node. ex: the experimental external forces data should go here.
+            # TODO: numerical_data_timeseries should be moved in the model instead of the dynamics options.
         """
+        super().__init__(**extra_parameters)
+
         self.expand_dynamics = expand_dynamics
         self.expand_continuity = expand_continuity
         self.skip_continuity = skip_continuity

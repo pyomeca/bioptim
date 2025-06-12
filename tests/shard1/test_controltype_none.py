@@ -41,10 +41,10 @@ class NonControlledMethod:
         self.c = 0
         self._name = name
 
-        self.state_types = []
-        self.control_types = []
-        self.algebraic_types = []
-        self.extra_dynamics = None
+        self.state_type = []
+        self.control_type = []
+        self.algebraic_type = []
+        self.extra_dynamic = None
         self.functions = [self.declare_variables]
 
     def serialize(self) -> tuple[Callable, dict]:

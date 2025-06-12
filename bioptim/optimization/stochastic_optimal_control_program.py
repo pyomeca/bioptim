@@ -5,7 +5,7 @@ from casadi import DM_eye, vertcat, Function, horzcat
 
 from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVectorHelper
-from ..dynamics.configure_problem import DynamicsOptionsList, Dynamics
+from ..dynamics.configure_problem import DynamicsOptionsList, DynamicsOptions
 from ..dynamics.ode_solvers import OdeSolver
 from ..limits.constraints import (
     ConstraintFcn,
@@ -40,7 +40,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
     def __init__(
         self,
         bio_model: list | tuple | StochasticBioModel,
-        dynamics: Dynamics | DynamicsOptionsList,
+        dynamics: DynamicsOptions | DynamicsOptionsList,
         n_shooting: int | list | tuple,
         phase_time: int | float | list | tuple,
         x_bounds: BoundsList = None,

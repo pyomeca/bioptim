@@ -500,7 +500,7 @@ class OptimalControlProgram:
             dynamics = DynamicsOptionsList()
             for i_phase in range(self.n_phases):
                 dynamics.add(DynamicsOptions())
-        if isinstance(dynamics, Dynamics):
+        if isinstance(dynamics, DynamicsOptions):
             tp = dynamics
             dynamics = DynamicsOptionsList()
             dynamics.add(tp)

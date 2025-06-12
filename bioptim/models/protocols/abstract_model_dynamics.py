@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from typing import TypeAlias
 from casadi import vertcat, DM
 
@@ -7,11 +8,11 @@ from ...dynamics.configure_variables import ConfigureVariables
 from ...dynamics.fatigue.fatigue_dynamics import FatigueList
 from ...dynamics.ode_solvers import OdeSolver
 from ...misc.enums import DefectType, ContactType
-from ...misc.parameters_types import Bool
+from ...misc.parameters_types import Bool, NpArray
 from ...optimization.problem_type import SocpType
 
 
-class TorqueDynamics:
+class TorqueDynamics(ABC):
     """
     This class is used to create a model actuated through joint torques.
 
@@ -308,7 +309,7 @@ class StochasticTorqueDynamics(TorqueDynamics):
         raise NotImplementedError("Stochastic torque dynamics does not support rigid contact forces yet. ")
 
 
-class HolonomicTorqueDynamics:
+class HolonomicTorqueDynamics(ABC):
 
     def __init__(self):
         self.state_type = [States.Q_U, States.QDOT_U]
@@ -468,7 +469,7 @@ class TorqueDerivativeDynamics(TorqueDynamics):
         self.state_type += [States.TAU]
         self.control_type += [Controls.TAUDOT]
 
-    def get_basic_variables(self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries):
+    def get_basic_variables(nlp, states, controls, parameters, algebraic_states, numerical_timeseries):
 
         # Get variables from the right place
         q = DynamicsFunctions.get(nlp.states["q"], states)
@@ -484,7 +485,6 @@ class TorqueDerivativeDynamics(TorqueDynamics):
         )
         return q, qdot, tau, external_forces
 
-    @staticmethod
     def dynamics(
         self,
         time,
@@ -715,7 +715,7 @@ class MusclesDynamics(TorqueDynamics):
         return nlp.model.rigid_contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
 
 
-class JointAccelerationDynamics:
+class JointAccelerationDynamics(ABC):
     """
     This class is used to create a model actuated through joint torques.
 
@@ -790,7 +790,7 @@ class JointAccelerationDynamics:
         raise RuntimeError("Joints acceleration driven dynamics cannot be used with contacts by definition.")
 
 
-DynamicalModel: (
+DynamicalModel: TypeAlias = (
     TorqueDynamics
     | StochasticTorqueDynamics
     | TorqueFreeFloatingBaseDynamics
