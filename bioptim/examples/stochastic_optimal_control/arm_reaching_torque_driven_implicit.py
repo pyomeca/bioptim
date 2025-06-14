@@ -23,7 +23,7 @@ from bioptim import (
     ObjectiveList,
     NonLinearProgram,
     DynamicsOptionsList,
-    Dynamics,
+    DynamicsOptions,
     BoundsList,
     InterpolationType,
     SocpType,
@@ -32,7 +32,6 @@ from bioptim import (
     ConstraintFcn,
     InitialGuessList,
     Axis,
-    DynamicsFcn,
     PhaseDynamics,
     ControlType,
     VariableScalingList,
@@ -318,9 +317,9 @@ def prepare_socp(
 
     return StochasticOptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_init=x_init,
         u_init=u_init,
         a_init=a_init,

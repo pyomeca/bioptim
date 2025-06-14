@@ -13,7 +13,7 @@ from bioptim import (
     Solver,
     ObjectiveList,
     OptimalControlProgram,
-    Dynamics,
+    DynamicsOptions,
     BoundsList,
     InterpolationType,
     SocpType,
@@ -139,9 +139,9 @@ def prepare_socp(
 
         return StochasticOptimalControlProgram(
             bio_model,
-            dynamics,
             n_shooting,
             final_time,
+            dynamics=dynamics,
             a_init=a_init,
             x_bounds=x_bounds,
             u_bounds=u_bounds,

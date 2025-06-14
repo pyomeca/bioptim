@@ -9,7 +9,7 @@ from bioptim import (
     ConstraintFcn,
     ConstraintList,
     DynamicsOptionsList,
-    Dynamics,
+    DynamicsOptions,
     InitialGuessList,
     Node,
     InterpolationType,

@@ -15,7 +15,7 @@ from bioptim import (
     TorqueFreeFloatingBaseBiorbdModel,
     OptimalControlProgram,
     DynamicsOptionsList,
-    Dynamics,
+    DynamicsOptions,
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,

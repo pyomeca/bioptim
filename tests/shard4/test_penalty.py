@@ -24,7 +24,7 @@ from bioptim import (
     ContactType,
     MusclesBiorbdModel,
     TorqueActivationBiorbdModel,
-    Dynamics,
+    DynamicsOptions,
 )
 from bioptim.limits.penalty import PenaltyOption
 from bioptim.limits.penalty_controller import PenaltyController

@@ -12,7 +12,7 @@ from bioptim import (
     BiMappingList,
     BoundsList,
     ConstraintList,
-    Dynamics,
+    DynamicsOptions,
     DynamicsOptionsList,
     HolonomicTorqueBiorbdModel,
     HolonomicConstraintsFcn,

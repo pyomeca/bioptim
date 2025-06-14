@@ -16,7 +16,7 @@ from casadi import MX
 from bioptim import (
     OptimalControlProgram,
     DynamicsOptionsList,
-    Dynamics,
+    DynamicsOptions,
     ObjectiveList,
     ConstraintList,
     ConstraintFcn,

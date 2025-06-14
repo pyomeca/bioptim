@@ -2,9 +2,10 @@ import platform
 from bioptim import (
     ConfigureProblem,
     ControlType,
-    BiorbdModel,
+    TorqueBiorbdModel,
+    TorqueDerivativeBiorbdModel,
     NonLinearProgram,
-    Dynamics,
+    DynamicsOptions,
     Solver,
     VariableScalingList,
     ParameterList,

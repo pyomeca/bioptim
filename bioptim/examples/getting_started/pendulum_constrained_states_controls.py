@@ -17,7 +17,7 @@ import numpy as np
 
 from bioptim import (
     OptimalControlProgram,
-    Dynamics,
+    DynamicsOptions,
     ConstraintList,
     ConstraintFcn,
     ObjectiveFcn,

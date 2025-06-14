@@ -211,6 +211,7 @@ from .models.biorbd.model_dynamics import (
     TorqueFreeFloatingBaseBiorbdModel,
     StochasticTorqueFreeFloatingBaseBiorbdModel,
     TorqueActivationBiorbdModel,
+    TorqueDerivativeBiorbdModel,
     MusclesBiorbdModel,
     JointAccelerationBiorbdModel,
     MultiTorqueBiorbdModel,

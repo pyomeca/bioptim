@@ -8,7 +8,7 @@ from casadi import MX
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
-    Dynamics,
+    DynamicsOptions,
     DynamicsOptionsList,
     ObjectiveList,
     ObjectiveFcn,

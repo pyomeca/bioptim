@@ -8,15 +8,15 @@ from casadi import MX, SX
 from bioptim import (
     ConfigureProblem,
     ControlType,
-    BiorbdModel,
+    TorqueBiorbdModel,
+    TorqueDerivativeBiorbdModel,
+    TorqueActivationBiorbdModel,
+    MusclesBiorbdModel,
     NonLinearProgram,
-    Dynamics,
-    ConstraintList,
-    Solver,
+    DynamicsOptions,
     VariableScalingList,
     ParameterList,
     PhaseDynamics,
-    SolutionMerge,
     ParameterContainer,
 )
 from tests.utils import TestUtils

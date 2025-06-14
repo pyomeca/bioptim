@@ -3,7 +3,7 @@ import re
 import pytest
 from bioptim import (
     TorqueBiorbdModel,
-    Dynamics,
+    DynamicsOptions,
     MultinodeConstraintList,
     MultinodeConstraintFcn,
     Node,

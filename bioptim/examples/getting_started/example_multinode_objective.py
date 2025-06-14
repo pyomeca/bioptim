@@ -8,13 +8,13 @@ from casadi import MX, sum1
 
 from bioptim import (
     OptimalControlProgram,
-    Dynamics,
+    DynamicsOptions,
     BoundsList,
     PhaseDynamics,
     OdeSolver,
     OdeSolverBase,
     Solver,
-    BiorbdModel,
+    TorqueBiorbdModel,
     PenaltyController,
     MultinodeObjectiveList,
     CostType,

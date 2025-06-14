@@ -7,7 +7,7 @@ import platform
 from bioptim import (
     TorqueBiorbdModel,
     OptimalControlProgram,
-    Dynamics,
+    DynamicsOptions,
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,

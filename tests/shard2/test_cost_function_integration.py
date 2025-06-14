@@ -14,7 +14,7 @@ from bioptim import (
     OptimalControlProgram,
     Objective,
     ObjectiveFcn,
-    Dynamics,
+    DynamicsOptions,
     BoundsList,
     Solver,
     PhaseDynamics,

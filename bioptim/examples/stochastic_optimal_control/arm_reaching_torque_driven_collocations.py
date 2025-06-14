@@ -27,7 +27,7 @@ from bioptim import (
     ControlType,
     Axis,
     SolutionMerge,
-    Dynamics,
+    DynamicsOptions,
 )
 
 from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType

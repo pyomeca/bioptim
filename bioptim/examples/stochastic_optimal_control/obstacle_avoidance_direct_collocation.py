@@ -19,9 +19,7 @@ from bioptim import (
     Solver,
     ObjectiveList,
     OptimalControlProgram,
-    NonLinearProgram,
-    DynamicsOptionsList,
-    Dynamics,
+    DynamicsOptions,
     InterpolationType,
     SocpType,
     Node,
@@ -31,7 +29,6 @@ from bioptim import (
     PenaltyController,
     PhaseTransitionList,
     PhaseTransitionFcn,
-    ConfigureProblem,
     ConstraintFcn,
     StochasticBioModel,
     OdeSolver,
@@ -40,7 +37,6 @@ from bioptim import (
     SolutionMerge,
     SolutionIntegrator,
     Shooting,
-    ContactType,
 )
 from bioptim.examples.stochastic_optimal_control.common import (
     test_matrix_semi_definite_positiveness,
@@ -489,9 +485,9 @@ def prepare_socp(
 
         return StochasticOptimalControlProgram(
             bio_model,
-            dynamics,
             n_shooting,
             final_time,
+            dynamics=dynamics,
             x_init=x_init,
             u_init=control_init,
             a_init=a_init,
