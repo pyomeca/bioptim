@@ -1,4 +1,4 @@
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import TypeAlias
 from casadi import vertcat, DM
 

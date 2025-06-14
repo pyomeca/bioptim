@@ -22,7 +22,7 @@ from bioptim import (
     CostType,
     DynamicsEvaluation,
     DynamicsFunctions,
-    Dynamics,
+    DynamicsOptions,
     InitialGuessList,
     Objective,
     ObjectiveFcn,
@@ -36,7 +36,7 @@ from bioptim import (
 
 
 class TimeDependentModel(TorqueBiorbdModel):
-    def dynamic(
+    def dynamics(
         self,
         time: MX | SX,
         states: MX | SX,
@@ -77,7 +77,7 @@ class TimeDependentModel(TorqueBiorbdModel):
 
         # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-        ddq = nlp.model.forward_dynamics(q, qdot, tau, [])
+        ddq = self.forward_dynamics(with_contact=False)(q, qdot, tau, [], [])
 
         return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
 
