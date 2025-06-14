@@ -165,14 +165,13 @@ def generate_data(
             node_index=node_index,
         )
 
-    nlp.dynamics_type = DynamicsOptions(
-        DynamicsFcn.MUSCLE_DRIVEN,
-    )
+    nlp.dynamics_type = DynamicsOptions()
+
     dynamics_func = Function(
         "ForwardDyn",
         [symbolic_time, symbolic_states, symbolic_controls, symbolic_parameters],
         [
-            DynamicsFunctions.muscles_driven(
+            bio_model.dynamics(
                 time=symbolic_time,
                 states=symbolic_states,
                 controls=symbolic_controls,

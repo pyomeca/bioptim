@@ -5,7 +5,7 @@ Test for file IO
 import platform
 
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     ConstraintList,
     ConstraintFcn,
     DynamicsOptionsList,
@@ -407,7 +407,7 @@ def partial_ocp_parameters(n_phases, phase_dynamics):
         raise RuntimeError("n_phases should be 1 or 3")
 
     biorbd_model_path = TestUtils.bioptim_folder() + "/examples/optimal_time_ocp/models/cube.bioMod"
-    bio_model = TorqueBiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path), TorqueBiorbdModel(biorbd_model_path), TorqueBiorbdModel(biorbd_model_path)
     n_shooting = (2, 2, 2)
     final_time = (2, 5, 4)
     time_min = [1, 3, 0.1]

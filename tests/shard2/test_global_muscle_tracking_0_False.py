@@ -5,7 +5,7 @@ Test for file IO
 import pytest
 import platform
 
-from bioptim import OdeSolver, Solver, BiorbdModel, PhaseDynamics, SolutionMerge, MusclesBiorbdModel
+from bioptim import OdeSolver, Solver, MusclesBiorbdModel, PhaseDynamics, SolutionMerge
 import numpy as np
 import numpy.testing as npt
 

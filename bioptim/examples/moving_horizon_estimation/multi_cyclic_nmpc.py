@@ -84,7 +84,7 @@ def prepare_nmpc(
 
     return MyCyclicNMPC(
         model,
-        dynamics,
+        dynamics=dynamics,
         cycle_len=cycle_len,
         cycle_duration=cycle_duration,
         n_cycles_simultaneous=n_cycles_simultaneous,

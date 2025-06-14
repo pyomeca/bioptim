@@ -6,7 +6,7 @@ import io
 import sys
 
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     OdeSolver,
     OdeSolverBase,
     ControlType,
