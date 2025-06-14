@@ -5,10 +5,9 @@ The first DoF of each model is not actuated, the second DoF is actuated with the
 
 import numpy as np
 from bioptim import (
-    MultiBiorbdModel,
+    MultiTorqueBiorbdModel,
     OptimalControlProgram,
-    DynamicsList,
-    DynamicsFcn,
+    DynamicsOptions,
     ObjectiveList,
     BoundsList,
     ObjectiveFcn,
@@ -25,8 +24,9 @@ def prepare_ocp(
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
+
     # Adding the models to the same phase
-    bio_models = MultiBiorbdModel((biorbd_model_path, biorbd_model_path_modified_inertia))
+    bio_models = MultiTorqueBiorbdModel((biorbd_model_path, biorbd_model_path_modified_inertia))
 
     # Problem parameters
     final_time = 1.5
@@ -43,8 +43,7 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1e-6)
 
     # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    dynamics = DynamicsOptions(expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -65,9 +64,9 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         bio_models,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,

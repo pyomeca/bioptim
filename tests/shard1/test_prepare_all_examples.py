@@ -76,12 +76,12 @@ def test__getting_started__custom_constraints():
 
 
 def test__getting_started__custom_dynamics():
-    from bioptim.examples.getting_started import custom_dynamics as ocp_module
+    from tests import test_utils_ocp as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/../bioptim/examples/getting_started/models/cube.bioMod",
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )

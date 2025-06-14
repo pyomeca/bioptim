@@ -9,12 +9,11 @@ mesh points.
 import platform
 
 from bioptim import (
-    BiorbdModel,
+    MusclesBiorbdModel,
     OptimalControlProgram,
     ObjectiveList,
     ObjectiveFcn,
-    Dynamics,
-    DynamicsFcn,
+    DynamicsOptions,
     InitialGuessList,
     OdeSolver,
     OdeSolverBase,
@@ -82,7 +81,10 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = MusclesBiorbdModel(
+        biorbd_model_path,
+        with_residual_torque=torque_level > 0,
+    )
 
     n_tau = bio_model.nb_tau
     n_muscles = bio_model.nb_muscles
@@ -149,12 +151,10 @@ def prepare_ocp(
             else:
                 raise ValueError("fatigue_type not implemented")
 
-    # Dynamics
-    dynamics = Dynamics(
-        DynamicsFcn.MUSCLE_DRIVEN,
+    # DynamicsOptions
+    dynamics = DynamicsOptions(
         expand_dynamics=expand_dynamics,
         fatigue=fatigue_dynamics,
-        with_residual_torque=torque_level > 0,
         ode_solver=ode_solver,
         phase_dynamics=phase_dynamics,
     )
@@ -199,9 +199,9 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         x_init=x_init,

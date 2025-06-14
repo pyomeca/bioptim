@@ -2,7 +2,7 @@
 Test for file IO
 """
 
-from bioptim import OdeSolver, BiorbdModel, SolutionMerge
+from bioptim import OdeSolver, MusclesBiorbdModel, SolutionMerge
 import numpy as np
 import numpy.testing as npt
 import pytest
@@ -18,8 +18,12 @@ def test_muscle_excitation_with_torque_and_markers_tracking(ode_solver):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     # Define the problem
+    use_residual_torque = True
+    with_excitation = True
     model_path = bioptim_folder + "/models/arm26.bioMod"
-    bio_model = BiorbdModel(model_path)
+    bio_model = MusclesBiorbdModel(model_path,
+                                   with_residual_torque=use_residual_torque,
+                                   with_excitation=with_excitation)
     final_time = 0.1
     n_shooting = 5
 
@@ -27,7 +31,9 @@ def test_muscle_excitation_with_torque_and_markers_tracking(ode_solver):
     np.random.seed(10)
     t, markers_ref, x_ref, muscle_excitations_ref = ocp_module.generate_data(bio_model, final_time, n_shooting)
 
-    bio_model = BiorbdModel(model_path)  # To allow for non free variable, the model must be reloaded
+    bio_model = MusclesBiorbdModel(model_path,
+                                   with_residual_torque=use_residual_torque,
+                                   with_excitation=with_excitation)  # To allow for non free variable, the model must be reloaded
     ocp = ocp_module.prepare_ocp(
         bio_model,
         final_time,
@@ -35,7 +41,7 @@ def test_muscle_excitation_with_torque_and_markers_tracking(ode_solver):
         markers_ref,
         muscle_excitations_ref,
         x_ref[: bio_model.nb_q, :].T,
-        use_residual_torque=True,
+        use_residual_torque=use_residual_torque,
         kin_data_to_track="markers",
         ode_solver=ode_solver(),
         expand_dynamics=ode_solver != OdeSolver.IRK,
@@ -155,7 +161,7 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
 
     # Define the problem
     model_path = bioptim_folder + "/models/arm26.bioMod"
-    bio_model = BiorbdModel(model_path)
+    bio_model = MusclesBiorbdModel(model_path)
     final_time = 0.1
     n_shooting = 5
 
@@ -163,7 +169,7 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
     np.random.seed(10)
     t, markers_ref, x_ref, muscle_excitations_ref = ocp_module.generate_data(bio_model, final_time, n_shooting)
 
-    bio_model = BiorbdModel(model_path)  # To allow for non free variable, the model must be reloaded
+    bio_model = MusclesBiorbdModel(model_path)  # To allow for non free variable, the model must be reloaded
     ocp = ocp_module.prepare_ocp(
         bio_model,
         final_time,

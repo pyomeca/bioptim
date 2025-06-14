@@ -6,10 +6,10 @@ import pytest
 from casadi import MX
 
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     OptimalControlProgram,
-    DynamicsFcn,
-    DynamicsList,
+    DynamicsOptionsList,
+    DynamicsOptions,
     BoundsList,
     ParameterList,
     InterpolationType,
@@ -44,12 +44,11 @@ def test_option_dict_method():
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_double_update_bounds_and_init(phase_dynamics):
     bioptim_folder = TestUtils.bioptim_folder()
-    bio_model = BiorbdModel(bioptim_folder + "/examples/track/models/cube_and_line.bioMod")
+    bio_model = TorqueBiorbdModel(bioptim_folder + "/examples/track/models/cube_and_line.bioMod")
     nq = bio_model.nb_q
     ns = 10
 
-    dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase_dynamics=phase_dynamics)
+    dynamics = DynamicsOptions(phase_dynamics=phase_dynamics)
     x_init = InitialGuessList()
     x_init["q"] = [0] * bio_model.nb_q
     x_init["qdot"] = [0] * bio_model.nb_qdot
@@ -182,13 +181,12 @@ def test_update_bounds_and_init_with_param(phase_dynamics):
         new_gravity[2] = value + extra_value
         bio_model.set_gravity(new_gravity)
 
-    bio_model = BiorbdModel(TestUtils.bioptim_folder() + "/examples/track/models/cube_and_line.bioMod")
+    bio_model = TorqueBiorbdModel(TestUtils.bioptim_folder() + "/examples/track/models/cube_and_line.bioMod")
     nq = bio_model.nb_q
     ns = 10
     g_min, g_max, g_init = -10, -6, -8
 
-    dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase_dynamics=phase_dynamics)
+    dynamics = DynamicsOptions(phase_dynamics=phase_dynamics)
 
     parameters = ParameterList(use_sx=False)
     parameter_bounds = BoundsList()
@@ -265,15 +263,14 @@ def test_update_bounds_and_init_with_param(phase_dynamics):
 @pytest.mark.parametrize("interpolation", [*InterpolationType])
 def test_update_noised_init_rk4(interpolation, phase_dynamics):
     bioptim_folder = TestUtils.bioptim_folder()
-    bio_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
+    bio_model = TorqueBiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
     nq = bio_model.nb_q
     nqdot = bio_model.nb_qdot
     ntau = bio_model.nb_tau
     ns = 3
     phase_time = 1.0
 
-    dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, ode_solver=OdeSolver.RK4(), phase_dynamics=phase_dynamics)
+    dynamics = DynamicsOptions(ode_solver=OdeSolver.RK4(), phase_dynamics=phase_dynamics)
 
     x_init = InitialGuessList()
     x_init["q"] = [0] * bio_model.nb_q
@@ -621,7 +618,7 @@ def test_update_noised_init_rk4(interpolation, phase_dynamics):
 @pytest.mark.parametrize("interpolation", [*InterpolationType])
 def test_update_noised_initial_guess_rk4(interpolation, phase_dynamics):
     bioptim_folder = TestUtils.bioptim_folder()
-    bio_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
+    bio_model = TorqueBiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
     nq = bio_model.nb_q
     nqdot = bio_model.nb_qdot
     ntau = bio_model.nb_tau
@@ -633,8 +630,7 @@ def test_update_noised_initial_guess_rk4(interpolation, phase_dynamics):
     x_init["qdot"] = [0] * bio_model.nb_qdot
     u_init = InitialGuessList()
     u_init["tau"] = [0] * bio_model.nb_tau
-    dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase_dynamics=phase_dynamics)
+    dynamics = DynamicsOptions(phase_dynamics=phase_dynamics)
     ocp = OptimalControlProgram(
         bio_model,
         dynamics,
@@ -972,7 +968,7 @@ def test_update_noised_initial_guess_rk4(interpolation, phase_dynamics):
 @pytest.mark.parametrize("interpolation", [*InterpolationType])
 def test_update_noised_initial_guess_collocation(interpolation, phase_dynamics):
     bioptim_folder = TestUtils.bioptim_folder()
-    bio_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
+    bio_model = TorqueBiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
     nq = bio_model.nb_q
     nqdot = bio_model.nb_qdot
     ntau = bio_model.nb_tau
@@ -980,8 +976,7 @@ def test_update_noised_initial_guess_collocation(interpolation, phase_dynamics):
     phase_time = 1.0
     ode_solver = OdeSolver.COLLOCATION(polynomial_degree=1)
 
-    dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver, phase_dynamics=phase_dynamics)
+    dynamics = DynamicsOptions(ode_solver=ode_solver, phase_dynamics=phase_dynamics)
 
     x_init = InitialGuessList()
     x_init["q"] = [0] * bio_model.nb_q

@@ -91,9 +91,8 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
   - <details>
     <summary><a href="#the-dynamics">The dynamics</a></summary>
 
-    - [Dynamics](#class-dynamics)
-    - [DynamicsList](#class-dynamicslist)
-    - [DynamicsFcn](#class-dynamicsfcn)
+    - [DynamicsOptions](#class-dynamics)
+    - [DynamicsOptionsList](#class-dynamicslist)
 
     </details>
 
@@ -360,8 +359,7 @@ We will not spend time explaining the import since every one of them will be exp
 from bioptim import (
   BiorbdModel,
   OptimalControlProgram,
-  DynamicsFcn,
-  Dynamics,
+  DynamicsOptions,
   BoundsList,
   InitialGuessList,
   ObjectiveFcn,
@@ -384,7 +382,7 @@ In `bioptim`, this dynamic is called torque driven.
 In a torque driven dynamics, the states are the positions (also called generalized coordinates, *q*) and the velocities (also called the generalized velocities, *qdot*), whereas the controls are the joint torques (also called generalized forces, *tau*). 
 Let us define such dynamics:
 ```python
-dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
+dynamics = DynamicsOptions(DynamicsFcn.TORQUE_DRIVEN)
 ```
 
 The pendulum is required to start in a downward position (0 rad) and to finish in an upward position (3.14 rad) with no velocity at the start and end nodes.
@@ -462,7 +460,7 @@ For simplicity's sake, I copied all the pieces of code previously visited in the
 ```python
 ocp = OptimalControlProgram(
         bio_model,
-        dynamics,
+        dynamics=dynamics,
         n_shooting=25,
         phase_time=3,
         x_bounds=x_bounds,
@@ -572,8 +570,7 @@ import biorbd_casadi as biorbd
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
-    DynamicsFcn,
-    Dynamics,
+    DynamicsOptions,
     BoundsList,    
     InitialGuessList,
     ObjectiveFcn,
@@ -581,7 +578,7 @@ from bioptim import (
 )
 
 bio_model = BiorbdModel("pendulum.bioMod")
-dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
+dynamics = DynamicsOptions(DynamicsFcn.TORQUE_DRIVEN)
 
 # Bounds are optional (default -inf -> inf)
 x_bounds = BoundsList()
@@ -605,7 +602,7 @@ u_init = [0, 0]
 
 ocp = OptimalControlProgram(
         bio_model,
-        dynamics,
+        dynamics=dynamics,
         n_shooting=25,
         phase_time=3,
         x_bounds=x_bounds,
@@ -704,9 +701,9 @@ Here it is:
 ```python
 OptimalControlProgram(
     bio_model: [list, BioModel],
-    dynamics: [Dynamics, DynamicsList],
     n_shooting: [int, list],
     phase_time: [float, list], 
+    dynamics: [DynamicsOptions, DynamicsOptionsList],
     x_bounds: BoundsList,
     u_bounds: BoundsList,
     x_init: InitialGuessList
@@ -758,9 +755,9 @@ Please note that a common ocp will usually define only these parameters:
 ```python
 ocp = OptimalControlProgram(
     bio_model: [list, BioModel],
-    dynamics: [Dynamics, DynamicsList],
     n_shooting: [int, list],
     phase_time: [float, list],
+    dynamics: [DynamicsOptions, DynamicsOptionsList],
     x_init: InitialGuessList
     u_init: InitialGuessList, 
     x_bounds: BoundsList,
@@ -960,18 +957,18 @@ States and controls are linked through Ordinary differential equations: dx/dt = 
 The following section investigates how to instruct `bioptim` of the dynamic equations the system should follow.
 
  
-### Class: Dynamics
+### Class: DynamicsOptions
 This class is the main class to define a dynamics. 
 It, therefore, contains all the information necessary to configure (i.e., determining which variables are states or controls) and perform the dynamics. 
-When constructing an `OptimalControlProgram()`, Dynamics is the expected class for the `dynamics` parameter. 
+When constructing an `OptimalControlProgram()`, DynamicsOptions is the expected class for the `dynamics` parameter. 
 
-The user can minimally define a Dynamics as: `dyn = Dynamics(DynamicsFcn)`.
+The user can minimally define a DynamicsOptions as: `dyn = DynamicsOptions(DynamicsFcn)`.
 The `DynamicsFcn` is the one presented in the corresponding section below. 
 
 #### The options
-The full signature of Dynamics is as follows:
+The full signature of DynamicsOptions is as follows:
 ```python
-Dynamics(dynamics_type, configure: Callable, dynamic_function: Callable, phase: int, ode_solver: OdeSolver, numerical_timeseries: dict[str, np.ndarray])
+DynamicsOptions(dynamics_type, configure: Callable, dynamic_function: Callable, phase: int, ode_solver: OdeSolver, numerical_timeseries: dict[str, np.ndarray])
 ```
 The `dynamics_type` is the selected `DynamicsFcn`. 
 It automatically defines both `configure` and `dynamic_function`. 
@@ -981,7 +978,7 @@ If one is interested in changing the behavior of a particular `DynamicsFcn`, the
 The `phase` is the index of the phase the dynamics applies to. 
 The `ode_solver` is the ode to use to "integrate" the dynamics function.
 The `numerical_timeseries` is a list of numerical values (one per node) to use in the dynamics. For example, it can be used to define experimental ground reaction forces.
-The `add()` method of `DynamicsList` usually takes care of this, but it can be useful when declaring the dynamics out of order.
+The `add()` method of `DynamicsOptionsList` usually takes care of this, but it can be useful when declaring the dynamics out of order.
 
 #### Custom dynamic functions
 If an advanced user wants to define their own dynamic function, they can define the configuration and/or the dynamics. 
@@ -999,7 +996,7 @@ where `as_states` add the variable to the states vector and `as_controls` to the
 Please note that this is not necessarily mutually exclusive.
 Finally, the user is expected to configure the dynamic by calling `ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamics)`
 
-Defining the dynamic function must be done when one provides a custom configuration, but it can also be defined by providing a function handler to the `dynamic_function` parameter for `Dynamics`. 
+Defining the dynamic function must be done when one provides a custom configuration, but it can also be defined by providing a function handler to the `dynamic_function` parameter for `DynamicsOptions`. 
 The signature of this custom dynamic function is as follows: `custom_dynamic(states: MX, controls: MX, parameters: MX, nlp: NonLinearProgram`.
 This function is expected to return a tuple[MX] of the derivative of the states. 
 Some methods defined in the class `DynamicsFunctions` can be useful, but will not be covered here since it is initially designed for internal use.
@@ -1007,14 +1004,14 @@ Please note that MX type is a CasADi type.
 Anyone who wants to define custom dynamics should be at least familiar with this type beforehand. 
 
 
-### Class: DynamicsList
-A DynamicsList is simply a list of Dynamics. 
-The `add()` method can be called exactly as if one was calling the `Dynamics` constructor. 
+### Class: DynamicsOptionsList
+A DynamicsOptionsList is simply a list of DynamicsOptions. 
+The `add()` method can be called exactly as if one was calling the `DynamicsOptions` constructor. 
 If the `add()` method is used more than one, the `phase` parameter is automatically incremented. 
 
 So a minimal use is as follows:
 ```python
-dyn_list = DynamicsList()
+dyn_list = DynamicsOptionsList()
 dyn_list.add(DynamicsFcn)
 ```
 
@@ -1023,7 +1020,7 @@ The `DynamicsFcn` class is the configuration and declaration of all the already 
 Since this is an Enum, it is possible to use tab key on the keyboard to dynamically list them all, depending on the capabilities of your IDE. 
 
 Please note that one can change the dynamic function associated to any of the configuration by providing a custom dynamics_function. 
-For more information on this, please refer to the Dynamics and DynamicsList section right before. 
+For more information on this, please refer to the DynamicsOptions and DynamicsOptionsList section right before. 
 
 #### TORQUE_DRIVEN 
 The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as *tau*. 
@@ -1077,7 +1074,7 @@ degrees of freedom.
 #### CUSTOM
 This leaves the user to define both the configuration (what are the states and controls) and to define the dynamic function. 
 CUSTOM should not be called by the user, but the user should pass the configure_function directly. 
-You can have a look at Dynamics and DynamicsList sections for more information about how to configure and define custom dynamics.
+You can have a look at DynamicsOptions and DynamicsOptionsList sections for more information about how to configure and define custom dynamics.
 
 
 ## The bounds
@@ -1680,7 +1677,7 @@ The default value is ONE_PER_NODE, meaning we consider the dynamic equations to 
 
 In the case, you want to use this feature you have to specify it when adding the dynamics of each phase.
 ```python3
-dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE)
+dynamics = DynamicsOptions(DynamicsFcn.TORQUE_DRIVEN, phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE)
 ```
 
 ### Enum: ControlType

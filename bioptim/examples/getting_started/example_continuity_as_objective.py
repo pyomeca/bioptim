@@ -19,11 +19,10 @@ import numpy as np
 from casadi import sqrt
 
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     OptimalControlProgram,
     Node,
-    DynamicsFcn,
-    Dynamics,
+    DynamicsOptions,
     BoundsList,
     InterpolationType,
     InitialGuessList,
@@ -98,7 +97,7 @@ def prepare_ocp_first_pass(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -107,8 +106,7 @@ def prepare_ocp_first_pass(
         objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=100 / n_shooting)
 
     # Dynamics
-    dynamics = Dynamics(
-        DynamicsFcn.TORQUE_DRIVEN,
+    dynamics = DynamicsOptions(
         state_continuity_weight=state_continuity_weight,
         ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
@@ -153,9 +151,9 @@ def prepare_ocp_first_pass(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_init=x_init,
         u_init=u_init,
         x_bounds=x_bounds,
@@ -201,7 +199,7 @@ def prepare_ocp_second_pass(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -210,7 +208,7 @@ def prepare_ocp_second_pass(
         objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=100 / n_shooting)
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver)
+    dynamics = DynamicsOptions(ode_solver=ode_solver)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -257,9 +255,9 @@ def prepare_ocp_second_pass(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_init=x_init,
         u_init=u_init,
         x_bounds=x_bounds,
