@@ -4,6 +4,8 @@ from bioptim import (
     ControlType,
     TorqueBiorbdModel,
     TorqueDerivativeBiorbdModel,
+    TorqueActivationBiorbdModel,
+    MusclesBiorbdModel,
     NonLinearProgram,
     DynamicsOptions,
     Solver,

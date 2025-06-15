@@ -469,7 +469,7 @@ class TorqueDerivativeDynamics(TorqueDynamics):
         self.state_type += [States.TAU]
         self.control_type += [Controls.TAUDOT]
 
-    def get_basic_variables(nlp, states, controls, parameters, algebraic_states, numerical_timeseries):
+    def get_basic_variables(self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue: FatigueList):
 
         # Get variables from the right place
         q = DynamicsFunctions.get(nlp.states["q"], states)
@@ -497,7 +497,8 @@ class TorqueDerivativeDynamics(TorqueDynamics):
     ):
 
         # Get the torque driven dynamics
-        tau_dynamics_evaluation = self.dynamics(
+        tau_dynamics_evaluation = TorqueDynamics.dynamics(
+            self,
             time,
             states,
             controls,
@@ -517,10 +518,13 @@ class TorqueDerivativeDynamics(TorqueDynamics):
         taudot_dxdt[nlp.states["qdot"].index, 0] = tau_dynamics_evaluation.dxdt[nlp.states["qdot"].index, 0]
         taudot_dxdt[nlp.states["tau"].index, 0] = taudot
 
-        taudot_defects = nlp.cx(nlp.states.shape, 1)
-        taudot_defects[nlp.states["q"].index, 0] = tau_dynamics_evaluation.defects[nlp.states["q"].index, 0]
-        taudot_defects[nlp.states["qdot"].index, 0] = tau_dynamics_evaluation.defects[nlp.states["qdot"].index, 0]
-        taudot_defects[nlp.states["tau"].index, 0] = slope_tau * nlp.dt - taudot * nlp.dt
+
+        taudot_defects = None
+        if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
+            taudot_defects = nlp.cx(nlp.states.shape, 1)
+            taudot_defects[nlp.states["q"].index, 0] = tau_dynamics_evaluation.defects[nlp.states["q"].index, 0]
+            taudot_defects[nlp.states["qdot"].index, 0] = tau_dynamics_evaluation.defects[nlp.states["qdot"].index, 0]
+            taudot_defects[nlp.states["tau"].index, 0] = slope_tau * nlp.dt - taudot * nlp.dt
 
         return DynamicsEvaluation(dxdt=taudot_dxdt, defects=taudot_defects)
 

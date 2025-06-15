@@ -504,9 +504,9 @@ def test_mayer_neg_monophase_time_constraint():
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot be declared more than once"):
         OptimalControlProgram(
             bio_model,
-            dynamics,
             n_shooting,
             final_time,
+            dynamics=dynamics,
             x_bounds=x_bounds,
             u_bounds=u_bounds,
             x_init=x_init,
@@ -544,9 +544,9 @@ def test_mayer1_neg_multiphase_time_constraint():
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot be declared more than once"):
         OptimalControlProgram(
             bio_model,
-            dynamics,
             n_shooting,
             final_time,
+            dynamics=dynamics,
             x_bounds=x_bounds,
             u_bounds=u_bounds,
             x_init=x_init,
@@ -584,9 +584,9 @@ def test_mayer2_neg_multiphase_time_constraint():
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot be declared more than once"):
         OptimalControlProgram(
             bio_model,
-            dynamics,
             n_shooting,
             final_time,
+            dynamics=dynamics,
             x_bounds=x_bounds,
             u_bounds=u_bounds,
             x_init=x_init,
@@ -624,9 +624,9 @@ def test_mayer_multiphase_time_constraint(phase_dynamics):
 
     OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         x_init=x_init,
@@ -661,9 +661,9 @@ def test_mayer_neg_two_objectives(phase_dynamics):
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot be declared more than once"):
         OptimalControlProgram(
             bio_model,
-            dynamics,
             n_shooting,
             final_time,
+            dynamics=dynamics,
             x_bounds=x_bounds,
             u_bounds=u_bounds,
             x_init=x_init,

@@ -21,8 +21,6 @@ from bioptim import (
     NonLinearProgram,
     BiMapping,
     DynamicsOptionsList,
-    DynamicsFcn,
-    DynamicsFunctions,
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,

@@ -249,9 +249,9 @@ class DynamicsFunctions:
         """
         tau = nlp.cx.zeros(nlp.model.nb_q, 1)
         if nlp.model.nb_passive_joint_torques > 0:
-            tau += nlp.model.passive_joint_torque()(q, qdot, parameters.cx)
+            tau += nlp.model.passive_joint_torque()(q, qdot, parameters)
         if nlp.model.nb_ligaments > 0:
-            tau += nlp.model.ligament_joint_torque()(q, qdot, parameters.cx)
+            tau += nlp.model.ligament_joint_torque()(q, qdot, parameters)
         if nlp.model.friction_coefficients is not None:
             tau -= nlp.model.friction_coefficients @ qdot
         return tau

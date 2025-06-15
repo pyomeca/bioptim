@@ -9,7 +9,7 @@ It is designed to show how one can define a multiphase optimal control program
 import platform
 
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     OptimalControlProgram,
     PenaltyController,
     DynamicsOptionsList,

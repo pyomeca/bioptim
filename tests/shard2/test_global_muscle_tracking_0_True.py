@@ -37,7 +37,7 @@ def test_muscle_activations_and_states_tracking(ode_solver, n_threads, phase_dyn
     # Generate random data to fit
     np.random.seed(10)
     t, markers_ref, x_ref, muscle_activations_ref = ocp_module.generate_data(
-        bio_model, final_time, n_shooting, use_residual_torque=use_residual_torque
+        bio_model, final_time, n_shooting, use_residual_torque=use_residual_torque,
     )
 
     bio_model = MusclesBiorbdModel(model_path, with_residual_torque=use_residual_torque)  # To allow for non free variable, the model must be reloaded
