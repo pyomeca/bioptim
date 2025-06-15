@@ -9,10 +9,8 @@ import platform
 import numpy as np
 
 from bioptim import (
-    BiorbdModel,
+    TorqueFreeFloatingBaseBiorbdModel,
     OptimalControlProgram,
-    DynamicsList,
-    DynamicsFcn,
     BoundsList,
     InitialGuessList,
     ObjectiveList,
@@ -41,7 +39,7 @@ def prepare_ocp(biorbd_model_path: str):
     n_shooting = [10]
     phase_time = [1.0]
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueFreeFloatingBaseBiorbdModel(biorbd_model_path)
 
     # Declaration of the objectives
     objective_functions = ObjectiveList()
@@ -57,10 +55,6 @@ def prepare_ocp(biorbd_model_path: str):
         node=Node.END,
         weight=-0.001,
     )
-
-    # Declaration of the dynamics function used during integration
-    dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN_FREE_FLOATING_BASE)
 
     # Declaration of optimization variables bounds and initial guesses
     # Path constraint

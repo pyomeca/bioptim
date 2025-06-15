@@ -5,7 +5,7 @@ from casadi import DM_eye, vertcat, Function, horzcat
 
 from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVectorHelper
-from ..dynamics.configure_problem import DynamicsList, Dynamics
+from ..dynamics.configure_problem import DynamicsOptionsList, DynamicsOptions
 from ..dynamics.ode_solvers import OdeSolver
 from ..limits.constraints import (
     ConstraintFcn,
@@ -40,7 +40,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
     def __init__(
         self,
         bio_model: list | tuple | StochasticBioModel,
-        dynamics: Dynamics | DynamicsList,
+        dynamics: DynamicsOptions | DynamicsOptionsList,
         n_shooting: int | list | tuple,
         phase_time: int | float | list | tuple,
         x_bounds: BoundsList = None,
@@ -72,7 +72,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         problem_type=SocpType.TRAPEZOIDAL_IMPLICIT,
         **kwargs,
     ):
-        _check_multi_threading_and_problem_type(problem_type, **kwargs)
+        _check_multi_threading_and_problem_type(problem_type, bio_model, **kwargs)
         _check_has_no_phase_dynamics_shared_during_the_phase(problem_type, **kwargs)
 
         self.problem_type = problem_type
@@ -611,14 +611,18 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         NLP.add(self, "is_stochastic", True, True)
 
 
-def _check_multi_threading_and_problem_type(problem_type, **kwargs):
+def _check_multi_threading_and_problem_type(problem_type, bio_model, **kwargs):
     if not isinstance(problem_type, SocpType.COLLOCATION):
-        if "n_thread" in kwargs:
-            if kwargs["n_thread"] != 1:
+        if "n_threads" in kwargs:
+            if kwargs["n_threads"] != 1:
                 raise ValueError(
                     "Multi-threading is not possible yet while solving a trapezoidal stochastic ocp."
-                    "n_thread is set to 1 by default."
+                    "n_threads is set to 1 by default."
                 )
+    if bio_model.problem_type != problem_type:
+        raise RuntimeError(
+            "The problem type should be the same in the StochasticModel as in the StochasticOptimalControlProblem."
+        )
 
 
 def _check_has_no_phase_dynamics_shared_during_the_phase(problem_type, **kwargs):

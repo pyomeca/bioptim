@@ -5,10 +5,9 @@ This is an example of the use of torque actuator using a model of 2segments and 
 import platform
 
 from bioptim import (
-    BiorbdModel,
+    TorqueActivationBiorbdModel,
     OptimalControlProgram,
-    DynamicsList,
-    DynamicsFcn,
+    DynamicsOptionsList,
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,
@@ -56,7 +55,7 @@ def prepare_ocp(
 
     # --- Options --- #
     # BioModel path
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueActivationBiorbdModel(biorbd_model_path, with_residual_torque=True)
     tau_min, tau_max = -10, 10
 
     # Add objective functions
@@ -65,10 +64,8 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="residual_tau", weight=100)
 
     # Dynamics
-    dynamics = DynamicsList()
+    dynamics = DynamicsOptionsList()
     dynamics.add(
-        DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
-        with_residual_torque=True,
         ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
@@ -101,9 +98,9 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         x_init=x_init,

@@ -1,8 +1,8 @@
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     OptimalControlProgram,
-    DynamicsList,
-    DynamicsFcn,
+    DynamicsOptionsList,
+    DynamicsOptions,
     ObjectiveList,
     ConstraintList,
     ConstraintFcn,
@@ -26,7 +26,8 @@ def prepare_ocp(
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
-    bio_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path_with_translations))
+
+    bio_model = (TorqueBiorbdModel(biorbd_model_path), TorqueBiorbdModel(biorbd_model_path_with_translations))
 
     # Problem parameters
     final_time = (0.5, 0.5)
@@ -56,9 +57,9 @@ def prepare_ocp(
     constraints.add(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, min_bound=0.3, max_bound=3, phase=1)
 
     # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    dynamics = DynamicsOptionsList()
+    dynamics.add(DynamicsOptions(expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics))
+    dynamics.add(DynamicsOptions(expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics))
 
     # Path constraint
     x_bounds = BoundsList()
@@ -105,9 +106,9 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_init=x_init,
         x_bounds=x_bounds,
         u_bounds=u_bounds,

@@ -7,12 +7,11 @@ ACADOS and Ipopt.
 
 import numpy as np
 from bioptim import (
-    BiorbdModel,
+    MusclesBiorbdModel,
     OptimalControlProgram,
     ObjectiveList,
     ObjectiveFcn,
-    DynamicsList,
-    DynamicsFcn,
+    DynamicsOptions,
     BoundsList,
     InitialGuessList,
     Solver,
@@ -31,7 +30,7 @@ def prepare_ocp(
 ):
     # --- Options --- #
     # BioModel path
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = MusclesBiorbdModel(biorbd_model_path, with_residual_torque=True)
     tau_min, tau_max, tau_init = -50.0, 50.0, 0.0
     muscle_min, muscle_max, muscle_init = 0.0, 1.0, 0.5
 
@@ -45,9 +44,8 @@ def prepare_ocp(
         ObjectiveFcn.Mayer.SUPERIMPOSE_MARKERS, weight=100000, first_marker="target", second_marker="COM_hand"
     )
 
-    # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, expand_dynamics=expand_dynamics)
+    # DynamicsOptions
+    dynamics = DynamicsOptions(expand_dynamics=expand_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -76,9 +74,9 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         x_init=x_init,

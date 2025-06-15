@@ -39,7 +39,6 @@ examples_ = OrderedDict(
                 [
                     ("Custom Bounds", "custom_bounds.py"),
                     ("Custom constraint", "custom_constraint.py"),
-                    ("Custom dynamics", "custom_dynamics.py"),
                     ("Custom initial guess", "custom_initial_guess.py"),
                     ("Custom objectives", "custom_objectives.py"),
                     ("Custom parameters", "custom_parameters.py"),

@@ -9,12 +9,11 @@ mesh points.
 import platform
 
 from bioptim import (
-    BiorbdModel,
+    MusclesBiorbdModel,
     OptimalControlProgram,
     ObjectiveList,
     ObjectiveFcn,
-    DynamicsList,
-    DynamicsFcn,
+    DynamicsOptions,
     BoundsList,
     InitialGuessList,
     OdeSolver,
@@ -22,6 +21,7 @@ from bioptim import (
     Solver,
     PhaseDynamics,
     ControlType,
+    MusclesBiorbdModel,
 )
 
 
@@ -70,7 +70,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = MusclesBiorbdModel(biorbd_model_path, with_residual_torque=True)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -81,10 +81,7 @@ def prepare_ocp(
     )
 
     # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(
-        DynamicsFcn.MUSCLE_DRIVEN,
-        with_residual_torque=True,
+    dynamics = DynamicsOptions(
         ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
@@ -114,9 +111,9 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         x_init=x_init,
