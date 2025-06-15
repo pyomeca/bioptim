@@ -1,5 +1,13 @@
 from enum import Enum, auto
 import numpy as np
+from ...misc.parameters_types import (
+    Bool,
+    Int,
+    Str,
+    IntList,
+    AnyList,
+    AnyDict,
+)
 
 
 class SolutionMerge(Enum):
@@ -33,7 +41,7 @@ class TimeResolution(Enum):
 
 
 class SolutionData:
-    def __init__(self, unscaled, scaled, n_nodes: list[int]):
+    def __init__(self, unscaled: AnyList, scaled: AnyList, n_nodes: IntList):
         """
         Parameters
         ----------
@@ -47,7 +55,7 @@ class SolutionData:
         self.n_nodes = n_nodes  # This is painfully necessary to get from outside to merge key if no keys are available
 
     @staticmethod
-    def from_unscaled(ocp, unscaled: list, variable_type: str):
+    def from_unscaled(ocp, unscaled: AnyList, variable_type: Str):
         """
         Create a SolutionData from unscaled values
 
@@ -64,7 +72,7 @@ class SolutionData:
         return SolutionData(unscaled, _to_scaled_values(unscaled, ocp, variable_type), n_nodes)
 
     @staticmethod
-    def from_scaled(ocp, scaled: list, variable_type: str):
+    def from_scaled(ocp, scaled: AnyList, variable_type: Str):
         """
         Create a SolutionData from scaled values
 
@@ -89,10 +97,10 @@ class SolutionData:
         key = keys["key"]
         return self.unscaled[phase][key]
 
-    def keys(self, phase: int = 0):
+    def keys(self, phase: Int = 0):
         return self.unscaled[phase].keys()
 
-    def to_dict(self, to_merge: SolutionMerge | list[SolutionMerge] = None, scaled: bool = False):
+    def to_dict(self, to_merge: SolutionMerge | list[SolutionMerge] = None, scaled: Bool = False):
         data = self.scaled if scaled else self.unscaled
 
         if to_merge is None:
@@ -127,7 +135,7 @@ class SolutionData:
         return out
 
     @staticmethod
-    def _merge_phases(data: list, to_merge: list[SolutionMerge]):
+    def _merge_phases(data: AnyList, to_merge: list[SolutionMerge]):
         """
         Merge the phases by merging keys and nodes before.
         This method does not remove the redundent nodes when merging the phase nor the nodes
@@ -142,14 +150,14 @@ class SolutionData:
 
         return np.concatenate(data, axis=1)
 
-    def _merge_keys_nodes(self, data: dict, phase: int):
+    def _merge_keys_nodes(self, data: AnyDict, phase: Int):
         """
         Merge the steps by merging keys before.
         """
         return np.concatenate(self._merge_keys(data, phase=phase), axis=1)
 
     @staticmethod
-    def _merge_nodes(data: dict, phase: int):
+    def _merge_nodes(data: AnyDict, phase: Int):
         """
         Merge the nodes of a SolutionData.unscaled or SolutionData.scaled, without merging the keys
 
@@ -160,7 +168,7 @@ class SolutionData:
 
         return {key: np.concatenate(data[phase][key], axis=1) for key in data[phase].keys()}
 
-    def _merge_keys(self, data: dict, phase: int):
+    def _merge_keys(self, data: AnyDict, phase: Int):
         """
         Merge the keys without merging anything else
         """
@@ -175,7 +183,7 @@ class SolutionData:
         return out
 
 
-def _to_unscaled_values(scaled: list, ocp, variable_type: str) -> list:
+def _to_unscaled_values(scaled: AnyList, ocp, variable_type: Str) -> AnyList:
     """
     Convert values of scaled solution to unscaled values
 
@@ -210,7 +218,7 @@ def _to_unscaled_values(scaled: list, ocp, variable_type: str) -> list:
     return unscaled
 
 
-def _to_scaled_values(unscaled: list, ocp, variable_type: str) -> list:
+def _to_scaled_values(unscaled: AnyList, ocp, variable_type: Str) -> AnyList:
     """
     Convert values of unscaled solution to scaled values
 
