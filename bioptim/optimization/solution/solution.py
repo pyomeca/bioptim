@@ -11,6 +11,7 @@ from ...dynamics.ode_solvers import OdeSolver
 from ...interfaces.solve_ivp_interface import solve_ivp_interface
 from ...limits.path_conditions import InitialGuess, InitialGuessList
 from ...limits.penalty_helpers import PenaltyHelpers
+from ...limits.penalty_option import PenaltyOption
 from ...misc.enums import (
     ControlType,
     CostType,
@@ -20,7 +21,25 @@ from ...misc.enums import (
     SolutionIntegrator,
     Node,
 )
+from ...misc.parameters_types import (
+    Bool,
+    Int,
+    IntOptional,
+    Float,
+    FloatOptional,
+    Str,
+    StrOptional,
+    AnyList,
+    AnyListOptional,
+    AnyDict,
+    AnyTuple,
+    FloatTuple,
+    AnyIterable,
+    NpArray,
+    NpArrayOptional,
+)
 from ...models.protocols.stochastic_biomodel import StochasticBioModel
+
 
 
 class Solution:
@@ -95,19 +114,19 @@ class Solution:
 
     def __init__(
         self,
-        ocp,
-        vector: np.ndarray | DM = None,
-        cost: np.ndarray | DM = None,
-        constraints: np.ndarray | DM = None,
-        lam_g: np.ndarray | DM = None,
-        lam_p: np.ndarray | DM = None,
-        lam_x: np.ndarray | DM = None,
-        inf_pr: np.ndarray | DM = None,
-        inf_du: np.ndarray | DM = None,
-        solver_time_to_optimize: float = None,
-        real_time_to_optimize: float = None,
-        iterations: int = None,
-        status: int = None,
+        ocp: "OptimalControlProgram",
+        vector: NpArrayOptional | DM = None,
+        cost: NpArrayOptional | DM = None,
+        constraints: NpArrayOptional | DM = None,
+        lam_g: NpArrayOptional | DM = None,
+        lam_p: NpArrayOptional | DM = None,
+        lam_x: NpArrayOptional | DM = None,
+        inf_pr: NpArrayOptional | DM = None,
+        inf_du: NpArrayOptional | DM = None,
+        solver_time_to_optimize: FloatOptional = None,
+        real_time_to_optimize: FloatOptional = None,
+        iterations: IntOptional = None,
+        status: IntOptional = None,
     ):
         """
         Parameters
@@ -171,7 +190,7 @@ class Solution:
             self._decision_algebraic_states = SolutionData.from_scaled(ocp, a, "a")
 
     @classmethod
-    def from_dict(cls, ocp, sol: dict):
+    def from_dict(cls, ocp: "OptimalControlProgram", sol: AnyDict):
         """
         Initialize all the attributes from an Ipopt-like dictionary data structure
 
@@ -205,7 +224,7 @@ class Solution:
         )
 
     @classmethod
-    def from_initial_guess(cls, ocp, sol: list):
+    def from_initial_guess(cls, ocp: "OptimalControlProgram", sol: AnyList):
         """
         Initialize all the attributes from a list of initial guesses (states, controls)
 
@@ -319,7 +338,7 @@ class Solution:
         return cls(ocp=ocp, vector=vector)
 
     @classmethod
-    def from_vector(cls, ocp, sol: np.ndarray | DM):
+    def from_vector(cls, ocp: "OptimalControlProgram", sol: NpArray | DM):
         """
         Initialize all the attributes from a vector of solution
 
@@ -337,7 +356,7 @@ class Solution:
         return cls(ocp=ocp, vector=sol)
 
     @classmethod
-    def from_ocp(cls, ocp):
+    def from_ocp(cls, ocp: "OptimalControlProgram"):
         """
         Initialize all the attributes from a vector of solution
 
@@ -353,8 +372,8 @@ class Solution:
         self,
         to_merge: SolutionMerge | list[SolutionMerge] = None,
         time_alignment: TimeAlignment = TimeAlignment.STATES,
-        continuous: bool = True,
-    ):
+        continuous: Bool = True,
+    ) -> AnyList | NpArray:
         """
         Returns the time span at each node of each phases
         """
@@ -369,8 +388,8 @@ class Solution:
         self,
         to_merge: SolutionMerge | list[SolutionMerge] = None,
         time_alignment: TimeAlignment = TimeAlignment.STATES,
-        continuous: bool = True,
-    ) -> list | np.ndarray:
+        continuous: Bool = True,
+    ) -> AnyList | NpArray:
         """
         Returns the time vector at each node that matches decision_states or decision_controls
 
@@ -399,9 +418,9 @@ class Solution:
         self,
         to_merge: SolutionMerge | list[SolutionMerge] = None,
         time_alignment: TimeAlignment = TimeAlignment.STATES,
-        continuous: bool = True,
-        duplicated_times: bool = True,
-    ) -> list | np.ndarray:
+        continuous: Bool = True,
+        duplicated_times: Bool = True,
+    ) -> AnyList | NpArray:
         """
         Returns the time vector at each node that matches stepwise_states or stepwise_controls
 
@@ -439,9 +458,9 @@ class Solution:
         time_resolution: TimeResolution,
         to_merge: SolutionMerge | list[SolutionMerge],
         time_alignment: TimeAlignment,
-        continuous: bool,
-        duplicated_times: bool = True,
-    ):
+        continuous: Bool,
+        duplicated_times: Bool = True,
+    ) -> AnyList | NpArray:
         if to_merge is None or isinstance(to_merge, SolutionMerge):
             to_merge = [to_merge]
 
@@ -527,7 +546,7 @@ class Solution:
 
         return times if len(times) > 1 else times[0]
 
-    def decision_states(self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge] = None):
+    def decision_states(self, scaled: Bool = False, to_merge: SolutionMerge | list[SolutionMerge] = None) -> AnyList | AnyDict:
         """
         Returns the decision states
 
@@ -549,7 +568,7 @@ class Solution:
             return data
         return data if len(data) > 1 else data[0]
 
-    def stepwise_states(self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge] = None):
+    def stepwise_states(self, scaled: Bool = False, to_merge: SolutionMerge | list[SolutionMerge] = None):
         """
         Returns the stepwise integrated states
 
@@ -574,7 +593,7 @@ class Solution:
             return data
         return data if len(data) > 1 else data[0]
 
-    def decision_controls(self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge] = None):
+    def decision_controls(self, scaled: Bool = False, to_merge: SolutionMerge | list[SolutionMerge] = None):
         """
         Returns the decision controls
 
@@ -588,7 +607,7 @@ class Solution:
         """
         return self.stepwise_controls(scaled=scaled, to_merge=to_merge)
 
-    def stepwise_controls(self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge] = None):
+    def stepwise_controls(self, scaled: Bool = False, to_merge: SolutionMerge | list[SolutionMerge] = None):
         """
         Returns the controls. Note the final control is always present but set to np.nan if it is not defined
 
@@ -611,14 +630,14 @@ class Solution:
         return data if len(data) > 1 else data[0]
 
     @property
-    def parameters(self):
+    def parameters(self) -> Any:
         """
         Returns the parameters
         """
 
         return self.decision_parameters(scaled=False)
 
-    def decision_parameters(self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge] = None):
+    def decision_parameters(self, scaled: Bool = False, to_merge: SolutionMerge | list[SolutionMerge] = None) -> Any:
         """
         Returns the decision parameters
 
@@ -654,7 +673,7 @@ class Solution:
 
         return out
 
-    def decision_algebraic_states(self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge] = None):
+    def decision_algebraic_states(self, scaled: Bool = False, to_merge: SolutionMerge | list[SolutionMerge] = None) -> AnyList | AnyDict:
         """
         Returns the decision algebraic_states
 
@@ -676,7 +695,7 @@ class Solution:
             return data
         return data if len(data) > 1 else data[0]
 
-    def copy(self, skip_data: bool = False) -> "Solution":
+    def copy(self, skip_data: Bool = False) -> "Solution":
         """
         Create a deepcopy of the Solution
 
@@ -718,7 +737,7 @@ class Solution:
             new._parameters = deepcopy(self._parameters)
         return new
 
-    def _prepare_integrate(self, integrator: SolutionIntegrator):
+    def _prepare_integrate(self, integrator: SolutionIntegrator) -> AnyTuple:
         """
         Prepare the variables for the states integration and checks if the integrator is compatible with the ocp.
 
@@ -769,9 +788,9 @@ class Solution:
         shooting_type: Shooting = Shooting.SINGLE,
         integrator: SolutionIntegrator = SolutionIntegrator.OCP,
         to_merge: SolutionMerge | list[SolutionMerge] = None,
-        duplicated_times: bool = True,
-        return_time: bool = False,
-    ):
+        duplicated_times: Bool = True,
+        return_time: Bool = False,
+    ) -> Any:
         """
         Create a deepcopy of the Solution
 
@@ -851,8 +870,8 @@ class Solution:
         self,
         integrator: SolutionIntegrator = SolutionIntegrator.OCP,
         to_merge: SolutionMerge | list[SolutionMerge] = None,
-        size: int = 100,
-    ):
+        size: Int = 100,
+    ) -> AnyDict | AnyList:
         """
         Integrated the states with different noise values sampled from the covariance matrix.
         """
@@ -972,13 +991,13 @@ class Solution:
     def _states_for_phase_integration(
         self,
         shooting_type: Shooting,
-        phase_idx: int,
-        integrated_states: np.ndarray,
-        decision_states,
-        decision_controls,
-        params,
+        phase_idx: Int,
+        integrated_states: NpArray,
+        decision_states: AnyList,
+        decision_controls: AnyList,
+        params: AnyDict,
         decision_algebraic_states,
-    ):
+    ) -> Any:
         """
         Returns the states to integrate for the phase_idx phase. If there was a phase transition, the last state of the
         previous phase is transformed into the first state of the next phase
@@ -1107,7 +1126,7 @@ class Solution:
 
         self._stepwise_states = SolutionData.from_unscaled(self.ocp, unscaled, "x")
 
-    def _return_time_vector(self, to_merge: SolutionMerge | list[SolutionMerge], duplicated_times: bool):
+    def _return_time_vector(self, to_merge: SolutionMerge | list[SolutionMerge], duplicated_times: Bool) -> AnyList | NpArray:
         """
         Returns the time vector at each node that matches stepwise_states or stepwise_controls
         Parameters
@@ -1135,7 +1154,7 @@ class Solution:
             time_vector = self.stepwise_time(to_merge=to_merge, duplicated_times=duplicated_times)
         return time_vector
 
-    def interpolate(self, n_frames: int | list | tuple, scaled: bool = False):
+    def interpolate(self, n_frames: Int | AnyIterable, scaled: Bool = False) -> AnyList | AnyDict:
         """
         Interpolate the states
 
@@ -1198,12 +1217,12 @@ class Solution:
 
     def graphs(
         self,
-        automatically_organize: bool = True,
-        show_bounds: bool = False,
-        show_now: bool = True,
+        automatically_organize: Bool = True,
+        show_bounds: Bool = False,
+        show_now: Bool = True,
         shooting_type: Shooting = Shooting.MULTIPLE,
         integrator: SolutionIntegrator = SolutionIntegrator.OCP,
-        save_name: str = None,
+        save_name: StrOptional = None,
     ) -> list[plt.figure]:
         """
         Show the graphs of the simulation
@@ -1241,13 +1260,13 @@ class Solution:
 
     def animate(
         self,
-        n_frames: int = 0,
+        n_frames: Int = 0,
         shooting_type: Shooting = None,
-        show_now: bool = True,
-        show_tracked_markers: bool = False,
-        viewer: str = "bioviz",
+        show_now: Bool = True,
+        show_tracked_markers: Bool = False,
+        viewer: Str = "bioviz",
         **kwargs: Any,
-    ) -> None | list:
+    ) -> AnyListOptional:
         """
         Animate the simulation
 
@@ -1290,14 +1309,14 @@ class Solution:
         )
 
     @staticmethod
-    def _dispatch_params(params):
+    def _dispatch_params(params: AnyDict) -> NpArray:
         values = [params[key][0] for key in params.keys()]
         if values:
             return np.concatenate(values)
         else:
             return np.ndarray((0, 1))
 
-    def _get_penalty_cost(self, nlp, penalty):
+    def _get_penalty_cost(self, nlp: "NonLinearProgram", penalty: PenaltyOption) -> FloatTuple:
         from ...interfaces.interface_utils import get_numerical_timeseries
 
         if nlp is None:
@@ -1367,7 +1386,7 @@ class Solution:
         return u
 
     @property
-    def cost(self):
+    def cost(self) -> Float | DM:
         if self._cost is None:
             self._cost = 0
             for J in self.ocp.J:
@@ -1382,12 +1401,12 @@ class Solution:
         return self._cost
 
     @property
-    def detailed_cost(self):
+    def detailed_cost(self) -> AnyList:
         if self._detailed_cost is None:
             self._compute_detailed_cost()
         return self._detailed_cost
 
-    def _compute_detailed_cost(self):
+    def _compute_detailed_cost(self) -> None:
         """
         Adds the detailed objective functions and/or constraints values to sol
 
@@ -1414,7 +1433,7 @@ class Solution:
             ]
         return
 
-    def print_cost(self, cost_type: CostType = CostType.ALL):
+    def print_cost(self, cost_type: CostType = CostType.ALL) -> Float:
         """
         Print the objective functions and/or constraints to the console
 
@@ -1463,7 +1482,7 @@ class Solution:
 
             return running_total
 
-        def print_objective_functions(ocp):
+        def print_objective_functions(ocp: "OptimalControlProgram") -> None:
             """
             Print the values of each objective function to the console
             """
@@ -1482,7 +1501,7 @@ class Solution:
             print(f"Sum cost functions: {running_total}")
             print(f"------------------------------")
 
-        def print_constraints(ocp, sol):
+        def print_constraints(ocp: "OptimalControlProgram", sol: AnyDict) -> None:
             """
             Print the values of each constraint with its lagrange multiplier to the console
             """
