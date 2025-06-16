@@ -469,7 +469,9 @@ class TorqueDerivativeDynamics(TorqueDynamics):
         self.state_type += [States.TAU]
         self.control_type = [Controls.TAUDOT]
 
-    def get_basic_variables(self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue: FatigueList):
+    def get_basic_variables(
+        self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue: FatigueList
+    ):
 
         # Get variables from the right place
         q = DynamicsFunctions.get(nlp.states["q"], states)

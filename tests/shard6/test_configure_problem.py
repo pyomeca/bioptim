@@ -101,7 +101,9 @@ def test_configures(cx):
     npt.assert_equal(nlp.states_dot.shape, n_states)
     npt.assert_equal(nlp.states_dot.keys(), keys_states)
 
-    ConfigureVariables.configure_stochastic_k(ocp, nlp, n_noised_controls=4, n_references=8, as_states=False, as_controls=True, as_algebraic_states=False)
+    ConfigureVariables.configure_stochastic_k(
+        ocp, nlp, n_noised_controls=4, n_references=8, as_states=False, as_controls=True, as_algebraic_states=False
+    )
     n_controls += 32
     keys_controls += ["k"]
     npt.assert_equal(nlp.controls.shape, n_controls)
@@ -196,7 +198,9 @@ def test_configure_muscles(cx):
     fatigue = FatigueList()
     fatigue.add(XiaFatigue(LD=10, LR=10, F=0.01, R=0.002), state_only=False)
 
-    ConfigureVariables.configure_muscles(ocp, nlp, as_states=True, as_controls=True, as_algebraic_states=False, fatigue=fatigue)
+    ConfigureVariables.configure_muscles(
+        ocp, nlp, as_states=True, as_controls=True, as_algebraic_states=False, fatigue=fatigue
+    )
     npt.assert_equal(nlp.states.shape, 24)
     npt.assert_equal(nlp.states.keys(), ["muscles", "muscles_ma", "muscles_mr", "muscles_mf"])
     npt.assert_equal(nlp.states_dot.shape, 24)

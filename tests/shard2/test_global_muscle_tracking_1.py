@@ -38,7 +38,9 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver, p
         bio_model, final_time, n_shooting, use_residual_torque=use_residual_torque
     )
 
-    bio_model = MusclesBiorbdModel(model_path, with_residual_torque=use_residual_torque)  # To allow for non free variable, the model must be reloaded
+    bio_model = MusclesBiorbdModel(
+        model_path, with_residual_torque=use_residual_torque
+    )  # To allow for non free variable, the model must be reloaded
     ocp = ocp_module.prepare_ocp(
         bio_model,
         final_time,
