@@ -568,9 +568,9 @@ def prepare_socp(
 
     return StochasticOptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_init=x_init,
         u_init=u_init,
         a_init=a_init,

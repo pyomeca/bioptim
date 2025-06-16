@@ -8,7 +8,6 @@ from casadi import MX
 from bioptim import (
     TorqueBiorbdModel,
     OptimalControlProgram,
-    DynamicsOptionsList,
     DynamicsOptions,
     BoundsList,
     ParameterList,
@@ -56,9 +55,9 @@ def test_double_update_bounds_and_init(phase_dynamics):
     u_init["tau"] = [0] * bio_model.nb_tau
     ocp = OptimalControlProgram(
         bio_model,
-        dynamics,
         ns,
         1.0,
+        dynamics=dynamics,
         x_init=x_init,
         u_init=u_init,
     )
@@ -204,9 +203,9 @@ def test_update_bounds_and_init_with_param(phase_dynamics):
 
     ocp = OptimalControlProgram(
         bio_model,
-        dynamics,
         ns,
         1.0,
+        dynamics=dynamics,
         parameters=parameters,
         parameter_init=parameter_init,
         parameter_bounds=parameter_bounds,
@@ -279,8 +278,8 @@ def test_update_noised_init_rk4(interpolation, phase_dynamics):
     u_init["tau"] = [0] * bio_model.nb_tau
     ocp = OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting=ns,
+        dynamics=dynamics,
         phase_time=phase_time,
         x_init=x_init,
         u_init=u_init,
@@ -633,8 +632,8 @@ def test_update_noised_initial_guess_rk4(interpolation, phase_dynamics):
     dynamics = DynamicsOptions(phase_dynamics=phase_dynamics)
     ocp = OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting=ns,
+        dynamics=dynamics,
         phase_time=phase_time,
         x_init=x_init,
         u_init=u_init,
@@ -985,8 +984,8 @@ def test_update_noised_initial_guess_collocation(interpolation, phase_dynamics):
     u_init["tau"] = [0] * bio_model.nb_tau
     ocp = OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting=ns,
+        dynamics=dynamics,
         phase_time=phase_time,
         x_init=x_init,
         u_init=u_init,

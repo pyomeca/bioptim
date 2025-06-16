@@ -17,6 +17,7 @@ from ..limits.penalty_controller import PenaltyController
 from ..misc.enums import ControlType, ContactType
 from ..models.biorbd.variational_biorbd_model import VariationalBiorbdModel
 from ..models.protocols.variational_biomodel import VariationalBioModel
+from ..models.biorbd.model_dynamics import VariationalTorqueBiorbdModel
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.parameters import ParameterList
 from ..optimization.variable_scaling import VariableScaling
@@ -46,7 +47,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         use_sx: bool = False,
         **kwargs,
     ):
-        if type(bio_model) != VariationalBiorbdModel:
+        if type(bio_model) != VariationalBiorbdModel and type(bio_model) != VariationalTorqueBiorbdModel:
             raise TypeError("bio_model must be of type VariationalBiorbdModel")
 
         if "phase_time" in kwargs:
@@ -81,7 +82,6 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         dynamics = DynamicsOptionsList()
         expand = True
         dynamics.add(
-            self.configure_torque_driven,
             expand_dynamics=expand,
             skip_continuity=True,
             ode_solver=OdeSolver.VARIATIONAL(),  # This is a fake ode_solver to be able to use the variational integrator
@@ -185,9 +185,9 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
         super().__init__(
             self.bio_model,
-            dynamics,
             n_shooting=n_shooting,
             phase_time=final_time,
+            dynamics=dynamics,
             x_init=q_init,
             x_bounds=q_bounds,
             parameters=parameters,

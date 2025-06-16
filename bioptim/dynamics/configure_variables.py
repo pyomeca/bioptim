@@ -924,7 +924,7 @@ class ConfigureVariables:
             If the generalized force derivatives should be an algebraic state
         """
 
-        name_contact_forces = [name for name in nlp.model.contact_names]
+        name_contact_forces = [name for name in nlp.model.rigid_contact_names]
         ConfigureVariables.configure_new_variable(
             "rigid_contact_forces",
             name_contact_forces,

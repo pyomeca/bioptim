@@ -153,15 +153,15 @@ def prepare_test_ocp(
         dynamics = DynamicsOptions(expand_dynamics=True, phase_dynamics=phase_dynamics)
     else:
         bio_model = TorqueBiorbdModel(bioptim_folder + "/examples/track/models/cube_and_line.bioMod")
-        dynamics = DynamicsOptionsList(expand_dynamics=True, phase_dynamics=phase_dynamics)
+        dynamics = DynamicsOptions(expand_dynamics=True, phase_dynamics=phase_dynamics)
 
     objective_functions = Objective(ObjectiveFcn.Mayer.MINIMIZE_TIME)
 
     ocp = OptimalControlProgram(
         bio_model,
-        dynamics,
         N_SHOOTING,
         1.0,
+        dynamics=dynamics,
         objective_functions=objective_functions,
         use_sx=use_sx,
     )

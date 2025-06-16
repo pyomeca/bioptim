@@ -6,7 +6,7 @@ import numpy as np
 from casadi import MX
 
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     OptimalControlProgram,
     DynamicsOptions,
     DynamicsOptionsList,
@@ -55,10 +55,10 @@ def prepare_ocp_phase_transitions(
 ) -> OptimalControlProgram:
     # BioModel path
     bio_model = (
-        BiorbdModel(biorbd_model_path),
-        BiorbdModel(biorbd_model_path),
-        BiorbdModel(biorbd_model_path),
-        BiorbdModel(biorbd_model_path),
+        TorqueBiorbdModel(biorbd_model_path),
+        TorqueBiorbdModel(biorbd_model_path),
+        TorqueBiorbdModel(biorbd_model_path),
+        TorqueBiorbdModel(biorbd_model_path),
     )
 
     # Problem parameters
@@ -186,12 +186,12 @@ def prepare_ocp_phase_transitions(
     )
 
 
-def my_parameter_function(bio_model: BiorbdModel, value: MX, extra_value: Any):
+def my_parameter_function(bio_model: TorqueBiorbdModel, value: MX, extra_value: Any):
     value[2] *= extra_value
     bio_model.set_gravity(value)
 
 
-def set_mass(bio_model: BiorbdModel, value: MX):
+def set_mass(bio_model: TorqueBiorbdModel, value: MX):
     bio_model.segments[0].characteristics().setMass(value)
 
 

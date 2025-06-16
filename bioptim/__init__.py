@@ -208,6 +208,7 @@ from .models.biorbd.model_dynamics import (
     TorqueBiorbdModel,
     StochasticTorqueBiorbdModel,
     HolonomicTorqueBiorbdModel,
+    VariationalTorqueBiorbdModel,
     TorqueFreeFloatingBaseBiorbdModel,
     StochasticTorqueFreeFloatingBaseBiorbdModel,
     TorqueActivationBiorbdModel,

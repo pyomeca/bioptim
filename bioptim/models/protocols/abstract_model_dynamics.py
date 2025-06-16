@@ -450,7 +450,7 @@ class TorqueActivationDynamics(TorqueDynamics):
 
         # Convert tau activations to joint torque
         tau = nlp.model.torque()(tau_activation, q, qdot, nlp.parameters.cx)
-        if self.residual_tau:
+        if self.with_residual_torque:
             tau += DynamicsFunctions.get(nlp.controls["residual_tau"], controls)
 
         # Add additional torques
@@ -467,7 +467,7 @@ class TorqueDerivativeDynamics(TorqueDynamics):
     def __init__(self):
         super().__init__()
         self.state_type += [States.TAU]
-        self.control_type += [Controls.TAUDOT]
+        self.control_type = [Controls.TAUDOT]
 
     def get_basic_variables(self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue: FatigueList):
 
@@ -494,39 +494,76 @@ class TorqueDerivativeDynamics(TorqueDynamics):
         algebraic_states,
         numerical_timeseries,
         nlp,
+        fatigue=None,
     ):
 
-        # Get the torque driven dynamics
-        tau_dynamics_evaluation = TorqueDynamics.dynamics(
-            self,
-            time,
-            states,
-            controls,
-            parameters,
-            algebraic_states,
-            numerical_timeseries,
-            nlp,
-            fatigue=None,
+        # Get states indices
+        q_indices, qdot_indices = self.get_q_qdot_indices(nlp)
+
+        # Get variables
+        q, qdot, tau, external_forces = self.get_basic_variables(
+            nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue=None
         )
-
-        # Append it with the torque derivative
         taudot = DynamicsFunctions.get(nlp.controls["taudot"], controls)
-        slope_tau = DynamicsFunctions.get(nlp.states_dot["tau"], nlp.states_dot.scaled.cx)
 
-        taudot_dxdt = nlp.cx(nlp.states.shape, 1)
-        taudot_dxdt[nlp.states["q"].index, 0] = tau_dynamics_evaluation.dxdt[nlp.states["q"].index, 0]
-        taudot_dxdt[nlp.states["qdot"].index, 0] = tau_dynamics_evaluation.dxdt[nlp.states["qdot"].index, 0]
-        taudot_dxdt[nlp.states["tau"].index, 0] = taudot
+        # Initialize dxdt
+        dxdt = nlp.cx(nlp.states.shape, 1)
+        dxdt[q_indices, 0] = DynamicsFunctions.compute_qdot(nlp, q, qdot)
+        dxdt[qdot_indices, 0] = DynamicsFunctions.compute_qddot(nlp, q, qdot, tau, external_forces)
+        dxdt[nlp.states["tau"].index, 0] = taudot
 
-
-        taudot_defects = None
+        defects = None
         if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
-            taudot_defects = nlp.cx(nlp.states.shape, 1)
-            taudot_defects[nlp.states["q"].index, 0] = tau_dynamics_evaluation.defects[nlp.states["q"].index, 0]
-            taudot_defects[nlp.states["qdot"].index, 0] = tau_dynamics_evaluation.defects[nlp.states["qdot"].index, 0]
-            taudot_defects[nlp.states["tau"].index, 0] = slope_tau * nlp.dt - taudot * nlp.dt
 
-        return DynamicsEvaluation(dxdt=taudot_dxdt, defects=taudot_defects)
+            DynamicsFunctions.no_states_mapping(nlp)
+
+            # Initialize defects
+            defects = nlp.cx(nlp.states.shape, 1)
+
+            # Do not use DynamicsFunctions.get to get the slopes because we do not want them mapped
+            slope_q = nlp.states_dot["q"].cx
+            slope_qdot = nlp.states_dot["qdot"].cx
+            slope_tau = nlp.states_dot["tau"].cx
+
+            if nlp.dynamics_type.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
+
+                dxdt_defects = nlp.cx(nlp.states.shape, 1)
+                dxdt_defects[q_indices, 0] = DynamicsFunctions.compute_qdot(nlp, q, qdot)
+                dxdt_defects[qdot_indices, 0] = DynamicsFunctions.forward_dynamics(
+                    nlp, q, qdot, tau, nlp.model.contact_types, external_forces
+                )
+                dxdt_defects[nlp.states["tau"].index, 0] = slope_tau * nlp.dt - taudot * nlp.dt
+
+                slopes = nlp.cx(nlp.states.shape, 1)
+                slopes[q_indices, 0] = slope_q
+                slopes[qdot_indices, 0] = slope_qdot
+                slopes[nlp.states["tau"].index, 0] = slope_tau
+
+                defects = slopes * nlp.dt - dxdt_defects * nlp.dt
+
+            elif nlp.dynamics_type.ode_solver.defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
+
+                defects[q_indices, 0] = slope_q * nlp.dt - qdot * nlp.dt
+
+                tau_id = DynamicsFunctions.inverse_dynamics(
+                    nlp,
+                    q=q,
+                    qdot=qdot,
+                    qddot=slope_qdot,
+                    contact_types=nlp.model.contact_types,
+                    external_forces=external_forces,
+                )
+                tau_defects = tau - tau_id
+                defects[qdot_indices, 0] = tau_defects
+                defects[nlp.states["tau"].index, 0] = slope_tau * nlp.dt - taudot * nlp.dt
+            else:
+                raise NotImplementedError(
+                    f"The defect type {nlp.dynamics_type.ode_solver.defects_type} is not implemented yet for torque driven dynamics."
+                )
+
+            defects = vertcat(defects, DynamicsFunctions.get_contact_defects(nlp, q, qdot, slope_qdot))
+
+        return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
 
 class MusclesDynamics(TorqueDynamics):
