@@ -1174,7 +1174,7 @@ def test_custom_dynamics(contact_types, phase_dynamics):
         )
 
 
-def test_with_contact_error(dynamics_fcn, phase_dynamics):
+def test_with_contact_error():
     from bioptim.examples.getting_started import pendulum as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)

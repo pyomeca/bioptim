@@ -380,6 +380,27 @@ class DynamicsOptions(OptionGeneric):
         """
         super().__init__(**extra_parameters)
 
+        if not isinstance(expand_dynamics, bool):
+            raise RuntimeError("expand_dynamics must be a boolean.")
+        if not isinstance(expand_continuity, bool):
+            raise RuntimeError("expand_continuity must be a boolean.")
+        if not isinstance(skip_continuity, bool):
+            raise RuntimeError("skip_continuity must be a boolean.")
+        if not isinstance(state_continuity_weight, (float, type(None))):
+            raise RuntimeError("state_continuity_weight must be a float or None.")
+        if not isinstance(phase_dynamics, PhaseDynamics):
+            raise RuntimeError("phase_dynamics must be of type PhaseDynamics.")
+        if not isinstance(ode_solver, (OdeSolver, OdeSolverBase)):
+            raise RuntimeError("ode_solver should be built an instance of OdeSolver")
+        if numerical_data_timeseries is not None:
+            if not isinstance(numerical_data_timeseries, dict):
+                raise RuntimeError("numerical_data_timeseries must be a dictionary.")
+            for key, value in numerical_data_timeseries.items():
+                if not isinstance(value, np.ndarray):
+                    raise RuntimeError(
+                        f"numerical_data_timeseries[{key}] must be a numpy array, but got {type(value)}."
+                    )
+
         self.expand_dynamics = expand_dynamics
         self.expand_continuity = expand_continuity
         self.skip_continuity = skip_continuity

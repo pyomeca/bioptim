@@ -201,25 +201,10 @@ class DynamicsFunctions:
         -------
         The derivative of qdot
         """
-
-        if "qdot" in nlp.states:
-            mapping = nlp.states["qdot"].mapping
-        elif "qdot_roots" and "qdot_joints" in nlp.states:
-            mapping = BiMapping(
-                to_first=list(nlp.states["qdot_roots"].mapping.to_first.map_idx)
-                + [i + nlp.model.nb_root for i in nlp.states["qdot_joints"].mapping.to_first.map_idx],
-                to_second=list(nlp.states["qdot_roots"].mapping.to_second.map_idx)
-                + [i + nlp.model.nb_root for i in nlp.states["qdot_joints"].mapping.to_second.map_idx],
-            )
-        elif "qdot" in nlp.controls:
-            mapping = nlp.controls["qdot"].mapping
-        else:
-            raise RuntimeError("Your qdot key combination was not found in states or controls")
-
         forward_dynamics_contact_types = ContactType.get_equivalent_explicit_contacts(nlp.model.contact_types)
         ddq_fd = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, forward_dynamics_contact_types, external_forces)
+        return ddq_fd
 
-        return mapping.to_first.map(ddq_fd)
 
     @staticmethod
     def collect_tau(
@@ -414,6 +399,13 @@ class DynamicsFunctions:
         # Get the mapping of the output
         if "qdot" in nlp.states:
             qdot_var_mapping = nlp.states["qdot"].mapping.to_first
+        elif "qdot_roots" and "qdot_joints" in nlp.states:
+            qdot_var_mapping = BiMapping(
+                to_first=list(nlp.states["qdot_roots"].mapping.to_first.map_idx)
+                + [i + nlp.model.nb_root for i in nlp.states["qdot_joints"].mapping.to_first.map_idx],
+                to_second=list(nlp.states["qdot_roots"].mapping.to_second.map_idx)
+                + [i + nlp.model.nb_root for i in nlp.states["qdot_joints"].mapping.to_second.map_idx],
+            ).to_first
         elif "qdot" in nlp.controls:
             qdot_var_mapping = nlp.controls["qdot"].mapping.to_first
         else:

@@ -8,7 +8,7 @@ import platform
 
 from matplotlib import pyplot as plt
 import numpy as np
-from casadi import MX, SX, vertcat
+from casadi import vertcat
 from bioptim import (
     MusclesBiorbdModel,
     Node,
@@ -17,17 +17,11 @@ from bioptim import (
     ConstraintFcn,
     ObjectiveList,
     ObjectiveFcn,
-    DynamicsOptionsList,
-    Dynamics,
+    DynamicsOptions,
     BoundsList,
     InitialGuessList,
     Solver,
     SolutionMerge,
-    NonLinearProgram,
-    ConfigureProblem,
-    DynamicsEvaluation,
-    DynamicsFunctions,
-    ExternalForceSetVariables,
     OdeSolver,
     DefectType,
     InterpolationType,

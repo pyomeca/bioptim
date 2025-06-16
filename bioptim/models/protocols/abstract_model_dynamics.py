@@ -401,7 +401,7 @@ class TorqueFreeFloatingBaseDynamics(TorqueDynamics):
 
         q_full = vertcat(q_roots, q_joints)
         qdot_full = vertcat(qdot_roots, qdot_joints)
-        tau_full = vertcat(nlp.cx(nlp.model.nb_roots, 1), tau_joints)
+        tau_full = vertcat(nlp.cx(nlp.model.nb_root, 1), tau_joints)
 
         # Add additional torques
         tau_full += DynamicsFunctions.collect_tau(nlp, q_full, qdot_full, parameters, states, controls, fatigue)

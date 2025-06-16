@@ -8,7 +8,7 @@ any RT (for instance Inertial Measurement Unit [IMU]) with a body segment
 import platform
 
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     Node,
     OptimalControlProgram,
     DynamicsOptionsList,
@@ -60,7 +60,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = ObjectiveList()
