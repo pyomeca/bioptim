@@ -341,7 +341,7 @@ class ConfigureVariables:
             If the generalized coordinates should be an algebraic state
         """
         name = "qdot_roots"
-        name_qdot = ConfigureVariables._get_kinematics_based_names(nlp, name)
+        name_qdot = ConfigureVariables._get_kinematics_based_names(nlp, "qdot")
         name_qdot_roots = [name_qdot[i] for i in range(nlp.model.nb_root)]
         axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
         ConfigureVariables.configure_new_variable(
@@ -372,8 +372,8 @@ class ConfigureVariables:
             If the generalized coordinates should be an algebraic state
         """
         name = "qdot_joints"
-        name_qdot = ConfigureVariables._get_kinematics_based_names(nlp, name)
-        name_qdot_joints = [name_qdot[i] for i in range(nlp.model.nb_root, nlp.model.nb_q)]
+        name_qdot = ConfigureVariables._get_kinematics_based_names(nlp, "qdot")
+        name_qdot_joints = [name_qdot[i] for i in range(nlp.model.nb_root, nlp.model.nb_qdot)]
         axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
         ConfigureVariables.configure_new_variable(
             name,
@@ -434,7 +434,7 @@ class ConfigureVariables:
             If the generalized coordinates should be an algebraic state
         """
         name = "qddot_joints"
-        name_qddot = ConfigureVariables._get_kinematics_based_names(nlp, name)
+        name_qddot = ConfigureVariables._get_kinematics_based_names(nlp, "qddot")
         name_qddot_joints = [name_qddot[i] for i in range(nlp.model.nb_root, nlp.model.nb_q)]
         axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
         ConfigureVariables.configure_new_variable(
@@ -795,8 +795,8 @@ class ConfigureVariables:
             If the generalized coordinates should be an algebraic state
         """
         name = "tau_joints"
-        name_tau = ConfigureVariables._get_kinematics_based_names(nlp, name)
-        name_tau_joints = [name_tau[i] for i in range(nlp.model.nb_root, nlp.model.nb_q)]
+        name_tau = ConfigureVariables._get_kinematics_based_names(nlp, "tau")
+        name_tau_joints = [name_tau[i] for i in range(nlp.model.nb_root, nlp.model.nb_tau)]
         axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
         ConfigureVariables.configure_new_variable(
             name,

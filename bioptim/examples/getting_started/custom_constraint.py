@@ -11,7 +11,7 @@ import platform
 
 from casadi import MX
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     Node,
     OptimalControlProgram,
     DynamicsOptions,

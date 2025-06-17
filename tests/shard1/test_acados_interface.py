@@ -766,9 +766,9 @@ def test_acados_bounds_not_implemented(failing):
 
     mhe = MovingHorizonEstimator(
         bio_model,
-        DynamicsOptions(expand_dynamics=True),
         window_len,
         window_duration,
+        dynamics=DynamicsOptions(expand_dynamics=True),
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         n_threads=4,

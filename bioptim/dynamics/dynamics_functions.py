@@ -232,7 +232,7 @@ class DynamicsFunctions:
         fatigue: FatigueList | None
             The fatigue elements to consider in the dynamics. If None, no fatigue will be considered.
         """
-        tau = nlp.cx.zeros(nlp.model.nb_q, 1)
+        tau = nlp.cx.zeros(nlp.model.nb_tau, 1)
         if nlp.model.nb_passive_joint_torques > 0:
             tau += nlp.model.passive_joint_torque()(q, qdot, parameters)
         if nlp.model.nb_ligaments > 0:

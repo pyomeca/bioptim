@@ -8,22 +8,25 @@ from typing import Callable
 import numpy as np
 from casadi import sin, MX, Function, vertcat
 from typing import Callable
-from bioptim import NonLinearProgram, DynamicsEvaluation
+from bioptim import NonLinearProgram, DynamicsEvaluation, TorqueDynamics
 
 
-class MyModel:
+class MyModel(TorqueDynamics):
     """
     This is a custom model that inherits from bioptim.CustomModel
     As CustomModel is an abstract class, some methods must be implemented.
     """
 
     def __init__(self):
+        super().__init__()
         # custom values for the example
         self.com = MX(np.array([-0.0005, 0.0688, -0.9542]))
         self.inertia = MX(0.0391)
         self.q = MX.sym("q", 1)
         self.qdot = MX.sym("qdot", 1)
         self.tau = MX.sym("tau", 1)
+        self.contact_types = ()
+
 
     # ---- Absolutely needed methods ---- #
     def serialize(self) -> tuple[Callable, dict]:

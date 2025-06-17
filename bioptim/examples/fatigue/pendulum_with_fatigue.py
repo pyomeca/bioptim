@@ -77,8 +77,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = TorqueBiorbdModel(biorbd_model_path)
-    n_tau = bio_model.nb_tau
+    n_tau = 2
     tau_min, tau_max, tau_init = -100, 100, 0
 
     # Add objective functions
@@ -143,9 +142,11 @@ def prepare_ocp(
         else:
             raise ValueError("fatigue_type not implemented")
 
+    # Initialize model
+    bio_model = TorqueBiorbdModel(biorbd_model_path, fatigue=fatigue_dynamics)
+
     # DynamicsOptions
     dynamics = DynamicsOptions(
-        fatigue=fatigue_dynamics,
         phase_dynamics=phase_dynamics,
         expand_dynamics=expand_dynamics,
     )

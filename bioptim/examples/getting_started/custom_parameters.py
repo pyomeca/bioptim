@@ -32,14 +32,14 @@ from bioptim import (
 )
 
 
-def my_parameter_function(bio_model: BiorbdModel, value: MX, extra_value: Any):
+def my_parameter_function(bio_model: TorqueBiorbdModel, value: MX, extra_value: Any):
     """
     The pre dynamics function is called right before defining the dynamics of the system. If one wants to
     modify the dynamics (e.g. optimize the gravity in this case), then this function is the proper way to do it.
 
     Parameters
     ----------
-    bio_model: BiorbdModel
+    bio_model: TorqueBiorbdModel
         The model to modify by the parameters
     value: MX
         The CasADi variables to modify the model
@@ -51,14 +51,14 @@ def my_parameter_function(bio_model: BiorbdModel, value: MX, extra_value: Any):
     bio_model.set_gravity(value)
 
 
-def set_mass(bio_model: BiorbdModel, value: MX):
+def set_mass(bio_model: TorqueBiorbdModel, value: MX):
     """
     The pre dynamics function is called right before defining the dynamics of the system. If one wants to
     modify the dynamics (e.g. optimize the gravity in this case), then this function is the proper way to do it.
 
     Parameters
     ----------
-    bio_model: BiorbdModel
+    bio_model: TorqueBiorbdModel
         The model to modify by the parameters
     value: MX
         The CasADi variables to modify the model

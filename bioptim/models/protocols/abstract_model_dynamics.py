@@ -671,7 +671,7 @@ class MusclesDynamics(TorqueDynamics):
 
                 dxdt_defects = nlp.cx(nlp.states.shape, 1)
                 ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, nlp.model.contact_types, external_forces)
-                dxdt_defects[nlp.states["q"].index, 0] = qdot
+                dxdt_defects[nlp.states["q"].index, 0] = DynamicsFunctions.compute_qdot(nlp, q, qdot)
                 dxdt_defects[nlp.states["qdot"].index, 0] = ddq
 
                 slopes = nlp.cx(nlp.states.shape, 1)
@@ -714,6 +714,7 @@ class MusclesDynamics(TorqueDynamics):
                 if ContactType.RIGID_EXPLICIT in nlp.model.contact_types:
                     raise NotImplementedError("Inverse dynamics, cannot be used with ContactType.RIGID_EXPLICIT yet")
 
+                dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
                 defects[nlp.states["q"].index, 0] = slope_q * nlp.dt - dq * nlp.dt
 
                 external_forces = DynamicsFunctions.get_external_forces_from_contacts(

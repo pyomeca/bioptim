@@ -33,6 +33,7 @@ from ...misc.parameters_types import (
 from ...misc.mapping import BiMappingList
 from ...misc.enums import ContactType
 from ...optimization.problem_type import SocpType
+from ...dynamics.fatigue import FatigueList
 
 
 class TorqueBiorbdModel(BiorbdModel, TorqueDynamics):
@@ -43,6 +44,7 @@ class TorqueBiorbdModel(BiorbdModel, TorqueDynamics):
         parameters: ParameterList = None,
         external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None,
         contact_types: list[ContactType] | tuple[ContactType] = (),
+        fatigue: FatigueList = None,
     ):
         BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set, contact_types)
         TorqueDynamics.__init__(self)
