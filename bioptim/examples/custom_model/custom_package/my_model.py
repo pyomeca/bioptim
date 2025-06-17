@@ -27,7 +27,6 @@ class MyModel(TorqueDynamics):
         self.tau = MX.sym("tau", 1)
         self.contact_types = ()
 
-
     # ---- Absolutely needed methods ---- #
     def serialize(self) -> tuple[Callable, dict]:
         # This is where you can serialize your model

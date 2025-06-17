@@ -205,7 +205,6 @@ class DynamicsFunctions:
         ddq_fd = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, forward_dynamics_contact_types, external_forces)
         return ddq_fd
 
-
     @staticmethod
     def collect_tau(
         nlp,
