@@ -199,9 +199,7 @@ def test_configure_muscles(cx):
         fatigue=fatigue,
     )
 
-    ConfigureVariables.configure_muscles(
-        ocp, nlp, as_states=True, as_controls=True, as_algebraic_states=False
-    )
+    ConfigureVariables.configure_muscles(ocp, nlp, as_states=True, as_controls=True, as_algebraic_states=False)
     npt.assert_equal(nlp.states.shape, 24)
     npt.assert_equal(nlp.states.keys(), ["muscles", "muscles_ma", "muscles_mr", "muscles_mf"])
     npt.assert_equal(nlp.states_dot.shape, 24)

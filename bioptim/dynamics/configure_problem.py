@@ -378,7 +378,9 @@ class DynamicsOptions(OptionGeneric):
             # TODO: numerical_data_timeseries should be moved in the model instead of the dynamics options.
         """
         if "fatigue" in extra_parameters:
-            raise ValueError("Fatigue is not an argument of the dynamics anymore, it should be sent to the model instead.")
+            raise ValueError(
+                "Fatigue is not an argument of the dynamics anymore, it should be sent to the model instead."
+            )
 
         super().__init__(**extra_parameters)
 

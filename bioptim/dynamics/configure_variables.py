@@ -740,7 +740,11 @@ class ConfigureVariables:
 
     @staticmethod
     def configure_tau(
-        ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool,
+        ocp,
+        nlp,
+        as_states: bool,
+        as_controls: bool,
+        as_algebraic_states: bool,
     ):
         """
         Configure the generalized forces
@@ -959,7 +963,11 @@ class ConfigureVariables:
 
     @staticmethod
     def configure_muscles(
-        ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool,
+        ocp,
+        nlp,
+        as_states: bool,
+        as_controls: bool,
+        as_algebraic_states: bool,
     ):
         """
         Configure the muscles

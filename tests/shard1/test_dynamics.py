@@ -1117,14 +1117,14 @@ def test_custom_dynamics(contact_types, phase_dynamics):
             return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
 
         def get_rigid_contact_forces(
-                self,
-                time,
-                states,
-                controls,
-                parameters,
-                algebraic_states,
-                numerical_timeseries,
-                nlp,
+            self,
+            time,
+            states,
+            controls,
+            parameters,
+            algebraic_states,
+            numerical_timeseries,
+            nlp,
         ):
             q = DynamicsFunctions.get(nlp.states["q"], states)
             qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
@@ -1134,7 +1134,6 @@ def test_custom_dynamics(contact_types, phase_dynamics):
             )
 
             return nlp.model.rigid_contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
-
 
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=False)

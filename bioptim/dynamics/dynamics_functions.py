@@ -265,9 +265,7 @@ class DynamicsFunctions:
         return contact_defects
 
     @staticmethod
-    def get_fatigue_defects(
-        key: Str, dxdt_defects: CX, slopes: CX, nlp, states: CX, controls: CX
-    ) -> Tuple[CX, CX]:
+    def get_fatigue_defects(key: Str, dxdt_defects: CX, slopes: CX, nlp, states: CX, controls: CX) -> Tuple[CX, CX]:
         """
         Get the dxdt and slopes associated with fatigue elements.
         These are added to compute the defects in the case where there is fatigue.

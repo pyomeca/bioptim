@@ -33,9 +33,7 @@ class TorqueDynamics(ABC):
         """
         return nlp.states["q"].index, nlp.states["qdot"].index
 
-    def get_basic_variables(
-        self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries
-    ):
+    def get_basic_variables(self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries):
 
         # Get variables from the right place
         q = DynamicsFunctions.get(nlp.states["q"], states)
@@ -380,9 +378,7 @@ class TorqueFreeFloatingBaseDynamics(TorqueDynamics):
             nlp.states["qdot_roots"].index
         ) + list(nlp.states["qdot_joints"].index)
 
-    def get_basic_variables(
-        self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries
-    ):
+    def get_basic_variables(self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries):
 
         if nlp.model.fatigue is not None:
             raise RuntimeError("Fatigue is not implemented yet for free floating base dynamics.")
@@ -432,9 +428,7 @@ class TorqueActivationDynamics(TorqueDynamics):
             self.control_type += [Controls.RESIDUAL_TAU]
         self.with_residual_torque = with_residual_torque
 
-    def get_basic_variables(
-        self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries
-    ):
+    def get_basic_variables(self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries):
         if nlp.model.fatigue is not None:
             raise NotImplementedError("Fatigue is not implemented yet for torque activation dynamics.")
 
@@ -464,9 +458,7 @@ class TorqueDerivativeDynamics(TorqueDynamics):
         self.state_type += [States.TAU]
         self.control_type = [Controls.TAUDOT]
 
-    def get_basic_variables(
-        self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries
-    ):
+    def get_basic_variables(self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries):
 
         # Get variables from the right place
         q = DynamicsFunctions.get(nlp.states["q"], states)
@@ -588,7 +580,13 @@ class MusclesDynamics(TorqueDynamics):
         self.with_excitation = with_excitation
 
     def get_basic_variables(
-        self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries,
+        self,
+        nlp,
+        states,
+        controls,
+        parameters,
+        algebraic_states,
+        numerical_timeseries,
     ):
 
         # Get variables from the right place
