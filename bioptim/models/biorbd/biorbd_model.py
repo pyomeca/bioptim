@@ -21,7 +21,7 @@ from ...misc.enums import ContactType
 from ...misc.utils import check_version
 from ...optimization.parameters import ParameterList
 
-from ...misc.parameters_types import Int, IntTuple
+from ...misc.parameters_types import Int, IntTuple, CX, CXOptional
 
 check_version(biorbd, "1.11.1", "1.12.0")
 
@@ -618,13 +618,23 @@ class BiorbdModel:
         else:
             return None
 
+    @staticmethod
+    def _get_cx(var: CX) -> CXOptional:
+        if isinstance(var, MX):
+            return MX
+        elif isinstance(var, SX):
+            return SX
+        else:
+            raise TypeError(f"The type of the variable should be either MX or SX, not {type(var)}.")
+
     def map_rigid_contact_forces_to_global_forces(
         self, rigid_contact_forces: MX | SX, q: MX | SX, parameters: MX | SX
     ) -> MX | SX:
         """
         Takes the rigid contact forces and dispatch is to match the external forces.
         """
-        external_forces = type(q).zeros(self.external_force_set.nb_external_forces_components)
+        cx = self._get_cx(q)
+        external_forces = cx.zeros(self.external_force_set.nb_external_forces_components)
 
         current_index = 0
         contacts_to_add = 0
