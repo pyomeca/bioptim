@@ -65,9 +65,9 @@ def prepare_nmpc(
 
     return MyCyclicNMPC(
         model,
-        dynamics,
         cycle_len,
         cycle_duration,
+        dynamics=dynamics,
         common_objective_functions=new_objectives,
         constraints=constraints,
         x_bounds=x_bound,

@@ -8,6 +8,7 @@ from bioptim import (
     ConfigureProblem,
     DynamicsFunctions,
     TorqueBiorbdModel,
+    BiorbdModel,
     ControlType,
     NonLinearProgram,
     DynamicsOptions,
@@ -18,6 +19,8 @@ from bioptim import (
     ExternalForceSetTimeSeries,
     ContactType,
     JointAccelerationBiorbdModel,
+    States,
+    Controls,
 )
 
 from ..utils import TestUtils
@@ -1085,36 +1088,61 @@ def test_joints_acceleration_driven(cx, phase_dynamics):
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("contact_types", [(), [ContactType.RIGID_EXPLICIT]])
 def test_custom_dynamics(contact_types, phase_dynamics):
-    def custom_dynamic(
-        time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp
-    ) -> DynamicsEvaluation:
-        q = DynamicsFunctions.get(nlp.states["q"], states)
-        qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-        tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
-        dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, contact_types)
+    class CustomModel(BiorbdModel):
+        def __init__(self, model_path, contact_types):
+            super().__init__(
+                model_path,
+                contact_types=contact_types,
+            )
 
-        return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
+            self.state_type = [States.Q, States.QDOT]
+            self.control_type = [Controls.TAU]
+            self.algebraic_type = []
+            self.functions = []
+            self.contact_types = contact_types
+            self.fatigue = None
+            self.extra_dynamics = None
 
-    def configure(ocp, nlp, with_contact=None, numerical_data_timeseries=None):
-        ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
-        ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
-        ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
-        ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic)
+        def dynamics(
+            self, time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp
+        ) -> DynamicsEvaluation:
+            q = DynamicsFunctions.get(nlp.states["q"], states)
+            qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+            tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
-        if ContactType.RIGID_EXPLICIT in nlp.model.contact_types:
-            ConfigureProblem.configure_rigid_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
+            dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
+            ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, contact_types)
+
+            return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
+
+        def get_rigid_contact_forces(
+                self,
+                time,
+                states,
+                controls,
+                parameters,
+                algebraic_states,
+                numerical_timeseries,
+                nlp,
+        ):
+            q = DynamicsFunctions.get(nlp.states["q"], states)
+            qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+            tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
+            external_forces = nlp.get_external_forces(
+                "external_forces", states, controls, algebraic_states, numerical_timeseries
+            )
+
+            return nlp.model.rigid_contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
+
 
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=False)
-    nlp.model = BiorbdModel(
+    nlp.model = CustomModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod",
         contact_types=contact_types,
     )
     nlp.dynamics_type = DynamicsOptions(
-        configure,
-        dynamic_function=custom_dynamic,
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
     )
