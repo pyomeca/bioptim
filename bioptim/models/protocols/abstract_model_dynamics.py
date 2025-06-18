@@ -5,7 +5,6 @@ from casadi import vertcat, DM
 from ...dynamics.configure_variables import States, Controls, AlgebraicStates
 from ...dynamics.dynamics_functions import DynamicsFunctions, DynamicsEvaluation
 from ...dynamics.configure_variables import ConfigureVariables
-from ...dynamics.fatigue.fatigue_dynamics import FatigueList
 from ...dynamics.ode_solvers import OdeSolver
 from ...misc.enums import DefectType, ContactType
 from ...misc.parameters_types import Bool, NpArray
@@ -35,16 +34,16 @@ class TorqueDynamics(ABC):
         return nlp.states["q"].index, nlp.states["qdot"].index
 
     def get_basic_variables(
-        self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue: FatigueList
+        self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries
     ):
 
         # Get variables from the right place
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-        tau = DynamicsFunctions.get_fatigable_tau(nlp, states, controls, fatigue)
+        tau = DynamicsFunctions.get_fatigable_tau(nlp, states, controls)
 
         # Add additional torques
-        tau += DynamicsFunctions.collect_tau(nlp, q, qdot, parameters, states, controls, fatigue)
+        tau += DynamicsFunctions.collect_tau(nlp, q, qdot, parameters)
 
         # Get external forces
         external_forces = nlp.get_external_forces(
@@ -61,7 +60,6 @@ class TorqueDynamics(ABC):
         algebraic_states,
         numerical_timeseries,
         nlp,
-        fatigue: FatigueList = None,
     ):
 
         # Get states indices
@@ -69,7 +67,7 @@ class TorqueDynamics(ABC):
 
         # Get variables
         q, qdot, tau, external_forces = self.get_basic_variables(
-            nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue
+            nlp, states, controls, parameters, algebraic_states, numerical_timeseries
         )
 
         # Initialize dxdt
@@ -77,8 +75,8 @@ class TorqueDynamics(ABC):
         dxdt[q_indices, 0] = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         dxdt[qdot_indices, 0] = DynamicsFunctions.compute_qddot(nlp, q, qdot, tau, external_forces)
 
-        if fatigue is not None and "tau" in fatigue:
-            dxdt = fatigue["tau"].dynamics(dxdt, nlp, states, controls)
+        if nlp.model.fatigue is not None and "tau" in nlp.model.fatigue:
+            dxdt = nlp.model.fatigue["tau"].dynamics(dxdt, nlp, states, controls)
 
         defects = None
         if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
@@ -112,13 +110,12 @@ class TorqueDynamics(ABC):
                     nlp,
                     states,
                     controls,
-                    fatigue,
                 )
 
                 defects = slopes * nlp.dt - dxdt_defects * nlp.dt
 
             elif nlp.dynamics_type.ode_solver.defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
-                if fatigue is not None:
+                if nlp.model.fatigue is not None:
                     raise NotImplementedError("Fatigue is not implemented yet with inverse dynamics defects.")
 
                 defects[q_indices, 0] = slope_q * nlp.dt - qdot * nlp.dt
@@ -151,10 +148,9 @@ class TorqueDynamics(ABC):
         algebraic_states,
         numerical_timeseries,
         nlp,
-        fatigue: FatigueList = None,
     ):
         q, qdot, tau, external_forces = self.get_basic_variables(
-            nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue
+            nlp, states, controls, parameters, algebraic_states, numerical_timeseries
         )
         return nlp.model.rigid_contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
 
@@ -263,7 +259,7 @@ class StochasticTorqueDynamics(TorqueDynamics):
 
         # Get variables
         q, qdot, tau, external_forces = self.get_basic_variables(
-            nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue=None
+            nlp, states, controls, parameters, algebraic_states, numerical_timeseries
         )
 
         if external_forces.shape != (0, 1):
@@ -304,7 +300,6 @@ class StochasticTorqueDynamics(TorqueDynamics):
         algebraic_states,
         numerical_timeseries,
         nlp,
-        fatigue: FatigueList = None,
     ):
         raise NotImplementedError("Stochastic torque dynamics does not support rigid contact forces yet. ")
 
@@ -386,10 +381,10 @@ class TorqueFreeFloatingBaseDynamics(TorqueDynamics):
         ) + list(nlp.states["qdot_joints"].index)
 
     def get_basic_variables(
-        self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue: FatigueList
+        self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries
     ):
 
-        if fatigue is not None:
+        if nlp.model.fatigue is not None:
             raise RuntimeError("Fatigue is not implemented yet for free floating base dynamics.")
 
         # Get variables from the right place
@@ -404,7 +399,7 @@ class TorqueFreeFloatingBaseDynamics(TorqueDynamics):
         tau_full = vertcat(nlp.cx(nlp.model.nb_root, 1), tau_joints)
 
         # Add additional torques
-        tau_full += DynamicsFunctions.collect_tau(nlp, q_full, qdot_full, parameters, states, controls, fatigue)
+        tau_full += DynamicsFunctions.collect_tau(nlp, q_full, qdot_full, parameters)
 
         # Get external forces
         external_forces = nlp.get_external_forces(
@@ -438,9 +433,9 @@ class TorqueActivationDynamics(TorqueDynamics):
         self.with_residual_torque = with_residual_torque
 
     def get_basic_variables(
-        self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue: FatigueList
+        self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries
     ):
-        if fatigue is not None:
+        if nlp.model.fatigue is not None:
             raise NotImplementedError("Fatigue is not implemented yet for torque activation dynamics.")
 
         # Get variables from the right place
@@ -454,7 +449,7 @@ class TorqueActivationDynamics(TorqueDynamics):
             tau += DynamicsFunctions.get(nlp.controls["residual_tau"], controls)
 
         # Add additional torques
-        tau += DynamicsFunctions.collect_tau(nlp, q, qdot, parameters, states, controls, fatigue)
+        tau += DynamicsFunctions.collect_tau(nlp, q, qdot, parameters)
 
         # Get external forces
         external_forces = nlp.get_external_forces(
@@ -470,7 +465,7 @@ class TorqueDerivativeDynamics(TorqueDynamics):
         self.control_type = [Controls.TAUDOT]
 
     def get_basic_variables(
-        self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue: FatigueList
+        self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries
     ):
 
         # Get variables from the right place
@@ -479,7 +474,7 @@ class TorqueDerivativeDynamics(TorqueDynamics):
         tau = DynamicsFunctions.get(nlp.states["tau"], states)
 
         # Add additional torques
-        tau += DynamicsFunctions.collect_tau(nlp, q, qdot, parameters, states, controls, fatigue=None)
+        tau += DynamicsFunctions.collect_tau(nlp, q, qdot, parameters)
 
         # Get external forces
         external_forces = nlp.get_external_forces(
@@ -496,7 +491,6 @@ class TorqueDerivativeDynamics(TorqueDynamics):
         algebraic_states,
         numerical_timeseries,
         nlp,
-        fatigue=None,
     ):
 
         # Get states indices
@@ -504,7 +498,7 @@ class TorqueDerivativeDynamics(TorqueDynamics):
 
         # Get variables
         q, qdot, tau, external_forces = self.get_basic_variables(
-            nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue=None
+            nlp, states, controls, parameters, algebraic_states, numerical_timeseries
         )
         taudot = DynamicsFunctions.get(nlp.controls["taudot"], controls)
 
@@ -594,7 +588,7 @@ class MusclesDynamics(TorqueDynamics):
         self.with_excitation = with_excitation
 
     def get_basic_variables(
-        self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue: FatigueList
+        self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries,
     ):
 
         # Get variables from the right place
@@ -604,16 +598,16 @@ class MusclesDynamics(TorqueDynamics):
             mus_activations = DynamicsFunctions.get(nlp.states["muscles"], states)
         else:
             mus_activations = DynamicsFunctions.get(nlp.controls["muscles"], controls)
-        fatigue_states, mus_activations = DynamicsFunctions.get_fatigue_states(states, nlp, fatigue, mus_activations)
+        fatigue_states, mus_activations = DynamicsFunctions.get_fatigue_states(states, nlp, mus_activations)
 
         # Compute the torques due to muscles
         muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations, fatigue_states)
 
         # Add additional torques
         if self.with_residual_torque:
-            residual_tau = DynamicsFunctions.get_fatigable_tau(nlp, states, controls, fatigue)
+            residual_tau = DynamicsFunctions.get_fatigable_tau(nlp, states, controls)
             muscles_tau += residual_tau
-        muscles_tau += DynamicsFunctions.collect_tau(nlp, q, qdot, parameters, states, controls, fatigue)
+        muscles_tau += DynamicsFunctions.collect_tau(nlp, q, qdot, parameters)
 
         # Get external forces
         external_forces = nlp.get_external_forces(
@@ -630,7 +624,6 @@ class MusclesDynamics(TorqueDynamics):
         algebraic_states,
         numerical_timeseries,
         nlp,
-        fatigue: FatigueList = None,
     ):
 
         # Get states indices
@@ -638,7 +631,7 @@ class MusclesDynamics(TorqueDynamics):
 
         # Get variables
         q, qdot, tau, external_forces, mus_activations = self.get_basic_variables(
-            nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue
+            nlp, states, controls, parameters, algebraic_states, numerical_timeseries
         )
 
         # Initialize dxdt
@@ -652,8 +645,8 @@ class MusclesDynamics(TorqueDynamics):
             dmus = DynamicsFunctions.compute_muscle_dot(nlp, mus_excitations, mus_activations)
             dxdt[nlp.states["muscles"].index, 0] = dmus
 
-        if fatigue is not None and "muscles" in fatigue:
-            dxdt = fatigue["muscles"].dynamics(dxdt, nlp, states, controls)
+        if nlp.model.fatigue is not None and "muscles" in nlp.model.fatigue:
+            dxdt = nlp.model.fatigue["muscles"].dynamics(dxdt, nlp, states, controls)
 
         defects = None
         if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
@@ -686,8 +679,8 @@ class MusclesDynamics(TorqueDynamics):
                     slope_mus = nlp.states_dot["muscles"].cx
                     slopes[nlp.states["muscles"].index, 0] = slope_mus
 
-                if fatigue is not None and "muscles" in fatigue:
-                    dxdt_defects = fatigue["muscles"].dynamics(dxdt_defects, nlp, states, controls)
+                if nlp.model.fatigue is not None and "muscles" in nlp.model.fatigue:
+                    dxdt_defects = nlp.model.fatigue["muscles"].dynamics(dxdt_defects, nlp, states, controls)
                     state_keys = nlp.states.keys()
                     if state_keys[0] != "q" or state_keys[1] != "qdot":
                         raise NotImplementedError(
@@ -709,7 +702,7 @@ class MusclesDynamics(TorqueDynamics):
                 defects = slopes * nlp.dt - dxdt_defects * nlp.dt
 
             elif nlp.dynamics_type.ode_solver.defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
-                if fatigue is not None:
+                if nlp.model.fatigue is not None:
                     raise NotImplementedError("Fatigue is not implemented yet with inverse dynamics defects.")
                 if ContactType.RIGID_EXPLICIT in nlp.model.contact_types:
                     raise NotImplementedError("Inverse dynamics, cannot be used with ContactType.RIGID_EXPLICIT yet")
@@ -751,10 +744,9 @@ class MusclesDynamics(TorqueDynamics):
         algebraic_states,
         numerical_timeseries,
         nlp,
-        fatigue: FatigueList = None,
     ):
         q, qdot, tau, external_forces, mus_activations = self.get_basic_variables(
-            nlp, states, controls, parameters, algebraic_states, numerical_timeseries, fatigue
+            nlp, states, controls, parameters, algebraic_states, numerical_timeseries
         )
         return nlp.model.rigid_contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
 
@@ -790,7 +782,6 @@ class JointAccelerationDynamics(ABC):
         algebraic_states,
         numerical_timeseries,
         nlp,
-        fatigue: FatigueList = None,
     ):
 
         # Get states indices

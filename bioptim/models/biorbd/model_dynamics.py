@@ -47,6 +47,7 @@ class TorqueBiorbdModel(BiorbdModel, TorqueDynamics):
         fatigue: FatigueList = None,
     ):
         BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set, contact_types)
+        self.fatigue = fatigue
         TorqueDynamics.__init__(self)
 
     def serialize(self) -> tuple[Callable, dict]:
@@ -216,8 +217,10 @@ class TorqueActivationBiorbdModel(BiorbdModel, TorqueActivationDynamics):
         parameters: ParameterList = None,
         external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None,
         contact_types: list[ContactType] | tuple[ContactType] = (),
+        fatigue: FatigueList = None,
     ):
         BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set, contact_types)
+        self.fatigue = fatigue
         TorqueActivationDynamics.__init__(self, with_residual_torque)
 
     def serialize(self) -> tuple[Callable, dict]:
@@ -237,8 +240,10 @@ class TorqueDerivativeBiorbdModel(BiorbdModel, TorqueDerivativeDynamics):
         parameters: ParameterList = None,
         external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None,
         contact_types: list[ContactType] | tuple[ContactType] = (),
+        fatigue: FatigueList = None,
     ):
         BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set, contact_types)
+        self.fatigue = fatigue
         TorqueDerivativeDynamics.__init__(self)
 
     def serialize(self) -> tuple[Callable, dict]:
@@ -260,8 +265,10 @@ class MusclesBiorbdModel(BiorbdModel, MusclesDynamics):
         parameters: ParameterList = None,
         external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None,
         contact_types: list[ContactType] | tuple[ContactType] = (),
+        fatigue: FatigueList = None,
     ):
         BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set, contact_types)
+        self.fatigue = fatigue
         MusclesDynamics.__init__(self, with_residual_torque, with_excitation)
 
     def serialize(self) -> tuple[Callable, dict]:

@@ -26,7 +26,6 @@ class ConfigureVariables:
         as_states: bool,
         as_controls: bool,
         as_algebraic_states: bool = False,
-        fatigue: FatigueList = None,
         combine_name: str = None,
         combine_state_control_plot: bool = False,
         skip_plot: bool = False,
@@ -51,8 +50,6 @@ class ConfigureVariables:
             If the new variable should be added to the control variable set
         as_algebraic_states: bool
             If the new variable should be added to the algebraic states variable set
-        fatigue: FatigueList
-            The list of fatigable item
         combine_name: str
             The name of a previously added plot to combine to
         combine_state_control_plot: bool
@@ -70,7 +67,6 @@ class ConfigureVariables:
             as_states,
             as_controls,
             as_algebraic_states,
-            fatigue,
             combine_name,
             combine_state_control_plot,
             skip_plot,
@@ -744,7 +740,7 @@ class ConfigureVariables:
 
     @staticmethod
     def configure_tau(
-        ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool, fatigue: FatigueList = None
+        ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool,
     ):
         """
         Configure the generalized forces
@@ -759,8 +755,6 @@ class ConfigureVariables:
             If the generalized forces should be a control
         as_algebraic_states: bool
             If the generalized forces should be an algebraic state
-        fatigue: FatigueList
-            If the dynamics with fatigue should be declared
         """
 
         name = "tau"
@@ -774,7 +768,6 @@ class ConfigureVariables:
             as_states=as_states,
             as_controls=as_controls,
             as_algebraic_states=as_algebraic_states,
-            fatigue=fatigue,
             axes_idx=axes_idx,
         )
 
@@ -966,7 +959,7 @@ class ConfigureVariables:
 
     @staticmethod
     def configure_muscles(
-        ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool, fatigue: FatigueList = None
+        ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool,
     ):
         """
         Configure the muscles
@@ -981,8 +974,6 @@ class ConfigureVariables:
             If the muscles should be a control
         as_algebraic_states: bool
             If the muscles should be an algebraic state
-        fatigue: FatigueList
-            The list of fatigue parameters
         """
 
         muscle_names = nlp.model.muscle_names
@@ -995,7 +986,6 @@ class ConfigureVariables:
             as_controls=as_controls,
             as_algebraic_states=as_algebraic_states,
             combine_state_control_plot=True,
-            fatigue=fatigue,
         )
 
     @staticmethod

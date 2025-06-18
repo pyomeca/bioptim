@@ -2,7 +2,6 @@ from casadi import horzcat, vertcat, MX, SX, DM
 
 from .dynamics_evaluation import DynamicsEvaluation
 from .ode_solvers import OdeSolver
-from .fatigue.fatigue_dynamics import FatigueList
 from ..limits.holonomic_constraints import HolonomicConstraintsFcn
 from ..misc.enums import DefectType, ContactType
 from ..misc.mapping import BiMapping
@@ -29,7 +28,7 @@ class DynamicsFunctions:
     """
 
     @staticmethod
-    def get_fatigable_tau(nlp, states: CX, controls: CX, fatigue: FatigueList) -> CX:
+    def get_fatigable_tau(nlp, states: CX, controls: CX) -> CX:
         """
         Apply the forward dynamics including (or not) the torque fatigue
 
@@ -41,8 +40,6 @@ class DynamicsFunctions:
             The states variable that may contains the tau and the tau fatigue variables
         controls: MX | SX
             The controls variable that may contains the tau
-        fatigue: FatigueList
-            The dynamics for the torque fatigue
 
         Returns
         -------
@@ -50,16 +47,17 @@ class DynamicsFunctions:
         """
         tau_var, tau_cx = (nlp.controls, controls) if "tau" in nlp.controls else (nlp.states, states)
         tau = nlp.get_var("tau", states, controls)
-        if fatigue is not None and "tau" in fatigue:
-            tau_fatigue = fatigue["tau"]
-            tau_suffix = fatigue["tau"].suffix
+
+        if nlp.model.fatigue is not None and "tau" in nlp.model.fatigue:
+            tau_fatigue = nlp.model.fatigue["tau"]
+            tau_suffix = nlp.model.fatigue["tau"].suffix
 
             # Only homogeneous state_only is implemented yet
             n_state_only = sum([t.models.state_only for t in tau_fatigue])
-            if 0 < n_state_only < len(fatigue["tau"]):
+            if 0 < n_state_only < len(nlp.model.fatigue["tau"]):
                 raise NotImplementedError("fatigue list without homogeneous state_only flag is not supported yet")
             apply_to_joint_dynamics = sum([t.models.apply_to_joint_dynamics for t in tau_fatigue])
-            if 0 < n_state_only < len(fatigue["tau"]):
+            if 0 < n_state_only < len(nlp.model.fatigue["tau"]):
                 raise NotImplementedError(
                     "fatigue list without homogeneous apply_to_joint_dynamics flag is not supported yet"
                 )
@@ -87,23 +85,22 @@ class DynamicsFunctions:
     def get_fatigue_states(
         states,
         nlp,
-        fatigue,
         mus_activations,
     ):
 
         fatigue_states = None
-        if fatigue is not None and "muscles" in fatigue:
-            mus_fatigue = fatigue["muscles"]
+        if nlp.model.fatigue is not None and "muscles" in nlp.model.fatigue:
+            mus_fatigue = nlp.model.fatigue["muscles"]
             fatigue_name = mus_fatigue.suffix[0]
 
             # Sanity check
             n_state_only = sum([m.models.state_only for m in mus_fatigue])
-            if 0 < n_state_only < len(fatigue["muscles"]):
+            if 0 < n_state_only < len(nlp.model.fatigue["muscles"]):
                 raise NotImplementedError(
                     f"{fatigue_name} list without homogeneous state_only flag is not supported yet"
                 )
             apply_to_joint_dynamics = sum([m.models.apply_to_joint_dynamics for m in mus_fatigue])
-            if 0 < apply_to_joint_dynamics < len(fatigue["muscles"]):
+            if 0 < apply_to_joint_dynamics < len(nlp.model.fatigue["muscles"]):
                 raise NotImplementedError(
                     f"{fatigue_name} list without homogeneous apply_to_joint_dynamics flag is not supported yet"
                 )
@@ -211,9 +208,6 @@ class DynamicsFunctions:
         q: CX,
         qdot: CX,
         parameters: CX,
-        states: OptimizationVariable,
-        controls: OptimizationVariable,
-        fatigue: FatigueList | None = None,
     ):
         """
         Collect the additional joint torques to add to the torques from controls.
@@ -228,8 +222,6 @@ class DynamicsFunctions:
             The value of qdot from "get"
         parameters: MX | SX
             The parameters of the system
-        fatigue: FatigueList | None
-            The fatigue elements to consider in the dynamics. If None, no fatigue will be considered.
         """
         tau = nlp.cx.zeros(nlp.model.nb_tau, 1)
         if nlp.model.nb_passive_joint_torques > 0:
@@ -274,7 +266,7 @@ class DynamicsFunctions:
 
     @staticmethod
     def get_fatigue_defects(
-        key: Str, dxdt_defects: CX, slopes: CX, nlp, states: CX, controls: CX, fatigue: FatigueList
+        key: Str, dxdt_defects: CX, slopes: CX, nlp, states: CX, controls: CX
     ) -> Tuple[CX, CX]:
         """
         Get the dxdt and slopes associated with fatigue elements.
@@ -294,11 +286,9 @@ class DynamicsFunctions:
             The states of the system
         controls: MX | SX
             The controls of the system
-        fatigue: FatigueList
-            The fatigue elements to consider in the dynamics. If None, no fatigue will be considered.
         """
-        if fatigue is not None and key in fatigue:
-            dxdt_defects = fatigue[key].dynamics(dxdt_defects, nlp, states, controls)
+        if nlp.model.fatigue is not None and key in nlp.model.fatigue:
+            dxdt_defects = nlp.model.fatigue[key].dynamics(dxdt_defects, nlp, states, controls)
             state_keys = nlp.states.keys()
             if state_keys[0] != "q" or state_keys[1] != "qdot":
                 raise NotImplementedError("The accession of fatigue states is not implemented generically yet.")

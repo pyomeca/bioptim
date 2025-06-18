@@ -5,7 +5,6 @@ from casadi import vertcat, Function, DM, horzcat
 
 from .configure_variables import AutoConfigure
 from .dynamics_functions import DynamicsFunctions
-from .fatigue.fatigue_dynamics import FatigueList
 from .ode_solvers import OdeSolver, OdeSolverBase
 from ..gui.plot import CustomPlot
 from ..misc.enums import (
@@ -378,6 +377,9 @@ class DynamicsOptions(OptionGeneric):
             The numerical timeseries at each node. ex: the experimental external forces data should go here.
             # TODO: numerical_data_timeseries should be moved in the model instead of the dynamics options.
         """
+        if "fatigue" in extra_parameters:
+            raise ValueError("Fatigue is not an argument of the dynamics anymore, it should be sent to the model instead.")
+
         super().__init__(**extra_parameters)
 
         if not isinstance(expand_dynamics, bool):

@@ -191,15 +191,16 @@ def test_configure_muscles(cx):
     nlp.cx = MX
     ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
 
-    nlp.model = MusclesBiorbdModel(
-        TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26.bioMod",
-    )
-
     fatigue = FatigueList()
     fatigue.add(XiaFatigue(LD=10, LR=10, F=0.01, R=0.002), state_only=False)
 
+    nlp.model = MusclesBiorbdModel(
+        TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26.bioMod",
+        fatigue=fatigue,
+    )
+
     ConfigureVariables.configure_muscles(
-        ocp, nlp, as_states=True, as_controls=True, as_algebraic_states=False, fatigue=fatigue
+        ocp, nlp, as_states=True, as_controls=True, as_algebraic_states=False
     )
     npt.assert_equal(nlp.states.shape, 24)
     npt.assert_equal(nlp.states.keys(), ["muscles", "muscles_ma", "muscles_mr", "muscles_mf"])

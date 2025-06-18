@@ -80,14 +80,8 @@ def prepare_ocp(
     -------
     The OptimalControlProgram ready to be solved
     """
-
-    bio_model = MusclesBiorbdModel(
-        biorbd_model_path,
-        with_residual_torque=torque_level > 0,
-    )
-
-    n_tau = bio_model.nb_tau
-    n_muscles = bio_model.nb_muscles
+    n_tau = 2
+    n_muscles = 6
     tau_min, tau_max = -10, 10
 
     # Define fatigue parameters for each muscle and residual torque
@@ -151,10 +145,15 @@ def prepare_ocp(
             else:
                 raise ValueError("fatigue_type not implemented")
 
+    bio_model = MusclesBiorbdModel(
+        biorbd_model_path,
+        with_residual_torque=torque_level > 0,
+        fatigue=fatigue_dynamics,
+    )
+
     # DynamicsOptions
     dynamics = DynamicsOptions(
         expand_dynamics=expand_dynamics,
-        fatigue=fatigue_dynamics,
         ode_solver=ode_solver,
         phase_dynamics=phase_dynamics,
     )

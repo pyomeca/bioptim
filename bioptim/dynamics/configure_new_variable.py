@@ -1,7 +1,7 @@
 import numpy as np
 from casadi import MX, SX, vertcat
 
-from .fatigue.fatigue_dynamics import FatigueList, MultiFatigueInterface
+from .fatigue.fatigue_dynamics import MultiFatigueInterface
 from ..gui.plot import CustomPlot
 from ..limits.path_conditions import Bounds
 from ..misc.enums import PlotType, ControlType, VariableType, PhaseDynamics
@@ -29,7 +29,6 @@ class NewVariableConfiguration:
         as_states: Bool,
         as_controls: Bool,
         as_algebraic_states: Bool = False,
-        fatigue: FatigueList = None,
         combine_name: StrOptional = None,
         combine_state_control_plot: Bool = False,
         skip_plot: Bool = False,
@@ -54,8 +53,6 @@ class NewVariableConfiguration:
             If the new variable should be added to the control variable set
         as_algebraic_states: bool
             If the new variable should be added to the algebraic states variable set
-        fatigue: FatigueList
-            The list of fatigable item
         combine_name: str
             The name of a previously added plot to combine to
         combine_state_control_plot: bool
@@ -73,7 +70,6 @@ class NewVariableConfiguration:
         self.as_states = as_states
         self.as_controls = as_controls
         self.as_algebraic_states = as_algebraic_states
-        self.fatigue = fatigue
         self.combine_name = combine_name
         self.combine_state_control_plot = combine_state_control_plot
         self.skip_plot = skip_plot
@@ -81,7 +77,7 @@ class NewVariableConfiguration:
 
         self._check_combine_state_control_plot()
 
-        if _manage_fatigue_to_new_variable(name, name_elements, ocp, nlp, as_states, as_controls, fatigue):
+        if _manage_fatigue_to_new_variable(name, name_elements, ocp, nlp, as_states, as_controls):
             # If the element is fatigable, this function calls back configure_new_variable to fill everything.
             # Therefore, we can exit now
             return
@@ -336,7 +332,6 @@ def _manage_fatigue_to_new_variable(
     nlp,
     as_states: Bool,
     as_controls: Bool,
-    fatigue: FatigueList = None,
 ):
     """
     Manage the fatigue variables and add them to the nlp
@@ -355,16 +350,14 @@ def _manage_fatigue_to_new_variable(
         If the fatigue is applied on the states
     as_controls: bool
         If the fatigue is applied on the controls
-    fatigue: FatigueList
-        The fatigue elements to apply
     """
-    if fatigue is None or name not in fatigue:
+    if nlp.model.fatigue is None or name not in nlp.model.fatigue:
         return False
 
     if not as_controls:
         raise NotImplementedError("Fatigue not applied on controls is not implemented yet")
 
-    fatigue_var = fatigue[name]
+    fatigue_var = nlp.model.fatigue[name]
     meta_suffixes = fatigue_var.suffix
 
     # Only homogeneous fatigue model are implement
