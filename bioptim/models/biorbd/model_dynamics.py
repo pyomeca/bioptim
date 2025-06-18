@@ -2,7 +2,7 @@ from typing import Callable
 import biorbd_casadi as biorbd
 import numpy as np
 
-from bioptim.models.biorbd.external_forces import (
+from .external_forces import (
     ExternalForceSetTimeSeries,
     ExternalForceSetVariables,
 )
@@ -33,7 +33,7 @@ from ...misc.parameters_types import (
 from ...misc.mapping import BiMappingList
 from ...misc.enums import ContactType
 from ...optimization.problem_type import SocpType
-from ...dynamics.fatigue import FatigueList
+from ...dynamics.fatigue.fatigue_dynamics import FatigueList
 
 
 class TorqueBiorbdModel(BiorbdModel, TorqueDynamics):
