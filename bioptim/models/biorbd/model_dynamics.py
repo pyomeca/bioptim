@@ -126,14 +126,16 @@ class HolonomicTorqueBiorbdModel(HolonomicBiorbdModel, HolonomicTorqueDynamics):
 
 class VariationalTorqueBiorbdModel(VariationalBiorbdModel, HolonomicTorqueDynamics):
     def __init__(
-            self,
-            bio_model: str | biorbd.Model,
-            discrete_approximation: QuadratureRule = QuadratureRule.TRAPEZOIDAL,
-            control_type: ControlType = ControlType.CONSTANT,
-            control_discrete_approximation: QuadratureRule = QuadratureRule.MIDPOINT,
-            parameters: ParameterList = None
+        self,
+        bio_model: str | biorbd.Model,
+        discrete_approximation: QuadratureRule = QuadratureRule.TRAPEZOIDAL,
+        control_type: ControlType = ControlType.CONSTANT,
+        control_discrete_approximation: QuadratureRule = QuadratureRule.MIDPOINT,
+        parameters: ParameterList = None,
     ):
-        VariationalBiorbdModel.__init__(self, bio_model, discrete_approximation, control_type, control_discrete_approximation, parameters)
+        VariationalBiorbdModel.__init__(
+            self, bio_model, discrete_approximation, control_type, control_discrete_approximation, parameters
+        )
         self.fatigue = None
         HolonomicTorqueDynamics.__init__(self)
 
