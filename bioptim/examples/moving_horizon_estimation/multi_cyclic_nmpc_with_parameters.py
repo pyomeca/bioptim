@@ -14,6 +14,7 @@ from casadi import MX, SX, vertcat
 from bioptim import (
     Axis,
     BiorbdModel,
+    TorqueBiorbdModel,
     BoundsList,
     TorqueDynamics,
     ConstraintFcn,
@@ -130,7 +131,7 @@ def prepare_nmpc(
     expand_dynamics: bool = True,
     use_sx: bool = False,
 ):
-    model = BiorbdModel(model_path)
+    model = TorqueBiorbdModel(model_path)
 
     parameter = ParameterList(use_sx=use_sx)
     parameter_bounds = BoundsList()
@@ -183,7 +184,7 @@ def prepare_nmpc(
 
     return MyCyclicNMPC(
         model,
-        dynamics,
+        dynamics=dynamics,
         cycle_len=cycle_len,
         cycle_duration=cycle_duration,
         n_cycles_simultaneous=n_cycles_simultaneous,

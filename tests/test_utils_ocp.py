@@ -38,6 +38,7 @@ class CustomBiorbdModel(BiorbdModel):
         self.algebraic_type = []
         self.functions = []
         self.extra_dynamics = None
+        self.fatigue = None
         self.extra_parameters = kwargs
 
     def dynamics(

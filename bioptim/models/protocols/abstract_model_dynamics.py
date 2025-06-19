@@ -33,6 +33,15 @@ class TorqueDynamics(ABC):
         """
         return nlp.states["q"].index, nlp.states["qdot"].index
 
+    def get_basic_slopes(self, nlp):
+        """
+        Get the slopes of the states in the normal dynamics.
+        Please note that, we do not use DynamicsFunctions.get to get the slopes because we do not want them mapped
+        """
+        slope_q = nlp.states_dot["q"].cx
+        slope_qdot = nlp.states_dot["qdot"].cx
+        return slope_q, slope_qdot
+
     def get_basic_variables(self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries):
 
         # Get variables from the right place
@@ -80,13 +89,10 @@ class TorqueDynamics(ABC):
         if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
 
             DynamicsFunctions.no_states_mapping(nlp)
+            slope_q, slope_qdot = self.get_basic_slopes(nlp)
 
             # Initialize defects
             defects = nlp.cx(nlp.states.shape, 1)
-
-            # Do not use DynamicsFunctions.get to get the slopes because we do not want them mapped
-            slope_q = nlp.states_dot["q"].cx
-            slope_qdot = nlp.states_dot["qdot"].cx
 
             if nlp.dynamics_type.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
 
@@ -280,8 +286,7 @@ class StochasticTorqueDynamics(TorqueDynamics):
                 )
 
             DynamicsFunctions.no_states_mapping(nlp)
-            slope_q = nlp.states_dot["q"].cx
-            slope_qdot = nlp.states_dot["qdot"].cx
+            slope_q, slope_qdot = self.get_basic_slopes(nlp)
 
             defects = nlp.cx(nlp.states.shape, 1)
             defects[q_indices, 0] = slope_q * nlp.dt - dq * nlp.dt
@@ -403,6 +408,11 @@ class TorqueFreeFloatingBaseDynamics(TorqueDynamics):
         )
         return q_full, qdot_full, tau_full, external_forces
 
+    def get_basic_slopes(self, nlp):
+        slope_q = vertcat(nlp.states_dot["q_roots"].cx, nlp.states_dot["q_joints"].cx)
+        slope_qdot = vertcat(nlp.states_dot["qdot_roots"].cx, nlp.states_dot["qdot_joints"].cx)
+        return slope_q, slope_qdot
+
 
 class StochasticTorqueFreeFloatingBaseDynamics(TorqueFreeFloatingBaseDynamics, StochasticTorqueDynamics):
     """
@@ -504,14 +514,11 @@ class TorqueDerivativeDynamics(TorqueDynamics):
         if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
 
             DynamicsFunctions.no_states_mapping(nlp)
+            slope_q, slope_qdot = self.get_basic_slopes(nlp)
+            slope_tau = nlp.states_dot["tau"].cx
 
             # Initialize defects
             defects = nlp.cx(nlp.states.shape, 1)
-
-            # Do not use DynamicsFunctions.get to get the slopes because we do not want them mapped
-            slope_q = nlp.states_dot["q"].cx
-            slope_qdot = nlp.states_dot["qdot"].cx
-            slope_tau = nlp.states_dot["tau"].cx
 
             if nlp.dynamics_type.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
 
@@ -520,7 +527,7 @@ class TorqueDerivativeDynamics(TorqueDynamics):
                 dxdt_defects[qdot_indices, 0] = DynamicsFunctions.forward_dynamics(
                     nlp, q, qdot, tau, nlp.model.contact_types, external_forces
                 )
-                dxdt_defects[nlp.states["tau"].index, 0] = slope_tau * nlp.dt - taudot * nlp.dt
+                dxdt_defects[nlp.states["tau"].index, 0] = taudot
 
                 slopes = nlp.cx(nlp.states.shape, 1)
                 slopes[q_indices, 0] = slope_q
@@ -569,9 +576,10 @@ class MusclesDynamics(TorqueDynamics):
         if with_excitation:
             self.state_type += [States.MUSCLE_ACTIVATION]
 
-        self.control_type = [Controls.MUSCLE_EXCITATION]
         if with_residual_torque:
-            self.control_type += [Controls.TAU]
+            self.control_type = [Controls.TAU, Controls.MUSCLE_EXCITATION]
+        else:
+            self.control_type = [Controls.MUSCLE_EXCITATION]
 
         self.algebraic_type = []
         self.functions = []
@@ -603,8 +611,7 @@ class MusclesDynamics(TorqueDynamics):
 
         # Add additional torques
         if self.with_residual_torque:
-            residual_tau = DynamicsFunctions.get_fatigable_tau(nlp, states, controls)
-            muscles_tau += residual_tau
+            muscles_tau += DynamicsFunctions.get_fatigable_tau(nlp, states, controls)
         muscles_tau += DynamicsFunctions.collect_tau(nlp, q, qdot, parameters)
 
         # Get external forces
@@ -650,13 +657,10 @@ class MusclesDynamics(TorqueDynamics):
         if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
 
             DynamicsFunctions.no_states_mapping(nlp)
+            slope_q, slope_qdot = self.get_basic_slopes(nlp)
 
             # Initialize defects
             defects = nlp.cx(nlp.states.shape, 1)
-
-            # Do not use DynamicsFunctions.get to get the slopes because we do not want them mapped
-            slope_q = nlp.states_dot["q"].cx
-            slope_qdot = nlp.states_dot["qdot"].cx
 
             if nlp.dynamics_type.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
 
@@ -743,13 +747,13 @@ class MusclesDynamics(TorqueDynamics):
         numerical_timeseries,
         nlp,
     ):
-        q, qdot, tau, external_forces, mus_activations = self.get_basic_variables(
+        q, qdot, tau, external_forces, _ = self.get_basic_variables(
             nlp, states, controls, parameters, algebraic_states, numerical_timeseries
         )
         return nlp.model.rigid_contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
 
 
-class JointAccelerationDynamics(ABC):
+class JointAccelerationDynamics(TorqueDynamics):
     """
     This class is used to create a model actuated through joint torques.
 
@@ -758,18 +762,8 @@ class JointAccelerationDynamics(ABC):
     """
 
     def __init__(self):
-        self.state_type = [States.Q, States.QDOT]
+        super().__init__()
         self.control_type = [Controls.QDDOT_JOINTS]
-        self.algebraic_type = []
-        self.functions = []
-        self.extra_dynamics = None
-
-    @staticmethod
-    def get_q_qdot_indices(nlp):
-        """
-        Get the indices of the states and controls in the normal dynamics
-        """
-        return nlp.states["q"].index, nlp.states["qdot"].index
 
     def dynamics(
         self,
@@ -802,8 +796,11 @@ class JointAccelerationDynamics(ABC):
 
         defects = None
         if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
-            slope_q = nlp.states_dot["q"].cx
-            slope_qdot = nlp.states_dot["qdot"].cx
+
+            DynamicsFunctions.no_states_mapping(nlp)
+            slope_q, slope_qdot = self.get_basic_slopes(nlp)
+
+            # Initialize defects
             defects = nlp.cx(nlp.states.shape, 1)
 
             # qdot = polynomial slope

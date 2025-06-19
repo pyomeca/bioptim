@@ -115,6 +115,7 @@ class CustomModel(BiorbdModel, TorqueDynamics):
         Custom model to use with the custom dynamics function
         """
         BiorbdModel.__init__(self, biorbd_model_path)
+        self.fatigue = None
         TorqueDynamics.__init__(self)
 
     def dynamics(

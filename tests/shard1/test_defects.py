@@ -1,14 +1,17 @@
 import numpy as np
 import numpy.testing as npt
 import pytest
-from casadi import MX, SX, vertcat
+from casadi import MX, SX
 
 from bioptim import (
     VariableScalingList,
     ConfigureProblem,
     TorqueBiorbdModel,
+    TorqueDerivativeBiorbdModel,
     TorqueActivationBiorbdModel,
     TorqueFreeFloatingBaseBiorbdModel,
+    MusclesBiorbdModel,
+    JointAccelerationBiorbdModel,
     ControlType,
     NonLinearProgram,
     DynamicsOptions,
@@ -936,13 +939,12 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
         np.random.rand(nlp.ns, 6)  # just not to change the values of the next random values
 
     nlp.numerical_timeseries = TestUtils.initialize_numerical_timeseries(nlp, dynamics=nlp.dynamics_type)
-    if defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
+
+    if with_contact and defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
         with pytest.raises(
-            NotImplementedError,
-            match="The defect type DefectType.TAU_EQUALS_INVERSE_DYNAMICS is not implemented yet for torque activations driven dynamics.",
+            NotImplementedError, match="Inverse dynamics, cannot be used with ContactType.RIGID_EXPLICIT yet"
         ):
             ConfigureProblem.initialize(ocp, nlp)
-
     else:
         ConfigureProblem.initialize(ocp, nlp)
 
@@ -984,6 +986,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
                         ),
                         decimal=5,
                     )
+                # else: NotImplemented
             else:
                 if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
                     npt.assert_almost_equal(
@@ -1002,7 +1005,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
                         ),
                         decimal=5,
                     )
-
+                # else: NotImplemented
         else:
             if with_external_force:
                 if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
@@ -1022,6 +1025,17 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
                         ),
                         decimal=5,
                     )
+                else:
+                    npt.assert_almost_equal(
+                        x_defects[:, 0],
+                        np.array(
+                            [
+                                -4.38307239e-02, -4.28372820e-02, 1.05373750e-01, -4.83112831e-02,
+                                2.76119722e+01, -5.33343749e+01, 7.45727140e+01, 4.13097716e+01
+                            ]
+                        ),
+                        decimal=5,
+                    )
             else:
                 if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
                     npt.assert_almost_equal(
@@ -1036,6 +1050,17 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
                                 2.16475239e01,
                                 1.24723562e02,
                                 -1.37029516e03,
+                            ]
+                        ),
+                        decimal=5,
+                    )
+                else:
+                    npt.assert_almost_equal(
+                        x_defects[:, 0],
+                        np.array(
+                            [
+                                -3.11723149e-01, -7.80580770e-02, 2.30405883e-01, 7.22178723e-02,
+                                7.85546423e+01, -1.09945344e+02, 6.89132889e+00, 4.73862588e+01
                             ]
                         ),
                         decimal=5,
@@ -1117,38 +1142,32 @@ def test_torque_activation_driven_with_residual_torque(
         np.random.rand(nlp.ns, 6)  # just not to change the values of the next random values
 
     nlp.numerical_timeseries = TestUtils.initialize_numerical_timeseries(nlp, dynamics=nlp.dynamics_type)
-    if defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
-        with pytest.raises(
-            NotImplementedError,
-            match="The defect type DefectType.TAU_EQUALS_INVERSE_DYNAMICS is not implemented yet for torque activations driven dynamics.",
-        ):
-            ConfigureProblem.initialize(ocp, nlp)
 
-    else:
-        ConfigureProblem.initialize(ocp, nlp)
+    ConfigureProblem.initialize(ocp, nlp)
 
-        # Test the results
-        states = np.random.rand(nlp.states.shape, nlp.ns)
-        states_dot = np.random.rand(nlp.states.shape, nlp.ns)
-        controls = np.random.rand(nlp.controls.shape, nlp.ns)
-        params = np.random.rand(nlp.parameters.shape, nlp.ns)
-        algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
-        numerical_timeseries = EXTERNAL_FORCE_ARRAY[:, 0] if with_external_force else []
-        time = np.random.rand(2)
-        x_defects = np.array(
-            nlp.dynamics_defects_func(
-                time,
-                states[:, 0],
-                controls[:, 0],
-                params[:, 0],
-                algebraic_states[:, 0],
-                numerical_timeseries,
-                states_dot[:, 0],
-            )
+    # Test the results
+    states = np.random.rand(nlp.states.shape, nlp.ns)
+    states_dot = np.random.rand(nlp.states.shape, nlp.ns)
+    controls = np.random.rand(nlp.controls.shape, nlp.ns)
+    params = np.random.rand(nlp.parameters.shape, nlp.ns)
+    algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
+    numerical_timeseries = EXTERNAL_FORCE_ARRAY[:, 0] if with_external_force else []
+    time = np.random.rand(2)
+    x_defects = np.array(
+        nlp.dynamics_defects_func(
+            time,
+            states[:, 0],
+            controls[:, 0],
+            params[:, 0],
+            algebraic_states[:, 0],
+            numerical_timeseries,
+            states_dot[:, 0],
         )
-        if with_residual_torque:
-            if with_passive_torque:
-                if with_external_force:
+    )
+    if with_residual_torque:
+        if with_passive_torque:
+            if with_external_force:
+                if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
                     npt.assert_almost_equal(
                         x_defects[:, 0],
                         np.array([6.04508047e-01, 1.84981427e-01, -8.70762306e01, -1.03464970e03]),
@@ -1156,10 +1175,22 @@ def test_torque_activation_driven_with_residual_torque(
                     )
                 else:
                     npt.assert_almost_equal(
-                        x_defects[:, 0], np.array([0.16044011, 0.1632901, -1.06310829, -27.22644766]), decimal=5
+                        x_defects[:, 0],
+                        np.array([0.60450805,  0.18498143, 83.57439118, 34.05025566]),
+                        decimal=5,
                     )
             else:
-                if with_external_force:
+                if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
+                    npt.assert_almost_equal(
+                        x_defects[:, 0], np.array([0.16044011, 0.1632901, -1.06310829, -27.22644766]), decimal=5
+                    )
+                else:
+                    npt.assert_almost_equal(
+                        x_defects[:, 0], np.array([0.16044011, 0.1632901 , 6.29890182, 2.76062726]), decimal=5
+                    )
+        else:
+            if with_external_force:
+                if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
                     npt.assert_almost_equal(
                         x_defects[:, 0],
                         np.array([6.04508047e-01, 1.84981427e-01, -8.35362294e01, -1.00272333e03]),
@@ -1167,11 +1198,23 @@ def test_torque_activation_driven_with_residual_torque(
                     )
                 else:
                     npt.assert_almost_equal(
+                        x_defects[:, 0],
+                        np.array([0.60450805,  0.18498143, 79.57439118, 33.05025566]),
+                        decimal=5,
+                    )
+            else:
+                if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
+                    npt.assert_almost_equal(
                         x_defects[:, 0], np.array([0.16044011, 0.1632901, -0.31706506, -17.5258886]), decimal=5
                     )
-        else:
-            if with_passive_torque:
-                if with_external_force:
+                else:
+                    npt.assert_almost_equal(
+                        x_defects[:, 0], np.array([0.16044011, 0.1632901 , 2.29890182, 1.76062726]), decimal=5
+                    )
+    else:
+        if with_passive_torque:
+            if with_external_force:
+                if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
                     npt.assert_almost_equal(
                         x_defects[:, 0],
                         np.array([5.28274079e-01, 1.61653585e-01, -7.53323145e01, -8.95479455e02]),
@@ -1179,10 +1222,22 @@ def test_torque_activation_driven_with_residual_torque(
                     )
                 else:
                     npt.assert_almost_equal(
-                        x_defects[:, 0], np.array([0.45831154, 0.4664528, -2.70311395, -51.49785706]), decimal=5
+                        x_defects[:, 0],
+                        np.array([0.52827408,  0.16165359, 82.71128776, 33.72507234]),
+                        decimal=5,
                     )
             else:
-                if with_external_force:
+                if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
+                    npt.assert_almost_equal(
+                        x_defects[:, 0], np.array([0.45831154, 0.4664528, -2.70311395, -51.49785706]), decimal=5
+                    )
+                else:
+                    npt.assert_almost_equal(
+                        x_defects[:, 0], np.array([0.45831154, 0.4664528 , 5.32931719, 1.83875302]), decimal=5
+                    )
+        else:
+            if with_external_force:
+                if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
                     npt.assert_almost_equal(
                         x_defects[:, 0],
                         np.array([5.28274079e-01, 1.61653585e-01, -7.22387397e01, -8.67579288e02]),
@@ -1190,7 +1245,18 @@ def test_torque_activation_driven_with_residual_torque(
                     )
                 else:
                     npt.assert_almost_equal(
+                        x_defects[:, 0],
+                        np.array([0.52827408,  0.16165359, 78.71128776, 32.72507234]),
+                        decimal=5,
+                    )
+            else:
+                if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
+                    npt.assert_almost_equal(
                         x_defects[:, 0], np.array([0.45831154, 0.4664528, -0.57197461, -23.78734089]), decimal=5
+                    )
+                else:
+                    npt.assert_almost_equal(
+                        x_defects[:, 0], np.array([0.45831154, 0.4664528 , 1.32931719, 0.83875302]), decimal=5
                     )
 
 
@@ -1276,15 +1342,28 @@ def test_torque_driven_free_floating_base(cx, phase_dynamics, defects_type):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("cx", [MX, SX])
-@pytest.mark.parametrize("with_external_force", [False, True])
-@pytest.mark.parametrize("contact_types", [[ContactType.RIGID_EXPLICIT], [ContactType.RIGID_IMPLICIT], ()])
-@pytest.mark.parametrize("with_residual_torque", [False, True])
-@pytest.mark.parametrize("with_excitations", [False, True])
+@pytest.mark.parametrize("with_external_force", [
+    False,
+    True,
+])
+@pytest.mark.parametrize("contact_types", [
+    [ContactType.RIGID_EXPLICIT],
+    [ContactType.RIGID_IMPLICIT],
+    (),
+])
+@pytest.mark.parametrize("with_residual_torque", [
+    False,
+    True,
+])
+@pytest.mark.parametrize("with_excitation", [
+    False,
+    True,
+])
 @pytest.mark.parametrize(
     "defects_type", [DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS, DefectType.TAU_EQUALS_INVERSE_DYNAMICS]
 )
 def test_muscle_driven(
-    with_excitations, contact_types, with_residual_torque, with_external_force, cx, phase_dynamics, defects_type
+    with_excitation, contact_types, with_residual_torque, with_external_force, cx, phase_dynamics, defects_type
 ):
 
     np.random.seed(42)
@@ -1307,7 +1386,7 @@ def test_muscle_driven(
 
     if ContactType.RIGID_IMPLICIT in contact_types and with_external_force:
         with pytest.raises(NotImplementedError):
-            nlp.model = BiorbdModel(
+            nlp.model = MusclesBiorbdModel(
                 TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod",
                 contact_types=contact_types,
                 external_force_set=external_forces,
@@ -1315,21 +1394,20 @@ def test_muscle_driven(
     elif ContactType.RIGID_IMPLICIT in contact_types:
         with pytest.raises(RuntimeError, match="The segment for the rigid contact index 0 was not found."):
             # TODO: This is a bug... The index of the parent of the contact is not correctly identified when it is the root
-            nlp.model = BiorbdModel(
+            nlp.model = MusclesBiorbdModel(
                 TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod",
                 contact_types=contact_types,
                 external_force_set=external_forces,
             )
     else:
-        nlp.model = BiorbdModel(
+        nlp.model = MusclesBiorbdModel(
             TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod",
             contact_types=contact_types,
             external_force_set=external_forces,
+            with_residual_torque=with_residual_torque,
+            with_excitation=with_excitation,
         )
         nlp.dynamics_type = DynamicsOptions(
-            DynamicsFcn.MUSCLE_DRIVEN,
-            with_residual_torque=with_residual_torque,
-            with_excitations=with_excitations,
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
             numerical_data_timeseries=numerical_timeseries,
@@ -1395,7 +1473,7 @@ def test_muscle_driven(
 
             if ContactType.RIGID_EXPLICIT in contact_types:
                 if with_residual_torque:
-                    if with_excitations:
+                    if with_excitation:
                         if with_external_force:
                             npt.assert_almost_equal(
                                 x_defects[:, 0],
@@ -1454,7 +1532,7 @@ def test_muscle_driven(
                                 decimal=5,
                             )
                 else:
-                    if with_excitations:
+                    if with_excitation:
                         if with_external_force:
                             npt.assert_almost_equal(
                                 x_defects[:, 0],
@@ -1521,7 +1599,7 @@ def test_muscle_driven(
                             )
             elif ContactType.RIGID_IMPLICIT in contact_types:
                 if with_residual_torque:
-                    if with_excitations:
+                    if with_excitation:
                         if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
                             npt.assert_almost_equal(
                                 x_defects[:, 0],
@@ -1578,7 +1656,7 @@ def test_muscle_driven(
                                 decimal=5,
                             )
                 else:
-                    if with_excitations:
+                    if with_excitation:
                         if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
                             npt.assert_almost_equal(
                                 x_defects[:, 0],
@@ -1645,7 +1723,7 @@ def test_muscle_driven(
                             )
             else:
                 if with_residual_torque:
-                    if with_excitations:
+                    if with_excitation:
                         if with_external_force:
                             if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
                                 npt.assert_almost_equal(
@@ -1768,7 +1846,7 @@ def test_muscle_driven(
                                     decimal=5,
                                 )
                 else:
-                    if with_excitations:
+                    if with_excitation:
                         if with_external_force:
                             if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
                                 npt.assert_almost_equal(
@@ -1910,9 +1988,8 @@ def test_joints_acceleration_driven(cx, phase_dynamics, defects_type):
 
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
-    nlp.model = BiorbdModel(TestUtils.bioptim_folder() + "/examples/getting_started/models/double_pendulum.bioMod")
+    nlp.model = JointAccelerationBiorbdModel(TestUtils.bioptim_folder() + "/examples/getting_started/models/double_pendulum.bioMod")
     nlp.dynamics_type = DynamicsOptions(
-        DynamicsFcn.JOINTS_ACCELERATION_DRIVEN,
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
         ode_solver=OdeSolver.COLLOCATION(defects_type=defects_type),

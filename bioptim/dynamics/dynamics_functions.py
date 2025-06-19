@@ -523,7 +523,7 @@ class DynamicsFunctions:
         The generalized forces computed from the muscles
         """
 
-        activations = type(q)()
+        activations = nlp.cx()
         for k in range(len(nlp.controls["muscles"])):
             if fatigue_states is not None:
                 activations = vertcat(activations, muscle_activations[k] * (1 - fatigue_states[k]))
