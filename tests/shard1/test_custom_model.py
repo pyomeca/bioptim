@@ -8,13 +8,11 @@ from bioptim import Solver, PhaseDynamics, SolutionMerge
 def test_custom_model(phase_dynamics):
     from bioptim.examples.custom_model import main as ocp_module
     from bioptim.examples.custom_model.custom_package import my_model as model
-    from bioptim.examples.custom_model.custom_package import custom_configure_my_dynamics as configure_dynamics
 
     ocp = ocp_module.prepare_ocp(
         model=model.MyModel(),
         final_time=1,
         n_shooting=30,
-        configure_dynamics=configure_dynamics,
         phase_dynamics=phase_dynamics,
         n_threads=1,
         expand_dynamics=True,

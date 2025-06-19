@@ -14,7 +14,7 @@ from bioptim import (
     BoundsList,
     ConstraintList,
     DynamicsOptionsList,
-    Dynamics,
+    DynamicsOptions,
     HolonomicBiorbdModel,
     HolonomicConstraintsFcn,
     HolonomicConstraintsList,
@@ -209,9 +209,9 @@ def prepare_ocp(
     return (
         OptimalControlProgram(
             bio_model,
-            dynamics,
             n_shooting,
             final_time,
+            dynamics=dynamics,
             x_bounds=x_bounds,
             u_bounds=u_bounds,
             a_bounds=a_bounds,

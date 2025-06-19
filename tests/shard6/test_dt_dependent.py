@@ -34,6 +34,7 @@ from ..utils import TestUtils
 class CustomModel(BiorbdModel, TorqueDynamics):
     def __init__(self, bio_model: str):
         BiorbdModel.__init__(self, bio_model)
+        self.fatigue = None
         TorqueDynamics.__init__(self)
 
     def dynamics(

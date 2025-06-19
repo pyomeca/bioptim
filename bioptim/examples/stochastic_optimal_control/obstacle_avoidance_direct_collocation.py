@@ -460,13 +460,14 @@ def prepare_socp(
         interpolation=InterpolationType.CONSTANT,
     )
 
-    # Dynamics
-    dynamics = DynamicsOptions(
-        phase_dynamics=phase_dynamics,
-        expand_dynamics=expand_dynamics,
-    )
-
     if is_stochastic:
+
+        # Dynamics
+        dynamics = DynamicsOptions(
+            phase_dynamics=phase_dynamics,
+            expand_dynamics=expand_dynamics,
+        )
+
         phase_transitions.add(PhaseTransitionFcn.COVARIANCE_CYCLIC)
 
         a_init = InitialGuessList()
@@ -510,11 +511,18 @@ def prepare_socp(
             duplicate_starting_point=True,
         )
 
+        # Dynamics
+        dynamics = DynamicsOptions(
+            phase_dynamics=phase_dynamics,
+            expand_dynamics=expand_dynamics,
+            ode_solver=ode_solver,
+        )
+
         return OptimalControlProgram(
             bio_model,
-            dynamics,
             n_shooting,
             final_time,
+            dynamics=dynamics,
             x_init=x_init,
             u_init=control_init,
             x_bounds=x_bounds,
@@ -546,7 +554,7 @@ def main():
     n_shooting = 40
     final_time = 4
     motor_noise_magnitude = np.array([1, 1]) * 1
-    bio_model = MassPointDynamicsModel(socp_type=socp_type, motor_noise_magnitude=motor_noise_magnitude)
+    bio_model = MassPointDynamicsModel(problem_type=socp_type, motor_noise_magnitude=motor_noise_magnitude)
 
     q_init = np.zeros((bio_model.nb_q, (polynomial_degree + 2) * n_shooting + 1))
     zq_init = initialize_circle((polynomial_degree + 1) * n_shooting + 1)

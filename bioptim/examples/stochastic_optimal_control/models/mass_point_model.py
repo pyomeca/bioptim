@@ -94,6 +94,7 @@ class MassPointDynamicsModel(MassPointModel):
         super().__init__(
             problem_type=problem_type, motor_noise_magnitude=motor_noise_magnitude, polynomial_degree=polynomial_degree
         )
+        self.fatigue = None
         self.state_type = [States.Q, States.QDOT]
         self.control_type = [self.configure_u]
         self.algebraic_type = []
@@ -156,6 +157,7 @@ class StochasticMassPointDynamicsModel(MassPointModel):
             )
         ]
         self.functions = []
+        self.fatigue = None
 
     def dynamics(self, time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp):
         """

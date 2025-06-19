@@ -106,7 +106,7 @@ def generate_dat_to_track(
     )
 
 
-def my_parameter_function(bio_model: BiorbdModel, value: MX):
+def my_parameter_function(bio_model: TorqueBiorbdModel, value: MX):
     bio_model.set_gravity(value)
 
 
@@ -226,9 +226,9 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         x_init=x_init,

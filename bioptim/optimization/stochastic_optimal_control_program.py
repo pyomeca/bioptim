@@ -40,9 +40,9 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
     def __init__(
         self,
         bio_model: list | tuple | StochasticBioModel,
-        dynamics: DynamicsOptions | DynamicsOptionsList,
         n_shooting: int | list | tuple,
         phase_time: int | float | list | tuple,
+        dynamics: DynamicsOptions | DynamicsOptionsList = None,
         x_bounds: BoundsList = None,
         u_bounds: BoundsList = None,
         a_bounds: BoundsList = None,
@@ -86,8 +86,18 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             parameter_init = InitialGuessList()
 
         # Integrator
-        for dyn in dynamics:
-            dyn.ode_solver = self._set_default_ode_solver()
+        n_phase = 1 if isinstance(n_shooting, int) else len(n_shooting)
+        if dynamics is None:
+            dynamics = DynamicsOptionsList(use_sx=use_sx)
+            for i_phase in range(n_phase):
+                dynamics.add(DynamicsOptions())
+        elif isinstance(dynamics, DynamicsOptions):
+            tp = dynamics
+            dynamics = DynamicsOptionsList()
+            dynamics.add(tp)
+
+        for i_phase in range(n_phase):
+            dynamics[i_phase].ode_solver = self._set_default_ode_solver()
 
         if "motor_noise" not in parameters.keys():
             n_motor_noise = bio_model.motor_noise_magnitude.shape[0]

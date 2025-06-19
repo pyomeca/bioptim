@@ -31,7 +31,7 @@ from ...misc.parameters_types import (
     DM,
 )
 from ...misc.mapping import BiMappingList
-from ...misc.enums import ContactType
+from ...misc.enums import ContactType, QuadratureRule, ControlType
 from ...optimization.problem_type import SocpType
 from ...dynamics.fatigue.fatigue_dynamics import FatigueList
 
@@ -126,9 +126,14 @@ class HolonomicTorqueBiorbdModel(HolonomicBiorbdModel, HolonomicTorqueDynamics):
 
 class VariationalTorqueBiorbdModel(VariationalBiorbdModel, HolonomicTorqueDynamics):
     def __init__(
-        self, bio_model: str | biorbd.Model, friction_coefficients: np.ndarray = None, parameters: ParameterList = None
+            self,
+            bio_model: str | biorbd.Model,
+            discrete_approximation: QuadratureRule = QuadratureRule.TRAPEZOIDAL,
+            control_type: ControlType = ControlType.CONSTANT,
+            control_discrete_approximation: QuadratureRule = QuadratureRule.MIDPOINT,
+            parameters: ParameterList = None
     ):
-        VariationalBiorbdModel.__init__(self, bio_model, friction_coefficients, parameters)
+        VariationalBiorbdModel.__init__(self, bio_model, discrete_approximation, control_type, control_discrete_approximation, parameters)
         self.fatigue = None
         HolonomicTorqueDynamics.__init__(self)
 

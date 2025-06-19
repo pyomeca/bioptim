@@ -123,9 +123,8 @@ def prepare_test_ocp(
     elif with_contact:
         dynamics = DynamicsOptionsList()
         if with_external_forces:
-            bio_model = MusclesBiorbdModel(
+            bio_model = TorqueBiorbdModel(
                 bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod",
-                with_residual_torque=True,
                 contact_types=[ContactType.RIGID_EXPLICIT],
                 external_force_set=external_forces,
             )
@@ -137,9 +136,8 @@ def prepare_test_ocp(
                 )
             )
         else:
-            bio_model = MusclesBiorbdModel(
+            bio_model = TorqueBiorbdModel(
                 bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod",
-                with_residual_torque=True,
                 contact_types=[ContactType.RIGID_EXPLICIT],
             )
             dynamics.add(
@@ -1588,9 +1586,9 @@ def test_bad_shape_output_penalty():
 
         ocp = OptimalControlProgram(
             bio_model,
-            dynamics,
             10,
             1.0,
+            dynamics=dynamics,
             constraints=constraints,
         )
         return ocp
