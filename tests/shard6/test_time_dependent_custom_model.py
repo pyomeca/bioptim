@@ -78,6 +78,7 @@ class Model:
         self.extra_dynamics = None
         self.functions = []
         self.contact_types = []
+        self.fatigue = None
 
     def serialize(self) -> tuple[Callable, dict]:
         return (

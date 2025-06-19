@@ -380,12 +380,13 @@ def test_acados_custom_dynamics(problem_type_custom):
         print("Test for ACADOS on Windows is skipped")
         return
 
-    from bioptim.examples.getting_started import custom_dynamics as ocp_module
+
+    from tests import test_utils_ocp as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/../bioptim/examples/getting_started/models/cube.bioMod",
         problem_type_custom=problem_type_custom,
         ode_solver=OdeSolver.RK4(),
         use_sx=True,
