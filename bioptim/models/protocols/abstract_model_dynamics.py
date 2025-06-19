@@ -363,6 +363,7 @@ class HolonomicTorqueDynamics(ABC):
     def extra_dynamics(self):
         return None
 
+
 class TorqueFreeFloatingBaseDynamics(TorqueDynamics):
     """
     This class is used to create a model actuated through joint torques with a free floating base.

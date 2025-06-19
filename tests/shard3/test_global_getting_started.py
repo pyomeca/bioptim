@@ -882,7 +882,7 @@ def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver, phase
     ode_solver = ode_solver()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path= bioptim_folder + "/../bioptim/examples/getting_started/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/../bioptim/examples/getting_started/models/cube.bioMod",
         problem_type_custom=problem_type_custom,
         ode_solver=ode_solver,
         phase_dynamics=phase_dynamics,
