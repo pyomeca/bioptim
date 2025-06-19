@@ -24,7 +24,6 @@ class TorqueDynamics(ABC):
         self.control_type = [Controls.TAU]
         self.algebraic_type = []
         self.functions = []
-        self.extra_dynamics = None
 
     @staticmethod
     def get_q_qdot_indices(nlp):
@@ -157,6 +156,10 @@ class TorqueDynamics(ABC):
             nlp, states, controls, parameters, algebraic_states, numerical_timeseries
         )
         return nlp.model.rigid_contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
+
+    @property
+    def extra_dynamics(self):
+        return None
 
 
 class StochasticTorqueDynamics(TorqueDynamics):
@@ -318,7 +321,6 @@ class HolonomicTorqueDynamics(ABC):
             lambda ocp, nlp: ConfigureVariables.configure_qdotv(ocp, nlp),
             lambda ocp, nlp: ConfigureVariables.configure_lagrange_multipliers_function(ocp, nlp),
         ]
-        self.extra_dynamics = None
 
     def dynamics(
         self,
@@ -357,6 +359,9 @@ class HolonomicTorqueDynamics(ABC):
     def get_rigid_contact_forces(self, time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp):
         return
 
+    @property
+    def extra_dynamics(self):
+        return None
 
 class TorqueFreeFloatingBaseDynamics(TorqueDynamics):
     """
@@ -372,7 +377,6 @@ class TorqueFreeFloatingBaseDynamics(TorqueDynamics):
         self.control_type = [Controls.TAU_JOINTS]
         self.algebraic_type = []
         self.functions = []
-        self.extra_dynamics = None
 
     @staticmethod
     def get_q_qdot_indices(nlp):
@@ -583,7 +587,6 @@ class MusclesDynamics(TorqueDynamics):
 
         self.algebraic_type = []
         self.functions = []
-        self.extra_dynamics = None
         self.with_residual_torque = with_residual_torque
         self.with_excitation = with_excitation
 
