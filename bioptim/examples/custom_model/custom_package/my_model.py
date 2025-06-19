@@ -26,6 +26,7 @@ class MyModel(TorqueDynamics):
         self.qdot = MX.sym("qdot", 1)
         self.tau = MX.sym("tau", 1)
         self.contact_types = ()
+        self.fatigue = None
 
     # ---- Absolutely needed methods ---- #
     def serialize(self) -> tuple[Callable, dict]:

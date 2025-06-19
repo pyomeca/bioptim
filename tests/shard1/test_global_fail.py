@@ -3,7 +3,7 @@ import re
 
 from casadi import MX
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     Node,
     OptimalControlProgram,
     DynamicsOptions,
@@ -45,7 +45,7 @@ def test_custom_constraint_multiple_nodes_fail():
         ),
     ):
         OptimalControlProgram(
-            BiorbdModel(model_path),
+            TorqueBiorbdModel(model_path),
             30,
             2,
             dynamics=DynamicsOptions(expand_dynamics=True, phase_dynamics=PhaseDynamics.ONE_PER_NODE),
@@ -76,7 +76,7 @@ def test_custom_constraint_mx_fail(phase_dynamics):
     u_init["tau"] = [0] * 3
 
     ocp = OptimalControlProgram(
-        BiorbdModel(model_path),
+        TorqueBiorbdModel(model_path),
         30,
         2,
         dynamics=DynamicsOptions(expand_dynamics=True, phase_dynamics=phase_dynamics),
