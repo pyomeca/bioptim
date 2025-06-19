@@ -2,14 +2,14 @@ import re
 
 import pytest
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
+    DynamicsOptions,
     MultinodeConstraintList,
     MultinodeConstraintFcn,
     Node,
     OdeSolver,
     OptimalControlProgram,
-    DynamicsList,
-    DynamicsFcn,
+    DynamicsOptionsList,
     ObjectiveList,
     BoundsList,
     PhaseDynamics,
@@ -18,7 +18,11 @@ from tests.utils import TestUtils
 
 
 def prepare_ocp(biorbd_model_path, phase_1, phase_2, phase_dynamics) -> OptimalControlProgram:
-    bio_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path))
+    bio_model = (
+        TorqueBiorbdModel(biorbd_model_path),
+        TorqueBiorbdModel(biorbd_model_path),
+        TorqueBiorbdModel(biorbd_model_path),
+    )
 
     # Problem parameters
     n_shooting = (100, 300, 100)
@@ -29,16 +33,10 @@ def prepare_ocp(biorbd_model_path, phase_1, phase_2, phase_dynamics) -> OptimalC
     objective_functions = ObjectiveList()
 
     # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(
-        DynamicsFcn.TORQUE_DRIVEN, ode_solver=OdeSolver.RK4(), expand_dynamics=True, phase_dynamics=phase_dynamics
-    )
-    dynamics.add(
-        DynamicsFcn.TORQUE_DRIVEN, ode_solver=OdeSolver.RK4(), expand_dynamics=True, phase_dynamics=phase_dynamics
-    )
-    dynamics.add(
-        DynamicsFcn.TORQUE_DRIVEN, ode_solver=OdeSolver.RK4(), expand_dynamics=True, phase_dynamics=phase_dynamics
-    )
+    dynamics = DynamicsOptionsList()
+    dynamics.add(DynamicsOptions(ode_solver=OdeSolver.RK4(), expand_dynamics=True, phase_dynamics=phase_dynamics))
+    dynamics.add(DynamicsOptions(ode_solver=OdeSolver.RK4(), expand_dynamics=True, phase_dynamics=phase_dynamics))
+    dynamics.add(DynamicsOptions(ode_solver=OdeSolver.RK4(), expand_dynamics=True, phase_dynamics=phase_dynamics))
 
     multinode_constraints = MultinodeConstraintList()
     # hard constraint
@@ -81,9 +79,9 @@ def prepare_ocp(biorbd_model_path, phase_1, phase_2, phase_dynamics) -> OptimalC
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,

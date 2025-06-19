@@ -6,11 +6,10 @@ import numpy as np
 from casadi import MX
 
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     OptimalControlProgram,
-    Dynamics,
-    DynamicsList,
-    DynamicsFcn,
+    DynamicsOptions,
+    DynamicsOptionsList,
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,
@@ -56,10 +55,10 @@ def prepare_ocp_phase_transitions(
 ) -> OptimalControlProgram:
     # BioModel path
     bio_model = (
-        BiorbdModel(biorbd_model_path),
-        BiorbdModel(biorbd_model_path),
-        BiorbdModel(biorbd_model_path),
-        BiorbdModel(biorbd_model_path),
+        TorqueBiorbdModel(biorbd_model_path),
+        TorqueBiorbdModel(biorbd_model_path),
+        TorqueBiorbdModel(biorbd_model_path),
+        TorqueBiorbdModel(biorbd_model_path),
     )
 
     # Problem parameters
@@ -92,11 +91,11 @@ def prepare_ocp_phase_transitions(
         )
 
     # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics)
+    dynamics = DynamicsOptionsList()
+    dynamics.add(DynamicsOptions(expand_dynamics=True, phase_dynamics=phase_dynamics))
+    dynamics.add(DynamicsOptions(expand_dynamics=True, phase_dynamics=phase_dynamics))
+    dynamics.add(DynamicsOptions(expand_dynamics=True, phase_dynamics=phase_dynamics))
+    dynamics.add(DynamicsOptions(expand_dynamics=True, phase_dynamics=phase_dynamics))
 
     # Constraints
     constraints = ConstraintList()
@@ -175,9 +174,9 @@ def prepare_ocp_phase_transitions(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
@@ -187,12 +186,12 @@ def prepare_ocp_phase_transitions(
     )
 
 
-def my_parameter_function(bio_model: BiorbdModel, value: MX, extra_value: Any):
+def my_parameter_function(bio_model: TorqueBiorbdModel, value: MX, extra_value: Any):
     value[2] *= extra_value
     bio_model.set_gravity(value)
 
 
-def set_mass(bio_model: BiorbdModel, value: MX):
+def set_mass(bio_model: TorqueBiorbdModel, value: MX):
     bio_model.segments[0].characteristics().setMass(value)
 
 
@@ -312,7 +311,7 @@ def prepare_ocp_parameters(
         )
 
     # --- Options --- #
-    bio_model = BiorbdModel(biorbd_model_path, parameters=parameters)
+    bio_model = TorqueBiorbdModel(biorbd_model_path, parameters=parameters)
     n_tau = bio_model.nb_tau
 
     # Add objective functions
@@ -321,9 +320,7 @@ def prepare_ocp_parameters(
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=10)
 
     # Dynamics
-    dynamics = Dynamics(
-        DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver, expand_dynamics=True, phase_dynamics=phase_dynamics
-    )
+    dynamics = DynamicsOptions(ode_solver=ode_solver, expand_dynamics=True, phase_dynamics=phase_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -341,9 +338,9 @@ def prepare_ocp_parameters(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
@@ -379,7 +376,7 @@ def prepare_ocp_custom_objectives(
 
     # --- Options --- #
     # BioModel path
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
 
     # Problem parameters
     n_shooting = 30
@@ -416,9 +413,7 @@ def prepare_ocp_custom_objectives(
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_MARKERS, list_index=7, index=[1, 2], target=target)
 
     # Dynamics
-    dynamics = Dynamics(
-        DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver, expand_dynamics=True, phase_dynamics=phase_dynamics
-    )
+    dynamics = DynamicsOptions(ode_solver=ode_solver, expand_dynamics=True, phase_dynamics=phase_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -436,9 +431,9 @@ def prepare_ocp_custom_objectives(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,

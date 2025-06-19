@@ -13,10 +13,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from casadi import MX, horzcat, DM
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     OptimalControlProgram,
-    DynamicsList,
-    DynamicsFcn,
+    DynamicsOptionsList,
     BoundsList,
     ObjectiveList,
     ObjectiveFcn,
@@ -79,7 +78,7 @@ def prepare_ocp_to_track(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
 
     # Rotations of the pendulum are passive
     variable_mappings = BiMappingList()
@@ -104,8 +103,8 @@ def prepare_ocp_to_track(
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=-1, quadratic=True)
 
     # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver)
+    dynamics = DynamicsOptionsList()
+    dynamics.add(ode_solver=ode_solver)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -158,7 +157,7 @@ def prepare_optimal_estimation(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -168,8 +167,8 @@ def prepare_optimal_estimation(
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1, target=time_ref, quadratic=True)
 
     # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver)
+    dynamics = DynamicsOptionsList()
+    dynamics.add(ode_solver=ode_solver)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -184,9 +183,9 @@ def prepare_optimal_estimation(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         time_ref,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,

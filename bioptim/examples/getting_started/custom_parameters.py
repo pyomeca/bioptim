@@ -12,10 +12,9 @@ from typing import Any
 import numpy as np
 from casadi import MX
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     OptimalControlProgram,
-    Dynamics,
-    DynamicsFcn,
+    DynamicsOptions,
     BoundsList,
     InitialGuessList,
     ObjectiveFcn,
@@ -33,14 +32,14 @@ from bioptim import (
 )
 
 
-def my_parameter_function(bio_model: BiorbdModel, value: MX, extra_value: Any):
+def my_parameter_function(bio_model: TorqueBiorbdModel, value: MX, extra_value: Any):
     """
     The pre dynamics function is called right before defining the dynamics of the system. If one wants to
     modify the dynamics (e.g. optimize the gravity in this case), then this function is the proper way to do it.
 
     Parameters
     ----------
-    bio_model: BiorbdModel
+    bio_model: TorqueBiorbdModel
         The model to modify by the parameters
     value: MX
         The CasADi variables to modify the model
@@ -52,14 +51,14 @@ def my_parameter_function(bio_model: BiorbdModel, value: MX, extra_value: Any):
     bio_model.set_gravity(value)
 
 
-def set_mass(bio_model: BiorbdModel, value: MX):
+def set_mass(bio_model: TorqueBiorbdModel, value: MX):
     """
     The pre dynamics function is called right before defining the dynamics of the system. If one wants to
     modify the dynamics (e.g. optimize the gravity in this case), then this function is the proper way to do it.
 
     Parameters
     ----------
-    bio_model: BiorbdModel
+    bio_model: TorqueBiorbdModel
         The model to modify by the parameters
     value: MX
         The CasADi variables to modify the model
@@ -211,7 +210,7 @@ def prepare_ocp(
         )
 
     # --- Options --- #
-    bio_model = BiorbdModel(biorbd_model_path, parameters=parameters)
+    bio_model = TorqueBiorbdModel(biorbd_model_path, parameters=parameters)
     n_tau = bio_model.nb_tau
 
     # Add objective functions
@@ -219,10 +218,8 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q", weight=1)
 
-    # Dynamics
-    dynamics = Dynamics(
-        DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
-    )
+    # DynamicsOptions
+    dynamics = DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -240,9 +237,9 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,

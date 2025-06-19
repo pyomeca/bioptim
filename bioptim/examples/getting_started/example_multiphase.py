@@ -9,11 +9,10 @@ It is designed to show how one can define a multiphase optimal control program
 import platform
 
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     OptimalControlProgram,
     PenaltyController,
-    DynamicsList,
-    DynamicsFcn,
+    DynamicsOptionsList,
     ObjectiveList,
     ObjectiveFcn,
     ConstraintList,
@@ -28,6 +27,7 @@ from bioptim import (
     PhaseDynamics,
     ControlType,
     QuadratureRule,
+    DynamicsOptions,
 )
 
 
@@ -74,7 +74,11 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path))
+    bio_model = (
+        TorqueBiorbdModel(biorbd_model_path),
+        TorqueBiorbdModel(biorbd_model_path),
+        TorqueBiorbdModel(biorbd_model_path),
+    )
 
     # Problem parameters
     if long_optim:
@@ -120,24 +124,27 @@ def prepare_ocp(
     # Dynamics
     if not isinstance(ode_solver, list):
         ode_solver = [ode_solver] * 3
-    dynamics = DynamicsList()
+    dynamics = DynamicsOptionsList()
     dynamics.add(
-        DynamicsFcn.TORQUE_DRIVEN,
-        ode_solver=ode_solver[0],
-        expand_dynamics=expand_dynamics,
-        phase_dynamics=phase_dynamics,
+        DynamicsOptions(
+            ode_solver=ode_solver[0],
+            expand_dynamics=expand_dynamics,
+            phase_dynamics=phase_dynamics,
+        )
     )
     dynamics.add(
-        DynamicsFcn.TORQUE_DRIVEN,
-        ode_solver=ode_solver[1],
-        expand_dynamics=expand_dynamics,
-        phase_dynamics=phase_dynamics,
+        DynamicsOptions(
+            ode_solver=ode_solver[1],
+            expand_dynamics=expand_dynamics,
+            phase_dynamics=phase_dynamics,
+        )
     )
     dynamics.add(
-        DynamicsFcn.TORQUE_DRIVEN,
-        ode_solver=ode_solver[2],
-        expand_dynamics=expand_dynamics,
-        phase_dynamics=phase_dynamics,
+        DynamicsOptions(
+            ode_solver=ode_solver[2],
+            expand_dynamics=expand_dynamics,
+            phase_dynamics=phase_dynamics,
+        )
     )
 
     # Constraints
@@ -170,9 +177,9 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,

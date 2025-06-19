@@ -14,7 +14,7 @@ from bioptim import (
     Objective,
     ObjectiveFcn,
     Solver,
-    VariationalBiorbdModel,
+    VariationalTorqueBiorbdModel,
     VariationalOptimalControlProgram,
 )
 import numpy as np
@@ -45,7 +45,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved.
     """
 
-    bio_model = VariationalBiorbdModel(bio_model_path)
+    bio_model = VariationalTorqueBiorbdModel(bio_model_path)
     # Holonomic constraints: The pendulum must not move on the z axis
     holonomic_constraints = HolonomicConstraintsList()
     holonomic_constraints.add(

@@ -19,8 +19,7 @@ from bioptim import (
     Solver,
     ObjectiveList,
     OptimalControlProgram,
-    NonLinearProgram,
-    DynamicsList,
+    DynamicsOptions,
     InterpolationType,
     SocpType,
     Node,
@@ -30,7 +29,6 @@ from bioptim import (
     PenaltyController,
     PhaseTransitionList,
     PhaseTransitionFcn,
-    ConfigureProblem,
     ConstraintFcn,
     StochasticBioModel,
     OdeSolver,
@@ -39,14 +37,16 @@ from bioptim import (
     SolutionMerge,
     SolutionIntegrator,
     Shooting,
-    ContactType,
 )
 from bioptim.examples.stochastic_optimal_control.common import (
     test_matrix_semi_definite_positiveness,
     test_eigen_values,
     reshape_to_matrix,
 )
-from bioptim.examples.stochastic_optimal_control.models.mass_point_model import MassPointModel
+from bioptim.examples.stochastic_optimal_control.models.mass_point_model import (
+    MassPointDynamicsModel,
+    StochasticMassPointDynamicsModel,
+)
 
 
 def plot_results(
@@ -326,50 +326,6 @@ def draw_cov_ellipse(cov, pos, ax, **kwargs):
     return ellip
 
 
-def configure_optimal_control_problem(
-    ocp: OptimalControlProgram,
-    nlp: NonLinearProgram,
-    numerical_data_timeseries=None,
-):
-    ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_new_variable("u", nlp.model.name_u, ocp, nlp, as_states=False, as_controls=True)
-
-    ConfigureProblem.configure_dynamics_function(
-        ocp,
-        nlp,
-        dyn_func=lambda time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp: nlp.dynamics_type.dynamic_function(
-            time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp, with_noise=False
-        ),
-    )
-
-
-def configure_stochastic_optimal_control_problem(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None
-):
-    ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_new_variable("u", nlp.model.name_u, ocp, nlp, as_states=False, as_controls=True)
-
-    # Algebraic states variables
-    ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=4)
-    ConfigureProblem.configure_stochastic_cov_implicit(ocp, nlp, n_noised_states=4)
-    ConfigureProblem.configure_dynamics_function(
-        ocp,
-        nlp,
-        dyn_func=lambda time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp: nlp.dynamics_type.dynamic_function(
-            time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp, with_noise=False
-        ),
-    )
-    ConfigureProblem.configure_dynamics_function(
-        ocp,
-        nlp,
-        dyn_func=lambda time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp: nlp.dynamics_type.dynamic_function(
-            time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp, with_noise=True
-        ),
-    )
-
-
 def path_constraint(controller: PenaltyController, super_elipse_index: int, is_robustified: bool = False):
     p_x = controller.states["q"].cx[0]
     p_y = controller.states["q"].cx[1]
@@ -424,11 +380,15 @@ def prepare_socp(
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     use_sx: bool = False,
 ) -> StochasticOptimalControlProgram | OptimalControlProgram:
-    problem_type = socp_type
 
-    bio_model = MassPointModel(
-        socp_type=problem_type, motor_noise_magnitude=motor_noise_magnitude, polynomial_degree=polynomial_degree
-    )
+    if is_stochastic:
+        bio_model = StochasticMassPointDynamicsModel(
+            problem_type=socp_type, motor_noise_magnitude=motor_noise_magnitude, polynomial_degree=polynomial_degree
+        )
+    else:
+        bio_model = MassPointDynamicsModel(
+            problem_type=socp_type, motor_noise_magnitude=motor_noise_magnitude, polynomial_degree=polynomial_degree
+        )
 
     nb_q = bio_model.nb_q
     nb_qdot = bio_model.nb_qdot
@@ -500,21 +460,10 @@ def prepare_socp(
         interpolation=InterpolationType.CONSTANT,
     )
 
-    # Dynamics
-    dynamics = DynamicsList()
-
     if is_stochastic:
-        dynamics.add(
-            configure_stochastic_optimal_control_problem,
-            dynamic_function=lambda time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp, with_noise: bio_model.dynamics(
-                states,
-                controls,
-                parameters,
-                algebraic_states,
-                numerical_timeseries,
-                nlp,
-                with_noise=with_noise,
-            ),
+
+        # Dynamics
+        dynamics = DynamicsOptions(
             phase_dynamics=phase_dynamics,
             expand_dynamics=expand_dynamics,
         )
@@ -537,9 +486,9 @@ def prepare_socp(
 
         return StochasticOptimalControlProgram(
             bio_model,
-            dynamics,
             n_shooting,
             final_time,
+            dynamics=dynamics,
             x_init=x_init,
             u_init=control_init,
             a_init=a_init,
@@ -550,7 +499,7 @@ def prepare_socp(
             constraints=constraints,
             control_type=ControlType.CONSTANT_WITH_LAST_NODE,
             n_threads=6,
-            problem_type=problem_type,
+            problem_type=socp_type,
             phase_transitions=phase_transitions,
             use_sx=use_sx,
         )
@@ -561,27 +510,19 @@ def prepare_socp(
             method=socp_type.method,
             duplicate_starting_point=True,
         )
-        dynamics.add(
-            configure_optimal_control_problem,
-            dynamic_function=lambda time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp, with_noise: bio_model.dynamics(
-                states,
-                controls,
-                parameters,
-                algebraic_states,
-                numerical_timeseries,
-                nlp,
-                with_noise=with_noise,
-            ),
-            ode_solver=ode_solver,
+
+        # Dynamics
+        dynamics = DynamicsOptions(
             phase_dynamics=phase_dynamics,
             expand_dynamics=expand_dynamics,
+            ode_solver=ode_solver,
         )
 
         return OptimalControlProgram(
             bio_model,
-            dynamics,
             n_shooting,
             final_time,
+            dynamics=dynamics,
             x_init=x_init,
             u_init=control_init,
             x_bounds=x_bounds,
@@ -613,7 +554,7 @@ def main():
     n_shooting = 40
     final_time = 4
     motor_noise_magnitude = np.array([1, 1]) * 1
-    bio_model = MassPointModel(socp_type=socp_type, motor_noise_magnitude=motor_noise_magnitude)
+    bio_model = MassPointDynamicsModel(problem_type=socp_type, motor_noise_magnitude=motor_noise_magnitude)
 
     q_init = np.zeros((bio_model.nb_q, (polynomial_degree + 2) * n_shooting + 1))
     zq_init = initialize_circle((polynomial_degree + 1) * n_shooting + 1)

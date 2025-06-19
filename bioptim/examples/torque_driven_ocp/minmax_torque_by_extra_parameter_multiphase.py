@@ -15,8 +15,8 @@ import biorbd_casadi as biorbd
 from casadi import MX
 from bioptim import (
     OptimalControlProgram,
-    DynamicsList,
-    DynamicsFcn,
+    DynamicsOptionsList,
+    DynamicsOptions,
     ObjectiveList,
     ConstraintList,
     ConstraintFcn,
@@ -27,7 +27,7 @@ from bioptim import (
     BiMappingList,
     ParameterList,
     InterpolationType,
-    BiorbdModel,
+    TorqueBiorbdModel,
     PenaltyController,
     ParameterObjectiveList,
 )
@@ -56,17 +56,12 @@ def prepare_ocp(
     parameter_option: int = 0,
     bio_model_path: str = "models/double_pendulum.bioMod",
 ) -> OptimalControlProgram:
-    bio_model = (BiorbdModel(bio_model_path), BiorbdModel(bio_model_path))
+    bio_model = (TorqueBiorbdModel(bio_model_path), TorqueBiorbdModel(bio_model_path))
 
     # Problem parameters
     n_shooting = (30, 30)
     final_time = (2, 3)
     tau_min, tau_max, tau_init = -40, 40, 0
-
-    # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
     # Mapping
     tau_mappings = BiMappingList()
@@ -177,7 +172,6 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
         objective_functions=objective_functions,

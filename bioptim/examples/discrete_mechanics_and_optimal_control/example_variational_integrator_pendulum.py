@@ -12,6 +12,8 @@ from bioptim import (
     ObjectiveFcn,
     Solver,
     VariationalBiorbdModel,
+    VariationalTorqueBiorbdModel,
+    HolonomicConstraintsList,
     VariationalOptimalControlProgram,
 )
 import numpy as np
@@ -42,7 +44,9 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved.
     """
 
-    bio_model = VariationalBiorbdModel(bio_model_path)
+    model = VariationalBiorbdModel(bio_model_path)
+    model.set_holonomic_configuration(HolonomicConstraintsList())
+    bio_model = VariationalTorqueBiorbdModel(model)
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")

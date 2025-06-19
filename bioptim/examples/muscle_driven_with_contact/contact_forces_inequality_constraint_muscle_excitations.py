@@ -9,15 +9,14 @@ import platform
 from matplotlib import pyplot as plt
 import numpy as np
 from bioptim import (
-    BiorbdModel,
+    MusclesBiorbdModel,
     Node,
     OptimalControlProgram,
     ConstraintList,
     ConstraintFcn,
     ObjectiveList,
     ObjectiveFcn,
-    DynamicsList,
-    DynamicsFcn,
+    DynamicsOptions,
     BiMappingList,
     BoundsList,
     InitialGuessList,
@@ -30,7 +29,9 @@ from bioptim import (
 
 def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver=OdeSolver.RK4(), expand_dynamics=True):
 
-    bio_model = BiorbdModel(biorbd_model_path, contact_types=[ContactType.RIGID_EXPLICIT])
+    bio_model = MusclesBiorbdModel(
+        biorbd_model_path, with_excitation=True, with_residual_torque=True, contact_types=[ContactType.RIGID_EXPLICIT]
+    )
 
     torque_min, torque_max, torque_init = -500.0, 500.0, 0.0
     activation_min, activation_max, activation_init = 0.0, 1.0, 0.5
@@ -46,11 +47,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1)
 
     # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(
-        DynamicsFcn.MUSCLE_DRIVEN,
-        with_excitations=True,
-        with_residual_torque=True,
+    dynamics = DynamicsOptions(
         ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
     )
@@ -105,9 +102,9 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         phase_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         x_init=x_init,
@@ -129,7 +126,7 @@ def main():
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     nlp = ocp.nlp[0]
-    nlp.model = BiorbdModel(biorbd_model_path)
+    nlp.model = MusclesBiorbdModel(biorbd_model_path)
 
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)

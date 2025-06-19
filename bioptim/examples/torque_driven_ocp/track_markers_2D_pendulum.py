@@ -11,14 +11,12 @@ import importlib.util
 from pathlib import Path
 import platform
 
-import biorbd_casadi as biorbd
 import numpy as np
 from casadi import MX, horzcat, DM
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     OptimalControlProgram,
-    DynamicsList,
-    DynamicsFcn,
+    DynamicsOptionsList,
     BoundsList,
     ObjectiveList,
     ObjectiveFcn,
@@ -65,7 +63,7 @@ def get_markers_pos(x: DM | np.ndarray, idx_marker: int, fun: Callable, n_q: int
 
 
 def prepare_ocp(
-    bio_model: BiorbdModel,
+    bio_model: TorqueBiorbdModel,
     final_time: float,
     n_shooting: int,
     markers_ref: np.ndarray,
@@ -79,7 +77,7 @@ def prepare_ocp(
 
     Parameters
     ----------
-    bio_model: BiorbdModel
+    bio_model: TorqueBiorbdModel
         The loaded biorbd model
     final_time: float
         The time at final node
@@ -117,10 +115,8 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.TRACK_CONTROL, key="tau", target=tau_ref)
 
     # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(
-        DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
-    )
+    dynamics = DynamicsOptionsList()
+    dynamics.add(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -139,9 +135,9 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
@@ -155,7 +151,7 @@ def main():
     """
 
     biorbd_path = str(EXAMPLES_FOLDER) + "/getting_started/models/pendulum.bioMod"
-    bio_model = BiorbdModel(biorbd_path)
+    bio_model = TorqueBiorbdModel(biorbd_path)
     final_time = 1
     n_shooting = 20
 

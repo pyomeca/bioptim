@@ -13,10 +13,9 @@ appreciate it). Finally, once it finished optimizing, it animates the model usin
 import platform
 
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     OptimalControlProgram,
-    DynamicsFcn,
-    Dynamics,
+    DynamicsOptions,
     InitialGuessList,
     Objective,
     BoundsList,
@@ -78,8 +77,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
-    n_tau = bio_model.nb_tau
+    n_tau = 2
     tau_min, tau_max, tau_init = -100, 100, 0
 
     # Add objective functions
@@ -144,10 +142,11 @@ def prepare_ocp(
         else:
             raise ValueError("fatigue_type not implemented")
 
-    # Dynamics
-    dynamics = Dynamics(
-        DynamicsFcn.TORQUE_DRIVEN,
-        fatigue=fatigue_dynamics,
+    # Initialize model
+    bio_model = TorqueBiorbdModel(biorbd_model_path, fatigue=fatigue_dynamics)
+
+    # DynamicsOptions
+    dynamics = DynamicsOptions(
         phase_dynamics=phase_dynamics,
         expand_dynamics=expand_dynamics,
     )
@@ -183,9 +182,9 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_init=x_init,
         u_init=u_init,
         x_bounds=x_bounds,

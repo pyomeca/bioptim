@@ -9,11 +9,11 @@ Note that the final node is not tracked.
 from bioptim import (
     BiorbdModel,
     BoundsList,
-    ConfigureProblem,
+    TorqueDynamics,
     ControlType,
     DynamicsEvaluation,
     DynamicsFunctions,
-    DynamicsList,
+    DynamicsOptionsList,
     InitialGuessList,
     ObjectiveFcn,
     ObjectiveList,
@@ -22,7 +22,6 @@ from bioptim import (
     NonLinearProgram,
     PhaseDynamics,
     SolutionMerge,
-    ContactType,
 )
 from casadi import MX, SX, vertcat, sin, Function, DM
 import numpy as np
@@ -32,36 +31,33 @@ import pytest
 from ..utils import TestUtils
 
 
-def custom_configure(
-    ocp: OptimalControlProgram,
-    nlp: NonLinearProgram,
-    numerical_data_timeseries: dict[str, np.ndarray] = None,
-):
-    ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
+class CustomModel(BiorbdModel, TorqueDynamics):
+    def __init__(self, bio_model: str):
+        BiorbdModel.__init__(self, bio_model)
+        self.fatigue = None
+        TorqueDynamics.__init__(self)
 
-    ConfigureProblem.configure_dynamics_function(ocp, nlp, dynamics)
+    def dynamics(
+        self,
+        time: MX | SX,
+        states: MX | SX,
+        controls: MX | SX,
+        parameters: MX | SX,
+        algebraic_states: MX | SX,
+        numerical_timeseries: MX | SX,
+        nlp: NonLinearProgram,
+    ) -> DynamicsEvaluation:
 
+        q = DynamicsFunctions.get(nlp.states["q"], states)
+        qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+        tau = DynamicsFunctions.get(nlp.controls["tau"], controls) * (
+            sin(nlp.tf - time) * time.ones(nlp.model.nb_tau) * 10
+        )
 
-def dynamics(
-    time: MX | SX,
-    states: MX | SX,
-    controls: MX | SX,
-    parameters: MX | SX,
-    algebraic_states: MX | SX,
-    numerical_timeseries: MX | SX,
-    nlp: NonLinearProgram,
-) -> DynamicsEvaluation:
+        dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
+        ddq = nlp.model.forward_dynamics()(q, qdot, tau, [], parameters)
 
-    q = DynamicsFunctions.get(nlp.states["q"], states)
-    qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-    tau = DynamicsFunctions.get(nlp.controls["tau"], controls) * (sin(nlp.tf - time) * time.ones(nlp.model.nb_tau) * 10)
-
-    dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-    ddq = nlp.model.forward_dynamics()(q, qdot, tau, [], parameters)
-
-    return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
+        return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
 
 
 def prepare_ocp_state_as_time(
@@ -74,9 +70,9 @@ def prepare_ocp_state_as_time(
 ) -> OptimalControlProgram:
 
     bio_model = (
-        [BiorbdModel(biorbd_model_path)]
+        [CustomModel(biorbd_model_path)]
         if n_phase == 1
-        else [BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path)]
+        else [CustomModel(biorbd_model_path), CustomModel(biorbd_model_path)]
     )
     final_time = 1
     n_shooting = 30
@@ -92,11 +88,9 @@ def prepare_ocp_state_as_time(
             )
 
     # Dynamics
-    dynamics = DynamicsList()
+    dynamics = DynamicsOptionsList()
     for i in range(len(bio_model)):
         dynamics.add(
-            custom_configure,
-            dynamic_function=dynamics,
             phase=i,
             ode_solver=OdeSolver.RK4(n_integration_steps=5),
             expand_dynamics=True,
@@ -125,9 +119,9 @@ def prepare_ocp_state_as_time(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_init=x_init,
         u_init=u_init,
         x_bounds=x_bounds,

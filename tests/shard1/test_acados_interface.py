@@ -13,7 +13,7 @@ import numpy.testing as npt
 import pytest
 
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     Axis,
     ObjectiveList,
     ObjectiveFcn,
@@ -22,8 +22,7 @@ from bioptim import (
     ConstraintFcn,
     Node,
     MovingHorizonEstimator,
-    Dynamics,
-    DynamicsFcn,
+    DynamicsOptions,
     InterpolationType,
     Solver,
     BoundsList,
@@ -733,7 +732,7 @@ def test_acados_bounds_not_implemented(failing):
         print("Test for ACADOS on Windows is skipped")
         return
     root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
-    bio_model = BiorbdModel(root_folder + "models/cart_pendulum.bioMod")
+    bio_model = TorqueBiorbdModel(root_folder + "models/cart_pendulum.bioMod")
 
     nq = bio_model.nb_q
     ntau = bio_model.nb_tau
@@ -767,9 +766,9 @@ def test_acados_bounds_not_implemented(failing):
 
     mhe = MovingHorizonEstimator(
         bio_model,
-        Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True),
         window_len,
         window_duration,
+        dynamics=DynamicsOptions(expand_dynamics=True),
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         n_threads=4,

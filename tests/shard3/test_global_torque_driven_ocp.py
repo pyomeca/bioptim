@@ -10,7 +10,7 @@ from bioptim import (
     ConstraintFcn,
     Node,
     Solver,
-    BiorbdModel,
+    TorqueBiorbdModel,
     PhaseDynamics,
     SolutionMerge,
 )
@@ -245,7 +245,7 @@ def test_track_marker_2D_pendulum(ode_solver, phase_dynamics):
 
     # Define the problem
     model_path = bioptim_folder + "/models/pendulum.bioMod"
-    bio_model = BiorbdModel(model_path)
+    bio_model = TorqueBiorbdModel(model_path)
 
     final_time = 2
     n_shooting = 30

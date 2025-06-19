@@ -863,7 +863,7 @@ def test_parameter_optimization(ode_solver, phase_dynamics):
 @pytest.mark.parametrize("problem_type_custom", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver, phase_dynamics):
-    from bioptim.examples.getting_started import custom_dynamics as ocp_module
+    from tests import test_utils_ocp as ocp_module
 
     gc.collect()  # Force garbage collection
     time.sleep(0.1)  # Avoiding delay in memory (re)allocation
@@ -882,7 +882,7 @@ def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver, phase
     ode_solver = ode_solver()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/../bioptim/examples/getting_started/models/cube.bioMod",
         problem_type_custom=problem_type_custom,
         ode_solver=ode_solver,
         phase_dynamics=phase_dynamics,

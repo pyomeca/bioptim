@@ -648,7 +648,7 @@ def test_check_models_comes_from_same_super_class():
         RuntimeError,
         match="The animation is only available for compatible models. "
         "Here, the model of phase 0 is of type FakeModel "
-        "and the model of phase 0 is of type BiorbdModel and they don't share the same super class.",
+        "and the model of phase 0 is of type TorqueBiorbdModel and they don't share the same super class.",
     ):
         _check_models_comes_from_same_super_class(sol.ocp.nlp)
 
