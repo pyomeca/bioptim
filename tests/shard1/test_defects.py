@@ -1030,8 +1030,14 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
                         x_defects[:, 0],
                         np.array(
                             [
-                                -4.38307239e-02, -4.28372820e-02, 1.05373750e-01, -4.83112831e-02,
-                                2.76119722e+01, -5.33343749e+01, 7.45727140e+01, 4.13097716e+01
+                                -4.38307239e-02,
+                                -4.28372820e-02,
+                                1.05373750e-01,
+                                -4.83112831e-02,
+                                2.76119722e01,
+                                -5.33343749e01,
+                                7.45727140e01,
+                                4.13097716e01,
                             ]
                         ),
                         decimal=5,
@@ -1059,8 +1065,14 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
                         x_defects[:, 0],
                         np.array(
                             [
-                                -3.11723149e-01, -7.80580770e-02, 2.30405883e-01, 7.22178723e-02,
-                                7.85546423e+01, -1.09945344e+02, 6.89132889e+00, 4.73862588e+01
+                                -3.11723149e-01,
+                                -7.80580770e-02,
+                                2.30405883e-01,
+                                7.22178723e-02,
+                                7.85546423e01,
+                                -1.09945344e02,
+                                6.89132889e00,
+                                4.73862588e01,
                             ]
                         ),
                         decimal=5,
@@ -1176,7 +1188,7 @@ def test_torque_activation_driven_with_residual_torque(
                 else:
                     npt.assert_almost_equal(
                         x_defects[:, 0],
-                        np.array([0.60450805,  0.18498143, 83.57439118, 34.05025566]),
+                        np.array([0.60450805, 0.18498143, 83.57439118, 34.05025566]),
                         decimal=5,
                     )
             else:
@@ -1186,7 +1198,7 @@ def test_torque_activation_driven_with_residual_torque(
                     )
                 else:
                     npt.assert_almost_equal(
-                        x_defects[:, 0], np.array([0.16044011, 0.1632901 , 6.29890182, 2.76062726]), decimal=5
+                        x_defects[:, 0], np.array([0.16044011, 0.1632901, 6.29890182, 2.76062726]), decimal=5
                     )
         else:
             if with_external_force:
@@ -1199,7 +1211,7 @@ def test_torque_activation_driven_with_residual_torque(
                 else:
                     npt.assert_almost_equal(
                         x_defects[:, 0],
-                        np.array([0.60450805,  0.18498143, 79.57439118, 33.05025566]),
+                        np.array([0.60450805, 0.18498143, 79.57439118, 33.05025566]),
                         decimal=5,
                     )
             else:
@@ -1209,7 +1221,7 @@ def test_torque_activation_driven_with_residual_torque(
                     )
                 else:
                     npt.assert_almost_equal(
-                        x_defects[:, 0], np.array([0.16044011, 0.1632901 , 2.29890182, 1.76062726]), decimal=5
+                        x_defects[:, 0], np.array([0.16044011, 0.1632901, 2.29890182, 1.76062726]), decimal=5
                     )
     else:
         if with_passive_torque:
@@ -1223,7 +1235,7 @@ def test_torque_activation_driven_with_residual_torque(
                 else:
                     npt.assert_almost_equal(
                         x_defects[:, 0],
-                        np.array([0.52827408,  0.16165359, 82.71128776, 33.72507234]),
+                        np.array([0.52827408, 0.16165359, 82.71128776, 33.72507234]),
                         decimal=5,
                     )
             else:
@@ -1233,7 +1245,7 @@ def test_torque_activation_driven_with_residual_torque(
                     )
                 else:
                     npt.assert_almost_equal(
-                        x_defects[:, 0], np.array([0.45831154, 0.4664528 , 5.32931719, 1.83875302]), decimal=5
+                        x_defects[:, 0], np.array([0.45831154, 0.4664528, 5.32931719, 1.83875302]), decimal=5
                     )
         else:
             if with_external_force:
@@ -1246,7 +1258,7 @@ def test_torque_activation_driven_with_residual_torque(
                 else:
                     npt.assert_almost_equal(
                         x_defects[:, 0],
-                        np.array([0.52827408,  0.16165359, 78.71128776, 32.72507234]),
+                        np.array([0.52827408, 0.16165359, 78.71128776, 32.72507234]),
                         decimal=5,
                     )
             else:
@@ -1256,7 +1268,7 @@ def test_torque_activation_driven_with_residual_torque(
                     )
                 else:
                     npt.assert_almost_equal(
-                        x_defects[:, 0], np.array([0.45831154, 0.4664528 , 1.32931719, 0.83875302]), decimal=5
+                        x_defects[:, 0], np.array([0.45831154, 0.4664528, 1.32931719, 0.83875302]), decimal=5
                     )
 
 
@@ -1342,23 +1354,35 @@ def test_torque_driven_free_floating_base(cx, phase_dynamics, defects_type):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("cx", [MX, SX])
-@pytest.mark.parametrize("with_external_force", [
-    False,
-    True,
-])
-@pytest.mark.parametrize("contact_types", [
-    [ContactType.RIGID_EXPLICIT],
-    [ContactType.RIGID_IMPLICIT],
-    (),
-])
-@pytest.mark.parametrize("with_residual_torque", [
-    False,
-    True,
-])
-@pytest.mark.parametrize("with_excitation", [
-    False,
-    True,
-])
+@pytest.mark.parametrize(
+    "with_external_force",
+    [
+        False,
+        True,
+    ],
+)
+@pytest.mark.parametrize(
+    "contact_types",
+    [
+        [ContactType.RIGID_EXPLICIT],
+        [ContactType.RIGID_IMPLICIT],
+        (),
+    ],
+)
+@pytest.mark.parametrize(
+    "with_residual_torque",
+    [
+        False,
+        True,
+    ],
+)
+@pytest.mark.parametrize(
+    "with_excitation",
+    [
+        False,
+        True,
+    ],
+)
 @pytest.mark.parametrize(
     "defects_type", [DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS, DefectType.TAU_EQUALS_INVERSE_DYNAMICS]
 )
@@ -1988,7 +2012,9 @@ def test_joints_acceleration_driven(cx, phase_dynamics, defects_type):
 
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
-    nlp.model = JointAccelerationBiorbdModel(TestUtils.bioptim_folder() + "/examples/getting_started/models/double_pendulum.bioMod")
+    nlp.model = JointAccelerationBiorbdModel(
+        TestUtils.bioptim_folder() + "/examples/getting_started/models/double_pendulum.bioMod"
+    )
     nlp.dynamics_type = DynamicsOptions(
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,

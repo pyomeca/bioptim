@@ -107,9 +107,7 @@ EXTERNAL_FORCE_ARRAY[:, 4] = [
     "with_external_force",
     [False, True],
 )
-@pytest.mark.parametrize(
-    "with_contact",
-    [False, True])
+@pytest.mark.parametrize("with_contact", [False, True])
 def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
@@ -838,13 +836,8 @@ def test_torque_driven_free_floating_base(cx, phase_dynamics):
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_external_force", [False, True])
-@pytest.mark.parametrize("with_contact", [
-    False,
-    True
-])
-@pytest.mark.parametrize("with_residual_torque", [
-    False,
-    True])
+@pytest.mark.parametrize("with_contact", [False, True])
+@pytest.mark.parametrize("with_residual_torque", [False, True])
 @pytest.mark.parametrize("with_excitation", [False, True])
 def test_muscle_driven(with_excitation, with_contact, with_residual_torque, with_external_force, cx, phase_dynamics):
 
