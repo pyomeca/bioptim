@@ -1,4 +1,3 @@
-from abc import ABC
 from typing import TypeAlias
 from casadi import vertcat, DM
 
@@ -9,9 +8,10 @@ from ...dynamics.ode_solvers import OdeSolver
 from ...misc.enums import DefectType, ContactType
 from ...misc.parameters_types import Bool, NpArray
 from ...optimization.problem_type import SocpType
+from ..protocols.abstract_model import AbstractModel
 
 
-class TorqueDynamics(ABC):
+class TorqueDynamics(AbstractModel):
     """
     This class is used to create a model actuated through joint torques.
 
@@ -20,6 +20,7 @@ class TorqueDynamics(ABC):
     """
 
     def __init__(self):
+        super().__init__()
         self.state_type = [States.Q, States.QDOT]
         self.control_type = [Controls.TAU]
         self.algebraic_type = []
@@ -310,9 +311,10 @@ class StochasticTorqueDynamics(TorqueDynamics):
         raise NotImplementedError("Stochastic torque dynamics does not support rigid contact forces yet. ")
 
 
-class HolonomicTorqueDynamics(ABC):
+class HolonomicTorqueDynamics(AbstractModel):
 
     def __init__(self):
+        super().__init__()
         self.state_type = [States.Q_U, States.QDOT_U]
         self.control_type = [Controls.TAU]
         self.algebraic_type = []

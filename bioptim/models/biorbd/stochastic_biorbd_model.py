@@ -2,11 +2,13 @@ from typing import Callable
 
 from casadi import DM
 
-from bioptim import BiorbdModel, DynamicsFunctions
+from .biorbd_model import BiorbdModel
+from ...dynamics.dynamics_functions import DynamicsFunctions
 from ...misc.mapping import BiMappingList
 from ...optimization.parameters import ParameterList
 from ...optimization.variable_scaling import VariableScaling
 from ...optimization.problem_type import SocpType
+from ..protocols.abstract_model_dynamics import DynamicalModel
 
 from ...misc.parameters_types import Int, Str, Bool, NpArray
 
@@ -41,7 +43,7 @@ class StochasticBiorbdModel(BiorbdModel):
 
     def __init__(
         self,
-        bio_model: Str | BiorbdModel,
+        bio_model: list | tuple | DynamicalModel,
         problem_type: SocpType,
         n_references: Int,
         n_feedbacks: Int,

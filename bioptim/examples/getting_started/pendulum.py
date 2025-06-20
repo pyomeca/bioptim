@@ -24,9 +24,6 @@ from bioptim import (
     ControlType,
     PhaseDynamics,
     OnlineOptim,
-    States,
-    Controls,
-    AutoConfigure,
 )
 
 
