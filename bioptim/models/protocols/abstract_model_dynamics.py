@@ -3,6 +3,7 @@ from casadi import vertcat, DM
 
 from ...dynamics.configure_variables import States, Controls, AlgebraicStates
 from ...dynamics.dynamics_functions import DynamicsFunctions, DynamicsEvaluation
+from ...dynamics.fatigue.fatigue_dynamics import FatigueList
 from ...dynamics.configure_variables import ConfigureVariables
 from ...dynamics.ode_solvers import OdeSolver
 from ...misc.enums import DefectType, ContactType
@@ -174,7 +175,7 @@ class StochasticTorqueDynamics(TorqueDynamics):
 
     def __init__(self, problem_type, with_cholesky, n_noised_tau, n_noise, n_noised_states, n_references):
         super().__init__()
-        self.control_type += [
+        self.control_configuration += [
             lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.K(
                 ocp,
                 nlp,
@@ -188,7 +189,7 @@ class StochasticTorqueDynamics(TorqueDynamics):
                 ocp, nlp, as_states, as_controls, as_algebraic_states, n_references=n_references
             ),
         ]
-        self.algebraic_type = [
+        self.algebraic_configuration = [
             lambda ocp, nlp, as_states, as_controls, as_algebraic_states: AlgebraicStates.M(
                 ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_states=n_noised_states
             ),
@@ -199,20 +200,20 @@ class StochasticTorqueDynamics(TorqueDynamics):
                 "The problem type TRAPEZOIDAL_EXPLICIT is not included in bioptim anymore, please use a custom configure."
             )
         if with_cholesky:
-            self.control_type += [
+            self.control_configuration += [
                 lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.CHOLESKY_COV(
                     ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_states=n_noised_states
                 )
             ]
         else:
-            self.control_type += [
+            self.control_configuration += [
                 lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.COV(
                     ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_states=n_noised_states
                 )
             ]
 
         if isinstance(problem_type, SocpType.TRAPEZOIDAL_IMPLICIT):
-            self.control_type += [
+            self.control_configuration += [
                 lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.A(
                     ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_states=n_noised_states
                 ),
@@ -614,7 +615,7 @@ class MusclesDynamics(TorqueDynamics):
     u = [muscles, tau (if with_residual_torque)]
     """
 
-    def __init__(self, with_residual_torque: Bool, with_excitation: Bool):
+    def __init__(self, with_residual_torque: Bool, with_excitation: Bool, fatigue: FatigueList = None):
         super().__init__()
 
         self.state_configuration = [States.Q, States.QDOT]
@@ -630,6 +631,7 @@ class MusclesDynamics(TorqueDynamics):
         self.functions = []
         self.with_residual_torque = with_residual_torque
         self.with_excitation = with_excitation
+        self.fatigue = fatigue
 
     def get_basic_variables(
         self,

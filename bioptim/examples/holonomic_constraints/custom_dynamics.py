@@ -86,7 +86,7 @@ def configure_qv(ocp, nlp, as_states, as_controls, as_algebraic_states):
 class ModifiedHolonomicTorqueBiorbdModel(HolonomicTorqueBiorbdModel):
     def __init__(self, bio_model_path: str):
         super().__init__(bio_model_path)
-        self.algebraic_type += [configure_qv]
+        self.algebraic_configuration += [configure_qv]
 
     @staticmethod
     def dynamics(

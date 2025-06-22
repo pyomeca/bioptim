@@ -48,8 +48,7 @@ class TorqueBiorbdModel(BiorbdModel, TorqueDynamics):
         fatigue: FatigueList = None,
     ):
         BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set, contact_types)
-        self.fatigue = fatigue
-        TorqueDynamics.__init__(self)
+        TorqueDynamics.__init__(self, fatigue)
 
     def serialize(self) -> tuple[Callable, dict]:
         return TorqueBiorbdModel, dict(
@@ -104,7 +103,6 @@ class StochasticTorqueBiorbdModel(StochasticBiorbdModel, StochasticTorqueDynamic
         n_noise = self.motor_noise_magnitude.shape[0] + self.sensory_noise_magnitude.shape[0]
         n_noised_states = 2 * n_noised_tau
 
-        self.fatigue = None
         StochasticTorqueDynamics.__init__(
             self, problem_type, with_cholesky, n_noised_tau, n_noise, n_noised_states, n_references
         )
@@ -118,7 +116,6 @@ class HolonomicTorqueBiorbdModel(HolonomicBiorbdModel, HolonomicTorqueDynamics):
         self, bio_model: str | biorbd.Model, friction_coefficients: np.ndarray = None, parameters: ParameterList = None
     ):
         HolonomicBiorbdModel.__init__(self, bio_model, friction_coefficients, parameters)
-        self.fatigue = None
         HolonomicTorqueDynamics.__init__(self)
 
     def serialize(self) -> tuple[Callable, dict]:
@@ -137,7 +134,6 @@ class VariationalTorqueBiorbdModel(VariationalBiorbdModel, VariationalTorqueDyna
         VariationalBiorbdModel.__init__(
             self, bio_model, discrete_approximation, control_type, control_discrete_approximation, parameters
         )
-        self.fatigue = None
         VariationalTorqueDynamics.__init__(self)
 
     def serialize(self) -> tuple[Callable, dict]:
@@ -154,7 +150,6 @@ class TorqueFreeFloatingBaseBiorbdModel(BiorbdModel, TorqueFreeFloatingBaseDynam
         contact_types: list[ContactType] | tuple[ContactType] = (),
     ):
         BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set, contact_types)
-        self.fatigue = None
         TorqueFreeFloatingBaseDynamics.__init__(self)
 
     def serialize(self) -> tuple[Callable, dict]:
@@ -210,7 +205,6 @@ class StochasticTorqueFreeFloatingBaseBiorbdModel(StochasticBiorbdModel, Stochas
         n_noise = self.motor_noise_magnitude.shape[0] + self.sensory_noise_magnitude.shape[0]
         n_noised_states = 2 * n_noised_tau
 
-        self.fatigue = None
         StochasticTorqueFreeFloatingBaseDynamics.__init__(
             self, problem_type, with_cholesky, n_noised_tau, n_noise, n_noised_states, n_references
         )
@@ -233,8 +227,7 @@ class TorqueActivationBiorbdModel(BiorbdModel, TorqueActivationDynamics):
         fatigue: FatigueList = None,
     ):
         BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set, contact_types)
-        self.fatigue = fatigue
-        TorqueActivationDynamics.__init__(self, with_residual_torque)
+        TorqueActivationDynamics.__init__(self, with_residual_torque, fatigue)
 
     def serialize(self) -> tuple[Callable, dict]:
         return TorqueActivationBiorbdModel, dict(
@@ -256,8 +249,7 @@ class TorqueDerivativeBiorbdModel(BiorbdModel, TorqueDerivativeDynamics):
         fatigue: FatigueList = None,
     ):
         BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set, contact_types)
-        self.fatigue = fatigue
-        TorqueDerivativeDynamics.__init__(self)
+        TorqueDerivativeDynamics.__init__(self, fatigue)
 
     def serialize(self) -> tuple[Callable, dict]:
         return TorqueDerivativeBiorbdModel, dict(
@@ -281,8 +273,7 @@ class MusclesBiorbdModel(BiorbdModel, MusclesDynamics):
         fatigue: FatigueList = None,
     ):
         BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set, contact_types)
-        self.fatigue = fatigue
-        MusclesDynamics.__init__(self, with_residual_torque, with_excitation)
+        MusclesDynamics.__init__(self, with_residual_torque, with_excitation, fatigue)
 
     def serialize(self) -> tuple[Callable, dict]:
         return MusclesBiorbdModel, dict(
@@ -303,7 +294,6 @@ class JointAccelerationBiorbdModel(BiorbdModel, JointAccelerationDynamics):
         contact_types: list[ContactType] | tuple[ContactType] = (),
     ):
         BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set, contact_types)
-        self.fatigue = None
         JointAccelerationDynamics.__init__(self)
 
     def serialize(self) -> tuple[Callable, dict]:
@@ -322,7 +312,6 @@ class MultiTorqueBiorbdModel(MultiBiorbdModel, TorqueDynamics):
         extra_bio_models: tuple[str | biorbd.Model | BiorbdModel, ...] = (),
     ):
         MultiBiorbdModel.__init__(self, bio_model, extra_bio_models)
-        self.fatigue = None
         TorqueDynamics.__init__(self)
 
     def serialize(self) -> tuple[Callable, dict]:
