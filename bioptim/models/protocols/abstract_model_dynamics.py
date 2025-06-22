@@ -175,7 +175,7 @@ class StochasticTorqueDynamics(TorqueDynamics):
     """
 
     def __init__(self, problem_type, with_cholesky, n_noised_tau, n_noise, n_noised_states, n_references):
-        super().__init__()
+        super().__init__(fatigue=None)
         self.control_configuration += [
             lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.K(
                 ocp,
@@ -415,7 +415,7 @@ class TorqueFreeFloatingBaseDynamics(TorqueDynamics):
     """
 
     def __init__(self):
-        super().__init__()
+        super().__init__(fatigue=None)
         self.state_configuration = [States.Q_ROOTS, States.Q_JOINTS, States.QDOT_ROOTS, States.QDOT_JOINTS]
         self.control_configuration = [Controls.TAU_JOINTS]
         self.algebraic_configuration = []
@@ -479,7 +479,7 @@ class StochasticTorqueFreeFloatingBaseDynamics(TorqueFreeFloatingBaseDynamics, S
 
 class TorqueActivationDynamics(TorqueDynamics):
     def __init__(self, with_residual_torque: Bool, fatigue: FatigueList):
-        super().__init__()
+        super().__init__(fatigue=None)
 
         if with_residual_torque:
             self.control_configuration += [Controls.RESIDUAL_TAU]
@@ -512,7 +512,7 @@ class TorqueActivationDynamics(TorqueDynamics):
 
 class TorqueDerivativeDynamics(TorqueDynamics):
     def __init__(self, fatigue: FatigueList):
-        super().__init__()
+        super().__init__(fatigue=None)
         self.state_configuration += [States.TAU]
         self.control_configuration = [Controls.TAUDOT]
         self.fatigue = fatigue
@@ -619,7 +619,7 @@ class MusclesDynamics(TorqueDynamics):
     """
 
     def __init__(self, with_residual_torque: Bool, with_excitation: Bool, fatigue: FatigueList = None):
-        super().__init__()
+        super().__init__(fatigue)
 
         self.state_configuration = [States.Q, States.QDOT]
         if with_excitation:
@@ -811,7 +811,7 @@ class JointAccelerationDynamics(TorqueDynamics):
     """
 
     def __init__(self):
-        super().__init__()
+        super().__init__(fatigue=None)
         self.control_configuration = [Controls.QDDOT_JOINTS]
 
     def dynamics(
