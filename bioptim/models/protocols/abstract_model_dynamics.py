@@ -366,6 +366,40 @@ class HolonomicTorqueDynamics(AbstractModel):
         return None
 
 
+
+class VariationalTorqueDynamics(AbstractModel):
+
+    def __init__(self):
+        super().__init__()
+        self.state_configuration = [States.Q]
+        # If the model has no holonomic constraint, there will be no lambdas defined
+        self.control_configuration = [Controls.TAU, Controls.LAMBDA]
+        self.algebraic_configuration = []
+        self.functions = [
+            lambda ocp, nlp: ConfigureVariables.configure_variational_functions(ocp, nlp),
+        ]
+
+    def dynamics(
+        self,
+        time,
+        states,
+        controls,
+        parameters,
+        algebraic_states,
+        numerical_timeseries,
+        nlp,
+    ):
+        # For variational integrator, the traditional dynamics is skipped, but its declaration is mandatory in bioptim
+        return DynamicsEvaluation(dxdt=nlp.cx(nlp.states.shape, ), defects=nlp.cx(0))
+
+    def get_rigid_contact_forces(self, time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp):
+        return
+
+    @property
+    def extra_dynamics(self):
+        return None
+
+
 class TorqueFreeFloatingBaseDynamics(TorqueDynamics):
     """
     This class is used to create a model actuated through joint torques with a free floating base.

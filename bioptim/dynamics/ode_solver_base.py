@@ -180,7 +180,14 @@ class OdeSolverBase:
         raise RuntimeError("This method should be implemented in the child class")
 
     def initialize_integrator(
-        self, ocp, nlp, dynamics_index: Int, node_index: Int, is_extra_dynamics: Bool = False, **extra_opt
+            self,
+            ocp,
+            nlp,
+            dynamics_index: Int,
+            node_index: Int,
+            is_extra_dynamics: Bool = False,
+            is_extra_deffects: Bool = False,
+            **extra_opt
     ) -> Callable:
         """
         Initialize the integrator
@@ -197,6 +204,8 @@ class OdeSolverBase:
             The current extra dynamics to resolve (that can be referred to nlp.extra_dynamics_func[index])
         is_extra_dynamics
             If the dynamics is an extra dynamics
+        is_extra_deffects
+            If the deffect is an extra deffect
         extra_opt
             Any extra options to pass to the integrator
 
@@ -224,7 +233,7 @@ class OdeSolverBase:
         if nlp.dynamics_defects_func is None:
             dynamics_defects_func = None
         else:
-            if is_extra_dynamics:
+            if is_extra_deffects:
                 dynamics_defects_func = nlp.extra_dynamics_defects_func[dynamics_index]
             else:
                 dynamics_defects_func = nlp.dynamics_defects_func
@@ -286,7 +295,7 @@ class OdeSolverBase:
         for i in range(len(nlp.extra_dynamics_func)):
             extra_dynamics += [
                 nlp.dynamics_type.ode_solver.initialize_integrator(
-                    ocp, nlp, dynamics_index=i, node_index=0, is_extra_dynamics=True
+                    ocp, nlp, dynamics_index=i, node_index=0, is_extra_dynamics=True, is_extra_deffects=False
                 )
             ]
             if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
@@ -295,7 +304,7 @@ class OdeSolverBase:
                 for node_index in range(1, nlp.ns):
                     extra_dynamics += [
                         nlp.dynamics_type.ode_solver.initialize_integrator(
-                            ocp, nlp, dynamics_index=i, node_index=node_index, is_extra_dynamics=True
+                            ocp, nlp, dynamics_index=i, node_index=node_index, is_extra_dynamics=True, is_extra_deffects=False
                         )
                     ]
             nlp.extra_dynamics.append(extra_dynamics)
@@ -305,7 +314,7 @@ class OdeSolverBase:
         for i in range(len(nlp.extra_dynamics_defects_func)):
             extra_dynamics_defects += [
                 nlp.dynamics_type.ode_solver.initialize_integrator(
-                    ocp, nlp, dynamics_index=i, node_index=0, is_extra_dynamics=True
+                    ocp, nlp, dynamics_index=i, node_index=0, is_extra_dynamics=False, is_extra_deffects=True
                 )
             ]
             if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
@@ -314,7 +323,7 @@ class OdeSolverBase:
                 for node_index in range(1, nlp.ns):
                     extra_dynamics_defects += [
                         nlp.dynamics_type.ode_solver.initialize_integrator(
-                            ocp, nlp, dynamics_index=i, node_index=node_index, is_extra_dynamics=True
+                            ocp, nlp, dynamics_index=i, node_index=node_index, is_extra_dynamics=False, is_extra_deffects=True
                         )
                     ]
             nlp.extra_dynamics_defects.append(extra_dynamics_defects)

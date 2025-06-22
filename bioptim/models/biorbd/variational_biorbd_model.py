@@ -132,6 +132,8 @@ class VariationalBiorbdModel(HolonomicBiorbdModel):
                     f"Discrete {self.control_discrete_approximation} is not implemented for {self.control_type} for "
                     f"VariationalBiorbdModel"
                 )
+        else:
+            raise RuntimeError(f"The control type {self.control_type} is not implemented for the VariationalBiorbdModel. ")
 
     def discrete_holonomic_constraints_jacobian(self, time_step: MX | SX, q: MX | SX) -> MX | SX | None:
         """

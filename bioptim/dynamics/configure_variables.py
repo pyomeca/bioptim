@@ -933,6 +933,41 @@ class ConfigureVariables:
         )
 
     @staticmethod
+    def configure_lagrange_multipliers_variable(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool) -> None:
+        """
+        Configure the lambdas for the holonomic constraints as algebraic states
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
+        as_states: bool
+            If the lagrange multipliers should be a state
+        as_controls: bool
+            If the lagrange multipliers should be a control
+        as_algebraic_states: bool
+            If the lagrange multipliers should be an algebraic state
+        """
+        if nlp.model.has_holonomic_constraints:
+            lambdas = []
+            for i in range(nlp.model.nb_holonomic_constraints):
+                lambdas.append(f"lambda_{i}")
+            ConfigureVariables.configure_new_variable(
+                "lambdas",
+                lambdas,
+                ocp,
+                nlp,
+                as_states=as_states,
+                as_controls=as_controls,
+                as_algebraic_states=as_algebraic_states,
+                # Please note that lagrange multipliers (lambdas) are not ready yet for bimapping other than the
+                # independent-dependent mapping from the holonomic configuration.
+            )
+
+
+    @staticmethod
     def configure_soft_contact_forces(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
         """
         Configure the generalized forces derivative
@@ -1313,6 +1348,107 @@ class ConfigureVariables:
             legend=all_multipliers_names,
         )
 
+
+    @staticmethod
+    def configure_variational_functions(ocp, nlp, **extra_params) -> None:
+        """
+        Configure the functions necessary for the variational integrator.
+        # TODO: This should be done elsewhere, but for now it is the easiest way to bypass the dynamics declaration as the variational dynamics depends on the nodes i-1, i and i+1
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
+        """
+
+        dt = nlp.cx.sym("time_step")
+        q_prev = nlp.cx.sym("q_prev", nlp.model.nb_q, 1)
+        q_cur = nlp.cx.sym("q_cur", nlp.model.nb_q, 1)
+        q_next = nlp.cx.sym("q_next", nlp.model.nb_q, 1)
+        control_prev = nlp.cx.sym("control_prev", nlp.model.nb_q, 1)
+        control_cur = nlp.cx.sym("control_cur", nlp.model.nb_q, 1)
+        control_next = nlp.cx.sym("control_next", nlp.model.nb_q, 1)
+        q0 = nlp.cx.sym("q0", nlp.model.nb_q, 1)
+        qdot0 = nlp.cx.sym("qdot_start", nlp.model.nb_q, 1)
+        q1 = nlp.cx.sym("q1", nlp.model.nb_q, 1)
+        control0 = nlp.cx.sym("control0", nlp.model.nb_q, 1)
+        control1 = nlp.cx.sym("control1", nlp.model.nb_q, 1)
+        q_ultimate = nlp.cx.sym("q_ultimate", nlp.model.nb_q, 1)
+        qdot_ultimate = nlp.cx.sym("qdot_ultimate", nlp.model.nb_q, 1)
+        q_penultimate = nlp.cx.sym("q_penultimate", nlp.model.nb_q, 1)
+        controlN_minus_1 = nlp.cx.sym("controlN_minus_1", nlp.model.nb_q, 1)
+        controlN = nlp.cx.sym("controlN", nlp.model.nb_q, 1)
+
+        three_nodes_input = [dt, q_prev, q_cur, q_next, control_prev, control_cur, control_next]
+        two_first_nodes_input = [dt, q0, qdot0, q1, control0, control1]
+        two_last_nodes_input = [dt, q_penultimate, q_ultimate, qdot_ultimate, controlN_minus_1, controlN]
+
+        if nlp.model.has_holonomic_constraints:
+            lambdas = nlp.cx.sym("lambda", self.bio_model.nb_holonomic_constraints, 1)
+            three_nodes_input.append(lambdas)
+            two_first_nodes_input.append(lambdas)
+            two_last_nodes_input.append(lambdas)
+        else:
+            lambdas = None
+
+        nlp.dynamics_defects_func = Function(
+            "ThreeNodesIntegration",
+            three_nodes_input,
+            [
+                nlp.model.discrete_euler_lagrange_equations(
+                    dt,
+                    q_prev,
+                    q_cur,
+                    q_next,
+                    control_prev,
+                    control_cur,
+                    control_next,
+                    lambdas,
+                )
+            ],
+        )
+
+        nlp.dynamics_defects_func_first_node = Function(
+            "TwoFirstNodesIntegration",
+            two_first_nodes_input,
+            [
+                nlp.model.compute_initial_states(
+                    dt,
+                    q0,
+                    qdot0,
+                    q1,
+                    control0,
+                    control1,
+                    lambdas,
+                )
+            ],
+        )
+
+        nlp.dynamics_defects_func_last_node = Function(
+            "TwoLastNodesIntegration",
+            two_last_nodes_input,
+            [
+                nlp.model.compute_final_states(
+                    dt,
+                    q_penultimate,
+                    q_ultimate,
+                    qdot_ultimate,
+                    controlN_minus_1,
+                    controlN,
+                    lambdas,
+                )
+            ],
+        )
+
+        # if expand:
+        # TODO: see how to restore the possiblity to not expand the functions
+        nlp.dynamics_defects_func = nlp.dynamics_defects_func.expand()
+        nlp.dynamics_defects_func_first_node = nlp.dynamics_defects_func_first_node.expand()
+        nlp.dynamics_defects_func_last_node = nlp.dynamics_defects_func_last_node.expand()
+
+
     @staticmethod
     def _get_kinematics_based_names(nlp, var_type: str) -> list[str]:
         """
@@ -1419,6 +1555,7 @@ class Controls(FcnEnum):
     COV = (ConfigureVariables.configure_stochastic_cov_implicit,)
     CHOLESKY_COV = (ConfigureVariables.configure_stochastic_cholesky_cov,)
     REF = (ConfigureVariables.configure_stochastic_ref,)
+    LAMBDA = (ConfigureVariables.configure_lagrange_multipliers_variable,)
 
 
 class AlgebraicStates(FcnEnum):

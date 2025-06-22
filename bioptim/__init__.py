@@ -223,6 +223,7 @@ from .models.protocols.abstract_model_dynamics import (
     TorqueDynamics,
     StochasticTorqueDynamics,
     HolonomicTorqueDynamics,
+    VariationalTorqueDynamics,
     TorqueFreeFloatingBaseDynamics,
     StochasticTorqueFreeFloatingBaseDynamics,
     TorqueActivationDynamics,

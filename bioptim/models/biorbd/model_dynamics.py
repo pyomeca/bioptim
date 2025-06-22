@@ -16,6 +16,7 @@ from ..protocols.abstract_model_dynamics import (
     TorqueDynamics,
     StochasticTorqueDynamics,
     HolonomicTorqueDynamics,
+    VariationalTorqueDynamics,
     TorqueFreeFloatingBaseDynamics,
     StochasticTorqueFreeFloatingBaseDynamics,
     TorqueActivationDynamics,
@@ -124,7 +125,7 @@ class HolonomicTorqueBiorbdModel(HolonomicBiorbdModel, HolonomicTorqueDynamics):
         return HolonomicTorqueBiorbdModel, dict(bio_model=self.path, friction_coefficients=self.friction_coefficients)
 
 
-class VariationalTorqueBiorbdModel(VariationalBiorbdModel, HolonomicTorqueDynamics):
+class VariationalTorqueBiorbdModel(VariationalBiorbdModel, VariationalTorqueDynamics):
     def __init__(
         self,
         bio_model: str | biorbd.Model,
@@ -137,7 +138,7 @@ class VariationalTorqueBiorbdModel(VariationalBiorbdModel, HolonomicTorqueDynami
             self, bio_model, discrete_approximation, control_type, control_discrete_approximation, parameters
         )
         self.fatigue = None
-        HolonomicTorqueDynamics.__init__(self)
+        VariationalTorqueDynamics.__init__(self)
 
     def serialize(self) -> tuple[Callable, dict]:
         return VariationalTorqueBiorbdModel, dict(bio_model=self.path, friction_coefficients=self.friction_coefficients)
