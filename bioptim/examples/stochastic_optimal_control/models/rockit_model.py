@@ -86,8 +86,8 @@ class RockitDynamicsOCP(RockitModel):
         super().__init__(self, motor_noise_magnitude, polynomial_degree, socp_type)
 
         # Variables to configure
-        self.state_type = [States.Q, States.QDOT]
-        self.control_types = [
+        self.state_configuration = [States.Q, States.QDOT]
+        self.control_configuration = [
             lambda ocp, nlp, as_states, as_controls, as_algebraic_states: ConfigureVariables.configure_new_variable(
                 "u", nlp.model.name_u, ocp, nlp, as_states=False, as_controls=True
             )
@@ -123,8 +123,8 @@ class RockitDynamicsSOCP(RockitDynamicsOCP):
         n_noised_states = 2
 
         # Variables to configure
-        self.state_type = [States.Q, States.QDOT]
-        self.control_type = [
+        self.state_configuration = [States.Q, States.QDOT]
+        self.control_configuration = [
             lambda ocp, nlp, as_states, as_controls, as_algebraic_states: ConfigureVariables.configure_new_variable(
                 "u", nlp.model.name_u, ocp, nlp, as_states=False, as_controls=True
             ),
@@ -133,7 +133,7 @@ class RockitDynamicsSOCP(RockitDynamicsOCP):
             ),
         ]
 
-        self.algebraic_type = [
+        self.algebraic_configuration = [
             lambda ocp, nlp, as_states, as_controls, as_algebraic_states: AlgebraicStates.M(
                 ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_states
             )

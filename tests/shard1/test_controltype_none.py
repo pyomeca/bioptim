@@ -41,9 +41,9 @@ class NonControlledMethod:
         self.c = 0
         self._name = name
 
-        self.state_type = []
-        self.control_type = []
-        self.algebraic_type = []
+        self.state_configuration = []
+        self.control_configuration = []
+        self.algebraic_configuration = []
         self.extra_dynamic = None
         self.functions = [self.declare_variables]
 

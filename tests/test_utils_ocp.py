@@ -33,9 +33,9 @@ class CustomBiorbdModel(BiorbdModel):
         BiorbdModel.__init__(self, biorbd_model_path)
 
         # Define the variables to configure here
-        self.state_type = [States.Q, States.QDOT]
-        self.control_type = [Controls.TAU]
-        self.algebraic_type = []
+        self.state_configuration = [States.Q, States.QDOT]
+        self.control_configuration = [Controls.TAU]
+        self.algebraic_configuration = []
         self.functions = []
         self.extra_dynamics = None
         self.fatigue = None

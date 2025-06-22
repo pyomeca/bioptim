@@ -7,9 +7,9 @@ from ...dynamics.configure_variables import States, Controls, AlgebraicStates
 
 class AbstractModel(ABC):
     def __init__(self):
-        self.state_type: List[States] = []
-        self.control_type: List[Controls] = []
-        self.algebraic_type: List[AlgebraicStates] = []
+        self.state_configuration: List[States] = []
+        self.control_configuration: List[Controls] = []
+        self.algebraic_configuration: List[AlgebraicStates] = []
         self.functions: List[Callable] = []
 
     @abstractmethod

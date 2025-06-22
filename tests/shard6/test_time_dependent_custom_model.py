@@ -43,7 +43,7 @@ class Model:
         self.time_as_states = time_as_states
         self.pulse_apparition_time = None
 
-        self.state_type = [
+        self.state_configuration = [
             lambda ocp, nlp, as_states, as_controls, as_algebraic_states: ConfigureVariables.configure_new_variable(
                 "Cn",
                 ["Cn"],
@@ -63,7 +63,7 @@ class Model:
         ]
 
         if self.time_as_states:
-            self.state_type += [
+            self.state_configuration += [
                 lambda ocp, nlp, as_states, as_controls, as_algebraic_states: ConfigureVariables.configure_new_variable(
                     "time",
                     ["time"],
@@ -73,8 +73,8 @@ class Model:
                     as_controls=False,
                 )
             ]
-        self.control_type = []
-        self.algebraic_type = []
+        self.control_configuration = []
+        self.algebraic_configuration = []
         self.extra_dynamics = None
         self.functions = []
         self.contact_types = []

@@ -1095,9 +1095,9 @@ def test_custom_dynamics(contact_types, phase_dynamics):
                 contact_types=contact_types,
             )
 
-            self.state_type = [States.Q, States.QDOT]
-            self.control_type = [Controls.TAU]
-            self.algebraic_type = []
+            self.state_configuration = [States.Q, States.QDOT]
+            self.control_configuration = [Controls.TAU]
+            self.algebraic_configuration = []
             self.functions = []
             self.contact_types = contact_types
             self.fatigue = None

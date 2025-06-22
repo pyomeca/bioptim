@@ -21,9 +21,9 @@ class TorqueDynamics(AbstractModel):
 
     def __init__(self):
         super().__init__()
-        self.state_type = [States.Q, States.QDOT]
-        self.control_type = [Controls.TAU]
-        self.algebraic_type = []
+        self.state_configuration = [States.Q, States.QDOT]
+        self.control_configuration = [Controls.TAU]
+        self.algebraic_configuration = []
         self.functions = []
 
     @staticmethod
@@ -315,9 +315,9 @@ class HolonomicTorqueDynamics(AbstractModel):
 
     def __init__(self):
         super().__init__()
-        self.state_type = [States.Q_U, States.QDOT_U]
-        self.control_type = [Controls.TAU]
-        self.algebraic_type = []
+        self.state_configuration = [States.Q_U, States.QDOT_U]
+        self.control_configuration = [Controls.TAU]
+        self.algebraic_configuration = []
         self.functions = [
             lambda ocp, nlp: ConfigureVariables.configure_qv(ocp, nlp),
             lambda ocp, nlp: ConfigureVariables.configure_qdotv(ocp, nlp),
@@ -410,9 +410,9 @@ class TorqueFreeFloatingBaseDynamics(TorqueDynamics):
 
     def __init__(self):
         super().__init__()
-        self.state_type = [States.Q_ROOTS, States.Q_JOINTS, States.QDOT_ROOTS, States.QDOT_JOINTS]
-        self.control_type = [Controls.TAU_JOINTS]
-        self.algebraic_type = []
+        self.state_configuration = [States.Q_ROOTS, States.Q_JOINTS, States.QDOT_ROOTS, States.QDOT_JOINTS]
+        self.control_configuration = [Controls.TAU_JOINTS]
+        self.algebraic_configuration = []
         self.functions = []
 
     @staticmethod
@@ -506,8 +506,8 @@ class TorqueActivationDynamics(TorqueDynamics):
 class TorqueDerivativeDynamics(TorqueDynamics):
     def __init__(self):
         super().__init__()
-        self.state_type += [States.TAU]
-        self.control_type = [Controls.TAUDOT]
+        self.state_configuration += [States.TAU]
+        self.control_configuration = [Controls.TAUDOT]
 
     def get_basic_variables(self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries):
 
@@ -613,16 +613,16 @@ class MusclesDynamics(TorqueDynamics):
     def __init__(self, with_residual_torque: Bool, with_excitation: Bool):
         super().__init__()
 
-        self.state_type = [States.Q, States.QDOT]
+        self.state_configuration = [States.Q, States.QDOT]
         if with_excitation:
-            self.state_type += [States.MUSCLE_ACTIVATION]
+            self.state_configuration += [States.MUSCLE_ACTIVATION]
 
         if with_residual_torque:
-            self.control_type = [Controls.TAU, Controls.MUSCLE_EXCITATION]
+            self.control_configuration = [Controls.TAU, Controls.MUSCLE_EXCITATION]
         else:
-            self.control_type = [Controls.MUSCLE_EXCITATION]
+            self.control_configuration = [Controls.MUSCLE_EXCITATION]
 
-        self.algebraic_type = []
+        self.algebraic_configuration = []
         self.functions = []
         self.with_residual_torque = with_residual_torque
         self.with_excitation = with_excitation

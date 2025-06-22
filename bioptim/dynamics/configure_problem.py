@@ -130,9 +130,9 @@ class ConfigureProblem:
             A reference to the phase
         """
         AutoConfigure(
-            states=nlp.model.state_type,
-            controls=nlp.model.control_type,
-            algebraic_states=nlp.model.algebraic_type,
+            states=nlp.model.state_configuration,
+            controls=nlp.model.control_configuration,
+            algebraic_states=nlp.model.algebraic_configuration,
             functions=nlp.model.functions,
         ).initialize(ocp, nlp)
 

@@ -95,9 +95,9 @@ class MassPointDynamicsModel(MassPointModel):
             problem_type=problem_type, motor_noise_magnitude=motor_noise_magnitude, polynomial_degree=polynomial_degree
         )
         self.fatigue = None
-        self.state_type = [States.Q, States.QDOT]
-        self.control_type = [self.configure_u]
-        self.algebraic_type = []
+        self.state_configuration = [States.Q, States.QDOT]
+        self.control_configuration = [self.configure_u]
+        self.algebraic_configuration = []
         self.functions = []
 
     def dynamics(self, time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp):
@@ -144,14 +144,14 @@ class StochasticMassPointDynamicsModel(MassPointModel):
         super().__init__(
             problem_type=problem_type, motor_noise_magnitude=motor_noise_magnitude, polynomial_degree=polynomial_degree
         )
-        self.state_type = [States.Q, States.QDOT]
-        self.control_type = [
+        self.state_configuration = [States.Q, States.QDOT]
+        self.control_configuration = [
             self.configure_u,
             lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.COV(
                 ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_states=4
             ),
         ]
-        self.algebraic_type = [
+        self.algebraic_configuration = [
             lambda ocp, nlp, as_states, as_controls, as_algebraic_states: AlgebraicStates.M(
                 ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_states=4
             )
