@@ -210,7 +210,6 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         """
         pass
 
-
     def variational_integrator_three_nodes(
         self,
         controllers: list[PenaltyController, PenaltyController, PenaltyController],
@@ -369,4 +368,3 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             n_qdot=n_qdot,
         )
         return multinode_constraints
-

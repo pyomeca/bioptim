@@ -933,7 +933,9 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_lagrange_multipliers_variable(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool) -> None:
+    def configure_lagrange_multipliers_variable(
+        ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool
+    ) -> None:
         """
         Configure the lambdas for the holonomic constraints as algebraic states
 
@@ -965,7 +967,6 @@ class ConfigureVariables:
                 # Please note that lagrange multipliers (lambdas) are not ready yet for bimapping other than the
                 # independent-dependent mapping from the holonomic configuration.
             )
-
 
     @staticmethod
     def configure_soft_contact_forces(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
@@ -1348,7 +1349,6 @@ class ConfigureVariables:
             legend=all_multipliers_names,
         )
 
-
     @staticmethod
     def configure_variational_functions(ocp, nlp, **extra_params) -> None:
         """
@@ -1447,7 +1447,6 @@ class ConfigureVariables:
         nlp.dynamics_defects_func = nlp.dynamics_defects_func.expand()
         nlp.dynamics_defects_func_first_node = nlp.dynamics_defects_func_first_node.expand()
         nlp.dynamics_defects_func_last_node = nlp.dynamics_defects_func_last_node.expand()
-
 
     @staticmethod
     def _get_kinematics_based_names(nlp, var_type: str) -> list[str]:

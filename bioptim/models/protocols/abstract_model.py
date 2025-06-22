@@ -5,6 +5,7 @@ from ...dynamics.dynamics_functions import DynamicsEvaluation
 from ...misc.parameters_types import CXOptional
 from ...dynamics.configure_variables import States, Controls, AlgebraicStates
 
+
 class AbstractModel(ABC):
     def __init__(self):
         self.state_configuration: List[States] = []

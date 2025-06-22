@@ -380,7 +380,6 @@ def test_acados_custom_dynamics(problem_type_custom):
         print("Test for ACADOS on Windows is skipped")
         return
 
-
     from tests import test_utils_ocp as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)

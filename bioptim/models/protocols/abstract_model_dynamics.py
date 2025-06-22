@@ -366,7 +366,6 @@ class HolonomicTorqueDynamics(AbstractModel):
         return None
 
 
-
 class VariationalTorqueDynamics(AbstractModel):
 
     def __init__(self):
@@ -390,7 +389,12 @@ class VariationalTorqueDynamics(AbstractModel):
         nlp,
     ):
         # For variational integrator, the traditional dynamics is skipped, but its declaration is mandatory in bioptim
-        return DynamicsEvaluation(dxdt=nlp.cx(nlp.states.shape, ), defects=nlp.cx(0))
+        return DynamicsEvaluation(
+            dxdt=nlp.cx(
+                nlp.states.shape,
+            ),
+            defects=nlp.cx(0),
+        )
 
     def get_rigid_contact_forces(self, time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp):
         return
