@@ -22,6 +22,7 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
     VariableScaling,
+    AbstractModel,
 )
 from casadi import DM, MX, SX, vertcat, exp
 import numpy as np
@@ -31,8 +32,9 @@ import pytest
 from ..utils import TestUtils
 
 
-class Model:
+class Model(AbstractModel):
     def __init__(self, time_as_states: bool = False):
+        super().__init__()
         self._name = None
         self.a_rest = 3000
         self.tau1_rest = 0.05
@@ -73,12 +75,7 @@ class Model:
                     as_controls=False,
                 )
             ]
-        self.control_configuration = []
-        self.algebraic_configuration = []
-        self.extra_dynamics = None
-        self.functions = []
         self.contact_types = []
-        self.fatigue = None
 
     def serialize(self) -> tuple[Callable, dict]:
         return (

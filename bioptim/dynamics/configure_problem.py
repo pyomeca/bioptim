@@ -1,26 +1,16 @@
-from typing import Callable, Any
-
+from typing import Any
 import numpy as np
-from casadi import vertcat, Function, DM, horzcat
+from casadi import vertcat, Function
 
 from .configure_variables import AutoConfigure
-from .dynamics_functions import DynamicsFunctions
 from .ode_solvers import OdeSolver, OdeSolverBase
-from ..gui.plot import CustomPlot
 from ..misc.enums import (
-    PlotType,
     PhaseDynamics,
-    ControlType,
 )
-from ..misc.fcn_enum import FcnEnum
-from ..misc.mapping import BiMapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
-from ..optimization.problem_type import SocpType
 from ..misc.parameters_types import (
-    Bool,
     Int,
     NpArray,
-    NpArrayDictOptional,
 )
 from ..optimization.non_linear_program import NonLinearProgram
 
@@ -142,21 +132,6 @@ class ConfigureProblem:
             ConfigureProblem.configure_dynamics_function(
                 ocp, nlp, nlp.model.extra_dynamics, **nlp.dynamics_type.extra_parameters
             )
-
-    @staticmethod
-    def custom(ocp, nlp: NonLinearProgram, **extra_params) -> None:
-        """
-        Call the user-defined dynamics configuration function
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the phase
-        """
-
-        nlp.dynamics_type.configure(ocp, nlp, **extra_params)
 
     @staticmethod
     def configure_dynamics_function(ocp, nlp: NonLinearProgram, dyn_func, **extra_params) -> None:

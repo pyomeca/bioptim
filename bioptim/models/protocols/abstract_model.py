@@ -11,6 +11,7 @@ class AbstractModel(ABC):
         self.control_configuration: List[Controls] = []
         self.algebraic_configuration: List[AlgebraicStates] = []
         self.functions: List[Callable] = []
+        self.fatigue = None
 
     @abstractmethod
     def dynamics(self) -> DynamicsEvaluation:
@@ -28,14 +29,7 @@ class AbstractModel(ABC):
     ) -> CXOptional:
         return None
 
-    def extra_dynamics(
-        self,
-        time: Any,
-        states: Any,
-        controls: Any,
-        parameters: Any,
-        algebraic_states: Any,
-        numerical_timeseries: Any,
-        nlp: Any,
-    ) -> Optional[DynamicsEvaluation]:
+    @property
+    def extra_dynamics(self) -> Optional[DynamicsEvaluation]:
+
         return None

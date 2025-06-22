@@ -20,25 +20,22 @@ from bioptim import (
     OdeSolver,
     OdeSolverBase,
     NonLinearProgram,
-    Solver,
     DynamicsEvaluation,
     PhaseDynamics,
     States,
     Controls,
+    AbstractModel,
 )
 
 
-class CustomBiorbdModel(BiorbdModel):
+class CustomBiorbdModel(BiorbdModel, AbstractModel):
     def __init__(self, biorbd_model_path: str, **kwargs):
         BiorbdModel.__init__(self, biorbd_model_path)
+        AbstractModel.__init__(self)
 
         # Define the variables to configure here
         self.state_configuration = [States.Q, States.QDOT]
         self.control_configuration = [Controls.TAU]
-        self.algebraic_configuration = []
-        self.functions = []
-        self.extra_dynamics = None
-        self.fatigue = None
         self.extra_parameters = kwargs
 
     def dynamics(
