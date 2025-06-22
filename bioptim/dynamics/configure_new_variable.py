@@ -33,6 +33,7 @@ class NewVariableConfiguration:
         combine_state_control_plot: Bool = False,
         skip_plot: Bool = False,
         axes_idx: BiMapping = None,
+        skip_fatigue: Bool = False,
     ):
         """
         Add a new variable to the states/controls pool
@@ -61,6 +62,9 @@ class NewVariableConfiguration:
             If no plot should be automatically added
         axes_idx: BiMapping
             The axes index to use for the plot
+        skip_fatigue: bool
+            If the configuration of fatigue variables should be skipped (typically, this should be se to False the first
+            time a variables is configured, and then set to True when NewVariableConfiguration is called recursively).
         """
 
         self.name = name
@@ -77,7 +81,7 @@ class NewVariableConfiguration:
 
         self._check_combine_state_control_plot()
 
-        if _manage_fatigue_to_new_variable(name, name_elements, ocp, nlp, as_states, as_controls):
+        if _manage_fatigue_to_new_variable(name, name_elements, ocp, nlp, as_states, as_controls, skip_fatigue=skip_fatigue):
             # If the element is fatigable, this function calls back configure_new_variable to fill everything.
             # Therefore, we can exit now
             return
@@ -332,6 +336,7 @@ def _manage_fatigue_to_new_variable(
     nlp,
     as_states: Bool,
     as_controls: Bool,
+    skip_fatigue: Bool
 ):
     """
     Manage the fatigue variables and add them to the nlp
@@ -350,8 +355,11 @@ def _manage_fatigue_to_new_variable(
         If the fatigue is applied on the states
     as_controls: bool
         If the fatigue is applied on the controls
+    skip_fatigue: bool
+        If the fatigue configuration should be skipped (typically, this should be se to False the first
+        time a variables is configured, and then set to True when NewVariableConfiguration is called recursively).
     """
-    if nlp.model.fatigue is None or name not in nlp.model.fatigue:
+    if nlp.model.fatigue is None or name not in nlp.model.fatigue or skip_fatigue:
         return False
 
     if not as_controls:
@@ -406,7 +414,7 @@ def _manage_fatigue_to_new_variable(
 
         if split_controls:
             NewVariableConfiguration(
-                var_names_with_suffix[-1], name_elements, ocp, nlp, as_states, as_controls, skip_plot=True
+                var_names_with_suffix[-1], name_elements, ocp, nlp, as_states, as_controls, skip_plot=True, skip_fatigue=True
             )
             nlp.plot[f"{var_names_with_suffix[-1]}_controls"] = CustomPlot(
                 lambda t0, phases_dt, node_idx, x, u, p, a, d, key: (
@@ -418,7 +426,7 @@ def _manage_fatigue_to_new_variable(
                 color=color[i],
             )
         elif i == 0:
-            NewVariableConfiguration(f"{name}", name_elements, ocp, nlp, as_states, as_controls, skip_plot=True)
+            NewVariableConfiguration(f"{name}", name_elements, ocp, nlp, as_states, as_controls, skip_plot=True, skip_fatigue=True)
             nlp.plot[f"{name}_controls"] = CustomPlot(
                 lambda t0, phases_dt, node_idx, x, u, p, a, d, key: (
                     u[nlp.controls.key_index(key), :] if u.any() else np.ndarray((len(name_elements), 1)) * np.nan
@@ -431,7 +439,7 @@ def _manage_fatigue_to_new_variable(
 
         for p, params in enumerate(fatigue_suffix):
             name_tp = f"{var_names_with_suffix[-1]}_{params}"
-            NewVariableConfiguration(name_tp, name_elements, ocp, nlp, True, False, skip_plot=True)
+            NewVariableConfiguration(name_tp, name_elements, ocp, nlp, as_states=True, as_controls=False, skip_plot=True, skip_fatigue=True)
             nlp.plot[name_tp] = CustomPlot(
                 lambda t0, phases_dt, node_idx, x, u, p, a, d, key, mod: (
                     mod * x[nlp.states.key_index(key), :] if x.any() else np.ndarray((len(name_elements), 1)) * np.nan
