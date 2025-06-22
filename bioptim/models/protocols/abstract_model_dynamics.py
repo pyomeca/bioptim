@@ -20,12 +20,13 @@ class TorqueDynamics(AbstractModel):
     u = [tau]
     """
 
-    def __init__(self):
+    def __init__(self, fatigue: FatigueList):
         super().__init__()
         self.state_configuration = [States.Q, States.QDOT]
         self.control_configuration = [Controls.TAU]
         self.algebraic_configuration = []
         self.functions = []
+        self.fatigue = fatigue
 
     @staticmethod
     def get_q_qdot_indices(nlp):
@@ -477,12 +478,13 @@ class StochasticTorqueFreeFloatingBaseDynamics(TorqueFreeFloatingBaseDynamics, S
 
 
 class TorqueActivationDynamics(TorqueDynamics):
-    def __init__(self, with_residual_torque: Bool):
+    def __init__(self, with_residual_torque: Bool, fatigue: FatigueList):
         super().__init__()
 
         if with_residual_torque:
-            self.control_type += [Controls.RESIDUAL_TAU]
+            self.control_configuration += [Controls.RESIDUAL_TAU]
         self.with_residual_torque = with_residual_torque
+        self.fatigue = fatigue
 
     def get_basic_variables(self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries):
         if nlp.model.fatigue is not None:
@@ -509,10 +511,11 @@ class TorqueActivationDynamics(TorqueDynamics):
 
 
 class TorqueDerivativeDynamics(TorqueDynamics):
-    def __init__(self):
+    def __init__(self, fatigue: FatigueList):
         super().__init__()
         self.state_configuration += [States.TAU]
         self.control_configuration = [Controls.TAUDOT]
+        self.fatigue = fatigue
 
     def get_basic_variables(self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries):
 
@@ -809,7 +812,7 @@ class JointAccelerationDynamics(TorqueDynamics):
 
     def __init__(self):
         super().__init__()
-        self.control_type = [Controls.QDDOT_JOINTS]
+        self.control_configuration = [Controls.QDDOT_JOINTS]
 
     def dynamics(
         self,
