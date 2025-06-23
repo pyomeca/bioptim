@@ -337,9 +337,12 @@ class ConfigureVariables:
             If the generalized coordinates should be an algebraic state
         """
         name = "qdot_roots"
+        if name in nlp.variable_mappings.keys():
+            raise NotImplementedError("qdot_roots is not ready for variable mapping yet.")
+
         name_qdot = ConfigureVariables._get_kinematics_based_names(nlp, "qdot")
         name_qdot_roots = [name_qdot[i] for i in range(nlp.model.nb_root)]
-        axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
+        axes_idx = BiMapping(to_first=list(range(nlp.model.nb_root)), to_second=list(range(nlp.model.nb_root)))
         ConfigureVariables.configure_new_variable(
             name,
             name_qdot_roots,
@@ -368,9 +371,13 @@ class ConfigureVariables:
             If the generalized coordinates should be an algebraic state
         """
         name = "qdot_joints"
+        if name in nlp.variable_mappings.keys():
+            raise NotImplementedError("qdot_joints is not ready for variable mapping yet.")
+
         name_qdot = ConfigureVariables._get_kinematics_based_names(nlp, "qdot")
         name_qdot_joints = [name_qdot[i] for i in range(nlp.model.nb_root, nlp.model.nb_qdot)]
-        axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
+        axes_idx = BiMapping(to_first=list(range(nlp.model.nb_root, nlp.model.nb_qdot)),
+                             to_second=list(range(nlp.model.nb_root, nlp.model.nb_qdot)))
         ConfigureVariables.configure_new_variable(
             name,
             name_qdot_joints,
@@ -430,9 +437,13 @@ class ConfigureVariables:
             If the generalized coordinates should be an algebraic state
         """
         name = "qddot_joints"
+        if name in nlp.variable_mappings.keys():
+            raise NotImplementedError("qddot_joints is not ready for variable mapping yet.")
+
         name_qddot = ConfigureVariables._get_kinematics_based_names(nlp, "qddot")
         name_qddot_joints = [name_qddot[i] for i in range(nlp.model.nb_root, nlp.model.nb_q)]
-        axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
+        axes_idx = BiMapping(to_first=list(range(nlp.model.nb_root, nlp.model.nb_q)),
+                            to_second=list(range(nlp.model.nb_root, nlp.model.nb_q)))
         ConfigureVariables.configure_new_variable(
             name,
             name_qddot_joints,
