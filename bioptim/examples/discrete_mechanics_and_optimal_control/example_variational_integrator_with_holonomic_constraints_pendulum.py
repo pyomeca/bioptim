@@ -45,17 +45,16 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved.
     """
 
-    bio_model = VariationalTorqueBiorbdModel(bio_model_path)
     # Holonomic constraints: The pendulum must not move on the z axis
     holonomic_constraints = HolonomicConstraintsList()
     holonomic_constraints.add(
         "holonomic_constraints",
         HolonomicConstraintsFcn.superimpose_markers,
-        model=bio_model,
         marker_1="marker_1",
         index=slice(2, 3),
     )
-    bio_model.set_holonomic_configuration(holonomic_constraints)
+
+    bio_model = VariationalTorqueBiorbdModel(bio_model_path, holonomic_constraints=holonomic_constraints)
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")

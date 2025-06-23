@@ -2,7 +2,8 @@ from typing import TypeAlias
 from casadi import vertcat, DM
 
 from ...dynamics.configure_variables import States, Controls, AlgebraicStates
-from ...dynamics.dynamics_functions import DynamicsFunctions, DynamicsEvaluation
+from ...dynamics.dynamics_functions import DynamicsFunctions
+from ...dynamics.dynamics_evaluation import DynamicsEvaluation
 from ...dynamics.fatigue.fatigue_dynamics import FatigueList
 from ...dynamics.configure_variables import ConfigureVariables
 from ...dynamics.ode_solvers import OdeSolver
@@ -20,7 +21,7 @@ class TorqueDynamics(AbstractModel):
     u = [tau]
     """
 
-    def __init__(self, fatigue: FatigueList):
+    def __init__(self, fatigue: FatigueList = None):
         super().__init__()
         self.state_configuration = [States.Q, States.QDOT]
         self.control_configuration = [Controls.TAU]
@@ -372,9 +373,9 @@ class VariationalTorqueDynamics(AbstractModel):
 
     def __init__(self):
         super().__init__()
-        self.state_configuration = [States.Q]
         # If the model has no holonomic constraint, there will be no lambdas defined
-        self.control_configuration = [Controls.TAU, Controls.LAMBDA]
+        self.state_configuration = [States.Q, Controls.LAMBDA]
+        self.control_configuration = [Controls.TAU]
         self.algebraic_configuration = []
         self.functions = [
             lambda ocp, nlp: ConfigureVariables.configure_variational_functions(ocp, nlp),

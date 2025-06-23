@@ -108,24 +108,23 @@ def prepare_ocp(
     -------
     The ocp ready to be solved
     """
-    bio_model = HolonomicTorqueBiorbdModel(biorbd_model_path)
-
     # Create a holonomic constraint to create a double pendulum from two single pendulums
     holonomic_constraints = HolonomicConstraintsList()
     holonomic_constraints.add(
         "holonomic_constraints",
         HolonomicConstraintsFcn.superimpose_markers,
-        model=bio_model,
         marker_1="marker_1",
         marker_2="marker_3",
         index=slice(1, 3),
         local_frame_index=0,
     )
+
     # The rotations (joint 0 and 3) are independent. The translations (joint 1 and 2) are constrained by the holonomic
     # constraint
-    bio_model.set_holonomic_configuration(
-        constraints_list=holonomic_constraints, independent_joint_index=[0, 3], dependent_joint_index=[1, 2]
-    )
+    bio_model = HolonomicTorqueBiorbdModel(biorbd_model_path,
+                                           holonomic_constraints=holonomic_constraints,
+                                           independent_joint_index=[0, 3],
+                                           dependent_joint_index=[1, 2])
 
     # Add objective functions
     objective_functions = ObjectiveList()

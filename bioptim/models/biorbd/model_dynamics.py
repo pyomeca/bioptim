@@ -24,6 +24,7 @@ from ..protocols.abstract_model_dynamics import (
     MusclesDynamics,
     JointAccelerationDynamics,
 )
+from ..protocols.holonomic_constraints import HolonomicConstraintsList
 from ...misc.parameters_types import (
     Str,
     Int,
@@ -113,9 +114,17 @@ class StochasticTorqueBiorbdModel(StochasticBiorbdModel, StochasticTorqueDynamic
 
 class HolonomicTorqueBiorbdModel(HolonomicBiorbdModel, HolonomicTorqueDynamics):
     def __init__(
-        self, bio_model: str | biorbd.Model, friction_coefficients: np.ndarray = None, parameters: ParameterList = None
+            self,
+            bio_model: str | biorbd.Model,
+            friction_coefficients: np.ndarray = None,
+            parameters: ParameterList = None,
+            holonomic_constraints: HolonomicConstraintsList | None = None,
+            dependent_joint_index: list[int] | tuple[int, ...] = None,
+            independent_joint_index: list[int] | tuple[int, ...] = None,
     ):
         HolonomicBiorbdModel.__init__(self, bio_model, friction_coefficients, parameters)
+        if holonomic_constraints is not None:
+            self.set_holonomic_configuration(holonomic_constraints, dependent_joint_index, independent_joint_index)
         HolonomicTorqueDynamics.__init__(self)
 
     def serialize(self) -> tuple[Callable, dict]:
@@ -130,10 +139,15 @@ class VariationalTorqueBiorbdModel(VariationalBiorbdModel, VariationalTorqueDyna
         control_type: ControlType = ControlType.CONSTANT,
         control_discrete_approximation: QuadratureRule = QuadratureRule.MIDPOINT,
         parameters: ParameterList = None,
+        holonomic_constraints: HolonomicConstraintsList | None = None,
+        dependent_joint_index: list[int] | tuple[int, ...] = None,
+        independent_joint_index: list[int] | tuple[int, ...] = None,
     ):
         VariationalBiorbdModel.__init__(
             self, bio_model, discrete_approximation, control_type, control_discrete_approximation, parameters
         )
+        if holonomic_constraints is not None:
+            self.set_holonomic_configuration(holonomic_constraints, dependent_joint_index, independent_joint_index)
         VariationalTorqueDynamics.__init__(self)
 
     def serialize(self) -> tuple[Callable, dict]:

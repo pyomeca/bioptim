@@ -1386,7 +1386,7 @@ class ConfigureVariables:
         two_last_nodes_input = [dt, q_penultimate, q_ultimate, qdot_ultimate, controlN_minus_1, controlN]
 
         if nlp.model.has_holonomic_constraints:
-            lambdas = nlp.cx.sym("lambda", self.bio_model.nb_holonomic_constraints, 1)
+            lambdas = nlp.cx.sym("lambda", nlp.model.nb_holonomic_constraints, 1)
             three_nodes_input.append(lambdas)
             two_first_nodes_input.append(lambdas)
             two_last_nodes_input.append(lambdas)

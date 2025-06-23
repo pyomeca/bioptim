@@ -1,12 +1,10 @@
-from casadi import horzcat, vertcat, MX, SX, DM
+from casadi import vertcat, MX, SX
 
-from .dynamics_evaluation import DynamicsEvaluation
-from .ode_solvers import OdeSolver
-from ..limits.holonomic_constraints import HolonomicConstraintsFcn
-from ..misc.enums import DefectType, ContactType
+from ..models.protocols.holonomic_constraints import HolonomicConstraintsFcn
+from ..misc.enums import ContactType
 from ..misc.mapping import BiMapping
 from ..optimization.optimization_variable import OptimizationVariable
-from ..misc.parameters_types import Bool, AnyListOptional, CX, CXOptional, Str, Tuple
+from ..misc.parameters_types import AnyListOptional, CX, CXOptional, Str, Tuple
 
 
 class DynamicsFunctions:

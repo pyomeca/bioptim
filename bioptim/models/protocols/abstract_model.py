@@ -1,7 +1,7 @@
 from typing import List, Any, Optional, Callable
 from abc import ABC, abstractmethod
 
-from ...dynamics.dynamics_functions import DynamicsEvaluation
+from ...dynamics.dynamics_evaluation import DynamicsEvaluation
 from ...misc.parameters_types import CXOptional
 from ...dynamics.configure_variables import States, Controls, AlgebraicStates
 
