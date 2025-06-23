@@ -111,7 +111,9 @@ class HolonomicBiorbdModel(BiorbdModel):
         for constraints_name in constraints_list.keys():
             constraint_fcn = constraints_list[constraints_name]["constraints_fcn"]
             extra_arguments = constraints_list[constraints_name]["extra_arguments"]
-            constraint, constraint_jacobian, constraint_double_derivative = constraint_fcn(model=self, **extra_arguments)
+            constraint, constraint_jacobian, constraint_double_derivative = constraint_fcn(
+                model=self, **extra_arguments
+            )
             self._add_holonomic_constraint(
                 constraint,
                 constraint_jacobian,

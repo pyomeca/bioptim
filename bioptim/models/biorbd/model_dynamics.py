@@ -114,13 +114,13 @@ class StochasticTorqueBiorbdModel(StochasticBiorbdModel, StochasticTorqueDynamic
 
 class HolonomicTorqueBiorbdModel(HolonomicBiorbdModel, HolonomicTorqueDynamics):
     def __init__(
-            self,
-            bio_model: str | biorbd.Model,
-            friction_coefficients: np.ndarray = None,
-            parameters: ParameterList = None,
-            holonomic_constraints: HolonomicConstraintsList | None = None,
-            dependent_joint_index: list[int] | tuple[int, ...] = None,
-            independent_joint_index: list[int] | tuple[int, ...] = None,
+        self,
+        bio_model: str | biorbd.Model,
+        friction_coefficients: np.ndarray = None,
+        parameters: ParameterList = None,
+        holonomic_constraints: HolonomicConstraintsList | None = None,
+        dependent_joint_index: list[int] | tuple[int, ...] = None,
+        independent_joint_index: list[int] | tuple[int, ...] = None,
     ):
         HolonomicBiorbdModel.__init__(self, bio_model, friction_coefficients, parameters)
         if holonomic_constraints is not None:

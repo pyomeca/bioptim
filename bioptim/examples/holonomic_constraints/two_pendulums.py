@@ -121,10 +121,12 @@ def prepare_ocp(
 
     # The rotations (joint 0 and 3) are independent. The translations (joint 1 and 2) are constrained by the holonomic
     # constraint
-    bio_model = HolonomicTorqueBiorbdModel(biorbd_model_path,
-                                           holonomic_constraints=holonomic_constraints,
-                                           independent_joint_index=[0, 3],
-                                           dependent_joint_index=[1, 2])
+    bio_model = HolonomicTorqueBiorbdModel(
+        biorbd_model_path,
+        holonomic_constraints=holonomic_constraints,
+        independent_joint_index=[0, 3],
+        dependent_joint_index=[1, 2],
+    )
 
     # Add objective functions
     objective_functions = ObjectiveList()
