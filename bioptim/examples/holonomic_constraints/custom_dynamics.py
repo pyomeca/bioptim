@@ -10,6 +10,7 @@ from bioptim import (
     OdeSolver,
     HolonomicTorqueBiorbdModel,
     ConfigureVariables,
+    HolonomicConstraintsList,
 )
 
 
@@ -84,8 +85,16 @@ def configure_qv(ocp, nlp, as_states, as_controls, as_algebraic_states):
 
 
 class ModifiedHolonomicTorqueBiorbdModel(HolonomicTorqueBiorbdModel):
-    def __init__(self, bio_model_path: str):
-        super().__init__(bio_model_path)
+    def __init__(self,
+                 bio_model_path: str,
+                 holonomic_constraints: HolonomicConstraintsList = None,
+                 independent_joint_index: tuple[int] = None,
+                 dependent_joint_index: tuple[int] = None,
+                 ):
+        super().__init__(bio_model_path,
+                         holonomic_constraints=holonomic_constraints,
+                         independent_joint_index=independent_joint_index,
+                         dependent_joint_index=dependent_joint_index)
         self.algebraic_configuration += [configure_qv]
 
     @staticmethod
@@ -139,76 +148,3 @@ class ModifiedHolonomicTorqueBiorbdModel(HolonomicTorqueBiorbdModel):
 
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
-
-# def configure_holonomic_torque_driven(
-#     ocp: OptimalControlProgram,
-#     nlp: NonLinearProgram,
-#     numerical_data_timeseries=None,
-#     contact_types=(),
-# ):
-#     """
-#     Tell the program which variables are states and controls.
-#     The user is expected to use the ConfigureProblem.configure_xxx functions.
-#
-#     Parameters
-#     ----------
-#     ocp: OptimalControlProgram
-#         A reference to the ocp
-#     nlp: NonLinearProgram
-#         A reference to the phase
-#     numerical_data_timeseries: NumericalDataTimeseries
-#         A reference to the numerical data timeseries
-#     contact_types: list[ContactType] | tuple[ContactType]
-#         The type of contacts to consider in the dynamics.
-#     """
-#
-#     name = "q_u"
-#     names_u = [nlp.model.name_dof[i] for i in nlp.model.independent_joint_index]
-#     ConfigureProblem.configure_new_variable(
-#         name,
-#         names_u,
-#         ocp,
-#         nlp,
-#         as_states=True,
-#         as_controls=False,
-#     )
-#
-#     name = "q_v"
-#     names_v = [nlp.model.name_dof[i] for i in nlp.model.dependent_joint_index]
-#     ConfigureProblem.configure_new_variable(
-#         name,
-#         names_v,
-#         ocp,
-#         nlp,
-#         as_states=False,
-#         as_controls=False,
-#         as_algebraic_states=True,
-#     )
-#
-#     name = "qdot_u"
-#     names_qdot = ConfigureProblem._get_kinematics_based_names(nlp, "qdot")
-#     names_udot = [names_qdot[i] for i in nlp.model.independent_joint_index]
-#     ConfigureProblem.configure_new_variable(
-#         name,
-#         names_udot,
-#         ocp,
-#         nlp,
-#         as_states=True,
-#         as_controls=False,
-#         # NOTE: not ready for phase mapping yet as it is based on dofnames of the class BioModel
-#         # see _set_kinematic_phase_mapping method
-#         # axes_idx=ConfigureProblem._apply_phase_mapping(ocp, nlp, name),
-#     )
-#
-#     ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
-#
-#     # extra plots
-#     ConfigureProblem.configure_qv(ocp, nlp, nlp.model.compute_q_v)
-#     ConfigureProblem.configure_qdotv(ocp, nlp, nlp.model._compute_qdot_v)
-#     ConfigureProblem.configure_lagrange_multipliers_function(ocp, nlp, nlp.model.compute_the_lagrangian_multipliers)
-#
-#     ConfigureProblem.configure_dynamics_function(
-#         ocp,
-#         nlp,
-#         holonomic_torque_driven_with_qv,
-#     )

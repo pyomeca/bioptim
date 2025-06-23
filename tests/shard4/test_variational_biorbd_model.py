@@ -122,7 +122,7 @@ def test_variational_model():
         constraints_func,
         constraints_jacobian_func,
         constraints_double_derivative_func,
-    ) = HolonomicConstraintsFcn.superimpose_markers(holonomic_model, marker_1="marker_1", index=slice(2, 3))
+    ) = HolonomicConstraintsFcn.superimpose_markers(marker_1="marker_1", index=slice(2, 3), model=holonomic_model)
     holonomic_model._add_holonomic_constraint(
         constraints_func, constraints_jacobian_func, constraints_double_derivative_func
     )
