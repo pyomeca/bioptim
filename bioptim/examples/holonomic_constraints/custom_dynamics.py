@@ -85,16 +85,19 @@ def configure_qv(ocp, nlp, as_states, as_controls, as_algebraic_states):
 
 
 class ModifiedHolonomicTorqueBiorbdModel(HolonomicTorqueBiorbdModel):
-    def __init__(self,
-                 bio_model_path: str,
-                 holonomic_constraints: HolonomicConstraintsList = None,
-                 independent_joint_index: tuple[int] = None,
-                 dependent_joint_index: tuple[int] = None,
-                 ):
-        super().__init__(bio_model_path,
-                         holonomic_constraints=holonomic_constraints,
-                         independent_joint_index=independent_joint_index,
-                         dependent_joint_index=dependent_joint_index)
+    def __init__(
+        self,
+        bio_model_path: str,
+        holonomic_constraints: HolonomicConstraintsList = None,
+        independent_joint_index: tuple[int] = None,
+        dependent_joint_index: tuple[int] = None,
+    ):
+        super().__init__(
+            bio_model_path,
+            holonomic_constraints=holonomic_constraints,
+            independent_joint_index=independent_joint_index,
+            dependent_joint_index=dependent_joint_index,
+        )
         self.algebraic_configuration += [configure_qv]
 
     @staticmethod
@@ -147,4 +150,3 @@ class ModifiedHolonomicTorqueBiorbdModel(HolonomicTorqueBiorbdModel):
             defects = vertcat(slope_q_u, slope_qdot_u) * nlp.dt - dxdt * nlp.dt
 
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
-

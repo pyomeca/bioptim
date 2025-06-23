@@ -385,7 +385,7 @@ def test_example_quaternions(phase_dynamics):
         expand_dynamics=True,
     )
     sol = ocp.solve()
-    assert sol.status == 0 # The optimization converged
+    assert sol.status == 0  # The optimization converged
 
     # Check objective function value
     f = np.array(sol.cost)
@@ -400,80 +400,59 @@ def test_example_quaternions(phase_dynamics):
     # Check some of the results
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
-    q_roots, q_joints, qdot_roots, qdot_joints, tau_joints = states["q_roots"], states["q_joints"], states["qdot_roots"], states["qdot_joints"], controls["tau_joints"]
+    q_roots, q_joints, qdot_roots, qdot_joints, tau_joints = (
+        states["q_roots"],
+        states["q_joints"],
+        states["qdot_roots"],
+        states["qdot_joints"],
+        controls["tau_joints"],
+    )
 
     # initial and final position
+    npt.assert_almost_equal(q_roots[:, 0], np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
     npt.assert_almost_equal(
-        q_roots[:, 0], np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-    )
-    npt.assert_almost_equal(
-        q_joints[:, 0], np.array([0.        , -0.9999875 ,  0.        ,  0.        ,  0.9999875 ,
-        0.        ,  0.00499998,  0.00499998])
+        q_joints[:, 0], np.array([0.0, -0.9999875, 0.0, 0.0, 0.9999875, 0.0, 0.00499998, 0.00499998])
     )
     npt.assert_almost_equal(
         q_roots[:, -1],
-        np.array(
-            [
-                0.00475187, 0.00384924, 0.0326082, -0.07208434, -0.00475046,
-                0.18357191
-            ]
-        ),
+        np.array([0.00475187, 0.00384924, 0.0326082, -0.07208434, -0.00475046, 0.18357191]),
     )
 
     npt.assert_almost_equal(
         q_joints[:, -1],
-        np.array(
-            [
-                -0.58188362, -0.46984388, 0.05948255, 0.99209049, 0.10564735,
-                -0.06755123, 0.66115052, 0.0056508
-            ]
-        ),
+        np.array([-0.58188362, -0.46984388, 0.05948255, 0.99209049, 0.10564735, -0.06755123, 0.66115052, 0.0056508]),
     )
 
     # initial and final velocities
     npt.assert_almost_equal(
         qdot_roots[:, 0],
-        np.array(
-            [
-                0., 0., 0., 0., 0., 0.
-            ]
-        ),
+        np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
     )
     npt.assert_almost_equal(
         qdot_joints[:, 0],
-        np.array(
-            [
-                -0.09999995, 0.09999997, -0.09996661, -0.09999998, -0.09999998,
-                -0.09998458
-            ]
-        ),
+        np.array([-0.09999995, 0.09999997, -0.09996661, -0.09999998, -0.09999998, -0.09998458]),
     )
     npt.assert_almost_equal(
         qdot_roots[:, -1],
-        np.array(
-            [
-                0.00377627, 0.00054556, 0.02098995, -0.01712139, -0.00534792,
-                0.07725791
-            ]
-        ),
+        np.array([0.00377627, 0.00054556, 0.02098995, -0.01712139, -0.00534792, 0.07725791]),
     )
 
     npt.assert_almost_equal(
         qdot_joints[:, -1],
-        np.array(
-            [
-                0.39154646, 0.30091969, 0.93232889, 0.34127671, 0.64430008,
-                1.00960836
-            ]
-        ),
+        np.array([0.39154646, 0.30091969, 0.93232889, 0.34127671, 0.64430008, 1.00960836]),
     )
 
-
     # initial and final controls
-    npt.assert_almost_equal(tau_joints[:, 0], np.array([-0.01994007,  0.03368354, -0.00069303, -0.05415661, -0.04957538,
-       -0.00121142]), decimal=6)
-    npt.assert_almost_equal(tau_joints[:, -1], np.array([ 2.40238785e-03,  2.21611332e-03,  3.07280623e-04, -1.10481106e-03,
-        2.89865386e-04, -4.19860530e-05]), decimal=6)
+    npt.assert_almost_equal(
+        tau_joints[:, 0],
+        np.array([-0.01994007, 0.03368354, -0.00069303, -0.05415661, -0.04957538, -0.00121142]),
+        decimal=6,
+    )
+    npt.assert_almost_equal(
+        tau_joints[:, -1],
+        np.array([2.40238785e-03, 2.21611332e-03, 3.07280623e-04, -1.10481106e-03, 2.89865386e-04, -4.19860530e-05]),
+        decimal=6,
+    )
 
     # simulate
     TestUtils.simulate(sol, decimal_value=6)

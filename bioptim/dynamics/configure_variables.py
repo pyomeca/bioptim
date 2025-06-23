@@ -376,8 +376,10 @@ class ConfigureVariables:
 
         name_qdot = ConfigureVariables._get_kinematics_based_names(nlp, "qdot")
         name_qdot_joints = [name_qdot[i] for i in range(nlp.model.nb_root, nlp.model.nb_qdot)]
-        axes_idx = BiMapping(to_first=list(range(nlp.model.nb_root, nlp.model.nb_qdot)),
-                             to_second=list(range(nlp.model.nb_root, nlp.model.nb_qdot)))
+        axes_idx = BiMapping(
+            to_first=list(range(nlp.model.nb_root, nlp.model.nb_qdot)),
+            to_second=list(range(nlp.model.nb_root, nlp.model.nb_qdot)),
+        )
         ConfigureVariables.configure_new_variable(
             name,
             name_qdot_joints,
@@ -442,8 +444,10 @@ class ConfigureVariables:
 
         name_qddot = ConfigureVariables._get_kinematics_based_names(nlp, "qddot")
         name_qddot_joints = [name_qddot[i] for i in range(nlp.model.nb_root, nlp.model.nb_q)]
-        axes_idx = BiMapping(to_first=list(range(nlp.model.nb_root, nlp.model.nb_q)),
-                            to_second=list(range(nlp.model.nb_root, nlp.model.nb_q)))
+        axes_idx = BiMapping(
+            to_first=list(range(nlp.model.nb_root, nlp.model.nb_q)),
+            to_second=list(range(nlp.model.nb_root, nlp.model.nb_q)),
+        )
         ConfigureVariables.configure_new_variable(
             name,
             name_qddot_joints,
