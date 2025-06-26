@@ -140,14 +140,13 @@ class VariationalTorqueBiorbdModel(VariationalBiorbdModel, VariationalTorqueDyna
         control_discrete_approximation: QuadratureRule = QuadratureRule.MIDPOINT,
         parameters: ParameterList = None,
         holonomic_constraints: HolonomicConstraintsList | None = None,
-        dependent_joint_index: list[int] | tuple[int, ...] = None,
-        independent_joint_index: list[int] | tuple[int, ...] = None,
     ):
         VariationalBiorbdModel.__init__(
             self, bio_model, discrete_approximation, control_type, control_discrete_approximation, parameters
         )
         if holonomic_constraints is not None:
-            self.set_holonomic_configuration(holonomic_constraints, dependent_joint_index, independent_joint_index)
+            # TODO: @ipuch -> add partitioning one day
+            self.set_holonomic_configuration(holonomic_constraints)
         VariationalTorqueDynamics.__init__(self)
 
     def serialize(self) -> tuple[Callable, dict]:
