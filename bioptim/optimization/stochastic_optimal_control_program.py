@@ -38,6 +38,7 @@ from ..misc.parameters_types import (
     Str,
     NpArray,
     IntorFloat,
+    AnyIterable,
 )
 
 
@@ -49,10 +50,10 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
 
     def __init__(
         self,
-        bio_model: List | Tuple | StochasticBioModel,
+        bio_model: AnyIterable | StochasticBioModel,
         dynamics: Dynamics | DynamicsList,
-        n_shooting: Int | List | Tuple,
-        phase_time: IntorFloat | List | Tuple,
+        n_shooting: Int | AnyIterable,
+        phase_time: IntorFloat | AnyIterable,
         x_bounds: BoundsList | None = None,
         u_bounds: BoundsList | None = None,
         a_bounds: BoundsList | None = None,
