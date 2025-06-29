@@ -29,6 +29,7 @@ from ..misc.parameters_types import (
     NpArrayDictOptional,
 )
 
+
 class VariationalOptimalControlProgram(OptimalControlProgram):
     """
     q_init and q_bounds only the positions initial guess and bounds since there are no velocities in the variational
@@ -345,7 +346,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         self,
         ocp: OptimalControlProgram,
         nlp: NonLinearProgram,
-        numerical_data_timeseries: NpArrayDictOptional=None,
+        numerical_data_timeseries: NpArrayDictOptional = None,
         contact_type: list[ContactType] | tuple[ContactType] = (),
     ) -> None:
         """

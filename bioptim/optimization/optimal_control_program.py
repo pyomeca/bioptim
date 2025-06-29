@@ -629,14 +629,14 @@ class OptimalControlProgram:
                 )
 
     def _prepare_bounds_and_init(
-        self, 
+        self,
         x_bounds: BoundsList,
-        u_bounds: BoundsList, 
-        parameter_bounds: BoundsList, 
-        a_bounds: BoundsList, 
-        x_init: InitialGuessList, 
-        u_init: InitialGuessList, 
-        parameter_init: InitialGuessList, 
+        u_bounds: BoundsList,
+        parameter_bounds: BoundsList,
+        a_bounds: BoundsList,
+        x_init: InitialGuessList,
+        u_init: InitialGuessList,
+        parameter_init: InitialGuessList,
         a_init: InitialGuessList,
     ) -> None:
         self.parameter_bounds = BoundsList()
@@ -835,9 +835,7 @@ class OptimalControlProgram:
 
         return biomodels
 
-    def _prepare_option_dict_for_phase(
-        self, name: Str, option_dict: OptionDict, option_dict_type: type
-    ) -> Any:
+    def _prepare_option_dict_for_phase(self, name: Str, option_dict: OptionDict, option_dict_type: type) -> Any:
         if option_dict is None:
             option_dict = option_dict_type()
 
@@ -996,9 +994,7 @@ class OptimalControlProgram:
         else:
             raise RuntimeError("new_constraint must be a Constraint or a ConstraintList")
 
-    def update_parameter_constraints(
-        self, new_constraint: ParameterConstraint | ParameterConstraintList
-    ) -> None:
+    def update_parameter_constraints(self, new_constraint: ParameterConstraint | ParameterConstraintList) -> None:
         """
         The main user interface to add or modify a parameter constraint in the ocp
 
@@ -1247,14 +1243,14 @@ class OptimalControlProgram:
             return color
 
         def compute_penalty_values(
-            t0: Float, 
-            phases_dt: FloatList, 
-            node_idx: Int, 
-            x: NpArray, 
-            u: NpArray, 
-            p: NpArray, 
-            a: NpArray, 
-            d: NpArray, 
+            t0: Float,
+            phases_dt: FloatList,
+            node_idx: Int,
+            x: NpArray,
+            u: NpArray,
+            p: NpArray,
+            a: NpArray,
+            d: NpArray,
             penalty: PenaltyOption,
         ):
             """
@@ -1345,7 +1341,9 @@ class OptimalControlProgram:
     def add_plot_check_conditioning(self) -> None:
         self.plot_check_conditioning = True
 
-    def save_intermediary_ipopt_iterations(self, path_to_results: Str, result_file_name: Str, nb_iter_save: Int) -> None:
+    def save_intermediary_ipopt_iterations(
+        self, path_to_results: Str, result_file_name: Str, nb_iter_save: Int
+    ) -> None:
         self.save_ipopt_iterations_info = SaveIterationsInfo(path_to_results, result_file_name, nb_iter_save)
 
     def prepare_plots(
@@ -1390,7 +1388,10 @@ class OptimalControlProgram:
         check_conditioning(self)
 
     def solve(
-        self, solver: GenericSolver | None = None, warm_start: Solution | None = None, expand_during_shake_tree: Bool = False
+        self,
+        solver: GenericSolver | None = None,
+        warm_start: Solution | None = None,
+        expand_during_shake_tree: Bool = False,
     ) -> Solution:
         """
         Call the solver to actually solve the ocp

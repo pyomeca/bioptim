@@ -237,9 +237,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
 
         self.frame_to_export = export_options["frame_to_export"]
 
-    def _initialize_solution(
-        self, dt: Float, states: AnyList, controls: AnyList, parameters: AnyList
-    ) -> Solution:
+    def _initialize_solution(self, dt: Float, states: AnyList, controls: AnyList, parameters: AnyList) -> Solution:
         x_init = InitialGuessList()
         for key in self.nlp[0].states.keys():
             x_init.add(
@@ -511,9 +509,7 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
 
         return states, controls, parameters
 
-    def _initialize_solution(
-        self, dt: Float, states: AnyList, controls: AnyList, parameters: AnyList
-    ) -> Solution:
+    def _initialize_solution(self, dt: Float, states: AnyList, controls: AnyList, parameters: AnyList) -> Solution:
         x_init = InitialGuessList()
         for key in self.nlp[0].states.keys():
             x_init.add(
@@ -837,9 +833,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
 
         return states, controls, parameters
 
-    def _initialize_solution(
-        self, dt: Float, states: AnyList, controls: AnyList, parameters: AnyList
-    ) -> Solution:
+    def _initialize_solution(self, dt: Float, states: AnyList, controls: AnyList, parameters: AnyList) -> Solution:
         x_init = InitialGuessList()
         for key in self.nlp[0].states.keys():
             x_init.add(
@@ -886,9 +880,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         a_init = InitialGuessList()
         return Solution.from_initial_guess(solution_ocp, [np.array([dt]), x_init, u_init, p_init, a_init])
 
-    def _initialize_one_cycle(
-        self, dt: Float, states: AnyDict, controls: AnyDict, parameters: AnyDict
-    ) -> Solution:
+    def _initialize_one_cycle(self, dt: Float, states: AnyDict, controls: AnyDict, parameters: AnyDict) -> Solution:
         """return a solution for a single window kept of the MHE"""
         x_init = InitialGuessList()
         for key in self.nlp[0].states.keys():
