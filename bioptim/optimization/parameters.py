@@ -13,6 +13,7 @@ from ..misc.parameters_types import (
     CX,
     CXList,
     StrList,
+    DoubleIntTuple,
 )
 from ..models.protocols.biomodel import BioModel
 from ..optimization.variable_scaling import VariableScaling, VariableScalingList
@@ -333,23 +334,23 @@ class ParameterContainer(OptimizationVariableContainer):
     def keys(self) -> StrList:
         return self._parameters.keys()
 
-    def key_index(self, key: Str) -> Range | IntList:
+    def key_index(self, key: Str) -> Int:
         return self._parameters[key].index
 
     @property
-    def shape(self) -> Int:
+    def shape(self) -> DoubleIntTuple:
         return self._parameters.shape
 
     @property
-    def cx_intermediates_list(self) -> None:
+    def cx_intermediates_list(self) -> CXList:
         raise RuntimeError("cx_intermediates_list is not available for parameters, only cx_start is accepted.")
 
     @property
-    def cx_mid(self) -> None:
+    def cx_mid(self) -> CX:
         raise RuntimeError("cx_mid is not available for parameters, only cx_start is accepted.")
 
     @property
-    def cx_end(self) -> None:
+    def cx_end(self) -> CX:
         raise RuntimeError("cx_end is not available for parameters, only cx_start is accepted.")
 
     @property
