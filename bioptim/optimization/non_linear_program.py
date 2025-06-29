@@ -186,10 +186,10 @@ class NonLinearProgram:
         self.A: AnyListOptional = None
         self.A_scaled: AnyListOptional = None
         self.a_scaling: AnyDictOptional = None
-        self.phase_d: PhaseDynamics = phase_dynamics
+        self.phase_dynamics: PhaseDynamics = phase_dynamics
         self.time_index: IntOptional = None
         self.time_cx: CXOptional = None
-        self: Any = None
+        self.tf: Any = None
         self.states: OptimizationVariableContainer = OptimizationVariableContainer(self.phase_dynamics)
         self.states_dot: OptimizationVariableContainer = OptimizationVariableContainer(self.phase_dynamics)
         self.controls: OptimizationVariableContainer = OptimizationVariableContainer(self.phase_dynamics)
