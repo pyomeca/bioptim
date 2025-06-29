@@ -14,7 +14,7 @@ from ..misc.parameters_types import (
     StrList,
     AnyList,
     AnyListOptional,
-    AnyIterableOrRange,
+    Indexer,
     CX,
     CXList,
 )
@@ -53,7 +53,7 @@ class OptimizationVariable:
         cx_start: AnyListOptional,
         index: Range | IntList,
         mapping: BiMapping | None = None,
-        parent_list: "OptimizationVariableList" | None = None,
+        parent_list: "OptimizationVariableList" = None,
     ) -> None:
         """
         Parameters
@@ -200,7 +200,7 @@ class OptimizationVariableList:
         self._current_cx_to_get = 0
         self.phase_dynamics = phase_dynamics
 
-    def __getitem__(self, item: Int | Str | AnyIterableOrRange) -> "OptimizationVariable":
+    def __getitem__(self, item: Int | Str | Indexer) -> "OptimizationVariable":
         """
         Get a specific variable in the list, whether by name or by index
 
