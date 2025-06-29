@@ -25,6 +25,7 @@ from ..misc.parameters_types import (
     Bool,
     IntorFloat,
     AnyDict,
+    AnyDictOptional,
     AnyList,
     AnyTuple,
     AnyIterable,
@@ -101,9 +102,9 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         solver: GenericSolver | None = None,
         warm_start: Solution | None = None,
         solver_first_iter: GenericSolver | None = None,
-        export_options: AnyDict | None = None,
+        export_options: AnyDictOptional = None,
         max_consecutive_failing: Int = inf,
-        update_function_extra_params: AnyDict | None = None,
+        update_function_extra_params: AnyDictOptional = None,
         get_all_iterations: Bool = False,
         **advance_options,
     ) -> Solution | AnyTuple:
@@ -222,7 +223,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
 
         return (final_sol, all_solutions, split_solutions) if get_all_iterations else final_sol
 
-    def _initialize_frame_to_export(self, export_options: AnyDict | None) -> None:
+    def _initialize_frame_to_export(self, export_options: AnyDictOptional) -> None:
         if export_options is None:
             export_options = {"frame_to_export": 0}
         else:
@@ -469,7 +470,7 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
         self,
         update_function: Callable,
         solver: GenericSolver | None = None,
-        cyclic_options: AnyDict | None = None,
+        cyclic_options: AnyDictOptional = None,
         solver_first_iter: GenericSolver | None = None,
         **extra_options,
     ) -> Solution | AnyTuple:
