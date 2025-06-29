@@ -1,10 +1,21 @@
 import numpy as np
+from typing import Any
 
 from ..misc.options import OptionGeneric, OptionDict
+from ..misc.parameters_types import (
+    Bool,
+    Int,
+    Str,
+    StrOptional,
+    AnyDict,
+    FloatList,
+    NpArrayOptional,
+    DoubleIntTuple,
+)
 
 
 class VariableScaling(OptionGeneric):
-    def __init__(self, key: str, scaling: np.ndarray | list = None, **kwargs):
+    def __init__(self, key: Str, scaling: NpArrayOptional | FloatList = None, **kwargs):
         """
         Parameters
         ----------
@@ -31,21 +42,21 @@ class VariableScaling(OptionGeneric):
         self.scaling = scaling
 
     @property
-    def value(self):
+    def value(self) -> NpArrayOptional:
         return self.scaling
 
     @property
-    def shape(self):
+    def shape(self) -> DoubleIntTuple:
         return self.scaling.shape
 
-    def to_vector(self, repeats: int):
+    def to_vector(self, repeats: Int) -> NpArrayOptional:
         """
         Repeat the scaling to match the variables vector format
         """
 
         return self.scaling.repeat(repeats, axis=0).reshape((-1, 1))
 
-    def to_array(self, repeats: int = 1):
+    def to_array(self, repeats: Int = 1) -> NpArrayOptional:
         """
         Repeat the scaling to match the variables array format
         """
@@ -67,15 +78,15 @@ class VariableScalingList(OptionDict):
         Print the VariableScalingList to the console
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super(VariableScalingList, self).__init__(sub_type=VariableScaling)
 
     def add(
         self,
-        key: str = None,
-        scaling: np.ndarray | list | VariableScaling = None,
+        key: StrOptional = None,
+        scaling: NpArrayOptional | list | VariableScaling = None,
         phase: int = -1,
-    ):
+    ) -> None:
         """
         Add a new bounds to the list, either [min_bound AND max_bound] OR [bounds] should be defined
 
@@ -104,20 +115,20 @@ class VariableScalingList(OptionDict):
             else:
                 raise ValueError(f"Scaling must be a VariableScaling, a list or a numpy array, not {type(scaling)}")
 
-    def copy(self):
+    def copy(self) -> "VariableScalingList":
         out = VariableScalingList()
         for key in self.keys():
             out.add(key, self[key])
         return out
 
     @property
-    def param_when_copying(self):
+    def param_when_copying(self) -> AnyDict:
         return {}
 
-    def __contains__(self, item):
+    def __contains__(self, item: Any) -> Bool:
         return item in self.options[0]
 
-    def print(self):
+    def print(self) -> None:
         """
         Print the VariableScalingList to the console
         """
