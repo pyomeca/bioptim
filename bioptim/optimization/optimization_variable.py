@@ -14,6 +14,7 @@ from ..misc.parameters_types import (
     StrList,
     AnyList,
     AnyListOptional,
+    AnyIterable,
     Indexer,
     CX,
     CXList,
