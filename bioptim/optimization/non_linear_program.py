@@ -193,7 +193,9 @@ class NonLinearProgram:
         self.states: OptimizationVariableContainer = OptimizationVariableContainer(self.phase_dynamics)
         self.states_dot: OptimizationVariableContainer = OptimizationVariableContainer(self.phase_dynamics)
         self.controls: OptimizationVariableContainer = OptimizationVariableContainer(self.phase_dynamics)
-        self.numerical_data_timeseries: OptimizationVariableContainer = OptimizationVariableContainer(self.phase_dynamics)
+        self.numerical_data_timeseries: OptimizationVariableContainer = OptimizationVariableContainer(
+            self.phase_dynamics
+        )
         self.numerical_timeseries: MX.sym | None = None
         # parameters is currently a clone of ocp.parameters, but should hold phase parameters
         from ..optimization.parameters import ParameterContainer
@@ -256,7 +258,9 @@ class NonLinearProgram:
         )
 
     @staticmethod
-    def _update_bound(bounds: BoundsList | None, bound_name: Str, allowed_keys: StrList, nlp_bounds: BoundsList) -> None:
+    def _update_bound(
+        bounds: BoundsList | None, bound_name: Str, allowed_keys: StrList, nlp_bounds: BoundsList
+    ) -> None:
         if bounds is None:
             return
 
@@ -298,7 +302,9 @@ class NonLinearProgram:
             if plot_key in self.plot and key in bounds.keys():
                 self.plot[plot_key].bounds = bounds[key]
 
-    def update_init(self, x_init: InitialGuessList | None, u_init: InitialGuessList | None, a_init: InitialGuessList | None) -> None:
+    def update_init(
+        self, x_init: InitialGuessList | None, u_init: InitialGuessList | None, a_init: InitialGuessList | None
+    ) -> None:
 
         if x_init is not None or a_init is not None:
             not_direct_collocation = not self.dynamics_type.ode_solver.is_direct_collocation
@@ -329,7 +335,9 @@ class NonLinearProgram:
         )
 
     @staticmethod
-    def _update_init(init: InitialGuessList | None, init_name: Str, allowed_keys: StrList, nlp_init: InitialGuessList) -> None:
+    def _update_init(
+        init: InitialGuessList | None, init_name: Str, allowed_keys: StrList, nlp_init: InitialGuessList
+    ) -> None:
         if init is None:
             return
 
@@ -516,7 +524,9 @@ class NonLinearProgram:
         return self.n_states_decision_steps(node_idx)
 
     @staticmethod
-    def add(ocp, param_name: Str, param: Any, duplicate_singleton: Bool, _type: Any = None, name: StrOptional = None) -> None:
+    def add(
+        ocp, param_name: Str, param: Any, duplicate_singleton: Bool, _type: Any = None, name: StrOptional = None
+    ) -> None:
         """
         Set a parameter to their respective nlp
 

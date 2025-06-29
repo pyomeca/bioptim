@@ -7,9 +7,7 @@ from ...misc.parameters_types import (
 )
 
 
-def concatenate_optimization_variables_dict(
-    variable: list[NpArrayDict], continuous: Bool = True
-) -> list[NpArrayDict]:
+def concatenate_optimization_variables_dict(variable: list[NpArrayDict], continuous: Bool = True) -> list[NpArrayDict]:
     """
     This function concatenates the decision variables of the phases of the system
     into a single array, omitting the last element of each phase except for the last one.

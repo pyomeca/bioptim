@@ -41,7 +41,6 @@ from ...misc.parameters_types import (
 from ...models.protocols.stochastic_biomodel import StochasticBioModel
 
 
-
 class Solution:
     """
     Data manipulation, graphing and storage
@@ -546,7 +545,9 @@ class Solution:
 
         return times if len(times) > 1 else times[0]
 
-    def decision_states(self, scaled: Bool = False, to_merge: SolutionMerge | list[SolutionMerge] = None) -> AnyList | AnyDict:
+    def decision_states(
+        self, scaled: Bool = False, to_merge: SolutionMerge | list[SolutionMerge] = None
+    ) -> AnyList | AnyDict:
         """
         Returns the decision states
 
@@ -673,7 +674,9 @@ class Solution:
 
         return out
 
-    def decision_algebraic_states(self, scaled: Bool = False, to_merge: SolutionMerge | list[SolutionMerge] = None) -> AnyList | AnyDict:
+    def decision_algebraic_states(
+        self, scaled: Bool = False, to_merge: SolutionMerge | list[SolutionMerge] = None
+    ) -> AnyList | AnyDict:
         """
         Returns the decision algebraic_states
 
@@ -1126,7 +1129,9 @@ class Solution:
 
         self._stepwise_states = SolutionData.from_unscaled(self.ocp, unscaled, "x")
 
-    def _return_time_vector(self, to_merge: SolutionMerge | list[SolutionMerge], duplicated_times: Bool) -> AnyList | NpArray:
+    def _return_time_vector(
+        self, to_merge: SolutionMerge | list[SolutionMerge], duplicated_times: Bool
+    ) -> AnyList | NpArray:
         """
         Returns the time vector at each node that matches stepwise_states or stepwise_controls
         Parameters

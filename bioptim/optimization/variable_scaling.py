@@ -13,6 +13,7 @@ from ..misc.parameters_types import (
     DoubleIntTuple,
 )
 
+
 class VariableScaling(OptionGeneric):
     def __init__(self, key: Str, scaling: NpArrayOptional | FloatList = None, **kwargs):
         """
