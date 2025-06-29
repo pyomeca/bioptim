@@ -10,12 +10,12 @@ from ..misc.parameters_types import (
     FloatList,
     Int,
     NpArray,
+    DoubleNpArrayTuple,
 )
 
 from ..misc.enums import ControlType, InterpolationType
 from ..limits.path_conditions import BoundsList, InitialGuessList
 from ..optimization.optimization_variable import OptimizationVariableContainer
-# from ..optimization.variable_scaling import VariableScalingList
 
 
 class OptimizationVectorHelper:
@@ -76,7 +76,7 @@ class OptimizationVectorHelper:
         return vertcat(t_scaled, *x_scaled, *u_scaled, p_scaled, *a_scaled)
 
     @staticmethod
-    def bounds_vectors(ocp: "OptimalControlProgram") -> tuple[NpArray, NpArray]:
+    def bounds_vectors(ocp: "OptimalControlProgram") -> DoubleNpArrayTuple:
         """
         Format the x, u and p bounds so they are in one nice (and useful) vector
 
@@ -383,8 +383,8 @@ def _dispatch_state_bounds(
     states: OptimizationVariableContainer,
     states_bounds: BoundsList,
     states_scaling: "VariableScalingList",
-    n_steps_callback: Callable[[Int], Int],
-) -> tuple[NpArray, NpArray]:
+    n_steps_callback: Callable,
+) -> DoubleNpArrayTuple:
     states.node_index = 0
     repeat = n_steps_callback(0)
 
@@ -438,7 +438,7 @@ def _dispatch_state_initial_guess(
     states: OptimizationVariableContainer,
     states_init: InitialGuessList,
     states_scaling: "VariableScalingList",
-    n_steps_callback: Callable[[Int], Int],
+    n_steps_callback: Callable,
 ) -> NpArray:
     states.node_index = 0
     repeat = n_steps_callback(0)
