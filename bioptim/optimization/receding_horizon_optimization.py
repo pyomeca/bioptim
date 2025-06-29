@@ -23,9 +23,11 @@ from ..misc.parameters_types import (
     Int,
     Float,
     Bool,
+    IntorFloat,
     AnyDict,
     AnyList,
     AnyTuple,
+    AnyIterable,
 )
 
 
@@ -44,8 +46,8 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         self,
         bio_model: list | tuple | BioModel,
         dynamics: Dynamics | DynamicsList,
-        window_len: Int | AnyList | AnyTuple,
-        window_duration: Int | Float | AnyList | AnyTuple,
+        window_len: Int | AnyIterable,
+        window_duration: IntorFloat | AnyIterable,
         common_objective_functions: ObjectiveList | None = None,
         use_sx: Bool = True,
         **kwargs,
@@ -400,7 +402,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         return states, controls, parameters
 
     def _define_time(
-        self, phase_time: Int | Float | AnyList | AnyTuple, objective_functions: ObjectiveList, constraints: ConstraintList
+        self, phase_time: IntorFloat | AnyIterable, objective_functions: ObjectiveList, constraints: ConstraintList
     ) -> None:
         """
         Declare the phase_time vector in v. If objective_functions or constraints defined a time optimization,
@@ -448,8 +450,8 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
         self,
         bio_model: list | tuple | BioModel,
         dynamics: Dynamics | DynamicsList,
-        cycle_len: Int | AnyList | AnyTuple,
-        cycle_duration: Int | Float | AnyList | AnyTuple,
+        cycle_len: Int | AnyIterable,
+        cycle_duration: IntorFloat | AnyIterable,
         use_sx: Bool = True,
         **kwargs,
     ) -> None:
@@ -642,8 +644,8 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         self,
         bio_model: list | tuple | BioModel,
         dynamics: Dynamics | DynamicsList,
-        cycle_len: Int | AnyList | AnyTuple,
-        cycle_duration: Int | Float | AnyList | AnyTuple,
+        cycle_len: Int | AnyIterable,
+        cycle_duration: Int | Float | AnyIterable,
         n_cycles_simultaneous: Int,
         n_cycles_to_advance: Int = 1,
         use_sx: Bool = True,
