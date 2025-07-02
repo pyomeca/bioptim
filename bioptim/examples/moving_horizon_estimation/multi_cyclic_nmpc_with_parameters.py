@@ -130,6 +130,7 @@ class CustomModel(BiorbdModel, TorqueDynamics):
             parameters_list=self.parameters_list,
         )
 
+
 def prepare_nmpc(
     model_path,
     cycle_len,

@@ -218,7 +218,7 @@ def test_multi_cyclic_nmpc_with_parameters(phase_dynamics):
     """
     Please note that this test is over constrained 'Too few degrees of freedom (n_x = 362, n_c = 363)', but works
     """
-    
+
     def update_functions(_nmpc, cycle_idx, _sol):
         return cycle_idx < n_cycles_total  # True if there are still some cycle to perform
 
