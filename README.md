@@ -357,9 +357,8 @@ Please note that this tutorial is designed to recreate the `examples/getting_sta
 We will not spend time explaining the import since every one of them will be explained in detail later, and it is pretty straightforward anyway.
 ```python
 from bioptim import (
-  BiorbdModel,
+  TorqueBiorbdModel,
   OptimalControlProgram,
-  DynamicsOptions,
   BoundsList,
   InitialGuessList,
   ObjectiveFcn,
@@ -370,20 +369,15 @@ from bioptim import (
 ## Building the ocp
 First of all, let us load a bioMod file using `biorbd`:
 ```python
-bio_model = BiorbdModel("pendulum.bioMod")
+bio_model = TorqueBiorbdModel("pendulum.bioMod")
 ```
 It is convenient since it will provide interesting functions such as the number of degrees of freedom (`bio_model.nb_q`).
 Please note that a `pendulum.bioMod` copy is available at the end of the *Getting started* section.
 In brief, the pendulum consists of two degrees of freedom (sideways movement and rotation), with the center of mass near the head.
-
-The dynamics of the pendulum, as for many biomechanical dynamics, is driven by the generalized forces. 
+There are different dynamics available (Torque, Muscle, TorqueDerivative, ...). Here, the dynamics of the pendulum is driven with generalized forces since a `TorqueBiorbdModel` was defined, as for many biomechanical dynamics. 
 Generalized forces are forces or moments directly applied to the degrees of freedom as if virtual motors were driven them.
 In `bioptim`, this dynamic is called torque driven. 
-In a torque driven dynamics, the states are the positions (also called generalized coordinates, *q*) and the velocities (also called the generalized velocities, *qdot*), whereas the controls are the joint torques (also called generalized forces, *tau*). 
-Let us define such dynamics:
-```python
-dynamics = DynamicsOptions(DynamicsFcn.TORQUE_DRIVEN)
-```
+In a torque driven dynamics, the states are the positions (also called generalized coordinates, *q*) and the velocities (also called the generalized velocities, *qdot*), whereas the controls are the joint torques (also called generalized forces, *tau*).
 
 The pendulum is required to start in a downward position (0 rad) and to finish in an upward position (3.14 rad) with no velocity at the start and end nodes.
 To define that, it would be nice first to define boundary constraints on the position (*q*) and velocities (*qdot*) that match those in the bioMod file and to apply them at the very beginning, the very end, and all the intermediate nodes as well.
@@ -419,7 +413,7 @@ u_bounds["tau"] = [-100, 0], [100, 0]
 Like this, the sideways force ranges from -100 Newton to 100 Newton, but the rotation force ranges from 0 N/m to 0 N/m.
 Again, `u_bounds` is defined for the first, the intermediate, and the final nodes, but this time, we do not want to specify anything particular for the first and final nodes, so we can leave them as is. 
 
-If you wondering where are defined *q*, *qdot* and *tau*, it is in the configuration of `DynamicsFcn.TORQUE_DRIVEN`. If you define a custom dynamics, then the variable's name should match those you define yourself.
+If you are wondering where are defined *q*, *qdot* and *tau*, it is in the configuration of the `TorqueBiorbdModel`, more specifically in the `TorqueDynamics`. If you define a custom model with a custom dynamics, then the variable's name should match those you define yourself.
 
 Who says optimization says cost function.
 Even though, it is possible to define an OCP without objective, it is not so much recommended, and let us face it... much less fun!
@@ -460,7 +454,6 @@ For simplicity's sake, I copied all the pieces of code previously visited in the
 ```python
 ocp = OptimalControlProgram(
         bio_model,
-        dynamics=dynamics,
         n_shooting=25,
         phase_time=3,
         x_bounds=x_bounds,
@@ -544,9 +537,7 @@ An example of how to use multi-start is given in examples/getting_started/multi-
 
 ## Solving stochastic optimal control problems (SOCP)
 It is possible to solve SOCP (also called optimal feedback control problem) using the class 
-`StochasticOptimalControlProgram`. You just have to add the type of SOCP that you want to solve using 
-`SocpType.TRAPEZOIDAL_EXPLICIT(motor_noise_magnitude, sensory_noise_magnitude)`,
-`SocpType.TRAPEZOIDAL_IMPLICIT(motor_noise_magnitude, sensory_noise_magnitude)`, or
+`StochasticOptimalControlProgram`. You just have to add the type of SOCP that you want to solve using
 `SocpType.COLLOCATION(motor_noise_magnitude, sensory_noise_magnitude)`. 
 Our implementation of SOCP is based on Van Wouwe 2022 (https://doi.org/10.1371/journal.pcbi.1009338). 
 In the examples folder examples/stochastic_optimal_control, you will find arm_reaching_muscle_driven.py which is our 
@@ -554,31 +545,24 @@ implementation of the arm reaching task (6 muscles) described in the above-menti
 Our implementation of the integration of the covariance matrix with a collocation scheme is based on Gillis 2013 
 (https://ieeexplore.ieee.org/abstract/document/6761121).
 You will also find our implementation of the example of Gillis 2013 in the same folder 
-(obstacle_avoidance_collocations.py).
-
-We recommend the user to use the SocpType.COLLOCATION implementation if a great level of dynamics consistency is 
-needed, or SocpType.TRAPEZOIDAL_IMPLICIT with a Cholesky decomposition of the covariance matrix for a faster 
-resolution.
+(obstacle_avoidance_collocations.py). We recommend this latter implementation.
 
 ## The complete example files
-If you did not completely follow (or were too lazy to!) you will find  the complete files described in the Getting started section here.
+If you did not completely follow (or were too lazy to!) you will find the complete files described in the Getting started section here.
 You will find that the file is a bit different from the `example/getting_started/pendulum.py`, but it is merely different on the surface.
 
 ### The pendulum.py file
 ```python
-import biorbd_casadi as biorbd
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     OptimalControlProgram,
-    DynamicsOptions,
     BoundsList,    
     InitialGuessList,
     ObjectiveFcn,
     Objective,
 )
 
-bio_model = BiorbdModel("pendulum.bioMod")
-dynamics = DynamicsOptions(DynamicsFcn.TORQUE_DRIVEN)
+bio_model = TorqueBiorbdModel("pendulum.bioMod")
 
 # Bounds are optional (default -inf -> inf)
 x_bounds = BoundsList()
@@ -602,7 +586,6 @@ u_init = [0, 0]
 
 ocp = OptimalControlProgram(
         bio_model,
-        dynamics=dynamics,
         n_shooting=25,
         phase_time=3,
         x_bounds=x_bounds,
@@ -722,12 +705,12 @@ OptimalControlProgram(
     use_sx: bool,
 )
 ```
-Of these, only the first four are mandatory.  
-`bio_model` is the model loaded with classes such as BiorbdModel, MultiBiorbdModel, or a custom class. 
+Of these, only the first three are mandatory.  
+`bio_model` is the model loaded with classes such as TorqueBiorbdModel, MuscleBiorbdModel, or a custom class. 
 In the case of a multiphase optimization, one model per phase should be passed in a list.  
-`dynamics` is the system's dynamics during each phase (see The dynamics section).  
 `n_shooting` is the number of shooting points of the direct multiple shooting (method) for each phase.  
 `phase_time` is the final time of each phase. If the time is free, this is the initial guess.  
+`dynamics` are the options to use when building the dynamics integration for each each phase (see The dynamics section).
 `x_bounds` is the minimal and maximal value the states can have (see The bounds section)  .  
 `u_bounds` is the minimal and maximal value the controls can have (see The bounds section).  
 `x_init` is the initial guess for the states variables (see The initial conditions section).  
@@ -804,14 +787,15 @@ The following keys are additional options when using `OnlineOptim.SERVER` and `O
   - `host`: the host to use (default is `localhost`)
   - `port`: the port to use (default is `5030`)
 
-Finally, one can save and load previously optimized values by using
-```python
-ocp.save(solution, file_path)
-ocp, solution = OptimalControlProgram.load(file_path)
+If you want to see IPOPT's iterations over the course of the resolution of your opc, it is possible using the following:
+```python    
+ocp.add_plot_ipopt_outputs()
 ```
-IMPORTANT NOTICE: Please note that saved solution depends on the `bioptim` version used to create the .bo file, and retro-compatibility is NOT enforced.
-In other words, an optimized solution from a previous version will probably NOT load on a newer `bioptim` version.
-To save the solution in a way independent of the version of `bioptim`, one may use the `stand_alone` flag to `True`.
+You can also save the solver's output during the optimization using the following:
+```python 
+ocp.save_intermediary_ipopt_iterations(path_to_results, result_file_name, nb_iter_save)
+```
+Where `path_to_results` is the path to the folder where the results will be saved, `result_file_name` is the name of the file where the results will be saved, and `nb_iter_save` is the number of iterations to skip before saving a new iteration.
 
 Finally, the `add_plot(name, update_function)` method can create new dynamics plots.
 The name is simply the name of the figure.
@@ -836,7 +820,7 @@ The interested user is invited to look at the docstrings for this class to get a
 The `VariationalOptimalControlProgram` class inherits from `OptimalControlProgram` and is used to solve optimal control
 problems using the variational approach. A variational integrator does the integration. The formulation being completely different from the other approaches, it needed its own class. The parameters are the same as in
 `OptimalControlProgram` apart from the following changes:
-- `bio_model` must be a `VariationalBiorbdModel`
+- `bio_model` must be a `TorqueVariationalBiorbdModel`
 - The phases have not been implemented yet; hence, only `final_time` must be specified, and it must be a float.
 - There are no velocities in the variational approach, so you must only specify the `q_init` and not the `q_bounds`
 instead of `x_init` and `x_bounds`.
@@ -891,8 +875,20 @@ The `MultiBiorbdModel` class implements BioModel of multiple models of biorbd dy
 bio_model = MultiBiorbdModel(("path/to/model.bioMod", "path/to/other/model.bioMod"))
 ```
 
-### Class: HolonomicBiorbdModel
-The `HolonomicBiorbdModel` class implements a BioModel of the biorbd dynamics library. Since the class inherits
+## The dynamics
+By essence, an optimal control program (ocp) links two types of variables: the states (x) and the controls (u). 
+Conceptually, the controls are the driving inputs of the system, which participate in changing the system states. 
+In the case of biomechanics, the states (*x*) are usually the generalized coordinates (*q*) and velocities (*qdot*), i.e., the pose of the musculoskeletal model and the joint velocities. 
+On the other hand, the controls (*u*) can be the generalized forces, i.e., the joint torques, but can also be the muscle excitations, for instance.
+States and controls are linked through Ordinary differential equations: dx/dt = f(x, u, a, p), where a are algebraic states and p are parameters that act on the system but are not time-dependent.
+
+In bioptim, the type of dynamics equations the system should follow is defined in the dynamical model.
+So the dynamical model plays two roles, it interfaces with the modeling library (e.g., biorbd), and it defines the dynamics equations that link the states and controls (e.g., torque driven dynamics).
+In this example, the `TorqueBiorbdModel` inherits from `BiorbdModel` and `TorqueDynamics`.
+
+
+### Class: TorqueHolonomicBiorbdModel
+The `TorqueHolonomicBiorbdModel` class implements a BioModel of the biorbd dynamics library. Since the class inherits
 from `BiorbdModel`, all the methods of `BiorbdModel` are available. You can define the
 degrees of freedom (DoF) that are independent (that define the movement) and the ones that are dependent (that are
 defined by the independent DoF and the holonomic constraint(s)). You can add some holonomic constraints to the model.
@@ -900,33 +896,39 @@ For this, you can use one of the functions of `HolonomicConstraintFcn` or add a 
 examples in `bioptim/examples/holonomic_constraints` to see how to use it.
 Some methods may not be interfaced yet; it is accessible through:
 
-
 ```python
-bio_model = HolonomicBiorbdModel("path/to/model.bioMod")
 holonomic_constraints = HolonomicConstraintsList()
 holonomic_constraints.add("holonomic_constraints", HolonomicConstraintsFcn.function, **kwargs)
-bio_model.set_holonomic_configuration(holonomic_constraints, independent_joint_index, dependent_joint_index)
+bio_model = TorqueHolonomicBiorbdModel("path/to/model.bioMod", holonomic_constraints=holonomic_constraints, independent_joint_index, dependent_joint_index)
 ```
 Two dynamics are implemented in the differential algebraic equations handling constraints at the acceleration level in
 constrained_forward_dynamics(...). Moreover, the other was inspired by Robotran, which uses index reduction methods to satisfy
 the constraints: partitioned_forward_dynamics(...)
+
 ### Class VariationalBiorbdModel
-The `VariationalBiorbdModel` class implements a BioModel of the biorbd dynamics library. It is used in Discrete
+The `TorqueVariationalBiorbdModel` class implements a BioModel of the biorbd dynamics library. It is used in Discrete
 Mechanic and Optimal Control (DMOC) and Discrete Mechanics and Optimal Control in Constrained Systems (DMOCC).
-Since the class inherits from `HolonomicBiorbdModel`, all the `HolonomicBiorbdModel` and `BiorbdModel` methods are
+Since the class inherits from `TorqueHolonomicBiorbdModel`, all the `HolonomicBiorbdModel` and `BiorbdModel` methods are
 available. This class is used in `VariationalOptimalControlProgram`. You can refer to the examples in
 `bioptim/examples/discrete_mechanics_and_optimal_control` to see how to use it.
 Some methods may not be interfaced yet; it is accessible through:
 
 ```python
-bio_model = VariationalBiorbdModel("path/to/model.bioMod")
 holonomic_constraints = HolonomicConstraintsList()
 holonomic_constraints.add("holonomic_constraints", HolonomicConstraintsFcn.function, **kwargs)
-bio_model.set_holonomic_configuration(holonomic_constraints)
+bio_model = TorqueVariationalBiorbdModel("path/to/model.bioMod", holonomic_constraints=holonomic_constraints)
 VariationalOptimalControlProgram(bio_model, ...)
 ```
 
-### Class: CustomModel
+### Custom dynamical model
+
+If an advanced user wants to define their own dynamic function, they can define a custom dynamical model.
+It is possible to create your own dynamical model either if you want to use a different modeling of your system or if you want to use dynamics equations that are not supported in bioptim yet.
+To help you implement your custom model, we have created two types of protocols the `BioModel` defining which methods are necessary on the modeling part, and the `AbstractModel` defining which methods are necessary on the dynamics equation part of your model.
+The declaration of your custom model could look like this:
+```python
+class MyModel(BioModel, AbstractModel):
+```
 
 The `BioModel` class is the base class for BiorbdModel and any custom models.
 The methods are abstracted and must be implemented in the child class,
@@ -934,7 +936,7 @@ or at least raise a `NotImplementedError` if they are not implemented. For examp
 ```python
 from bioptim import Model
 
-class MyModel(CustomModel, metaclass=ABCMeta):
+class CustomModeling:
     def __init__(self, *args, **kwargs):
         ...
 
@@ -945,64 +947,86 @@ class MyModel(CustomModel, metaclass=ABCMeta):
         raise NotImplementedError
 ```
 
-see the example [examples/custom_model/](https://github.com/pyomeca/bioptim/tree/master/bioptim/examples/custom_model) for more details.
+The `AbstractModel` class is the base class to define the dynamics of the system.
+Some basic attributes and methods are defined like `extra_dynamics` returning `None` and some others have to be overridden in the child class, like `dynamics`.
+The main method to implement is the `dynamics` method, which defines the dynamics of the system and the main attributes to define are the state and control variable configurations. Once again, we have implemented some variable configurations for you, such as `States.Q` and `Controls.TAU`, but it is possible to define your own configurations.
+If you want to define other custom casadi functions, you can do it in the `functions` attribute.
+```python3
+from bioptim import AbstractModel
 
-## The dynamics
-By essence, an optimal control program (ocp) links two types of variables: the states (x) and the controls (u). 
-Conceptually, the controls are the driving inputs of the system, which participate in changing the system states. 
-In the case of biomechanics, the states (*x*) are usually the generalized coordinates (*q*) and velocities (*qdot*), i.e., the pose of the musculoskeletal model and the joint velocities. 
-On the other hand, the controls (*u*) can be the generalized forces, i.e., the joint torques, but can also be the muscle excitations, for instance.
-States and controls are linked through Ordinary differential equations: dx/dt = f(x, u, p), where p can be additional parameters that act on the system but are not time-dependent.
+class CustomMDynamics(AbstractModel):
+    def __init__(self):
+        super().__init__()
+        self.state_configuration = [States.Q, States.QDOT]
+        self.control_configuration = [Controls.TAU]
+        self.algebraic_configuration = [lambda ocp, nlp, as_states, as_controls, as_algebraic_states: your_custom_variable_function(
+                ocp, nlp, as_states, as_controls, as_algebraic_states, extra_arguments=extra_arguments
+            )]
+        self.functions = []
 
-The following section investigates how to instruct `bioptim` of the dynamic equations the system should follow.
+    def dynamics(
+        self,
+        time,
+        states,
+        controls,
+        parameters,
+        algebraic_states,
+        numerical_timeseries,
+        nlp,
+    ):
+        """ 
+        This method defines the dynamics of the system by returning a return DynamicsEvaluation(dxdt, defects) object.
+        """
+        raise NotImplementedError
+```
 
- 
+If you do not want to start from scratch, you can instead inherit from already defined classes like `BirbdModel` and `TorqueDynamics`, and then, override or add the methods that you need.
+To help you, here are some of the currently available variable configuration:
+- States:
+  - `States.Q`: the generalized coordinates (q)
+  - `States.QDOT`: the generalized velocities (qdot)
+  - `States.QDDOT`: the generalized accelerations (qddot)
+  - `States.MUSCLE_ACTIVATION`: the muscle activations
+- Controls:
+  - `Controls.TAU`: the generalized forces (tau)
+  - `Controls.MUSCLE_EXCITATION`: the muscle excitations
+
+And some of the currently available dynamics:
+- `TorqueDynamics`:The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as *tau*. The derivative of *q* is trivially *qdot*. The derivative of *qdot* is given by the biorbd function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`. If external forces are provided, they are added to the ForwardDynamics function.
+- `TorqueDerivativeDynamics`: The torque derivative driven defines the states (x) as *q*, *qdot*, *tau* and the controls (u) as *taudot*. The derivative of *q* is trivially *qdot*. The derivative of *qdot* is given by the biorbd function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`. The derivative of *tau* is trivially *taudot*. If external forces are provided, they are added to the ForwardDynamics function.
+- `TorqueActivationsDynamics`: The torque activations driven defines the states (x) as *q* and *qdot* and the controls (u) as the level of activation of *tau*. The derivative of *q* is trivially *qdot*. The actual *tau* is computed from the activation by the biorbd function: `tau = bio_model.torque(torque_act, q, qdot)`. The derivative of *qdot* is given by the biorbd function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`.
+(Please note, this dynamics is expected to be very slow to converge, if it ever does. One is therefore encourage using TORQUE_DRIVEN instead, and to add the TORQUE_MAX_FROM_ACTUATORS constraint. This has been shown to be more efficient and allows defining minimum torque. **with_residual_torque = True:** The residual torque is taken into account in the *tau*.)
+- `JointsAccelerationDynamics`: The joints acceleration driven defines the states (x) as *q* and *qdot* and the controls (u) as *qddot_joints*. The derivative of *q* is trivially *qdot*. The joints' acceleration *qddot_joints* is the acceleration of the actual joints of the `biorb_model` without its root's joints. The model's root's joints acceleration *qddot_root* are computed by the `biorbd` function: `qddot_root = boirbd_model.ForwardDynamicsFreeFloatingBase(q, qdot, qddot_joints)`. The derivative of *qdot* is the vertical stack of *qddot_root* and *qddot_joints*.
+(This dynamic is suitable for bodies in free fall.)
+- `MuscleDynamics`: The muscle driven defines the states (x) as *q* and *qdot* and the controls (u) as the muscle activations. The derivative of *q* is trivially *qdot*. Possible options: The actual *tau* is computed from the muscle activation converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(muscles_states, q, qdot)`. The derivative of *qdot* is given by the `biorbd` function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`. The actual *tau* is computed from the sum of *tau* to the *a* converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(a, q, qdot)`. **with_residual_torque = True:** The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as the *tau* and the muscle activations (*a*). The actual *tau* is computed from the sum of *tau* to the muscle activation converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(a, q, qdot)`. **with_excitations = True:** The torque driven defines the states (x) as *q*, *qdot* and muscle activations (*a*) and the controls (u) as the *tau* and the *EMG*. The derivative of *a* is computed by the `biorbd` function: `adot = model.activationDot(emg, a)`
+- `HolonomicTorqueDynamics`: This dynamics have been implemented to be used with `HolonomicBiorbdModel`. It is a torque driven only applied on the independent degrees of freedom.
+
+See the example [examples/custom_model/](https://github.com/pyomeca/bioptim/tree/master/bioptim/examples/custom_model) for more details.
+
+
 ### Class: DynamicsOptions
-This class is the main class to define a dynamics. 
-It, therefore, contains all the information necessary to configure (i.e., determining which variables are states or controls) and perform the dynamics. 
-When constructing an `OptimalControlProgram()`, DynamicsOptions is the expected class for the `dynamics` parameter. 
-
-The user can minimally define a DynamicsOptions as: `dyn = DynamicsOptions(DynamicsFcn)`.
-The `DynamicsFcn` is the one presented in the corresponding section below. 
-
-#### The options
+This class is the main class to define the options to use when integrating the dynamics equations.
 The full signature of DynamicsOptions is as follows:
 ```python
-DynamicsOptions(dynamics_type, configure: Callable, dynamic_function: Callable, phase: int, ode_solver: OdeSolver, numerical_timeseries: dict[str, np.ndarray])
+DynamicsOptions(
+    phase: int, 
+    expand_dynamics: bool,
+    expand_continuity: bool,
+    skip_continuity: bool,
+    state_continuity_weight: float | int | None,
+    phase_dynamics: PhaseDynamics,
+    ode_solver: OdeSolver, 
+    numerical_timeseries: dict[str, np.ndarray],
+)
 ```
-The `dynamics_type` is the selected `DynamicsFcn`. 
-It automatically defines both `configure` and `dynamic_function`. 
-If a function is sent instead, this function is interpreted as `configure` and the DynamicsFcn is assumed to be `DynamicsFcn.CUSTOM`
-If one is interested in changing the behavior of a particular `DynamicsFcn`, they can refer to the Custom dynamics functions right below. 
-
 The `phase` is the index of the phase the dynamics applies to. 
+The `expand_dynamics` is a boolean that indicates if the `casadi.Function`containing the dynamics equations should be expanded (this options increases RAM usage, but reduces computational time).
+The `expand_continuity` is a boolean that indicates if the continuity constraints, including the integration of the dynanics equations, should be expanded (this options largely increases RAM usage, but largely reduces computational time).
+The `skip_continuity` is a boolean that indicates if the continuity constraints should be skipped (please note that skipping the continuity implies that the dynamics is not respected at node transitions).
+The `state_continuity_weight` is a float that defines the weight of the state continuity objective (can be used if you want to encourage numerical consistency through an objective, but not to enforce it through a constraint).
+The `phase_dynamics` indicates if the dynamics equations are the same at each node `PhaseDynamics.SHARED_DURING_THE_PHASE` or change at each node `PhaseDynamics.ONE_PER_NODE`.
 The `ode_solver` is the ode to use to "integrate" the dynamics function.
 The `numerical_timeseries` is a list of numerical values (one per node) to use in the dynamics. For example, it can be used to define experimental ground reaction forces.
-The `add()` method of `DynamicsOptionsList` usually takes care of this, but it can be useful when declaring the dynamics out of order.
-
-#### Custom dynamic functions
-If an advanced user wants to define their own dynamic function, they can define the configuration and/or the dynamics. 
-
-The configuration is what tells `bioptim` which variables are states and which are control.
-The user is expected to provide a function handler with the following signature: `custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram)`.
-In this function, the user is expected to call the relevant `ConfigureProblem` class methods: 
-- `configure_q(nlp, as_states: bool, as_controls: bool)`
-- `configure_qdot(nlp, as_states: bool, as_controls: bool)`
-- `configure_q_qdot(nlp, as_states: bool, as_controls: bool)`
-- `configure_tau(nlp, as_states: bool, as_controls: bool)`
-- `configure_residual_tau(nlp, as_states: bool, as_controls: bool)`
-- `configure_muscles(nlp, as_states: bool, as_controls: bool)`
-where `as_states` add the variable to the states vector and `as_controls` to the controls vector.
-Please note that this is not necessarily mutually exclusive.
-Finally, the user is expected to configure the dynamic by calling `ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamics)`
-
-Defining the dynamic function must be done when one provides a custom configuration, but it can also be defined by providing a function handler to the `dynamic_function` parameter for `DynamicsOptions`. 
-The signature of this custom dynamic function is as follows: `custom_dynamic(states: MX, controls: MX, parameters: MX, nlp: NonLinearProgram`.
-This function is expected to return a tuple[MX] of the derivative of the states. 
-Some methods defined in the class `DynamicsFunctions` can be useful, but will not be covered here since it is initially designed for internal use.
-Please note that MX type is a CasADi type.
-Anyone who wants to define custom dynamics should be at least familiar with this type beforehand. 
-
 
 ### Class: DynamicsOptionsList
 A DynamicsOptionsList is simply a list of DynamicsOptions. 
@@ -1012,70 +1036,8 @@ If the `add()` method is used more than one, the `phase` parameter is automatica
 So a minimal use is as follows:
 ```python
 dyn_list = DynamicsOptionsList()
-dyn_list.add(DynamicsFcn)
+dyn_list.add(dynamics_options_here)
 ```
-
-### Class: DynamicsFcn
-The `DynamicsFcn` class is the configuration and declaration of all the already available dynamics in `bioptim`. 
-Since this is an Enum, it is possible to use tab key on the keyboard to dynamically list them all, depending on the capabilities of your IDE. 
-
-Please note that one can change the dynamic function associated to any of the configuration by providing a custom dynamics_function. 
-For more information on this, please refer to the DynamicsOptions and DynamicsOptionsList section right before. 
-
-#### TORQUE_DRIVEN 
-The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as *tau*. 
-The derivative of *q* is trivially *qdot*.
-The derivative of *qdot* is given by the biorbd function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`.
-If external forces are provided, they are added to the ForwardDynamics function.
-
-#### TORQUE_DERIVATIVE_DRIVEN
-The torque derivative driven defines the states (x) as *q*, *qdot*, *tau* and the controls (u) as *taudot*. 
-The derivative of *q* is trivially *qdot*.
-The derivative of *qdot* is given by the biorbd function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`.
-The derivative of *tau* is trivially *taudot*. 
-If external forces are provided, they are added to the ForwardDynamics function.
-
-#### TORQUE_ACTIVATIONS_DRIVEN
-The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as the level of activation of *tau*. 
-The derivative of *q* is trivially *qdot*.
-The actual *tau* is computed from the activation by the `biorbd` function: `tau = bio_model.torque(torque_act, q, qdot)`.
-Then, the derivative of *qdot* is given by the `biorbd` function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`.
-
-Please note, this dynamics is expected to be very slow to converge, if it ever does. 
-One is therefore encourage using TORQUE_DRIVEN instead, and to add the TORQUE_MAX_FROM_ACTUATORS constraint.
-This has been shown to be more efficient and allows defining minimum torque. 
-- **with_residual_torque = True:** The residual torque is taken into account in the *tau*.
-
-#### JOINTS_ACCELERATION_DRIVEN
-The joints acceleration driven defines the states (x) as *q* and *qdot* and the controls (u) as *qddot_joints*. The derivative of *q* is trivially *qdot*.
-The joints' acceleration *qddot_joints* is the acceleration of the actual joints of the `biorb_model` without its root's joints.
-The model's root's joints acceleration *qddot_root* are computed by the `biorbd` function: `qddot_root = boirbd_model.ForwardDynamicsFreeFloatingBase(q, qdot, qddot_joints)`.
-The derivative of *qdot* is the vertical stack of *qddot_root* and *qddot_joints*.
-
-This dynamic is suitable for bodies in free fall.
-
-#### MUSCLE_DRIVEN
-The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as the muscle activations. 
-The derivative of *q* is trivially *qdot*. Possible options:
-The actual *tau* is computed from the muscle activation converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(muscles_states, q, qdot)`.
-The derivative of *qdot* is given by the `biorbd` function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`. The actual *tau* is computed from the sum of *tau* to the *a* converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(a, q, qdot)`.
-- **with_residual_torque = True:** The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as the *tau* and the muscle activations (*a*). 
-The actual *tau* is computed from the sum of *tau* to the muscle activation converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(a, q, qdot)`.
-- **with_excitations = True:** The torque driven defines the states (x) as *q*, *qdot* and muscle activations (*a*) and the controls (u) as the *tau* and the *EMG*.
-The derivative of *a* is computed by the `biorbd` function: `adot = model.activationDot(emg, a)`
-
-
-#### HOLOMOMIC_TORQUE_DRIVEN
-This dynamics have been implemented to be used with `HolonomicBiorbdModel`. It is a torque driven only applied on the independent
-degrees of freedom.
-
-
-
-#### CUSTOM
-This leaves the user to define both the configuration (what are the states and controls) and to define the dynamic function. 
-CUSTOM should not be called by the user, but the user should pass the configure_function directly. 
-You can have a look at DynamicsOptions and DynamicsOptionsList sections for more information about how to configure and define custom dynamics.
-
 
 ## The bounds
 The bounds provide a class that has minimal and maximal values for a variable.
@@ -1662,9 +1624,9 @@ Feel free to test each of them to see which fits your needs best.
 It is perfectly designed for MHE and NMPC problems.
 
 The accepted values are:
-- ̀`Ipopt`
-- ̀`Acados`
-- ̀`SQP`
+- `Ipopt`
+- `Acados`
+- `SQP`
 
 ### Enum: PhaseDynamics
 
@@ -1677,7 +1639,7 @@ The default value is ONE_PER_NODE, meaning we consider the dynamic equations to 
 
 In the case, you want to use this feature you have to specify it when adding the dynamics of each phase.
 ```python3
-dynamics = DynamicsOptions(DynamicsFcn.TORQUE_DRIVEN, phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE)
+dynamics = DynamicsOptions(phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE)
 ```
 
 ### Enum: ControlType
@@ -1812,16 +1774,8 @@ It is designed to show how to define custom constraints function if the availabl
 
 This example reproduces the behavior of the `SUPERIMPOSE_MARKERS` constraint.
 
-### The [custom_dynamics.py](./bioptim/examples/getting_started/custom_dynamics.py) file
-This example is a trivial box that must superimpose one of its corners on a marker at the beginning of the movement
-and superimpose the same corner on a different marker at the end.
-It is designed to show how to define a custom dynamics function if the provided ones are not 
-sufficient.
-
-This example reproduces the behavior of the `DynamicsFcn.TORQUE_DRIVEN` using custom dynamics. 
-
-The custom_dynamic function is used to provide the derivative of the states. The custom_configure function is used 
-to tell the program which variables are states and controls. 
+### The [custom_model.py](./bioptim/examples/custom_model/main.py) file
+This example shows how to use a custom dynamical model in bioptim.
 
 ### The [custom_initial_guess.py](./bioptim/examples/getting_started/custom_initial_guess.py) file
 This example is a trivial box that must superimpose one of its corners on a marker at the beginning of the movement
