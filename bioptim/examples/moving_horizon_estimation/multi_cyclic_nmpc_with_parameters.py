@@ -6,6 +6,7 @@ the latter has more cycle at a time giving the knowledge to the solver that 'som
 """
 
 import platform
+from typing import Callable
 
 import biorbd
 import numpy as np
@@ -14,7 +15,6 @@ from casadi import MX, SX, vertcat
 from bioptim import (
     Axis,
     BiorbdModel,
-    TorqueBiorbdModel,
     BoundsList,
     TorqueDynamics,
     ConstraintFcn,
@@ -58,7 +58,7 @@ class MyCyclicNMPC(MultiCyclicNonlinearModelPredictiveControl):
         return True
 
 
-def dummy_parameter_function(bio_model: biorbd.Model, value: MX):
+def dummy_parameter_function(bio_model, value: MX):
     return
 
 
@@ -67,11 +67,13 @@ def param_custom_objective(controller: PenaltyController) -> MX:
 
 
 class CustomModel(BiorbdModel, TorqueDynamics):
-    def __init__(self, model_path):
+    def __init__(self, model_path, parameters_list):
         """
         Custom model that inherits from BiorbdModel and TorqueDynamics to implement custom dynamics.
         """
-        BiorbdModel.__init__(self, model_path)
+        self.model_path = model_path
+        self.parameters_list = parameters_list
+        BiorbdModel.__init__(self, model_path, parameters=parameters_list)
         TorqueDynamics.__init__(self)
 
     def dynamics(
@@ -119,6 +121,14 @@ class CustomModel(BiorbdModel, TorqueDynamics):
 
         return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
 
+    def serialize(self) -> tuple[Callable, dict]:
+        """
+        This is necessary for NMPC as the model must be reconstructed from its serialized form at each cycle.
+        """
+        return CustomModel, dict(
+            model_path=self.path,
+            parameters_list=self.parameters_list,
+        )
 
 def prepare_nmpc(
     model_path,
@@ -131,7 +141,6 @@ def prepare_nmpc(
     expand_dynamics: bool = True,
     use_sx: bool = False,
 ):
-    model = TorqueBiorbdModel(model_path)
 
     parameter = ParameterList(use_sx=use_sx)
     parameter_bounds = BoundsList()
@@ -152,6 +161,8 @@ def prepare_nmpc(
         max_bound=[3.5],
         interpolation=InterpolationType.CONSTANT,
     )
+
+    model = CustomModel(model_path, parameters_list=parameter)
 
     dynamics = DynamicsOptions(expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 

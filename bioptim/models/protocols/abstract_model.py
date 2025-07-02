@@ -32,5 +32,7 @@ class AbstractModel(ABC):
 
     @property
     def extra_dynamics(self) -> Optional[DynamicsEvaluation]:
-
+        """
+        When inheriting from this class, the extra_dynamics @property can be overridden to provide additional dynamics using the same arguments as the dynamics function.
+        """
         return None
