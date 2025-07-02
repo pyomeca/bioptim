@@ -805,17 +805,34 @@ class MusclesDynamics(TorqueDynamics):
         return nlp.model.rigid_contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
 
 
-class JointAccelerationDynamics(TorqueDynamics):
+class JointAccelerationDynamics(AbstractModel):
     """
-    This class is used to create a model actuated through joint torques.
+    This class is used to create a model actuated through joint acceleration.
 
     x = [q, qdot]
-    u = [tau]
+    u = [qddot_joints]
     """
 
     def __init__(self):
-        super().__init__(fatigue=None)
+        super().__init__()
+        self.state_configuration = [States.Q, States.QDOT]
         self.control_configuration = [Controls.QDDOT_JOINTS]
+
+    @staticmethod
+    def get_q_qdot_indices(nlp):
+        """
+        Get the indices of the states and controls in the normal dynamics
+        """
+        return nlp.states["q"].index, nlp.states["qdot"].index
+
+    def get_basic_slopes(self, nlp):
+        """
+        Get the slopes of the states in the normal dynamics.
+        Please note that, we do not use DynamicsFunctions.get to get the slopes because we do not want them mapped
+        """
+        slope_q = nlp.states_dot["q"].cx
+        slope_qdot = nlp.states_dot["qdot"].cx
+        return slope_q, slope_qdot
 
     def dynamics(
         self,
