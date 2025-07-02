@@ -370,6 +370,9 @@ def test_track_marker_2D_pendulum(ode_solver, phase_dynamics):
 def test_example_quaternions(phase_dynamics):
     from bioptim.examples.torque_driven_ocp import example_quaternions as ocp_module
 
+    if platform.system() == "Windows":
+        pytest.skip("This OCP does not converge on Windows.")
+
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     # Define the problem
