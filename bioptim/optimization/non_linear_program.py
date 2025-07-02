@@ -337,6 +337,9 @@ class NonLinearProgram:
         """
         Declare all the casadi variables with the right size to be used during this specific phase.
         """
+        if self.control_type not in ControlType:
+            raise NotImplementedError(f"Multiple shooting problem not implemented yet for {self.control_type}")
+
         self._declare_states_shooting_points()
         self._declare_controls_shooting_points()
         self._declare_algebraic_states_shooting_points()

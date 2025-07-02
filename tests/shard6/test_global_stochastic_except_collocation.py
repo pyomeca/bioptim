@@ -8,6 +8,8 @@ from casadi import DM, vertcat
 from bioptim import Solver, SolutionMerge, SolutionIntegrator
 from ..utils import TestUtils
 
+# TODO: All the tests in this file can be removed once the Leuven version of stochastic is removed from Bioptim
+
 
 # Integrated values should be handled another way
 # In the meantime, let's skip this test

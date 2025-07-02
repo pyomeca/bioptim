@@ -324,7 +324,6 @@ class OcpToConsole(GraphAbstract):
             else:
                 print(f"PHASE DURATION IS OPTIMIZED")
             print(f"SHOOTING NODES : {self.ocp.nlp[phase_idx].ns}")
-            # print(f"DYNAMICS: {self.ocp.nlp[phase_idx].dynamics_type.type.name}")
             print(f"ODE: {self.ocp.nlp[phase_idx].dynamics_type.ode_solver.integrator.__name__}")
             print(f"**********")
             print("")
