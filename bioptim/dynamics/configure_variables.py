@@ -189,8 +189,7 @@ class ConfigureVariables:
             as_states=as_states,
             as_controls=as_controls,
             as_algebraic_states=as_algebraic_states,
-            axes_idx=BiMapping(to_first=list(range(0, nlp.model.nb_root)),
-                               to_second=list(range(0, nlp.model.nb_root))),
+            axes_idx=BiMapping(to_first=list(range(0, nlp.model.nb_root)), to_second=list(range(0, nlp.model.nb_root))),
         )
 
     @staticmethod
@@ -222,8 +221,10 @@ class ConfigureVariables:
             as_states=as_states,
             as_controls=as_controls,
             as_algebraic_states=as_algebraic_states,
-            axes_idx=BiMapping(to_first=list(range(0, nlp.model.nb_q - nlp.model.nb_root)),
-                               to_second=list(range(0, nlp.model.nb_q - nlp.model.nb_root))),
+            axes_idx=BiMapping(
+                to_first=list(range(0, nlp.model.nb_q - nlp.model.nb_root)),
+                to_second=list(range(0, nlp.model.nb_q - nlp.model.nb_root)),
+            ),
         )
 
     @staticmethod
@@ -391,9 +392,9 @@ class ConfigureVariables:
             as_controls=as_controls,
             as_algebraic_states=as_algebraic_states,
             axes_idx=BiMapping(
-            to_first=list(range(0, nlp.model.nb_qdot - nlp.model.nb_root)),
-            to_second=list(range(0, nlp.model.nb_qdot - nlp.model.nb_root)),
-        ),
+                to_first=list(range(0, nlp.model.nb_qdot - nlp.model.nb_root)),
+                to_second=list(range(0, nlp.model.nb_qdot - nlp.model.nb_root)),
+            ),
         )
 
     @staticmethod
@@ -458,9 +459,9 @@ class ConfigureVariables:
             as_controls=as_controls,
             as_algebraic_states=as_algebraic_states,
             axes_idx=BiMapping(
-            to_first=list(range(0, nlp.model.nb_q - nlp.model.nb_root)),
-            to_second=list(range(0, nlp.model.nb_q - nlp.model.nb_root)),
-        ),
+                to_first=list(range(0, nlp.model.nb_q - nlp.model.nb_root)),
+                to_second=list(range(0, nlp.model.nb_q - nlp.model.nb_root)),
+            ),
         )
 
     @staticmethod
@@ -824,9 +825,11 @@ class ConfigureVariables:
             as_states=as_states,
             as_controls=as_controls,
             as_algebraic_states=as_algebraic_states,
-            axes_idx=BiMapping(to_first=list(range(0, nlp.model.nb_tau - nlp.model.nb_root)),
-                                 to_second=list(range(0, nlp.model.nb_tau - nlp.model.nb_root))
-        ))
+            axes_idx=BiMapping(
+                to_first=list(range(0, nlp.model.nb_tau - nlp.model.nb_root)),
+                to_second=list(range(0, nlp.model.nb_tau - nlp.model.nb_root)),
+            ),
+        )
 
     @staticmethod
     def configure_residual_tau(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
