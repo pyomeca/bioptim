@@ -178,7 +178,9 @@ class ConfigureVariables:
         """
         name = "q_roots"
         name_q_roots = [nlp.model.name_dof[i] for i in range(nlp.model.nb_root)]
-        axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
+        if name in nlp.variable_mappings.keys() and nlp.variable_mappings[name].actually_does_a_mapping:
+            raise RuntimeError("q_roots is not ready for variable mapping yet.")
+
         ConfigureVariables.configure_new_variable(
             name,
             name_q_roots,
@@ -187,7 +189,8 @@ class ConfigureVariables:
             as_states=as_states,
             as_controls=as_controls,
             as_algebraic_states=as_algebraic_states,
-            axes_idx=axes_idx,
+            axes_idx=BiMapping(to_first=list(range(0, nlp.model.nb_root)),
+                               to_second=list(range(0, nlp.model.nb_root))),
         )
 
     @staticmethod
@@ -208,7 +211,9 @@ class ConfigureVariables:
         """
         name = "q_joints"
         name_q_joints = [nlp.model.name_dof[i] for i in range(nlp.model.nb_root, nlp.model.nb_q)]
-        axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
+        if name in nlp.variable_mappings.keys() and nlp.variable_mappings[name].actually_does_a_mapping:
+            raise RuntimeError("q_joints is not ready for variable mapping yet.")
+
         ConfigureVariables.configure_new_variable(
             name,
             name_q_joints,
@@ -217,7 +222,8 @@ class ConfigureVariables:
             as_states=as_states,
             as_controls=as_controls,
             as_algebraic_states=as_algebraic_states,
-            axes_idx=axes_idx,
+            axes_idx=BiMapping(to_first=list(range(0, nlp.model.nb_q - nlp.model.nb_root)),
+                               to_second=list(range(0, nlp.model.nb_q - nlp.model.nb_root))),
         )
 
     @staticmethod
@@ -337,12 +343,11 @@ class ConfigureVariables:
             If the generalized coordinates should be an algebraic state
         """
         name = "qdot_roots"
-        if name in nlp.variable_mappings.keys():
+        if name in nlp.variable_mappings.keys() and nlp.variable_mappings[name].actually_does_a_mapping:
             raise NotImplementedError("qdot_roots is not ready for variable mapping yet.")
 
         name_qdot = ConfigureVariables._get_kinematics_based_names(nlp, "qdot")
         name_qdot_roots = [name_qdot[i] for i in range(nlp.model.nb_root)]
-        axes_idx = BiMapping(to_first=list(range(nlp.model.nb_root)), to_second=list(range(nlp.model.nb_root)))
         ConfigureVariables.configure_new_variable(
             name,
             name_qdot_roots,
@@ -351,7 +356,7 @@ class ConfigureVariables:
             as_states=as_states,
             as_controls=as_controls,
             as_algebraic_states=as_algebraic_states,
-            axes_idx=axes_idx,
+            axes_idx=BiMapping(to_first=list(range(0, nlp.model.nb_root)), to_second=list(range(0, nlp.model.nb_root))),
         )
 
     @staticmethod
@@ -371,15 +376,12 @@ class ConfigureVariables:
             If the generalized coordinates should be an algebraic state
         """
         name = "qdot_joints"
-        if name in nlp.variable_mappings.keys():
+        if name in nlp.variable_mappings.keys() and nlp.variable_mappings[name].actually_does_a_mapping:
             raise NotImplementedError("qdot_joints is not ready for variable mapping yet.")
 
         name_qdot = ConfigureVariables._get_kinematics_based_names(nlp, "qdot")
         name_qdot_joints = [name_qdot[i] for i in range(nlp.model.nb_root, nlp.model.nb_qdot)]
-        axes_idx = BiMapping(
-            to_first=list(range(nlp.model.nb_root, nlp.model.nb_qdot)),
-            to_second=list(range(nlp.model.nb_root, nlp.model.nb_qdot)),
-        )
+
         ConfigureVariables.configure_new_variable(
             name,
             name_qdot_joints,
@@ -388,7 +390,10 @@ class ConfigureVariables:
             as_states=as_states,
             as_controls=as_controls,
             as_algebraic_states=as_algebraic_states,
-            axes_idx=axes_idx,
+            axes_idx=BiMapping(
+            to_first=list(range(0, nlp.model.nb_qdot - nlp.model.nb_root)),
+            to_second=list(range(0, nlp.model.nb_qdot - nlp.model.nb_root)),
+        ),
         )
 
     @staticmethod
@@ -439,15 +444,11 @@ class ConfigureVariables:
             If the generalized coordinates should be an algebraic state
         """
         name = "qddot_joints"
-        if name in nlp.variable_mappings.keys():
+        if name in nlp.variable_mappings.keys() and nlp.variable_mappings[name].actually_does_a_mapping:
             raise NotImplementedError("qddot_joints is not ready for variable mapping yet.")
 
         name_qddot = ConfigureVariables._get_kinematics_based_names(nlp, "qddot")
         name_qddot_joints = [name_qddot[i] for i in range(nlp.model.nb_root, nlp.model.nb_q)]
-        axes_idx = BiMapping(
-            to_first=list(range(nlp.model.nb_root, nlp.model.nb_q)),
-            to_second=list(range(nlp.model.nb_root, nlp.model.nb_q)),
-        )
         ConfigureVariables.configure_new_variable(
             name,
             name_qddot_joints,
@@ -456,7 +457,10 @@ class ConfigureVariables:
             as_states=as_states,
             as_controls=as_controls,
             as_algebraic_states=as_algebraic_states,
-            axes_idx=axes_idx,
+            axes_idx=BiMapping(
+            to_first=list(range(0, nlp.model.nb_q - nlp.model.nb_root)),
+            to_second=list(range(0, nlp.model.nb_q - nlp.model.nb_root)),
+        ),
         )
 
     @staticmethod
@@ -807,9 +811,11 @@ class ConfigureVariables:
             If the generalized coordinates should be an algebraic state
         """
         name = "tau_joints"
+        if name in nlp.variable_mappings.keys() and nlp.variable_mappings[name].actually_does_a_mapping:
+            raise NotImplementedError("tau_joints is not ready for variable mapping yet.")
+
         name_tau = ConfigureVariables._get_kinematics_based_names(nlp, "tau")
         name_tau_joints = [name_tau[i] for i in range(nlp.model.nb_root, nlp.model.nb_tau)]
-        axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
         ConfigureVariables.configure_new_variable(
             name,
             name_tau_joints,
@@ -818,8 +824,9 @@ class ConfigureVariables:
             as_states=as_states,
             as_controls=as_controls,
             as_algebraic_states=as_algebraic_states,
-            axes_idx=axes_idx,
-        )
+            axes_idx=BiMapping(to_first=list(range(0, nlp.model.nb_tau - nlp.model.nb_root)),
+                                 to_second=list(range(0, nlp.model.nb_tau - nlp.model.nb_root))
+        ))
 
     @staticmethod
     def configure_residual_tau(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
