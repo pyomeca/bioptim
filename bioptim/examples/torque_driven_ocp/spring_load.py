@@ -13,8 +13,8 @@ from matplotlib import pyplot as plt
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
-    Dynamics,
-    ConfigureProblem,
+    DynamicsOptions,
+    TorqueDynamics,
     ObjectiveList,
     DynamicsFunctions,
     ObjectiveFcn,
@@ -24,7 +24,6 @@ from bioptim import (
     DynamicsEvaluation,
     PhaseDynamics,
     SolutionMerge,
-    ContactType,
 )
 
 # scenarios are based on a Mayer term (at Tf)
@@ -110,73 +109,60 @@ scenarios = {
 }
 
 
-def custom_dynamic(
-    time: MX,
-    states: MX,
-    controls: MX,
-    parameters: MX,
-    algebraic_states: MX,
-    numerical_timeseries: MX,
-    nlp: NonLinearProgram,
-) -> DynamicsEvaluation:
-    """
-    The dynamics of the system using an external force (see custom_dynamics for more explanation)
+class CustomModel(BiorbdModel, TorqueDynamics):
+    def __init__(self, biorbd_model_path):
+        """
+        Custom model to use with the custom dynamics function
+        """
+        BiorbdModel.__init__(self, biorbd_model_path)
+        self.fatigue = None
+        TorqueDynamics.__init__(self)
 
-    Parameters
-    ----------
-    time: MX
-        The current time of the system
-    states: MX
-        The current states of the system
-    controls: MX
-        The current controls of the system
-    parameters: MX
-        The current parameters of the system
-    algebraic_states: MX
-        The current algebraic states of the system
-    numerical_timeseries: MX
-        The current numerical timeseries of the system
-    nlp: NonLinearProgram
-        A reference to the phase of the ocp
+    def dynamics(
+        self,
+        time: MX,
+        states: MX,
+        controls: MX,
+        parameters: MX,
+        algebraic_states: MX,
+        numerical_timeseries: MX,
+        nlp: NonLinearProgram,
+    ) -> DynamicsEvaluation:
+        """
+        The dynamics of the system using an external force (see custom_dynamics for more explanation)
 
-    Returns
-    -------
-    The state derivative
-    """
+        Parameters
+        ----------
+        time: MX
+            The current time of the system
+        states: MX
+            The current states of the system
+        controls: MX
+            The current controls of the system
+        parameters: MX
+            The current parameters of the system
+        algebraic_states: MX
+            The current algebraic states of the system
+        numerical_timeseries: MX
+            The current numerical timeseries of the system
+        nlp: NonLinearProgram
+            A reference to the phase of the ocp
 
-    q = DynamicsFunctions.get(nlp.states["q"], states)
-    qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-    tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
+        Returns
+        -------
+        The state derivative
+        """
 
-    stiffness = 100
-    tau -= sign(q[0]) * stiffness * q[0]  # damping
+        q = DynamicsFunctions.get(nlp.states["q"], states)
+        qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+        tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
-    qddot = nlp.model.forward_dynamics(with_contact=False)(q, qdot, tau, [], [])
+        stiffness = 100
+        tau -= sign(q[0]) * stiffness * q[0]  # damping
 
-    return DynamicsEvaluation(dxdt=vertcat(qdot, qddot), defects=None)
+        qddot = nlp.model.forward_dynamics(with_contact=False)(q, qdot, tau, [], [])
 
-
-def custom_configure(
-    ocp: OptimalControlProgram,
-    nlp: NonLinearProgram,
-    numerical_data_timeseries=None,
-):
-    """
-    The configuration of the dynamics (see custom_dynamics for more explanation)
-
-    Parameters
-    ----------
-    ocp: OptimalControlProgram
-        A reference to the ocp
-    nlp: NonLinearProgram
-        A reference to the phase of the ocp
-    numerical_data_timeseries: dict[str, np.ndarray]
-            A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
-    """
-    ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
-    ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic)
+        return DynamicsEvaluation(dxdt=vertcat(qdot, qddot), defects=None)
 
 
 def prepare_ocp(
@@ -189,7 +175,7 @@ def prepare_ocp(
 ):
 
     # BioModel path
-    m = BiorbdModel(biorbd_model_path)
+    m = CustomModel(biorbd_model_path)
     m.set_gravity(np.array((0, 0, 0)))
 
     weight = 1
@@ -221,9 +207,7 @@ def prepare_ocp(
     )
 
     # Dynamics
-    dynamics = Dynamics(
-        custom_configure,
-        dynamic_function=custom_dynamic,
+    dynamics = DynamicsOptions(
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
     )
@@ -241,7 +225,7 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         m,
-        dynamics,
+        dynamics=dynamics,
         n_shooting=n_shooting,
         phase_time=phase_time,
         x_bounds=x_bounds,

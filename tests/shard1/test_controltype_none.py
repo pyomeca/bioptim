@@ -13,7 +13,8 @@ from bioptim import (
     ConstraintFcn,
     ConstraintList,
     DynamicsEvaluation,
-    DynamicsList,
+    DynamicsOptionsList,
+    DynamicsOptions,
     ObjectiveFcn,
     ObjectiveList,
     OdeSolver,
@@ -24,6 +25,7 @@ from bioptim import (
     Solver,
     PhaseDynamics,
     SolutionMerge,
+    ConfigureVariables,
 )
 
 
@@ -38,6 +40,12 @@ class NonControlledMethod:
         self.b = 0
         self.c = 0
         self._name = name
+
+        self.state_configuration = []
+        self.control_configuration = []
+        self.algebraic_configuration = []
+        self.extra_dynamic = None
+        self.functions = [self.declare_variables]
 
     def serialize(self) -> tuple[Callable, dict]:
         # This is where you can serialize your model
@@ -77,7 +85,7 @@ class NonControlledMethod:
 
         return vertcat(a_dot, b_dot, c_dot)
 
-    def custom_dynamics(
+    def dynamics(
         self,
         time: MX | SX,
         states: MX | SX,
@@ -97,7 +105,7 @@ class NonControlledMethod:
     def declare_variables(self, ocp: OptimalControlProgram, nlp: NonLinearProgram):
         name = "a"
         name_a = [name]
-        ConfigureProblem.configure_new_variable(
+        ConfigureVariables.configure_new_variable(
             name,
             name_a,
             ocp,
@@ -108,7 +116,7 @@ class NonControlledMethod:
 
         name = "b"
         name_b = [name]
-        ConfigureProblem.configure_new_variable(
+        ConfigureVariables.configure_new_variable(
             name,
             name_b,
             ocp,
@@ -119,7 +127,7 @@ class NonControlledMethod:
 
         name = "c"
         name_c = [name]
-        ConfigureProblem.configure_new_variable(
+        ConfigureVariables.configure_new_variable(
             name,
             name_c,
             ocp,
@@ -127,8 +135,6 @@ class NonControlledMethod:
             as_states=True,
             as_controls=False,
         )
-
-        ConfigureProblem.configure_dynamics_function(ocp, nlp, self.custom_dynamics, my_ocp=ocp)
 
 
 def prepare_ocp(
@@ -163,7 +169,6 @@ def prepare_ocp(
     -------
     The OptimalControlProgram ready to be solved
     """
-    custom_model = NonControlledMethod()
     models = (
         NonControlledMethod(),
         NonControlledMethod(),
@@ -180,15 +185,15 @@ def prepare_ocp(
     final_time = [0.01 for i in range(n_phase)]  # Set the final time for all my n phases
 
     # Creates the system's dynamic for my n phases
-    dynamics = DynamicsList()
+    dynamics = DynamicsOptionsList()
     for i in range(n_phase):
         dynamics.add(
-            custom_model.declare_variables,
-            dynamic_function=custom_model.custom_dynamics,
-            phase=i,
-            expand_dynamics=True,
-            ode_solver=ode_solver,
-            phase_dynamics=phase_dynamics,
+            DynamicsOptions(
+                phase=i,
+                expand_dynamics=True,
+                ode_solver=ode_solver,
+                phase_dynamics=phase_dynamics,
+            )
         )
 
     # Creates the constraint for my n phases
@@ -215,9 +220,9 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         models,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         objective_functions=objective_functions,
         constraints=constraints,

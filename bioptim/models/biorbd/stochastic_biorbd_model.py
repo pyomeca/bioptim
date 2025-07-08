@@ -2,10 +2,13 @@ from typing import Callable
 
 from casadi import DM
 
-from bioptim import BiorbdModel, DynamicsFunctions
+from .biorbd_model import BiorbdModel
+from ...dynamics.dynamics_functions import DynamicsFunctions
 from ...misc.mapping import BiMappingList
 from ...optimization.parameters import ParameterList
 from ...optimization.variable_scaling import VariableScaling
+from ...optimization.problem_type import SocpType
+from ..protocols.abstract_model_dynamics import DynamicalModel
 
 from ...misc.parameters_types import Int, Str, Bool, NpArray
 
@@ -40,7 +43,8 @@ class StochasticBiorbdModel(BiorbdModel):
 
     def __init__(
         self,
-        bio_model: Str | BiorbdModel,
+        bio_model: list | tuple | DynamicalModel,
+        problem_type: SocpType,
         n_references: Int,
         n_feedbacks: Int,
         n_noised_states: Int,
@@ -52,6 +56,7 @@ class StochasticBiorbdModel(BiorbdModel):
         motor_noise_mapping: BiMappingList = BiMappingList(),
         use_sx: Bool = False,
         parameters: ParameterList = None,
+        friction_coefficients: NpArray = None,
         **kwargs,
     ):
         if parameters is None:
@@ -69,12 +74,18 @@ class StochasticBiorbdModel(BiorbdModel):
             scaling=VariableScaling("sensory_noise", [1.0] * sensory_noise_magnitude.shape[0]),
         )
         super().__init__(
-            bio_model=(bio_model if isinstance(bio_model, str) else bio_model.model), parameters=parameters, **kwargs
+            bio_model=(bio_model if isinstance(bio_model, str) else bio_model.model),
+            parameters=parameters,
+            friction_coefficients=friction_coefficients,
+            **kwargs,
         )
+        self.problem_type = problem_type
 
         self.motor_noise_magnitude = motor_noise_magnitude
         self.sensory_noise_magnitude = sensory_noise_magnitude
 
+        if compute_torques_from_noise_and_feedback is None:
+            compute_torques_from_noise_and_feedback = _compute_torques_from_noise_and_feedback_default
         self.compute_torques_from_noise_and_feedback = compute_torques_from_noise_and_feedback
 
         self.sensory_reference = sensory_reference

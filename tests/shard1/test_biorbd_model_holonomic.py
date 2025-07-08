@@ -18,7 +18,6 @@ def test_model_holonomic():
     holonomic_constrains.add(
         "y",
         HolonomicConstraintsFcn.superimpose_markers,
-        model=model,
         marker_1="marker_1",
         marker_2="marker_6",
         index=slice(1, 2),
@@ -26,7 +25,6 @@ def test_model_holonomic():
     holonomic_constrains.add(
         "z",
         HolonomicConstraintsFcn.superimpose_markers,
-        model=model,
         marker_1="marker_1",
         marker_2="marker_6",
         index=slice(2, 3),
@@ -120,7 +118,6 @@ def test_model_holonomic():
     ill_hconstraints.add(
         "y",
         HolonomicConstraintsFcn.superimpose_markers,
-        model=model,
         marker_1="marker_1",
         marker_2="marker_6",
         index=slice(1, 2),

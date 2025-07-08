@@ -5,6 +5,8 @@ This formulation allow to decouple the covariance matrix with the previous state
 but increases largely the number of variables to optimize.
 Decomposing the covariance matrix using Cholesky L @ @.T allows to reduce the number of variables and ensures that the
 covariance matrix always stays positive semi-definite.
+
+WARNING: These examples are not maintained anymore, please use SocpType.COLLOCATION for a safer, faster, better alternative.
 """
 
 import pickle
@@ -17,10 +19,11 @@ from bioptim import (
     StochasticOptimalControlProgram,
     ObjectiveFcn,
     Solver,
-    StochasticBiorbdModel,
+    StochasticTorqueBiorbdModel,
     ObjectiveList,
     NonLinearProgram,
-    DynamicsList,
+    DynamicsOptionsList,
+    DynamicsOptions,
     BoundsList,
     InterpolationType,
     SocpType,
@@ -29,7 +32,6 @@ from bioptim import (
     ConstraintFcn,
     InitialGuessList,
     Axis,
-    DynamicsFcn,
     PhaseDynamics,
     ControlType,
     VariableScalingList,
@@ -105,8 +107,10 @@ def prepare_socp(
 
     problem_type = SocpType.TRAPEZOIDAL_IMPLICIT(with_cholesky)
 
-    bio_model = StochasticBiorbdModel(
+    bio_model = StochasticTorqueBiorbdModel(
         biorbd_model_path,
+        problem_type=problem_type,
+        with_cholesky=with_cholesky,
         sensory_noise_magnitude=sensory_noise_magnitude,
         motor_noise_magnitude=motor_noise_magnitude,
         sensory_reference=sensory_reference,
@@ -188,11 +192,7 @@ def prepare_socp(
     )
 
     # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(
-        DynamicsFcn.STOCHASTIC_TORQUE_DRIVEN,
-        problem_type=problem_type,
-        with_cholesky=with_cholesky,
+    dynamics = DynamicsOptions(
         expand_dynamics=False,
         phase_dynamics=PhaseDynamics.ONE_PER_NODE,
         numerical_data_timeseries=None,
@@ -317,9 +317,9 @@ def prepare_socp(
 
     return StochasticOptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_init=x_init,
         u_init=u_init,
         a_init=a_init,

@@ -6,7 +6,7 @@ import numpy as np
 from casadi import Function, vertcat
 
 from .optimal_control_program import OptimalControlProgram
-from ..dynamics.configure_problem import ConfigureProblem, DynamicsList
+from ..dynamics.configure_problem import ConfigureProblem, DynamicsOptionsList
 from ..dynamics.dynamics_evaluation import DynamicsEvaluation
 from ..dynamics.ode_solvers import OdeSolver
 from ..limits.constraints import ParameterConstraintList
@@ -17,6 +17,7 @@ from ..limits.penalty_controller import PenaltyController
 from ..misc.enums import ControlType, ContactType
 from ..models.biorbd.variational_biorbd_model import VariationalBiorbdModel
 from ..models.protocols.variational_biomodel import VariationalBioModel
+from ..models.biorbd.model_dynamics import VariationalTorqueBiorbdModel
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.parameters import ParameterList
 from ..optimization.variable_scaling import VariableScaling
@@ -46,7 +47,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         use_sx: bool = False,
         **kwargs,
     ):
-        if type(bio_model) != VariationalBiorbdModel:
+        if type(bio_model) != VariationalBiorbdModel and type(bio_model) != VariationalTorqueBiorbdModel:
             raise TypeError("bio_model must be of type VariationalBiorbdModel")
 
         if "phase_time" in kwargs:
@@ -78,10 +79,9 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         n_qdot = n_q = self.bio_model.nb_q
 
         # Dynamics
-        dynamics = DynamicsList()
+        dynamics = DynamicsOptionsList()
         expand = True
         dynamics.add(
-            self.configure_torque_driven,
             expand_dynamics=expand,
             skip_continuity=True,
             ode_solver=OdeSolver.VARIATIONAL(),  # This is a fake ode_solver to be able to use the variational integrator
@@ -185,9 +185,9 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
         super().__init__(
             self.bio_model,
-            dynamics,
             n_shooting=n_shooting,
             phase_time=final_time,
+            dynamics=dynamics,
             x_init=q_init,
             x_bounds=q_bounds,
             parameters=parameters,
@@ -209,172 +209,6 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         value
         """
         pass
-
-    def configure_dynamics_function(
-        self,
-        ocp: OptimalControlProgram,
-        nlp: NonLinearProgram,
-        expand: bool = True,
-    ):
-        """
-        Configure the dynamics of the system. This is where the variational integrator equations are defined.
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the phase
-        expand: bool
-            If the dynamics should be expanded with casadi
-        """
-
-        dynamics_eval = DynamicsEvaluation(nlp.cx(0), nlp.cx(0))
-        dynamics_dxdt = dynamics_eval.dxdt
-        if isinstance(dynamics_dxdt, (list, tuple)):
-            dynamics_dxdt = vertcat(*dynamics_dxdt)
-
-        # Note: useless but needed to run bioptim as it need to test the size of xdot
-        nlp.dynamics_func = Function(
-            "ForwardDyn",
-            [
-                vertcat(nlp.time_cx, nlp.dt),
-                nlp.states.scaled.cx,
-                nlp.controls.scaled.cx,
-                nlp.parameters.cx,
-                nlp.algebraic_states.scaled.cx,
-                nlp.numerical_timeseries.cx,
-            ],
-            [dynamics_dxdt],
-            ["t_span", "x", "u", "p", "a", "d"],
-            ["xdot"],
-        )
-
-        dt = nlp.cx.sym("time_step")
-        q_prev = nlp.cx.sym("q_prev", nlp.model.nb_q, 1)
-        q_cur = nlp.cx.sym("q_cur", nlp.model.nb_q, 1)
-        q_next = nlp.cx.sym("q_next", nlp.model.nb_q, 1)
-        control_prev = nlp.cx.sym("control_prev", nlp.model.nb_q, 1)
-        control_cur = nlp.cx.sym("control_cur", nlp.model.nb_q, 1)
-        control_next = nlp.cx.sym("control_next", nlp.model.nb_q, 1)
-        q0 = nlp.cx.sym("q0", nlp.model.nb_q, 1)
-        qdot0 = nlp.cx.sym("qdot_start", nlp.model.nb_q, 1)
-        q1 = nlp.cx.sym("q1", nlp.model.nb_q, 1)
-        control0 = nlp.cx.sym("control0", nlp.model.nb_q, 1)
-        control1 = nlp.cx.sym("control1", nlp.model.nb_q, 1)
-        q_ultimate = nlp.cx.sym("q_ultimate", nlp.model.nb_q, 1)
-        qdot_ultimate = nlp.cx.sym("qdot_ultimate", nlp.model.nb_q, 1)
-        q_penultimate = nlp.cx.sym("q_penultimate", nlp.model.nb_q, 1)
-        controlN_minus_1 = nlp.cx.sym("controlN_minus_1", nlp.model.nb_q, 1)
-        controlN = nlp.cx.sym("controlN", nlp.model.nb_q, 1)
-
-        three_nodes_input = [dt, q_prev, q_cur, q_next, control_prev, control_cur, control_next]
-        two_first_nodes_input = [dt, q0, qdot0, q1, control0, control1]
-        two_last_nodes_input = [dt, q_penultimate, q_ultimate, qdot_ultimate, controlN_minus_1, controlN]
-
-        if self.bio_model.has_holonomic_constraints:
-            lambdas = nlp.cx.sym("lambda", self.bio_model.nb_holonomic_constraints, 1)
-            three_nodes_input.append(lambdas)
-            two_first_nodes_input.append(lambdas)
-            two_last_nodes_input.append(lambdas)
-        else:
-            lambdas = None
-
-        nlp.dynamics_defects_func = Function(
-            "ThreeNodesIntegration",
-            three_nodes_input,
-            [
-                self.bio_model.discrete_euler_lagrange_equations(
-                    dt,
-                    q_prev,
-                    q_cur,
-                    q_next,
-                    control_prev,
-                    control_cur,
-                    control_next,
-                    lambdas,
-                )
-            ],
-        )
-
-        nlp.dynamics_defects_func_first_node = Function(
-            "TwoFirstNodesIntegration",
-            two_first_nodes_input,
-            [
-                self.bio_model.compute_initial_states(
-                    dt,
-                    q0,
-                    qdot0,
-                    q1,
-                    control0,
-                    control1,
-                    lambdas,
-                )
-            ],
-        )
-
-        nlp.dynamics_defects_func_last_node = Function(
-            "TwoLastNodesIntegration",
-            two_last_nodes_input,
-            [
-                self.bio_model.compute_final_states(
-                    dt,
-                    q_penultimate,
-                    q_ultimate,
-                    qdot_ultimate,
-                    controlN_minus_1,
-                    controlN,
-                    lambdas,
-                )
-            ],
-        )
-
-        if expand:
-            nlp.dynamics_func = nlp.dynamics_func.expand()
-            nlp.dynamics_defects_func = nlp.dynamics_defects_func.expand()
-            nlp.dynamics_defects_func_first_node = nlp.dynamics_defects_func_first_node.expand()
-            nlp.dynamics_defects_func_last_node = nlp.dynamics_defects_func_last_node.expand()
-
-    def configure_torque_driven(
-        self,
-        ocp: OptimalControlProgram,
-        nlp: NonLinearProgram,
-        numerical_data_timeseries=None,
-        contact_types: list[ContactType] | tuple[ContactType] = (),
-    ):
-        """
-        Configure the problem to be torque driven for the variational integrator.
-        The states are the q (and the lambdas if the system has holonomic constraints).
-        The controls are the tau.
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp.
-        nlp: NonLinearProgram
-            A reference to the phase.
-        numerical_data_timeseries: dict[str, np.ndarray]
-            A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
-        contact_types: list[ContactType] | tuple[ContactType]
-        The type of contacts to consider in the dynamics.
-        """
-
-        ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
-        ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
-        if self.bio_model.has_holonomic_constraints:
-            lambdas = []
-            for i in range(self.bio_model.nb_holonomic_constraints):
-                lambdas.append(f"lambda_{i}")
-            ConfigureProblem.configure_new_variable(
-                "lambdas",
-                lambdas,
-                ocp,
-                nlp,
-                as_states=True,
-                as_controls=False,
-            )
-
-        self.configure_dynamics_function(ocp, nlp)
 
     def variational_integrator_three_nodes(
         self,

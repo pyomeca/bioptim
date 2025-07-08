@@ -6,8 +6,8 @@ from typing import Any, Callable
 
 from casadi import MX, Function, jacobian, vertcat
 
-from ..models.protocols.biomodel import BioModel
-from ..misc.options import OptionDict
+from .biomodel import BioModel
+from ...misc.options import OptionDict
 
 
 class HolonomicConstraintsFcn:
@@ -17,11 +17,11 @@ class HolonomicConstraintsFcn:
 
     @staticmethod
     def superimpose_markers(
-        model: BioModel,
         marker_1: str,
         marker_2: str = None,
         index: slice = slice(0, 3),
         local_frame_index: int = None,
+        model: BioModel = None,
     ) -> tuple[Function, Function, Function]:
         """
         Generate the constraint functions to superimpose two markers.
@@ -106,7 +106,7 @@ class HolonomicConstraintsFcn:
 
     @staticmethod
     def rigid_contacts(
-        model: BioModel,
+        model: BioModel = None,
     ) -> tuple[Function, Function, Function]:
         """
         Generate the constraint functions to restrain contact movement.
@@ -187,7 +187,7 @@ class HolonomicConstraintsList(OptionDict):
     def __init__(self):
         super(HolonomicConstraintsList, self).__init__(sub_type=dict)
 
-    def add(self, key: str, constraints_fcn: Callable, **kwargs: Any):
+    def add(self, key: str, constraints_fcn: Callable, **extra_arguments: Any):
         """
         Add a new bounds to the list, either [min_bound AND max_bound] OR [bounds] should be defined
 
@@ -198,10 +198,8 @@ class HolonomicConstraintsList(OptionDict):
         constraints_fcn: HolonomicConstraintsFcn
             The function that generates the holonomic constraints
         """
-        constraints, constraints_jacobian, constraints_double_derivative = constraints_fcn(**kwargs)
         super(HolonomicConstraintsList, self)._add(
             key=key,
-            constraints=constraints,
-            constraints_jacobian=constraints_jacobian,
-            constraints_double_derivative=constraints_double_derivative,
+            constraints_fcn=constraints_fcn,
+            extra_arguments=extra_arguments,
         )

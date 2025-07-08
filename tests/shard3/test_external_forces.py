@@ -1,11 +1,10 @@
 from bioptim import (
     PhaseDynamics,
     SolutionMerge,
-    BiorbdModel,
+    TorqueBiorbdModel,
     Node,
     OptimalControlProgram,
-    DynamicsList,
-    DynamicsFcn,
+    DynamicsOptionsList,
     ObjectiveList,
     ObjectiveFcn,
     ConstraintList,
@@ -184,7 +183,7 @@ def prepare_ocp(
             "force5", "Test", np.vstack((np.zeros((3, n_shooting)), Test_force)), point_of_application=Test_point_of_application
         )
 
-    bio_model = BiorbdModel(biorbd_model_path, external_force_set=external_forces)
+    bio_model = TorqueBiorbdModel(biorbd_model_path, external_force_set=external_forces)
     numerical_data_timeseries = {"external_forces": external_forces.to_numerical_time_series()}
 
     # Add objective functions
@@ -192,9 +191,8 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100)
 
     # Dynamics
-    dynamics = DynamicsList()
+    dynamics = DynamicsOptionsList()
     dynamics.add(
-        DynamicsFcn.TORQUE_DRIVEN,
         numerical_data_timeseries=numerical_data_timeseries,
     )
 
@@ -217,9 +215,9 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,

@@ -13,11 +13,10 @@ from bioptim import (
     StochasticOptimalControlProgram,
     ObjectiveFcn,
     Solver,
-    StochasticBiorbdModel,
+    StochasticTorqueBiorbdModel,
     ObjectiveList,
     NonLinearProgram,
-    DynamicsList,
-    DynamicsFcn,
+    DynamicsOptionsList,
     BoundsList,
     InterpolationType,
     SocpType,
@@ -28,6 +27,7 @@ from bioptim import (
     ControlType,
     Axis,
     SolutionMerge,
+    DynamicsOptions,
 )
 
 from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
@@ -104,17 +104,19 @@ def prepare_socp(
         initial_cov=initial_cov,
     )
 
-    bio_model = StochasticBiorbdModel(
+    bio_model = StochasticTorqueBiorbdModel(
         biorbd_model_path,
+        problem_type=problem_type,
+        with_cholesky=False,
+        n_noised_states=4,
+        n_noised_controls=2,
         sensory_noise_magnitude=sensory_noise_magnitude,
         motor_noise_magnitude=motor_noise_magnitude,
         sensory_reference=sensory_reference,
         n_references=4,  # This number must be in agreement with what is declared in sensory_reference
         n_feedbacks=4,
-        n_noised_states=4,
-        n_noised_controls=2,
-        friction_coefficients=np.array([[0.05, 0.025], [0.025, 0.05]]),
         use_sx=use_sx,
+        friction_coefficients=np.array([[0.05, 0.025], [0.025, 0.05]]),
     )
 
     n_tau = bio_model.nb_tau
@@ -183,12 +185,7 @@ def prepare_socp(
     )
 
     # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(
-        DynamicsFcn.STOCHASTIC_TORQUE_DRIVEN,
-        problem_type=problem_type,
-        expand_dynamics=True,
-    )
+    dynamics = DynamicsOptions(expand_dynamics=True)
 
     x_bounds = BoundsList()
     x_bounds.add("q", min_bound=[-cas.inf] * n_q, max_bound=[cas.inf] * n_q, interpolation=InterpolationType.CONSTANT)
@@ -253,9 +250,9 @@ def prepare_socp(
 
     return StochasticOptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_init=x_init,
         u_init=u_init,
         a_init=a_init,

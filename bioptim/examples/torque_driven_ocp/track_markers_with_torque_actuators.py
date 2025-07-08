@@ -10,11 +10,12 @@ better idea. An example of which can be found with the bioptim paper.
 import platform
 
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
+    TorqueActivationBiorbdModel,
     Node,
     OptimalControlProgram,
-    DynamicsList,
-    DynamicsFcn,
+    DynamicsOptionsList,
+    DynamicsOptions,
     ObjectiveList,
     ObjectiveFcn,
     ConstraintList,
@@ -67,7 +68,10 @@ def prepare_ocp(
 
     # --- Options --- #
     # BioModel path
-    bio_model = BiorbdModel(biorbd_model_path)
+    if actuator_type and actuator_type == 1:
+        bio_model = TorqueActivationBiorbdModel(biorbd_model_path)
+    else:
+        bio_model = TorqueBiorbdModel(biorbd_model_path)
 
     # Problem parameters
     if actuator_type and actuator_type == 1:
@@ -80,31 +84,14 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100)
 
     # Dynamics
-    dynamics = DynamicsList()
-    if actuator_type:
-        if actuator_type == 1:
-            dynamics.add(
-                DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
-                ode_solver=ode_solver,
-                expand_dynamics=expand_dynamics,
-                phase_dynamics=phase_dynamics,
-            )
-        elif actuator_type == 2:
-            dynamics.add(
-                DynamicsFcn.TORQUE_DRIVEN,
-                ode_solver=ode_solver,
-                expand_dynamics=expand_dynamics,
-                phase_dynamics=phase_dynamics,
-            )
-        else:
-            raise ValueError("actuator_type is 1 (torque activations) or 2 (torque max constraints)")
-    else:
-        dynamics.add(
-            DynamicsFcn.TORQUE_DRIVEN,
+    dynamics = DynamicsOptionsList()
+    dynamics.add(
+        DynamicsOptions(
             ode_solver=ode_solver,
             expand_dynamics=expand_dynamics,
             phase_dynamics=phase_dynamics,
         )
+    )
 
     # Constraints
     constraints = ConstraintList()
@@ -128,9 +115,9 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,

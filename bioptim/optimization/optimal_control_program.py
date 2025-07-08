@@ -9,8 +9,7 @@ from matplotlib import pyplot as plt
 
 from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVectorHelper
-from ..dynamics.configure_problem import DynamicsList, Dynamics, ConfigureProblem
-from ..dynamics.ode_solvers import OdeSolver
+from ..dynamics.configure_problem import DynamicsOptionsList, DynamicsOptions, ConfigureProblem
 from ..gui.check_conditioning import check_conditioning
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..gui.ipopt_output_plot import SaveIterationsInfo
@@ -57,6 +56,8 @@ from ..misc.mapping import BiMappingList, Mapping, BiMapping
 from ..misc.options import OptionDict
 from ..models.biorbd.variational_biorbd_model import VariationalBiorbdModel
 from ..models.protocols.biomodel import BioModel
+from ..models.protocols.abstract_model_dynamics import DynamicalModel
+from ..models.protocols.abstract_model import AbstractModel
 from ..optimization.optimization_variable import OptimizationVariableList
 from ..optimization.parameters import ParameterList, Parameter, ParameterContainer
 from ..optimization.solution.solution import Solution
@@ -138,10 +139,10 @@ class OptimalControlProgram:
 
     def __init__(
         self,
-        bio_model: list | tuple | BioModel,
-        dynamics: Dynamics | DynamicsList,
+        bio_model: list | tuple | DynamicalModel,
         n_shooting: int | list | tuple,
         phase_time: int | float | list | tuple,
+        dynamics: DynamicsOptions | DynamicsOptionsList = None,
         x_bounds: BoundsList = None,
         u_bounds: BoundsList = None,
         a_bounds: BoundsList = None,
@@ -174,12 +175,12 @@ class OptimalControlProgram:
         ----------
         bio_model: list | tuple | BioModel
             The bio_model to use for the optimization
-        dynamics: Dynamics | DynamicsList
-            The dynamics of the phases
         n_shooting: int | list[int]
             The number of shooting point of the phases
         phase_time: int | float | list | tuple
             The phase time of the phases
+        dynamics: DynamicsOptions | DynamicsOptionsList
+            The dynamics of the phases
         x_init: InitialGuess | InitialGuessList
             The initial guesses for the states
         u_init: InitialGuess | InitialGuessList
@@ -324,6 +325,9 @@ class OptimalControlProgram:
         """
         if not isinstance(bio_model, (list, tuple)):
             bio_model = [bio_model]
+        for model in bio_model:
+            if not isinstance(model, AbstractModel):
+                raise RuntimeError("The bio_model should inherit from AbstractModel")
         bio_model = self._check_quaternions_hasattr(bio_model)
         self.n_phases = len(bio_model)
         return bio_model
@@ -496,12 +500,16 @@ class OptimalControlProgram:
         if not isinstance(use_sx, bool):
             raise RuntimeError("use_sx should be a bool")
 
-        if isinstance(dynamics, Dynamics):
+        if dynamics is None:
+            dynamics = DynamicsOptionsList()
+            for i_phase in range(self.n_phases):
+                dynamics.add(DynamicsOptions())
+        if isinstance(dynamics, DynamicsOptions):
             tp = dynamics
-            dynamics = DynamicsList()
+            dynamics = DynamicsOptionsList()
             dynamics.add(tp)
-        if not isinstance(dynamics, DynamicsList):
-            raise ValueError("dynamics must be of type DynamicsList or Dynamics")
+        if not isinstance(dynamics, DynamicsOptionsList):
+            raise ValueError("dynamics must be of type DynamicsOptionsList or DynamicsOptions")
 
         # Type of CasADi graph
         self.cx = SX if use_sx else MX

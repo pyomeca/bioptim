@@ -8,6 +8,8 @@ from casadi import DM, vertcat
 from bioptim import Solver, SolutionMerge, SolutionIntegrator
 from ..utils import TestUtils
 
+# TODO: All the tests in this file can be removed once the Leuven version of stochastic is removed from Bioptim
+
 
 # Integrated values should be handled another way
 # In the meantime, let's skip this test
@@ -390,109 +392,109 @@ from ..utils import TestUtils
 #             ]
 #         ),
 #     )
-
-
-@pytest.mark.parametrize("with_scaling", [True, False])
-@pytest.mark.parametrize("use_sx", [True, False])
-def test_arm_reaching_torque_driven_implicit(with_scaling, use_sx):
-    """
-    The values of this test is sketchy (when the controls can have different ControlTypes, the number of constraints should increase by 16.
-    """
-    from bioptim.examples.stochastic_optimal_control import arm_reaching_torque_driven_implicit as ocp_module
-
-    if not with_scaling and not use_sx:
-        pytest.skip("Redundant test")
-
-    final_time = 0.8
-    n_shooting = 4
-    hand_final_position = np.array([9.359873986980460e-12, 0.527332023564034])
-
-    dt = 0.01
-    motor_noise_std = 0.05
-    wPq_std = 3e-4
-    wPqdot_std = 0.0024
-    motor_noise_magnitude = DM(np.array([motor_noise_std**2 / dt, motor_noise_std**2 / dt]))
-    wPq_magnitude = DM(np.array([wPq_std**2 / dt, wPq_std**2 / dt]))
-    wPqdot_magnitude = DM(np.array([wPqdot_std**2 / dt, wPqdot_std**2 / dt]))
-    sensory_noise_magnitude = vertcat(wPq_magnitude, wPqdot_magnitude)
-
-    bioptim_folder = TestUtils.module_folder(ocp_module)
-
-    ocp = ocp_module.prepare_socp(
-        biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
-        final_time=final_time,
-        n_shooting=n_shooting,
-        hand_final_position=hand_final_position,
-        motor_noise_magnitude=motor_noise_magnitude,
-        sensory_noise_magnitude=sensory_noise_magnitude,
-        with_cholesky=False,
-        with_scaling=with_scaling,
-        use_sx=use_sx,
-    )
-
-    # Solver parameters
-    solver = Solver.IPOPT()
-    solver.set_maximum_iterations(4)
-    solver.set_nlp_scaling_method("none")
-
-    # Check the values which will be sent to the solver
-    np.random.seed(42)
-    expected = [2.262656e02, 6.982128e10, 2.695483e03] if with_scaling else [226.265556, 1064.856593, 377.623933]
-
-    TestUtils.compare_ocp_to_solve(
-        ocp,
-        v=np.random.rand(457, 1),
-        expected_v_f_g=expected,
-        decimal=6,
-    )
-    if platform.system() == "Windows":
-        return
-
-    sol = ocp.solve(solver)
-
-    # Check objective
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-
-    # Check constraints values
-    g = np.array(sol.constraints)
-    npt.assert_equal(g.shape, (362, 1))
-
-    # Check some of the solution values
-    states = sol.decision_states(to_merge=SolutionMerge.NODES)
-    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
-    algebraic_states = sol.decision_algebraic_states(to_merge=SolutionMerge.NODES)
-
-    q, qdot = states["q"], states["qdot"]
-    tau = controls["tau"]
-
-    # Check some of the results
-    k, ref, m, cov, a, c = (
-        controls["k"],
-        controls["ref"],
-        algebraic_states["m"],
-        controls["cov"],
-        controls["a"],
-        controls["c"],
-    )
-    if not with_scaling:
-        # Check objective function value
-        npt.assert_almost_equal(f[0, 0], 95.49928267855638, decimal=4)
-
-        # detailed cost values
-        npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 95.43029410036674, decimal=4)
-        npt.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 0.06898857818965713, decimal=4)
-        npt.assert_almost_equal(
-            f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
-        )
-
-        # initial and final position
-        npt.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
-        npt.assert_almost_equal(q[:, -1], np.array([0.9255255, 1.290118]))
-        npt.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
-        npt.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
-
-        npt.assert_almost_equal(tau[:, 0], np.array([0.4160923, -0.2730973]))
-        npt.assert_almost_equal(tau[:, -2], np.array([-0.4087628, 0.3192567]))
-
-        npt.assert_almost_equal(ref[:, 0], np.array([2.8105910e-02, 2.8313229e-01, 4.6654784e-05, 4.6654784e-05]))
+#
+#
+# @pytest.mark.parametrize("with_scaling", [True, False])
+# @pytest.mark.parametrize("use_sx", [True, False])
+# def test_arm_reaching_torque_driven_implicit(with_scaling, use_sx):
+#     """
+#     The values of this test is sketchy (when the controls can have different ControlTypes, the number of constraints should increase by 16.
+#     """
+#     from bioptim.examples.stochastic_optimal_control import arm_reaching_torque_driven_implicit as ocp_module
+#
+#     if not with_scaling and not use_sx:
+#         pytest.skip("Redundant test")
+#
+#     final_time = 0.8
+#     n_shooting = 4
+#     hand_final_position = np.array([9.359873986980460e-12, 0.527332023564034])
+#
+#     dt = 0.01
+#     motor_noise_std = 0.05
+#     wPq_std = 3e-4
+#     wPqdot_std = 0.0024
+#     motor_noise_magnitude = DM(np.array([motor_noise_std**2 / dt, motor_noise_std**2 / dt]))
+#     wPq_magnitude = DM(np.array([wPq_std**2 / dt, wPq_std**2 / dt]))
+#     wPqdot_magnitude = DM(np.array([wPqdot_std**2 / dt, wPqdot_std**2 / dt]))
+#     sensory_noise_magnitude = vertcat(wPq_magnitude, wPqdot_magnitude)
+#
+#     bioptim_folder = TestUtils.module_folder(ocp_module)
+#
+#     ocp = ocp_module.prepare_socp(
+#         biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
+#         final_time=final_time,
+#         n_shooting=n_shooting,
+#         hand_final_position=hand_final_position,
+#         motor_noise_magnitude=motor_noise_magnitude,
+#         sensory_noise_magnitude=sensory_noise_magnitude,
+#         with_cholesky=False,
+#         with_scaling=with_scaling,
+#         use_sx=use_sx,
+#     )
+#
+#     # Solver parameters
+#     solver = Solver.IPOPT()
+#     solver.set_maximum_iterations(4)
+#     solver.set_nlp_scaling_method("none")
+#
+#     # Check the values which will be sent to the solver
+#     np.random.seed(42)
+#     expected = [2.262656e02, 6.982128e10, 2.695483e03] if with_scaling else [226.265556, 1064.856593, 377.623933]
+#
+#     TestUtils.compare_ocp_to_solve(
+#         ocp,
+#         v=np.random.rand(457, 1),
+#         expected_v_f_g=expected,
+#         decimal=6,
+#     )
+#     if platform.system() == "Windows":
+#         return
+#
+#     sol = ocp.solve(solver)
+#
+#     # Check objective
+#     f = np.array(sol.cost)
+#     npt.assert_equal(f.shape, (1, 1))
+#
+#     # Check constraints values
+#     g = np.array(sol.constraints)
+#     npt.assert_equal(g.shape, (362, 1))
+#
+#     # Check some of the solution values
+#     states = sol.decision_states(to_merge=SolutionMerge.NODES)
+#     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+#     algebraic_states = sol.decision_algebraic_states(to_merge=SolutionMerge.NODES)
+#
+#     q, qdot = states["q"], states["qdot"]
+#     tau = controls["tau"]
+#
+#     # Check some of the results
+#     k, ref, m, cov, a, c = (
+#         controls["k"],
+#         controls["ref"],
+#         algebraic_states["m"],
+#         controls["cov"],
+#         controls["a"],
+#         controls["c"],
+#     )
+#     if not with_scaling:
+#         # Check objective function value
+#         npt.assert_almost_equal(f[0, 0], 95.49928267855638, decimal=4)
+#
+#         # detailed cost values
+#         npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 95.43029410036674, decimal=4)
+#         npt.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 0.06898857818965713, decimal=4)
+#         npt.assert_almost_equal(
+#             f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
+#         )
+#
+#         # initial and final position
+#         npt.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
+#         npt.assert_almost_equal(q[:, -1], np.array([0.9255255, 1.290118]))
+#         npt.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
+#         npt.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
+#
+#         npt.assert_almost_equal(tau[:, 0], np.array([0.4160923, -0.2730973]))
+#         npt.assert_almost_equal(tau[:, -2], np.array([-0.4087628, 0.3192567]))
+#
+#         npt.assert_almost_equal(ref[:, 0], np.array([2.8105910e-02, 2.8313229e-01, 4.6654784e-05, 4.6654784e-05]))

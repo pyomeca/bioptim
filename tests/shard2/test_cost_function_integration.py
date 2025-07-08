@@ -6,7 +6,7 @@ import io
 import sys
 
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     OdeSolver,
     OdeSolverBase,
     ControlType,
@@ -14,8 +14,7 @@ from bioptim import (
     OptimalControlProgram,
     Objective,
     ObjectiveFcn,
-    Dynamics,
-    DynamicsFcn,
+    DynamicsOptions,
     BoundsList,
     Solver,
     PhaseDynamics,
@@ -67,7 +66,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
 
     # Add objective functions
     if objective == "torque":
@@ -86,9 +85,7 @@ def prepare_ocp(
         raise ValueError("Wrong objective")
 
     # Dynamics
-    dynamics = Dynamics(
-        DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver, expand_dynamics=True, phase_dynamics=phase_dynamics
-    )
+    dynamics = DynamicsOptions(ode_solver=ode_solver, expand_dynamics=True, phase_dynamics=phase_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -107,9 +104,9 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         phase_time=1,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,

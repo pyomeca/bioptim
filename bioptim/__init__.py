@@ -54,14 +54,10 @@ ACADOS
 # --- Managing the dynamics --- #
 ConfigureProblem
     Dynamics configuration for the most common ocp
-Dynamics
+DynamicsOptions
     A placeholder for the chosen dynamics by the user
-DynamicsList
-    A list of Dynamics if more than one is required, typically when more than one phases are declared
-DynamicsFcn
-    Selection of valid dynamics functions
-DynamicsFunctions
-    Implementation of all the dynamic functions
+DynamicsOptionsList
+    A list of DynamicsOptions if more than one is required, typically when more than one phases are declared
 DynamicsEvaluation
     A placeholder for the dynamics evaluation in explicit dxdt or in implicit defects
 
@@ -160,7 +156,8 @@ multiphase can be found in 'examples/torque_driven_ocp'. For ACADOS specific exa
 
 """
 
-from .dynamics.configure_problem import ConfigureProblem, DynamicsFcn, DynamicsList, Dynamics
+from .dynamics.configure_problem import ConfigureProblem, DynamicsOptionsList, DynamicsOptions
+from .dynamics.configure_variables import AutoConfigure, States, Controls, AlgebraicStates, ConfigureVariables
 from .dynamics.dynamics_evaluation import DynamicsEvaluation
 from .dynamics.dynamics_functions import DynamicsFunctions
 from .dynamics.fatigue.effort_perception import EffortPerception, TauEffortPerception
@@ -180,7 +177,6 @@ from .limits.path_conditions import BoundsList, InitialGuessList, Bounds, Initia
 from .limits.penalty_controller import PenaltyController
 from .limits.penalty_helpers import PenaltyHelpers
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
-from .limits.holonomic_constraints import HolonomicConstraintsFcn, HolonomicConstraintsList
 from .misc.__version__ import __version__
 from .misc.enums import (
     Axis,
@@ -207,8 +203,35 @@ from .models.biorbd.holonomic_biorbd_model import HolonomicBiorbdModel
 from .models.biorbd.multi_biorbd_model import MultiBiorbdModel
 from .models.biorbd.stochastic_biorbd_model import StochasticBiorbdModel
 from .models.biorbd.variational_biorbd_model import VariationalBiorbdModel
+from .models.biorbd.model_dynamics import (
+    TorqueBiorbdModel,
+    StochasticTorqueBiorbdModel,
+    HolonomicTorqueBiorbdModel,
+    VariationalTorqueBiorbdModel,
+    TorqueFreeFloatingBaseBiorbdModel,
+    StochasticTorqueFreeFloatingBaseBiorbdModel,
+    TorqueActivationBiorbdModel,
+    TorqueDerivativeBiorbdModel,
+    MusclesBiorbdModel,
+    JointAccelerationBiorbdModel,
+    MultiTorqueBiorbdModel,
+)
 from .models.protocols.biomodel import BioModel
+from .models.protocols.holonomic_constraints import HolonomicConstraintsFcn, HolonomicConstraintsList
 from .models.protocols.stochastic_biomodel import StochasticBioModel
+from .models.protocols.abstract_model_dynamics import (
+    TorqueDynamics,
+    StochasticTorqueDynamics,
+    HolonomicTorqueDynamics,
+    VariationalTorqueDynamics,
+    TorqueFreeFloatingBaseDynamics,
+    StochasticTorqueFreeFloatingBaseDynamics,
+    TorqueActivationDynamics,
+    TorqueDerivativeDynamics,
+    MusclesDynamics,
+    JointAccelerationDynamics,
+)
+from .models.protocols.abstract_model import AbstractModel
 from .optimization.multi_start import MultiStart
 from .optimization.non_linear_program import NonLinearProgram
 from .optimization.optimal_control_program import OptimalControlProgram

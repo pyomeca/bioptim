@@ -5,10 +5,9 @@ Test for file IO
 import platform
 
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     OptimalControlProgram,
-    DynamicsList,
-    DynamicsFcn,
+    DynamicsOptions,
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,
@@ -67,7 +66,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
 
     # Add objective functions
     if marker_in_first_coordinates_system:
@@ -99,9 +98,7 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", node=Node.ALL, index=[2, 3], weight=-1)
 
     # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(
-        DynamicsFcn.TORQUE_DRIVEN,
+    dynamics = DynamicsOptions(
         expand_dynamics=not isinstance(ode_solver, OdeSolver.IRK),
         phase_dynamics=phase_dynamics,
         ode_solver=ode_solver,
@@ -125,9 +122,9 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         x_init=x_init,

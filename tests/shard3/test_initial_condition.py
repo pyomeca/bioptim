@@ -9,10 +9,9 @@ from bioptim import (
     Solution,
     Shooting,
     SolutionIntegrator,
-    BiorbdModel,
+    TorqueBiorbdModel,
     Objective,
-    Dynamics,
-    DynamicsFcn,
+    DynamicsOptions,
     ObjectiveFcn,
     OptimalControlProgram,
     InitialGuessList,
@@ -315,14 +314,14 @@ def test_initial_guess_error_messages(phase_dynamics):
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, phase_dynamics=phase_dynamics)
+    dynamics = DynamicsOptions(phase_dynamics=phase_dynamics)
 
     # check the error messages
     with pytest.raises(RuntimeError, match="x_init should be built from a InitialGuessList"):
-        bio_model = BiorbdModel(biorbd_model_path)
+        bio_model = TorqueBiorbdModel(biorbd_model_path)
         OptimalControlProgram(
             bio_model,
-            dynamics,
+            dynamics=dynamics,
             n_shooting=5,
             phase_time=1,
             x_init=1,
@@ -330,10 +329,10 @@ def test_initial_guess_error_messages(phase_dynamics):
         )
 
     with pytest.raises(RuntimeError, match="u_init should be built from a InitialGuessList"):
-        bio_model = BiorbdModel(biorbd_model_path)
+        bio_model = TorqueBiorbdModel(biorbd_model_path)
         OptimalControlProgram(
             bio_model,
-            dynamics,
+            dynamics=dynamics,
             n_shooting=5,
             phase_time=1,
             u_init=1,
@@ -348,10 +347,10 @@ def test_initial_guess_error_messages(phase_dynamics):
     ):
         x_init = InitialGuessList()
         x_init.add("bad_key", [1, 2])
-        bio_model = BiorbdModel(biorbd_model_path)
+        bio_model = TorqueBiorbdModel(biorbd_model_path)
         OptimalControlProgram(
             bio_model,
-            dynamics,
+            dynamics=dynamics,
             n_shooting=5,
             phase_time=1,
             x_init=x_init,
@@ -367,10 +366,10 @@ def test_initial_guess_error_messages(phase_dynamics):
     ):
         u_init = InitialGuessList()
         u_init.add("bad_key", [1, 2])
-        bio_model = BiorbdModel(biorbd_model_path)
+        bio_model = TorqueBiorbdModel(biorbd_model_path)
         OptimalControlProgram(
             bio_model,
-            dynamics,
+            dynamics=dynamics,
             n_shooting=5,
             phase_time=1,
             u_init=u_init,

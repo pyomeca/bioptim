@@ -44,7 +44,7 @@ class NonLinearProgram:
         The extra dynamic function used during the current phase dxdt = f(x,u,p)
     implicit_dynamics_func: Callable
         The implicit dynamic function used during the current phase f(x,u,p,xdot) = 0
-    dynamics_type: Dynamics
+    dynamics_type: DynamicsOptions
         The dynamic option declared by the user for the current phase
     g: list[list[Constraint]]
         All the constraints at each of the node of the phase
@@ -595,9 +595,7 @@ class NonLinearProgram:
             return ValueError(f"node_index out of range [0:{self.ns}]")
         return self.dt * node_idx
 
-    def get_var_from_states_or_controls(
-        self, key: str, states: MX.sym, controls: MX.sym, algebraic_states: MX.sym = None
-    ) -> MX:
+    def get_var(self, key: str, states: MX.sym, controls: MX.sym, algebraic_states: MX.sym = None) -> MX:
         """
         This function returns the requested variable from the states, controls, or algebraic_states.
         If the variable is present in more than one type of variables, it returns the following priority:

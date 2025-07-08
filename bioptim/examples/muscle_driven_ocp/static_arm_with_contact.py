@@ -10,12 +10,11 @@ mesh points.
 import platform
 
 from bioptim import (
-    BiorbdModel,
+    MusclesBiorbdModel,
     OptimalControlProgram,
     ObjectiveList,
     ObjectiveFcn,
-    DynamicsList,
-    DynamicsFcn,
+    DynamicsOptions,
     BoundsList,
     InitialGuessList,
     OdeSolver,
@@ -54,7 +53,9 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path, contact_types=[ContactType.RIGID_EXPLICIT])
+    bio_model = MusclesBiorbdModel(
+        biorbd_model_path, with_residual_torque=True, contact_types=[ContactType.RIGID_EXPLICIT]
+    )
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -65,13 +66,9 @@ def prepare_ocp(
     )
 
     # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(
-        DynamicsFcn.MUSCLE_DRIVEN,
-        with_residual_torque=True,
+    dynamics = DynamicsOptions(
         ode_solver=ode_solver,
     )
-    # raise RuntimeError("This example is broken, since contact dynamics with muscle is not implemented")
 
     # Path constraint
     x_bounds = BoundsList()
@@ -97,14 +94,14 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
-        objective_functions,
+        dynamics=dynamics,
+        x_init=x_init,
+        u_init=u_init,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        objective_functions=objective_functions,
     )
 
 

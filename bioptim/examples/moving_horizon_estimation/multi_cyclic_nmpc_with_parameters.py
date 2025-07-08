@@ -6,6 +6,7 @@ the latter has more cycle at a time giving the knowledge to the solver that 'som
 """
 
 import platform
+from typing import Callable
 
 import biorbd
 import numpy as np
@@ -15,10 +16,10 @@ from bioptim import (
     Axis,
     BiorbdModel,
     BoundsList,
-    ConfigureProblem,
+    TorqueDynamics,
     ConstraintFcn,
     ConstraintList,
-    Dynamics,
+    DynamicsOptions,
     DynamicsEvaluation,
     DynamicsFunctions,
     InitialGuessList,
@@ -57,7 +58,7 @@ class MyCyclicNMPC(MultiCyclicNonlinearModelPredictiveControl):
         return True
 
 
-def dummy_parameter_function(bio_model: biorbd.Model, value: MX):
+def dummy_parameter_function(bio_model, value: MX):
     return
 
 
@@ -65,75 +66,69 @@ def param_custom_objective(controller: PenaltyController) -> MX:
     return controller.parameters["tau_modifier"].cx - 2
 
 
-def parameter_dependent_dynamic(
-    time: MX | SX,
-    states: MX | SX,
-    controls: MX | SX,
-    parameters: MX | SX,
-    algebraic_states: MX | SX,
-    numerical_timeseries: MX | SX,
-    nlp: NonLinearProgram,
-) -> DynamicsEvaluation:
-    """
-    The custom dynamics function that provides the derivative of the states: dxdt = f(t, x, u, p, a, d)
+class CustomModel(BiorbdModel, TorqueDynamics):
+    def __init__(self, model_path, parameters_list):
+        """
+        Custom model that inherits from BiorbdModel and TorqueDynamics to implement custom dynamics.
+        """
+        self.model_path = model_path
+        self.parameters_list = parameters_list
+        BiorbdModel.__init__(self, model_path, parameters=parameters_list)
+        TorqueDynamics.__init__(self)
 
-    Parameters
-    ----------
-    time: MX | SX
-        The time of the system
-    states: MX | SX
-        The state of the system
-    controls: MX | SX
-        The controls of the system
-    parameters: MX | SX
-        The parameters acting on the system
-    algebraic_states: MX | SX
-        The algebraic states variables of the system
-    numerical_timeseries: MX | SX
-        The numerical timeseries of the system
-    nlp: NonLinearProgram
-        A reference to the phase
+    def dynamics(
+        self,
+        time: MX | SX,
+        states: MX | SX,
+        controls: MX | SX,
+        parameters: MX | SX,
+        algebraic_states: MX | SX,
+        numerical_timeseries: MX | SX,
+        nlp: NonLinearProgram,
+    ) -> DynamicsEvaluation:
+        """
+        The custom dynamics function that provides the derivative of the states: dxdt = f(t, x, u, p, a, d)
 
-    Returns
-    -------
-    The derivative of the states in the tuple[MX | SX] format
-    """
+        Parameters
+        ----------
+        time: MX | SX
+            The time of the system
+        states: MX | SX
+            The state of the system
+        controls: MX | SX
+            The controls of the system
+        parameters: MX | SX
+            The parameters acting on the system
+        algebraic_states: MX | SX
+            The algebraic states variables of the system
+        numerical_timeseries: MX | SX
+            The numerical timeseries of the system
+        nlp: NonLinearProgram
+            A reference to the phase
 
-    q = DynamicsFunctions.get(nlp.states["q"], states)
-    qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-    tau = DynamicsFunctions.get(nlp.controls["tau"], controls) * (parameters)
+        Returns
+        -------
+        The derivative of the states in the tuple[MX | SX] format
+        """
 
-    # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
-    dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-    ddq = nlp.model.forward_dynamics(with_contact=False)(q, qdot, tau, [], [])
+        q = DynamicsFunctions.get(nlp.states["q"], states)
+        qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+        tau = DynamicsFunctions.get(nlp.controls["tau"], controls) * (parameters)
 
-    return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
+        # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
+        dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
+        ddq = nlp.model.forward_dynamics(with_contact=False)(q, qdot, tau, [], [])
 
+        return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
 
-def custom_configure(
-    ocp: OptimalControlProgram,
-    nlp: NonLinearProgram,
-    numerical_data_timeseries: dict[str, np.ndarray] = None,
-):
-    """
-    Tell the program which variables are states and controls.
-    The user is expected to use the ConfigureProblem.configure_xxx functions.
-
-    Parameters
-    ----------
-    ocp: OptimalControlProgram
-        A reference to the ocp
-    nlp: NonLinearProgram
-        A reference to the phase
-    numerical_data_timeseries: dict[str, np.ndarray]
-            A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
-    """
-
-    ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
-    ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
-
-    ConfigureProblem.configure_dynamics_function(ocp, nlp, parameter_dependent_dynamic)
+    def serialize(self) -> tuple[Callable, dict]:
+        """
+        This is necessary for NMPC as the model must be reconstructed from its serialized form at each cycle.
+        """
+        return CustomModel, dict(
+            model_path=self.path,
+            parameters_list=self.parameters_list,
+        )
 
 
 def prepare_nmpc(
@@ -147,7 +142,6 @@ def prepare_nmpc(
     expand_dynamics: bool = True,
     use_sx: bool = False,
 ):
-    model = BiorbdModel(model_path)
 
     parameter = ParameterList(use_sx=use_sx)
     parameter_bounds = BoundsList()
@@ -169,7 +163,9 @@ def prepare_nmpc(
         interpolation=InterpolationType.CONSTANT,
     )
 
-    dynamics = Dynamics(custom_configure, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    model = CustomModel(model_path, parameters_list=parameter)
+
+    dynamics = DynamicsOptions(expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     x_bounds = BoundsList()
     x_bounds["q"] = model.bounds_from_ranges("q")
@@ -200,7 +196,7 @@ def prepare_nmpc(
 
     return MyCyclicNMPC(
         model,
-        dynamics,
+        dynamics=dynamics,
         cycle_len=cycle_len,
         cycle_duration=cycle_duration,
         n_cycles_simultaneous=n_cycles_simultaneous,

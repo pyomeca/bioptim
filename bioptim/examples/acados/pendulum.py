@@ -9,12 +9,11 @@ dynamics out there (the joint torque driven), it defines an objective function a
 
 import numpy as np
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     OptimalControlProgram,
     ObjectiveList,
     ObjectiveFcn,
-    DynamicsList,
-    DynamicsFcn,
+    DynamicsOptions,
     BoundsList,
     Solver,
 )
@@ -46,7 +45,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
     nq = bio_model.nb_q
     nqdot = bio_model.nb_qdot
 
@@ -65,9 +64,8 @@ def prepare_ocp(
         ObjectiveFcn.Mayer.MINIMIZE_STATE, weight=500, key="qdot", target=target[nq:, :], multi_thread=False
     )
 
-    # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics)
+    # DynamicsOptions
+    dynamics = DynamicsOptions(expand_dynamics=expand_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -87,9 +85,9 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,

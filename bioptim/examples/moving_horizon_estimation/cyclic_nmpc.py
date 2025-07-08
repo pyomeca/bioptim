@@ -8,10 +8,9 @@ import platform
 
 import numpy as np
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     CyclicNonlinearModelPredictiveControl,
-    Dynamics,
-    DynamicsFcn,
+    DynamicsOptions,
     Objective,
     ObjectiveFcn,
     ConstraintList,
@@ -41,8 +40,8 @@ def prepare_nmpc(
     phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics=True,
 ):
-    model = BiorbdModel(model_path)
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    model = TorqueBiorbdModel(model_path)
+    dynamics = DynamicsOptions(expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     x_bound = BoundsList()
     x_bound["q"] = model.bounds_from_ranges("q")
@@ -66,9 +65,9 @@ def prepare_nmpc(
 
     return MyCyclicNMPC(
         model,
-        dynamics,
         cycle_len,
         cycle_duration,
+        dynamics=dynamics,
         common_objective_functions=new_objectives,
         constraints=constraints,
         x_bounds=x_bound,

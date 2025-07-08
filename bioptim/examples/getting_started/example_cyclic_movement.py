@@ -11,11 +11,10 @@ if weight is <= 0 [or if no weight is provided], or as a soft penalty (objective
 import platform
 
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     Node,
     OptimalControlProgram,
-    Dynamics,
-    DynamicsFcn,
+    DynamicsOptions,
     Objective,
     ObjectiveFcn,
     ConstraintList,
@@ -68,15 +67,13 @@ def prepare_ocp(
     The ocp ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100)
 
-    # Dynamics
-    dynamics = Dynamics(
-        DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
-    )
+    # DynamicsOptions
+    dynamics = DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     # Constraints
     constraints = ConstraintList()
@@ -109,9 +106,9 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,

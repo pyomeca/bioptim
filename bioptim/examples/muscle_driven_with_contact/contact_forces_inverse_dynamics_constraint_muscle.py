@@ -8,26 +8,20 @@ import platform
 
 from matplotlib import pyplot as plt
 import numpy as np
-from casadi import MX, SX, vertcat
+from casadi import vertcat
 from bioptim import (
-    BiorbdModel,
+    MusclesBiorbdModel,
     Node,
     OptimalControlProgram,
     ConstraintList,
     ConstraintFcn,
     ObjectiveList,
     ObjectiveFcn,
-    DynamicsList,
-    DynamicsFcn,
+    DynamicsOptions,
     BoundsList,
     InitialGuessList,
     Solver,
     SolutionMerge,
-    NonLinearProgram,
-    ConfigureProblem,
-    DynamicsEvaluation,
-    DynamicsFunctions,
-    ExternalForceSetVariables,
     OdeSolver,
     DefectType,
     InterpolationType,
@@ -80,7 +74,7 @@ def prepare_ocp(
 ):
 
     # BioModel
-    bio_model = BiorbdModel(biorbd_model_path, contact_types=contact_types)
+    bio_model = MusclesBiorbdModel(biorbd_model_path, with_residual_torque=True, contact_types=contact_types)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -90,10 +84,7 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_COM_POSITION, weight=100)
 
     # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(
-        DynamicsFcn.MUSCLE_DRIVEN,
-        with_residual_torque=True,
+    dynamics = DynamicsOptions(
         expand_dynamics=expand_dynamics,
         phase_dynamics=PhaseDynamics.ONE_PER_NODE,
         ode_solver=OdeSolver.COLLOCATION(polynomial_degree=3, defects_type=defects_type),
@@ -180,9 +171,9 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         phase_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         a_bounds=a_bounds,

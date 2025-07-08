@@ -324,7 +324,6 @@ class OcpToConsole(GraphAbstract):
             else:
                 print(f"PHASE DURATION IS OPTIMIZED")
             print(f"SHOOTING NODES : {self.ocp.nlp[phase_idx].ns}")
-            print(f"DYNAMICS: {self.ocp.nlp[phase_idx].dynamics_type.type.name}")
             print(f"ODE: {self.ocp.nlp[phase_idx].dynamics_type.ode_solver.integrator.__name__}")
             print(f"**********")
             print("")
@@ -578,7 +577,6 @@ class OcpToGraph(GraphAbstract):
         else:
             node_str += f"<b>Phase duration</b>: optimized<br/>"
         node_str += f"<b>Shooting nodes</b>: {self.ocp.nlp[phase_idx].ns}<br/>"
-        node_str += f"<b>Dynamics</b>: {self.ocp.nlp[phase_idx].dynamics_type.type.name}<br/>"
         node_str += f"<b>ODE</b>: {self.ocp.nlp[phase_idx].dynamics_type.ode_solver.integrator.__name__}<br/>"
         node_str += f"<b>Control type</b>: {self.ocp.nlp[phase_idx].control_type.name}"
         g.node(f"nlp_node_{phase_idx}", f"""<{node_str}>""")

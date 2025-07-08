@@ -15,15 +15,14 @@ import platform
 
 import numpy as np
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     Node,
     OptimalControlProgram,
     ConstraintList,
     ConstraintFcn,
     ObjectiveList,
     ObjectiveFcn,
-    DynamicsList,
-    DynamicsFcn,
+    DynamicsOptionsList,
     BiMappingList,
     BoundsList,
     InitialGuessList,
@@ -32,6 +31,7 @@ from bioptim import (
     Solver,
     PhaseDynamics,
     ContactType,
+    DynamicsOptions,
 )
 
 
@@ -81,7 +81,7 @@ def prepare_ocp(
 
     # --- Options --- #
     # BioModel path
-    bio_model = BiorbdModel(biorbd_model_path, contact_types=[ContactType.RIGID_EXPLICIT])
+    bio_model = TorqueBiorbdModel(biorbd_model_path, contact_types=[ContactType.RIGID_EXPLICIT])
     tau_min, tau_max = -500, 500
     dof_mapping = BiMappingList()
     dof_mapping.add("tau", to_second=[None, None, None, 0], to_first=[3])
@@ -91,12 +91,13 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1)
 
     # Dynamics
-    dynamics = DynamicsList()
+    dynamics = DynamicsOptionsList()
     dynamics.add(
-        DynamicsFcn.TORQUE_DRIVEN,
-        ode_solver=ode_solver,
-        expand_dynamics=expand_dynamics,
-        phase_dynamics=phase_dynamics,
+        DynamicsOptions(
+            ode_solver=ode_solver,
+            expand_dynamics=expand_dynamics,
+            phase_dynamics=phase_dynamics,
+        )
     )
 
     # Constraints
@@ -144,9 +145,9 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         phase_time,
+        dynamics=dynamics,
         x_init=x_init,
         x_bounds=x_bounds,
         u_bounds=u_bounds,

@@ -4,7 +4,7 @@ Test for file IO
 
 import platform
 
-from bioptim import OdeSolver, PhaseDynamics, BiorbdModel, SolutionMerge
+from bioptim import OdeSolver, PhaseDynamics, MusclesBiorbdModel, SolutionMerge
 import numpy as np
 import numpy.testing as npt
 import pytest
@@ -26,11 +26,11 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver, p
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     # Define the problem
+    use_residual_torque = False
     model_path = bioptim_folder + "/models/arm26.bioMod"
-    bio_model = BiorbdModel(model_path)
+    bio_model = MusclesBiorbdModel(model_path, with_residual_torque=use_residual_torque)
     final_time = 0.1
     n_shooting = 5
-    use_residual_torque = False
 
     # Generate random data to fit
     np.random.seed(10)
@@ -38,7 +38,9 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver, p
         bio_model, final_time, n_shooting, use_residual_torque=use_residual_torque
     )
 
-    bio_model = BiorbdModel(model_path)  # To allow for non free variable, the model must be reloaded
+    bio_model = MusclesBiorbdModel(
+        model_path, with_residual_torque=use_residual_torque
+    )  # To allow for non free variable, the model must be reloaded
     ocp = ocp_module.prepare_ocp(
         bio_model,
         final_time,

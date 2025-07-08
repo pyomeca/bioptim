@@ -5,7 +5,7 @@ from casadi import DM_eye, vertcat, Function, horzcat
 
 from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVectorHelper
-from ..dynamics.configure_problem import DynamicsList, Dynamics
+from ..dynamics.configure_problem import DynamicsOptionsList, DynamicsOptions
 from ..dynamics.ode_solvers import OdeSolver
 from ..limits.constraints import (
     ConstraintFcn,
@@ -40,9 +40,9 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
     def __init__(
         self,
         bio_model: list | tuple | StochasticBioModel,
-        dynamics: Dynamics | DynamicsList,
         n_shooting: int | list | tuple,
         phase_time: int | float | list | tuple,
+        dynamics: DynamicsOptions | DynamicsOptionsList = None,
         x_bounds: BoundsList = None,
         u_bounds: BoundsList = None,
         a_bounds: BoundsList = None,
@@ -72,7 +72,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         problem_type=SocpType.TRAPEZOIDAL_IMPLICIT,
         **kwargs,
     ):
-        _check_multi_threading_and_problem_type(problem_type, **kwargs)
+        _check_multi_threading_and_problem_type(problem_type, bio_model, **kwargs)
         _check_has_no_phase_dynamics_shared_during_the_phase(problem_type, **kwargs)
 
         self.problem_type = problem_type
@@ -86,8 +86,18 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             parameter_init = InitialGuessList()
 
         # Integrator
-        for dyn in dynamics:
-            dyn.ode_solver = self._set_default_ode_solver()
+        n_phase = 1 if isinstance(n_shooting, int) else len(n_shooting)
+        if dynamics is None:
+            dynamics = DynamicsOptionsList(use_sx=use_sx)
+            for i_phase in range(n_phase):
+                dynamics.add(DynamicsOptions())
+        elif isinstance(dynamics, DynamicsOptions):
+            tp = dynamics
+            dynamics = DynamicsOptionsList()
+            dynamics.add(tp)
+
+        for i_phase in range(n_phase):
+            dynamics[i_phase].ode_solver = self._set_default_ode_solver()
 
         if "motor_noise" not in parameters.keys():
             n_motor_noise = bio_model.motor_noise_magnitude.shape[0]
@@ -611,14 +621,18 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         NLP.add(self, "is_stochastic", True, True)
 
 
-def _check_multi_threading_and_problem_type(problem_type, **kwargs):
+def _check_multi_threading_and_problem_type(problem_type, bio_model, **kwargs):
     if not isinstance(problem_type, SocpType.COLLOCATION):
-        if "n_thread" in kwargs:
-            if kwargs["n_thread"] != 1:
+        if "n_threads" in kwargs:
+            if kwargs["n_threads"] != 1:
                 raise ValueError(
                     "Multi-threading is not possible yet while solving a trapezoidal stochastic ocp."
-                    "n_thread is set to 1 by default."
+                    "n_threads is set to 1 by default."
                 )
+    if bio_model.problem_type != problem_type:
+        raise RuntimeError(
+            "The problem type should be the same in the StochasticModel as in the StochasticOptimalControlProblem."
+        )
 
 
 def _check_has_no_phase_dynamics_shared_during_the_phase(problem_type, **kwargs):

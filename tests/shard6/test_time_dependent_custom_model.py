@@ -3,12 +3,12 @@ from typing import Callable
 
 from bioptim import (
     BoundsList,
-    ConfigureProblem,
+    ConfigureVariables,
     ConstraintFcn,
     ConstraintList,
     ControlType,
     DynamicsEvaluation,
-    DynamicsList,
+    DynamicsOptionsList,
     InitialGuessList,
     InterpolationType,
     Node,
@@ -22,7 +22,7 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
     VariableScaling,
-    ContactType,
+    AbstractModel,
 )
 from casadi import DM, MX, SX, vertcat, exp
 import numpy as np
@@ -32,8 +32,9 @@ import pytest
 from ..utils import TestUtils
 
 
-class Model:
+class Model(AbstractModel):
     def __init__(self, time_as_states: bool = False):
+        super().__init__()
         self._name = None
         self.a_rest = 3000
         self.tau1_rest = 0.05
@@ -43,6 +44,38 @@ class Model:
         self.tauc = 0.02
         self.time_as_states = time_as_states
         self.pulse_apparition_time = None
+
+        self.state_configuration = [
+            lambda ocp, nlp, as_states, as_controls, as_algebraic_states: ConfigureVariables.configure_new_variable(
+                "Cn",
+                ["Cn"],
+                ocp,
+                nlp,
+                as_states=True,
+                as_controls=False,
+            ),
+            lambda ocp, nlp, as_states, as_controls, as_algebraic_states: ConfigureVariables.configure_new_variable(
+                "F",
+                ["F"],
+                ocp,
+                nlp,
+                as_states=True,
+                as_controls=False,
+            ),
+        ]
+
+        if self.time_as_states:
+            self.state_configuration += [
+                lambda ocp, nlp, as_states, as_controls, as_algebraic_states: ConfigureVariables.configure_new_variable(
+                    "time",
+                    ["time"],
+                    ocp,
+                    nlp,
+                    as_states=True,
+                    as_controls=False,
+                )
+            ]
+        self.contact_types = []
 
     def serialize(self) -> tuple[Callable, dict]:
         return (
@@ -110,8 +143,8 @@ class Model:
     def f_dot_fun(self, cn: MX, f: MX, a: MX | float, tau1: MX | float, km: MX | float) -> MX | float:
         return a * (cn / (km + cn)) - (f / (tau1 + self.tau2 * (cn / (km + cn))))
 
-    @staticmethod
     def dynamics(
+        self,
         time: MX,
         states: MX,
         controls: MX,
@@ -132,48 +165,6 @@ class Model:
             ),
             defects=None,
         )
-
-    def declare_variables(
-        self,
-        ocp: OptimalControlProgram,
-        nlp: NonLinearProgram,
-        numerical_data_timeseries: dict[str, np.ndarray] = None,
-    ):
-        name = "Cn"
-        name_cn = [name]
-        ConfigureProblem.configure_new_variable(
-            name,
-            name_cn,
-            ocp,
-            nlp,
-            as_states=True,
-            as_controls=False,
-        )
-
-        name = "F"
-        name_f = [name]
-        ConfigureProblem.configure_new_variable(
-            name,
-            name_f,
-            ocp,
-            nlp,
-            as_states=True,
-            as_controls=False,
-        )
-
-        if self.time_as_states:
-            name = "time"
-            name_time = [name]
-            ConfigureProblem.configure_new_variable(
-                name,
-                name_time,
-                ocp,
-                nlp,
-                as_states=True,
-                as_controls=False,
-            )
-
-        ConfigureProblem.configure_dynamics_function(ocp, nlp, dyn_func=self.dynamics)
 
     def set_pulse_apparition_time(self, value: list[MX], kwargs: dict = None):
         """
@@ -292,11 +283,9 @@ def prepare_ocp(
     for i in range(n_stim):
         constraints.add(CustomConstraint.equal_to_first_pulse_interval_time, node=Node.START, target=0, phase=i)
 
-    dynamics = DynamicsList()
+    dynamics = DynamicsOptionsList()
     for i in range(n_stim):
         dynamics.add(
-            models[i].declare_variables,
-            dynamic_function=models[i].dynamics,
             expand_dynamics=True,
             expand_continuity=False,
             phase=i,

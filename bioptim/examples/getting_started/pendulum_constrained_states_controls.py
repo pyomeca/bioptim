@@ -17,8 +17,7 @@ import numpy as np
 
 from bioptim import (
     OptimalControlProgram,
-    DynamicsFcn,
-    Dynamics,
+    DynamicsOptions,
     ConstraintList,
     ConstraintFcn,
     ObjectiveFcn,
@@ -27,7 +26,7 @@ from bioptim import (
     OdeSolverBase,
     CostType,
     Solver,
-    BiorbdModel,
+    TorqueBiorbdModel,
     ControlType,
     PhaseDynamics,
     Node,
@@ -78,15 +77,13 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
     # Dynamics
-    dynamics = Dynamics(
-        DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
-    )
+    dynamics = DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     # Path state constraints
     constraints = ConstraintList()
@@ -119,9 +116,9 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         constraints=constraints,
         objective_functions=objective_functions,
         use_sx=use_sx,

@@ -10,11 +10,11 @@ import platform
 
 from casadi import MX
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     Node,
     OptimalControlProgram,
-    DynamicsFcn,
-    DynamicsList,
+    DynamicsOptionsList,
+    DynamicsOptions,
     ObjectiveFcn,
     ObjectiveList,
     ConstraintFcn,
@@ -94,10 +94,10 @@ def prepare_ocp(
 
     # BioModel path
     bio_model = (
-        BiorbdModel(biorbd_model_path),
-        BiorbdModel(biorbd_model_path),
-        BiorbdModel(biorbd_model_path),
-        BiorbdModel(biorbd_model_path),
+        TorqueBiorbdModel(biorbd_model_path),
+        TorqueBiorbdModel(biorbd_model_path),
+        TorqueBiorbdModel(biorbd_model_path),
+        TorqueBiorbdModel(biorbd_model_path),
     )
 
     # Problem parameters
@@ -112,20 +112,12 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=2)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=3)
 
-    # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(
-        DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
-    )
-    dynamics.add(
-        DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
-    )
-    dynamics.add(
-        DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
-    )
-    dynamics.add(
-        DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
-    )
+    # DynamicsOptions
+    dynamics = DynamicsOptionsList()
+    dynamics.add(DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics))
+    dynamics.add(DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics))
+    dynamics.add(DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics))
+    dynamics.add(DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics))
 
     # Constraints
     constraints = ConstraintList()
@@ -200,9 +192,9 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         x_init=x_init,

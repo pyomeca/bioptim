@@ -8,7 +8,7 @@ import numpy as np
 
 from .optimal_control_program import OptimalControlProgram
 from ..optimization.solution.solution import Solution
-from ..dynamics.configure_problem import Dynamics, DynamicsList
+from ..dynamics.configure_problem import DynamicsOptions, DynamicsOptionsList
 from ..dynamics.ode_solvers import OdeSolver
 from ..limits.constraints import ConstraintFcn, ConstraintList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList
@@ -35,9 +35,9 @@ class RecedingHorizonOptimization(OptimalControlProgram):
     def __init__(
         self,
         bio_model: list | tuple | BioModel,
-        dynamics: Dynamics | DynamicsList,
         window_len: int | list | tuple,
         window_duration: int | float | list | tuple,
+        dynamics: DynamicsOptions | DynamicsOptionsList = None,
         common_objective_functions: ObjectiveList = None,
         use_sx=True,
         **kwargs,
@@ -437,9 +437,9 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
     def __init__(
         self,
         bio_model: list | tuple | BioModel,
-        dynamics: Dynamics | DynamicsList,
         cycle_len: int | list | tuple,
         cycle_duration: int | float | list | tuple,
+        dynamics: DynamicsOptions | DynamicsOptionsList = None,
         use_sx=True,
         **kwargs,
     ):
@@ -629,10 +629,10 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
     def __init__(
         self,
         bio_model: list | tuple | BioModel,
-        dynamics: Dynamics | DynamicsList,
         cycle_len: int | list | tuple,
         cycle_duration: int | float | list | tuple,
         n_cycles_simultaneous: int,
+        dynamics: DynamicsOptions | DynamicsOptionsList = None,
         n_cycles_to_advance: int = 1,
         use_sx=True,
         **kwargs,

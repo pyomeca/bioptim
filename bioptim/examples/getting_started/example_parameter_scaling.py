@@ -11,10 +11,9 @@ import numpy as np
 from casadi import MX
 
 from bioptim import (
-    BiorbdModel,
+    TorqueBiorbdModel,
     OptimalControlProgram,
-    Dynamics,
-    DynamicsFcn,
+    DynamicsOptions,
     BoundsList,
     InitialGuessList,
     ObjectiveFcn,
@@ -70,7 +69,7 @@ def generate_dat_to_track(
     The ocp ready to be solved
     """
     # --- Options --- #
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
     n_tau = bio_model.nb_tau
 
     # Add objective functions
@@ -79,9 +78,7 @@ def generate_dat_to_track(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q", weight=1)
 
     # Dynamics
-    dynamics = Dynamics(
-        DynamicsFcn.TORQUE_DRIVEN, ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
-    )
+    dynamics = DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -99,9 +96,9 @@ def generate_dat_to_track(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
@@ -109,7 +106,7 @@ def generate_dat_to_track(
     )
 
 
-def my_parameter_function(bio_model: BiorbdModel, value: MX):
+def my_parameter_function(bio_model: TorqueBiorbdModel, value: MX):
     bio_model.set_gravity(value)
 
 
@@ -197,14 +194,13 @@ def prepare_ocp(
     )
 
     # --- Options --- #
-    bio_model = BiorbdModel(biorbd_model_path, parameters=parameters)
+    bio_model = TorqueBiorbdModel(biorbd_model_path, parameters=parameters)
 
     # Add objective functions
     objective_functions = ObjectiveList()
 
     # Dynamics
-    dynamics = Dynamics(
-        DynamicsFcn.TORQUE_DRIVEN,
+    dynamics = DynamicsOptions(
         state_continuity_weight=100,
         ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
@@ -230,9 +226,9 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         final_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         x_init=x_init,

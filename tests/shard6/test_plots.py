@@ -3,7 +3,7 @@ import platform
 
 import numpy as np
 
-from bioptim import InterpolationType, PhaseDynamics, Solver, ControlType, OdeSolver, BiorbdModel
+from bioptim import InterpolationType, PhaseDynamics, Solver, ControlType, OdeSolver, TorqueBiorbdModel
 from ..utils import TestUtils
 
 
@@ -506,7 +506,7 @@ def test__torque_driven_ocp__track_markers_2D_pendulum():
     np.random.seed(42)
     n_shooting = 30
     ocp = ocp_module.prepare_ocp(
-        bio_model=BiorbdModel(model_path),
+        bio_model=TorqueBiorbdModel(model_path),
         final_time=2,
         n_shooting=n_shooting,
         markers_ref=np.random.rand(3, 2, n_shooting + 1),

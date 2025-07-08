@@ -9,12 +9,12 @@ import platform
 
 import numpy as np
 from bioptim import (
-    BiorbdModel,
+    TorqueActivationBiorbdModel,
+    TorqueBiorbdModel,
     OptimalControlProgram,
     ObjectiveList,
     ObjectiveFcn,
-    DynamicsList,
-    DynamicsFcn,
+    DynamicsOptions,
     BiMappingList,
     BoundsList,
     InitialGuessList,
@@ -75,7 +75,11 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path, contact_types=[ContactType.RIGID_EXPLICIT])
+    if use_actuators:
+        bio_model = TorqueActivationBiorbdModel(biorbd_model_path, contact_types=[ContactType.RIGID_EXPLICIT])
+    else:
+        bio_model = TorqueBiorbdModel(biorbd_model_path, contact_types=[ContactType.RIGID_EXPLICIT])
+
     tau_min, tau_max = (-1, 1) if use_actuators else (-500, 500)
 
     dof_mapping = BiMappingList()
@@ -92,21 +96,11 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1 / 100)
 
     # Dynamics
-    dynamics = DynamicsList()
-    if use_actuators:
-        dynamics.add(
-            DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
-            ode_solver=ode_solver,
-            expand_dynamics=expand_dynamics,
-            phase_dynamics=phase_dynamics,
-        )
-    else:
-        dynamics.add(
-            DynamicsFcn.TORQUE_DRIVEN,
-            ode_solver=ode_solver,
-            expand_dynamics=expand_dynamics,
-            phase_dynamics=phase_dynamics,
-        )
+    dynamics = DynamicsOptions(
+        ode_solver=ode_solver,
+        expand_dynamics=expand_dynamics,
+        phase_dynamics=phase_dynamics,
+    )
 
     # Constraints
     constraints = ConstraintList()
@@ -146,9 +140,9 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         n_shooting,
         phase_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         x_init=x_init,

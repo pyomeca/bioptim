@@ -11,15 +11,14 @@ import matplotlib.pyplot as plt
 
 from bioptim import (
     OptimalControlProgram,
-    DynamicsList,
-    DynamicsFcn,
+    DynamicsOptions,
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,
     Solver,
     Node,
     CostType,
-    BiorbdModel,
+    TorqueBiorbdModel,
     BiMappingList,
     PhaseDynamics,
     SolutionMerge,
@@ -35,7 +34,7 @@ def prepare_ocp(
     expand_dynamics: bool = True,
 ):
     # Parameters of the problem
-    biorbd_model = BiorbdModel(biorbd_model_path)
+    biorbd_model = TorqueBiorbdModel(biorbd_model_path)
     phase_time = 1.5
     n_shooting = 30
     tau_min, tau_max = -100, 100
@@ -63,8 +62,7 @@ def prepare_ocp(
         )
 
     # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    dynamics = DynamicsOptions(expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     # Path constraint
     n_q = biorbd_model.nb_q
@@ -86,9 +84,9 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         biorbd_model,
-        dynamics,
         n_shooting,
         phase_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,

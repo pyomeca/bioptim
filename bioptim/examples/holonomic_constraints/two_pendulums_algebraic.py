@@ -13,7 +13,8 @@ from bioptim import (
     BiMappingList,
     BoundsList,
     ConstraintList,
-    DynamicsList,
+    DynamicsOptionsList,
+    DynamicsOptions,
     HolonomicBiorbdModel,
     HolonomicConstraintsFcn,
     HolonomicConstraintsList,
@@ -28,8 +29,7 @@ from bioptim import (
     OdeSolver,
 )
 from .custom_dynamics import (
-    holonomic_torque_driven_with_qv,
-    configure_holonomic_torque_driven,
+    ModifiedHolonomicTorqueBiorbdModel,
     constraint_holonomic,
     constraint_holonomic_end,
 )
@@ -116,13 +116,12 @@ def prepare_ocp(
     -------
     The ocp ready to be solved
     """
-    bio_model = HolonomicBiorbdModel(biorbd_model_path)
+
     # Create a holonomic constraint to create a double pendulum from two single pendulums
     holonomic_constraints = HolonomicConstraintsList()
     holonomic_constraints.add(
         "holonomic_constraints",
         HolonomicConstraintsFcn.superimpose_markers,
-        model=bio_model,
         marker_1="marker_1",
         marker_2="marker_3",
         index=slice(1, 3),
@@ -130,8 +129,11 @@ def prepare_ocp(
     )
     # The rotations (joint 0 and 3) are independent. The translations (joint 1 and 2) are constrained by the holonomic
     # constraint
-    bio_model.set_holonomic_configuration(
-        constraints_list=holonomic_constraints, independent_joint_index=[0, 3], dependent_joint_index=[1, 2]
+    bio_model = ModifiedHolonomicTorqueBiorbdModel(
+        biorbd_model_path,
+        holonomic_constraints=holonomic_constraints,
+        independent_joint_index=[0, 3],
+        dependent_joint_index=[1, 2],
     )
 
     # Add objective functions
@@ -140,13 +142,12 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1, min_bound=0.5, max_bound=0.6)
 
     # Dynamics
-    dynamics = DynamicsList()
-    # dynamics.add(DynamicsFcn.HOLONOMIC_TORQUE_DRIVEN, expand_dynamics=expand_dynamics)
+    dynamics = DynamicsOptionsList()
     dynamics.add(
-        configure_holonomic_torque_driven,
-        ode_solver=ode_solver,
-        dynamic_function=holonomic_torque_driven_with_qv,
-        expand_dynamics=expand_dynamics,
+        DynamicsOptions(
+            ode_solver=ode_solver,
+            expand_dynamics=expand_dynamics,
+        )
     )
 
     # Boundaries
@@ -209,9 +210,9 @@ def prepare_ocp(
     return (
         OptimalControlProgram(
             bio_model,
-            dynamics,
             n_shooting,
             final_time,
+            dynamics=dynamics,
             x_bounds=x_bounds,
             u_bounds=u_bounds,
             a_bounds=a_bounds,

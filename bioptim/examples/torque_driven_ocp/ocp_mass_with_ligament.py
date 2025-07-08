@@ -5,14 +5,13 @@ damping, it uses the model mass_point_with_ligament.bioMod
 
 from bioptim import (
     OptimalControlProgram,
-    DynamicsList,
+    DynamicsOptions,
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,
     InitialGuessList,
     OdeSolver,
-    BiorbdModel,
-    DynamicsFcn,
+    TorqueBiorbdModel,
     PhaseDynamics,
 )
 
@@ -52,7 +51,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
     # Model path
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
 
     # ConfigureProblem parameters
     number_shooting_points = 100
@@ -65,9 +64,7 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=10000000)
 
     # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(
-        DynamicsFcn.TORQUE_DRIVEN,
+    dynamics = DynamicsOptions(
         ode_solver=ode_solver,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
@@ -89,9 +86,9 @@ def prepare_ocp(
 
     return OptimalControlProgram(
         bio_model,
-        dynamics,
         number_shooting_points,
         final_time,
+        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         u_init=u_init,
