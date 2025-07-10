@@ -1,7 +1,6 @@
 import biorbd_casadi as biorbd
 import numpy as np
 import pyorerun
-from pyomeca import Markers as PyoMarkers
 from typing import Any
 
 from .viewer_utils import _prepare_tracked_markers_for_animation
