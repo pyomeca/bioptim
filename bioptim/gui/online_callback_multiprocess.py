@@ -45,7 +45,11 @@ class OnlineCallbackMultiprocess(OnlineCallbackAbstract):
     def eval(self, arg: AnyIterable, enforce: Bool = False) -> IntListOptional:
         # Dequeuing the data by removing previous not useful data
         while not self.queue.empty():
-            self.queue.get_nowait()
+            try:
+                self.queue.get_nowait()
+            except:
+                # To avoid the "raise Empty" in get_nowait() which crashes the optimization in progress
+                continue
 
         args_dict = {}
         for i, s in enumerate(nlpsol_out()):
