@@ -1225,6 +1225,7 @@ class Solution:
         """
 
         plot_ocp = self.ocp.prepare_plots(automatically_organize, show_bounds, shooting_type, integrator)
+        self.ocp.plot_ipopt_outputs = False  # This plot is not possible on solutions (only in live plots)
         plot_ocp.update_data(*plot_ocp.parse_data(**{"x": self.vector}))
         if save_name:
             if save_name.endswith(".png"):
