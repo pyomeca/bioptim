@@ -116,7 +116,7 @@ def launch_rerun(
 
         biorbd_model = pyorerun.BiorbdModel.from_biorbd_object(model)
         tm = (
-            PyoMarkers(tm, channels=[n.to_string() for n in biorbd_model.model.markerNames()])
+            pyorerun.PyoMarkers(tm, channels=[n.to_string() for n in biorbd_model.model.markerNames()])
             if tm is not None
             else None
         )
