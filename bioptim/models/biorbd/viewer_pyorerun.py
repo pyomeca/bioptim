@@ -1,7 +1,6 @@
 import biorbd_casadi as biorbd
 import numpy as np
 import pyorerun
-from pyomeca import Markers as PyoMarkers
 from typing import Any
 
 from .viewer_utils import _prepare_tracked_markers_for_animation
@@ -117,7 +116,7 @@ def launch_rerun(
 
         biorbd_model = pyorerun.BiorbdModel.from_biorbd_object(model)
         tm = (
-            PyoMarkers(tm, channels=[n.to_string() for n in biorbd_model.model.markerNames()])
+            pyorerun.PyoMarkers(tm, channels=[n.to_string() for n in biorbd_model.model.markerNames()])
             if tm is not None
             else None
         )
