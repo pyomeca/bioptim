@@ -1,5 +1,3 @@
-from typing import Callable
-
 import numpy as np
 from casadi import DM_eye, vertcat, Function, horzcat
 
@@ -31,14 +29,13 @@ from ..optimization.problem_type import SocpType
 from ..optimization.variable_scaling import VariableScalingList, VariableScaling
 from ..misc.parameters_types import (
     Int,
-    Float,
     Bool,
     List,
-    Tuple,
     Str,
     NpArray,
     IntorFloat,
     AnyIterable,
+    Callable,
 )
 
 

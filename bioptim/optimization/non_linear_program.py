@@ -1,4 +1,4 @@
-from typing import Callable, Any
+from typing import Any
 
 import casadi
 import numpy as np
@@ -31,6 +31,7 @@ from ..misc.parameters_types import (
     AnyDict,
     AnyDictOptional,
     CXOptional,
+    Callable,
 )
 
 

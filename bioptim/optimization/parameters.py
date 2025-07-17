@@ -1,4 +1,4 @@
-from typing import Callable, Any
+from typing import Any
 
 from casadi import MX, SX, vertcat
 import numpy as np
@@ -14,6 +14,7 @@ from ..misc.parameters_types import (
     CXList,
     StrList,
     DoubleIntTuple,
+    Callable,
 )
 from ..models.protocols.biomodel import BioModel
 from ..optimization.variable_scaling import VariableScaling, VariableScalingList

@@ -1,6 +1,5 @@
 from copy import deepcopy
 from math import inf
-from typing import Callable
 from time import perf_counter
 
 from casadi import SX
@@ -29,6 +28,7 @@ from ..misc.parameters_types import (
     AnyList,
     AnyTuple,
     AnyIterable,
+    Callable,
 )
 
 

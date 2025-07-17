@@ -1,8 +1,6 @@
 import numpy as np
 from casadi import vertcat, DM, SX, MX
 
-from typing import Callable
-
 from ..misc.parameters_types import (
     AnyTuple,
     CX,
@@ -11,6 +9,7 @@ from ..misc.parameters_types import (
     Int,
     NpArray,
     DoubleNpArrayTuple,
+    Callable,
 )
 
 from ..misc.enums import ControlType, InterpolationType

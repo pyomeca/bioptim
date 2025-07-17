@@ -1,5 +1,3 @@
-from typing import Callable
-
 import numpy as np
 from casadi import MX, SX, vertcat
 
@@ -14,10 +12,10 @@ from ..misc.parameters_types import (
     StrList,
     AnyList,
     AnyListOptional,
-    AnyIterable,
     Indexer,
     CX,
     CXList,
+    Callable,
 )
 
 

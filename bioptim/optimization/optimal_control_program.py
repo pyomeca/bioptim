@@ -1,5 +1,5 @@
 from math import inf
-from typing import Callable, Any
+from typing import Any
 
 import biorbd_casadi as biorbd
 import casadi
@@ -81,6 +81,7 @@ from ..misc.parameters_types import (
     AnyIterable,
     DoubleNpArrayTuple,
     CX,
+    Callable,
 )
 
 

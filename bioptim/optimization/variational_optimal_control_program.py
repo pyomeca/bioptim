@@ -3,7 +3,6 @@ Optimal control program with the variational integrator for the dynamics.
 """
 
 import numpy as np
-from typing import Callable
 from casadi import Function, vertcat
 
 from .optimal_control_program import OptimalControlProgram
@@ -27,6 +26,7 @@ from ..misc.parameters_types import (
     Int,
     Float,
     NpArrayDictOptional,
+    Callable,
 )
 
 

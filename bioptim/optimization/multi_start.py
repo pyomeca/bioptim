@@ -1,17 +1,17 @@
 from multiprocessing import Pool
 from itertools import product
-from typing import Any, Callable
+from typing import Any
 
 from ..optimization.optimal_control_program import OptimalControlProgram
 from ..interfaces import Solver
 from ..optimization.solution.solution import Solution
 
 from ..misc.parameters_types import (
-    Bool,
     Int,
     AnyTuple,
     AnyDict,
     AnyList,
+    Callable,
 )
 
 
