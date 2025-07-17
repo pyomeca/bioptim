@@ -1,4 +1,4 @@
-from typing import Any, Callable
+from typing import Any, Callable as CallableObj
 import numpy as np
 from typing import TypeAlias
 from casadi import MX, SX, DM
@@ -13,7 +13,7 @@ Bool: TypeAlias = bool
 Tuple: TypeAlias = tuple
 List: TypeAlias = list
 Bytes: TypeAlias = bytes
-AnyCallable: TypeAlias = Callable
+Callable: TypeAlias = CallableObj
 
 IntorFloat: TypeAlias = int | float
 
