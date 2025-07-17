@@ -1,8 +1,9 @@
-from typing import Any
+from typing import Any, Callable
 import numpy as np
 from typing import TypeAlias
 from casadi import MX, SX, DM
 from .enums import Node
+
 
 Int: TypeAlias = int
 Range: TypeAlias = range
@@ -12,6 +13,7 @@ Bool: TypeAlias = bool
 Tuple: TypeAlias = tuple
 List: TypeAlias = list
 Bytes: TypeAlias = bytes
+AnyCallable: TypeAlias = Callable
 
 IntorFloat: TypeAlias = int | float
 

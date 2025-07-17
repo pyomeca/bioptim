@@ -29,9 +29,9 @@ class MultiStart:
     def __init__(
         self,
         combinatorial_parameters: dict[AnyTuple, ...],
-        prepare_ocp_callback: Callable[[Any], OptimalControlProgram],
+        prepare_ocp_callback: Callable,
         post_optimization_callback: tuple[Callable[[Solution, Any], None], AnyDict],
-        should_solve_callback: tuple[Callable[[Any, AnyDict], Bool], AnyDict] | None = None,
+        should_solve_callback: tuple[Callable, AnyDict] | None = None,
         solver: Solver = None,
         n_pools: Int = 1,
     ):
