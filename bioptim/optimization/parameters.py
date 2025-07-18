@@ -1,9 +1,22 @@
-from typing import Callable, Any
+from typing import Any
 
 from casadi import MX, SX, vertcat
 import numpy as np
 
 from ..misc.mapping import BiMapping
+from ..misc.parameters_types import (
+    Str,
+    Int,
+    IntList,
+    Range,
+    Bool,
+    CX,
+    CXList,
+    StrList,
+    DoubleIntTuple,
+    Callable,
+)
+from ..models.protocols.biomodel import BioModel
 from ..optimization.variable_scaling import VariableScaling, VariableScalingList
 from ..optimization.optimization_variable import (
     OptimizationVariable,
@@ -20,16 +33,16 @@ class Parameter(OptimizationVariable):
 
     def __init__(
         self,
-        name: str,
+        name: Str,
         mx: MX,
-        cx_start: list | None,
-        index: range | list,
+        cx_start: CXList | None,
+        index: Range | IntList,
         mapping: BiMapping = None,
-        parent_list=None,
-        function: Callable = None,
-        size: int = None,
-        cx_type: Callable | MX | SX = None,
-        scaling: VariableScaling = None,
+        parent_list: "ParameterList" = None,
+        function: Callable | None = None,
+        size: Int | None = None,
+        cx_type: Callable | CX | None = None,
+        scaling: VariableScaling | None = None,
         **kwargs: Any,
     ):
         """
@@ -65,19 +78,19 @@ class Parameter(OptimizationVariable):
         self._mx = mx
 
     @property
-    def mx(self):
+    def mx(self) -> MX:
         # TODO: this should removed and placed in the BiorbdModel
         return self._mx
 
     @property
-    def cx(self):
+    def cx(self) -> CX:
         if self.parent_list is not None:
             return self.cx_start
         else:
             return self.cx_start()
 
     @property
-    def cx_start(self):
+    def cx_start(self) -> CX:
         """
         The CX of the variable
         """
@@ -88,16 +101,16 @@ class Parameter(OptimizationVariable):
             )
         return self.parent_list.cx_start[self.index]
 
-    def cx_mid(self):
+    def cx_mid(self) -> None:
         raise RuntimeError("cx_mid is not available for parameters, only cx_start is accepted.")
 
-    def cx_end(self):
+    def cx_end(self) -> None:
         raise RuntimeError("cx_end is not available for parameters, only cx_start is accepted.")
 
-    def cx_intermediates_list(self):
+    def cx_intermediates_list(self) -> None:
         raise RuntimeError("cx_intermediates_list is not available for parameters, only cx_start is accepted.")
 
-    def apply_parameter(self, model):
+    def apply_parameter(self, model: "BioModel") -> None:
         """
         Apply the parameter variables to the model. This should be called during the creation of the biomodel
         """
@@ -112,7 +125,7 @@ class ParameterList(OptimizationVariableList):
     A list of Parameters.
     """
 
-    def __init__(self, use_sx: bool):
+    def __init__(self, use_sx: Bool):
         cx_constructor = SX if use_sx else MX
         super(ParameterList, self).__init__(cx_constructor, phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE)
         self.cx_type = cx_constructor
@@ -123,23 +136,23 @@ class ParameterList(OptimizationVariableList):
         self.scaling = VariableScalingList()
 
     @property
-    def current_cx_to_get(self):
+    def current_cx_to_get(self) -> Int:
         return self._current_cx_to_get
 
     @current_cx_to_get.setter
-    def current_cx_to_get(self, index: int):
+    def current_cx_to_get(self, index: Int):
         raise RuntimeError(
             "current_cx_to_get is not changable for parameters, only cx_start is accepted (current_cx_to_get is always 0)."
         )
 
     def add(
         self,
-        name: str,
-        function: callable,
-        size: int,
+        name: Str,
+        function: Callable,
+        size: Int,
         scaling: VariableScaling,
         mapping: BiMapping = None,
-        allow_reserved_name: bool = False,
+        allow_reserved_name: Bool = False,
         **kwargs: Any,
     ):
         """
@@ -202,7 +215,7 @@ class ParameterList(OptimizationVariableList):
             )
         )
 
-    def copy(self):
+    def copy(self) -> "ParameterList":
         """
         Copy a parameters list to new one
         """
@@ -228,20 +241,20 @@ class ParameterList(OptimizationVariableList):
 
         return parameters_copy
 
-    def cx_mid(self):
+    def cx_mid(self) -> None:
         raise RuntimeError("cx_mid is not available for parameters, only cx_start is accepted.")
 
-    def cx_end(self):
+    def cx_end(self) -> None:
         raise RuntimeError("cx_end is not available for parameters, only cx_start is accepted.")
 
-    def cx_intermediates_list(self):
+    def cx_intermediates_list(self) -> None:
         raise RuntimeError("cx_intermediates_list is not available for parameters, only cx_start is accepted.")
 
-    def add_a_copied_element(self, element_to_copy_index):
+    def add_a_copied_element(self, element_to_copy_index: Int) -> None:
         self.elements.append(self.elements[element_to_copy_index])
 
     @property
-    def mx(self):
+    def mx(self) -> MX:
         """
         Returns
         -------
@@ -261,19 +274,19 @@ class ParameterContainer(OptimizationVariableContainer):
     A parameter container (i.e., the list of scaled parameters and a list of unscaled parameters).
     """
 
-    def __init__(self, use_sx: bool):
+    def __init__(self, use_sx: Bool):
         super(ParameterContainer, self).__init__(phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE)
         self._parameters: ParameterList = ParameterList(use_sx=use_sx)
 
     @property
-    def node_index(self):
+    def node_index(self) -> Int:
         return self._node_index
 
     @node_index.setter
-    def node_index(self, value):
+    def node_index(self, value: Int):
         raise RuntimeError("node_index is not changable for parameters since it is the same for every node.")
 
-    def initialize(self, parameters: ParameterList):
+    def initialize(self, parameters: ParameterList) -> None:
         """
         Initialize the Container so the dimensions are correct.
 
@@ -288,18 +301,18 @@ class ParameterContainer(OptimizationVariableContainer):
         self._parameters = parameters.copy()
         return
 
-    def initialize_from_shooting(self, n_shooting: int, cx: Callable):
+    def initialize_from_shooting(self, n_shooting: Int, cx: Callable) -> None:
         raise RuntimeError("initialize_from_shooting is not available for parameters, only initialize is accepted.")
 
     @property
-    def parameters(self):
+    def parameters(self) -> ParameterList:
         """
         This method allows to intercept the scaled item and return the current node_index
         """
         return self._parameters
 
     @property
-    def unscaled(self):
+    def unscaled(self) -> ParameterList:
         """
         This method allows to intercept the scaled item and return the current node_index
 
@@ -313,34 +326,34 @@ class ParameterContainer(OptimizationVariableContainer):
         return self._parameters
 
     @property
-    def scaled(self):
+    def scaled(self) -> ParameterList:
         """
         This method allows to intercept the scaled item and return the current node_index
         """
         return self._parameters
 
-    def keys(self):
+    def keys(self) -> StrList:
         return self._parameters.keys()
 
-    def key_index(self, key):
+    def key_index(self, key: Str) -> Int:
         return self._parameters[key].index
 
     @property
-    def shape(self):
+    def shape(self) -> DoubleIntTuple:
         return self._parameters.shape
 
     @property
-    def cx_intermediates_list(self):
+    def cx_intermediates_list(self) -> CXList:
         raise RuntimeError("cx_intermediates_list is not available for parameters, only cx_start is accepted.")
 
     @property
-    def cx_mid(self):
+    def cx_mid(self) -> CX:
         raise RuntimeError("cx_mid is not available for parameters, only cx_start is accepted.")
 
     @property
-    def cx_end(self):
+    def cx_end(self) -> CX:
         raise RuntimeError("cx_end is not available for parameters, only cx_start is accepted.")
 
     @property
-    def mx(self):
+    def mx(self) -> MX:
         return self.parameters.mx

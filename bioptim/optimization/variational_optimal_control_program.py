@@ -21,6 +21,13 @@ from ..models.biorbd.model_dynamics import VariationalTorqueBiorbdModel
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.parameters import ParameterList
 from ..optimization.variable_scaling import VariableScaling
+from ..misc.parameters_types import (
+    Bool,
+    Int,
+    Float,
+    NpArrayDictOptional,
+    Callable,
+)
 
 
 class VariationalOptimalControlProgram(OptimalControlProgram):
@@ -32,9 +39,9 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
     def __init__(
         self,
         bio_model: VariationalBioModel,
-        n_shooting: int,
-        final_time: float,
-        q_init: InitialGuessList = None,
+        n_shooting: Int,
+        final_time: Float,
+        q_init: InitialGuessList | None = None,
         q_bounds: BoundsList = None,
         qdot_init: InitialGuessList = None,
         qdot_bounds: BoundsList = None,
@@ -44,7 +51,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         parameter_objectives: ParameterObjectiveList = None,
         parameter_constraints: ParameterConstraintList = None,
         multinode_constraints: MultinodeConstraintList = None,
-        use_sx: bool = False,
+        use_sx: Bool = False,
         **kwargs,
     ):
         if type(bio_model) != VariationalBiorbdModel and type(bio_model) != VariationalTorqueBiorbdModel:
@@ -200,7 +207,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         )
 
     @staticmethod
-    def qdot_function(model, value):
+    def qdot_function(model, value) -> None:
         """
         It is currently mandatory to provide a function to the method add of ParameterList.
         Parameters
@@ -213,7 +220,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
     def variational_integrator_three_nodes(
         self,
         controllers: list[PenaltyController, PenaltyController, PenaltyController],
-    ):
+    ) -> Callable:
         """
         The discrete Euler Lagrange equations for the main integration.
 
@@ -253,8 +260,8 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
     def variational_integrator_initial(
         self,
         controllers: list[PenaltyController, PenaltyController],
-        n_qdot: int,
-    ):
+        n_qdot: Int,
+    ) -> Callable:
         """
         The initial continuity constraint for the integration.
 
@@ -293,8 +300,8 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
     def variational_integrator_final(
         self,
         controllers: list[PenaltyController, PenaltyController],
-        n_qdot: int,
-    ):
+        n_qdot: Int,
+    ) -> Callable:
         """
         The final continuity constraint for the integration. Warning: When the system has holonomic constraints, there
         are more variables than equations so the lambda and the velocity of the last node are "free" variables.
@@ -332,7 +339,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             )
 
     def variational_continuity(
-        self, multinode_constraints: MultinodeConstraintList, n_shooting: int, n_qdot: int
+        self, multinode_constraints: MultinodeConstraintList, n_shooting: Int, n_qdot: Int
     ) -> MultinodeConstraintList:
         """
         The continuity constraint for the integration.

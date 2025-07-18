@@ -1,5 +1,3 @@
-from typing import Callable
-
 import numpy as np
 from casadi import DM_eye, vertcat, Function, horzcat
 
@@ -29,6 +27,16 @@ from ..optimization.optimal_control_program import OptimalControlProgram
 from ..optimization.parameters import ParameterList
 from ..optimization.problem_type import SocpType
 from ..optimization.variable_scaling import VariableScalingList, VariableScaling
+from ..misc.parameters_types import (
+    Int,
+    Bool,
+    List,
+    Str,
+    NpArray,
+    IntorFloat,
+    AnyIterable,
+    Callable,
+)
 
 
 class StochasticOptimalControlProgram(OptimalControlProgram):
@@ -39,37 +47,37 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
 
     def __init__(
         self,
-        bio_model: list | tuple | StochasticBioModel,
-        n_shooting: int | list | tuple,
-        phase_time: int | float | list | tuple,
+        bio_model: AnyIterable | StochasticBioModel,
+        n_shooting: Int | AnyIterable,
+        phase_time: IntorFloat | AnyIterable,
         dynamics: DynamicsOptions | DynamicsOptionsList = None,
-        x_bounds: BoundsList = None,
-        u_bounds: BoundsList = None,
-        a_bounds: BoundsList = None,
+        x_bounds: BoundsList | None = None,
+        u_bounds: BoundsList | None = None,
+        a_bounds: BoundsList | None = None,
         x_init: InitialGuessList | None = None,
         u_init: InitialGuessList | None = None,
         a_init: InitialGuessList | None = None,
-        objective_functions: Objective | ObjectiveList = None,
-        constraints: Constraint | ConstraintList = None,
-        parameters: ParameterList = None,
-        parameter_bounds: BoundsList = None,
-        parameter_init: InitialGuessList = None,
-        parameter_objectives: ParameterObjectiveList = None,
-        parameter_constraints: ParameterConstraintList = None,
-        control_type: ControlType | list = ControlType.CONSTANT,
-        variable_mappings: BiMappingList = None,
-        time_phase_mapping: BiMapping = None,
-        plot_mappings: Mapping = None,
-        phase_transitions: PhaseTransitionList = None,
-        multinode_constraints: MultinodeConstraintList = None,
-        multinode_objectives: MultinodeObjectiveList = None,
-        x_scaling: VariableScalingList = None,
-        u_scaling: VariableScalingList = None,
-        a_scaling: VariableScalingList = None,
-        n_threads: int = 1,
-        use_sx: bool = False,
-        integrated_value_functions: dict[str, Callable] = None,
-        problem_type=SocpType.TRAPEZOIDAL_IMPLICIT,
+        objective_functions: Objective | ObjectiveList | None = None,
+        constraints: Constraint | ConstraintList | None = None,
+        parameters: ParameterList | None = None,
+        parameter_bounds: BoundsList | None = None,
+        parameter_init: InitialGuessList | None = None,
+        parameter_objectives: ParameterObjectiveList | None = None,
+        parameter_constraints: ParameterConstraintList | None = None,
+        control_type: ControlType | List = ControlType.CONSTANT,
+        variable_mappings: BiMappingList | None = None,
+        time_phase_mapping: BiMapping | None = None,
+        plot_mappings: Mapping | None = None,
+        phase_transitions: PhaseTransitionList | None = None,
+        multinode_constraints: MultinodeConstraintList | None = None,
+        multinode_objectives: MultinodeObjectiveList | None = None,
+        x_scaling: VariableScalingList | None = None,
+        u_scaling: VariableScalingList | None = None,
+        a_scaling: VariableScalingList | None = None,
+        n_threads: Int = 1,
+        use_sx: Bool = False,
+        integrated_value_functions: dict[Str, Callable] | None = None,
+        problem_type: SocpType = SocpType.TRAPEZOIDAL_IMPLICIT,
         **kwargs,
     ):
         _check_multi_threading_and_problem_type(problem_type, bio_model, **kwargs)
@@ -178,7 +186,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         multinode_objectives: ObjectiveList,
         constraints: ConstraintList,
         phase_transition: PhaseTransitionList,
-    ):
+    ) -> None:
         """
         This function declares the multi node penalties (constraints and objectives) to the penalty pool.
 
@@ -206,7 +214,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         else:
             raise RuntimeError("Wrong choice of problem_type, you must choose one of the SocpType.")
 
-    def _prepare_stochastic_dynamics_explicit(self, constraints):
+    def _prepare_stochastic_dynamics_explicit(self, constraints: ConstraintList) -> None:
         """
         Adds the internal constraint needed for the explicit formulation of the stochastic ocp.
         """
@@ -235,7 +243,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 )
         penalty_m_dg_dz_list.add_or_replace_to_penalty_pool(self)
 
-    def _prepare_stochastic_dynamics_implicit(self, constraints):
+    def _prepare_stochastic_dynamics_implicit(self, constraints: ConstraintList) -> None:
         """
         Adds the internal constraint needed for the implicit formulation of the stochastic ocp.
         """
@@ -298,7 +306,9 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
 
         multi_node_penalties.add_or_replace_to_penalty_pool(self)
 
-    def _prepare_stochastic_dynamics_collocation(self, constraints, phase_transition):
+    def _prepare_stochastic_dynamics_collocation(
+        self, constraints: ConstraintList, phase_transition: PhaseTransitionList
+    ) -> None:
         """
         Adds the internal constraint needed for the implicit formulation of the stochastic ocp using collocation
         integration. This is the real implementation suggested in Gillis 2013.
@@ -343,15 +353,33 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     # penalty_type=PenaltyType.INTERNAL  #TODO: waiting for the bug on ConstraintList to be fixed
                 )
 
-    def _auto_initialize(self, x_init, u_init, parameter_init, a_init):
-        def replace_initial_guess(key, n_var, var_init, a_init, i_phase, interpolation):
+    def _auto_initialize(
+        self,
+        x_init: InitialGuessList,
+        u_init: InitialGuessList,
+        parameter_init: InitialGuessList,
+        a_init: InitialGuessList,
+    ) -> None:
+        def replace_initial_guess(
+            key: Str,
+            n_var: Int,
+            var_init: NpArray,
+            a_init: InitialGuessList,
+            i_phase: Int,
+            interpolation: InterpolationType,
+        ) -> None:
             if n_var != 0:
                 if key in a_init:
                     a_init[key] = InitialGuess(var_init, interpolation=interpolation, phase=i_phase)
                 else:
                     a_init.add(key, initial_guess=var_init, interpolation=interpolation, phase=i_phase)
 
-        def get_ref_init(time_vector, x_guess, p_guess, nlp):
+        def get_ref_init(
+            time_vector: NpArray,
+            x_guess: NpArray,
+            p_guess: NpArray,
+            nlp: NLP,
+        ) -> NpArray:
             if nlp.numerical_timeseries.cx.shape[0] != 0:
                 raise RuntimeError(
                     "The automatic initialization of stochastic variables is not implemented yet for nlp with numerical_timeseries."
@@ -383,7 +411,15 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 ref_init = ref_init_this_time if i == 0 else np.hstack((ref_init, ref_init_this_time))
             return ref_init
 
-        def get_m_init(time_vector, x_guess, u_guess, p_guess, nlp, Fdz, Gdz):
+        def get_m_init(
+            time_vector: NpArray,
+            x_guess: NpArray,
+            u_guess: NpArray,
+            p_guess: NpArray,
+            nlp: NLP,
+            Fdz: Function,
+            Gdz: Function,
+        ) -> NpArray:
             m_init = np.zeros((n_m, (self.problem_type.polynomial_degree + 2) * nlp.ns + 1))
             for i in range(nlp.ns):
                 index_this_time = [
@@ -426,16 +462,16 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             return m_init
 
         def get_cov_init(
-            time_vector,
-            x_guess,
-            u_guess,
-            p_guess,
-            m_init,
-            nlp,
-            Gdx,
-            Gdw,
-            initial_covariance,
-        ):
+            time_vector: NpArray,
+            x_guess: NpArray,
+            u_guess: NpArray,
+            p_guess: NpArray,
+            m_init: NpArray,
+            nlp: NLP,
+            Gdx: Function,
+            Gdw: Function,
+            initial_covariance: NpArray,
+        ) -> NpArray:
             sigma_w_dm = vertcat(nlp.model.motor_noise_magnitude, nlp.model.sensory_noise_magnitude) * DM_eye(
                 vertcat(nlp.model.motor_noise_magnitude, nlp.model.sensory_noise_magnitude).shape[0]
             )
@@ -582,8 +618,16 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             replace_initial_guess("cov", n_cov, cov_init, u_init, i_phase, interpolation=InterpolationType.EACH_FRAME)
 
     def _prepare_bounds_and_init(
-        self, x_bounds, u_bounds, parameter_bounds, a_bounds, x_init, u_init, parameter_init, a_init
-    ):
+        self,
+        x_bounds: BoundsList,
+        u_bounds: BoundsList,
+        parameter_bounds: BoundsList,
+        a_bounds: BoundsList,
+        x_init: InitialGuessList,
+        u_init: InitialGuessList,
+        parameter_init: InitialGuessList,
+        a_init: InitialGuessList,
+    ) -> None:
         self.parameter_bounds = BoundsList()
         self.parameter_init = InitialGuessList()
 
@@ -595,7 +639,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         # Define the actual NLP problem
         OptimizationVectorHelper.declare_ocp_shooting_points(self)
 
-    def _set_default_ode_solver(self):
+    def _set_default_ode_solver(self) -> OdeSolver:
         """It overrides the method in OptimalControlProgram that set a RK4 by default"""
         if isinstance(self.problem_type, SocpType.TRAPEZOIDAL_IMPLICIT) or isinstance(
             self.problem_type, SocpType.TRAPEZOIDAL_EXPLICIT
@@ -610,7 +654,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         else:
             raise RuntimeError("Wrong choice of problem_type, you must choose one of the SocpType.")
 
-    def _set_nlp_is_stochastic(self):
+    def _set_nlp_is_stochastic(self) -> None:
         """
         Set the is_stochastic variable to True for all the nlp
 
@@ -621,7 +665,9 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         NLP.add(self, "is_stochastic", True, True)
 
 
-def _check_multi_threading_and_problem_type(problem_type, bio_model, **kwargs):
+def _check_multi_threading_and_problem_type(
+    problem_type: SocpType, bio_model: AnyIterable | StochasticBioModel, **kwargs
+) -> None:
     if not isinstance(problem_type, SocpType.COLLOCATION):
         if "n_threads" in kwargs:
             if kwargs["n_threads"] != 1:
@@ -635,7 +681,7 @@ def _check_multi_threading_and_problem_type(problem_type, bio_model, **kwargs):
         )
 
 
-def _check_has_no_phase_dynamics_shared_during_the_phase(problem_type, **kwargs):
+def _check_has_no_phase_dynamics_shared_during_the_phase(problem_type: SocpType, **kwargs) -> None:
     if not isinstance(problem_type, SocpType.COLLOCATION):
         if "phase_dynamics" in kwargs:
             if kwargs["phase_dynamics"] == PhaseDynamics.SHARED_DURING_THE_PHASE:

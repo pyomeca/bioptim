@@ -1,9 +1,10 @@
-from typing import Callable, Any
+from typing import Any
 
 import casadi
 import numpy as np
 from casadi import SX, MX, vertcat
 
+from ..misc.mapping import BiMapping, BiMappingList
 from .optimization_variable import OptimizationVariableContainer
 from ..dynamics.dynamics_evaluation import DynamicsEvaluation
 from ..dynamics.dynamics_functions import DynamicsFunctions
@@ -16,6 +17,22 @@ from ..models.protocols.biomodel import BioModel
 from ..models.protocols.holonomic_biomodel import HolonomicBioModel
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
 from ..models.protocols.variational_biomodel import VariationalBioModel
+
+from ..misc.parameters_types import (
+    Bool,
+    Int,
+    IntOptional,
+    FloatOptional,
+    Str,
+    StrOptional,
+    StrList,
+    AnyList,
+    AnyListOptional,
+    AnyDict,
+    AnyDictOptional,
+    CXOptional,
+    Callable,
+)
 
 
 class NonLinearProgram:
@@ -124,70 +141,74 @@ class NonLinearProgram:
     """
 
     def __init__(self, phase_dynamics: PhaseDynamics, use_sx: bool):
-        self.casadi_func = {}
-        self.rigid_contact_forces_func = None
-        self.soft_contact_forces_func = None
-        self.control_type = ControlType.CONSTANT
-        self.cx = None
-        self.dt = None
-        self.dynamics = []
-        self.extra_dynamics = []
+        self.casadi_func: AnyDict = {}
+        self.rigid_contact_forces_func: Callable | None = None
+        self.soft_contact_forces_func: Callable | None = None
+        self.control_type: ControlType = ControlType.CONSTANT
+        self.cx: CXOptional = None
+        self.dt: FloatOptional = None
+        self.dynamics: list[OdeSolver] = []
+        self.extra_dynamics: AnyList = []
+        self.extra_dynamics_defects: AnyList = []
+        self.dynamics_evaluation: DynamicsEvaluation = DynamicsEvaluation()
+        self.dynamics_func: Callable | None = None
+        self.extra_dynamics_func: AnyList = []
+        self.dynamics_defects_func: Callable = None
+        self.extra_dynamics_defects_func: AnyList = []
+        self.implicit_dynamics_func: Callable | None = None
+        self.dynamics_type: "DynamicsFcn" | None = None
         self.extra_dynamics_defects = []
-        self.dynamics_evaluation = DynamicsEvaluation()
-        self.dynamics_func = None
-        self.extra_dynamics_func: list = []
         self.dynamics_defects_func = None
         self.extra_dynamics_defects_func: list = []
-        self.implicit_dynamics_func = None
-        self.dynamics_type = None
-        self.g = []
-        self.g_internal = []
-        self.g_implicit = []
-        self.J = []
-        self.J_internal = []
+        self.g: AnyList = []
+        self.g_internal: AnyList = []
+        self.g_implicit: AnyList = []
+        self.J: AnyList = []
+        self.J_internal: AnyList = []
         self.model: BioModel | StochasticBioModel | HolonomicBioModel | VariationalBioModel | None = None
-        self.n_threads = None
-        self.ns = None
-        self.par_dynamics = None
-        self.phase_idx = None
-        self.phase_mapping = None
-        self.plot = {}
-        self.plot_mapping = {}
-        self.T = None
-        self.variable_mappings = {}
-        self.u_bounds = BoundsList()
-        self.u_init = InitialGuessList()
-        self.U_scaled = None
-        self.u_scaling = None
-        self.U = None
-        self.x_bounds = BoundsList()
-        self.x_init = InitialGuessList()
-        self.X_scaled = None
-        self.x_scaling = None
-        self.X = None
-        self.a_bounds = BoundsList()
-        self.a_init = InitialGuessList()
-        self.A = None
-        self.A_scaled = None
-        self.a_scaling = None
-        self.phase_dynamics = phase_dynamics
-        self.time_index = None
-        self.time_cx = None
-        self.dt = None
-        self.tf = None
-        self.states = OptimizationVariableContainer(self.phase_dynamics)
-        self.states_dot = OptimizationVariableContainer(self.phase_dynamics)
-        self.controls = OptimizationVariableContainer(self.phase_dynamics)
-        self.numerical_data_timeseries = OptimizationVariableContainer(self.phase_dynamics)
-        self.numerical_timeseries = None
+        self.n_threads: IntOptional = None
+        self.ns: IntOptional = None
+        self.par_dynamics: casadi.Function = None
+        self.phase_idx: IntOptional = None
+        self.phase_mapping: BiMapping = None
+        self.plot: AnyDict = {}
+        self.plot_mapping: AnyDict = {}
+        self.T: Any = None
+        self.variable_mappings: BiMappingList = {}
+        self.u_bounds: BoundsList = BoundsList()
+        self.u_init: InitialGuessList = InitialGuessList()
+        self.U_scaled: AnyListOptional = None
+        self.u_scaling: AnyDictOptional = None
+        self.U: AnyListOptional = None
+        self.x_bounds: BoundsList = BoundsList()
+        self.x_init: InitialGuessList = InitialGuessList()
+        self.X_scaled: AnyListOptional = None
+        self.x_scaling: AnyDictOptional = None
+        self.X: AnyListOptional = None
+        self.a_bounds: BoundsList = BoundsList()
+        self.a_init: InitialGuessList = InitialGuessList()
+        self.A: AnyListOptional = None
+        self.A_scaled: AnyListOptional = None
+        self.a_scaling: AnyDictOptional = None
+        self.phase_dynamics: PhaseDynamics = phase_dynamics
+        self.time_index: IntOptional = None
+        self.time_cx: CXOptional = None
+        self.tf: Any = None
+        self.states: OptimizationVariableContainer = OptimizationVariableContainer(self.phase_dynamics)
+        self.states_dot: OptimizationVariableContainer = OptimizationVariableContainer(self.phase_dynamics)
+        self.controls: OptimizationVariableContainer = OptimizationVariableContainer(self.phase_dynamics)
+        self.numerical_data_timeseries: OptimizationVariableContainer = OptimizationVariableContainer(
+            self.phase_dynamics
+        )
+        self.numerical_timeseries: MX.sym | None = None
         # parameters is currently a clone of ocp.parameters, but should hold phase parameters
         from ..optimization.parameters import ParameterContainer
 
-        self.parameters = ParameterContainer(use_sx=use_sx)
-        self.algebraic_states = OptimizationVariableContainer(self.phase_dynamics)
-        self.integrated_values = OptimizationVariableContainer(self.phase_dynamics)
+        self.parameters: ParameterContainer = ParameterContainer(use_sx=use_sx)
+        self.algebraic_states: OptimizationVariableContainer = OptimizationVariableContainer(self.phase_dynamics)
+        self.integrated_values: OptimizationVariableContainer = OptimizationVariableContainer(self.phase_dynamics)
 
-    def initialize(self, cx: MX | SX | Callable = None):
+    def initialize(self, cx: CXOptional | Callable = None):
         """
         Reset a nlp to a sane initial state
 
@@ -220,7 +241,7 @@ class NonLinearProgram:
         )
         self.integrated_values.initialize_intermediate_cx(n_shooting=self.ns + 1, n_cx=1)
 
-    def update_bounds(self, x_bounds, u_bounds, a_bounds):
+    def update_bounds(self, x_bounds: BoundsList, u_bounds: BoundsList, a_bounds: BoundsList) -> None:
         self._update_bound(
             bounds=x_bounds,
             bound_name="x_bounds",
@@ -241,7 +262,9 @@ class NonLinearProgram:
         )
 
     @staticmethod
-    def _update_bound(bounds, bound_name, allowed_keys, nlp_bounds):
+    def _update_bound(
+        bounds: BoundsList | None, bound_name: Str, allowed_keys: StrList, nlp_bounds: BoundsList
+    ) -> None:
         if bounds is None:
             return
 
@@ -260,12 +283,12 @@ class NonLinearProgram:
         for key in bounds.keys():
             nlp_bounds.add(key, bounds[key], phase=0)
 
-    def update_bounds_on_plots(self):
+    def update_bounds_on_plots(self) -> None:
         self._update_plot_bounds(self.states.keys(), self.x_bounds, "_states")
         self._update_plot_bounds(self.controls.keys(), self.u_bounds, "_controls")
         self._update_plot_bounds(self.algebraic_states.keys(), self.a_bounds, "_algebraic")
 
-    def _update_plot_bounds(self, keys, bounds, suffix):
+    def _update_plot_bounds(self, keys: StrList, bounds: BoundsList, suffix: Str) -> None:
         """
         Helper method to update plot bounds for a given group.
 
@@ -283,7 +306,9 @@ class NonLinearProgram:
             if plot_key in self.plot and key in bounds.keys():
                 self.plot[plot_key].bounds = bounds[key]
 
-    def update_init(self, x_init, u_init, a_init):
+    def update_init(
+        self, x_init: InitialGuessList | None, u_init: InitialGuessList | None, a_init: InitialGuessList | None
+    ) -> None:
 
         if x_init is not None or a_init is not None:
             not_direct_collocation = not self.dynamics_type.ode_solver.is_direct_collocation
@@ -314,7 +339,9 @@ class NonLinearProgram:
         )
 
     @staticmethod
-    def _update_init(init, init_name, allowed_keys, nlp_init):
+    def _update_init(
+        init: InitialGuessList | None, init_name: Str, allowed_keys: StrList, nlp_init: InitialGuessList
+    ) -> None:
         if init is None:
             return
 
@@ -333,7 +360,7 @@ class NonLinearProgram:
         for key in init.keys():
             nlp_init.add(key, init[key], phase=0)
 
-    def declare_shooting_points(self):
+    def declare_shooting_points(self) -> None:
         """
         Declare all the casadi variables with the right size to be used during this specific phase.
         """
@@ -344,7 +371,7 @@ class NonLinearProgram:
         self._declare_controls_shooting_points()
         self._declare_algebraic_states_shooting_points()
 
-    def _declare_states_shooting_points(self):
+    def _declare_states_shooting_points(self) -> None:
         p = self.phase_idx
         x = []
         x_scaled = []
@@ -362,7 +389,7 @@ class NonLinearProgram:
         self.X_scaled = x_scaled
         self.X = x
 
-    def _declare_controls_shooting_points(self):
+    def _declare_controls_shooting_points(self) -> None:
         p = self.phase_idx
         u = []
         u_scaled = []
@@ -377,7 +404,7 @@ class NonLinearProgram:
         self.U_scaled = u_scaled
         self.U = u
 
-    def _declare_algebraic_states_shooting_points(self):
+    def _declare_algebraic_states_shooting_points(self) -> None:
         p = self.phase_idx
         a = []
         a_scaled = []
@@ -401,7 +428,7 @@ class NonLinearProgram:
         self.A = a
 
     @property
-    def n_states_nodes(self) -> int:
+    def n_states_nodes(self) -> Int:
         """
         Returns
         -------
@@ -409,7 +436,7 @@ class NonLinearProgram:
         """
         return self.ns + 1
 
-    def n_states_decision_steps(self, node_idx) -> int:
+    def n_states_decision_steps(self, node_idx) -> Int:
         """
         Parameters
         ----------
@@ -426,7 +453,7 @@ class NonLinearProgram:
             1 if self.dynamics_type.ode_solver.duplicate_starting_point else 0
         )
 
-    def n_states_stepwise_steps(self, node_idx: int, ode_solver: OdeSolver = None) -> int:
+    def n_states_stepwise_steps(self, node_idx: Int, ode_solver: OdeSolver | None = None) -> Int:
         """
         Parameters
         ----------
@@ -447,7 +474,7 @@ class NonLinearProgram:
             return self.dynamics[node_idx].shape_xall[1]
 
     @property
-    def n_controls_nodes(self) -> int:
+    def n_controls_nodes(self) -> Int:
         """
         Returns
         -------
@@ -456,7 +483,7 @@ class NonLinearProgram:
         mod = 1 if self.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE) else 0
         return self.ns + mod
 
-    def n_controls_steps(self, node_idx) -> int:
+    def n_controls_steps(self, node_idx: Int) -> Int:
         """
         Parameters
         ----------
@@ -478,7 +505,7 @@ class NonLinearProgram:
             raise RuntimeError("Not implemented yet")
 
     @property
-    def n_algebraic_states_nodes(self) -> int:
+    def n_algebraic_states_nodes(self) -> Int:
         """
         Returns
         -------
@@ -487,7 +514,7 @@ class NonLinearProgram:
 
         return self.n_states_nodes
 
-    def n_algebraic_states_decision_steps(self, node_idx) -> int:
+    def n_algebraic_states_decision_steps(self, node_idx) -> Int:
         """
         Parameters
         ----------
@@ -501,7 +528,9 @@ class NonLinearProgram:
         return self.n_states_decision_steps(node_idx)
 
     @staticmethod
-    def add(ocp, param_name: str, param: Any, duplicate_singleton: bool, _type: Any = None, name: str = None):
+    def add(
+        ocp, param_name: Str, param: Any, duplicate_singleton: Bool, _type: Any = None, name: StrOptional = None
+    ) -> None:
         """
         Set a parameter to their respective nlp
 
@@ -557,7 +586,7 @@ class NonLinearProgram:
                     raise RuntimeError(f"Parameter {param_name} must be a {str(_type)}")
 
     @staticmethod
-    def __setattr(nlp, name: str | None, param_name: str, param: Any):
+    def __setattr(nlp, name: StrOptional, param_name: Str, param: Any) -> None:
         """
         Add a new element to the nlp of the format 'nlp.param_name = param' or 'nlp.name["param_name"] = param'
 
@@ -578,7 +607,7 @@ class NonLinearProgram:
         else:
             getattr(nlp, name)[param_name] = param
 
-    def node_time(self, node_idx: int):
+    def node_time(self, node_idx: Int) -> FloatOptional:
         """
         Gives the time for a specific index
 
@@ -595,7 +624,7 @@ class NonLinearProgram:
             return ValueError(f"node_index out of range [0:{self.ns}]")
         return self.dt * node_idx
 
-    def get_var(self, key: str, states: MX.sym, controls: MX.sym, algebraic_states: MX.sym = None) -> MX:
+    def get_var(self, key: Str, states: MX.sym, controls: MX.sym, algebraic_states: MX.sym = None) -> MX:
         """
         This function returns the requested variable from the states, controls, or algebraic_states.
         If the variable is present in more than one type of variables, it returns the following priority:
@@ -652,13 +681,13 @@ class NonLinearProgram:
 
     def retrieve_forces(
         self,
-        name: str,
+        name: Str,
         external_forces: MX,
         states: MX.sym,
         controls: MX.sym,
         algebraic_states: MX.sym,
         numerical_timeseries: MX.sym,
-    ):
+    ) -> MX:
         """
         This function retrieves the external forces whether they are in
         states, controls, algebraic_states or numerical_timeseries
@@ -691,7 +720,7 @@ class NonLinearProgram:
 
         return external_forces
 
-    def set_node_index(self, node):
+    def set_node_index(self, node: Int) -> None:
         self.states.node_index = node
         self.states_dot.node_index = node
         self.controls.node_index = node

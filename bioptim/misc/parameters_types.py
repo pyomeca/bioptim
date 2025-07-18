@@ -1,8 +1,9 @@
-from typing import Any
+from typing import Any, Callable as CallableObj
 import numpy as np
 from typing import TypeAlias
 from casadi import MX, SX, DM
 from .enums import Node
+
 
 Int: TypeAlias = int
 Range: TypeAlias = range
@@ -12,6 +13,7 @@ Bool: TypeAlias = bool
 Tuple: TypeAlias = tuple
 List: TypeAlias = list
 Bytes: TypeAlias = bytes
+Callable: TypeAlias = CallableObj
 
 IntorFloat: TypeAlias = int | float
 
@@ -34,7 +36,6 @@ AnyListorDict: TypeAlias = list[Any] | dict[str, Any]
 IntDict: TypeAlias = dict[str, int]
 NpArrayDict: TypeAlias = dict[str, np.ndarray]
 NpArrayDictOptional: TypeAlias = NpArrayDict | None
-
 
 AnyDictOptional: TypeAlias = dict[str, Any] | None
 AnyListOptional: TypeAlias = list[Any] | None

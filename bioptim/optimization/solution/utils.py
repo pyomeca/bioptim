@@ -1,9 +1,13 @@
 import numpy as np
+from ...misc.parameters_types import (
+    Bool,
+    NpArray,
+    NpArrayList,
+    NpArrayDict,
+)
 
 
-def concatenate_optimization_variables_dict(
-    variable: list[dict[np.ndarray]], continuous: bool = True
-) -> list[dict[np.ndarray]]:
+def concatenate_optimization_variables_dict(variable: list[NpArrayDict], continuous: Bool = True) -> list[NpArrayDict]:
     """
     This function concatenates the decision variables of the phases of the system
     into a single array, omitting the last element of each phase except for the last one.
@@ -36,11 +40,11 @@ def concatenate_optimization_variables_dict(
 
 
 def concatenate_optimization_variables(
-    variable: list[np.ndarray] | np.ndarray,
-    continuous_phase: bool = True,
-    continuous_interval: bool = True,
-    merge_phases: bool = True,
-) -> np.ndarray | list[dict[np.ndarray]]:
+    variable: NpArrayList | NpArray,
+    continuous_phase: Bool = True,
+    continuous_interval: Bool = True,
+    merge_phases: Bool = True,
+) -> NpArray | list[NpArrayDict]:
     """
     This function concatenates the decision variables of the phases of the system
     into a single array, omitting the last element of each phase except for the last one.
