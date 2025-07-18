@@ -160,9 +160,9 @@ class OptimalControlProgram:
     def __init__(
         self,
         bio_model: AnyIterable | BioModel,
-        dynamics: Dynamics | DynamicsList,
         n_shooting: Int | IntIterable,
         phase_time: IntorFloat | IntIterable,
+        dynamics: DynamicsOptions | DynamicsOptionsList = None,
         x_bounds: BoundsList | None = None,
         u_bounds: BoundsList | None = None,
         a_bounds: BoundsList | None = None,
@@ -432,7 +432,7 @@ class OptimalControlProgram:
 
     def _check_arguments_and_build_nlp(
         self,
-        dynamics: Dynamics | DynamicsList,
+        dynamics: DynamicsOptions | DynamicsOptionsList | None,
         objective_functions: Objective | ObjectiveList | None,
         constraints: Constraint | ConstraintList | None,
         parameters: ParameterList | None,
@@ -1626,7 +1626,7 @@ class OptimalControlProgram:
             "dt_initial_guess", initial_guess=[v for v in dt_initial_guess.values()]
         )
 
-    def _define_numerical_timeseries(self, dynamics: DynamicsList) -> None:
+    def _define_numerical_timeseries(self, dynamics: DynamicsOptions | DynamicsOptionsList | None) -> None:
         """
         Declare the numerical_timeseries symbolic variables.
 

@@ -48,9 +48,9 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
     def __init__(
         self,
         bio_model: AnyIterable | StochasticBioModel,
-        dynamics: Dynamics | DynamicsList,
         n_shooting: Int | AnyIterable,
         phase_time: IntorFloat | AnyIterable,
+        dynamics: DynamicsOptions | DynamicsOptionsList = None,
         x_bounds: BoundsList | None = None,
         u_bounds: BoundsList | None = None,
         a_bounds: BoundsList | None = None,
@@ -80,7 +80,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         problem_type: SocpType = SocpType.TRAPEZOIDAL_IMPLICIT,
         **kwargs,
     ):
-        _check_multi_threading_and_problem_type(problem_type, bio_model, **kwargs) -> None:
+        _check_multi_threading_and_problem_type(problem_type, bio_model, **kwargs)
         _check_has_no_phase_dynamics_shared_during_the_phase(problem_type, **kwargs)
 
         self.problem_type = problem_type

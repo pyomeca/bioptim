@@ -46,9 +46,9 @@ class RecedingHorizonOptimization(OptimalControlProgram):
     def __init__(
         self,
         bio_model: list | tuple | BioModel,
-        dynamics: Dynamics | DynamicsList,
         window_len: Int | AnyIterable,
         window_duration: IntorFloat | AnyIterable,
+        dynamics: DynamicsOptions | DynamicsOptionsList = None,
         common_objective_functions: ObjectiveList | None = None,
         use_sx: Bool = True,
         **kwargs,
@@ -448,9 +448,9 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
     def __init__(
         self,
         bio_model: list | tuple | BioModel,
-        dynamics: Dynamics | DynamicsList,
         cycle_len: Int | AnyIterable,
         cycle_duration: IntorFloat | AnyIterable,
+        dynamics: DynamicsOptions | DynamicsOptionsList = None,
         use_sx: Bool = True,
         **kwargs,
     ) -> None:
@@ -640,10 +640,10 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
     def __init__(
         self,
         bio_model: list | tuple | BioModel,
-        dynamics: Dynamics | DynamicsList,
         cycle_len: Int | AnyIterable,
         cycle_duration: Int | Float | AnyIterable,
         n_cycles_simultaneous: Int,
+        dynamics: DynamicsOptions | DynamicsOptionsList = None,
         n_cycles_to_advance: Int = 1,
         use_sx: Bool = True,
         **kwargs,
