@@ -624,7 +624,6 @@ class NonLinearProgram:
             return ValueError(f"node_index out of range [0:{self.ns}]")
         return self.dt * node_idx
 
-
     def get_var(self, key: Str, states: MX.sym, controls: MX.sym, algebraic_states: MX.sym = None) -> MX:
         """
         This function returns the requested variable from the states, controls, or algebraic_states.

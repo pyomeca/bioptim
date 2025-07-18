@@ -665,7 +665,9 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         NLP.add(self, "is_stochastic", True, True)
 
 
-def _check_multi_threading_and_problem_type(problem_type: SocpType, **kwargs) -> None:
+def _check_multi_threading_and_problem_type(
+    problem_type: SocpType, bio_model: AnyIterable | StochasticBioModel, **kwargs
+) -> None:
     if not isinstance(problem_type, SocpType.COLLOCATION):
         if "n_threads" in kwargs:
             if kwargs["n_threads"] != 1:
