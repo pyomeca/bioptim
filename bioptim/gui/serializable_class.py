@@ -492,6 +492,7 @@ class NlpSerializable:
         self.algebraic_states = algebraic_states
         self.parameters = parameters
         self.numerical_timeseries = numerical_timeseries
+        self.ode_solver = ode_solver
         self.plot = plot
 
     @classmethod
@@ -508,6 +509,7 @@ class NlpSerializable:
             parameters=OptimizationVariableContainerSerializable.from_container(nlp.parameters),
             numerical_timeseries=OptimizationVariableContainerSerializable.from_container(nlp.numerical_timeseries),
             plot={key: CustomPlotSerializable.from_custom_plot(nlp.plot[key]) for key in nlp.plot},
+            ode_solver=OdeSolverSerializable.from_ode_solver(nlp.dynamics_type.ode_solver),
         )
 
     def serialize(self) -> AnyDict:
@@ -521,6 +523,7 @@ class NlpSerializable:
             "algebraic_states": self.algebraic_states.serialize(),
             "parameters": self.parameters.serialize(),
             "numerical_timeseries": self.numerical_timeseries.serialize(),
+            "ode_solver": self.ode_solver.serialize(),
             "plot": {key: plot.serialize() for key, plot in self.plot.items()},
         }
 
@@ -536,6 +539,7 @@ class NlpSerializable:
             algebraic_states=OptimizationVariableContainerSerializable.deserialize(data["algebraic_states"]),
             parameters=OptimizationVariableContainerSerializable.deserialize(data["parameters"]),
             numerical_timeseries=OptimizationVariableContainerSerializable.deserialize(data["numerical_timeseries"]),
+            ode_solver=OdeSolverSerializable.deserialize(data["ode_solver"]),
             plot={key: CustomPlotSerializable.deserialize(plot) for key, plot in data["plot"].items()},
         )
 
