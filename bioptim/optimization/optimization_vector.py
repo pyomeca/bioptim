@@ -1,7 +1,20 @@
 import numpy as np
 from casadi import vertcat, DM, SX, MX
 
+from ..misc.parameters_types import (
+    AnyTuple,
+    CX,
+    DMList,
+    FloatList,
+    Int,
+    NpArray,
+    DoubleNpArrayTuple,
+    Callable,
+)
+
 from ..misc.enums import ControlType, InterpolationType
+from ..limits.path_conditions import BoundsList, InitialGuessList
+from ..optimization.optimization_variable import OptimizationVariableContainer
 
 
 class OptimizationVectorHelper:
@@ -31,7 +44,7 @@ class OptimizationVectorHelper:
     """
 
     @staticmethod
-    def declare_ocp_shooting_points(ocp):
+    def declare_ocp_shooting_points(ocp: "OptimalControlProgram") -> None:
         """
         Declare all the casadi variables with the right size to be used during a specific phase
         """
@@ -39,7 +52,7 @@ class OptimizationVectorHelper:
             nlp.declare_shooting_points()
 
     @staticmethod
-    def vector(ocp):
+    def vector(ocp: "OptimalControlProgram") -> CX:
         """
         Format the x, u, p and s so they are in one nice (and useful) vector
 
@@ -62,7 +75,7 @@ class OptimizationVectorHelper:
         return vertcat(t_scaled, *x_scaled, *u_scaled, p_scaled, *a_scaled)
 
     @staticmethod
-    def bounds_vectors(ocp) -> tuple[np.ndarray, np.ndarray]:
+    def bounds_vectors(ocp: "OptimalControlProgram") -> DoubleNpArrayTuple:
         """
         Format the x, u and p bounds so they are in one nice (and useful) vector
 
@@ -156,7 +169,7 @@ class OptimizationVectorHelper:
         return v_bounds_min, v_bounds_max
 
     @staticmethod
-    def init_vector(ocp):
+    def init_vector(ocp: "OptimalControlProgram") -> NpArray:
         """
         Format the x, u and p bounds so they are in one nice (and useful) vector
 
@@ -234,7 +247,7 @@ class OptimizationVectorHelper:
         return v_init
 
     @staticmethod
-    def extract_phase_dt(ocp, data: np.ndarray | DM) -> list:
+    def extract_phase_dt(ocp: "OptimalControlProgram", data: NpArray | DM) -> FloatList:
         """
         Get the dt values
 
@@ -255,7 +268,7 @@ class OptimizationVectorHelper:
         return list(out[:, 0])
 
     @staticmethod
-    def extract_step_times(ocp, data: np.ndarray | DM) -> list:
+    def extract_step_times(ocp: "OptimalControlProgram", data: NpArray | DM) -> list[DMList]:
         """
         Get the phase time. If time is optimized, the MX/SX values are replaced by their actual optimized time
 
@@ -284,7 +297,7 @@ class OptimizationVectorHelper:
         return out
 
     @staticmethod
-    def to_dictionaries(ocp, data: np.ndarray | DM) -> tuple:
+    def to_dictionaries(ocp: "OptimalControlProgram", data: NpArray | DM) -> AnyTuple:
         """
         Convert a vector of solution in an easy to use dictionary, where are the variables are given their proper names
 
@@ -364,7 +377,13 @@ class OptimizationVectorHelper:
         return data_states, data_controls, data_parameters, data_algebraic_states
 
 
-def _dispatch_state_bounds(nlp, states, states_bounds, states_scaling, n_steps_callback):
+def _dispatch_state_bounds(
+    nlp: "NonLinearProgram",
+    states: OptimizationVariableContainer,
+    states_bounds: BoundsList,
+    states_scaling: "VariableScalingList",
+    n_steps_callback: Callable,
+) -> DoubleNpArrayTuple:
     states.node_index = 0
     repeat = n_steps_callback(0)
 
@@ -413,7 +432,13 @@ def _dispatch_state_bounds(nlp, states, states_bounds, states_scaling, n_steps_c
     return v_bounds_min, v_bounds_max
 
 
-def _dispatch_state_initial_guess(nlp, states, states_init, states_scaling, n_steps_callback):
+def _dispatch_state_initial_guess(
+    nlp: "NonLinearProgram",
+    states: OptimizationVariableContainer,
+    states_init: InitialGuessList,
+    states_scaling: "VariableScalingList",
+    n_steps_callback: Callable,
+) -> NpArray:
     states.node_index = 0
     repeat = n_steps_callback(0)
 

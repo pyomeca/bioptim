@@ -1,4 +1,10 @@
 import numpy as np
+from ..misc.parameters_types import (
+    Bool,
+    Int,
+    Str,
+    NpArrayOptional,
+)
 
 
 class SocpType:
@@ -19,7 +25,7 @@ class SocpType:
             If True, the Cholesky decomposition is used to reduce the number of optimization variables
         """
 
-        def __init__(self, with_cholesky: bool = False):
+        def __init__(self, with_cholesky: Bool = False):
             self.with_cholesky = with_cholesky
 
     class TRAPEZOIDAL_IMPLICIT:
@@ -32,7 +38,7 @@ class SocpType:
             If True, the Cholesky decomposition is used to reduce the number of optimization variables
         """
 
-        def __init__(self, with_cholesky: bool = False):
+        def __init__(self, with_cholesky: Bool = False):
             self.with_cholesky = with_cholesky
 
     class COLLOCATION:
@@ -48,10 +54,10 @@ class SocpType:
 
         def __init__(
             self,
-            polynomial_degree: int = 4,
-            method: str = "legendre",
-            auto_initialization: bool = False,
-            initial_cov: np.ndarray = None,
+            polynomial_degree: Int = 4,
+            method: Str = "legendre",
+            auto_initialization: Bool = False,
+            initial_cov: NpArrayOptional = None,
         ):
             """
             Parameters
