@@ -387,6 +387,19 @@ def test__muscle_driven_ocp__static_arm():
     )
 
 
+def test__muscle_driven_ocp__static_arm_with_contact():
+    from bioptim.examples.muscle_driven_ocp import static_arm_with_contact as ocp_module
+
+    bioptim_folder = TestUtils.module_folder(ocp_module)
+
+    ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/arm26_with_contact.bioMod",
+        final_time=1,
+        n_shooting=30,
+        weight=1000,
+    )
+
+
 def test__muscle_driven_with_contact__muscle_activations_contacts_tracker():
     pass
 

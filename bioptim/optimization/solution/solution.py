@@ -1420,7 +1420,7 @@ class Solution:
         ----------
         """
         if self.ocp.n_threads > 1:
-            raise NotImplementedError("Computing detailed cost with n_thread > 1 is not implemented yet")
+            raise NotImplementedError("Computing detailed cost with n_threads > 1 is not implemented yet")
 
         self._detailed_cost = []
 

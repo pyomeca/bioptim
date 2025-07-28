@@ -72,24 +72,26 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
-    x_bounds[0][:, 0] = (0, 0.07, 1.4, 0, 0, 0)
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+    x_bounds["q"][:, 0] = (0, 0.07, 1.4)
+    x_bounds["qdot"][:, 0] = (0, 0, 0)
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([1.57] * bio_model.nb_q + [0] * bio_model.nb_qdot)
+    x_init["q"] = [1.57] * bio_model.nb_q
 
     # Define control path constraint
     muscle_min, muscle_max, muscle_init = 0.0, 1.0, 0.5
     tau_min, tau_max, tau_init = -1.0, 1.0, 0.0
     u_bounds = BoundsList()
-    u_bounds.add(
-        [tau_min] * bio_model.nb_tau + [muscle_min] * bio_model.nb_muscles,
-        [tau_max] * bio_model.nb_tau + [muscle_max] * bio_model.nb_muscles,
+    u_bounds["tau"] = [tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau
+    u_bounds["muscles"] = (
+        [muscle_min] * bio_model.nb_muscles,
+        [muscle_max] * bio_model.nb_muscles,
     )
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * bio_model.nb_tau + [muscle_init] * bio_model.nb_muscles)
     # ------------- #
 
     return OptimalControlProgram(
