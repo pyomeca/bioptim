@@ -93,7 +93,7 @@ class CustomBiorbdModel(BiorbdModel, AbstractModel):
             slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
             slopes = vertcat(slope_q, slope_qdot)
-            defects = slopes * nlp.dt - dxdt * nlp.dt
+            defects = slopes - dxdt
 
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 

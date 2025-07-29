@@ -147,6 +147,6 @@ class ModifiedHolonomicTorqueBiorbdModel(HolonomicTorqueBiorbdModel):
         if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
             slope_q_u = DynamicsFunctions.get(nlp.states_dot["q_u"], nlp.states_dot.scaled.cx)
             slope_qdot_u = DynamicsFunctions.get(nlp.states_dot["qdot_u"], nlp.states_dot.scaled.cx)
-            defects = vertcat(slope_q_u, slope_qdot_u) * nlp.dt - dxdt * nlp.dt
+            defects = vertcat(slope_q_u, slope_qdot_u) - dxdt
 
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)

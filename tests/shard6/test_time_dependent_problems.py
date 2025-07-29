@@ -88,7 +88,7 @@ class CustomModel(BiorbdModel, TorqueDynamics):
         if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
             slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
-            defects = vertcat(slope_q, slope_qdot) * nlp.dt - dxdt * nlp.dt
+            defects = vertcat(slope_q, slope_qdot) - dxdt
 
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
