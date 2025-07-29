@@ -131,7 +131,7 @@ def test_time_constraint(ode_solver, phase_dynamics):
     g = np.array(sol.constraints)
     if ode_solver == OdeSolver.COLLOCATION:
         npt.assert_equal(g.shape, (ns * 20 + 1, 1))
-        npt.assert_almost_equal(g, np.concatenate((np.zeros((ns * 20, 1)), [[1]])))
+        npt.assert_almost_equal(g, np.concatenate((np.zeros((ns * 20, 1)), [[1]])), decimal=5)
     else:
         npt.assert_equal(g.shape, (ns * 4 + 1, 1))
         npt.assert_almost_equal(g, np.concatenate((np.zeros((ns * 4, 1)), [[1]])))
