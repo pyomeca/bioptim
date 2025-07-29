@@ -118,7 +118,7 @@ def test_xia_stabilized_fatigable_muscles(phase_dynamics):
     TestUtils.compare_ocp_to_solve(
         ocp,
         v=np.random.rand(613, 1),
-        expected_v_f_g=[306.3365222501875, 3457.8474074260107, 486.75997079938367],
+        expected_v_f_g=[306.3365222501875, 3457.8474074260107, 1293.2242481362955],
         decimal=6,
     )
     if platform.system() == "Windows":
@@ -129,7 +129,7 @@ def test_xia_stabilized_fatigable_muscles(phase_dynamics):
     # Check objective function value
     f = np.array(sol.cost)
     npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 19.770521758810393)
+    npt.assert_almost_equal(f[0, 0], 18.904691471277303)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -148,35 +148,40 @@ def test_xia_stabilized_fatigable_muscles(phase_dynamics):
 
     # initial and final velocities
     npt.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-    npt.assert_almost_equal(qdot[:, -1], np.array((-2.93853331, 3.00564551)))
+    npt.assert_almost_equal(qdot[:, -1], np.array((-1.78114524,  1.76341503)))
 
     # fatigue parameters
     npt.assert_almost_equal(ma[:, 0], np.array((0, 0, 0, 0, 0, 0)))
     npt.assert_almost_equal(
         ma[:, -1],
-        np.array((0.00739128, 0.00563555, 0.00159309, 0.02418655, 0.02418655, 0.00041913)),
+        np.array((3.41955888e-06, 6.02042750e-03, 3.21965396e-03, 1.95919691e-02,
+       1.95919691e-02, 7.88674875e-04)),
     )
     npt.assert_almost_equal(mr[:, 0], np.array((1, 1, 1, 1, 1, 1)))
     npt.assert_almost_equal(
-        mr[:, -1], np.array((0.99260018, 0.99281414, 0.99707397, 0.97566527, 0.97566527, 0.99904065))
+        mr[:, -1], np.array((0.99999658, 0.99237006, 0.99537383, 0.98030769, 0.98030769,
+       0.99857302))
     )
     npt.assert_almost_equal(mf[:, 0], np.array((0, 0, 0, 0, 0, 0)))
     npt.assert_almost_equal(
         mf[:, -1],
-        np.array((8.54868155e-06, 1.55030599e-03, 1.33293886e-03, 1.48176210e-04, 1.48176210e-04, 5.40217808e-04)),
+        np.array((4.25376909e-09, 1.60951527e-03, 1.40651391e-03, 1.00337311e-04,
+       1.00337311e-04, 6.38309302e-04)),
     )
 
     # initial and final controls
-    npt.assert_almost_equal(tau[:, 0], np.array((0.80920008, 1.66855572)))
-    npt.assert_almost_equal(tau[:, -1], np.array((0.81847388, -0.85234628)))
+    npt.assert_almost_equal(tau[:, 0], np.array((1.11812695, 0.92784166)))
+    npt.assert_almost_equal(tau[:, -1], np.array((0.96701702, -0.92271073)))
 
     npt.assert_almost_equal(
         muscles[:, 0],
-        np.array((6.22395441e-08, 4.38966513e-01, 3.80781292e-01, 2.80532298e-07, 2.80532298e-07, 2.26601989e-01)),
+        np.array((6.38163507e-08, 3.85245439e-01, 3.11770385e-01, 5.59020416e-07,
+       5.59020415e-07, 1.74124410e-01)),
     )
     npt.assert_almost_equal(
         muscles[:, -1],
-        np.array((8.86069119e-03, 1.17337666e-08, 1.28715148e-08, 2.02340603e-02, 2.02340603e-02, 2.16517945e-08)),
+        np.array((4.09264726e-06, 1.23284147e-08, 1.10680824e-08, 1.84237508e-02,
+       1.84237508e-02, 1.98888990e-08)),
     )
 
     # simulate
@@ -243,7 +248,7 @@ def test_effort_fatigable_muscles(phase_dynamics):
     TestUtils.compare_ocp_to_solve(
         ocp,
         v=np.random.rand(301, 1),
-        expected_v_f_g=[148.61306144921627, 2777.429584653532, -15.071606578311815],
+        expected_v_f_g=[148.61306144921627, 2777.429584653532, -42.93987379573434],
         decimal=6,
     )
     if platform.system() == "Windows":
@@ -283,16 +288,18 @@ def test_effort_fatigable_muscles(phase_dynamics):
     )
 
     # initial and final controls
-    npt.assert_almost_equal(tau[:, 0], np.array((1.00151692, 0.75680941)))
-    npt.assert_almost_equal(tau[:, -1], np.array((0.52586761, -0.65113307)))
+    npt.assert_almost_equal(tau[:, 0], np.array((1.00151716, 0.75680917)))
+    npt.assert_almost_equal(tau[:, -1], np.array((0.52586758, -0.65113302)))
 
     npt.assert_almost_equal(
         muscles[:, 0],
-        np.array((-3.28714697e-09, 3.22448892e-01, 2.29707231e-01, 2.48558443e-08, 2.48558443e-08, 1.68035326e-01)),
+        np.array((-3.28714790e-09,  3.22448850e-01,  2.29707194e-01,  2.48558519e-08,
+        2.48558519e-08,  1.68035272e-01)),
     )
     npt.assert_almost_equal(
         muscles[:, -1],
-        np.array((3.86483818e-02, 1.10050313e-09, 2.74222702e-09, 4.25097771e-02, 4.25097771e-02, 6.56233597e-09)),
+        np.array((3.86483798e-02, 1.10050390e-09, 2.74222788e-09, 4.25097743e-02,
+       4.25097743e-02, 6.56233729e-09)),
     )
 
     # simulate
