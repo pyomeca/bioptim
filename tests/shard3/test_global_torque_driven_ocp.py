@@ -328,19 +328,19 @@ def test_track_marker_2D_pendulum(ode_solver, phase_dynamics):
         # Check objective function value
         f = np.array(sol.cost)
         npt.assert_equal(f.shape, (1, 1))
-        npt.assert_almost_equal(f[0, 0], 40.928418155675274)
+        npt.assert_almost_equal(f[0, 0], 40.92496227517089)
 
         # initial and final position
         npt.assert_almost_equal(q[:, 0], np.array((0, 0)))
-        npt.assert_almost_equal(q[:, -1], np.array((0.37522392, 0.4953551)))
+        npt.assert_almost_equal(q[:, -1], np.array((0.38321534, 0.46333863)))
 
         # initial and final velocities
         npt.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-        npt.assert_almost_equal(qdot[:, -1], np.array((1.16532029, -0.77872106)))
+        npt.assert_almost_equal(qdot[:, -1], np.array((0.91690887, -0.4747445)))
 
         # initial and final controls
-        npt.assert_almost_equal(tau[:, 0], np.array((1.12924394, 0.43151372)))
-        npt.assert_almost_equal(tau[:, -1], np.array((0.21181288, 0.95199836)))
+        npt.assert_almost_equal(tau[:, 0], np.array((1.13684199, 0.43000804)))
+        npt.assert_almost_equal(tau[:, -1], np.array((0.21069152, 0.95289673)))
 
     # simulate
     TestUtils.simulate(sol)

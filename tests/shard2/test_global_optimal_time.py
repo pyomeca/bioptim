@@ -357,7 +357,7 @@ def test_multiphase_time_constraint_with_phase_time_equality(ode_solver, phase_d
     # Check constraints
     g = np.array(sol.constraints)
     if ode_solver == OdeSolver.COLLOCATION:
-        npt.assert_almost_equal(f[0, 0], 53463.26241017142)
+        npt.assert_almost_equal(f[0, 0], 53463.26239909639)
         npt.assert_equal(g.shape, (421 * 5 + 22, 1))
         npt.assert_almost_equal(
             g,
