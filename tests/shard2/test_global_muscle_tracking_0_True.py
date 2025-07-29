@@ -140,15 +140,13 @@ def test_muscle_activations_and_states_tracking(ode_solver, n_threads, phase_dyn
         npt.assert_almost_equal(qdot[:, -1], np.array([-0.43457001, -6.90996465]))
         # initial and final controls
         npt.assert_almost_equal(tau[:, 0], np.array([2.04280628e-06, -5.44222837e-06]))
-        npt.assert_almost_equal(tau[:, -1], np.array([-1.99157389e-08,  6.13725954e-08]))
+        npt.assert_almost_equal(tau[:, -1], np.array([-1.99157389e-08, 6.13725954e-08]))
         npt.assert_almost_equal(
-            mus[:, 0], np.array([0.77133411, 0.02085473, 0.63363359, 0.74881774, 0.49851613,
-       0.22482177])
+            mus[:, 0], np.array([0.77133411, 0.02085473, 0.63363359, 0.74881774, 0.49851613, 0.22482177])
         )
         npt.assert_almost_equal(
             mus[:, -1],
-            np.array([0.4418359 , 0.4340145 , 0.61776425, 0.5131385 , 0.65039449,
-       0.60103605]),
+            np.array([0.4418359, 0.4340145, 0.61776425, 0.5131385, 0.65039449, 0.60103605]),
         )
 
     elif ode_solver == OdeSolver.RK4:

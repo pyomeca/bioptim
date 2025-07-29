@@ -61,24 +61,22 @@ def test_xia_fatigable_muscles(phase_dynamics):
 
     # initial and final velocities
     npt.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-    npt.assert_almost_equal(qdot[:, -1], np.array((-1.78114524,  1.76341503)))
+    npt.assert_almost_equal(qdot[:, -1], np.array((-1.78114524, 1.76341503)))
 
     # fatigue parameters
     npt.assert_almost_equal(ma[:, 0], np.array((0, 0, 0, 0, 0, 0)))
     npt.assert_almost_equal(
-        ma[:, -1], np.array((3.41955871e-06, 6.02042750e-03, 3.21965396e-03, 1.95919691e-02,
-       1.95919691e-02, 7.88674875e-04))
+        ma[:, -1],
+        np.array((3.41955871e-06, 6.02042750e-03, 3.21965396e-03, 1.95919691e-02, 1.95919691e-02, 7.88674875e-04)),
     )
     npt.assert_almost_equal(mr[:, 0], np.array((1, 1, 1, 1, 1, 1)))
     npt.assert_almost_equal(
-        mr[:, -1], np.array((0.99999658, 0.99237006, 0.99537383, 0.98030769, 0.98030769,
-       0.99857302))
+        mr[:, -1], np.array((0.99999658, 0.99237006, 0.99537383, 0.98030769, 0.98030769, 0.99857302))
     )
     npt.assert_almost_equal(mf[:, 0], np.array((0, 0, 0, 0, 0, 0)))
     npt.assert_almost_equal(
         mf[:, -1],
-        np.array((4.25377166e-09, 1.60951527e-03, 1.40651391e-03, 1.00337311e-04,
-       1.00337311e-04, 6.38309302e-04)),
+        np.array((4.25377166e-09, 1.60951527e-03, 1.40651391e-03, 1.00337311e-04, 1.00337311e-04, 6.38309302e-04)),
     )
 
     # initial and final controls
@@ -87,13 +85,11 @@ def test_xia_fatigable_muscles(phase_dynamics):
 
     npt.assert_almost_equal(
         muscles[:, 0],
-        np.array((6.38163488e-08, 3.85245439e-01, 3.11770385e-01, 5.59020409e-07,
-       5.59020409e-07, 1.74124410e-01)),
+        np.array((6.38163488e-08, 3.85245439e-01, 3.11770385e-01, 5.59020409e-07, 5.59020409e-07, 1.74124410e-01)),
     )
     npt.assert_almost_equal(
         muscles[:, -1],
-        np.array((4.09264707e-06, 1.23284147e-08, 1.10680824e-08, 1.84237508e-02,
-       1.84237508e-02, 1.98888990e-08)),
+        np.array((4.09264707e-06, 1.23284147e-08, 1.10680824e-08, 1.84237508e-02, 1.84237508e-02, 1.98888990e-08)),
     )
 
     # simulate
