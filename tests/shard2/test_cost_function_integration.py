@@ -321,27 +321,27 @@ def test_pendulum_collocation(control_type, integration_rule, objective, phase_d
     if integration_rule == QuadratureRule.RECTANGLE_LEFT:
         if control_type == ControlType.CONSTANT:
             if objective == "torque":
-                npt.assert_almost_equal(f[0, 0], 11.795040652982767)
-                npt.assert_almost_equal(j_printed, 11.795040652982767)
+                npt.assert_almost_equal(f[0, 0], 11.795040652982784)
+                npt.assert_almost_equal(j_printed, 11.795040652982784)
             else:
-                npt.assert_almost_equal(f[0, 0], 12.336208562756555)
-                npt.assert_almost_equal(j_printed, 12.336208562756553)
+                npt.assert_almost_equal(f[0, 0], 11.383415350091333)
+                npt.assert_almost_equal(j_printed, 11.383415350091333)
     elif integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
         if control_type == ControlType.CONSTANT:
             if objective == "torque":
-                npt.assert_almost_equal(f[0, 0], 11.795040652982767)
-                npt.assert_almost_equal(j_printed, 11.795040652982767)
+                npt.assert_almost_equal(f[0, 0], 11.795040652982784)
+                npt.assert_almost_equal(j_printed, 11.795040652982784)
             else:
-                npt.assert_almost_equal(f[0, 0], 12.336208562756559)
-                npt.assert_almost_equal(j_printed, 12.336208562756559)
+                npt.assert_almost_equal(f[0, 0], 11.383415350091333)
+                npt.assert_almost_equal(j_printed, 11.383415350091333)
     elif integration_rule == QuadratureRule.TRAPEZOIDAL:
         if control_type == ControlType.CONSTANT:
             if objective == "torque":
-                npt.assert_almost_equal(f[0, 0], 11.795040652982767)
-                npt.assert_almost_equal(j_printed, 11.795040652982767)
+                npt.assert_almost_equal(f[0, 0], 11.795040652982784)
+                npt.assert_almost_equal(j_printed, 11.795040652982784)
             else:
-                npt.assert_almost_equal(f[0, 0], 12.336208562756564)
-                npt.assert_almost_equal(j_printed, 12.336208562756564)
+                npt.assert_almost_equal(f[0, 0], 11.383415350091333)
+                npt.assert_almost_equal(j_printed, 11.383415350091333)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])

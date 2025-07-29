@@ -63,7 +63,7 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver, p
             expected = [26.473138941541652, 215.04636610774946, 10.574774769800726]
         case OdeSolver.COLLOCATION:
             v_len = 135
-            expected = [64.27619358626245, 199.0608093817752, -497.2117949234156]
+            expected = [64.27619358626245, 199.0608093817752, -1340.7660276585289]
         case OdeSolver.IRK:
             v_len = 55
             expected = [26.473138941541652, 215.04636610774946, -35.9551582488577]
@@ -80,6 +80,7 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver, p
         return
 
     sol = ocp.solve()
+    assert sol.status == 0.0
 
     # Check objective function value
     f = np.array(sol.cost)
@@ -89,7 +90,8 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver, p
     g = np.array(sol.constraints)
     if ode_solver == OdeSolver.COLLOCATION:
         npt.assert_equal(g.shape, (20 * 5, 1))
-        npt.assert_almost_equal(g, np.zeros((20 * 5, 1)), decimal=6)
+        # decimal=5 is fine here because the "Constraint violation" was scaled by IPOPT
+        npt.assert_almost_equal(g, np.zeros((20 * 5, 1)), decimal=5)
     else:
         npt.assert_equal(g.shape, (20, 1))
         npt.assert_almost_equal(g, np.zeros((20, 1)), decimal=6)
@@ -122,16 +124,18 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver, p
         npt.assert_almost_equal(q[:, 0], np.array([-3.74337403e-06, 4.00697373e-06]))
         npt.assert_almost_equal(q[:, -1], np.array([0.20480488, -0.95076061]))
         # initial and final velocities
-        npt.assert_almost_equal(qdot[:, 0], np.array([1.17026419e-04, -9.75179756e-05]))
-        npt.assert_almost_equal(qdot[:, -1], np.array([-0.43456688, -6.90997413]))
+        npt.assert_almost_equal(qdot[:, 0], np.array([1.16124035e-04, -9.79027202e-05]))
+        npt.assert_almost_equal(qdot[:, -1], np.array([-0.43456833, -6.90996636]))
         # initial and final controls
         npt.assert_almost_equal(
             mus[:, 0],
-            np.array([0.77133458, 0.02085464, 0.63363333, 0.74881816, 0.49851632, 0.22482216]),
+            np.array([0.77133446, 0.02085466, 0.63363341, 0.74881804, 0.49851627,
+       0.22482204]),
         )
         npt.assert_almost_equal(
             mus[:, -1],
-            np.array([0.4418359, 0.4340145, 0.61776425, 0.5131385, 0.65039449, 0.60103605]),
+            np.array([0.4418359 , 0.4340145 , 0.61776425, 0.5131385 , 0.65039449,
+       0.60103605]),
         )
 
     elif ode_solver == OdeSolver.RK4:

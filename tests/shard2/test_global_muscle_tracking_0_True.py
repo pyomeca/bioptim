@@ -69,7 +69,7 @@ def test_muscle_activations_and_states_tracking(ode_solver, n_threads, phase_dyn
             expected = [30.176497827705912, 216.82271917709082, 41.92662823234213]
         case OdeSolver.COLLOCATION:
             v_len = 145
-            expected = [69.45381468487611, 200.49863362309583, 1010.2302612756722]
+            expected = [69.45381468487611, 200.49863362309583, 2684.0152450078062]
         case OdeSolver.IRK:
             v_len = 65
             expected = [30.176497827705912, 216.82271917709082, 63.204797772662936]

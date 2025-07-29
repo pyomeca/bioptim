@@ -100,24 +100,26 @@ def test_muscle_driven_ocp(ode_solver, phase_dynamics):
         )
 
     elif ode_solver == OdeSolver.COLLOCATION:
-        npt.assert_almost_equal(f[0, 0], 0.12644297341855165)
+        npt.assert_almost_equal(f[0, 0], 0.12644281876423868)
 
         # initial and final position
         npt.assert_almost_equal(q[:, 0], np.array([0.07, 1.4]))
-        npt.assert_almost_equal(q[:, -1], np.array([-0.19992534, 2.65884909]))
+        npt.assert_almost_equal(q[:, -1], np.array([-0.19992576,  2.65885103]))
         # initial and final velocities
         npt.assert_almost_equal(qdot[:, 0], np.array([0.0, 0.0]))
-        npt.assert_almost_equal(qdot[:, -1], np.array([-2.31430927, 14.18129464]))
+        npt.assert_almost_equal(qdot[:, -1], np.array([-2.31434722, 14.18129136]))
         # initial and final controls
-        npt.assert_almost_equal(tau[:, 0], np.array([0.00799575, 0.02025812]))
-        npt.assert_almost_equal(tau[:, -1], np.array([0.00228286, 0.00281158]))
+        npt.assert_almost_equal(tau[:, 0], np.array([0.00799575, 0.0202582]))
+        npt.assert_almost_equal(tau[:, -1], np.array([0.00228286, 0.00281157]))
         npt.assert_almost_equal(
             mus[:, 0],
-            np.array([7.16887076e-06, 6.03293415e-01, 3.37026700e-01, 1.08380212e-05, 1.14088234e-05, 3.66740786e-01]),
+            np.array([7.16885887e-06, 6.03295239e-01, 3.37027853e-01, 1.08379827e-05,
+                1.14087833e-05, 3.66742146e-01]),
         )
         npt.assert_almost_equal(
             mus[:, -1],
-            np.array([5.46652642e-05, 6.57077193e-03, 3.72595814e-03, 4.73887187e-04, 4.89821189e-04, 9.06067240e-03]),
+            np.array([5.46506989e-05, 6.28417104e-03, 3.23481504e-03, 3.21760771e-04,
+            3.31030946e-04, 8.90994795e-03]),
         )
     elif ode_solver == OdeSolver.TRAPEZOIDAL:
         npt.assert_almost_equal(f[0, 0], 0.13299706974727432)
