@@ -124,13 +124,13 @@ def test_multi_cyclic_nmpc_get_final(phase_dynamics, ode_solver):
         if ode_solver.method == "radau":
             # initial and final position
             npt.assert_equal(q.shape, (3, n_cycles_total * cycle_len * (ode_solver.polynomial_degree + 1) + 1))
-            npt.assert_almost_equal(q[:, 0], np.array((-12.56637061,   1.04359174,   1.03625065)))
-            npt.assert_almost_equal(q[:, -1], np.array([0.        , 1.04359174, 1.03625065]))
+            npt.assert_almost_equal(q[:, 0], np.array((-12.56637061, 1.04359174, 1.03625065)))
+            npt.assert_almost_equal(q[:, -1], np.array([0.0, 1.04359174, 1.03625065]))
             # initial and final velocities
             npt.assert_almost_equal(qdot[:, 0], np.array([6.28810582, 2.55280178, 0.02627301]), decimal=5)
-            npt.assert_almost_equal(qdot[:, -1], np.array([6.28810582,  2.42201137, -0.57799103]), decimal=5)
+            npt.assert_almost_equal(qdot[:, -1], np.array([6.28810582, 2.42201137, -0.57799103]), decimal=5)
             # initial and final controls
-            npt.assert_almost_equal(tau[:, 0], np.array([-0.19682043,  4.84862251,  2.37825343]), decimal=4)
+            npt.assert_almost_equal(tau[:, 0], np.array([-0.19682043, 4.84862251, 2.37825343]), decimal=4)
             npt.assert_almost_equal(tau[:, -1], np.array([0.19682043, 5.35831142, 2.43094827]), decimal=4)
 
         # check time

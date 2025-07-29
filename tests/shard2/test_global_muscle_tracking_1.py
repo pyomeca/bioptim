@@ -129,13 +129,11 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver, p
         # initial and final controls
         npt.assert_almost_equal(
             mus[:, 0],
-            np.array([0.77133446, 0.02085466, 0.63363341, 0.74881804, 0.49851627,
-       0.22482204]),
+            np.array([0.77133446, 0.02085466, 0.63363341, 0.74881804, 0.49851627, 0.22482204]),
         )
         npt.assert_almost_equal(
             mus[:, -1],
-            np.array([0.4418359 , 0.4340145 , 0.61776425, 0.5131385 , 0.65039449,
-       0.60103605]),
+            np.array([0.4418359, 0.4340145, 0.61776425, 0.5131385, 0.65039449, 0.60103605]),
         )
 
     elif ode_solver == OdeSolver.RK4:

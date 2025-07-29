@@ -98,29 +98,25 @@ def test_muscle_excitation_with_torque_and_markers_tracking(ode_solver):
 
         # initial and final position
         npt.assert_almost_equal(q[:, 0], np.array([-0.00142137, -0.00147973]))
-        npt.assert_almost_equal(q[:, -1], np.array([0.2033968 , -0.95862998]))
+        npt.assert_almost_equal(q[:, -1], np.array([0.2033968, -0.95862998]))
         # initial and final velocities
-        npt.assert_almost_equal(qdot[:, 0], np.array([-0.04127716,  1.11182115]))
+        npt.assert_almost_equal(qdot[:, 0], np.array([-0.04127716, 1.11182115]))
         npt.assert_almost_equal(qdot[:, -1], np.array([0.1747842, -8.9971307]))
         # initial and final muscle state
         npt.assert_almost_equal(
-            mus_states[:, 0], np.array([0.77132064, 0.02075195, 0.63364823, 0.74880388, 0.49850701,
-       0.22479665])
+            mus_states[:, 0], np.array([0.77132064, 0.02075195, 0.63364823, 0.74880388, 0.49850701, 0.22479665])
         )
         npt.assert_almost_equal(
-            mus_states[:, -1], np.array([0.52076592, 0.50803169, 0.60498554, 0.43736946, 0.5933876 ,
-       0.59927553])
+            mus_states[:, -1], np.array([0.52076592, 0.50803169, 0.60498554, 0.43736946, 0.5933876, 0.59927553])
         )
         # initial and final controls
         npt.assert_almost_equal(tau[:, 0], np.array([4.63258794e-05, 2.39522172e-05]))
         npt.assert_almost_equal(tau[:, -1], np.array([-2.86456641e-08, 8.63101439e-08]))
         npt.assert_almost_equal(
-            mus_controls[:, 0], np.array([0.76820025, 0.02175625, 0.63390284, 0.74872748, 0.49847306,
-       0.22487578])
+            mus_controls[:, 0], np.array([0.76820025, 0.02175625, 0.63390284, 0.74872748, 0.49847306, 0.22487578])
         )
         npt.assert_almost_equal(
-            mus_controls[:, -1], np.array([0.44183311, 0.43401359, 0.61776037, 0.51314242, 0.65039128,
-       0.60103257])
+            mus_controls[:, -1], np.array([0.44183311, 0.43401359, 0.61776037, 0.51314242, 0.65039128, 0.60103257])
         )
 
     elif ode_solver == OdeSolver.RK4:
