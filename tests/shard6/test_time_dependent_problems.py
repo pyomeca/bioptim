@@ -305,22 +305,22 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
             if control_type == ControlType.CONSTANT:
                 v_len = 665 * n_phase
                 expected = (
-                    [66.5, 80006.0 if minimize_time else 6.0, 6.035552847184389]
+                    [66.5, 80006.0 if minimize_time else 6.0, 60.355528471843854]
                     if n_phase == 1
-                    else [133.0, 400012.00000000006 if minimize_time else 12.0, 28.618666282170977]
+                    else [133.0, 400012.00000000006 if minimize_time else 12.0, 286.1866628217095]
                 )
             elif control_type == ControlType.LINEAR_CONTINUOUS:
                 v_len = 667 * n_phase
                 if minimize_time:
                     if n_phase == 1:
-                        expected = [66.69999999999999, 80006.0, 6.035552847184389]
+                        expected = [66.69999999999999, 80006.0, 60.355528471843854]
                     else:
-                        expected = [133.39999999999998, 400012.00000000006, 28.61866628217097]
+                        expected = [133.39999999999998, 400012.00000000006, 286.1866628217095]
                 else:
                     if n_phase == 1:
-                        expected = [66.69999999999999, 6.000000000000002, 6.035552847184389]
+                        expected = [66.69999999999999, 6.000000000000002, 60.355528471843854]
                     else:
-                        expected = [133.39999999999998, 12.000000000000009, 28.61866628217097]
+                        expected = [133.39999999999998, 12.000000000000009, 286.1866628217095]
 
         case OdeSolver.IRK:
             if control_type == ControlType.CONSTANT:

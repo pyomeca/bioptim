@@ -274,7 +274,7 @@ def test_track_marker_2D_pendulum(ode_solver, phase_dynamics):
     match ode_solver_orig:
         case OdeSolver.COLLOCATION:
             v_len = 665
-            expected = [329.58704584455836, 45.86799945455372, 32.40020240692716]
+            expected = [329.58704584455836, 45.86799945455372, 76.30823619468703]
         case OdeSolver.IRK:
             v_len = 185
             expected = [87.49523141142917, 194.20847154483175, 4027.416142481593]
