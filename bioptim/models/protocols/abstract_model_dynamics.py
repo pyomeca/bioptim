@@ -119,13 +119,13 @@ class TorqueDynamics(AbstractModel):
                     controls,
                 )
 
-                defects = slopes * nlp.dt - dxdt_defects * nlp.dt
+                defects = slopes - dxdt_defects
 
             elif nlp.dynamics_type.ode_solver.defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
                 if nlp.model.fatigue is not None:
                     raise NotImplementedError("Fatigue is not implemented yet with inverse dynamics defects.")
 
-                defects[q_indices, 0] = slope_q * nlp.dt - qdot * nlp.dt
+                defects[q_indices, 0] = slope_q - qdot
 
                 tau_id = DynamicsFunctions.inverse_dynamics(
                     nlp,
@@ -296,8 +296,8 @@ class StochasticTorqueDynamics(TorqueDynamics):
             slope_q, slope_qdot = self.get_basic_slopes(nlp)
 
             defects = nlp.cx(nlp.states.shape, 1)
-            defects[q_indices, 0] = slope_q * nlp.dt - dq * nlp.dt
-            defects[qdot_indices, 0] = slope_qdot * nlp.dt - ddq * nlp.dt
+            defects[q_indices, 0] = slope_q - dq
+            defects[qdot_indices, 0] = slope_qdot - ddq
 
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
@@ -353,7 +353,7 @@ class HolonomicTorqueDynamics(AbstractModel):
             if nlp.dynamics_type.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
                 qddot_u = nlp.model.partitioned_forward_dynamics()(q_u, qdot_u, q_v_init, tau)
                 derivative = vertcat(qdot_u, qddot_u)
-                defects = vertcat(slope_q, slope_qdot) * nlp.dt - derivative * nlp.dt
+                defects = vertcat(slope_q, slope_qdot) - derivative
             else:
                 raise NotImplementedError(
                     f"The defect type {nlp.dynamics_type.ode_solver.defects_type} is not implemented yet for holonomic torque driven dynamics."
@@ -586,11 +586,11 @@ class TorqueDerivativeDynamics(TorqueDynamics):
                 slopes[qdot_indices, 0] = slope_qdot
                 slopes[nlp.states["tau"].index, 0] = slope_tau
 
-                defects = slopes * nlp.dt - dxdt_defects * nlp.dt
+                defects = slopes - dxdt_defects
 
             elif nlp.dynamics_type.ode_solver.defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
 
-                defects[q_indices, 0] = slope_q * nlp.dt - qdot * nlp.dt
+                defects[q_indices, 0] = slope_q - qdot
 
                 tau_id = DynamicsFunctions.inverse_dynamics(
                     nlp,
@@ -602,7 +602,7 @@ class TorqueDerivativeDynamics(TorqueDynamics):
                 )
                 tau_defects = tau - tau_id
                 defects[qdot_indices, 0] = tau_defects
-                defects[nlp.states["tau"].index, 0] = slope_tau * nlp.dt - taudot * nlp.dt
+                defects[nlp.states["tau"].index, 0] = slope_tau - taudot
             else:
                 raise NotImplementedError(
                     f"The defect type {nlp.dynamics_type.ode_solver.defects_type} is not implemented yet for torque driven dynamics."
@@ -753,7 +753,7 @@ class MusclesDynamics(TorqueDynamics):
 
                     slopes[fatigue_indices, 0] = slopes_fatigue
 
-                defects = slopes * nlp.dt - dxdt_defects * nlp.dt
+                defects = slopes - dxdt_defects
 
             elif nlp.dynamics_type.ode_solver.defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
                 if nlp.model.fatigue is not None:
@@ -762,7 +762,7 @@ class MusclesDynamics(TorqueDynamics):
                     raise NotImplementedError("Inverse dynamics, cannot be used with ContactType.RIGID_EXPLICIT yet")
 
                 dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-                defects[nlp.states["q"].index, 0] = slope_q * nlp.dt - dq * nlp.dt
+                defects[nlp.states["q"].index, 0] = slope_q - dq
 
                 external_forces = DynamicsFunctions.get_external_forces_from_contacts(
                     nlp, q, qdot, nlp.model.contact_types, external_forces
@@ -778,7 +778,7 @@ class MusclesDynamics(TorqueDynamics):
                     mus_excitations = DynamicsFunctions.get(nlp.controls["muscles"], controls)
                     dmus = DynamicsFunctions.compute_muscle_dot(nlp, mus_excitations, mus_activations)
                     slope_mus = nlp.states_dot["muscles"].cx
-                    defects[nlp.states["muscles"].index, 0] = slope_mus * nlp.dt - dmus * nlp.dt
+                    defects[nlp.states["muscles"].index, 0] = slope_mus - dmus
 
             else:
                 raise NotImplementedError(
@@ -873,10 +873,10 @@ class JointAccelerationDynamics(AbstractModel):
             defects = nlp.cx(nlp.states.shape, 1)
 
             # qdot = polynomial slope
-            defects[q_indices, 0] = slope_q * nlp.dt - qdot_mapped * nlp.dt
+            defects[q_indices, 0] = slope_q - qdot_mapped
 
             if nlp.dynamics_type.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
-                defects[qdot_indices, 0] = slope_qdot * nlp.dt - qddot_mapped * nlp.dt
+                defects[qdot_indices, 0] = slope_qdot - qddot_mapped
 
             else:
                 raise NotImplementedError(

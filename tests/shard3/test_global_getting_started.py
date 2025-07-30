@@ -172,7 +172,7 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type):
 
     if n_threads > 1:
         with pytest.raises(
-            NotImplementedError, match="Computing detailed cost with n_thread > 1 is not implemented yet"
+            NotImplementedError, match="Computing detailed cost with n_threads > 1 is not implemented yet"
         ):
             detailed_cost = sol.detailed_cost[0]
         detailed_cost = None
@@ -195,11 +195,11 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type):
 
     elif isinstance(ode_solver_obj, OdeSolver.COLLOCATION):
         if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
-            optimal_cost = 46.667345680854794
-            npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [-0.1780507, 0.3254202])
+            optimal_cost = 51.03624140672109
+            npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [0.00282762, 0.14317854])
         else:
-            optimal_cost = 65.86214777650633
-            npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [0.5545747, -0.4128084])
+            optimal_cost = 65.86214777650544
+            npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [0.55457473, -0.41280843])
 
         npt.assert_almost_equal(f[0, 0], optimal_cost)
         # detailed cost values
@@ -265,10 +265,10 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type):
         npt.assert_almost_equal(tau[:, -1], np.array((-25.26494109, 0)))
     elif isinstance(ode_solver_obj, OdeSolver.COLLOCATION):
         if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
-            npt.assert_almost_equal(tau[:, 0], np.array((5.78386563, 0)))
-            npt.assert_almost_equal(tau[:, -1], np.array((-18.22245512, 0)))
+            npt.assert_almost_equal(tau[:, 0], np.array((5.71088029, 0)))
+            npt.assert_almost_equal(tau[:, -1], np.array((-19.89491045, 0)))
         else:
-            npt.assert_almost_equal(tau[:, 0], np.array((5.4231798, 0)))
+            npt.assert_almost_equal(tau[:, 0], np.array((5.42317977, 0)))
             npt.assert_almost_equal(tau[:, -1], np.array((-25.26762264, 0)))
     elif isinstance(ode_solver_obj, OdeSolver.RK1):
         npt.assert_almost_equal(tau[:, 0], np.array((5.498956, 0)))
