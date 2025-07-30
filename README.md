@@ -569,7 +569,7 @@ x_bounds = BoundsList()
 x_bounds["q"] = bio_model.bounds_from_ranges("q")
 x_bounds["q"][:, [0, -1]] = 0
 x_bounds["q"][1, -1] = 3.14
-x_bounds["dot"] = bio_model.bounds_from_ranges("qdot")
+x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
 x_bounds["qdot"][:, [0, -1]] = 0
 
 u_bounds = BoundsList()
