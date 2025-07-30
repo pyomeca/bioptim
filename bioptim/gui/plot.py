@@ -301,7 +301,7 @@ class PlotOcp:
             "general_options": {"use_tight_layout": False},
             "non_integrated_plots": {"linestyle": "-", "markersize": 3, "linewidth": 1.1},
             "integrated_plots": {"linestyle": "-", "markersize": 3, "linewidth": 1.1},
-            "point_plots": {"linestyle": None, "marker": ".", "markersize": 15},
+            "point_plots": {"linestyle": None, "marker": ".", "markersize": 5},
             "bounds": {"color": "k", "linewidth": 0.4, "linestyle": "-"},
             "grid": {"color": "k", "linestyle": "-", "linewidth": 0.15},
             "vertical_lines": {"color": "k", "linestyle": "--", "linewidth": 1.2},
