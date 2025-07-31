@@ -1,6 +1,6 @@
 from typing import TypeAlias
 
-from .abstract_dynamics import StateSpaceDynamics
+from .abstract_dynamics import AbstractStateSpaceDynamics
 from .joint_acceleration_dynamics import JointAccelerationDynamics
 from .torque_dynamics_holonomic import HolonomicTorqueDynamics
 from .muscle_dynamics import MusclesDynamics
