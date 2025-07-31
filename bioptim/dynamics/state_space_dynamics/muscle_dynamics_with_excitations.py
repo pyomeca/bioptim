@@ -18,7 +18,7 @@ class MusclesDynamicsWithExcitations(TorqueDynamics):
     u = [muscles, tau (if with_residual_torque)]
     """
 
-    def __init__(self, with_residual_torque: Bool, with_excitation: Bool, fatigue: FatigueList = None):
+    def __init__(self, with_residual_torque: Bool, fatigue: FatigueList = None):
         super().__init__(fatigue)
 
         self.state_configuration = [States.Q, States.QDOT]
@@ -31,7 +31,6 @@ class MusclesDynamicsWithExcitations(TorqueDynamics):
         self.algebraic_configuration = []
         self.functions = []
         self.with_residual_torque = with_residual_torque
-        self.with_excitation = with_excitation
         self.fatigue = fatigue
 
     def get_basic_variables(
