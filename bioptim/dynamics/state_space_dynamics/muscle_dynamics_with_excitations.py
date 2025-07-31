@@ -10,7 +10,7 @@ from ...misc.parameters_types import Bool
 from .torque_dynamics import TorqueDynamics
 
 
-class MusclesDynamics(TorqueDynamics):
+class MusclesDynamicsWithExcitations(TorqueDynamics):
     """
     This class is used to create a model actuated through muscle activation.
 
@@ -22,6 +22,7 @@ class MusclesDynamics(TorqueDynamics):
         super().__init__(fatigue)
 
         self.state_configuration = [States.Q, States.QDOT]
+        self.state_configuration += [States.MUSCLE_ACTIVATION]
 
         self.control_configuration = [Controls.MUSCLE_EXCITATION]
         if with_residual_torque:
@@ -31,6 +32,7 @@ class MusclesDynamics(TorqueDynamics):
         self.functions = []
         self.with_residual_torque = with_residual_torque
         self.with_excitation = with_excitation
+        self.fatigue = fatigue
 
     def get_basic_variables(
         self,
@@ -45,7 +47,7 @@ class MusclesDynamics(TorqueDynamics):
         # Get variables from the right place
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-        mus_activations = DynamicsFunctions.get(nlp.controls["muscles"], controls)
+        mus_activations = DynamicsFunctions.get(nlp.states["muscles"], states)
         fatigue_states, mus_activations = DynamicsFunctions.get_fatigue_states(states, nlp, mus_activations)
 
         # Compute the torques due to muscles
@@ -86,6 +88,10 @@ class MusclesDynamics(TorqueDynamics):
         dxdt[q_indices, 0] = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         dxdt[qdot_indices, 0] = DynamicsFunctions.compute_qddot(nlp, q, qdot, tau, external_forces)
 
+        mus_excitations = DynamicsFunctions.get(nlp.controls["muscles"], controls)
+        dmus = DynamicsFunctions.compute_muscle_dot(nlp, mus_excitations, mus_activations)
+        dxdt[nlp.states["muscles"].index, 0] = dmus
+
         if nlp.model.fatigue is not None and "muscles" in nlp.model.fatigue:
             dxdt = nlp.model.fatigue["muscles"].dynamics(dxdt, nlp, states, controls)
 
@@ -108,6 +114,12 @@ class MusclesDynamics(TorqueDynamics):
                 slopes = nlp.cx(nlp.states.shape, 1)
                 slopes[nlp.states["q"].index, 0] = slope_q
                 slopes[nlp.states["qdot"].index, 0] = slope_qdot
+
+                mus_excitations = DynamicsFunctions.get(nlp.controls["muscles"], controls)
+                dmus = DynamicsFunctions.compute_muscle_dot(nlp, mus_excitations, mus_activations)
+                dxdt_defects[nlp.states["muscles"].index, 0] = dmus
+                slope_mus = nlp.states_dot["muscles"].cx
+                slopes[nlp.states["muscles"].index, 0] = slope_mus
 
                 if nlp.model.fatigue is not None and "muscles" in nlp.model.fatigue:
                     dxdt_defects = nlp.model.fatigue["muscles"].dynamics(dxdt_defects, nlp, states, controls)
@@ -149,6 +161,11 @@ class MusclesDynamics(TorqueDynamics):
                 )
                 tau_defects = tau - tau_id
                 defects[nlp.states["qdot"].index, 0] = tau_defects
+
+                mus_excitations = DynamicsFunctions.get(nlp.controls["muscles"], controls)
+                dmus = DynamicsFunctions.compute_muscle_dot(nlp, mus_excitations, mus_activations)
+                slope_mus = nlp.states_dot["muscles"].cx
+                defects[nlp.states["muscles"].index, 0] = slope_mus * nlp.dt - dmus * nlp.dt
 
             else:
                 raise NotImplementedError(
