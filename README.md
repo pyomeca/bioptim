@@ -951,28 +951,31 @@ The `AbstractModel` class is the base class to define the dynamics of the system
 Some basic attributes and methods are defined like `extra_dynamics` returning `None` and some others have to be overridden in the child class, like `dynamics`.
 The main method to implement is the `dynamics` method, which defines the dynamics of the system and the main attributes to define are the state and control variable configurations. Once again, we have implemented some variable configurations for you, such as `States.Q` and `Controls.TAU`, but it is possible to define your own configurations.
 If you want to define other custom casadi functions, you can do it in the `functions` attribute.
-```python3
-from bioptim import AbstractModel
 
-class CustomMDynamics(AbstractModel):
+```python3
+from bioptim import StateSpaceDynamics
+
+
+class CustomMDynamics(StateSpaceDynamics):
     def __init__(self):
         super().__init__()
         self.state_configuration = [States.Q, States.QDOT]
         self.control_configuration = [Controls.TAU]
-        self.algebraic_configuration = [lambda ocp, nlp, as_states, as_controls, as_algebraic_states: your_custom_variable_function(
+        self.algebraic_configuration = [
+            lambda ocp, nlp, as_states, as_controls, as_algebraic_states: your_custom_variable_function(
                 ocp, nlp, as_states, as_controls, as_algebraic_states, extra_arguments=extra_arguments
             )]
         self.functions = []
 
     def dynamics(
-        self,
-        time,
-        states,
-        controls,
-        parameters,
-        algebraic_states,
-        numerical_timeseries,
-        nlp,
+            self,
+            time,
+            states,
+            controls,
+            parameters,
+            algebraic_states,
+            numerical_timeseries,
+            nlp,
     ):
         """ 
         This method defines the dynamics of the system by returning a return DynamicsEvaluation(dxdt, defects) object.

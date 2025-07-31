@@ -56,8 +56,7 @@ from ..misc.mapping import BiMappingList, Mapping, BiMapping
 from ..misc.options import OptionDict
 from ..models.biorbd.variational_biorbd_model import VariationalBiorbdModel
 from ..models.protocols.biomodel import BioModel
-from ..models.protocols.abstract_model_dynamics import DynamicalModel
-from ..models.protocols.abstract_model import AbstractModel
+from ..dynamics.state_space_dynamics import StateSpaceDynamics
 from ..optimization.optimization_variable import OptimizationVariableList
 from ..optimization.parameters import ParameterList, Parameter, ParameterContainer
 from ..optimization.solution.solution import Solution
@@ -346,7 +345,7 @@ class OptimalControlProgram:
         if not isinstance(bio_model, (list, tuple)):
             bio_model = [bio_model]
         for model in bio_model:
-            if not isinstance(model, AbstractModel):
+            if not isinstance(model, StateSpaceDynamics):
                 raise RuntimeError("The bio_model should inherit from AbstractModel")
         bio_model = self._check_quaternions_hasattr(bio_model)
         self.n_phases = len(bio_model)
