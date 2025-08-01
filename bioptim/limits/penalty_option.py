@@ -6,6 +6,7 @@ from casadi import vertcat, Function, jacobian, diag
 from ..optimization.optimization_variable import OptimizationVariableList
 from .penalty_controller import PenaltyController
 from ..limits.penalty_helpers import PenaltyHelpers, Slicy
+from ..limits.weight import Weight
 from ..misc.enums import Node, PlotType, ControlType, PenaltyType, QuadratureRule, PhaseDynamics
 from ..misc.mapping import BiMapping
 from ..misc.options import OptionGeneric
@@ -108,7 +109,7 @@ class PenaltyOption(OptionGeneric):
         node: Node | IntorNodeIterable = Node.DEFAULT,
         target: FloatIterableorNpArray | IntIterableorNpArray | NpArrayList | None = None,
         quadratic: BoolOptional = None,
-        weight: Float = 1,
+        weight: Float | Int | Weight = 1,
         derivative: Bool = False,
         explicit_derivative: Bool = False,
         integrate: Bool = False,
@@ -136,7 +137,7 @@ class PenaltyOption(OptionGeneric):
             A target to track for the penalty
         quadratic: bool
             If the penalty is quadratic
-        weight: float
+        weight: float | Weight
             The weighting applied to this specific penalty
         derivative: bool
             If the function should be evaluated at X and X+1
@@ -208,7 +209,7 @@ class PenaltyOption(OptionGeneric):
         self.node_idx = []
         self.multinode_idx = None
         self.dt = 0
-        self.weight = weight
+        self.weight = weight if isinstance(weight, Weight) else Weight(weight)
         self.function: list[Function | None] = []
         self.function_non_threaded: list[Function | None] = []
         self.weighted_function: list[Function | None] = []
@@ -327,13 +328,6 @@ class PenaltyOption(OptionGeneric):
         terms, meaning that you have to declare the constraint h=0 and the "variation of h"=buffer ** 2 with
         is_stochastic=True independently.
         """
-
-        # TODO: Charbie -> This is just a first implementation (x=[q, qdot]), it should then be generalized
-
-        nx = controller.q.shape[0]
-        n_root = controller.model.nb_root
-        n_joints = nx - n_root
-
         if "cholesky_cov" in controller.controls.keys():
             l_cov_matrix = StochasticBioModel.reshape_to_cholesky_matrix(
                 controller.controls["cholesky_cov"].cx_start, controller.model.matrix_shape_cov_cholesky
@@ -450,8 +444,11 @@ class PenaltyOption(OptionGeneric):
         is_trapezoidal = self.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL, QuadratureRule.TRAPEZOIDAL)
         target_shape = tuple([len(self.rows), len(self.cols) + 1 if is_trapezoidal else len(self.cols)])
         target_cx = controller.cx.sym("target", target_shape)
-        weight_cx = controller.cx.sym("weight", 1, 1)
-        exponent = 2 if self.quadratic and self.weight else 1
+        weight_cx = controller.cx.sym("weight", len(self.cols), 1)
+        self.weight.check_and_adjust_dimensions(1, controller.ns, self.name)
+        if len(self.cols) > 0:
+            raise NotImplementedError("ddfdddddddddddddds")
+        exponent = 2 if self.quadratic and self.weight.evaluate_at(self.cols[0]) else 1
 
         if is_trapezoidal:
             # Hypothesis for APPROXIMATE_TRAPEZOIDAL: the function is continuous on states
