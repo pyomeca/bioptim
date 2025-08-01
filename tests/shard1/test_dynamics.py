@@ -25,7 +25,7 @@ from bioptim import (
     JointAccelerationBiorbdModel,
     States,
     Controls,
-    StateSpaceDynamics,
+    AbstractStateSpaceDynamics,
 )
 
 from ..utils import TestUtils
