@@ -953,10 +953,10 @@ The main method to implement is the `dynamics` method, which defines the dynamic
 If you want to define other custom casadi functions, you can do it in the `functions` attribute.
 
 ```python3
-from bioptim import StateSpaceDynamics
+from bioptim import AbstractStateSpaceDynamics
 
 
-class CustomMDynamics(StateSpaceDynamics):
+class CustomMDynamics(AbstractStateSpaceDynamics):
     def __init__(self):
         super().__init__()
         self.state_configuration = [States.Q, States.QDOT]

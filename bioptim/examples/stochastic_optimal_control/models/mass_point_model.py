@@ -15,11 +15,11 @@ from bioptim import (
     AlgebraicStates,
     ConfigureVariables,
     SocpType,
-    StateSpaceDynamics,
+    AbstractStateSpaceDynamics,
 )
 
 
-class MassPointModel(StateSpaceDynamics):
+class MassPointModel(AbstractStateSpaceDynamics):
     """
     This allows to generate the same model as in the paper.
     """
