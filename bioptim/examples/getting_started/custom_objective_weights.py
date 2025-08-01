@@ -53,6 +53,7 @@ def custom_weight(current_shooting_point: int, n_elements: int, n_shooting: int)
     # Linear interpolation created with custom function
     return my_values[:, 0] + (my_values[:, -1] - my_values[:, 0]) * current_shooting_point / n_shooting
 
+
 def prepare_ocp(
     biorbd_model_path: str,
     n_shooting: int,
@@ -101,7 +102,7 @@ def prepare_ocp(
     elif interpolation_type == InterpolationType.LINEAR:
         weight = Weight([0, 1], interpolation=InterpolationType.LINEAR)
     elif interpolation_type == InterpolationType.EACH_FRAME:
-        weight = Weight(np.linspace(0, 1, n_shooting+1), interpolation=InterpolationType.LINEAR)
+        weight = Weight(np.linspace(0, 1, n_shooting + 1), interpolation=InterpolationType.LINEAR)
     elif interpolation_type == InterpolationType.SPLINE:
         spline_time = np.hstack((0, np.sort(np.random.random((3,)) * final_time), final_time))
         spline_points = np.random.random((nq + nqdot, 5)) * (-10) - 5
@@ -115,7 +116,9 @@ def prepare_ocp(
         raise NotImplementedError("Not implemented yet")
 
     # Add objective functions
-    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", node=Node.ALL_SHOOTING, weight=weight)
+    objective_functions = Objective(
+        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", node=Node.ALL_SHOOTING, weight=weight
+    )
 
     # DynamicsOptions
     dynamics = DynamicsOptions(expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
@@ -128,9 +131,7 @@ def prepare_ocp(
     # Path condition
     x_bounds = BoundsList()
     x_bounds.add("q", min_bound=[-100] * nq, max_bound=[100] * nq, interpolation=InterpolationType.CONSTANT)
-    x_bounds.add(
-        "qdot", min_bound=[-100] * nqdot, max_bound=[100] * nqdot, interpolation=InterpolationType.CONSTANT
-    )
+    x_bounds.add("qdot", min_bound=[-100] * nqdot, max_bound=[100] * nqdot, interpolation=InterpolationType.CONSTANT)
     u_bounds = BoundsList()
     u_bounds.add(
         "tau", min_bound=[tau_min] * ntau, max_bound=[tau_max] * ntau, interpolation=InterpolationType.CONSTANT
