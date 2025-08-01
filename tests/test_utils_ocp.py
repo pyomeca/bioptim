@@ -24,14 +24,14 @@ from bioptim import (
     PhaseDynamics,
     States,
     Controls,
-    StateSpaceDynamics,
+    AbstractStateSpaceDynamics,
 )
 
 
-class CustomBiorbdModel(BiorbdModel, StateSpaceDynamics):
+class CustomBiorbdModel(BiorbdModel, AbstractStateSpaceDynamics):
     def __init__(self, biorbd_model_path: str, **kwargs):
         BiorbdModel.__init__(self, biorbd_model_path)
-        StateSpaceDynamics.__init__(self)
+        AbstractStateSpaceDynamics.__init__(self)
 
         # Define the variables to configure here
         self.state_configuration = [States.Q, States.QDOT]
