@@ -19,7 +19,7 @@ def constraint_holonomic_end(
 ):
     """
     The custom constraint function that provides the holonomic constraints at the end node
-    This function is used to compute the holonomic constraints at the end node of the phase.
+    This function is used to compute the holonomic constraints at the end node of the phase because the last interval does not have cx_intermediates_list variables.
 
     Parameters
     ----------
