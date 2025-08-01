@@ -6,10 +6,10 @@ from ..dynamics_evaluation import DynamicsEvaluation
 from ..configure_variables import ConfigureVariables
 from ..ode_solvers import OdeSolver
 from ...misc.enums import DefectType
-from .abstract_dynamics import StateSpaceDynamics
+from .abstract_dynamics import AbstractStateSpaceDynamics
 
 
-class HolonomicTorqueDynamics(StateSpaceDynamics):
+class HolonomicTorqueDynamics(AbstractStateSpaceDynamics):
 
     def __init__(self):
         super().__init__()

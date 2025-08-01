@@ -3,10 +3,10 @@ from ..dynamics_functions import DynamicsFunctions
 from ..dynamics_evaluation import DynamicsEvaluation
 from ..ode_solvers import OdeSolver
 from ...misc.enums import DefectType
-from .abstract_dynamics import StateSpaceDynamics
+from .abstract_dynamics import AbstractStateSpaceDynamics
 
 
-class JointAccelerationDynamics(StateSpaceDynamics):
+class JointAccelerationDynamics(AbstractStateSpaceDynamics):
     """
     This class is used to create a model actuated through joint acceleration.
 
