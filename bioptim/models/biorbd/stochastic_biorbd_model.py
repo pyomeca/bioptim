@@ -8,7 +8,7 @@ from ...misc.mapping import BiMappingList
 from ...optimization.parameters import ParameterList
 from ...optimization.variable_scaling import VariableScaling
 from ...optimization.problem_type import SocpType
-from ...dynamics.state_space_dynamics import AbstractStateSpaceDynamics
+
 
 from ...misc.parameters_types import Int, Bool, NpArray
 
@@ -43,7 +43,7 @@ class StochasticBiorbdModel(BiorbdModel):
 
     def __init__(
         self,
-        bio_model: list | tuple | AbstractStateSpaceDynamics,
+        bio_model: list | tuple,
         problem_type: SocpType,
         n_references: Int,
         n_feedbacks: Int,
