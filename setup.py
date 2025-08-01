@@ -17,6 +17,7 @@ setup(
         "bioptim",
         "bioptim/dynamics",
         "bioptim/dynamics/fatigue",
+        "bioptim/dynamics/state_space_dynamics",
         "bioptim/gui",
         "bioptim/interfaces",
         "bioptim/limits",
