@@ -42,7 +42,8 @@ def constraint_holonomic(
     controllers: PenaltyController,
 ):
     """
-    Applies the holonomic constraints on each collocation node into the constraint set of solver.
+    The custom constraint function that provides the holonomic constraints at each collocation node.
+    This function is used to add the holonomic constraints to the solver's constraint set.
     Please note that the holonomic constraints are NOT embedded in the equations of motion,
     but rather in the constraint set of the solver.
 
