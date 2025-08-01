@@ -1,12 +1,12 @@
 from typing import List, Any, Optional, Callable
 from abc import ABC, abstractmethod
 
-from ...dynamics.dynamics_evaluation import DynamicsEvaluation
+from ..dynamics_evaluation import DynamicsEvaluation
 from ...misc.parameters_types import CXOptional
-from ...dynamics.configure_variables import States, Controls, AlgebraicStates
+from ..configure_variables import States, Controls, AlgebraicStates
 
 
-class AbstractModel(ABC):
+class AbstractStateSpaceDynamics(ABC):
     def __init__(self):
         self.state_configuration: List[States] = []
         self.control_configuration: List[Controls] = []
