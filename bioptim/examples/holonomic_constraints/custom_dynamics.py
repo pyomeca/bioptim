@@ -43,7 +43,7 @@ def constraint_holonomic(
 ):
     """
     Applies the holonomic constraints on each collocation node into the constraint set of solver.
-    The holonomic constraints are not any more embedded in the equations of motion,
+    Please note that the holonomic constraints are NOT embedded in the equations of motion,
     but rather in the constraint set of the solver.
 
     Parameters
