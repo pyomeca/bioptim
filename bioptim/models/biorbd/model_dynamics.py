@@ -286,7 +286,7 @@ class MusclesBiorbdModel(BiorbdModel, MusclesDynamics):
         fatigue: FatigueList = None,
     ):
         BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set, contact_types)
-        MusclesDynamics.__init__(self, with_residual_torque, False, fatigue)
+        MusclesDynamics.__init__(self, with_residual_torque, fatigue)
 
     def serialize(self) -> tuple[Callable, dict]:
         return MusclesBiorbdModel, dict(
