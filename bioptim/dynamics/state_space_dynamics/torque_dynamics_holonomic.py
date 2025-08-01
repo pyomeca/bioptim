@@ -17,9 +17,9 @@ class HolonomicTorqueDynamics(AbstractStateSpaceDynamics):
         self.control_configuration = [Controls.TAU]
         self.algebraic_configuration = []
         self.functions = [
-            lambda ocp, nlp: ConfigureVariables.configure_qv(ocp, nlp),
-            lambda ocp, nlp: ConfigureVariables.configure_qdotv(ocp, nlp),
-            lambda ocp, nlp: ConfigureVariables.configure_lagrange_multipliers_function(ocp, nlp),
+            ConfigureVariables.configure_qv,
+            ConfigureVariables.configure_qdotv,
+            ConfigureVariables.configure_lagrange_multipliers_function,
         ]
 
     def dynamics(
