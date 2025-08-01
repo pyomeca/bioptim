@@ -231,7 +231,7 @@ from .dynamics.state_space_dynamics import (
     MusclesDynamics,
     JointAccelerationDynamics,
 )
-from .dynamics.state_space_dynamics import StateSpaceDynamics
+from .dynamics.state_space_dynamics import AbstractStateSpaceDynamics
 from .optimization.multi_start import MultiStart
 from .optimization.non_linear_program import NonLinearProgram
 from .optimization.optimal_control_program import OptimalControlProgram
