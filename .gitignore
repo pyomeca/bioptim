@@ -116,3 +116,5 @@ bioptim/sandbox/
 *.DS_store
 
 *.png
+
+sandbox/
