@@ -6,6 +6,7 @@ from casadi import vertcat, Function, jacobian, diag
 from ..optimization.optimization_variable import OptimizationVariableList
 from .penalty_controller import PenaltyController
 from ..limits.penalty_helpers import PenaltyHelpers, Slicy
+from ..limits.weight import Weight
 from ..misc.enums import Node, PlotType, ControlType, PenaltyType, QuadratureRule, PhaseDynamics
 from ..misc.mapping import BiMapping
 from ..misc.options import OptionGeneric
@@ -108,7 +109,7 @@ class PenaltyOption(OptionGeneric):
         node: Node | IntorNodeIterable = Node.DEFAULT,
         target: FloatIterableorNpArray | IntIterableorNpArray | NpArrayList | None = None,
         quadratic: BoolOptional = None,
-        weight: Float = 1,
+        weight: Float | Int | Weight = 1,
         derivative: Bool = False,
         explicit_derivative: Bool = False,
         integrate: Bool = False,
@@ -136,7 +137,7 @@ class PenaltyOption(OptionGeneric):
             A target to track for the penalty
         quadratic: bool
             If the penalty is quadratic
-        weight: float
+        weight: float | Weight
             The weighting applied to this specific penalty
         derivative: bool
             If the function should be evaluated at X and X+1
@@ -208,7 +209,7 @@ class PenaltyOption(OptionGeneric):
         self.node_idx = []
         self.multinode_idx = None
         self.dt = 0
-        self.weight = weight
+        self.weight = weight if isinstance(weight, Weight) else Weight(weight)
         self.function: list[Function | None] = []
         self.function_non_threaded: list[Function | None] = []
         self.weighted_function: list[Function | None] = []
@@ -247,7 +248,9 @@ class PenaltyOption(OptionGeneric):
             self._check_target_dimensions(controllers)
             if self.plot_target:
                 self._finish_add_target_to_plot(controllers)
-
+                
+        self._check_weight_dimensions(controllers)
+        
         if not isinstance(controllers, list):
             controllers = [controllers]
 
@@ -314,6 +317,19 @@ class PenaltyOption(OptionGeneric):
                 f"target {self.target.shape} does not correspond to expected size {shape} for penalty {self.name}"
             )
 
+    def _check_weight_dimensions(self, controller: PenaltyController):
+        """
+        Checks if the variable index is consistent with the requested variable.
+        If the function returns, all is okay
+
+        Parameters
+        ----------
+        controller: PenaltyController
+            The penalty node elements
+        """
+        n_nodes = len(controller.t)
+        self.weight.check_and_adjust_dimensions(n_nodes, f"{self.name} weight")
+
     def transform_penalty_to_stochastic(self, controller: PenaltyController, fcn: CX, state_cx_scaled: CX):
         """
         Transform the penalty fcn into the variation of fcn depending on the noise:
@@ -327,13 +343,6 @@ class PenaltyOption(OptionGeneric):
         terms, meaning that you have to declare the constraint h=0 and the "variation of h"=buffer ** 2 with
         is_stochastic=True independently.
         """
-
-        # TODO: Charbie -> This is just a first implementation (x=[q, qdot]), it should then be generalized
-
-        nx = controller.q.shape[0]
-        n_root = controller.model.nb_root
-        n_joints = nx - n_root
-
         if "cholesky_cov" in controller.controls.keys():
             l_cov_matrix = StochasticBioModel.reshape_to_cholesky_matrix(
                 controller.controls["cholesky_cov"].cx_start, controller.model.matrix_shape_cov_cholesky
@@ -450,8 +459,8 @@ class PenaltyOption(OptionGeneric):
         is_trapezoidal = self.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL, QuadratureRule.TRAPEZOIDAL)
         target_shape = tuple([len(self.rows), len(self.cols) + 1 if is_trapezoidal else len(self.cols)])
         target_cx = controller.cx.sym("target", target_shape)
-        weight_cx = controller.cx.sym("weight", 1, 1)
-        exponent = 2 if self.quadratic and self.weight else 1
+        weight_cx = controller.cx.sym("weight", len(self.cols), 1)
+        exponent = 2 if self.quadratic else 1
 
         if is_trapezoidal:
             # Hypothesis for APPROXIMATE_TRAPEZOIDAL: the function is continuous on states
@@ -599,7 +608,7 @@ class PenaltyOption(OptionGeneric):
         self.function_non_threaded[node] = self.function[node]
 
         # weight is zero for constraints penalty and non-zero for objective functions
-        modified_fcn = (weight_cx * modified_fcn * self.dt) if self.weight else (modified_fcn * self.dt)
+        modified_fcn = (weight_cx * modified_fcn * self.dt)
 
         self.weighted_function[node] = Function(
             name,
