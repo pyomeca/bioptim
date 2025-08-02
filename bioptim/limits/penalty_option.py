@@ -248,7 +248,9 @@ class PenaltyOption(OptionGeneric):
             self._check_target_dimensions(controllers)
             if self.plot_target:
                 self._finish_add_target_to_plot(controllers)
-
+                
+        self._check_weight_dimensions(controllers)
+        
         if not isinstance(controllers, list):
             controllers = [controllers]
 
@@ -314,6 +316,19 @@ class PenaltyOption(OptionGeneric):
             raise RuntimeError(
                 f"target {self.target.shape} does not correspond to expected size {shape} for penalty {self.name}"
             )
+
+    def _check_weight_dimensions(self, controller: PenaltyController):
+        """
+        Checks if the variable index is consistent with the requested variable.
+        If the function returns, all is okay
+
+        Parameters
+        ----------
+        controller: PenaltyController
+            The penalty node elements
+        """
+        n_nodes = len(controller.t)
+        self.weight.check_and_adjust_dimensions(n_nodes, f"{self.name} weight")
 
     def transform_penalty_to_stochastic(self, controller: PenaltyController, fcn: CX, state_cx_scaled: CX):
         """
@@ -445,10 +460,7 @@ class PenaltyOption(OptionGeneric):
         target_shape = tuple([len(self.rows), len(self.cols) + 1 if is_trapezoidal else len(self.cols)])
         target_cx = controller.cx.sym("target", target_shape)
         weight_cx = controller.cx.sym("weight", len(self.cols), 1)
-        self.weight.check_and_adjust_dimensions(1, controller.ns, self.name)
-        if len(self.cols) > 0:
-            raise NotImplementedError("ddfdddddddddddddds")
-        exponent = 2 if self.quadratic and self.weight.evaluate_at(self.cols[0]) else 1
+        exponent = 2 if self.quadratic else 1
 
         if is_trapezoidal:
             # Hypothesis for APPROXIMATE_TRAPEZOIDAL: the function is continuous on states
@@ -596,7 +608,7 @@ class PenaltyOption(OptionGeneric):
         self.function_non_threaded[node] = self.function[node]
 
         # weight is zero for constraints penalty and non-zero for objective functions
-        modified_fcn = (weight_cx * modified_fcn * self.dt) if self.weight else (modified_fcn * self.dt)
+        modified_fcn = (weight_cx * modified_fcn * self.dt)
 
         self.weighted_function[node] = Function(
             name,

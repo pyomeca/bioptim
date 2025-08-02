@@ -59,6 +59,7 @@ def prepare_ocp(
     n_shooting: int,
     final_time: float,
     interpolation_type: InterpolationType = InterpolationType.CONSTANT,
+    node: Node = Node.ALL_SHOOTING,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
@@ -96,28 +97,40 @@ def prepare_ocp(
     ntau = bio_model.nb_tau
     tau_min, tau_max = -100, 100
 
+    if node == Node.START:
+        n_nodes = 1
+    elif node == Node.INTERMEDIATES:
+        n_nodes = n_shooting - 2
+    elif node == Node.ALL_SHOOTING:
+        n_nodes = n_shooting
+    else:
+        raise RuntimeError("This example is not designed to work with this node type.")
+
     # Weight
     if interpolation_type == InterpolationType.CONSTANT:
-        weight = Weight([1], interpolation=InterpolationType.CONSTANT)
+        weight = [1]
+        weight = Weight(weight, interpolation=InterpolationType.CONSTANT)
     elif interpolation_type == InterpolationType.LINEAR:
-        weight = Weight([0, 1], interpolation=InterpolationType.LINEAR)
+        weight = [0, 1]
+        weight = Weight(weight, interpolation=InterpolationType.LINEAR)
     elif interpolation_type == InterpolationType.EACH_FRAME:
-        weight = Weight(np.linspace(0, 1, n_shooting + 1), interpolation=InterpolationType.LINEAR)
+        weight = np.linspace(0, 1, n_nodes)
+        weight = Weight(weight, interpolation=InterpolationType.EACH_FRAME)
     elif interpolation_type == InterpolationType.SPLINE:
         spline_time = np.hstack((0, np.sort(np.random.random((3,)) * final_time), final_time))
-        spline_points = np.random.random((nq + nqdot, 5)) * (-10) - 5
+        spline_points = np.random.random((5, )) * (-10) - 5
         weight = Weight(spline_points, interpolation=InterpolationType.SPLINE, t=spline_time)
     elif interpolation_type == InterpolationType.CUSTOM:
         # The custom functions refer to the one at the beginning of the file.
         # For this particular instance, they emulate a Linear interpolation
-        extra_params = {"n_elements": nq + nqdot, "n_shooting": n_shooting}
+        extra_params = {"n_nodes": n_nodes}
         weight = Weight(custom_weight, interpolation=InterpolationType.CUSTOM, **extra_params)
     else:
         raise NotImplementedError("Not implemented yet")
 
     # Add objective functions
     objective_functions = Objective(
-        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", node=Node.ALL_SHOOTING, weight=weight
+        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", node=node, weight=weight
     )
 
     # DynamicsOptions
@@ -154,21 +167,23 @@ def main():
     Show all the InterpolationType implemented in bioptim
     """
 
-    print(f"Show the bounds")
+    nodes_to_test = [Node.ALL_SHOOTING]  # [Node.START, Node.INTERMEDIATES, Node.ALL_SHOOTING]
+
     for interpolation_type in InterpolationType:
-        if interpolation_type == InterpolationType.ALL_POINTS:
-            continue
-        # TODO REMOVE !!!!!!!!!!!
-        if interpolation_type != InterpolationType.LINEAR:
-            continue
+        for node in nodes_to_test:
+            if interpolation_type == InterpolationType.ALL_POINTS:
+                continue
+            # TODO REMOVE !!!!!!!!!!!
+            if interpolation_type != InterpolationType.LINEAR:
+                continue
 
-        print(f"Solving problem using {interpolation_type} bounds")
-        ocp = prepare_ocp("models/cube.bioMod", n_shooting=30, final_time=2, interpolation_type=interpolation_type)
-        sol = ocp.solve()
-        print("\n")
+            print(f"Solving problem using {interpolation_type} weight applied at {node} nodes.")
+            ocp = prepare_ocp("models/cube.bioMod", n_shooting=30, final_time=2, interpolation_type=interpolation_type, node=node)
+            sol = ocp.solve()
+            print("\n")
 
-        # Print the last solution
-        sol.graphs(show_bounds=True)
+            # Print the last solution
+            sol.graphs(show_bounds=True)
 
 
 if __name__ == "__main__":
