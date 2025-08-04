@@ -938,7 +938,7 @@ class ParameterConstraint(PenaltyOption):
             quadratic=quadratic,
             custom_function=custom_function,
             weight=NotApplicable(),
-            **extra_parameters
+            **extra_parameters,
         )
 
         self.min_bound = min_bound

@@ -210,7 +210,9 @@ class PenaltyOption(OptionGeneric):
         self.multinode_idx = None
         self.dt = 0
         if weight is None:
-            raise RuntimeError("weight must be declared, please use NotApplicable if you want a constraint instead of an objective.")
+            raise RuntimeError(
+                "weight must be declared, please use NotApplicable if you want a constraint instead of an objective."
+            )
         self.weight = weight if isinstance(weight, (Weight, NotApplicable)) else Weight(weight)
         self.function: list[Function | None] = []
         self.function_non_threaded: list[Function | None] = []
@@ -339,9 +341,10 @@ class PenaltyOption(OptionGeneric):
         self.weight.check_and_adjust_dimensions(n_nodes, f"{self.name} weight")
 
         if not isinstance(self.weight, NotApplicable) and len(self.weight.shape) != 1:
-            raise RuntimeError("Something went wrong, the weight should be a vector at this point. "
-                               "Please note that independent weighting of components is not available yet.")
-
+            raise RuntimeError(
+                "Something went wrong, the weight should be a vector at this point. "
+                "Please note that independent weighting of components is not available yet."
+            )
 
     def transform_penalty_to_stochastic(self, controller: PenaltyController, fcn: CX, state_cx_scaled: CX):
         """

@@ -15,6 +15,7 @@ from ..misc.parameters_types import (
 from ..optimization.non_linear_program import NonLinearProgram
 from ..limits.weight import Weight, NotApplicable
 
+
 class ConfigureProblem:
     """
     Dynamics configuration for the most common ocp

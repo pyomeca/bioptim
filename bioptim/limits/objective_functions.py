@@ -495,11 +495,13 @@ class ParameterObjective(PenaltyOption):
     A placeholder for an objective function
     """
 
-    def __init__(self,
-                 parameter_objective: Any,
-                 custom_type: Any = None,
-                 weight: Weight | FloatOptional = 1,
-                 **extra_parameters: Any):
+    def __init__(
+        self,
+        parameter_objective: Any,
+        custom_type: Any = None,
+        weight: Weight | FloatOptional = 1,
+        **extra_parameters: Any,
+    ):
         """
         Parameters
         ----------
@@ -529,10 +531,7 @@ class ParameterObjective(PenaltyOption):
                 )
 
         super(ParameterObjective, self).__init__(
-            penalty=parameter_objective,
-            custom_function=custom_function,
-            weight=weight,
-            **extra_parameters
+            penalty=parameter_objective, custom_function=custom_function, weight=weight, **extra_parameters
         )
 
     def _add_penalty_to_pool(self, controller: list[PenaltyController]):

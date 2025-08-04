@@ -15,9 +15,13 @@ from ..misc.parameters_types import (
 
 
 class MultinodeObjective(MultinodePenalty):
-    def __init__(self, *args,
-                 weight: Float | Int | Weight | NotApplicable = Weight(1),  # 1 by default because it is an objective
-                 is_stochastic: Bool = False, **kwargs):
+    def __init__(
+        self,
+        *args,
+        weight: Float | Int | Weight | NotApplicable = Weight(1),  # 1 by default because it is an objective
+        is_stochastic: Bool = False,
+        **kwargs,
+    ):
         super(MultinodeObjective, self).__init__(MultinodeObjectiveFcn, *args, **kwargs)
 
         self.weight = weight if isinstance(weight, (Weight, NotApplicable)) else Weight(weight)
