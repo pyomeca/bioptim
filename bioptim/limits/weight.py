@@ -246,9 +246,12 @@ class Weight(ndarray):
                 return self[1]
 
         elif self.type == InterpolationType.LINEAR:
-            return self[0] + (self[1] - self[0]) * node / (
-                self.n_nodes
-            )
+            if self.n_nodes == 1:
+                return self[0]
+            else:
+                return self[0] + (self[1] - self[0]) * node / (
+                    (self.n_nodes - 1)
+                )
 
         elif self.type == InterpolationType.EACH_FRAME:
             return self[node]

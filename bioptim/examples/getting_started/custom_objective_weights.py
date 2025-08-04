@@ -30,28 +30,28 @@ from bioptim import (
 )
 
 
-def custom_weight(current_shooting_point: int, n_elements: int, n_shooting: int) -> np.ndarray:
+def custom_weight(node: int, n_nodes: int) -> float:
     """
     The custom function for the objective wright (this particular one mimics linear interpolation)
 
     Parameters
     ----------
-    current_shooting_point: int
-        The current point to return the value, it is defined between [0; n_shooting] for the states
-        and [0; n_shooting[ for the controls
-    n_elements: int
-        The number of rows of the matrix
-    n_shooting: int
-        The number of shooting point
+    node: int
+        The index of the current point to return the value
+    n_nodes: int
+        The number of index available
 
     Returns
     -------
     The vector value of the bounds at current_shooting_point
     """
 
-    my_values = np.array([[-10, -5]] * n_elements)
+    my_values = [0, 1]
     # Linear interpolation created with custom function
-    return my_values[:, 0] + (my_values[:, -1] - my_values[:, 0]) * current_shooting_point / n_shooting
+    if n_nodes == 1:
+        return my_values[0]
+    else:
+        return my_values[0] + (my_values[1] - my_values[0]) * node / (n_nodes - 1)
 
 
 def prepare_ocp(
@@ -130,7 +130,7 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = Objective(
-        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", node=node, weight=weight
+        ObjectiveFcn.Mayer.MINIMIZE_CONTROL, key="tau", node=node, weight=weight
     )
 
     # DynamicsOptions
@@ -167,14 +167,12 @@ def main():
     Show all the InterpolationType implemented in bioptim
     """
 
-    nodes_to_test = [Node.ALL_SHOOTING]  # [Node.START, Node.INTERMEDIATES, Node.ALL_SHOOTING]
+    nodes_to_test = [Node.START, Node.INTERMEDIATES, Node.ALL_SHOOTING]
 
     for interpolation_type in InterpolationType:
         for node in nodes_to_test:
-            if interpolation_type == InterpolationType.ALL_POINTS:
-                continue
-            # TODO REMOVE !!!!!!!!!!!
-            if interpolation_type != InterpolationType.LINEAR:
+            if (interpolation_type == InterpolationType.ALL_POINTS or
+                    interpolation_type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT):
                 continue
 
             print(f"Solving problem using {interpolation_type} weight applied at {node} nodes.")

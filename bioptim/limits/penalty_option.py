@@ -327,7 +327,13 @@ class PenaltyOption(OptionGeneric):
         controller: PenaltyController
             The penalty node elements
         """
-        n_nodes = len(controller.t)
+        if isinstance(controller, list):
+            n_nodes = len(controller[0].t)
+            for c in controller[1:]:
+                if len(c.t) != n_nodes:
+                    raise RuntimeError("All controllers must have the same number of nodes")
+        else:
+            n_nodes = len(controller.t)
         self.weight.check_and_adjust_dimensions(n_nodes, f"{self.name} weight")
 
     def transform_penalty_to_stochastic(self, controller: PenaltyController, fcn: CX, state_cx_scaled: CX):
