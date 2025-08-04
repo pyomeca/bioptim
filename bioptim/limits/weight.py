@@ -238,8 +238,11 @@ class Weight(ndarray):
         The values of the components at a specific index
         """
 
+        # Sanity checks
         if self.n_nodes is None:
             raise RuntimeError(f"check_and_adjust_dimensions must be called at least once before evaluating at")
+        if node > self.n_nodes:
+            raise RuntimeError("index too high for evaluate at")
 
         if self.type == InterpolationType.CONSTANT:
             value = self[0]
@@ -249,8 +252,6 @@ class Weight(ndarray):
                 value = self[0]
             elif node == self.n_nodes:
                 value = self[2]
-            elif node > self.n_nodes:
-                raise RuntimeError("index too high for evaluate at")
             else:
                 value = self[1]
 

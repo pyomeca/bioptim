@@ -550,3 +550,49 @@ def test_pendulum_integration_rule(control_type, interpolation_type, integration
             elif integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
                 npt.assert_almost_equal(f[0, 0], -3315.0557682774315)
                 npt.assert_almost_equal(j_printed, -3315.0557682774315)
+
+
+def test_bad_weights():
+
+    bioptim_folder = TestUtils.module_folder(ocp_module)
+
+    with pytest.raises(ValueError, match="The interpolation type ALL_POINTS is not allowed for Weight since the objective is evaluated only at the node and not at the collocation points. Use EACH_FRAME instead."):
+        Weight([0, 1], interpolation=InterpolationType.ALL_POINTS)
+
+    with pytest.raises(RuntimeError, match=r"Invalid number of column for InterpolationType.CONSTANT \(ncols = 2\), the expected number of column is 1"):
+        Weight([0, 1], interpolation=InterpolationType.CONSTANT)
+
+    with pytest.raises(RuntimeError, match=r"Invalid number of column for InterpolationType.LINEAR \(ncols = 3\), the expected number of column is 2"):
+        Weight([0, 1, 2], interpolation=InterpolationType.LINEAR)
+
+    with pytest.raises(RuntimeError,
+                       match=r"Value for InterpolationType.SPLINE must have at least 2 columns"):
+        Weight([0], interpolation=InterpolationType.SPLINE)
+
+    with pytest.raises(RuntimeError,
+                       match=r"Spline necessitate a time vector"):
+        Weight([0, 1, 2, 3, 4, 5], interpolation=InterpolationType.SPLINE)
+
+    with pytest.raises(RuntimeError,
+                       match=r"Spline necessitate a time vector which as the same length as column of data"):
+        Weight([0, 1, 2, 3, 4], interpolation=InterpolationType.SPLINE, t=[0, 1, 2, 3, 4, 5])
+
+    with pytest.raises(RuntimeError,
+                       match=r"InterpolationType is not implemented yet"):
+        Weight([0, 1, 2, 3, 4], interpolation="bad_type")
+
+    # Finally set a weight
+    weight = Weight([0, 1, 2, 3, 4], interpolation=InterpolationType.EACH_FRAME)
+
+    with pytest.raises(RuntimeError,
+                       match=r"check_and_adjust_dimensions must be called at least once before evaluating at"):
+        weight.evaluate_at(0, 1)
+
+    with pytest.raises(RuntimeError,
+                       match=r"Invalid number of column for InterpolationType.EACH_FRAME \(ncols = 5\), the expected number of column is 3 for coucou."):
+        weight.check_and_adjust_dimensions(n_nodes=3, element_name="coucou")
+
+    weight.check_and_adjust_dimensions(n_nodes=5, element_name="coucou")
+    with pytest.raises(RuntimeError,
+                       match=r"index too high for evaluate at"):
+        weight.evaluate_at(10, 1)
