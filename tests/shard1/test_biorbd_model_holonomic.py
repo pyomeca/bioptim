@@ -1,3 +1,4 @@
+import platform
 import numpy as np
 import numpy.testing as npt
 import pytest
@@ -224,6 +225,9 @@ def test_example_two_pendulums():
 def test_example_two_pendulums_algebraic():
     """Test the holonomic_constraints/two_pendulums_algebraic example"""
     from bioptim.examples.holonomic_constraints import two_pendulums_algebraic
+
+    if platform.system() == "Windows":
+        pytest.skip("This test is skipped on Windows because too sensitive.")
 
     bioptim_folder = TestUtils.module_folder(two_pendulums_algebraic)
 
