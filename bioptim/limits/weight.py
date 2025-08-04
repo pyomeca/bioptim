@@ -216,7 +216,7 @@ class Weight(ndarray):
                     f"Invalid number of column for {self.type} (ncols = {self.shape[0]}), the expected number of column is {self.n_nodes} for {element_name}."
                 )
 
-    def evaluate_at(self, node: Int):
+    def evaluate_at(self, node: Int, n_elements: int):
         """
         Evaluate the interpolation at a specific node
 
@@ -228,6 +228,8 @@ class Weight(ndarray):
                      for node=Node.START -> node is 0
                      for node=Node.END -> node is 0
                      for node=[0, 4, 7, 9] -> node is 0, 1, 2, 3, respectively
+        n_elements: int
+            The number of components in the objective (e.g., the number of DoFs)
 
         Returns
         -------
@@ -238,30 +240,30 @@ class Weight(ndarray):
             raise RuntimeError(f"check_and_adjust_dimensions must be called at least once before evaluating at")
 
         if self.type == InterpolationType.CONSTANT:
-            return self[0]
+            value = self[0]
 
         elif self.type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
             if node == 0:
-                return self[0]
+                value = self[0]
             elif node == self.n_nodes:
-                return self[2]
+                value = self[2]
             elif node > self.n_nodes:
                 raise RuntimeError("index too high for evaluate at")
             else:
-                return self[1]
+                value = self[1]
 
         elif self.type == InterpolationType.LINEAR:
             if self.n_nodes == 1:
-                return self[0]
+                value = self[0]
             else:
-                return self[0] + (self[1] - self[0]) * node / ((self.n_nodes - 1))
+                value = self[0] + (self[1] - self[0]) * node / ((self.n_nodes - 1))
 
         elif self.type == InterpolationType.EACH_FRAME:
-            return self[node]
+            value = self[node]
 
         elif self.type == InterpolationType.SPLINE:
             spline = interp1d(self.t, self)
-            return spline(node / self.n_nodes * (self.t[-1] - self.t[0]))
+            value = spline(node / self.n_nodes * (self.t[-1] - self.t[0]))
 
         elif self.type == InterpolationType.CUSTOM:
             parameters = {}
@@ -270,6 +272,10 @@ class Weight(ndarray):
                     continue
                 parameters[key] = self.extra_params[key]
 
-            return self.custom_function(node, **parameters)
+            value = self.custom_function(node, **parameters)
         else:
             raise RuntimeError(f"InterpolationType is not implemented yet")
+
+        repeated_value = np.repeat(value, n_elements)
+
+        return repeated_value

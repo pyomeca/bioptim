@@ -276,7 +276,7 @@ class PenaltyHelpers:
 
     @staticmethod
     def weight(penalty, penalty_node_idx: Int) -> Float:
-        return penalty.weight.evaluate_at(penalty_node_idx)
+        return penalty.weight.evaluate_at(penalty_node_idx, len(penalty.rows))
 
     @staticmethod
     def target(penalty, penalty_node_idx: Int) -> NpArray:

@@ -1283,7 +1283,7 @@ class OptimalControlProgram:
             Values computed for the given time, state, control, parameters, penalty and time step
             """
 
-            weight = PenaltyHelpers.weight(penalty)
+            weight = PenaltyHelpers.weight(penalty, penalty.node_idx.index(node_idx))
             target = PenaltyHelpers.target(penalty, penalty.node_idx.index(node_idx))
 
             val = penalty.weighted_function_non_threaded[node_idx](t0, phases_dt, x, u, p, a, d, weight, target)

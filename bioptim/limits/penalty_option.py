@@ -336,6 +336,11 @@ class PenaltyOption(OptionGeneric):
             n_nodes = len(controller.t)
         self.weight.check_and_adjust_dimensions(n_nodes, f"{self.name} weight")
 
+        if len(self.weight.shape) != 1:
+            raise RuntimeError("Something went wrong, the weight should be a vector at this point. "
+                               "Please note that independent weighting of components is not available yet.")
+
+
     def transform_penalty_to_stochastic(self, controller: PenaltyController, fcn: CX, state_cx_scaled: CX):
         """
         Transform the penalty fcn into the variation of fcn depending on the noise:
@@ -465,7 +470,7 @@ class PenaltyOption(OptionGeneric):
         is_trapezoidal = self.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL, QuadratureRule.TRAPEZOIDAL)
         target_shape = tuple([len(self.rows), len(self.cols) + 1 if is_trapezoidal else len(self.cols)])
         target_cx = controller.cx.sym("target", target_shape)
-        weight_cx = controller.cx.sym("weight", len(self.cols), 1)
+        weight_cx = controller.cx.sym("weight", len(self.rows), len(self.cols))
         exponent = 2 if self.quadratic else 1
 
         if is_trapezoidal:
