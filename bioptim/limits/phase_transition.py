@@ -6,6 +6,7 @@ from casadi import vertcat, MX
 from .multinode_constraint import MultinodeConstraint
 from .multinode_penalty import MultinodePenalty, MultinodePenaltyFunctions
 from .path_conditions import Bounds
+from .weight import Weight
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyController
 from ..misc.enums import Node, PenaltyType, InterpolationType
 from ..misc.fcn_enum import FcnEnum
@@ -72,7 +73,12 @@ class PhaseTransition(MultinodePenalty):
             **extra_parameters,
         )
 
-        self.weight = 0 if weight is None else weight
+        if isinstance(weight, Weight):
+            self.weight = weight
+        elif weight is not None:
+            self.weight = Weight(weight)
+        else:
+            self.weight = Weight(0)
         self.min_bound = min_bound
         self.max_bound = max_bound
         self.bounds = Bounds("phase_transition", interpolation=InterpolationType.CONSTANT)

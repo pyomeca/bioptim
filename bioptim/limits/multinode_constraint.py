@@ -3,6 +3,7 @@ from typing import Any
 import numpy as np
 
 from .path_conditions import Bounds
+from .weight import Weight
 from ..misc.enums import InterpolationType, PenaltyType, ConstraintType
 from ..misc.fcn_enum import FcnEnum
 from .multinode_penalty import MultinodePenalty, MultinodePenaltyList, MultinodePenaltyFunctions
@@ -23,7 +24,7 @@ class MultinodeConstraint(MultinodePenalty):
 
         super(MultinodeConstraint, self).__init__(MultinodeConstraintFcn, *args, **kwargs)
 
-        self.weight = 0
+        self.weight = Weight(0)
         self.min_bound = min_bound
         self.max_bound = max_bound
         self.is_stochastic = is_stochastic

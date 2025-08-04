@@ -4,6 +4,7 @@ from ..misc.enums import PenaltyType
 from ..misc.fcn_enum import FcnEnum
 from .multinode_penalty import MultinodePenalty, MultinodePenaltyList, MultinodePenaltyFunctions
 from .objective_functions import ObjectiveFunction
+from .weight import Weight
 
 
 from ..misc.parameters_types import (
@@ -16,7 +17,12 @@ class MultinodeObjective(MultinodePenalty):
     def __init__(self, *args, weight: Float = 0, is_stochastic: Bool = False, **kwargs):
         super(MultinodeObjective, self).__init__(MultinodeObjectiveFcn, *args, **kwargs)
 
-        self.weight = weight if weight is not None else 0
+        if isinstance(weight, Weight):
+            self.weight = weight
+        elif weight is not None:
+            self.weight = Weight(weight)
+        else:
+            self.weight = Weight(0)
         self.quadratic = kwargs["quadratic"] if "quadratic" in kwargs else True
         self.base = ObjectiveFunction.MayerFunction
         self.is_stochastic = is_stochastic
