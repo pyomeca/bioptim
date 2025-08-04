@@ -42,6 +42,12 @@ Anyone can play with bioptim with a working (but slightly limited in terms of gr
 As a tour guide that uses this binder, you can watch the `bioptim` workshop that we gave at the CMBBE conference on September 2021 by following this link:
 [https://youtu.be/z7fhKoW1y60](https://youtu.be/z7fhKoW1y60)
 
+A GUI is available to run all the current examples. To run it you can use the following command, from the root folder of the project:
+```bash
+python -m bioptim.examples
+```
+Please refer to section [Examples](#examples) for more information on how to run the examples.
+
 # Table of Contents 
 
 
