@@ -18,8 +18,8 @@ def constraint_holonomic_end(
     controllers: PenaltyController,
 ):
     """
-    Minimize the distance between two markers
-    By default this function is quadratic, meaning that it minimizes distance between them.
+    The custom constraint function that provides the holonomic constraints at the end node
+    This function is used to compute the holonomic constraints at the end node of the phase because the last interval does not have cx_intermediates_list variables.
 
     Parameters
     ----------
@@ -42,8 +42,10 @@ def constraint_holonomic(
     controllers: PenaltyController,
 ):
     """
-    Minimize the distance between two markers
-    By default this function is quadratic, meaning that it minimizes distance between them.
+    The custom constraint function that provides the holonomic constraints at each collocation node.
+    This function is used to add the holonomic constraints to the solver's constraint set.
+    Please note that the holonomic constraints are NOT embedded in the equations of motion,
+    but rather in the constraint set of the solver.
 
     Parameters
     ----------
