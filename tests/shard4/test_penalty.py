@@ -1487,7 +1487,7 @@ def test_PenaltyFunctionAbstract_get_node(node, ns, phase_dynamics):
     nlp.parameters = tp["param"]
 
     pn = []
-    penalty = PenaltyOption(pn)
+    penalty = PenaltyOption(pn, weight=1)
     penalty.node = node
 
     if node == Node.MID and ns % 2 != 0:
