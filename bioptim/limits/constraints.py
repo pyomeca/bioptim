@@ -5,6 +5,7 @@ from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function, MX_ey
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyController
+from .weight import NotApplicable
 from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
@@ -67,13 +68,19 @@ class Constraint(PenaltyOption):
             custom_function = constraint
             constraint = ConstraintFcn.CUSTOM
 
+        if "weight" in extra_parameters.keys():
+            if not isinstance(extra_parameters["weight"], NotApplicable):
+                raise NotImplementedError("The weight of constraints must be NotApplicable for now.")
+            else:
+                extra_parameters.pop("weight")
+
         super(Constraint, self).__init__(
             penalty=constraint,
             phase=phase,
             quadratic=quadratic,
             custom_function=custom_function,
             is_stochastic=is_stochastic,
-            weight=0,  # Default is 0 for constraints
+            weight=NotApplicable(),  # Default for constraints
             **extra_parameters,
         )
 
@@ -920,8 +927,18 @@ class ParameterConstraint(PenaltyOption):
             custom_function = parameter_constraint
             parameter_constraint = ConstraintFcn.CUSTOM
 
+        if "weight" in extra_parameters.keys():
+            if not isinstance(extra_parameters["weight"], NotApplicable):
+                raise NotImplementedError("The weight of constraints must be NotApplicable for now.")
+            else:
+                extra_parameters.pop("weight")
+
         super(ParameterConstraint, self).__init__(
-            penalty=parameter_constraint, quadratic=quadratic, custom_function=custom_function, **extra_parameters
+            penalty=parameter_constraint,
+            quadratic=quadratic,
+            custom_function=custom_function,
+            weight=NotApplicable(),
+            **extra_parameters
         )
 
         self.min_bound = min_bound

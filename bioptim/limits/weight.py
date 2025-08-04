@@ -69,7 +69,7 @@ class Weight(ndarray):
             Any parameters to pass to the path condition
         """
         if input_array is None:
-            raise RuntimeError("The value of a Weight must be declared because we cannot know by default if it is a constraint (0) or an objective (1).")
+            raise RuntimeError("The value of a Weight must be declared because we cannot know by default if it is a constraint (NotApplicable) or an objective (1).")
 
         # Check and reinterpret input
         custom_function = None
@@ -279,3 +279,18 @@ class Weight(ndarray):
         repeated_value = np.repeat(value, n_elements)
 
         return repeated_value
+
+
+class NotApplicable:
+    """
+    A class to represent a Not Applicable weight.
+    This is used for the weight on constraints, which could be implemented eventually.
+    """
+    def __repr__(self):
+        return "Not Applicable"
+
+    def check_and_adjust_dimensions(self, n_nodes: Int, element_name: Str):
+        return
+
+    def evaluate_at(self, node: Int, n_elements: int):
+        return 1

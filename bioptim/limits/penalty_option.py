@@ -6,7 +6,7 @@ from casadi import vertcat, Function, jacobian, diag
 from ..optimization.optimization_variable import OptimizationVariableList
 from .penalty_controller import PenaltyController
 from ..limits.penalty_helpers import PenaltyHelpers, Slicy
-from ..limits.weight import Weight
+from ..limits.weight import Weight, NotApplicable
 from ..misc.enums import Node, PlotType, ControlType, PenaltyType, QuadratureRule, PhaseDynamics
 from ..misc.mapping import BiMapping
 from ..misc.options import OptionGeneric
@@ -105,7 +105,7 @@ class PenaltyOption(OptionGeneric):
     def __init__(
         self,
         penalty: Any,
-        weight: Float | Int | Weight,
+        weight: Float | Int | Weight | NotApplicable,
         phase: Int = 0,
         node: Node | IntorNodeIterable = Node.DEFAULT,
         target: FloatIterableorNpArray | IntIterableorNpArray | NpArrayList | None = None,
@@ -209,7 +209,9 @@ class PenaltyOption(OptionGeneric):
         self.node_idx = []
         self.multinode_idx = None
         self.dt = 0
-        self.weight = weight if isinstance(weight, Weight) else Weight(weight)
+        if weight is None:
+            raise RuntimeError("weight must be declared, please use NotApplicable if you want a constraint instead of an objective.")
+        self.weight = weight if isinstance(weight, (Weight, NotApplicable)) else Weight(weight)
         self.function: list[Function | None] = []
         self.function_non_threaded: list[Function | None] = []
         self.weighted_function: list[Function | None] = []
@@ -336,7 +338,7 @@ class PenaltyOption(OptionGeneric):
             n_nodes = len(controller.t)
         self.weight.check_and_adjust_dimensions(n_nodes, f"{self.name} weight")
 
-        if len(self.weight.shape) != 1:
+        if not isinstance(self.weight, NotApplicable) and len(self.weight.shape) != 1:
             raise RuntimeError("Something went wrong, the weight should be a vector at this point. "
                                "Please note that independent weighting of components is not available yet.")
 
@@ -470,7 +472,14 @@ class PenaltyOption(OptionGeneric):
         is_trapezoidal = self.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL, QuadratureRule.TRAPEZOIDAL)
         target_shape = tuple([len(self.rows), len(self.cols) + 1 if is_trapezoidal else len(self.cols)])
         target_cx = controller.cx.sym("target", target_shape)
-        weight_cx = controller.cx.sym("weight", len(self.rows), len(self.cols))
+        if isinstance(self.weight, Weight):
+            weight_cx = controller.cx.sym("weight", len(self.rows), len(self.cols))
+        elif isinstance(self.weight, NotApplicable):
+            # This is a simplification since NotApplicable.evaluate at returns 1, but if we want to implement constraint
+            # weights, we should have the same shape as above
+            weight_cx = controller.cx.sym("weight", 1, 1)
+        else:
+            RuntimeError(f"weight must be a Weight or NotApplicable, not {type(self.weight)}")
         exponent = 2 if self.quadratic else 1
 
         if is_trapezoidal:
