@@ -3,7 +3,7 @@ from typing import Any
 import numpy as np
 
 from .path_conditions import Bounds
-from .weight import NotApplicable
+from .weight import Weight, NotApplicable
 from ..misc.enums import InterpolationType, PenaltyType, ConstraintType
 from ..misc.fcn_enum import FcnEnum
 from .multinode_penalty import MultinodePenalty, MultinodePenaltyList, MultinodePenaltyFunctions
@@ -15,8 +15,11 @@ from ..misc.parameters_types import (
 
 
 class MultinodeConstraint(MultinodePenalty):
-    def __init__(self, *args, min_bound: Float = 0, max_bound: Float = 0, is_stochastic: Bool = False, **kwargs):
-        if "weight" in kwargs and kwargs["weight"] is not None:
+    def __init__(self, *args,
+                 min_bound: Float = 0,
+                 max_bound: Float = 0,
+                 is_stochastic: Bool = False, **kwargs):
+        if "weight" in kwargs and not isinstance(kwargs["weight"], NotApplicable):
             raise ValueError(
                 "MultinodeConstraints can't declare weight, use MultinodeObjective instead. If you were defining a "
                 "custom function that uses 'weight' as parameter, please use another keyword."
@@ -24,7 +27,6 @@ class MultinodeConstraint(MultinodePenalty):
 
         super(MultinodeConstraint, self).__init__(MultinodeConstraintFcn, *args, **kwargs)
 
-        self.weight = NotApplicable()  # because it is a constraint
         self.min_bound = min_bound
         self.max_bound = max_bound
         self.is_stochastic = is_stochastic
@@ -82,7 +84,10 @@ class MultinodeConstraintList(MultinodePenaltyList):
         Configure all the multinode penalties and put them in a list
     """
 
-    def add(self, multinode_constraint: Any, **extra_arguments: Any):
+    def add(self,
+            multinode_constraint: Any,
+            weight: Weight | NotApplicable = NotApplicable(),
+            **extra_arguments: Any):
         """
         Add a new MultinodePenalty to the list
 
@@ -96,6 +101,7 @@ class MultinodeConstraintList(MultinodePenaltyList):
 
         super(MultinodeConstraintList, self).add(
             option_type=MultinodeConstraint,
+            weight=weight,
             multinode_penalty=multinode_constraint,
             _multinode_penalty_fcn=MultinodeConstraintFcn,
             **extra_arguments,

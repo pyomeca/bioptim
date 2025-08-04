@@ -483,7 +483,7 @@ class PenaltyOption(OptionGeneric):
             weight_cx = controller.cx.sym("weight", 1, 1)
         else:
             RuntimeError(f"weight must be a Weight or NotApplicable, not {type(self.weight)}")
-        exponent = 2 if self.quadratic else 1
+        exponent = 2 if (self.quadratic and isinstance(self.weight, Weight)) else 1
 
         if is_trapezoidal:
             # Hypothesis for APPROXIMATE_TRAPEZOIDAL: the function is continuous on states

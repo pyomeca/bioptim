@@ -21,6 +21,12 @@ class MultinodeObjective(MultinodePenalty):
         is_stochastic: Bool = False,
         **kwargs,
     ):
+        if "weight" in kwargs and isinstance(kwargs["weight"], NotApplicable):
+            raise ValueError(
+                "MultinodeObjective can't declare NotApplicable weights, use MultinodeConstraint instead. If you were defining a "
+                "custom function that uses 'weight' as parameter, please use another keyword."
+            )
+
         super(MultinodeObjective, self).__init__(MultinodeObjectiveFcn, *args, **kwargs)
 
         self.quadratic = kwargs["quadratic"] if "quadratic" in kwargs else True
@@ -48,7 +54,10 @@ class MultinodeObjectiveList(MultinodePenaltyList):
         Add a new MultinodeObjective to the list
     """
 
-    def add(self, multinode_objective: Any, **extra_arguments: Any):
+    def add(self,
+            multinode_objective: Any,
+            weight: Weight | NotApplicable = Weight(1),
+            **extra_arguments: Any):
         """
         Add a new MultinodePenalty to the list
 
@@ -62,6 +71,7 @@ class MultinodeObjectiveList(MultinodePenaltyList):
 
         super(MultinodeObjectiveList, self).add(
             option_type=MultinodeObjective,
+            weight=weight,
             multinode_penalty=multinode_objective,
             _multinode_penalty_fcn=MultinodeObjectiveFcn,
             **extra_arguments,
