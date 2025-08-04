@@ -69,7 +69,7 @@ class Weight(ndarray):
             Any parameters to pass to the path condition
         """
         if input_array is None:
-            input_array = 1
+            raise RuntimeError("The value of a Weight must be declared because we cannot know by default if it is a constraint (0) or an objective (1).")
 
         # Check and reinterpret input
         custom_function = None

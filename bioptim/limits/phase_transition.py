@@ -78,7 +78,7 @@ class PhaseTransition(MultinodePenalty):
         elif weight is not None:
             self.weight = Weight(weight)
         else:
-            self.weight = Weight(0)
+            self.weight = Weight(0)  # By default phase transition is a constraint
         self.min_bound = min_bound
         self.max_bound = max_bound
         self.bounds = Bounds("phase_transition", interpolation=InterpolationType.CONSTANT)
@@ -93,9 +93,11 @@ class PhaseTransition(MultinodePenalty):
             MultinodeConstraint.set_bounds(self)
 
     def _get_pool_to_add_penalty(self, ocp, nlp):
-        if not self.weight:
+        if not self.weight or self.weight == 0:
+            # No weight means it is a constraint
             return nlp.g_internal if nlp else ocp.g_internal
         else:
+            # With weight means it is an objective
             return nlp.J_internal if nlp else ocp.J_internal
 
 

@@ -22,7 +22,7 @@ class MultinodeObjective(MultinodePenalty):
         elif weight is not None:
             self.weight = Weight(weight)
         else:
-            self.weight = Weight(0)
+            self.weight = Weight(1)  # 1 by default because it is an objective
         self.quadratic = kwargs["quadratic"] if "quadratic" in kwargs else True
         self.base = ObjectiveFunction.MayerFunction
         self.is_stochastic = is_stochastic
