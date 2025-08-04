@@ -4,6 +4,7 @@ from casadi import MX_eye, SX_eye, jacobian, Function, MX, SX, vertcat
 
 from .constraints import PenaltyOption
 from .objective_functions import ObjectiveFunction
+from .weight import Weight, NotApplicable
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyController
 from ..limits.penalty_helpers import PenaltyHelpers
 from ..misc.enums import Node, PenaltyType
@@ -48,6 +49,7 @@ class MultinodePenalty(PenaltyOption):
         _multinode_penalty_fcn: Any,
         nodes: IntorNodeIterable,
         nodes_phase: IntTuple,
+        weight: Weight | NotApplicable,
         multinode_penalty: Any | Callable = None,
         custom_function: Callable = None,
         **extra_parameters: Any,
@@ -57,7 +59,7 @@ class MultinodePenalty(PenaltyOption):
             multinode_penalty = _multinode_penalty_fcn.CUSTOM
 
         super(MultinodePenalty, self).__init__(
-            penalty=multinode_penalty, custom_function=custom_function, **extra_parameters
+            penalty=multinode_penalty, custom_function=custom_function, weight=weight, **extra_parameters
         )
 
         for node in nodes:

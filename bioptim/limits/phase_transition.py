@@ -84,12 +84,12 @@ class PhaseTransition(MultinodePenalty):
 
     def add_or_replace_to_penalty_pool(self, ocp, nlp):
         super(PhaseTransition, self).add_or_replace_to_penalty_pool(ocp, nlp)
-        if not self.weight:
+        if isinstance(self.weight, NotApplicable):
             self: MultinodeConstraint
             MultinodeConstraint.set_bounds(self)
 
     def _get_pool_to_add_penalty(self, ocp, nlp):
-        if self.weight == 0:
+        if isinstance(self.weight, NotApplicable):
             # No weight means it is a constraint
             return nlp.g_internal if nlp else ocp.g_internal
         else:

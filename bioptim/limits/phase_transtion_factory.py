@@ -1,5 +1,6 @@
 from .objective_functions import ObjectiveFunction
 from .phase_transition import PhaseTransition, PhaseTransitionFcn, PhaseTransitionList
+from .weight import NotApplicable
 from ..misc.enums import ControlType
 
 
@@ -49,7 +50,7 @@ class PhaseTransitionFactory:
                     PhaseTransition(
                         phase_pre_idx=phase,
                         transition=PhaseTransitionFcn.CONTINUOUS_CONTROLS,
-                        weight=0,  # Continuity always enforced by the linear continuous control
+                        weight=NotApplicable(),  # Continuity always enforced by the linear continuous control
                     )
                 )
 

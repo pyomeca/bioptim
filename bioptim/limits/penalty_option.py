@@ -630,7 +630,7 @@ class PenaltyOption(OptionGeneric):
 
         self.function_non_threaded[node] = self.function[node]
 
-        # weight is zero for constraints penalty and non-zero for objective functions
+        # weight is one for constraints penalty and non-zero for objective functions
         modified_fcn = weight_cx * modified_fcn * self.dt
 
         self.weighted_function[node] = Function(
