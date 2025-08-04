@@ -239,7 +239,7 @@ class DynamicsOptions(OptionGeneric):
         expand_dynamics: bool = True,
         expand_continuity: bool = False,
         skip_continuity: bool = False,
-        state_continuity_weight: float | int | None = None,
+        state_continuity_weight: float | int | None = 0,  # 0 is the default for constraints
         phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
         ode_solver: OdeSolver | OdeSolverBase = OdeSolver.RK4(),
         numerical_data_timeseries: dict[str, np.ndarray] = None,

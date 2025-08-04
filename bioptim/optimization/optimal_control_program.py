@@ -869,7 +869,7 @@ class OptimalControlProgram:
         if nlp.dynamics_type.skip_continuity:
             return
 
-        if nlp.dynamics_type.state_continuity_weight is None:
+        if nlp.dynamics_type.state_continuity_weight == 0:
             # Continuity as constraints
             penalty = Constraint(
                 ConstraintFcn.STATE_CONTINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL

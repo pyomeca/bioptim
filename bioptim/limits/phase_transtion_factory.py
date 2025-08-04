@@ -49,7 +49,7 @@ class PhaseTransitionFactory:
                     PhaseTransition(
                         phase_pre_idx=phase,
                         transition=PhaseTransitionFcn.CONTINUOUS_CONTROLS,
-                        weight=None,  # Continuity always enforced by the linear continuous control
+                        weight=0,  # Continuity always enforced by the linear continuous control
                     )
                 )
 

@@ -73,6 +73,7 @@ class Constraint(PenaltyOption):
             quadratic=quadratic,
             custom_function=custom_function,
             is_stochastic=is_stochastic,
+            weight=0,  # Default is 0 for constraints
             **extra_parameters,
         )
 

@@ -2,6 +2,7 @@ from typing import Callable, Any
 
 from .penalty import PenaltyFunctionAbstract, PenaltyOption
 from .penalty_controller import PenaltyController
+from .weight import Weight
 from ..misc.enums import Node, QuadratureRule, PenaltyType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
@@ -27,6 +28,7 @@ class Objective(PenaltyOption):
         custom_type: Any = None,
         phase: Int = -1,
         is_stochastic: Bool = False,
+        weight: Weight | FloatOptional = 1,
         **extra_parameters: Any,
     ):
         """
@@ -98,6 +100,7 @@ class Objective(PenaltyOption):
             phase=phase,
             custom_function=custom_function,
             is_stochastic=is_stochastic,
+            weight=weight,
             **extra_parameters,
         )
 

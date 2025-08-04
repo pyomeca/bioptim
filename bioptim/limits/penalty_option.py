@@ -105,11 +105,11 @@ class PenaltyOption(OptionGeneric):
     def __init__(
         self,
         penalty: Any,
+        weight: Float | Int | Weight,
         phase: Int = 0,
         node: Node | IntorNodeIterable = Node.DEFAULT,
         target: FloatIterableorNpArray | IntIterableorNpArray | NpArrayList | None = None,
         quadratic: BoolOptional = None,
-        weight: Float | Int | Weight = 1,
         derivative: Bool = False,
         explicit_derivative: Bool = False,
         integrate: Bool = False,
