@@ -54,10 +54,7 @@ class MultinodeObjectiveList(MultinodePenaltyList):
         Add a new MultinodeObjective to the list
     """
 
-    def add(self,
-            multinode_objective: Any,
-            weight: Weight | NotApplicable = Weight(1),
-            **extra_arguments: Any):
+    def add(self, multinode_objective: Any, weight: Weight | NotApplicable = Weight(1), **extra_arguments: Any):
         """
         Add a new MultinodePenalty to the list
 

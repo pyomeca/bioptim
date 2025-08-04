@@ -15,10 +15,7 @@ from ..misc.parameters_types import (
 
 
 class MultinodeConstraint(MultinodePenalty):
-    def __init__(self, *args,
-                 min_bound: Float = 0,
-                 max_bound: Float = 0,
-                 is_stochastic: Bool = False, **kwargs):
+    def __init__(self, *args, min_bound: Float = 0, max_bound: Float = 0, is_stochastic: Bool = False, **kwargs):
         if "weight" in kwargs and not isinstance(kwargs["weight"], NotApplicable):
             raise ValueError(
                 "MultinodeConstraints can't declare weight, use MultinodeObjective instead. If you were defining a "
@@ -84,10 +81,7 @@ class MultinodeConstraintList(MultinodePenaltyList):
         Configure all the multinode penalties and put them in a list
     """
 
-    def add(self,
-            multinode_constraint: Any,
-            weight: Weight | NotApplicable = NotApplicable(),
-            **extra_arguments: Any):
+    def add(self, multinode_constraint: Any, weight: Weight | NotApplicable = NotApplicable(), **extra_arguments: Any):
         """
         Add a new MultinodePenalty to the list
 
