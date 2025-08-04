@@ -248,9 +248,9 @@ class PenaltyOption(OptionGeneric):
             self._check_target_dimensions(controllers)
             if self.plot_target:
                 self._finish_add_target_to_plot(controllers)
-                
+
         self._check_weight_dimensions(controllers)
-        
+
         if not isinstance(controllers, list):
             controllers = [controllers]
 
@@ -614,7 +614,7 @@ class PenaltyOption(OptionGeneric):
         self.function_non_threaded[node] = self.function[node]
 
         # weight is zero for constraints penalty and non-zero for objective functions
-        modified_fcn = (weight_cx * modified_fcn * self.dt)
+        modified_fcn = weight_cx * modified_fcn * self.dt
 
         self.weighted_function[node] = Function(
             name,

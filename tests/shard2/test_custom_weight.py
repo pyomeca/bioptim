@@ -1,5 +1,3 @@
-
-
 from bioptim import (
     TorqueBiorbdModel,
     OdeSolver,
@@ -90,7 +88,7 @@ def prepare_ocp(
         weight = Weight(weight, interpolation=InterpolationType.EACH_FRAME)
     elif interpolation_type == InterpolationType.SPLINE:
         spline_time = np.hstack((0, np.sort(np.random.random((3,)) * final_time), final_time))
-        spline_points = np.random.random((5, )) * (-10) - 5
+        spline_points = np.random.random((5,)) * (-10) - 5
         weight = Weight(spline_points, interpolation=InterpolationType.SPLINE, t=spline_time)
     elif interpolation_type == InterpolationType.CUSTOM:
         # The custom functions refer to the one at the beginning of the file.
@@ -152,29 +150,36 @@ def prepare_ocp(
     )
 
 
-@pytest.mark.parametrize("phase_dynamics", [
-    PhaseDynamics.SHARED_DURING_THE_PHASE,
-    PhaseDynamics.ONE_PER_NODE,
-])
-@pytest.mark.parametrize("objective", [
-    "lagrange",
-    "mayer",
-])
 @pytest.mark.parametrize(
-    "control_type", [
+    "phase_dynamics",
+    [
+        PhaseDynamics.SHARED_DURING_THE_PHASE,
+        PhaseDynamics.ONE_PER_NODE,
+    ],
+)
+@pytest.mark.parametrize(
+    "objective",
+    [
+        "lagrange",
+        "mayer",
+    ],
+)
+@pytest.mark.parametrize(
+    "control_type",
+    [
         ControlType.CONSTANT,
         ControlType.CONSTANT_WITH_LAST_NODE,
         ControlType.LINEAR_CONTINUOUS,
-    ]
+    ],
 )
 @pytest.mark.parametrize(
     "interpolation_type",
     [
-         InterpolationType.CONSTANT,
-         InterpolationType.LINEAR,
-         InterpolationType.EACH_FRAME,
-         InterpolationType.SPLINE,
-         InterpolationType.CUSTOM,
+        InterpolationType.CONSTANT,
+        InterpolationType.LINEAR,
+        InterpolationType.EACH_FRAME,
+        InterpolationType.SPLINE,
+        InterpolationType.CUSTOM,
     ],
 )
 @pytest.mark.parametrize(
@@ -194,7 +199,9 @@ def test_pendulum(control_type, interpolation_type, node, objective, phase_dynam
 
     # Test the errors first
     if objective == "lagrange" and (node == Node.START or node == Node.INTERMEDIATES or isinstance(node, list)):
-        with pytest.raises(RuntimeError, match="Lagrange objective are for Node.ALL_SHOOTING or Node.ALL, did you mean Mayer?"):
+        with pytest.raises(
+            RuntimeError, match="Lagrange objective are for Node.ALL_SHOOTING or Node.ALL, did you mean Mayer?"
+        ):
             ocp = prepare_ocp(
                 biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
                 n_shooting=n_shooting,
@@ -231,44 +238,44 @@ def test_pendulum(control_type, interpolation_type, node, objective, phase_dynam
         if node == Node.START:
             value = tau[:, 0]
             if objective == "mayer":
-                npt.assert_almost_equal(f[0, 0], np.sum(value ** 2))
-                npt.assert_almost_equal(j_printed, np.sum(value ** 2))
+                npt.assert_almost_equal(f[0, 0], np.sum(value**2))
+                npt.assert_almost_equal(j_printed, np.sum(value**2))
             # else raise error above
         elif node == Node.INTERMEDIATES:
             if objective == "mayer":
                 if control_type == ControlType.CONSTANT:
                     value = tau[:, 1:-1]
-                    npt.assert_almost_equal(f[0, 0], np.sum(value ** 2))
-                    npt.assert_almost_equal(j_printed, np.sum(value ** 2))
+                    npt.assert_almost_equal(f[0, 0], np.sum(value**2))
+                    npt.assert_almost_equal(j_printed, np.sum(value**2))
                 elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
                     value = tau[:, 1:-2]
                     # TODO: @pariterre -> do we expect -2 ?
-                    npt.assert_almost_equal(f[0, 0], np.sum(value ** 2))
-                    npt.assert_almost_equal(j_printed, np.sum(value ** 2))
+                    npt.assert_almost_equal(f[0, 0], np.sum(value**2))
+                    npt.assert_almost_equal(j_printed, np.sum(value**2))
                 else:
                     value = tau[:, 1:-4:2]
                     # TODO: @pariterre -> do we expect -4 ?
-                    npt.assert_almost_equal(f[0, 0], np.sum(value ** 2))
-                    npt.assert_almost_equal(j_printed, np.sum(value ** 2))
+                    npt.assert_almost_equal(f[0, 0], np.sum(value**2))
+                    npt.assert_almost_equal(j_printed, np.sum(value**2))
             # else raise error above
         elif node == Node.ALL_SHOOTING:
             if objective == "mayer":
                 if control_type == ControlType.CONSTANT:
-                    npt.assert_almost_equal(f[0, 0], np.sum(tau ** 2))
-                    npt.assert_almost_equal(j_printed, np.sum(tau ** 2))
+                    npt.assert_almost_equal(f[0, 0], np.sum(tau**2))
+                    npt.assert_almost_equal(j_printed, np.sum(tau**2))
                 elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
-                    npt.assert_almost_equal(f[0, 0], np.sum(tau ** 2))
-                    npt.assert_almost_equal(j_printed, np.sum(tau ** 2))
+                    npt.assert_almost_equal(f[0, 0], np.sum(tau**2))
+                    npt.assert_almost_equal(j_printed, np.sum(tau**2))
                 elif control_type == ControlType.LINEAR_CONTINUOUS:
                     npt.assert_almost_equal(f[0, 0], np.sum(tau[:, 0:-1:2] ** 2))
                     npt.assert_almost_equal(j_printed, np.sum(tau[:, 0:-1:2] ** 2))
             else:
                 if control_type == ControlType.CONSTANT:
-                    npt.assert_almost_equal(f[0, 0], np.sum(tau ** 2 * dt))
-                    npt.assert_almost_equal(j_printed, np.sum(tau ** 2 * dt))
+                    npt.assert_almost_equal(f[0, 0], np.sum(tau**2 * dt))
+                    npt.assert_almost_equal(j_printed, np.sum(tau**2 * dt))
                 elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
-                    npt.assert_almost_equal(f[0, 0], np.sum(tau ** 2 * dt))
-                    npt.assert_almost_equal(j_printed, np.sum(tau ** 2 * dt))
+                    npt.assert_almost_equal(f[0, 0], np.sum(tau**2 * dt))
+                    npt.assert_almost_equal(j_printed, np.sum(tau**2 * dt))
                 elif control_type == ControlType.LINEAR_CONTINUOUS:
                     npt.assert_almost_equal(f[0, 0], np.sum(tau[:, 0:-1:2] ** 2 * dt))
                     npt.assert_almost_equal(j_printed, np.sum(tau[:, 0:-1:2] ** 2 * dt))
@@ -284,9 +291,11 @@ def test_pendulum(control_type, interpolation_type, node, objective, phase_dynam
                     npt.assert_almost_equal(f[0, 0], np.sum(tau[:, np.array(node) * 2] ** 2))
                     npt.assert_almost_equal(j_printed, np.sum(tau[:, np.array(node) * 2] ** 2))
             # else raise error above
-    elif (interpolation_type == InterpolationType.LINEAR or
-          interpolation_type == InterpolationType.CUSTOM or
-            interpolation_type == InterpolationType.EACH_FRAME):
+    elif (
+        interpolation_type == InterpolationType.LINEAR
+        or interpolation_type == InterpolationType.CUSTOM
+        or interpolation_type == InterpolationType.EACH_FRAME
+    ):
         if node == Node.START:
             if objective == "mayer":
                 npt.assert_almost_equal(f[0, 0], 0)
@@ -435,20 +444,21 @@ def test_pendulum(control_type, interpolation_type, node, objective, phase_dynam
 
 
 @pytest.mark.parametrize(
-    "control_type", [
+    "control_type",
+    [
         ControlType.CONSTANT,
         ControlType.CONSTANT_WITH_LAST_NODE,
         ControlType.LINEAR_CONTINUOUS,
-    ]
+    ],
 )
 @pytest.mark.parametrize(
     "interpolation_type",
     [
-         InterpolationType.CONSTANT,
-         InterpolationType.LINEAR,
-         InterpolationType.EACH_FRAME,
-         InterpolationType.SPLINE,
-         InterpolationType.CUSTOM,
+        InterpolationType.CONSTANT,
+        InterpolationType.LINEAR,
+        InterpolationType.EACH_FRAME,
+        InterpolationType.SPLINE,
+        InterpolationType.CUSTOM,
     ],
 )
 @pytest.mark.parametrize(
@@ -484,7 +494,7 @@ def test_pendulum_integration_rule(control_type, interpolation_type, integration
     f = np.array(sol.cost)
     npt.assert_equal(f.shape, (1, 1))
     if interpolation_type == InterpolationType.CONSTANT:
-        value = tau ** 2
+        value = tau**2
         if control_type == ControlType.CONSTANT or control_type == ControlType.CONSTANT_WITH_LAST_NODE:
             npt.assert_almost_equal(f[0, 0], np.sum(value * dt))
             npt.assert_almost_equal(j_printed, np.sum(value * dt))
@@ -499,9 +509,11 @@ def test_pendulum_integration_rule(control_type, interpolation_type, integration
                 # out = np.sum((value[0, 1:] + value[0, :-1]) / 2 * dt)
                 npt.assert_almost_equal(f[0, 0], 52.02092181662168)
                 npt.assert_almost_equal(j_printed, 52.02092181662168)
-    elif (interpolation_type == InterpolationType.LINEAR or
-          interpolation_type == InterpolationType.CUSTOM or
-            interpolation_type == InterpolationType.EACH_FRAME):
+    elif (
+        interpolation_type == InterpolationType.LINEAR
+        or interpolation_type == InterpolationType.CUSTOM
+        or interpolation_type == InterpolationType.EACH_FRAME
+    ):
         if control_type == ControlType.CONSTANT:
             value = np.zeros((ntau, n_shooting))
             for i in range(ntau):

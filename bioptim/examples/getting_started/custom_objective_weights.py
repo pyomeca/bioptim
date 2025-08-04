@@ -118,7 +118,7 @@ def prepare_ocp(
         weight = Weight(weight, interpolation=InterpolationType.EACH_FRAME)
     elif interpolation_type == InterpolationType.SPLINE:
         spline_time = np.hstack((0, np.sort(np.random.random((3,)) * final_time), final_time))
-        spline_points = np.random.random((5, )) * (-10) - 5
+        spline_points = np.random.random((5,)) * (-10) - 5
         weight = Weight(spline_points, interpolation=InterpolationType.SPLINE, t=spline_time)
     elif interpolation_type == InterpolationType.CUSTOM:
         # The custom functions refer to the one at the beginning of the file.
@@ -129,9 +129,7 @@ def prepare_ocp(
         raise NotImplementedError("Not implemented yet")
 
     # Add objective functions
-    objective_functions = Objective(
-        ObjectiveFcn.Mayer.MINIMIZE_CONTROL, key="tau", node=node, weight=weight
-    )
+    objective_functions = Objective(ObjectiveFcn.Mayer.MINIMIZE_CONTROL, key="tau", node=node, weight=weight)
 
     # DynamicsOptions
     dynamics = DynamicsOptions(expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
@@ -171,12 +169,16 @@ def main():
 
     for interpolation_type in InterpolationType:
         for node in nodes_to_test:
-            if (interpolation_type == InterpolationType.ALL_POINTS or
-                    interpolation_type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT):
+            if (
+                interpolation_type == InterpolationType.ALL_POINTS
+                or interpolation_type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT
+            ):
                 continue
 
             print(f"Solving problem using {interpolation_type} weight applied at {node} nodes.")
-            ocp = prepare_ocp("models/cube.bioMod", n_shooting=30, final_time=2, interpolation_type=interpolation_type, node=node)
+            ocp = prepare_ocp(
+                "models/cube.bioMod", n_shooting=30, final_time=2, interpolation_type=interpolation_type, node=node
+            )
             sol = ocp.solve()
             print("\n")
 

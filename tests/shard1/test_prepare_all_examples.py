@@ -66,6 +66,7 @@ def test__getting_started__custom_bounds():
             expand_dynamics=True,
         )
 
+
 def test__getting_started__custom_objective_weights():
     from bioptim.examples.getting_started import custom_objective_weights as ocp_module
 
@@ -75,8 +76,10 @@ def test__getting_started__custom_objective_weights():
 
     for interpolation_type in InterpolationType:
         for node in nodes_to_test:
-            if (interpolation_type == InterpolationType.ALL_POINTS or
-                    interpolation_type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT):
+            if (
+                interpolation_type == InterpolationType.ALL_POINTS
+                or interpolation_type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT
+            ):
                 continue
 
             ocp_module.prepare_ocp(
@@ -88,6 +91,7 @@ def test__getting_started__custom_objective_weights():
                 phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
                 expand_dynamics=True,
             )
+
 
 def test__getting_started__custom_constraints():
     from bioptim.examples.getting_started import custom_constraint as ocp_module

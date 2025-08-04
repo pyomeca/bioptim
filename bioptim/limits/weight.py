@@ -46,6 +46,7 @@ class Weight(ndarray):
     evaluate_at(self, node: int)
         Evaluate the interpolation at a specific index
     """
+
     def __new__(
         cls,
         input_array: NpArray | Callable = None,
@@ -111,8 +112,10 @@ class Weight(ndarray):
             pass
 
         elif interpolation == InterpolationType.ALL_POINTS:
-            raise ValueError("The interpolation type ALL_POINTS is not allowed for Weight since the objective is "
-                             "evaluated only at the node and not at the collocation points. Use EACH_FRAME instead.")
+            raise ValueError(
+                "The interpolation type ALL_POINTS is not allowed for Weight since the objective is "
+                "evaluated only at the node and not at the collocation points. Use EACH_FRAME instead."
+            )
 
         elif interpolation == InterpolationType.SPLINE:
             if input_array.shape[0] < 2:
@@ -209,7 +212,9 @@ class Weight(ndarray):
         self.n_nodes = n_nodes
         if self.type == InterpolationType.EACH_FRAME:
             if self.shape[0] != self.n_nodes:
-                raise RuntimeError(f"Invalid number of column for {self.type} (ncols = {self.shape[0]}), the expected number of column is {self.n_nodes} for {element_name}.")
+                raise RuntimeError(
+                    f"Invalid number of column for {self.type} (ncols = {self.shape[0]}), the expected number of column is {self.n_nodes} for {element_name}."
+                )
 
     def evaluate_at(self, node: Int):
         """
@@ -249,9 +254,7 @@ class Weight(ndarray):
             if self.n_nodes == 1:
                 return self[0]
             else:
-                return self[0] + (self[1] - self[0]) * node / (
-                    (self.n_nodes - 1)
-                )
+                return self[0] + (self[1] - self[0]) * node / ((self.n_nodes - 1))
 
         elif self.type == InterpolationType.EACH_FRAME:
             return self[node]
