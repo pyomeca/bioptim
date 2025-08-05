@@ -1363,7 +1363,7 @@ class Solution:
             )
             d = np.array([]) if d_tp.shape == (0, 0) else np.array(d_tp)
 
-            weight = PenaltyHelpers.weight(penalty)
+            weight = PenaltyHelpers.weight(penalty, idx)
             target = PenaltyHelpers.target(penalty, idx)
 
             node_idx = penalty.node_idx[idx]

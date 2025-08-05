@@ -3,6 +3,8 @@ import platform
 from pathlib import Path
 from types import ModuleType
 from typing import Any
+import io
+import sys
 
 import numpy as np
 import numpy.testing as npt
@@ -230,3 +232,17 @@ class TestUtils:
                         ),
                     )
         return numerical_timeseries
+
+    @staticmethod
+    def sum_cost_function_output(sol):
+        """
+        Sum the cost function output from sol.print_cost()
+        """
+        captured_output = io.StringIO()  # Create StringIO object
+        sys.stdout = captured_output  # and redirect stdout.
+        sol.print_cost()  # Call function.
+        sys.stdout = sys.__stdout__  # Reset redirect.
+        idx = captured_output.getvalue().find("Sum cost functions")
+        output = captured_output.getvalue()[idx:].split("\n")[0]
+        idx = len("Sum cost functions: ")
+        return float(output[idx:])

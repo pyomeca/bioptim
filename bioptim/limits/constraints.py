@@ -5,6 +5,7 @@ from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function, MX_ey
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyController
+from .weight import ConstraintWeight
 from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
@@ -41,6 +42,7 @@ class Constraint(PenaltyOption):
         quadratic: Bool = False,
         phase: Int = -1,
         is_stochastic: Bool = False,
+        weight: Int | Float | ConstraintWeight = ConstraintWeight(),
         **extra_parameters: Any,
     ):
         """
@@ -59,6 +61,8 @@ class Constraint(PenaltyOption):
         is_stochastic: bool
             If the constraint is stochastic (if we should instead look at the rate of variation of the inequality
             constraint)
+        weight: ConstraintWeight
+            The weight to apply to the constraint
         extra_parameters:
             Generic parameters for options
         """
@@ -67,12 +71,19 @@ class Constraint(PenaltyOption):
             custom_function = constraint
             constraint = ConstraintFcn.CUSTOM
 
+        if not isinstance(weight, ConstraintWeight):
+            if isinstance(weight, (int, float)):
+                weight = ConstraintWeight(weight)
+            else:
+                raise ValueError(f"The weight must be a ConstraintWeight, int or float, not {type(weight)}")
+
         super(Constraint, self).__init__(
             penalty=constraint,
             phase=phase,
             quadratic=quadratic,
             custom_function=custom_function,
             is_stochastic=is_stochastic,
+            weight=weight,
             **extra_parameters,
         )
 
@@ -168,7 +179,12 @@ class ConstraintList(OptionList):
         Print the ConstraintList to the console
     """
 
-    def add(self, constraint: Callable | Constraint | Any, **extra_arguments: Any):
+    def add(
+        self,
+        constraint: Callable | Constraint | Any,
+        weight: Int | Float | ConstraintWeight = ConstraintWeight(),
+        **extra_arguments: Any,
+    ):
         """
         Add a new constraint to the list
 
@@ -176,6 +192,8 @@ class ConstraintList(OptionList):
         ----------
         constraint: Callable | Constraint | ConstraintFcn
             The chosen constraint
+        weight: Int | Float | ConstraintWeight
+            The weight to apply to the constraint.
         extra_arguments: dict
             Any parameters to pass to Constraint
         """
@@ -184,7 +202,15 @@ class ConstraintList(OptionList):
             self.copy(constraint)
 
         else:
-            super(ConstraintList, self)._add(option_type=Constraint, constraint=constraint, **extra_arguments)
+            if not isinstance(weight, ConstraintWeight):
+                if isinstance(weight, (int, float)):
+                    weight = ConstraintWeight(weight)
+                else:
+                    raise ValueError(f"The weight must be a ConstraintWeight, int or float, not {type(weight)}")
+
+            super(ConstraintList, self)._add(
+                option_type=Constraint, constraint=constraint, weight=weight, **extra_arguments
+            )
             # TODO: add an InternalConstraint option type? Because now the list_index is wrong
 
     def print(self):
@@ -898,6 +924,7 @@ class ParameterConstraint(PenaltyOption):
         min_bound: NpArrayorFloatOptional = None,
         max_bound: NpArrayorFloatOptional = None,
         quadratic: Bool = False,
+        weight: Int | Float | ConstraintWeight = ConstraintWeight(),
         **extra_parameters: Any,
     ):
         """
@@ -911,6 +938,8 @@ class ParameterConstraint(PenaltyOption):
             The vector of maximal bound of the constraint. Default is 0
         quadratic: bool
             If the penalty is quadratic
+        weight: ConstraintWeight
+            The weight to apply to the constraint
         extra_parameters:
             Generic parameters for options
         """
@@ -919,8 +948,18 @@ class ParameterConstraint(PenaltyOption):
             custom_function = parameter_constraint
             parameter_constraint = ConstraintFcn.CUSTOM
 
+        if not isinstance(weight, ConstraintWeight):
+            if isinstance(weight, (int, float)):
+                weight = ConstraintWeight(weight)
+            else:
+                raise ValueError(f"The weight must be a ConstraintWeight, int or float, not {type(weight)}")
+
         super(ParameterConstraint, self).__init__(
-            penalty=parameter_constraint, quadratic=quadratic, custom_function=custom_function, **extra_parameters
+            penalty=parameter_constraint,
+            quadratic=quadratic,
+            custom_function=custom_function,
+            weight=weight,
+            **extra_parameters,
         )
 
         self.min_bound = min_bound
@@ -1016,7 +1055,12 @@ class ParameterConstraintList(OptionList):
         Print the ParameterConstraintList to the console
     """
 
-    def add(self, parameter_constraint: Callable | ParameterConstraint | Any, **extra_arguments: Any):
+    def add(
+        self,
+        parameter_constraint: Callable | ParameterConstraint | Any,
+        weight: Int | Float | ConstraintWeight = ConstraintWeight(),
+        **extra_arguments: Any,
+    ):
         """
         Add a new constraint to the list
 
@@ -1024,6 +1068,8 @@ class ParameterConstraintList(OptionList):
         ----------
         parameter_constraint: Callable | Constraint | ConstraintFcn
             The chosen parameter constraint
+        weight: Int | Float | ConstraintWeight
+            The weight to apply to the constraint.
         extra_arguments: dict
             Any parameters to pass to Constraint
         """
@@ -1032,6 +1078,12 @@ class ParameterConstraintList(OptionList):
             self.copy(parameter_constraint)
 
         else:
+            if not isinstance(weight, ConstraintWeight):
+                if isinstance(weight, (int, float)):
+                    weight = ConstraintWeight(weight)
+                else:
+                    raise ValueError(f"The weight must be a ConstraintWeight, int or float, not {type(weight)}")
+
             super(ParameterConstraintList, self)._add(
                 option_type=ParameterConstraint, parameter_constraint=parameter_constraint, **extra_arguments
             )

@@ -4,6 +4,7 @@ from casadi import MX_eye, SX_eye, jacobian, Function, MX, SX, vertcat
 
 from .constraints import PenaltyOption
 from .objective_functions import ObjectiveFunction
+from .weight import ObjectiveWeight, ConstraintWeight
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyController
 from ..limits.penalty_helpers import PenaltyHelpers
 from ..misc.enums import Node, PenaltyType
@@ -12,11 +13,7 @@ from ..misc.mapping import BiMapping
 from ..misc.options import UniquePerPhaseOptionList
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
 
-from ..misc.parameters_types import (
-    Str,
-    IntTuple,
-    IntorNodeIterable,
-)
+from ..misc.parameters_types import Str, IntTuple, IntorNodeIterable, Int, Float
 
 
 class MultinodePenalty(PenaltyOption):
@@ -48,6 +45,7 @@ class MultinodePenalty(PenaltyOption):
         _multinode_penalty_fcn: Any,
         nodes: IntorNodeIterable,
         nodes_phase: IntTuple,
+        weight: ObjectiveWeight | ConstraintWeight,
         multinode_penalty: Any | Callable = None,
         custom_function: Callable = None,
         **extra_parameters: Any,
@@ -57,7 +55,7 @@ class MultinodePenalty(PenaltyOption):
             multinode_penalty = _multinode_penalty_fcn.CUSTOM
 
         super(MultinodePenalty, self).__init__(
-            penalty=multinode_penalty, custom_function=custom_function, **extra_parameters
+            penalty=multinode_penalty, custom_function=custom_function, weight=weight, **extra_parameters
         )
 
         for node in nodes:
@@ -809,6 +807,7 @@ class MultinodePenaltyList(UniquePerPhaseOptionList):
     def add(
         self,
         multinode_penalty: Any,
+        weight: ObjectiveWeight | ConstraintWeight,
         option_type: type = None,
         _multinode_penalty_fcn: type | Any = None,
         **extra_arguments: Any,
@@ -820,6 +819,8 @@ class MultinodePenaltyList(UniquePerPhaseOptionList):
         ----------
         multinode_penalty: Callable | MultinodePenaltyFcn
             The chosen phase transition
+        weight: ObjectiveWeight | ConstraintWeight
+            The weight to apply to this penalty
         option_type
              If the option is MultinodeConstraints
         _multinode_penalty_fcn:
@@ -839,7 +840,12 @@ class MultinodePenaltyList(UniquePerPhaseOptionList):
             phase = -1
 
         super(MultinodePenaltyList, self)._add(
-            option_type=option_type, multinode_penalty=multinode_penalty, phase=phase, **extra_arguments
+            option_type=option_type,
+            multinode_penalty=multinode_penalty,
+            weight=weight,
+            _multinode_penalty_fcn=_multinode_penalty_fcn,
+            phase=phase,
+            **extra_arguments,
         )
 
     def add_or_replace_to_penalty_pool(self, ocp):
