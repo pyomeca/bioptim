@@ -524,7 +524,7 @@ class ParameterObjective(PenaltyOption):
         self,
         parameter_objective: Any,
         custom_type: Any = None,
-        weight: ObjectiveWeight | FloatOptional = 1,
+        weight: Int | Float | ObjectiveWeight = ObjectiveWeight(),
         **extra_parameters: Any,
     ):
         """
@@ -534,7 +534,9 @@ class ParameterObjective(PenaltyOption):
             The chosen objective function
         custom_type: ObjectiveFcn.Parameter | Callable
             The custom parameter objective function
-        params: dict
+        weight: ObjectiveWeight | float
+            The weight to apply to the objective function
+        extra_parameters: dict
             Generic parameters for options
         """
         custom_function = None
@@ -555,8 +557,17 @@ class ParameterObjective(PenaltyOption):
                     "It should either be ObjectiveFcn.Parameter"
                 )
 
+        if not isinstance(weight, ObjectiveWeight):
+            if isinstance(weight, (int, float)):
+                weight = ObjectiveWeight(weight)
+            else:
+                raise ValueError(f"The weight must be a ObjectiveWeight, int or float, not {type(weight)}")
+
         super(ParameterObjective, self).__init__(
-            penalty=parameter_objective, custom_function=custom_function, weight=weight, **extra_parameters
+            penalty=parameter_objective,
+            custom_function=custom_function,
+            weight=weight,
+            **extra_parameters
         )
 
     def _add_penalty_to_pool(self, controller: list[PenaltyController]):
@@ -624,7 +635,10 @@ class ParameterObjectiveList(OptionList):
         Print the ParameterObjectiveList to the console
     """
 
-    def add(self, parameter_objective: Callable | ParameterObjective | Any, **extra_arguments: Any):
+    def add(self,
+            parameter_objective: Callable | ParameterObjective | Any,
+            weight: Int | Float | ObjectiveWeight = ObjectiveWeight(),
+            **extra_arguments: Any):
         """
         Add a new parameter objective function to the list
 
@@ -632,6 +646,8 @@ class ParameterObjectiveList(OptionList):
         ----------
         parameter_objective: Callable | ParameterObjective
             The chosen parameter objective function
+        weight: ObjectiveWeight | float
+            The weight to apply to the objective function
         extra_arguments: dict
             Any parameters to pass to ParameterObjectiveFcn
         """
@@ -639,9 +655,16 @@ class ParameterObjectiveList(OptionList):
         if isinstance(parameter_objective, ParameterObjective):
             self.copy(parameter_objective)
         else:
+            if not isinstance(weight, ObjectiveWeight):
+                if isinstance(weight, (int, float)):
+                    weight = ObjectiveWeight(weight)
+                else:
+                    raise ValueError(f"The weight must be a ObjectiveWeight, int or float, not {type(weight)}")
+
             super(ParameterObjectiveList, self)._add(
                 option_type=ParameterObjective,
                 parameter_objective=parameter_objective,
+                weight=weight,
                 node=Node.START,
                 **extra_arguments,
             )

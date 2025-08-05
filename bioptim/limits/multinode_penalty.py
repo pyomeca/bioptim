@@ -840,7 +840,7 @@ class MultinodePenaltyList(UniquePerPhaseOptionList):
             phase = -1
 
         super(MultinodePenaltyList, self)._add(
-            option_type=option_type, multinode_penalty=multinode_penalty, phase=phase, weight=weight, **extra_arguments
+            option_type=option_type, multinode_penalty=multinode_penalty, weight=weight, _multinode_penalty_fcn=_multinode_penalty_fcn, phase=phase, **extra_arguments
         )
 
     def add_or_replace_to_penalty_pool(self, ocp):

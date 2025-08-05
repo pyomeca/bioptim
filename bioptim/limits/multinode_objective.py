@@ -34,7 +34,11 @@ class MultinodeObjective(MultinodePenalty):
                 raise ValueError(f"The weight must be a ObjectiveWeight, int or float, not {type(weight)}")
 
         super(MultinodeObjective, self).__init__(
-            MultinodeObjectiveFcn, _multinode_penalty_fcn, nodes, nodes_phase, weight, **kwargs
+            _multinode_penalty_fcn=_multinode_penalty_fcn,
+            nodes=nodes,
+            nodes_phase=nodes_phase,
+            weight=weight,
+            **kwargs
         )
 
         self.quadratic = kwargs["quadratic"] if "quadratic" in kwargs else True

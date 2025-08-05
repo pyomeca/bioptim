@@ -924,6 +924,7 @@ class ParameterConstraint(PenaltyOption):
         min_bound: NpArrayorFloatOptional = None,
         max_bound: NpArrayorFloatOptional = None,
         quadratic: Bool = False,
+        weight: Int | Float | ConstraintWeight = ConstraintWeight(),
         **extra_parameters: Any,
     ):
         """
@@ -937,6 +938,8 @@ class ParameterConstraint(PenaltyOption):
             The vector of maximal bound of the constraint. Default is 0
         quadratic: bool
             If the penalty is quadratic
+        weight: ConstraintWeight
+            The weight to apply to the constraint
         extra_parameters:
             Generic parameters for options
         """
@@ -945,17 +948,17 @@ class ParameterConstraint(PenaltyOption):
             custom_function = parameter_constraint
             parameter_constraint = ConstraintFcn.CUSTOM
 
-        if "weight" in extra_parameters.keys():
-            if not isinstance(extra_parameters["weight"], ConstraintWeight):
-                raise NotImplementedError("The weight of constraints must be ConstraintWeight for now.")
+        if not isinstance(weight, ConstraintWeight):
+            if isinstance(weight, (int, float)):
+                weight = ConstraintWeight(weight)
             else:
-                extra_parameters.pop("weight")
+                raise ValueError(f"The weight must be a ConstraintWeight, int or float, not {type(weight)}")
 
         super(ParameterConstraint, self).__init__(
             penalty=parameter_constraint,
             quadratic=quadratic,
             custom_function=custom_function,
-            weight=ConstraintWeight(),
+            weight=weight,
             **extra_parameters,
         )
 
@@ -1052,7 +1055,10 @@ class ParameterConstraintList(OptionList):
         Print the ParameterConstraintList to the console
     """
 
-    def add(self, parameter_constraint: Callable | ParameterConstraint | Any, **extra_arguments: Any):
+    def add(self,
+            parameter_constraint: Callable | ParameterConstraint | Any,
+            weight: Int | Float | ConstraintWeight = ConstraintWeight(),
+            **extra_arguments: Any):
         """
         Add a new constraint to the list
 
@@ -1060,6 +1066,8 @@ class ParameterConstraintList(OptionList):
         ----------
         parameter_constraint: Callable | Constraint | ConstraintFcn
             The chosen parameter constraint
+        weight: Int | Float | ConstraintWeight
+            The weight to apply to the constraint.
         extra_arguments: dict
             Any parameters to pass to Constraint
         """
@@ -1068,6 +1076,12 @@ class ParameterConstraintList(OptionList):
             self.copy(parameter_constraint)
 
         else:
+            if not isinstance(weight, ConstraintWeight):
+                if isinstance(weight, (int, float)):
+                    weight = ConstraintWeight(weight)
+                else:
+                    raise ValueError(f"The weight must be a ConstraintWeight, int or float, not {type(weight)}")
+
             super(ParameterConstraintList, self)._add(
                 option_type=ParameterConstraint, parameter_constraint=parameter_constraint, **extra_arguments
             )
