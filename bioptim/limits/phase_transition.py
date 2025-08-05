@@ -62,6 +62,10 @@ class PhaseTransition(MultinodePenalty):
         if not isinstance(transition, PhaseTransitionFcn):
             custom_function = transition
             transition = PhaseTransitionFcn.CUSTOM
+
+        if isinstance(weight, (Int, Float)):
+            weight = ObjectiveWeight(weight)
+
         super(PhaseTransition, self).__init__(
             PhaseTransitionFcn,
             nodes_phase=(
@@ -76,7 +80,7 @@ class PhaseTransition(MultinodePenalty):
             **extra_parameters,
         )
 
-        self.weight = weight if isinstance(weight, (ObjectiveWeight, ConstraintWeight)) else ObjectiveWeight(weight)
+        self.weight = weight
         self.min_bound = min_bound
         self.max_bound = max_bound
         self.bounds = Bounds("phase_transition", interpolation=InterpolationType.CONSTANT)
