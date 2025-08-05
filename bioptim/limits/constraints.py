@@ -1055,10 +1055,12 @@ class ParameterConstraintList(OptionList):
         Print the ParameterConstraintList to the console
     """
 
-    def add(self,
-            parameter_constraint: Callable | ParameterConstraint | Any,
-            weight: Int | Float | ConstraintWeight = ConstraintWeight(),
-            **extra_arguments: Any):
+    def add(
+        self,
+        parameter_constraint: Callable | ParameterConstraint | Any,
+        weight: Int | Float | ConstraintWeight = ConstraintWeight(),
+        **extra_arguments: Any,
+    ):
         """
         Add a new constraint to the list
 

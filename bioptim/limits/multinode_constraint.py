@@ -37,11 +37,7 @@ class MultinodeConstraint(MultinodePenalty):
                 raise ValueError(f"The weight must be a ConstraintWeight, int or float, not {type(weight)}")
 
         super(MultinodeConstraint, self).__init__(
-            _multinode_penalty_fcn=_multinode_penalty_fcn,
-            nodes=nodes,
-            nodes_phase=nodes_phase,
-            weight=weight,
-            **kwargs
+            _multinode_penalty_fcn=_multinode_penalty_fcn, nodes=nodes, nodes_phase=nodes_phase, weight=weight, **kwargs
         )
 
         self.min_bound = min_bound

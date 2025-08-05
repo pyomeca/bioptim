@@ -564,10 +564,7 @@ class ParameterObjective(PenaltyOption):
                 raise ValueError(f"The weight must be a ObjectiveWeight, int or float, not {type(weight)}")
 
         super(ParameterObjective, self).__init__(
-            penalty=parameter_objective,
-            custom_function=custom_function,
-            weight=weight,
-            **extra_parameters
+            penalty=parameter_objective, custom_function=custom_function, weight=weight, **extra_parameters
         )
 
     def _add_penalty_to_pool(self, controller: list[PenaltyController]):
@@ -635,10 +632,12 @@ class ParameterObjectiveList(OptionList):
         Print the ParameterObjectiveList to the console
     """
 
-    def add(self,
-            parameter_objective: Callable | ParameterObjective | Any,
-            weight: Int | Float | ObjectiveWeight = ObjectiveWeight(),
-            **extra_arguments: Any):
+    def add(
+        self,
+        parameter_objective: Callable | ParameterObjective | Any,
+        weight: Int | Float | ObjectiveWeight = ObjectiveWeight(),
+        **extra_arguments: Any,
+    ):
         """
         Add a new parameter objective function to the list
 
