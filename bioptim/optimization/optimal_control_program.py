@@ -40,7 +40,7 @@ from ..limits.penalty import PenaltyOption
 from ..limits.penalty_helpers import PenaltyHelpers
 from ..limits.phase_transition import PhaseTransition, PhaseTransitionList, PhaseTransitionFcn
 from ..limits.phase_transtion_factory import PhaseTransitionFactory
-from ..limits.weight import NotApplicable
+from ..limits.weight import ConstraintWeight
 from ..misc.__version__ import __version__
 from ..misc.enums import (
     ControlType,
@@ -870,7 +870,7 @@ class OptimalControlProgram:
         if nlp.dynamics_type.skip_continuity:
             return
 
-        if isinstance(nlp.dynamics_type.state_continuity_weight, NotApplicable):
+        if isinstance(nlp.dynamics_type.state_continuity_weight, ConstraintWeight):
             # Continuity as constraints
             penalty = Constraint(
                 ConstraintFcn.STATE_CONTINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL

@@ -26,7 +26,7 @@ from bioptim import (
     BoundsList,
     InterpolationType,
     PhaseDynamics,
-    Weight,
+    ObjectiveWeight,
 )
 
 
@@ -106,25 +106,25 @@ def prepare_ocp(
     else:
         raise RuntimeError("This example is not designed to work with this node type.")
 
-    # Weight
+    # ObjectiveWeight
     if interpolation_type == InterpolationType.CONSTANT:
         weight = [1]
-        weight = Weight(weight, interpolation=InterpolationType.CONSTANT)
+        weight = ObjectiveWeight(weight, interpolation=InterpolationType.CONSTANT)
     elif interpolation_type == InterpolationType.LINEAR:
         weight = [0, 1]
-        weight = Weight(weight, interpolation=InterpolationType.LINEAR)
+        weight = ObjectiveWeight(weight, interpolation=InterpolationType.LINEAR)
     elif interpolation_type == InterpolationType.EACH_FRAME:
         weight = np.linspace(0, 1, n_nodes)
-        weight = Weight(weight, interpolation=InterpolationType.EACH_FRAME)
+        weight = ObjectiveWeight(weight, interpolation=InterpolationType.EACH_FRAME)
     elif interpolation_type == InterpolationType.SPLINE:
         spline_time = np.hstack((0, np.sort(np.random.random((3,)) * final_time), final_time))
         spline_points = np.random.random((5,)) * (-10) - 5
-        weight = Weight(spline_points, interpolation=InterpolationType.SPLINE, t=spline_time)
+        weight = ObjectiveWeight(spline_points, interpolation=InterpolationType.SPLINE, t=spline_time)
     elif interpolation_type == InterpolationType.CUSTOM:
         # The custom functions refer to the one at the beginning of the file.
         # For this particular instance, they emulate a Linear interpolation
         extra_params = {"n_nodes": n_nodes}
-        weight = Weight(custom_weight, interpolation=InterpolationType.CUSTOM, **extra_params)
+        weight = ObjectiveWeight(custom_weight, interpolation=InterpolationType.CUSTOM, **extra_params)
     else:
         raise NotImplementedError("Not implemented yet")
 

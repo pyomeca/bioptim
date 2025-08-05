@@ -5,7 +5,7 @@ from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function, MX_ey
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyController
-from .weight import NotApplicable
+from .weight import ConstraintWeight
 from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
@@ -42,6 +42,7 @@ class Constraint(PenaltyOption):
         quadratic: Bool = False,
         phase: Int = -1,
         is_stochastic: Bool = False,
+        weight: Int | Float | ConstraintWeight = ConstraintWeight(),
         **extra_parameters: Any,
     ):
         """
@@ -60,6 +61,8 @@ class Constraint(PenaltyOption):
         is_stochastic: bool
             If the constraint is stochastic (if we should instead look at the rate of variation of the inequality
             constraint)
+        weight: ConstraintWeight
+            The weight to apply to the constraint
         extra_parameters:
             Generic parameters for options
         """
@@ -68,11 +71,11 @@ class Constraint(PenaltyOption):
             custom_function = constraint
             constraint = ConstraintFcn.CUSTOM
 
-        if "weight" in extra_parameters.keys():
-            if not isinstance(extra_parameters["weight"], NotApplicable):
-                raise NotImplementedError("The weight of constraints must be NotApplicable for now.")
+        if not isinstance(weight, ConstraintWeight):
+            if isinstance(weight, (int, float)):
+                weight = ConstraintWeight(weight)
             else:
-                extra_parameters.pop("weight")
+                raise ValueError(f"The weight must be a ConstraintWeight, int or float, not {type(weight)}")
 
         super(Constraint, self).__init__(
             penalty=constraint,
@@ -80,7 +83,7 @@ class Constraint(PenaltyOption):
             quadratic=quadratic,
             custom_function=custom_function,
             is_stochastic=is_stochastic,
-            weight=NotApplicable(),  # Default for constraints
+            weight=weight,
             **extra_parameters,
         )
 
@@ -176,7 +179,10 @@ class ConstraintList(OptionList):
         Print the ConstraintList to the console
     """
 
-    def add(self, constraint: Callable | Constraint | Any, **extra_arguments: Any):
+    def add(self,
+            constraint: Callable | Constraint | Any,
+            weight: Int | Float | ConstraintWeight = ConstraintWeight(),
+            **extra_arguments: Any):
         """
         Add a new constraint to the list
 
@@ -184,6 +190,8 @@ class ConstraintList(OptionList):
         ----------
         constraint: Callable | Constraint | ConstraintFcn
             The chosen constraint
+        weight: Int | Float | ConstraintWeight
+            The weight to apply to the constraint.
         extra_arguments: dict
             Any parameters to pass to Constraint
         """
@@ -192,7 +200,13 @@ class ConstraintList(OptionList):
             self.copy(constraint)
 
         else:
-            super(ConstraintList, self)._add(option_type=Constraint, constraint=constraint, **extra_arguments)
+            if not isinstance(weight, ConstraintWeight):
+                if isinstance(weight, (int, float)):
+                    weight = ConstraintWeight(weight)
+                else:
+                    raise ValueError(f"The weight must be a ConstraintWeight, int or float, not {type(weight)}")
+
+            super(ConstraintList, self)._add(option_type=Constraint, constraint=constraint, weight=weight, **extra_arguments)
             # TODO: add an InternalConstraint option type? Because now the list_index is wrong
 
     def print(self):
@@ -928,8 +942,8 @@ class ParameterConstraint(PenaltyOption):
             parameter_constraint = ConstraintFcn.CUSTOM
 
         if "weight" in extra_parameters.keys():
-            if not isinstance(extra_parameters["weight"], NotApplicable):
-                raise NotImplementedError("The weight of constraints must be NotApplicable for now.")
+            if not isinstance(extra_parameters["weight"], ConstraintWeight):
+                raise NotImplementedError("The weight of constraints must be ConstraintWeight for now.")
             else:
                 extra_parameters.pop("weight")
 
@@ -937,7 +951,7 @@ class ParameterConstraint(PenaltyOption):
             penalty=parameter_constraint,
             quadratic=quadratic,
             custom_function=custom_function,
-            weight=NotApplicable(),
+            weight=ConstraintWeight(),
             **extra_parameters,
         )
 

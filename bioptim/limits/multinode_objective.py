@@ -4,30 +4,41 @@ from ..misc.enums import PenaltyType
 from ..misc.fcn_enum import FcnEnum
 from .multinode_penalty import MultinodePenalty, MultinodePenaltyList, MultinodePenaltyFunctions
 from .objective_functions import ObjectiveFunction
-from .weight import Weight, NotApplicable
+from .weight import ObjectiveWeight
 
 
 from ..misc.parameters_types import (
     Bool,
     Float,
     Int,
+    IntorNodeIterable,
+    IntTuple,
 )
 
 
 class MultinodeObjective(MultinodePenalty):
     def __init__(
         self,
-        *args,
+        _multinode_penalty_fcn: Any,
+        nodes: IntorNodeIterable,
+        nodes_phase: IntTuple,
+        weight: Int | Float | ObjectiveWeight,
         is_stochastic: Bool = False,
         **kwargs,
     ):
-        if "weight" in kwargs and isinstance(kwargs["weight"], NotApplicable):
-            raise ValueError(
-                "MultinodeObjective can't declare NotApplicable weights, use MultinodeConstraint instead. If you were defining a "
-                "custom function that uses 'weight' as parameter, please use another keyword."
-            )
 
-        super(MultinodeObjective, self).__init__(MultinodeObjectiveFcn, *args, **kwargs)
+        if not isinstance(weight, ObjectiveWeight):
+            if isinstance(weight, (int, float)):
+                weight = ObjectiveWeight(weight)
+            else:
+                raise ValueError(f"The weight must be a ObjectiveWeight, int or float, not {type(weight)}")
+
+        super(MultinodeObjective, self).__init__(MultinodeObjectiveFcn,
+                                                 _multinode_penalty_fcn,
+                                                 nodes,
+                                                 nodes_phase,
+                                                 weight,
+                                                 **kwargs)
 
         self.quadratic = kwargs["quadratic"] if "quadratic" in kwargs else True
         self.base = ObjectiveFunction.MayerFunction
@@ -54,7 +65,7 @@ class MultinodeObjectiveList(MultinodePenaltyList):
         Add a new MultinodeObjective to the list
     """
 
-    def add(self, multinode_objective: Any, weight: Weight | NotApplicable = Weight(1), **extra_arguments: Any):
+    def add(self, multinode_objective: Any, weight: Int | Float | ObjectiveWeight = ObjectiveWeight(), **extra_arguments: Any):
         """
         Add a new MultinodePenalty to the list
 
@@ -65,6 +76,12 @@ class MultinodeObjectiveList(MultinodePenaltyList):
         extra_arguments: dict
             Any parameters to pass to Objective
         """
+
+        if not isinstance(weight, ObjectiveWeight):
+            if isinstance(weight, (int, float)):
+                weight = ObjectiveWeight(weight)
+            else:
+                raise ValueError(f"The weight must be a ObjectiveWeight, int or float, not {type(weight)}")
 
         super(MultinodeObjectiveList, self).add(
             option_type=MultinodeObjective,

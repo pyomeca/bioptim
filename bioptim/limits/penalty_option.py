@@ -6,7 +6,7 @@ from casadi import vertcat, Function, jacobian, diag
 from ..optimization.optimization_variable import OptimizationVariableList
 from .penalty_controller import PenaltyController
 from ..limits.penalty_helpers import PenaltyHelpers, Slicy
-from ..limits.weight import Weight, NotApplicable
+from ..limits.weight import ObjectiveWeight, ConstraintWeight
 from ..misc.enums import Node, PlotType, ControlType, PenaltyType, QuadratureRule, PhaseDynamics
 from ..misc.mapping import BiMapping
 from ..misc.options import OptionGeneric
@@ -105,7 +105,7 @@ class PenaltyOption(OptionGeneric):
     def __init__(
         self,
         penalty: Any,
-        weight: Float | Int | Weight | NotApplicable,
+        weight: ObjectiveWeight | ConstraintWeight,
         phase: Int = 0,
         node: Node | IntorNodeIterable = Node.DEFAULT,
         target: FloatIterableorNpArray | IntIterableorNpArray | NpArrayList | None = None,
@@ -137,7 +137,7 @@ class PenaltyOption(OptionGeneric):
             A target to track for the penalty
         quadratic: bool
             If the penalty is quadratic
-        weight: float | Weight
+        weight: ObjectiveWeight | ConstraintWeight
             The weighting applied to this specific penalty
         derivative: bool
             If the function should be evaluated at X and X+1
@@ -209,11 +209,11 @@ class PenaltyOption(OptionGeneric):
         self.node_idx = []
         self.multinode_idx = None
         self.dt = 0
-        if weight is None:
+        if weight is None or not isinstance(weight, (ObjectiveWeight, ConstraintWeight)):
             raise RuntimeError(
-                "weight must be declared, please use NotApplicable if you want a constraint instead of an objective."
+                "weight must be declared, please use ConstraintWeight if you want a constraint instead of an objective. This should not happen, please contact the developers."
             )
-        self.weight = weight if isinstance(weight, (Weight, NotApplicable)) else Weight(weight)
+        self.weight = weight
         self.function: list[Function | None] = []
         self.function_non_threaded: list[Function | None] = []
         self.weighted_function: list[Function | None] = []
@@ -340,7 +340,7 @@ class PenaltyOption(OptionGeneric):
             n_nodes = len(controller.t)
         self.weight.check_and_adjust_dimensions(n_nodes, f"{self.name} weight")
 
-        if not isinstance(self.weight, NotApplicable) and len(self.weight.shape) != 1:
+        if not isinstance(self.weight, ConstraintWeight) and len(self.weight.shape) != 1:
             raise RuntimeError(
                 "Something went wrong, the weight should be a vector at this point. "
                 "Please note that independent weighting of components is not available yet."
@@ -475,15 +475,15 @@ class PenaltyOption(OptionGeneric):
         is_trapezoidal = self.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL, QuadratureRule.TRAPEZOIDAL)
         target_shape = tuple([len(self.rows), len(self.cols) + 1 if is_trapezoidal else len(self.cols)])
         target_cx = controller.cx.sym("target", target_shape)
-        if isinstance(self.weight, Weight):
+        if isinstance(self.weight, ObjectiveWeight):
             weight_cx = controller.cx.sym("weight", len(self.rows), len(self.cols))
-        elif isinstance(self.weight, NotApplicable):
-            # This is a simplification since NotApplicable.evaluate at returns 1, but if we want to implement constraint
+        elif isinstance(self.weight, ConstraintWeight):
+            # This is a simplification since ConstraintWeight.evaluate at returns 1, but if we want to implement constraint
             # weights, we should have the same shape as above
             weight_cx = controller.cx.sym("weight", 1, 1)
         else:
-            RuntimeError(f"weight must be a Weight or NotApplicable, not {type(self.weight)}")
-        exponent = 2 if (self.quadratic and isinstance(self.weight, Weight)) else 1
+            RuntimeError(f"weight must be a ObjectiveWeight or ConstraintWeight, not {type(self.weight)}")
+        exponent = 2 if (self.quadratic and isinstance(self.weight, ObjectiveWeight)) else 1
 
         if is_trapezoidal:
             # Hypothesis for APPROXIMATE_TRAPEZOIDAL: the function is continuous on states

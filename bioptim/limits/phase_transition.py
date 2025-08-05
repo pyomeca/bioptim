@@ -6,7 +6,7 @@ from casadi import vertcat, MX
 from .multinode_constraint import MultinodeConstraint
 from .multinode_penalty import MultinodePenalty, MultinodePenaltyFunctions
 from .path_conditions import Bounds
-from .weight import Weight, NotApplicable
+from .weight import ObjectiveWeight, ConstraintWeight
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyController
 from ..misc.enums import Node, PenaltyType, InterpolationType
 from ..misc.fcn_enum import FcnEnum
@@ -51,7 +51,7 @@ class PhaseTransition(MultinodePenalty):
         self,
         phase_pre_idx: IntOptional = None,
         transition: Any | Callable = None,
-        weight: Weight | NotApplicable | Float | Int = NotApplicable(),  # By default phase transition is a constraint
+        weight: ObjectiveWeight | ConstraintWeight | Float | Int = ConstraintWeight(),  # By default phase transition is a constraint
         custom_function: Callable = None,
         min_bound: Float = 0,
         max_bound: Float = 0,
@@ -74,7 +74,7 @@ class PhaseTransition(MultinodePenalty):
             **extra_parameters,
         )
 
-        self.weight = weight if isinstance(weight, (Weight, NotApplicable)) else Weight(weight)
+        self.weight = weight if isinstance(weight, (ObjectiveWeight, ConstraintWeight)) else ObjectiveWeight(weight)
         self.min_bound = min_bound
         self.max_bound = max_bound
         self.bounds = Bounds("phase_transition", interpolation=InterpolationType.CONSTANT)
@@ -84,12 +84,12 @@ class PhaseTransition(MultinodePenalty):
 
     def add_or_replace_to_penalty_pool(self, ocp, nlp):
         super(PhaseTransition, self).add_or_replace_to_penalty_pool(ocp, nlp)
-        if isinstance(self.weight, NotApplicable):
+        if isinstance(self.weight, ConstraintWeight):
             self: MultinodeConstraint
             MultinodeConstraint.set_bounds(self)
 
     def _get_pool_to_add_penalty(self, ocp, nlp):
-        if isinstance(self.weight, NotApplicable):
+        if isinstance(self.weight, ConstraintWeight):
             # No weight means it is a constraint
             return nlp.g_internal if nlp else ocp.g_internal
         else:

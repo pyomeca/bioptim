@@ -49,7 +49,7 @@ class Weight(ndarray):
 
     def __new__(
         cls,
-        input_array: NpArray | Callable = None,
+        value: NpArray | Callable = 1,
         t: FloatListOptional = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT,
         **extra_params,
@@ -59,7 +59,7 @@ class Weight(ndarray):
 
         Parameters
         ----------
-        input_array: np.ndarray | Callable
+        value: np.ndarray | Callable
             An array of values to use in the interpolation of the weight.
         t: list[float]
             The time stamps
@@ -68,45 +68,40 @@ class Weight(ndarray):
         extra_params: dict
             Any parameters to pass to the path condition
         """
-        if input_array is None:
-            raise RuntimeError(
-                "The value of a Weight must be declared because we cannot know by default if it is a constraint (NotApplicable) or an objective (1)."
-            )
-
         # Check and reinterpret input
         custom_function = None
         if interpolation == InterpolationType.CUSTOM:
-            if not callable(input_array):
+            if not callable(value):
                 raise TypeError("The input when using InterpolationType.CUSTOM should be a callable function")
-            custom_function = input_array
-            input_array = np.array(())
-        if not isinstance(input_array, CX):
-            input_array = np.asarray(input_array, dtype=float)
+            custom_function = value
+            value = np.array(())
+        if not isinstance(value, CX):
+            value = np.asarray(value, dtype=float)
 
-        if len(input_array.shape) == 0:
-            input_array = input_array[np.newaxis]
+        if len(value.shape) == 0:
+            value = value[np.newaxis]
 
         if interpolation == InterpolationType.CONSTANT:
-            if input_array.shape[0] != 1:
+            if value.shape[0] != 1:
                 raise RuntimeError(
                     f"Invalid number of column for InterpolationType.CONSTANT "
-                    f"(ncols = {input_array.shape[0]}), the expected number of column is 1"
+                    f"(ncols = {value.shape[0]}), the expected number of column is 1"
                 )
 
         elif interpolation == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
-            if input_array.shape[0] != 1 and input_array.shape[0] != 3:
+            if value.shape[0] != 1 and value.shape[0] != 3:
                 raise RuntimeError(
                     f"Invalid number of column for InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT "
-                    f"(ncols = {input_array.shape[0]}), the expected number of column is 1 or 3"
+                    f"(ncols = {value.shape[0]}), the expected number of column is 1 or 3"
                 )
-            if input_array.shape[0] == 1:
-                input_array = np.repeat(input_array, 3, axis=1)
+            if value.shape[0] == 1:
+                value = np.repeat(value, 3, axis=1)
 
         elif interpolation == InterpolationType.LINEAR:
-            if input_array.shape[0] != 2:
+            if value.shape[0] != 2:
                 raise RuntimeError(
                     f"Invalid number of column for InterpolationType.LINEAR "
-                    f"(ncols = {input_array.shape[0]}), the expected number of column is 2"
+                    f"(ncols = {value.shape[0]}), the expected number of column is 2"
                 )
 
         elif interpolation == InterpolationType.EACH_FRAME:
@@ -120,12 +115,12 @@ class Weight(ndarray):
             )
 
         elif interpolation == InterpolationType.SPLINE:
-            if input_array.shape[0] < 2:
+            if value.shape[0] < 2:
                 raise RuntimeError("Value for InterpolationType.SPLINE must have at least 2 columns")
             if t is None:
                 raise RuntimeError("Spline necessitate a time vector")
             t = np.asarray(t)
-            if input_array.shape[0] != t.shape[0]:
+            if value.shape[0] != t.shape[0]:
                 raise RuntimeError("Spline necessitate a time vector which as the same length as column of data")
 
         elif interpolation == InterpolationType.CUSTOM:
@@ -133,10 +128,10 @@ class Weight(ndarray):
             pass
         else:
             raise RuntimeError(f"InterpolationType is not implemented yet")
-        if not isinstance(input_array, CX):
-            obj = np.asarray(input_array).view(cls)
+        if not isinstance(value, CX):
+            obj = np.asarray(value).view(cls)
         else:
-            obj = input_array
+            obj = value
 
         # Additional information (do not forget to update __reduce__ and __setstate__)
         obj.n_nodes = None  # This will be set in check_and_adjust_dimensions
@@ -284,14 +279,39 @@ class Weight(ndarray):
         return repeated_value
 
 
-class NotApplicable:
+class ObjectiveWeight(Weight):
     """
-    A class to represent a Not Applicable weight.
-    This is used for the weight on constraints, which could be implemented eventually.
+    A class to represent an objective weight.
     """
+    def __new__(
+            cls,
+            value: NpArray | Callable = None,
+            t: FloatListOptional = None,
+            interpolation: InterpolationType = InterpolationType.CONSTANT,
+            **extra_params) -> "ObjectiveWeight":
+        value = value if value is not None else 1
+        obj = super().__new__(cls, value, t, interpolation, **extra_params)
+        return obj
+
+class ConstraintWeight(Weight):
+    """
+    A class to represent a constraint weight.
+    """
+    def __new__(
+            cls,
+            value: NpArray | Callable = None,
+            t: FloatListOptional = None,
+            interpolation: InterpolationType = InterpolationType.CONSTANT,
+            **extra_params) -> "ConstraintWeight":
+
+        # TODO: implement here
+        if value is not None:
+            raise NotImplementedError("ConstraintWeight should not be initialized here.")
+        obj = super().__new__(cls, value, t, interpolation, **extra_params)
+        return obj
 
     def __repr__(self):
-        return "Not Applicable"
+        return "Constraint weight"
 
     def check_and_adjust_dimensions(self, n_nodes: Int, element_name: Str):
         return

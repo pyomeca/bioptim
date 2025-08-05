@@ -3,7 +3,7 @@ from typing import Any
 import numpy as np
 
 from .path_conditions import Bounds
-from .weight import Weight, NotApplicable
+from .weight import ObjectiveWeight, ConstraintWeight
 from ..misc.enums import InterpolationType, PenaltyType, ConstraintType
 from ..misc.fcn_enum import FcnEnum
 from .multinode_penalty import MultinodePenalty, MultinodePenaltyList, MultinodePenaltyFunctions
@@ -11,18 +11,36 @@ from .multinode_penalty import MultinodePenalty, MultinodePenaltyList, Multinode
 from ..misc.parameters_types import (
     Bool,
     Float,
+    Int,
+    IntTuple,
+    IntorNodeIterable,
 )
 
 
 class MultinodeConstraint(MultinodePenalty):
-    def __init__(self, *args, min_bound: Float = 0, max_bound: Float = 0, is_stochastic: Bool = False, **kwargs):
-        if "weight" in kwargs and not isinstance(kwargs["weight"], NotApplicable):
-            raise ValueError(
-                "MultinodeConstraints can't declare weight, use MultinodeObjective instead. If you were defining a "
-                "custom function that uses 'weight' as parameter, please use another keyword."
-            )
+    def __init__(
+            self,
+            _multinode_penalty_fcn: Any,
+            nodes: IntorNodeIterable,
+            nodes_phase: IntTuple,
+            weight: Int | Float | ConstraintWeight,
+            min_bound: Float = 0,
+            max_bound: Float = 0,
+            is_stochastic: Bool = False,
+            **kwargs):
 
-        super(MultinodeConstraint, self).__init__(MultinodeConstraintFcn, *args, **kwargs)
+        if not isinstance(weight, ConstraintWeight):
+            if isinstance(weight, (int, float)):
+                weight = ConstraintWeight(weight)
+            else:
+                raise ValueError(f"The weight must be a ConstraintWeight, int or float, not {type(weight)}")
+
+        super(MultinodeConstraint, self).__init__(MultinodeConstraintFcn,
+                                                  _multinode_penalty_fcn,
+                                                  nodes,
+                                                  nodes_phase,
+                                                  weight,
+                                                  **kwargs)
 
         self.min_bound = min_bound
         self.max_bound = max_bound
@@ -81,7 +99,7 @@ class MultinodeConstraintList(MultinodePenaltyList):
         Configure all the multinode penalties and put them in a list
     """
 
-    def add(self, multinode_constraint: Any, weight: Weight | NotApplicable = NotApplicable(), **extra_arguments: Any):
+    def add(self, multinode_constraint: Any, weight: Int | Float | ConstraintWeight = ConstraintWeight(), **extra_arguments: Any):
         """
         Add a new MultinodePenalty to the list
 
@@ -92,6 +110,12 @@ class MultinodeConstraintList(MultinodePenaltyList):
         extra_arguments: dict
             Any parameters to pass to Constraint
         """
+
+        if not isinstance(weight, ConstraintWeight):
+            if isinstance(weight, (int, float)):
+                weight = ConstraintWeight(weight)
+            else:
+                raise ValueError(f"The weight must be a ConstraintWeight, int or float, not {type(weight)}")
 
         super(MultinodeConstraintList, self).add(
             option_type=MultinodeConstraint,

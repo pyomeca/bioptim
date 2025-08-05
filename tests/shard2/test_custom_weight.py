@@ -14,7 +14,7 @@ from bioptim import (
     SolutionMerge,
     InterpolationType,
     Node,
-    Weight,
+    ObjectiveWeight,
 )
 import numpy as np
 import numpy.testing as npt
@@ -75,26 +75,26 @@ def prepare_ocp(
     else:
         n_nodes = len(node)
 
-    # Weight
+    # ObjectiveWeight
     if interpolation_type == InterpolationType.CONSTANT:
         weight = [1]
-        weight = Weight(weight, interpolation=InterpolationType.CONSTANT)
+        weight = ObjectiveWeight(weight, interpolation=InterpolationType.CONSTANT)
     elif interpolation_type == InterpolationType.LINEAR:
         weight = [0, 1]
-        weight = Weight(weight, interpolation=InterpolationType.LINEAR)
+        weight = ObjectiveWeight(weight, interpolation=InterpolationType.LINEAR)
     elif interpolation_type == InterpolationType.EACH_FRAME:
         # It emulates a Linear interpolation
         weight = np.linspace(0, 1, n_nodes)
-        weight = Weight(weight, interpolation=InterpolationType.EACH_FRAME)
+        weight = ObjectiveWeight(weight, interpolation=InterpolationType.EACH_FRAME)
     elif interpolation_type == InterpolationType.SPLINE:
         spline_time = np.hstack((0, np.sort(np.random.random((3,)) * final_time), final_time))
         spline_points = np.random.random((5,)) * (-10) - 5
-        weight = Weight(spline_points, interpolation=InterpolationType.SPLINE, t=spline_time)
+        weight = ObjectiveWeight(spline_points, interpolation=InterpolationType.SPLINE, t=spline_time)
     elif interpolation_type == InterpolationType.CUSTOM:
         # The custom functions refer to the one at the beginning of the file.
         # For this particular instance, it emulates a Linear interpolation
         extra_params = {"n_nodes": n_nodes}
-        weight = Weight(ocp_module.custom_weight, interpolation=InterpolationType.CUSTOM, **extra_params)
+        weight = ObjectiveWeight(ocp_module.custom_weight, interpolation=InterpolationType.CUSTOM, **extra_params)
     else:
         raise NotImplementedError("Not implemented yet")
 
@@ -249,12 +249,10 @@ def test_pendulum(control_type, interpolation_type, node, objective, phase_dynam
                     npt.assert_almost_equal(j_printed, np.sum(value**2))
                 elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
                     value = tau[:, 1:-2]
-                    # TODO: @pariterre -> do we expect -2 ?
                     npt.assert_almost_equal(f[0, 0], np.sum(value**2))
                     npt.assert_almost_equal(j_printed, np.sum(value**2))
                 else:
                     value = tau[:, 1:-4:2]
-                    # TODO: @pariterre -> do we expect -4 ?
                     npt.assert_almost_equal(f[0, 0], np.sum(value**2))
                     npt.assert_almost_equal(j_printed, np.sum(value**2))
             # else raise error above
@@ -494,21 +492,19 @@ def test_pendulum_integration_rule(control_type, interpolation_type, integration
     f = np.array(sol.cost)
     npt.assert_equal(f.shape, (1, 1))
     if interpolation_type == InterpolationType.CONSTANT:
-        value = tau**2
         if control_type == ControlType.CONSTANT or control_type == ControlType.CONSTANT_WITH_LAST_NODE:
-            npt.assert_almost_equal(f[0, 0], np.sum(value * dt))
-            npt.assert_almost_equal(j_printed, np.sum(value * dt))
+            npt.assert_almost_equal(f[0, 0], np.sum(tau**2 * dt))
+            npt.assert_almost_equal(j_printed, np.sum(tau**2 * dt))
         else:
             if integration_rule == QuadratureRule.TRAPEZOIDAL:
-                # TODO: @ipuch -> is it normal that there is a large difference ? (34 vs 68)
-                # out = np.sum((value[0, 1:] + value[0, :-1]) / 2 * dt)
-                npt.assert_almost_equal(f[0, 0], 34.52084504124008)
-                npt.assert_almost_equal(j_printed, 34.52084504124008)
+                out = 0
+                for i in range(round((tau[0, :].shape[0] - 1) / 2)):
+                    out += (tau[0, i * 2] ** 2 + tau[0, i * 2 + 1] ** 2) / 2 * dt
+                npt.assert_almost_equal(f[0, 0], out)
+                npt.assert_almost_equal(j_printed, out)
             elif integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
-                # TODO: @ipuch -> is it normal that there is a large difference ? (52 vs 331)
-                # out = np.sum((value[0, 1:] + value[0, :-1]) / 2 * dt)
-                npt.assert_almost_equal(f[0, 0], 52.02092181662168)
-                npt.assert_almost_equal(j_printed, 52.02092181662168)
+                npt.assert_almost_equal(f[0, 0], np.sum(tau[0, 0:-1:2]**2 * dt))
+                npt.assert_almost_equal(j_printed, np.sum(tau[0, 0:-1:2]**2 * dt))
     elif (
         interpolation_type == InterpolationType.LINEAR
         or interpolation_type == InterpolationType.CUSTOM
@@ -527,15 +523,14 @@ def test_pendulum_integration_rule(control_type, interpolation_type, integration
             npt.assert_almost_equal(f[0, 0], np.sum(value * dt))
             npt.assert_almost_equal(j_printed, np.sum(value * dt))
         else:
-            value = np.zeros((ntau, n_shooting))
-            for i in range(ntau):
-                value[i, :] = tau[i, 0:-2:2] ** 2 * np.linspace(0, 1, n_shooting)
             if integration_rule == QuadratureRule.TRAPEZOIDAL:
-                # out = np.sum((value[0, 1:] + value[0, :-1]) / 2 * dt)
-                npt.assert_almost_equal(f[0, 0], 13.252698925930796)
-                npt.assert_almost_equal(j_printed, 13.252698925930796)
+                out = 0
+                weight = np.linspace(0, 1, n_shooting)
+                for i in range(round((tau[0, :].shape[0] - 1) / 2)):
+                    out += (tau[0, i * 2] ** 2 + tau[0, i * 2 + 1] ** 2) / 2 * dt * weight[i]
+                npt.assert_almost_equal(f[0, 0], out)
+                npt.assert_almost_equal(j_printed, out)
             elif integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
-                # out = np.sum((value[0, 1:] + value[0, :-1]) / 2 * dt)
                 npt.assert_almost_equal(f[0, 0], 9.55437614886297)
                 npt.assert_almost_equal(j_printed, 9.55437614886297)
     elif interpolation_type == InterpolationType.SPLINE:
@@ -557,32 +552,32 @@ def test_bad_weights():
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     with pytest.raises(ValueError, match="The interpolation type ALL_POINTS is not allowed for Weight since the objective is evaluated only at the node and not at the collocation points. Use EACH_FRAME instead."):
-        Weight([0, 1], interpolation=InterpolationType.ALL_POINTS)
+        ObjectiveWeight([0, 1], interpolation=InterpolationType.ALL_POINTS)
 
     with pytest.raises(RuntimeError, match=r"Invalid number of column for InterpolationType.CONSTANT \(ncols = 2\), the expected number of column is 1"):
-        Weight([0, 1], interpolation=InterpolationType.CONSTANT)
+        ObjectiveWeight([0, 1], interpolation=InterpolationType.CONSTANT)
 
     with pytest.raises(RuntimeError, match=r"Invalid number of column for InterpolationType.LINEAR \(ncols = 3\), the expected number of column is 2"):
-        Weight([0, 1, 2], interpolation=InterpolationType.LINEAR)
+        ObjectiveWeight([0, 1, 2], interpolation=InterpolationType.LINEAR)
 
     with pytest.raises(RuntimeError,
                        match=r"Value for InterpolationType.SPLINE must have at least 2 columns"):
-        Weight([0], interpolation=InterpolationType.SPLINE)
+        ObjectiveWeight([0], interpolation=InterpolationType.SPLINE)
 
     with pytest.raises(RuntimeError,
                        match=r"Spline necessitate a time vector"):
-        Weight([0, 1, 2, 3, 4, 5], interpolation=InterpolationType.SPLINE)
+        ObjectiveWeight([0, 1, 2, 3, 4, 5], interpolation=InterpolationType.SPLINE)
 
     with pytest.raises(RuntimeError,
                        match=r"Spline necessitate a time vector which as the same length as column of data"):
-        Weight([0, 1, 2, 3, 4], interpolation=InterpolationType.SPLINE, t=[0, 1, 2, 3, 4, 5])
+        ObjectiveWeight([0, 1, 2, 3, 4], interpolation=InterpolationType.SPLINE, t=[0, 1, 2, 3, 4, 5])
 
     with pytest.raises(RuntimeError,
                        match=r"InterpolationType is not implemented yet"):
-        Weight([0, 1, 2, 3, 4], interpolation="bad_type")
+        ObjectiveWeight([0, 1, 2, 3, 4], interpolation="bad_type")
 
     # Finally set a weight
-    weight = Weight([0, 1, 2, 3, 4], interpolation=InterpolationType.EACH_FRAME)
+    weight = ObjectiveWeight([0, 1, 2, 3, 4], interpolation=InterpolationType.EACH_FRAME)
 
     with pytest.raises(RuntimeError,
                        match=r"check_and_adjust_dimensions must be called at least once before evaluating at"):
