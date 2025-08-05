@@ -1974,34 +1974,22 @@ def test_memory_and_execution_time():
             735225,
         ],
         "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.COLLOCATION'>-False-1-PhaseDynamics.SHARED_DURING_THE_PHASE": [
-            10.969594955444336,
-            4.5225489139556885,
-            646988,
+            8.078601360321045, 8.792459964752197, 689994
         ],
         "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.COLLOCATION'>-False-1-PhaseDynamics.ONE_PER_NODE": [
-            23.84077286720276,
-            4.538561105728149,
-            1210450,
+            17.752251625061035, 8.70758056640625, 1275880
         ],
         "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.COLLOCATION'>-False-2-PhaseDynamics.SHARED_DURING_THE_PHASE": [
-            10.9096360206604,
-            4.760142803192139,
-            752733,
+            8.119649887084961, 6.599950790405273, 796572
         ],
         "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.COLLOCATION'>-True-1-PhaseDynamics.SHARED_DURING_THE_PHASE": [
-            6.926822900772095,
-            2.414496898651123,
-            727860,
+            5.980520248413086, 4.108591079711914, 763235
         ],
         "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.COLLOCATION'>-True-1-PhaseDynamics.ONE_PER_NODE": [
-            12.805675983428955,
-            2.5234029293060303,
-            1196527,
+            12.725889682769775, 3.9272022247314453, 1263727
         ],
         "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.COLLOCATION'>-True-2-PhaseDynamics.SHARED_DURING_THE_PHASE": [
-            6.878154993057251,
-            2.5607388019561768,
-            720381,
+            6.875128746032715, 4.187591075897217, 783077
         ],
         "pendulum-<class 'bioptim.dynamics.ode_solvers.OdeSolver.TRAPEZOIDAL'>-False-1-PhaseDynamics.SHARED_DURING_THE_PHASE": [
             10.018677949905396,
@@ -2054,88 +2042,88 @@ def test_memory_and_execution_time():
             1218876,
         ],
         "initial_guesses-COLLOCATION legendre 4-InterpolationType.CONSTANT-True-PhaseDynamics.SHARED_DURING_THE_PHASE": [
-            0.21778297424316406, 0.07433199882507324, 417561
+            2.1778297424316406, 0.7433199882507324, 417561
         ],
         "initial_guesses-COLLOCATION legendre 4-InterpolationType.CONSTANT-True-PhaseDynamics.ONE_PER_NODE": [
-            0.4239842891693115, 0.08284783363342285, 441187
+            4.239842891693115, 0.8284783363342285, 441187
         ],
         "initial_guesses-COLLOCATION legendre 4-InterpolationType.CONSTANT-False-PhaseDynamics.SHARED_DURING_THE_PHASE": [
-            0.2624359130859375, 0.09851813316345215, 405859
+            2.624359130859375, 0.9851813316345215, 405859
         ],
         "initial_guesses-COLLOCATION legendre 4-InterpolationType.CONSTANT-False-PhaseDynamics.ONE_PER_NODE": [
-            0.4457371234893799, 0.08162188529968262, 440896
+            4.457371234893799, 0.8162188529968262, 440896
         ],
         "initial_guesses-COLLOCATION legendre 4-InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT-True-PhaseDynamics.SHARED_DURING_THE_PHASE": [
-            0.2380051612854004, 0.07899308204650879, 404238
+            2.380051612854004, 0.7899308204650879, 404238
         ],
         "initial_guesses-COLLOCATION legendre 4-InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT-True-PhaseDynamics.ONE_PER_NODE": [
-            0.4717679023742676, 0.09147405624389648, 435233
+            4.717679023742676, 0.9147405624389648, 435233
         ],
         "initial_guesses-COLLOCATION legendre 4-InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT-False-PhaseDynamics.SHARED_DURING_THE_PHASE": [
-            0.23846101760864258, 0.09232211112976074, 411426
+            2.3846101760864258, 0.9232211112976074, 411426
         ],
         "initial_guesses-COLLOCATION legendre 4-InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT-False-PhaseDynamics.ONE_PER_NODE": [
-            0.4601020812988281, 0.08674907684326172, 444399
+            4.601020812988281, 0.8674907684326172, 444399
         ],
         "initial_guesses-COLLOCATION legendre 4-InterpolationType.LINEAR-True-PhaseDynamics.SHARED_DURING_THE_PHASE": [
-            0.2927689552307129, 0.11065387725830078, 401641
+            2.927689552307129, 1.1065387725830078, 401641
         ],
         "initial_guesses-COLLOCATION legendre 4-InterpolationType.LINEAR-True-PhaseDynamics.ONE_PER_NODE": [
-            0.5082271099090576, 0.09821200370788574, 440636
+            5.082271099090576, 0.9821200370788574, 440636
         ],
         "initial_guesses-COLLOCATION legendre 4-InterpolationType.LINEAR-False-PhaseDynamics.SHARED_DURING_THE_PHASE": [
-            0.30338597297668457, 0.09261083602905273, 403861
+            3.0338597297668457, 0.9261083602905273, 403861
         ],
         "initial_guesses-COLLOCATION legendre 4-InterpolationType.LINEAR-False-PhaseDynamics.ONE_PER_NODE": [
-            0.48421716690063477, 0.08306384086608887, 440277
+            4.8421716690063477, 0.8306384086608887, 440277
         ],
         "initial_guesses-COLLOCATION legendre 4-InterpolationType.EACH_FRAME-True-PhaseDynamics.SHARED_DURING_THE_PHASE": [
-            0.2626190185546875, 0.09510993957519531, 400041
+            2.626190185546875, 0.9510993957519531, 400041
         ],
         "initial_guesses-COLLOCATION legendre 4-InterpolationType.EACH_FRAME-True-PhaseDynamics.ONE_PER_NODE": [
-            0.46212244033813477, 0.08069467544555664, 435017
+            4.6212244033813477, 0.8069467544555664, 435017
         ],
         "initial_guesses-COLLOCATION legendre 4-InterpolationType.EACH_FRAME-False-PhaseDynamics.SHARED_DURING_THE_PHASE": [
-            0.270949125289917, 0.08343720436096191, 408325
+            2.70949125289917, 0.8343720436096191, 408325
         ],
         "initial_guesses-COLLOCATION legendre 4-InterpolationType.EACH_FRAME-False-PhaseDynamics.ONE_PER_NODE": [
-            0.49596595764160156, 0.08695292472839355, 436745
+            4.9596595764160156, 0.8695292472839355, 436745
         ],
         "initial_guesses-COLLOCATION legendre 4-InterpolationType.ALL_POINTS-True-PhaseDynamics.SHARED_DURING_THE_PHASE": [
-            0.26180410385131836, 0.10502195358276367, 410309
+            2.6180410385131836, 1.0502195358276367, 410309
         ],
         "initial_guesses-COLLOCATION legendre 4-InterpolationType.ALL_POINTS-True-PhaseDynamics.ONE_PER_NODE": [
-            0.5576479434967041, 0.21515202522277832, 444541
+            5.576479434967041, 2.1515202522277832, 444541
         ],
         "initial_guesses-COLLOCATION legendre 4-InterpolationType.ALL_POINTS-False-PhaseDynamics.SHARED_DURING_THE_PHASE": [
-            0.31530189514160156, 0.1218109130859375, 403795
+            3.1530189514160156, 1.218109130859375, 403795
         ],
         "initial_guesses-COLLOCATION legendre 4-InterpolationType.ALL_POINTS-False-PhaseDynamics.ONE_PER_NODE": [
-            0.4999852180480957, 0.09397292137145996, 442997
+            4.999852180480957, 0.9397292137145996, 442997
         ],
         "initial_guesses-COLLOCATION legendre 4-InterpolationType.SPLINE-True-PhaseDynamics.SHARED_DURING_THE_PHASE": [
-            0.25156712532043457, 0.08472609519958496, 440063
+            2.5156712532043457, 0.8472609519958496, 440063
         ],
         "initial_guesses-COLLOCATION legendre 4-InterpolationType.SPLINE-True-PhaseDynamics.ONE_PER_NODE": [
-            0.489361047744751, 0.08550405502319336, 437511
+            4.89361047744751, 0.8550405502319336, 437511
         ],
         "initial_guesses-COLLOCATION legendre 4-InterpolationType.SPLINE-False-PhaseDynamics.SHARED_DURING_THE_PHASE": [
-            0.26365089416503906, 0.10550594329833984, 402261
+            2.6365089416503906, 1.0550594329833984, 402261
         ],
         "initial_guesses-COLLOCATION legendre 4-InterpolationType.SPLINE-False-PhaseDynamics.ONE_PER_NODE": [
-            0.4780232906341553, 0.0906989574432373, 439410
+            4.780232906341553, 0.906989574432373, 439410
         ],
         "initial_guesses-COLLOCATION legendre 4-InterpolationType.CUSTOM-True-PhaseDynamics.SHARED_DURING_THE_PHASE": [
-            0.25539207458496094, 0.09598684310913086, 438701
+            2.5539207458496094, 0.9598684310913086, 438701
         ],
         "initial_guesses-COLLOCATION legendre 4-InterpolationType.CUSTOM-True-PhaseDynamics.ONE_PER_NODE": [
-            0.4376351833343506, 0.0864567756652832, 438701
+            4.376351833343506, 0.864567756652832, 438701
         ],
         "initial_guesses-COLLOCATION legendre 4-InterpolationType.CUSTOM-False-PhaseDynamics.SHARED_DURING_THE_PHASE": [
-            0.26754093170166016, 0.10262036323547363, 4248252,
+            2.6754093170166016, 1.0262036323547363, 4248252,
         ],
         "initial_guesses-COLLOCATION legendre 4-InterpolationType.CUSTOM-False-PhaseDynamics.ONE_PER_NODE": [
-            0.4361300468444824, 0.08208799362182617, 440940
+            4.361300468444824, 0.8208799362182617, 440940
         ],
         "cyclic_objective-RK4 5 steps-PhaseDynamics.SHARED_DURING_THE_PHASE": [
             4.349828243255615,
@@ -2485,7 +2473,7 @@ def test_memory_and_execution_time():
 
     # # If the changes you have made in the code are expected to change the values, you can run the following to update them.
     # for key in ref.keys():
-    #     print(f"{key} : {test_memory[key]}")
+    #     print(f"{key} : [{test_memory[key][0]*10}, {test_memory[key][1]*10}, {test_memory[key][2]}]")
 
     for key in ref.keys():
         npt.assert_array_less(test_memory[key][0], ref[key][0] * 3)
