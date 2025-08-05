@@ -13,13 +13,7 @@ from ..misc.mapping import BiMapping
 from ..misc.options import UniquePerPhaseOptionList
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
 
-from ..misc.parameters_types import (
-    Str,
-    IntTuple,
-    IntorNodeIterable,
-    Int,
-    Float
-)
+from ..misc.parameters_types import Str, IntTuple, IntorNodeIterable, Int, Float
 
 
 class MultinodePenalty(PenaltyOption):

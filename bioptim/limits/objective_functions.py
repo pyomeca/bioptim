@@ -191,10 +191,12 @@ class ObjectiveList(OptionList):
         Print the ObjectiveList to the console
     """
 
-    def add(self,
-            objective: Callable | Objective | Any,
-            weight: Int | Float | ObjectiveWeight = ObjectiveWeight(),
-            **extra_arguments: Any):
+    def add(
+        self,
+        objective: Callable | Objective | Any,
+        weight: Int | Float | ObjectiveWeight = ObjectiveWeight(),
+        **extra_arguments: Any,
+    ):
         """
         Add a new objective function to the list
 
@@ -216,7 +218,9 @@ class ObjectiveList(OptionList):
                 else:
                     raise ValueError(f"The weight must be a ObjectiveWeight, int or float, not {type(weight)}")
 
-            super(ObjectiveList, self)._add(option_type=Objective, objective=objective, weight=weight, **extra_arguments)
+            super(ObjectiveList, self)._add(
+                option_type=Objective, objective=objective, weight=weight, **extra_arguments
+            )
 
     def print(self):
         raise NotImplementedError("Printing of ObjectiveList is not ready yet")

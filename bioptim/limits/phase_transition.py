@@ -51,7 +51,9 @@ class PhaseTransition(MultinodePenalty):
         self,
         phase_pre_idx: IntOptional = None,
         transition: Any | Callable = None,
-        weight: ObjectiveWeight | ConstraintWeight | Float | Int = ConstraintWeight(),  # By default phase transition is a constraint
+        weight: (
+            ObjectiveWeight | ConstraintWeight | Float | Int
+        ) = ConstraintWeight(),  # By default phase transition is a constraint
         custom_function: Callable = None,
         min_bound: Float = 0,
         max_bound: Float = 0,

@@ -19,15 +19,16 @@ from ..misc.parameters_types import (
 
 class MultinodeConstraint(MultinodePenalty):
     def __init__(
-            self,
-            _multinode_penalty_fcn: Any,
-            nodes: IntorNodeIterable,
-            nodes_phase: IntTuple,
-            weight: Int | Float | ConstraintWeight,
-            min_bound: Float = 0,
-            max_bound: Float = 0,
-            is_stochastic: Bool = False,
-            **kwargs):
+        self,
+        _multinode_penalty_fcn: Any,
+        nodes: IntorNodeIterable,
+        nodes_phase: IntTuple,
+        weight: Int | Float | ConstraintWeight,
+        min_bound: Float = 0,
+        max_bound: Float = 0,
+        is_stochastic: Bool = False,
+        **kwargs,
+    ):
 
         if not isinstance(weight, ConstraintWeight):
             if isinstance(weight, (int, float)):
@@ -35,12 +36,9 @@ class MultinodeConstraint(MultinodePenalty):
             else:
                 raise ValueError(f"The weight must be a ConstraintWeight, int or float, not {type(weight)}")
 
-        super(MultinodeConstraint, self).__init__(MultinodeConstraintFcn,
-                                                  _multinode_penalty_fcn,
-                                                  nodes,
-                                                  nodes_phase,
-                                                  weight,
-                                                  **kwargs)
+        super(MultinodeConstraint, self).__init__(
+            MultinodeConstraintFcn, _multinode_penalty_fcn, nodes, nodes_phase, weight, **kwargs
+        )
 
         self.min_bound = min_bound
         self.max_bound = max_bound
@@ -99,7 +97,12 @@ class MultinodeConstraintList(MultinodePenaltyList):
         Configure all the multinode penalties and put them in a list
     """
 
-    def add(self, multinode_constraint: Any, weight: Int | Float | ConstraintWeight = ConstraintWeight(), **extra_arguments: Any):
+    def add(
+        self,
+        multinode_constraint: Any,
+        weight: Int | Float | ConstraintWeight = ConstraintWeight(),
+        **extra_arguments: Any,
+    ):
         """
         Add a new MultinodePenalty to the list
 

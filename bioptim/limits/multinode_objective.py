@@ -33,12 +33,9 @@ class MultinodeObjective(MultinodePenalty):
             else:
                 raise ValueError(f"The weight must be a ObjectiveWeight, int or float, not {type(weight)}")
 
-        super(MultinodeObjective, self).__init__(MultinodeObjectiveFcn,
-                                                 _multinode_penalty_fcn,
-                                                 nodes,
-                                                 nodes_phase,
-                                                 weight,
-                                                 **kwargs)
+        super(MultinodeObjective, self).__init__(
+            MultinodeObjectiveFcn, _multinode_penalty_fcn, nodes, nodes_phase, weight, **kwargs
+        )
 
         self.quadratic = kwargs["quadratic"] if "quadratic" in kwargs else True
         self.base = ObjectiveFunction.MayerFunction
@@ -65,7 +62,12 @@ class MultinodeObjectiveList(MultinodePenaltyList):
         Add a new MultinodeObjective to the list
     """
 
-    def add(self, multinode_objective: Any, weight: Int | Float | ObjectiveWeight = ObjectiveWeight(), **extra_arguments: Any):
+    def add(
+        self,
+        multinode_objective: Any,
+        weight: Int | Float | ObjectiveWeight = ObjectiveWeight(),
+        **extra_arguments: Any,
+    ):
         """
         Add a new MultinodePenalty to the list
 

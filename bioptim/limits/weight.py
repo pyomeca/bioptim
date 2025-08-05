@@ -283,26 +283,31 @@ class ObjectiveWeight(Weight):
     """
     A class to represent an objective weight.
     """
+
     def __new__(
-            cls,
-            value: NpArray | Callable = None,
-            t: FloatListOptional = None,
-            interpolation: InterpolationType = InterpolationType.CONSTANT,
-            **extra_params) -> "ObjectiveWeight":
+        cls,
+        value: NpArray | Callable = None,
+        t: FloatListOptional = None,
+        interpolation: InterpolationType = InterpolationType.CONSTANT,
+        **extra_params,
+    ) -> "ObjectiveWeight":
         value = value if value is not None else 1
         obj = super().__new__(cls, value, t, interpolation, **extra_params)
         return obj
+
 
 class ConstraintWeight(Weight):
     """
     A class to represent a constraint weight.
     """
+
     def __new__(
-            cls,
-            value: NpArray | Callable = None,
-            t: FloatListOptional = None,
-            interpolation: InterpolationType = InterpolationType.CONSTANT,
-            **extra_params) -> "ConstraintWeight":
+        cls,
+        value: NpArray | Callable = None,
+        t: FloatListOptional = None,
+        interpolation: InterpolationType = InterpolationType.CONSTANT,
+        **extra_params,
+    ) -> "ConstraintWeight":
 
         # TODO: implement here
         if value is not None:

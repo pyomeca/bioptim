@@ -179,10 +179,12 @@ class ConstraintList(OptionList):
         Print the ConstraintList to the console
     """
 
-    def add(self,
-            constraint: Callable | Constraint | Any,
-            weight: Int | Float | ConstraintWeight = ConstraintWeight(),
-            **extra_arguments: Any):
+    def add(
+        self,
+        constraint: Callable | Constraint | Any,
+        weight: Int | Float | ConstraintWeight = ConstraintWeight(),
+        **extra_arguments: Any,
+    ):
         """
         Add a new constraint to the list
 
@@ -206,7 +208,9 @@ class ConstraintList(OptionList):
                 else:
                     raise ValueError(f"The weight must be a ConstraintWeight, int or float, not {type(weight)}")
 
-            super(ConstraintList, self)._add(option_type=Constraint, constraint=constraint, weight=weight, **extra_arguments)
+            super(ConstraintList, self)._add(
+                option_type=Constraint, constraint=constraint, weight=weight, **extra_arguments
+            )
             # TODO: add an InternalConstraint option type? Because now the list_index is wrong
 
     def print(self):
