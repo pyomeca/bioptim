@@ -25,11 +25,12 @@ from bioptim import (
     TimeAlignment,
 )
 
-from model import CustomMuscleModelNoContacts, animate_solution
+from model import WithResidualExternalForces, animate_solution
 
 
 def prepare_ocp(
     biorbd_model_path: str,
+    mesh_file_folder: str,
     n_shooting: int,
     phase_time: float,
     q_exp: np.ndarray[float],
@@ -91,7 +92,9 @@ def prepare_ocp(
     numerical_time_series = {"external_forces": external_force_set.to_numerical_time_series()}
 
     # Model
-    bio_model = CustomMuscleModelNoContacts(biorbd_model_path, external_force_set=external_force_set)
+    bio_model = WithResidualExternalForces(biorbd_model_path,
+                                            mesh_file_folder=mesh_file_folder,
+                                            external_force_set=external_force_set)
 
     nb_q = bio_model.nb_q
     nb_muscles = bio_model.nb_muscles
@@ -253,9 +256,11 @@ def main():
         markers_exp = data["markers_exp"]
 
     # --- Prepare the ocp --- #
-    biorbd_model_path = "wholebody_model.bioMod"
+    biorbd_model_path = "../../models/wholebody_model.bioMod"
+    mesh_file_folder = "../../../external/biomechanics_models/Geometry_triangles"
     ocp = prepare_ocp(
         biorbd_model_path,
+        mesh_file_folder,
         n_shooting,
         phase_time,
         q_exp,

@@ -8,17 +8,19 @@ from bioptim import (
     DynamicsFunctions,
     DynamicsEvaluation,
     ConfigureVariables,
+    ExternalForceSetTimeSeries,
 )
 
 
-class CustomMuscleModelNoContacts(MusclesBiorbdModel):
-    def __init__(self, biorbd_model_path, external_force_set=None):
+class WithResidualExternalForces(MusclesBiorbdModel):
+    def __init__(self, biorbd_model_path: str, mesh_file_folder: str, external_force_set: ExternalForceSetTimeSeries=None, with_residual_torque=True):
         """
         Custom muscle-driven model to handle the residual external forces.
         """
         super().__init__(
-            biorbd_model_path, external_force_set=external_force_set, with_residual_torque=True
+            biorbd_model_path, external_force_set=external_force_set, with_residual_torque=with_residual_torque
         )
+        # TODO: add mesh_file_folder to all BiorbdModel ?
         self.control_configuration += [
             lambda ocp, nlp, as_states, as_controls,
                    as_algebraic_states: ConfigureVariables.configure_translational_forces(
