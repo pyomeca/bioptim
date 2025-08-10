@@ -182,7 +182,9 @@ class Solution:
             self.phases_dt = OptimizationVectorHelper.extract_phase_dt(ocp, vector)
             self._stepwise_times = OptimizationVectorHelper.extract_step_times(ocp, vector)
 
-            x, u, p, a = OptimizationVectorHelper.to_dictionaries(ocp, vector)
+            x, u, p, a = self.ocp.vector_layout.deserialize_to_dicts(vector)
+            # x, u, p, a = OptimizationVectorHelper.to_dictionaries(ocp, vector)
+
             self._decision_states = SolutionData.from_scaled(ocp, x, "x")
             self._stepwise_controls = SolutionData.from_scaled(ocp, u, "u")
             self._parameters = SolutionData.from_scaled(ocp, p, "p")
