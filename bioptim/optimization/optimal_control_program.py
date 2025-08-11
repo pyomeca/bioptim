@@ -40,6 +40,7 @@ from ..limits.penalty import PenaltyOption
 from ..limits.penalty_helpers import PenaltyHelpers
 from ..limits.phase_transition import PhaseTransition, PhaseTransitionList, PhaseTransitionFcn
 from ..limits.phase_transtion_factory import PhaseTransitionFactory
+from ..limits.weight import ConstraintWeight
 from ..misc.__version__ import __version__
 from ..misc.enums import (
     ControlType,
@@ -869,7 +870,7 @@ class OptimalControlProgram:
         if nlp.dynamics_type.skip_continuity:
             return
 
-        if nlp.dynamics_type.state_continuity_weight is None:
+        if isinstance(nlp.dynamics_type.state_continuity_weight, ConstraintWeight):
             # Continuity as constraints
             penalty = Constraint(
                 ConstraintFcn.STATE_CONTINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL
@@ -1283,7 +1284,7 @@ class OptimalControlProgram:
             Values computed for the given time, state, control, parameters, penalty and time step
             """
 
-            weight = PenaltyHelpers.weight(penalty)
+            weight = PenaltyHelpers.weight(penalty, penalty.node_idx.index(node_idx))
             target = PenaltyHelpers.target(penalty, penalty.node_idx.index(node_idx))
 
             val = penalty.weighted_function_non_threaded[node_idx](t0, phases_dt, x, u, p, a, d, weight, target)

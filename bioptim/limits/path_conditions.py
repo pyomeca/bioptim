@@ -35,10 +35,11 @@ from ..misc.parameters_types import (
     FloatIterableorNpArray,
     FloatIterableorNpArrayorFloat,
     DoubleIntTuple,
+    CX,
 )
 
 
-class PathCondition(np.ndarray):
+class PathCondition(ndarray):
     """
     A matrix for any component (rows) and time (columns) conditions
 
@@ -102,7 +103,7 @@ class PathCondition(np.ndarray):
                 raise TypeError("The input when using InterpolationType.CUSTOM should be a callable function")
             custom_function = input_array
             input_array = np.array(())
-        if not isinstance(input_array, (MX, SX)):
+        if not isinstance(input_array, CX):
             input_array = np.asarray(input_array, dtype=float)
 
         if len(input_array.shape) == 0:
