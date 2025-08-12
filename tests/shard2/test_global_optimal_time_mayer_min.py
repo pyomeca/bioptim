@@ -127,7 +127,7 @@ def test_pendulum_min_time_mayer_constrained(ode_solver, phase_dynamics):
             expected = [87.49523141142917, 11.236203565420874, -0.005115857843225768]
         case OdeSolver.COLLOCATION:
             v_len = 665
-            expected = [329.58704584455836, 11.236203565420874, 32.40020240692716]
+            expected = [329.58704584455836, 11.236203565420874, 76.30823619468703]
         case OdeSolver.IRK:
             v_len = 185
             expected = [87.49523141142917, 11.236203565420874, 4027.416142481593]

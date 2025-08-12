@@ -13,6 +13,7 @@ from ..misc.parameters_types import (
     NpArray,
 )
 from ..optimization.non_linear_program import NonLinearProgram
+from ..limits.weight import ObjectiveWeight, ConstraintWeight
 
 
 class ConfigureProblem:
@@ -239,7 +240,9 @@ class DynamicsOptions(OptionGeneric):
         expand_dynamics: bool = True,
         expand_continuity: bool = False,
         skip_continuity: bool = False,
-        state_continuity_weight: float | int | None = None,
+        state_continuity_weight: (
+            float | int | ConstraintWeight | ObjectiveWeight
+        ) = ConstraintWeight(),  # Default is a constraint
         phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
         ode_solver: OdeSolver | OdeSolverBase = OdeSolver.RK4(),
         numerical_data_timeseries: dict[str, np.ndarray] = None,
@@ -278,8 +281,10 @@ class DynamicsOptions(OptionGeneric):
             raise RuntimeError("expand_continuity must be a boolean.")
         if not isinstance(skip_continuity, bool):
             raise RuntimeError("skip_continuity must be a boolean.")
-        if not isinstance(state_continuity_weight, (float, int, type(None))):
-            raise RuntimeError("state_continuity_weight must be a float or None.")
+        if not isinstance(state_continuity_weight, (float, int, ConstraintWeight, ObjectiveWeight)):
+            raise RuntimeError(
+                "state_continuity_weight must be an int, a float, an ObjectiveWeight, or a ConstraintWeight."
+            )
         if not isinstance(phase_dynamics, PhaseDynamics):
             raise RuntimeError("phase_dynamics must be of type PhaseDynamics.")
         if not isinstance(ode_solver, (OdeSolver, OdeSolverBase)):

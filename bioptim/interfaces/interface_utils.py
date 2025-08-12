@@ -1,8 +1,7 @@
 from time import perf_counter
 
-import numpy as np
 from casadi import Importer, Function
-from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
+from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, DM, reshape
 
 from bioptim.optimization.solution.solution import Solution
 from .solver_interface import SolverInterface
@@ -307,7 +306,8 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scale
         If the penalty should be the scaled [True] or unscaled [False]
     Returns
     -------
-    TODO
+    out: CX
+        A vector of all penalty values
     """
 
     ocp = interface.ocp
@@ -328,8 +328,8 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scale
             u = nlp.cx()
             a = nlp.cx()
             d = None
-            weight = np.ndarray((1, 0))
-            target = nlp.cx()
+            weight = DM()
+            target = DM()
             for idx in range(len(penalty.node_idx)):
                 t0_tp, x_tp, u_tp, p, a_tp, d_tp, weight_tp, target_tp = _get_weighted_function_inputs(
                     penalty, idx, ocp, nlp, scaled
@@ -352,12 +352,11 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scale
                     a_tp = tp
                 a = horzcat(a, a_tp)
                 d = horzcat(d, d_tp) if d is not None else d_tp
-                weight = np.concatenate((weight, [[float(weight_tp)]]), axis=1)
+                weight = horzcat(weight, weight_tp)
                 target = horzcat(target, target_tp)
 
             # We can call penalty.weighted_function[0] since multi-thread declares all the node at [0]
             tp = reshape(penalty.weighted_function[0](t0, phases_dt, x, u, p, a, d, weight, target), -1, 1)
-
         else:
             tp = interface.ocp.cx()
             for idx in range(len(penalty.node_idx)):
@@ -377,7 +376,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scale
 def _get_weighted_function_inputs(penalty, penalty_idx: Int, ocp, nlp: NonLinearProgram, scaled: Bool):
     t0 = PenaltyHelpers.t0(penalty, penalty_idx, lambda p_idx, n_idx: ocp.node_time(phase_idx=p_idx, node_idx=n_idx))
 
-    weight = PenaltyHelpers.weight(penalty)
+    weight = PenaltyHelpers.weight(penalty, penalty_idx)
     target = PenaltyHelpers.target(penalty, penalty_idx)
 
     if nlp:

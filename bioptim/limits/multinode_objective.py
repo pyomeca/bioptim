@@ -4,19 +4,39 @@ from ..misc.enums import PenaltyType
 from ..misc.fcn_enum import FcnEnum
 from .multinode_penalty import MultinodePenalty, MultinodePenaltyList, MultinodePenaltyFunctions
 from .objective_functions import ObjectiveFunction
+from .weight import ObjectiveWeight
 
 
 from ..misc.parameters_types import (
     Bool,
     Float,
+    Int,
+    IntorNodeIterable,
+    IntTuple,
 )
 
 
 class MultinodeObjective(MultinodePenalty):
-    def __init__(self, *args, weight: Float = 0, is_stochastic: Bool = False, **kwargs):
-        super(MultinodeObjective, self).__init__(MultinodeObjectiveFcn, *args, **kwargs)
+    def __init__(
+        self,
+        _multinode_penalty_fcn: Any,
+        nodes: IntorNodeIterable,
+        nodes_phase: IntTuple,
+        weight: Int | Float | ObjectiveWeight,
+        is_stochastic: Bool = False,
+        **kwargs,
+    ):
 
-        self.weight = weight if weight is not None else 0
+        if not isinstance(weight, ObjectiveWeight):
+            if isinstance(weight, (int, float)):
+                weight = ObjectiveWeight(weight)
+            else:
+                raise ValueError(f"The weight must be a ObjectiveWeight, int or float, not {type(weight)}")
+
+        super(MultinodeObjective, self).__init__(
+            _multinode_penalty_fcn=_multinode_penalty_fcn, nodes=nodes, nodes_phase=nodes_phase, weight=weight, **kwargs
+        )
+
         self.quadratic = kwargs["quadratic"] if "quadratic" in kwargs else True
         self.base = ObjectiveFunction.MayerFunction
         self.is_stochastic = is_stochastic
@@ -42,7 +62,12 @@ class MultinodeObjectiveList(MultinodePenaltyList):
         Add a new MultinodeObjective to the list
     """
 
-    def add(self, multinode_objective: Any, **extra_arguments: Any):
+    def add(
+        self,
+        multinode_objective: Any,
+        weight: Int | Float | ObjectiveWeight = ObjectiveWeight(),
+        **extra_arguments: Any,
+    ):
         """
         Add a new MultinodePenalty to the list
 
@@ -54,8 +79,15 @@ class MultinodeObjectiveList(MultinodePenaltyList):
             Any parameters to pass to Objective
         """
 
+        if not isinstance(weight, ObjectiveWeight):
+            if isinstance(weight, (int, float)):
+                weight = ObjectiveWeight(weight)
+            else:
+                raise ValueError(f"The weight must be a ObjectiveWeight, int or float, not {type(weight)}")
+
         super(MultinodeObjectiveList, self).add(
             option_type=MultinodeObjective,
+            weight=weight,
             multinode_penalty=multinode_objective,
             _multinode_penalty_fcn=MultinodeObjectiveFcn,
             **extra_arguments,

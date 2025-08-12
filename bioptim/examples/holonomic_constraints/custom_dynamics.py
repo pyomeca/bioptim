@@ -19,7 +19,7 @@ def constraint_holonomic_end(
 ):
     """
     The custom constraint function that provides the holonomic constraints at the end node
-    This function is used to compute the holonomic constraints at the end node of the phase.
+    This function is used to compute the holonomic constraints at the end node of the phase because the last interval does not have cx_intermediates_list variables.
 
     Parameters
     ----------
@@ -42,8 +42,9 @@ def constraint_holonomic(
     controllers: PenaltyController,
 ):
     """
-    Applies the holonomic constraints on each collocation node into the constraint set of solver.
-    The holonomic constraints are not any more embedded in the equations of motion,
+    The custom constraint function that provides the holonomic constraints at each collocation node.
+    This function is used to add the holonomic constraints to the solver's constraint set.
+    Please note that the holonomic constraints are NOT embedded in the equations of motion,
     but rather in the constraint set of the solver.
 
     Parameters
@@ -148,6 +149,6 @@ class ModifiedHolonomicTorqueBiorbdModel(HolonomicTorqueBiorbdModel):
         if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
             slope_q_u = DynamicsFunctions.get(nlp.states_dot["q_u"], nlp.states_dot.scaled.cx)
             slope_qdot_u = DynamicsFunctions.get(nlp.states_dot["qdot_u"], nlp.states_dot.scaled.cx)
-            defects = vertcat(slope_q_u, slope_qdot_u) * nlp.dt - dxdt * nlp.dt
+            defects = vertcat(slope_q_u, slope_qdot_u) - dxdt
 
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
