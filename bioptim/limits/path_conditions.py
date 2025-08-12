@@ -685,11 +685,13 @@ class BoundsList(OptionDict):
 
     def max(self) -> list:
         """access the max of each element in the list"""
-        return [{key: element[key].max for key in element} for element in self.options]
+        max_bounds = [{key: element[key].max for key in element} for element in self.options]
+        return max_bounds[0] if len(max_bounds) == 1 else max_bounds
 
     def min(self) -> list:
         """access the min of each element in the list"""
-        return [{key: element[key].min for key in element} for element in self.options]
+        min_bounds = [{key: element[key].min for key in element} for element in self.options]
+        return min_bounds[0] if len(min_bounds) == 1 else min_bounds
 
 
 class InitialGuess(OptionGeneric):
@@ -710,7 +712,7 @@ class InitialGuess(OptionGeneric):
         Vertical concatenate of two InitialGuess
     scale(self, scaling: float)
         Scaling an InitialGuess
-    __bool__(self) -> bool
+    __bool__(self) -> bool.max(
         Get if the initial guess is empty
     shape(self) -> int
         Get the size of the initial guess
