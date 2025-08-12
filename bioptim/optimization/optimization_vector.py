@@ -15,7 +15,7 @@ from ..misc.parameters_types import (
 from ..misc.enums import ControlType, InterpolationType
 from ..limits.path_conditions import BoundsList, InitialGuessList
 from ..optimization.optimization_variable import OptimizationVariableContainer
-from .optimization_layout import VectorLayout
+from .vector_layout import VectorLayout
 
 
 class OptimizationVectorHelper:
