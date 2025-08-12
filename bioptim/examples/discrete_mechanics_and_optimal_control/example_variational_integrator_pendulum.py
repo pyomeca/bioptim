@@ -87,7 +87,7 @@ def prepare_ocp(
 
 def main():
     """
-    If pendulum is run as a script, it will perform the optimization and animates it
+    If pendulum is run as a script, it will perform the optimization and animate it
     """
     n_shooting = 100
 
@@ -102,7 +102,7 @@ def main():
 
     # --- Show the results in a bioviz animation --- #
     sol.print_cost()  # /!\ Since the last controls are nan the costs are not accurate /!\
-    sol.animate()
+    sol.animate(viewer="pyorerun")
 
     # --- Show the graph results --- #
     # The states are displayed piecewise constant, but actually they are not.
