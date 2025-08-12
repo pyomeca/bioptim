@@ -160,6 +160,10 @@ class VectorLayout:
         """
         values = [ocp_values[key] for key in self.index_map]
 
+        # best debug found
+        for i, (v, (key, val)) in enumerate(zip(values, self.index_map.items())):
+            print(i, v.shape, key, val)
+
         if _CASADI_TYPES and isinstance(values[0], _CASADI_TYPES):
             return ca.vertcat(*values)
         else:
@@ -172,7 +176,7 @@ class VectorLayout:
         """
         result = {}
         for i, (key, (sl, n_cols)) in enumerate(self.index_map.items()):
-
+            print(i, "key", key)
             result[key] = vec[sl].toarray()
 
             v_size = sl.stop - sl.start
