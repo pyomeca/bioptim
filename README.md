@@ -42,6 +42,12 @@ Anyone can play with bioptim with a working (but slightly limited in terms of gr
 As a tour guide that uses this binder, you can watch the `bioptim` workshop that we gave at the CMBBE conference on September 2021 by following this link:
 [https://youtu.be/z7fhKoW1y60](https://youtu.be/z7fhKoW1y60)
 
+A GUI is available to run all the current examples. To run it you can use the following command, from the root folder of the project:
+```bash
+python -m bioptim.examples
+```
+Please refer to section [Examples](#examples) for more information on how to run the examples.
+
 # Table of Contents 
 
 
@@ -173,6 +179,7 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
     <summary><a href="#the-extra-stuff-and-the-enum">The extra stuff and the Enum</a></summary>
 
     - [The mappings](#the-mappings)
+    - [Weight](#weight)
     - [Node](#enum-node)
     - [OdeSolver](#class-odesolver)
     - [Solver](#enum-solver)
@@ -345,7 +352,9 @@ L = 0
 for i in range(n_shooting):
   L += weight * sum((evaluated_cost[:, i] - target_cost[:, i])**2 * dt)
 ```
-Where `weight` is by default 1 and `target_cost` is by default 0. For more advanced approximations, see QuadratureRule section. They can be used to evaluate more accurately the Lagrange terms of the cost function.
+Where `weight` is by default 1 and `target_cost` is by default 0.
+For mor details on the weighting of objectives and constraints, see the section [Weight](#weight) 
+For more advanced approximations, see [QuadratureRule](#enum-quadraturerule) section. They can be used to evaluate more accurately the Lagrange terms of the cost function.
 The optimization variables can be subject to equality and/or inequality constraints.
 
 # A first practical example
@@ -569,7 +578,7 @@ x_bounds = BoundsList()
 x_bounds["q"] = bio_model.bounds_from_ranges("q")
 x_bounds["q"][:, [0, -1]] = 0
 x_bounds["q"][1, -1] = 3.14
-x_bounds["dot"] = bio_model.bounds_from_ranges("qdot")
+x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
 x_bounds["qdot"][:, [0, -1]] = 0
 
 u_bounds = BoundsList()
@@ -953,10 +962,10 @@ The main method to implement is the `dynamics` method, which defines the dynamic
 If you want to define other custom casadi functions, you can do it in the `functions` attribute.
 
 ```python3
-from bioptim import AbstractStateSpaceDynamics
+from bioptim import StateDynamics
 
 
-class CustomMDynamics(AbstractStateSpaceDynamics):
+class CustomDynamics(StateDynamics):
     def __init__(self):
         super().__init__()
         self.state_configuration = [States.Q, States.QDOT]
@@ -1588,6 +1597,16 @@ The BiMapping is no more no less than a list of two mappings that link two matri
 The SelectionMapping is a subclass of BiMapping where you only have to precise the size of the first matrix, 
 and the mapping b_to_a to get the second matrix from the first. If some elements depend on others, 
 you can add an argument dependency:`SelectionMapping(size(int), b_to_a; tuple[int, int, ...], dependencies :tuple([int, int, bool]))`
+
+### Weight
+A weighting coefficient is associated with each objective function. The default is 1, but you can modify it if you want using the class `ObjectiveWeight`.
+Just like bounds, the objective weights can be interpolated (CONSTANT, LINEAR, SPLINE, EACH_NODE, CUSTOM).
+The interpolation is performed on the nodes available for this objective. For example, if you have defined an objective with 
+`node=[0, 1, 5], weight=ObjectiveWeight([0, 100], interpolation=InterpolationType.LINEAR)`, 
+then the weight will increase linearly between 0 and 100 such that the nodes will have the following weights 
+- node = 0 → weight = 0
+- node = 1 → weight = 50
+- node = 5 → weight = 100
 
 ### Enum: Node
 The node targets some specific nodes of the ocp or a phase.

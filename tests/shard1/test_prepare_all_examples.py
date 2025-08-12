@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from bioptim import InterpolationType, PhaseDynamics, OdeSolver, ContactType, DefectType
+from bioptim import InterpolationType, PhaseDynamics, OdeSolver, ContactType, DefectType, Node
 from ..utils import TestUtils
 
 
@@ -54,13 +54,43 @@ def test__getting_started__custom_bounds():
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
-    ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
-        n_shooting=30,
-        final_time=2,
-        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
-        expand_dynamics=True,
-    )
+    for interpolation_type in InterpolationType:
+        if interpolation_type == InterpolationType.ALL_POINTS:
+            continue
+        ocp_module.prepare_ocp(
+            biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+            n_shooting=30,
+            final_time=2,
+            interpolation_type=interpolation_type,
+            phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
+            expand_dynamics=True,
+        )
+
+
+def test__getting_started__custom_objective_weights():
+    from bioptim.examples.getting_started import custom_objective_weights as ocp_module
+
+    bioptim_folder = TestUtils.module_folder(ocp_module)
+
+    nodes_to_test = [Node.START, Node.INTERMEDIATES, Node.ALL_SHOOTING]
+
+    for interpolation_type in InterpolationType:
+        for node in nodes_to_test:
+            if (
+                interpolation_type == InterpolationType.ALL_POINTS
+                or interpolation_type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT
+            ):
+                continue
+
+            ocp_module.prepare_ocp(
+                biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+                n_shooting=30,
+                final_time=2,
+                interpolation_type=interpolation_type,
+                node=node,
+                phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
+                expand_dynamics=True,
+            )
 
 
 def test__getting_started__custom_constraints():
