@@ -132,54 +132,16 @@ class VectorLayout:
     - "time-major": Group by time node first [x₀,u₀,a₀, x₁,u₁,a₁, ...]
     - "variable-major": Group by variable type first [x₀,x₁,..., u₀,u₁,..., a₀,a₁,...]
 
-    Custom orderings can be registered using register_ordering().
+    Custom orderings can be registered
     """
 
-    def __init__(self, ocp, ordering: str = "variable-major"):
+    def __init__(self, ocp, ordering: str | Callable = "variable-major"):
         self.ocp = ocp
         self.ordering = ordering
         self.generator = self._pick_generator()
         self.index_map = self._build_index_map()  # maps (phase, var_type, node, key) -> slice
 
-    def pick_generator(self):
-        """Select the generator function based on the ordering mode."""
-        try:
-            return ORDERING_STRATEGIES[self.ordering]
-        except KeyError:
-            raise ValueError(f"Unknown ordering mode: {self.ordering}")
-
-    def _add_block(self, idx_map: dict, key: Key, slice_start: int, size_like, horizontal_size) -> int:
-        """Create a slice for key at current offset and return new offset."""
-        length = _len_of(size_like)
-        slice_end = slice_start + length * horizontal_size
-        idx_map[key] = slice(slice_start, slice_end), horizontal_size
-        return slice_end
-
-    def _build_index_map(self):
-        idx_map = {}
-        offset = 0
-
-        # Time parameter always comes first
-        offset = self._add_block(idx_map, ("global", "time"), offset, self.ocp.dt_parameter.shape, 1)
-
-        # use the generator to append blocks (no branching here)
-        for key, v_size, h_size in self.generator():
-            offset = self._add_block(idx_map, key, offset, v_size, h_size)
-
-        # Parameters always last
-        offset = self._add_block(idx_map, ("global", "parameters"), offset, self.ocp.parameters.shape, 1)
-
-        self.total_size = offset
-        return idx_map
-
-    # -----------------------
-    # public API
-    # -----------------------
-    def register_ordering(self, name: str, generator: GeneratorType) -> None:
-        """Register a custom ordering generator. generator() must yield (key, size)."""
-        self._ordering_strategies[name] = generator
-
-    def serialize(self, ocp_values):
+    def stack(self, ocp_values):
         """
         Given a dict of values keyed by index_map keys, build a flat vector.
         If values are CasADi symbols, returns a vertcat.
@@ -196,7 +158,7 @@ class VectorLayout:
         else:
             return np.vstack(values)
 
-    def deserialize(self, vec):
+    def unstack(self, vec):
         """
         Given flat vector, return dict with same structure as index_map.
         Works for NumPy arrays and CasADi objects.
@@ -212,14 +174,14 @@ class VectorLayout:
 
         return result
 
-    def deserialize_to_lists(self, vec):
+    def unstack_to_lists(self, vec):
         """
         Convert a flat vector into a nested list structure:
         [phases][var_type_index][node] = ndarray
         var_type_index: 0=states, 1=controls, 2=algebraics, 3=parameters (global)
         """
         # First, get the dict of all slices using the same method
-        deserialized = self.deserialize(vec)
+        unstacked = self.unstack(vec)
 
         result_states = []
         result_controls = []
@@ -231,22 +193,22 @@ class VectorLayout:
             phase_algebraics = []
 
             for node in range(nlp.n_states_nodes):
-                phase_states.append(deserialized[(p, "states", node)])
+                phase_states.append(unstacked[(p, "states", node)])
             for node in range(nlp.n_controls_nodes):
-                phase_controls.append(deserialized[(p, "controls", node)])
+                phase_controls.append(unstacked[(p, "controls", node)])
             for node in range(nlp.n_states_nodes):
-                phase_algebraics.append(deserialized[(p, "algebraic_states", node)])
+                phase_algebraics.append(unstacked[(p, "algebraic_states", node)])
 
             result_states.append(phase_states)
             result_controls.append(phase_controls)
             result_algebraics.append(phase_algebraics)
 
         # Parameters are global
-        params = deserialized[("global", "parameters")]
+        params = unstacked[("global", "parameters")]
 
         return result_states, result_controls, params, result_algebraics
 
-    def deserialize_to_dicts(self, vec):
+    def unstack_to_dicts(self, vec):
         """
         Convert a flat vector into a nested dictionary structure with variable names.
         Structure:
@@ -258,37 +220,56 @@ class VectorLayout:
             )
         """
         # Step 1: get list-based structure
-        list_states, list_controls, params, list_algebraics = self.deserialize_to_lists(vec)
+        list_states, list_controls, params, list_algebraics = self.unstack_to_lists(vec)
 
         data_states, data_controls, data_algebraics = [], [], []
         data_parameters = {}
 
-        # Define variable type mapping: (list_structure, accessor, index_getter, output_list)
-        var_types = [
-            (list_states, lambda nlp: nlp.states.keys(), lambda nlp, k: nlp.states[k].index, data_states),
-            (list_controls, lambda nlp: nlp.controls.keys(), lambda nlp, k: nlp.controls.key_index(k), data_controls),
-            (
-                list_algebraics,
-                lambda nlp: nlp.algebraic_states.keys(),
-                lambda nlp, k: nlp.algebraic_states[k].index,
-                data_algebraics,
-            ),
-        ]
-
         # Step 2: loop over phases once
         for p, nlp in enumerate(self.ocp.nlp):
-            for list_struct, key_getter, idx_getter, out_list in var_types:
-                var_dict = {key: [None] * len(list_struct[p]) for key in key_getter(nlp)}
-                for node, arr in enumerate(list_struct[p]):
-                    for key in key_getter(nlp):
-                        var_dict[key][node] = arr[idx_getter(nlp, key), :]
-                out_list.append(var_dict)
+
+            data_states += _extract_states_dict(list_states[p], nlp)
+            data_controls += _extract_controls_dict(list_controls[p], nlp)
+            data_algebraics += _extract_algebraics_dict(list_algebraics[p], nlp)
 
         # Step 3: parameters (global)
         for key in self.ocp.parameters.keys():
             data_parameters[key] = params[self.ocp.parameters[key].index]
 
         return data_states, data_controls, [data_parameters], data_algebraics
+
+    def _build_index_map(self):
+        idx_map = {}
+        offset = 0
+
+        # Time parameter always comes first
+        offset = self._add_block(idx_map, ("global", "time"), offset, self.ocp.dt_parameter.shape, 1)
+
+        # use the generator to append blocks (no branching here)
+        for key, v_size, h_size in self.generator(self.ocp):
+            offset = self._add_block(idx_map, key, offset, v_size, h_size)
+
+        # Parameters always last
+        offset = self._add_block(idx_map, ("global", "parameters"), offset, self.ocp.parameters.shape, 1)
+
+        self.total_size = offset
+        return idx_map
+
+    def _pick_generator(self):
+        """Select the generator function based on the ordering attribute."""
+        if callable(self.ordering):
+            return self.ordering
+        try:
+            return ORDERING_STRATEGIES[self.ordering]
+        except KeyError:
+            raise ValueError(f"Unknown ordering mode: {self.ordering}")
+
+    def _add_block(self, idx_map: dict, key: Key, slice_start: int, size_like, horizontal_size) -> int:
+        """Create a slice for key at current offset and return new offset."""
+        length = _len_of(size_like)
+        slice_end = slice_start + length * horizontal_size
+        idx_map[key] = slice(slice_start, slice_end), horizontal_size
+        return slice_end
 
 
 def _len_of(shape_like) -> int:
@@ -311,6 +292,33 @@ def _len_of(shape_like) -> int:
     except Exception:
         # fallback: try int conversion
         return int(shape_like)
+
+
+def _extract_attr_dict(list_data, nlp, attr) -> list[dict[str, list[np.ndarray]]]:
+    """Extract attribute (states, controls, algebraic_states) into dictionary format for one phase."""
+    extracted_attr = getattr(nlp, attr)
+    keys = extracted_attr.keys()
+    var_dict = {key: [None] * len(list_data) for key in keys}
+    for node, arr in enumerate(list_data):
+        for key in keys:
+            key_index = extracted_attr[key].index
+            var_dict[key][node] = arr[key_index, :]
+    return [var_dict]
+
+
+def _extract_states_dict(list_data, nlp):
+    """Extract states into dictionary format for one phase."""
+    return _extract_attr_dict(list_data, nlp, "states")
+
+
+def _extract_controls_dict(list_data, nlp):
+    """Extract controls into dictionary format for one phase."""
+    return _extract_attr_dict(list_data, nlp, "controls")
+
+
+def _extract_algebraics_dict(list_data, nlp):
+    """Extract algebraic states into dictionary format for one phase."""
+    return _extract_attr_dict(list_data, nlp, "algebraic_states")
 
 
 # if __name__ == "__main__":
