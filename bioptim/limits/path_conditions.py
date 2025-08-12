@@ -683,6 +683,14 @@ class BoundsList(OptionDict):
 
         raise NotImplementedError("Printing of BoundsList is not ready yet")
 
+    def max(self) -> list:
+        """access the max of each element in the list"""
+        return [{key: element[key].max for key in element} for element in self.options]
+
+    def min(self) -> list:
+        """access the min of each element in the list"""
+        return [{key: element[key].min for key in element} for element in self.options]
+
 
 class InitialGuess(OptionGeneric):
     """
