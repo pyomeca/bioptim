@@ -15,11 +15,11 @@ from bioptim import (
     AlgebraicStates,
     ConfigureVariables,
     SocpType,
-    AbstractStateSpaceDynamics,
+    StateDynamics,
 )
 
 
-class MassPointModel(AbstractStateSpaceDynamics):
+class MassPointModel(StateDynamics):
     """
     This allows to generate the same model as in the paper.
     """
@@ -118,7 +118,7 @@ class MassPointDynamicsModel(MassPointModel):
             # Defects
             slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
-            defects = vertcat(slope_q, slope_qdot) * nlp.dt - vertcat(qdot, qddot) * nlp.dt
+            defects = vertcat(slope_q, slope_qdot) - vertcat(qdot, qddot)
 
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
@@ -177,7 +177,7 @@ class StochasticMassPointDynamicsModel(MassPointModel):
             # Defects
             slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
-            defects = vertcat(slope_q, slope_qdot) * nlp.dt - vertcat(qdot, qddot) * nlp.dt
+            defects = vertcat(slope_q, slope_qdot) - vertcat(qdot, qddot)
 
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
@@ -213,6 +213,6 @@ class StochasticMassPointDynamicsModel(MassPointModel):
             # Defects
             slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
-            defects = vertcat(slope_q, slope_qdot) * nlp.dt - vertcat(qdot, qddot) * nlp.dt
+            defects = vertcat(slope_q, slope_qdot) - vertcat(qdot, qddot)
 
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)

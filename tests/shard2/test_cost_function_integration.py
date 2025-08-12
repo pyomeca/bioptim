@@ -116,20 +116,6 @@ def prepare_ocp(
     )
 
 
-def sum_cost_function_output(sol):
-    """
-    Sum the cost function output from sol.print_cost()
-    """
-    captured_output = io.StringIO()  # Create StringIO object
-    sys.stdout = captured_output  # and redirect stdout.
-    sol.print_cost()  # Call function.
-    sys.stdout = sys.__stdout__  # Reset redirect.
-    idx = captured_output.getvalue().find("Sum cost functions")
-    output = captured_output.getvalue()[idx:].split("\n")[0]
-    idx = len("Sum cost functions: ")
-    return float(output[idx:])
-
-
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("objective", ["torque", "qdot"])
 @pytest.mark.parametrize(
@@ -155,7 +141,7 @@ def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
     solver = Solver.IPOPT()
     solver.set_maximum_iterations(5)
     sol = ocp.solve(solver)
-    j_printed = sum_cost_function_output(sol)
+    j_printed = TestUtils.sum_cost_function_output(sol)
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
     tau = controls["tau"]
     dt = sol.t_span()[0][-1]
@@ -313,7 +299,7 @@ def test_pendulum_collocation(control_type, integration_rule, objective, phase_d
     solver = Solver.IPOPT()
     solver.set_maximum_iterations(5)
     sol = ocp.solve(solver)
-    j_printed = sum_cost_function_output(sol)
+    j_printed = TestUtils.sum_cost_function_output(sol)
 
     # Check objective function value
     f = np.array(sol.cost)
@@ -321,27 +307,27 @@ def test_pendulum_collocation(control_type, integration_rule, objective, phase_d
     if integration_rule == QuadratureRule.RECTANGLE_LEFT:
         if control_type == ControlType.CONSTANT:
             if objective == "torque":
-                npt.assert_almost_equal(f[0, 0], 11.795040652982767)
-                npt.assert_almost_equal(j_printed, 11.795040652982767)
+                npt.assert_almost_equal(f[0, 0], 11.795040652982784)
+                npt.assert_almost_equal(j_printed, 11.795040652982784)
             else:
-                npt.assert_almost_equal(f[0, 0], 12.336208562756555)
-                npt.assert_almost_equal(j_printed, 12.336208562756553)
+                npt.assert_almost_equal(f[0, 0], 11.383415350091333)
+                npt.assert_almost_equal(j_printed, 11.383415350091333)
     elif integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
         if control_type == ControlType.CONSTANT:
             if objective == "torque":
-                npt.assert_almost_equal(f[0, 0], 11.795040652982767)
-                npt.assert_almost_equal(j_printed, 11.795040652982767)
+                npt.assert_almost_equal(f[0, 0], 11.795040652982784)
+                npt.assert_almost_equal(j_printed, 11.795040652982784)
             else:
-                npt.assert_almost_equal(f[0, 0], 12.336208562756559)
-                npt.assert_almost_equal(j_printed, 12.336208562756559)
+                npt.assert_almost_equal(f[0, 0], 11.383415350091333)
+                npt.assert_almost_equal(j_printed, 11.383415350091333)
     elif integration_rule == QuadratureRule.TRAPEZOIDAL:
         if control_type == ControlType.CONSTANT:
             if objective == "torque":
-                npt.assert_almost_equal(f[0, 0], 11.795040652982767)
-                npt.assert_almost_equal(j_printed, 11.795040652982767)
+                npt.assert_almost_equal(f[0, 0], 11.795040652982784)
+                npt.assert_almost_equal(j_printed, 11.795040652982784)
             else:
-                npt.assert_almost_equal(f[0, 0], 12.336208562756564)
-                npt.assert_almost_equal(j_printed, 12.336208562756564)
+                npt.assert_almost_equal(f[0, 0], 11.383415350091333)
+                npt.assert_almost_equal(j_printed, 11.383415350091333)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -513,7 +499,7 @@ def test_pendulum_target(control_type, integration_rule, objective, phase_dynami
     solver = Solver.IPOPT()
     solver.set_maximum_iterations(5)
     sol = ocp.solve(solver)
-    j_printed = sum_cost_function_output(sol)
+    j_printed = TestUtils.sum_cost_function_output(sol)
 
     # Check objective function value
     f = np.array(sol.cost)

@@ -24,14 +24,14 @@ from bioptim import (
     PhaseDynamics,
     States,
     Controls,
-    AbstractStateSpaceDynamics,
+    StateDynamics,
 )
 
 
-class CustomBiorbdModel(BiorbdModel, AbstractStateSpaceDynamics):
+class CustomBiorbdModel(BiorbdModel, StateDynamics):
     def __init__(self, biorbd_model_path: str, **kwargs):
         BiorbdModel.__init__(self, biorbd_model_path)
-        AbstractStateSpaceDynamics.__init__(self)
+        StateDynamics.__init__(self)
 
         # Define the variables to configure here
         self.state_configuration = [States.Q, States.QDOT]
@@ -93,7 +93,7 @@ class CustomBiorbdModel(BiorbdModel, AbstractStateSpaceDynamics):
             slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
             slopes = vertcat(slope_q, slope_qdot)
-            defects = slopes * nlp.dt - dxdt * nlp.dt
+            defects = slopes - dxdt
 
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 

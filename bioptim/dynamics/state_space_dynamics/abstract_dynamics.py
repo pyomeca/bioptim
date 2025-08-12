@@ -6,7 +6,7 @@ from ...misc.parameters_types import CXOptional
 from ..configure_variables import States, Controls, AlgebraicStates
 
 
-class AbstractStateSpaceDynamics(ABC):
+class StateDynamics(ABC):
     def __init__(self):
         self.state_configuration: List[States] = []
         self.control_configuration: List[Controls] = []

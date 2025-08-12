@@ -4,7 +4,6 @@ from typing import Callable
 from bioptim import (
     BoundsList,
     ConfigureVariables,
-    ConstraintFcn,
     ConstraintList,
     ControlType,
     DynamicsEvaluation,
@@ -22,7 +21,7 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
     VariableScaling,
-    AbstractStateSpaceDynamics,
+    StateDynamics,
 )
 from casadi import DM, MX, SX, vertcat, exp
 import numpy as np
@@ -32,7 +31,7 @@ import pytest
 from ..utils import TestUtils
 
 
-class Model(AbstractStateSpaceDynamics):
+class Model(StateDynamics):
     def __init__(self, time_as_states: bool = False):
         super().__init__()
         self._name = None
@@ -166,7 +165,7 @@ class Model(AbstractStateSpaceDynamics):
             defects=None,
         )
 
-    def set_pulse_apparition_time(self, value: list[MX], kwargs: dict = None):
+    def set_pulse_apparition_time(self, value: list[MX]):
         """
         Sets the pulse apparition time for each pulse (phases) according to the ocp parameter "pulse_apparition_time"
 
@@ -174,8 +173,6 @@ class Model(AbstractStateSpaceDynamics):
         ----------
         value: list[MX]
             The pulse apparition time list (s)
-        kwargs: dict
-            The kwargs of the ocp
         """
         self.pulse_apparition_time = value
 
@@ -235,17 +232,6 @@ def prepare_ocp(
     n_shooting = [n_shooting] * n_stim
     time_min = pulse_event["time_min"]
     time_max = pulse_event["time_max"]
-
-    constraints = ConstraintList()
-    if time_min and time_max:
-        for i in range(n_stim):
-            constraints.add(
-                ConstraintFcn.TIME_CONSTRAINT,
-                node=Node.END,
-                min_bound=time_min,
-                max_bound=time_max,
-                phase=i,
-            )
 
     step_phase = final_time / n_stim
     final_time_phase = [step_phase] * n_stim

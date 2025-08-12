@@ -1,10 +1,10 @@
 from ..configure_variables import States, Controls
 from ..dynamics_evaluation import DynamicsEvaluation
 from ..configure_variables import ConfigureVariables
-from .abstract_dynamics import AbstractStateSpaceDynamics
+from .abstract_dynamics import StateDynamics
 
 
-class VariationalTorqueDynamics(AbstractStateSpaceDynamics):
+class VariationalTorqueDynamics(StateDynamics):
 
     def __init__(self):
         super().__init__()

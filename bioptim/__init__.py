@@ -177,6 +177,7 @@ from .limits.path_conditions import BoundsList, InitialGuessList, Bounds, Initia
 from .limits.penalty_controller import PenaltyController
 from .limits.penalty_helpers import PenaltyHelpers
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
+from .limits.weight import ObjectiveWeight, ConstraintWeight
 from .misc.__version__ import __version__
 from .misc.enums import (
     Axis,
@@ -233,7 +234,7 @@ from .dynamics.state_space_dynamics import (
     MusclesDynamicsWithExcitations,
     JointAccelerationDynamics,
 )
-from .dynamics.state_space_dynamics import AbstractStateSpaceDynamics
+from .dynamics.state_space_dynamics import StateDynamics
 from .optimization.multi_start import MultiStart
 from .optimization.non_linear_program import NonLinearProgram
 from .optimization.optimal_control_program import OptimalControlProgram
