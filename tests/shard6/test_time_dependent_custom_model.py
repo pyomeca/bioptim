@@ -22,7 +22,7 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
     VariableScaling,
-    AbstractStateSpaceDynamics,
+    StateDynamics,
 )
 from casadi import DM, MX, SX, vertcat, exp
 import numpy as np
@@ -32,7 +32,7 @@ import pytest
 from ..utils import TestUtils
 
 
-class Model(AbstractStateSpaceDynamics):
+class Model(StateDynamics):
     def __init__(self, time_as_states: bool = False):
         super().__init__()
         self._name = None
