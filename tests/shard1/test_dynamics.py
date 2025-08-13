@@ -12,6 +12,7 @@ from bioptim import (
     TorqueActivationBiorbdModel,
     TorqueFreeFloatingBaseBiorbdModel,
     MusclesBiorbdModel,
+    MusclesWithExcitationsBiorbdModel,
     BiorbdModel,
     ControlType,
     NonLinearProgram,
@@ -858,12 +859,13 @@ def test_muscle_driven(with_excitation, with_contact, with_residual_torque, with
         )
         numerical_timeseries = {"external_forces": external_forces.to_numerical_time_series()}
 
-    nlp.model = MusclesBiorbdModel(
+    muscle_class = MusclesWithExcitationsBiorbdModel if with_excitation else MusclesBiorbdModel
+
+    nlp.model = muscle_class(
         TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod",
         contact_types=[ContactType.RIGID_EXPLICIT] if with_contact else (),
         external_force_set=external_forces,
         with_residual_torque=with_residual_torque,
-        with_excitation=with_excitation,
     )
     nlp.dynamics_type = DynamicsOptions(
         expand_dynamics=True,

@@ -24,13 +24,14 @@ from bioptim import (
     Solver,
     SolutionMerge,
     ContactType,
+    MusclesWithExcitationsBiorbdModel,
 )
 
 
 def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver=OdeSolver.RK4(), expand_dynamics=True):
 
-    bio_model = MusclesBiorbdModel(
-        biorbd_model_path, with_excitation=True, with_residual_torque=True, contact_types=[ContactType.RIGID_EXPLICIT]
+    bio_model = MusclesWithExcitationsBiorbdModel(
+        biorbd_model_path, with_residual_torque=True, contact_types=[ContactType.RIGID_EXPLICIT]
     )
 
     torque_min, torque_max, torque_init = -500.0, 500.0, 0.0

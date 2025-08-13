@@ -23,6 +23,7 @@ from ...dynamics.state_space_dynamics import (
     TorqueDerivativeDynamics,
     MusclesDynamics,
     JointAccelerationDynamics,
+    MusclesDynamicsWithExcitations,
 )
 from ..protocols.holonomic_constraints import HolonomicConstraintsList
 from ...misc.parameters_types import (
@@ -278,7 +279,6 @@ class MusclesBiorbdModel(BiorbdModel, MusclesDynamics):
         self,
         bio_model: Str | biorbd.Model,
         with_residual_torque: Bool = False,
-        with_excitation: Bool = False,
         friction_coefficients: np.ndarray = None,
         parameters: ParameterList = None,
         external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None,
@@ -286,10 +286,33 @@ class MusclesBiorbdModel(BiorbdModel, MusclesDynamics):
         fatigue: FatigueList = None,
     ):
         BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set, contact_types)
-        MusclesDynamics.__init__(self, with_residual_torque, with_excitation, fatigue)
+        MusclesDynamics.__init__(self, with_residual_torque, fatigue)
 
     def serialize(self) -> tuple[Callable, dict]:
         return MusclesBiorbdModel, dict(
+            bio_model=self.path,
+            friction_coefficients=self.friction_coefficients,
+            external_force_set=self.external_force_set,
+            contact_types=self.contact_types,
+        )
+
+
+class MusclesWithExcitationsBiorbdModel(BiorbdModel, MusclesDynamicsWithExcitations):
+    def __init__(
+        self,
+        bio_model: Str | biorbd.Model,
+        with_residual_torque: Bool = False,
+        friction_coefficients: np.ndarray = None,
+        parameters: ParameterList = None,
+        external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None,
+        contact_types: list[ContactType] | tuple[ContactType] = (),
+        fatigue: FatigueList = None,
+    ):
+        BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set, contact_types)
+        MusclesDynamicsWithExcitations.__init__(self, with_residual_torque, fatigue)
+
+    def serialize(self) -> tuple[Callable, dict]:
+        return MusclesWithExcitationsBiorbdModel, dict(
             bio_model=self.path,
             friction_coefficients=self.friction_coefficients,
             external_force_set=self.external_force_set,
