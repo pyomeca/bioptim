@@ -30,35 +30,83 @@ def _dispatch_state_bounds(
         n_shooting = nlp.ns * repeat_for_key
         states_bounds[key].check_and_adjust_dimensions(states[key].cx.shape[0], n_shooting)
 
-    all_bounds = []
-    for k in range(nlp.n_states_nodes):
-        states.node_index = k
-        for p in range(original_repeat if k != nlp.ns else 1):
-            collapsed = _compute_bound_for_node(
-                k, p, DEFAULT_MIN_BOUND, original_repeat, n_steps_callback, states, states_bounds.min(), states_scaling
-            )
-            all_bounds += [np.reshape(collapsed.T, (-1, 1))]
-    v_bounds_min = np.concatenate(all_bounds, axis=0)
+    v_bounds_min = _compute_bounds_for_all_nodes(
+        nlp,
+        DEFAULT_MIN_BOUND,
+        states,
+        states_bounds.min(),
+        states_scaling,
+        original_repeat,
+    )
 
-    all_bounds = []
-    for k in range(nlp.n_states_nodes):
-        states.node_index = k
-        for p in range(original_repeat if k != nlp.ns else 1):
-            collapsed = _compute_bound_for_node(
-                k, p, DEFAULT_MAX_BOUND, original_repeat, n_steps_callback, states, states_bounds.max(), states_scaling
-            )
-            all_bounds += [np.reshape(collapsed.T, (-1, 1))]
-    v_bounds_max = np.concatenate(all_bounds, axis=0)
-
+    v_bounds_max = _compute_bounds_for_all_nodes(
+        nlp,
+        DEFAULT_MAX_BOUND,
+        states,
+        states_bounds.max(),
+        states_scaling,
+        original_repeat,
+    )
     return v_bounds_min, v_bounds_max
 
 
+def _compute_bounds_for_all_nodes(
+    nlp: "NonLinearProgram",
+    default_bound: np.ndarray,
+    states: OptimizationVariableContainer,
+    states_bounds: dict,  # "min" or "max" only, not both
+    states_scaling: "VariableScalingList",
+    repeat: int,
+) -> np.ndarray:
+    """
+    Compute bounds for all nodes in the discretized problem.
+
+    This function iterates through all nodes and their intervals to compute
+    either minimum or maximum bounds for the state variables.
+
+    Parameters
+    ----------
+    nlp : NonLinearProgram
+        The non-linear program being solved
+    default_bound : np.ndarray
+        The default bound value (either DEFAULT_MIN_BOUND or DEFAULT_MAX_BOUND)
+    states : OptimizationVariableContainer
+        The states variables container
+    states_bounds : dict
+        The bounds list object (either min or max bounds)
+    states_scaling : VariableScalingList
+        The scaling factors for states
+    repeat : int
+        Number of steps in each interval (for direct collocation, this is the number of nodes per interval)
+
+    Returns
+    -------
+    np.ndarray
+        The concatenated bounds for all nodes
+    """
+    all_bounds = []
+    for node in range(nlp.n_states_nodes):
+        states.node_index = node
+        is_final_node = node == nlp.ns
+        for interval_node in range(1 if is_final_node else repeat):
+            collapsed = _compute_bound_for_node(
+                node,
+                interval_node,
+                default_bound,
+                repeat,
+                states,
+                states_bounds,
+                states_scaling,
+            )
+            all_bounds += [np.reshape(collapsed.T, (-1, 1))]
+    return np.concatenate(all_bounds, axis=0)
+
+
 def _compute_bound_for_node(
-    k: int,
-    p: int,
+    node: int,
+    interval_node: int,
     default_bound: np.ndarray,  # "min" or "max"
     repeat: int,
-    n_steps_callback: Callable,
     states: OptimizationVariableContainer,
     states_bounds: dict,  # min or max only not both
     states_scaling: "VariableScalingList",
@@ -69,9 +117,9 @@ def _compute_bound_for_node(
     for key in real_keys:
 
         if states_bounds[key].type == InterpolationType.ALL_POINTS:
-            point = k * n_steps_callback(0) + p
+            point = node * repeat + interval_node
         else:
-            point = _get_interpolation_point(k, p)
+            point = _get_interpolation_point(node, interval_node)
 
         value = states_bounds[key].evaluate_at(shooting_point=point, repeat=repeat)[:, np.newaxis]
         value /= states_scaling[key].scaling
@@ -125,3 +173,4 @@ def _get_interpolation_point(node: int, interval_node: int) -> int:
         return 1  # NOTE: This is the hack
     else:
         return node
+
