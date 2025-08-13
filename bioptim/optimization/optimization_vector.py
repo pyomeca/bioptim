@@ -103,12 +103,10 @@ class OptimizationVectorHelper:
         # For controls
         for nlp in ocp.nlp:
             nlp.set_node_index(0)
-            if nlp.control_type in (ControlType.CONSTANT,):
+
             ns = nlp.ns
             if nlp.control_type.has_a_final_node:
                 ns += 1
-            else:
-                raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
 
             real_keys = [key for key in nlp.u_bounds.keys() if key is not "None"]
             for key in real_keys:
