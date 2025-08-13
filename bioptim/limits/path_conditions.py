@@ -712,7 +712,7 @@ class InitialGuess(OptionGeneric):
         Vertical concatenate of two InitialGuess
     scale(self, scaling: float)
         Scaling an InitialGuess
-    __bool__(self) -> bool.max(
+    __bool__(self) -> bool
         Get if the initial guess is empty
     shape(self) -> int
         Get the size of the initial guess
