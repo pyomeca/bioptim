@@ -121,8 +121,10 @@ def _compute_bound_for_node(
         else:
             point = _get_interpolation_point(node, interval_node)
 
-        value = states_bounds[key].evaluate_at(shooting_point=point, repeat=repeat)[:, np.newaxis]
-        value /= states_scaling[key].scaling
+        value = (
+            states_bounds[key].evaluate_at(shooting_point=point, repeat=repeat)[:, np.newaxis]
+            / states_scaling[key].scaling
+        )
 
         collapsed_values[states[key].index, :] = value
 
@@ -165,6 +167,8 @@ def _get_interpolation_point(node: int, interval_node: int) -> int:
 
     """
     is_first_node = node == 0
+
+    # always true for direct multiple shooting, but not for direct collocation
     is_first_node_in_interval = interval_node == 0
 
     if is_first_node and is_first_node_in_interval:
@@ -173,4 +177,3 @@ def _get_interpolation_point(node: int, interval_node: int) -> int:
         return 1  # NOTE: This is the hack
     else:
         return node
-
