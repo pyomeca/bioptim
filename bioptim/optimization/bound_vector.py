@@ -26,10 +26,9 @@ def _dispatch_state_bounds(
     # Dimension check
     real_keys = [key for key in states_bounds.keys() if key is not "None"]
     for key in real_keys:
-        if states_bounds[key].type == InterpolationType.ALL_POINTS:
-            states_bounds[key].check_and_adjust_dimensions(states[key].cx.shape[0], nlp.ns * repeat)
-        else:
-            states_bounds[key].check_and_adjust_dimensions(states[key].cx.shape[0], nlp.ns)
+        repeat = repeat if states_bounds[key].type == InterpolationType.ALL_POINTS else 1
+        n_shooting = nlp.ns * repeat
+        states_bounds[key].check_and_adjust_dimensions(states[key].cx.shape[0], n_shooting)
 
     all_bounds = []
     for k in range(nlp.n_states_nodes):
@@ -57,7 +56,7 @@ def _dispatch_state_bounds(
 def _compute_bound_for_node(
     k: int,
     p: int,
-    default_bound: str,  # "min" or "max"
+    default_bound: np.ndarray,  # "min" or "max"
     repeat: int,
     n_steps_callback: Callable,
     states: OptimizationVariableContainer,
@@ -68,9 +67,12 @@ def _compute_bound_for_node(
 
     real_keys = [key for key in states_bounds.keys() if key is not "None"]
     for key in real_keys:
+
         if states_bounds[key].type == InterpolationType.ALL_POINTS:
             point = k * n_steps_callback(0) + p
         else:
+            # This allows CONSTANT_WITH_FIRST_AND_LAST to work in collocations, but is flawed for the other ones
+            # point refers to the column to use in the bounds matrix
             point = k if k != 0 else 0 if p == 0 else 1
 
         value = (
