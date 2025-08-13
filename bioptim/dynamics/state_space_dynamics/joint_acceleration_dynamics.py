@@ -74,10 +74,10 @@ class JointAccelerationDynamics(StateDynamics):
             defects = nlp.cx(nlp.states.shape, 1)
 
             # qdot = polynomial slope
-            defects[q_indices, 0] = slope_q * nlp.dt - qdot_mapped * nlp.dt
+            defects[q_indices, 0] = slope_q - qdot_mapped
 
             if nlp.dynamics_type.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
-                defects[qdot_indices, 0] = slope_qdot * nlp.dt - qddot_mapped * nlp.dt
+                defects[qdot_indices, 0] = slope_qdot - qddot_mapped
 
             else:
                 raise NotImplementedError(
