@@ -876,6 +876,9 @@ class InitialGuess(OptionGeneric):
         self.init = noised_guess.init
         self.type = noised_guess.type
 
+    def evaluate_at(self, shooting_point: Int, repeat: Int = 1):
+        return self.init.evaluate_at(shooting_point, repeat)
+
 
 class NoisedInitialGuess(InitialGuess):
     """
