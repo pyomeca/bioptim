@@ -12,6 +12,7 @@ from bioptim import (
     TorqueActivationBiorbdModel,
     TorqueFreeFloatingBaseBiorbdModel,
     MusclesBiorbdModel,
+    MusclesWithExcitationsBiorbdModel,
     BiorbdModel,
     ControlType,
     NonLinearProgram,
