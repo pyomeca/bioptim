@@ -71,14 +71,11 @@ def _compute_bound_for_node(
         if states_bounds[key].type == InterpolationType.ALL_POINTS:
             point = k * n_steps_callback(0) + p
         else:
-            point = _get_interpolation_point(node, interval_node)
+            point = _get_interpolation_point(k, p)
 
         value = states_bounds[key].evaluate_at(shooting_point=point, repeat=repeat)[:, np.newaxis]
+        value /= states_scaling[key].scaling
 
-        value = (
-            states_bounds[key].evaluate_at(shooting_point=point, repeat=repeat)[:, np.newaxis]
-            / states_scaling[key].scaling
-        )
         collapsed_values[states[key].index, :] = value
 
     key_not_in_bounds = set(states.keys()) - set(states_bounds.keys())
