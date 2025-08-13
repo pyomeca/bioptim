@@ -8,7 +8,7 @@ from ..misc.parameters_types import (
 from ..misc.enums import InterpolationType
 from ..limits.path_conditions import BoundsList
 from ..optimization.optimization_variable import OptimizationVariableContainer
-from .vector_utils import _compute_bounds_for_all_nodes
+from .vector_utils import _compute_values_for_all_nodes
 
 DEFAULT_MIN_BOUND = -np.inf
 DEFAULT_MAX_BOUND = np.inf
@@ -42,7 +42,7 @@ def _dispatch_state_bounds(
         n_shooting = nlp.ns * repeat_for_key
         states_bounds[key].check_and_adjust_dimensions(states[key].cx.shape[0], n_shooting)
 
-    v_bounds_min = _compute_bounds_for_all_nodes(
+    v_bounds_min = _compute_values_for_all_nodes(
         nlp,
         DEFAULT_MIN_BOUND,
         states,
@@ -52,7 +52,7 @@ def _dispatch_state_bounds(
         original_repeat,
     )
 
-    v_bounds_max = _compute_bounds_for_all_nodes(
+    v_bounds_max = _compute_values_for_all_nodes(
         nlp,
         DEFAULT_MAX_BOUND,
         states,
@@ -82,7 +82,7 @@ def _dispatch_control_bounds(
     for key in real_keys:
         control_bounds[key].check_and_adjust_dimensions(controls[key].cx.shape[0], ns - 1)
 
-    v_bounds_min = _compute_bounds_for_all_nodes(
+    v_bounds_min = _compute_values_for_all_nodes(
         nlp,
         DEFAULT_MIN_BOUND,
         controls,
@@ -92,7 +92,7 @@ def _dispatch_control_bounds(
         original_repeat,
     )
 
-    v_bounds_max = _compute_bounds_for_all_nodes(
+    v_bounds_max = _compute_values_for_all_nodes(
         nlp,
         DEFAULT_MAX_BOUND,
         controls,

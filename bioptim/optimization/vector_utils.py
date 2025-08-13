@@ -4,11 +4,11 @@ from ..misc.enums import InterpolationType
 from ..optimization.optimization_variable import OptimizationVariableContainer
 
 
-def _compute_bounds_for_all_nodes(
+def _compute_values_for_all_nodes(
     nlp: "NonLinearProgram",
-    default_bound: np.ndarray,
-    optimization_variable: OptimizationVariableContainer,
-    bounds: dict,  # "min" or "max" only, not both
+    default_value: np.ndarray,
+    variable_container: OptimizationVariableContainer,
+    defined_values: dict,  # "min" or "max" only, not both
     scaling: "VariableScalingList",
     n_nodes: int,
     repeat: int,
@@ -23,19 +23,20 @@ def _compute_bounds_for_all_nodes(
     ----------
     nlp: NonLinearProgram
         The non-linear program containing the optimization problem
-    default_bound : np.ndarray
-        The default bound value (either DEFAULT_MIN_BOUND or DEFAULT_MAX_BOUND)
-    optimization_variable : OptimizationVariableContainer
-        The states variables container
-    bounds : dict
-        The bounds list object (either min or max bounds)
-    scaling : VariableScalingList
-        The scaling factors for states
+    default_value: np.ndarray
+        The default value to use if the variable is not defined
+        (either DEFAULT_MIN_BOUND, DEFAULT_MAX_BOUND, or DEFAULT_INITIAL_GUESS)
+    variable_container: OptimizationVariableContainer
+        The container for the optimization variables for states, controls, or algebraic variables that we refer to
+    defined_values : dict
+        The defined values for the variable, which can be min bounds, max bounds, or initial guesses.
+    variable_scaling: "VariableScalingList"
+        The scaling factors for the variables, which are used to scale the evaluated values.
     n_nodes : int
-        The number of state nodes in the optimization problem
+        The number of nodes for the given variable considered.
     repeat : int
         Number of steps in each interval (for direct collocation, this is the number of nodes per interval)
-        Only relevant for states or algebraic variables not for controls.
+        Only relevant for states or algebraic variables NOT for controls.
 
     Returns
     -------
@@ -47,48 +48,74 @@ def _compute_bounds_for_all_nodes(
         nlp.set_node_index(node)
         is_final_node = node == nlp.ns
         for interval_node in range(1 if is_final_node else repeat):
-            collapsed = _compute_bound_for_node(
+            collapsed = _compute_value_for_node(
                 node,
                 interval_node,
-                default_bound,
+                default_value,
                 repeat,
-                optimization_variable,
-                bounds,
+                variable_container,
+                defined_values,
                 scaling,
             )
             all_bounds += [np.reshape(collapsed.T, (-1, 1))]
     return np.concatenate(all_bounds, axis=0)
 
 
-def _compute_bound_for_node(
+def _compute_value_for_node(
     node: int,
     interval_node: int,
-    default_bound: np.ndarray,  # "min" or "max"
+    default_value: np.ndarray,
     repeat: int,
-    states: OptimizationVariableContainer,
-    states_bounds: dict,  # min or max only not both
-    states_scaling: "VariableScalingList",
+    variable_container: OptimizationVariableContainer,
+    defined_values: dict,
+    variable_scaling: "VariableScalingList",
 ) -> np.ndarray:
-    collapsed_values = np.ndarray((states.shape, 1))
+    """
+    Compute the value for a specific node and interval node.
 
-    real_keys = [key for key in states_bounds.keys() if key is not "None"]
+    Parameters
+    ----------
+    node: int
+        The current node index of the interval
+    interval_node: int
+        The current interval node index (0 for the first node, 1 for the second node, etc.) within the interval ,
+    default_value: np.ndarray
+        The default value to use if the variable is not defined
+        (either DEFAULT_MIN_BOUND, DEFAULT_MAX_BOUND, or DEFAULT_INITIAL_GUESS)
+    repeat: int
+        Number of steps for direct collocation, this is the number of nodes per interval
+    variable_container: OptimizationVariableContainer
+        The container for the optimization variables for states, controls, or algebraic variables that we refer to
+    defined_values: dict
+        The defined values for the variable, which can be min bounds, max bounds, or initial guesses.
+        They are defined through InterpolationType and will be used to evaluate the value at the given node.
+    variable_scaling: "VariableScalingList"
+        The scaling factors for the variables, which are used to scale the evaluated values.
+
+    Returns
+    -------
+
+    """
+    collapsed_values = np.ndarray((variable_container.shape, 1))
+
+    real_keys = [key for key in defined_values.keys() if key is not "None"]
     for key in real_keys:
 
-        if states_bounds[key].type == InterpolationType.ALL_POINTS:
+        if defined_values[key].type == InterpolationType.ALL_POINTS:
             point = node * repeat + interval_node
         else:
             point = _get_interpolation_point(node, interval_node)
 
         value = (
-            states_bounds[key].evaluate_at(shooting_point=point, repeat=repeat)[:, np.newaxis]
-            / states_scaling[key].scaling
+            defined_values[key].evaluate_at(shooting_point=point, repeat=repeat)[:, np.newaxis]
+            / variable_scaling[key].scaling
         )
 
-        collapsed_values[states[key].index, :] = value
+        collapsed_values[variable_container[key].index, :] = value
 
-    key_not_in_bounds = set(states.keys()) - set(states_bounds.keys())
-    for key in key_not_in_bounds:
-        collapsed_values[states[key].index, :] = default_bound
+    keys_not_defined = set(variable_container.keys()) - set(defined_values.keys())
+    for key in keys_not_defined:
+        collapsed_values[variable_container[key].index, :] = default_value
 
     return collapsed_values
 
