@@ -18,10 +18,21 @@ def _dispatch_state_bounds(
     states: OptimizationVariableContainer,
     states_bounds: BoundsList,
     states_scaling: "VariableScalingList",
-    n_steps_callback: Callable,
+    original_repeat: int,
 ) -> DoubleNpArrayTuple:
+    """
+    Dispatch the bounds for the states of the optimization problem to the bound vector.
+    Parameters
+    ----------
+    nlp
+    states
+    states_bounds
+    states_scaling
+    original_repeat : int
+        The number of steps in each interval for direct collocation only.
+
+    """
     states.node_index = 0
-    original_repeat = n_steps_callback(0)
 
     # Dimension checks
     real_keys = [key for key in states_bounds.keys() if key is not "None"]
@@ -57,7 +68,6 @@ def _dispatch_control_bounds(
     controls: OptimizationVariableContainer,
     control_bounds: BoundsList,
     control_scaling: "VariableScalingList",
-    n_steps_callback: Callable,
 ) -> DoubleNpArrayTuple:
     original_repeat = 1
     nlp.set_node_index(0)
@@ -184,10 +194,11 @@ def _compute_bound_for_node(
 
 def _get_interpolation_point(node: int, interval_node: int) -> int:
     """
-    This function determines the interpolation point to use for InterpolationType OTHER THAN ALL_POINTS.
+    This function determines the interpolation point to use
+        for InterpolationType except interpolationType.ALL_POINTS
 
     NOTE: This logic allows CONSTANT_WITH_FIRST_AND_LAST to work with OdeSolver.COLLOCATION,
-    This would also work for InterpolationType.CONSTANT, and ALL_POINTS, but not for the others.
+    OdeSolver.COLLOCATION would also work for InterpolationType.CONSTANT, and ALL_POINTS, but not for the others.
 
     In the case of direct collocation, we ENFORCE the nodes within the first interval to take the value of
      the node of index 1 instead of 0.
@@ -195,10 +206,11 @@ def _get_interpolation_point(node: int, interval_node: int) -> int:
     n = node, i = interval, p = returned point
 
     Standard Case:                  Collocation Case:
-    (direct multiple shooting)      (Direct Collocation)
+    (Direct multiple shooting)      (Direct Collocation)
     n0 n1 n2 n3 ... nN              n_{0,0} n_{0,1} n_{0,2} ... n_{0,N}, n_{1,0} ...
     |  |  |  |      |               /       |       |             |       |
     p0 p1 p2 p3 ... pN             0        1       1             1       1
+                                      (enforced) (enforced)   (enforced)
 
     Parameters
     ----------

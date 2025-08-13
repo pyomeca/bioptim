@@ -94,7 +94,7 @@ class OptimizationVectorHelper:
         # For states
         for nlp in ocp.nlp:
             min_bounds, max_bounds = _dispatch_state_bounds(
-                nlp, nlp.states, nlp.x_bounds, nlp.x_scaling, lambda n: nlp.n_states_decision_steps(n)
+                nlp, nlp.states, nlp.x_bounds, nlp.x_scaling, nlp.n_states_decision_steps(0)
             )
 
             v_bounds_min = np.concatenate((v_bounds_min, min_bounds))
@@ -102,9 +102,7 @@ class OptimizationVectorHelper:
 
         # For controls
         for nlp in ocp.nlp:
-            min_bounds, max_bounds = _dispatch_control_bounds(
-                nlp, nlp.controls, nlp.u_bounds, nlp.u_scaling, lambda n: 1
-            )
+            min_bounds, max_bounds = _dispatch_control_bounds(nlp, nlp.controls, nlp.u_bounds, nlp.u_scaling)
 
             v_bounds_min = np.concatenate((v_bounds_min, min_bounds))
             v_bounds_max = np.concatenate((v_bounds_max, max_bounds))
@@ -129,7 +127,7 @@ class OptimizationVectorHelper:
                 nlp.algebraic_states,
                 nlp.a_bounds,
                 nlp.a_scaling,
-                lambda n: nlp.n_algebraic_states_decision_steps(n),
+                nlp.n_algebraic_states_decision_steps(0),
             )
 
             v_bounds_min = np.concatenate((v_bounds_min, min_bounds))
