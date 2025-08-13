@@ -115,13 +115,13 @@ class TorqueDynamics(StateDynamics):
                     controls,
                 )
 
-                defects = slopes * nlp.dt - dxdt_defects * nlp.dt
+                defects = slopes - dxdt_defects
 
             elif nlp.dynamics_type.ode_solver.defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
                 if nlp.model.fatigue is not None:
                     raise NotImplementedError("Fatigue is not implemented yet with inverse dynamics defects.")
 
-                defects[q_indices, 0] = slope_q * nlp.dt - qdot * nlp.dt
+                defects[q_indices, 0] = slope_q - qdot
 
                 tau_id = DynamicsFunctions.inverse_dynamics(
                     nlp,

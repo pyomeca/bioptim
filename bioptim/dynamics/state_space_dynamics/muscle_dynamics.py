@@ -128,7 +128,7 @@ class MusclesDynamics(TorqueDynamics):
 
                     slopes[fatigue_indices, 0] = slopes_fatigue
 
-                defects = slopes * nlp.dt - dxdt_defects * nlp.dt
+                defects = slopes - dxdt_defects
 
             elif nlp.dynamics_type.ode_solver.defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
                 if nlp.model.fatigue is not None:
@@ -137,7 +137,7 @@ class MusclesDynamics(TorqueDynamics):
                     raise NotImplementedError("Inverse dynamics, cannot be used with ContactType.RIGID_EXPLICIT yet")
 
                 dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-                defects[nlp.states["q"].index, 0] = slope_q * nlp.dt - dq * nlp.dt
+                defects[nlp.states["q"].index, 0] = slope_q - dq
 
                 external_forces = DynamicsFunctions.get_external_forces_from_contacts(
                     nlp, q, qdot, nlp.model.contact_types, external_forces
