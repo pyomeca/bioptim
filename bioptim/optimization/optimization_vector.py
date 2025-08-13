@@ -63,51 +63,7 @@ class OptimizationVectorHelper:
         """
         vector_layout = VectorLayout(ocp)
         ocp.vector_layout = vector_layout
-
-        ocp_values = {}
-        # Global time parameter
-        ocp_values[("global", "time")] = ocp.dt_parameter.cx
-        ocp_values[("global", "parameters")] = ocp.parameters.scaled.cx
-
-        # Per-phase, per-node values
-        for p, nlp in enumerate(ocp.nlp):
-            # States
-            for node, x in enumerate(nlp.X_scaled):
-                ocp_values[(p, "states", node)] = x.reshape((-1, 1))
-            # Controls
-            for node, u in enumerate(nlp.U_scaled):
-                ocp_values[(p, "controls", node)] = u
-            # Algebraic states
-            for node, a in enumerate(nlp.A_scaled):
-                ocp_values[(p, "algebraic_states", node)] = a.reshape((-1, 1))
-
-        return vector_layout.serialize(ocp_values)
-
-        # t_scaled = ocp.dt_parameter.cx
-        # x_scaled = []
-        # u_scaled = []
-        # a_scaled = []
-        # p_scaled = ocp.parameters.scaled.cx
-        #
-        # for nlp in ocp.nlp:
-        #     x_scaled += [x.reshape((-1, 1)) for x in nlp.X_scaled]
-        #     u_scaled += nlp.U_scaled
-        #     a_scaled += [a.reshape((-1, 1)) for a in nlp.A_scaled]
-        #
-        # return vertcat(t_scaled, *x_scaled, *u_scaled, p_scaled, *a_scaled)
-        # build v which is in a form xi, ui, ai, xi+1, ui+1, ai+1, etc ...
-        # v_scaled = []
-        #
-        # for nlp in ocp.nlp:
-        #     for x_scaled_i, u_scaled_i, a_scaled_i in zip(nlp.X_scaled, nlp.U_scaled, nlp.A_scaled):
-        #         v_scaled += [x_scaled_i.reshape((-1, 1))]
-        #         v_scaled += [u_scaled_i]
-        #         v_scaled += [a_scaled_i.reshape((-1, 1))]
-        #     v_scaled += [nlp.X_scaled[-1].reshape((-1, 1))]
-        #     v_scaled += [nlp.A_scaled[-1].reshape((-1, 1))]
-        #
-        # return vertcat(t_scaled, vertcat(*v_scaled))
-        # return vertcat(t_scaled, *x_scaled, *u_scaled, p_scaled, *a_scaled)
+        return vector_layout.stack_from_ocp(ocp)
 
     @staticmethod
     def bounds_vectors(ocp: "OptimalControlProgram") -> DoubleNpArrayTuple:
@@ -513,3 +469,4 @@ def _dispatch_state_initial_guess(
             v_init = np.concatenate((v_init, np.reshape(collapsed_values_init.T, (-1, 1))))
 
     return v_init
+

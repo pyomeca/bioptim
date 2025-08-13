@@ -141,6 +141,27 @@ class VectorLayout:
         self.generator = self._pick_generator()
         self.index_map = self._build_index_map()  # maps (phase, var_type, node, key) -> slice
 
+    def stack_from_ocp(self, ocp):
+        """Given an OptimalControlProgram, stack all variables into a flat vector."""
+        ocp_values = {}
+        # Global time parameter
+        ocp_values[("global", "time")] = ocp.dt_parameter.cx
+        ocp_values[("global", "parameters")] = ocp.parameters.scaled.cx
+
+        # Per-phase, per-node values
+        for p, nlp in enumerate(ocp.nlp):
+            # States
+            for node, x in enumerate(nlp.X_scaled):
+                ocp_values[(p, "states", node)] = x.reshape((-1, 1))
+            # Controls
+            for node, u in enumerate(nlp.U_scaled):
+                ocp_values[(p, "controls", node)] = u
+            # Algebraic states
+            for node, a in enumerate(nlp.A_scaled):
+                ocp_values[(p, "algebraic_states", node)] = a.reshape((-1, 1))
+
+        return self.stack(ocp_values)
+
     def stack(self, ocp_values):
         """
         Given a dict of values keyed by index_map keys, build a flat vector.
@@ -219,20 +240,17 @@ class VectorLayout:
                 [phase][var_name][node] = ndarray   # algebraics
             )
         """
-        # Step 1: get list-based structure
         list_states, list_controls, params, list_algebraics = self.unstack_to_lists(vec)
 
         data_states, data_controls, data_algebraics = [], [], []
         data_parameters = {}
 
-        # Step 2: loop over phases once
         for p, nlp in enumerate(self.ocp.nlp):
 
             data_states += _extract_states_dict(list_states[p], nlp)
             data_controls += _extract_controls_dict(list_controls[p], nlp)
             data_algebraics += _extract_algebraics_dict(list_algebraics[p], nlp)
 
-        # Step 3: parameters (global)
         for key in self.ocp.parameters.keys():
             data_parameters[key] = params[self.ocp.parameters[key].index]
 
@@ -320,21 +338,3 @@ def _extract_algebraics_dict(list_data, nlp):
     """Extract algebraic states into dictionary format for one phase."""
     return _extract_attr_dict(list_data, nlp, "algebraic_states")
 
-
-# if __name__ == "__main__":
-#
-#     def my_custom_order():
-#         # yield global time already handled, this just yields other keys
-#         # e.g., alternate states and controls across all phases, then algebraics
-#         for p, nlp in enumerate(ocp.nlp):
-#             for node in range(nlp.n_nodes):
-#                 yield (p, "states", node), nlp.states.shape
-#                 yield (p, "controls", node), nlp.controls.shape
-#         for p, nlp in enumerate(ocp.nlp):
-#             for node in range(nlp.n_nodes):
-#                 yield (p, "algebraic_states", node), nlp.algebraic_states.shape
-#
-#     layout = VectorLayout(ocp, ordering="time-major")
-#     layout.register_ordering("my-order", my_custom_order)
-#     layout.ordering = "my-order"
-#     layout.index_map = layout._build_index_map()
