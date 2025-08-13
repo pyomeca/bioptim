@@ -490,6 +490,10 @@ class OptimizationVariableContainer:
 
     @node_index.setter
     def node_index(self, value: Int) -> None:
+        """
+        Set the node index to get the values (states, control, algebraic, etc...) at the right node index,
+        i.e. the right interval, when PhaseDynamics.ONE_PER_NODE is used each node has its own dynamics.
+        """
         if self.phase_dynamics == PhaseDynamics.ONE_PER_NODE:
             self._node_index = value
 
