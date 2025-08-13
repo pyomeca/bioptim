@@ -431,12 +431,12 @@ def test_get_time_aligned_with_controls_multi_phases(
     )
     assert time.shape[0] == controls["tau"].shape[1]
     if continuous:
-        if control_type.has_final_node
+        if control_type.has_a_final_node:
             assert time[-1] == 11
         else:
             assert time[-1] == 10.8
     else:
-        if control_type.has_final_node
+        if control_type.has_a_final_node:
             npt.assert_almost_equal(time[-1, 0], 4.0)
         else:
             npt.assert_almost_equal(time[-1, 0], 3.8)
@@ -449,12 +449,12 @@ def test_get_time_aligned_with_controls_multi_phases(
     )
     assert time.shape[0] == controls.shape[1]
     if continuous:
-        if control_type.has_final_node
+        if control_type.has_a_final_node:
             assert time[-1] == 11
         else:
             assert time[-1] == 10.8
     else:
-        if control_type.has_final_node
+        if control_type.has_a_final_node:
             npt.assert_almost_equal(time[-1, 0], 4.0)
         else:
             npt.assert_almost_equal(time[-1, 0], 3.8)
@@ -522,12 +522,12 @@ def test_get_time_aligned_with_controls_multi_phases(
     )
     assert time.shape[0] == controls["tau"].shape[1]
     if continuous:
-        if control_type.has_final_node
+        if control_type.has_a_final_node:
             assert time[-1] == 11
         else:
             assert time[-1] == 10.8
     else:
-        if control_type.has_final_node
+        if control_type.has_a_final_node:
             npt.assert_almost_equal(time[-1, 0], 4.0)
         else:
             npt.assert_almost_equal(time[-1, 0], 3.8)
@@ -540,12 +540,12 @@ def test_get_time_aligned_with_controls_multi_phases(
     )
     assert time.shape[0] == controls.shape[1]
     if continuous:
-        if control_type.has_final_node
+        if control_type.has_a_final_node:
             assert time[-1] == 11
         else:
             assert time[-1] == 10.8
     else:
-        if control_type.has_final_node
+        if control_type.has_a_final_node:
             npt.assert_almost_equal(time[-1, 0], 4.0)
         else:
             npt.assert_almost_equal(time[-1, 0], 3.8)
