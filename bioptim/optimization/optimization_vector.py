@@ -16,6 +16,7 @@ from ..misc.enums import ControlType, InterpolationType
 from ..limits.path_conditions import BoundsList, InitialGuessList
 from ..optimization.optimization_variable import OptimizationVariableContainer
 from .bound_vector import _dispatch_state_bounds, _dispatch_control_bounds
+from .init_vector import _dispatch_state_initial_guess
 
 
 class OptimizationVectorHelper:
@@ -152,7 +153,7 @@ class OptimizationVectorHelper:
         # For states
         for nlp in ocp.nlp:
             init = _dispatch_state_initial_guess(
-                nlp, nlp.states, nlp.x_init, nlp.x_scaling, lambda n: nlp.n_states_decision_steps(n)
+                nlp, nlp.states, nlp.x_init, nlp.x_scaling, nlp.n_states_decision_steps(0)
             )
             v_init = np.concatenate((v_init, init))
 
@@ -206,7 +207,7 @@ class OptimizationVectorHelper:
                 nlp.algebraic_states,
                 nlp.a_init,
                 nlp.a_scaling,
-                lambda n: nlp.n_algebraic_states_decision_steps(n),
+                nlp.n_algebraic_states_decision_steps(0),
             )
 
             v_init = np.concatenate((v_init, init))
@@ -342,51 +343,3 @@ class OptimizationVectorHelper:
                 offset += na * n_cols
 
         return data_states, data_controls, data_parameters, data_algebraic_states
-
-
-def _dispatch_state_initial_guess(
-    nlp: "NonLinearProgram",
-    states: OptimizationVariableContainer,
-    states_init: InitialGuessList,
-    states_scaling: "VariableScalingList",
-    n_steps_callback: Callable,
-) -> NpArray:
-    states.node_index = 0
-    repeat = n_steps_callback(0)
-
-    for key in states.keys():
-        if key in states_init.keys():
-            if states_init[key].type == InterpolationType.ALL_POINTS:
-                states_init[key].check_and_adjust_dimensions(states[key].cx.shape[0], nlp.ns * repeat)
-            else:
-                states_init[key].check_and_adjust_dimensions(states[key].cx.shape[0], nlp.ns)
-
-    v_init = np.ndarray((0, 1))
-    for k in range(nlp.n_states_nodes):
-        states.node_index = k
-
-        for p in range(repeat if k != nlp.ns else 1):
-            collapsed_values_init = np.ndarray((states.shape, 1))
-            for key in states:
-                if key in states_init.keys():
-                    if states_init[key].type == InterpolationType.ALL_POINTS:
-                        point = k * n_steps_callback(0) + p
-                    else:
-                        # This allows CONSTANT_WITH_FIRST_AND_LAST to work in collocations, but is flawed for the other ones
-                        # point refers to the column to use in the bounds matrix
-                        point = k if k != 0 else 0 if p == 0 else 1
-
-                    value_init = (
-                        states_init[key].init.evaluate_at(shooting_point=point, repeat=repeat)[:, np.newaxis]
-                        / states_scaling[key].scaling
-                    )
-
-                else:
-                    value_init = 0
-
-                # Organize the controls according to the correct indices
-                collapsed_values_init[states[key].index, :] = value_init
-
-            v_init = np.concatenate((v_init, np.reshape(collapsed_values_init.T, (-1, 1))))
-
-    return v_init
