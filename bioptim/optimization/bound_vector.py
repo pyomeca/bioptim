@@ -21,21 +21,21 @@ def _dispatch_state_bounds(
     n_steps_callback: Callable,
 ) -> DoubleNpArrayTuple:
     states.node_index = 0
-    repeat = n_steps_callback(0)
+    original_repeat = n_steps_callback(0)
 
     # Dimension checks
     real_keys = [key for key in states_bounds.keys() if key is not "None"]
     for key in real_keys:
-        repeat = repeat if states_bounds[key].type == InterpolationType.ALL_POINTS else 1
-        n_shooting = nlp.ns * repeat
+        repeat_for_key = original_repeat if states_bounds[key].type == InterpolationType.ALL_POINTS else 1
+        n_shooting = nlp.ns * repeat_for_key
         states_bounds[key].check_and_adjust_dimensions(states[key].cx.shape[0], n_shooting)
 
     all_bounds = []
     for k in range(nlp.n_states_nodes):
         states.node_index = k
-        for p in range(repeat if k != nlp.ns else 1):
+        for p in range(original_repeat if k != nlp.ns else 1):
             collapsed = _compute_bound_for_node(
-                k, p, DEFAULT_MIN_BOUND, repeat, n_steps_callback, states, states_bounds.min(), states_scaling
+                k, p, DEFAULT_MIN_BOUND, original_repeat, n_steps_callback, states, states_bounds.min(), states_scaling
             )
             all_bounds += [np.reshape(collapsed.T, (-1, 1))]
     v_bounds_min = np.concatenate(all_bounds, axis=0)
@@ -43,9 +43,9 @@ def _dispatch_state_bounds(
     all_bounds = []
     for k in range(nlp.n_states_nodes):
         states.node_index = k
-        for p in range(repeat if k != nlp.ns else 1):
+        for p in range(original_repeat if k != nlp.ns else 1):
             collapsed = _compute_bound_for_node(
-                k, p, DEFAULT_MAX_BOUND, repeat, n_steps_callback, states, states_bounds.max(), states_scaling
+                k, p, DEFAULT_MAX_BOUND, original_repeat, n_steps_callback, states, states_bounds.max(), states_scaling
             )
             all_bounds += [np.reshape(collapsed.T, (-1, 1))]
     v_bounds_max = np.concatenate(all_bounds, axis=0)
