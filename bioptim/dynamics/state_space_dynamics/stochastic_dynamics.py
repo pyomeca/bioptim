@@ -137,8 +137,8 @@ class StochasticTorqueDynamics(TorqueDynamics):
             slope_q, slope_qdot = self.get_basic_slopes(nlp)
 
             defects = nlp.cx(nlp.states.shape, 1)
-            defects[q_indices, 0] = slope_q * nlp.dt - dq * nlp.dt
-            defects[qdot_indices, 0] = slope_qdot * nlp.dt - ddq * nlp.dt
+            defects[q_indices, 0] = slope_q - dq
+            defects[qdot_indices, 0] = slope_qdot - ddq
 
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 

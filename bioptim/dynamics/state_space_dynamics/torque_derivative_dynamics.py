@@ -82,11 +82,11 @@ class TorqueDerivativeDynamics(TorqueDynamics):
                 slopes[qdot_indices, 0] = slope_qdot
                 slopes[nlp.states["tau"].index, 0] = slope_tau
 
-                defects = slopes * nlp.dt - dxdt_defects * nlp.dt
+                defects = slopes - dxdt_defects
 
             elif nlp.dynamics_type.ode_solver.defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
 
-                defects[q_indices, 0] = slope_q * nlp.dt - qdot * nlp.dt
+                defects[q_indices, 0] = slope_q - qdot
 
                 tau_id = DynamicsFunctions.inverse_dynamics(
                     nlp,
@@ -98,7 +98,7 @@ class TorqueDerivativeDynamics(TorqueDynamics):
                 )
                 tau_defects = tau - tau_id
                 defects[qdot_indices, 0] = tau_defects
-                defects[nlp.states["tau"].index, 0] = slope_tau * nlp.dt - taudot * nlp.dt
+                defects[nlp.states["tau"].index, 0] = slope_tau - taudot
             else:
                 raise NotImplementedError(
                     f"The defect type {nlp.dynamics_type.ode_solver.defects_type} is not implemented yet for torque driven dynamics."
