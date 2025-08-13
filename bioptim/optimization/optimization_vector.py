@@ -15,7 +15,7 @@ from ..misc.parameters_types import (
 from ..misc.enums import ControlType, InterpolationType
 from ..limits.path_conditions import BoundsList, InitialGuessList
 from ..optimization.optimization_variable import OptimizationVariableContainer
-from .bound_vector import _dispatch_state_bounds
+from .bound_vector import _dispatch_state_bounds, _dispatch_control_bounds
 
 
 class OptimizationVectorHelper:
@@ -102,42 +102,12 @@ class OptimizationVectorHelper:
 
         # For controls
         for nlp in ocp.nlp:
-            nlp.set_node_index(0)
+            min_bounds, max_bounds = _dispatch_control_bounds(
+                nlp, nlp.controls, nlp.u_bounds, nlp.u_scaling, lambda n: 1
+            )
 
-            ns = nlp.ns
-            if nlp.control_type.has_a_final_node:
-                ns += 1
-
-            real_keys = [key for key in nlp.u_bounds.keys() if key is not "None"]
-            for key in real_keys:
-                nlp.u_bounds[key].check_and_adjust_dimensions(nlp.controls[key].cx.shape[0], ns - 1)
-
-            for k in range(ns):
-                nlp.set_node_index(k)
-                collapsed_values_min = np.ndarray((nlp.controls.shape, 1))
-                collapsed_values_max = np.ndarray((nlp.controls.shape, 1))
-                for key in nlp.controls:
-                    if key in nlp.u_bounds.keys():
-                        value_min = (
-                            nlp.u_bounds[key].min.evaluate_at(shooting_point=k)[:, np.newaxis]
-                            / nlp.u_scaling[key].scaling
-                        )
-                        value_max = (
-                            nlp.u_bounds[key].max.evaluate_at(shooting_point=k)[:, np.newaxis]
-                            / nlp.u_scaling[key].scaling
-                        )
-                        value_min = value_min[:, 0]
-                        value_max = value_max[:, 0]
-                    else:
-                        value_min = -np.inf
-                        value_max = np.inf
-
-                    # Organize the controls according to the correct indices
-                    collapsed_values_min[nlp.controls[key].index, 0] = value_min
-                    collapsed_values_max[nlp.controls[key].index, 0] = value_max
-
-                v_bounds_min = np.concatenate((v_bounds_min, np.reshape(collapsed_values_min.T, (-1, 1))))
-                v_bounds_max = np.concatenate((v_bounds_max, np.reshape(collapsed_values_max.T, (-1, 1))))
+            v_bounds_min = np.concatenate((v_bounds_min, min_bounds))
+            v_bounds_max = np.concatenate((v_bounds_max, max_bounds))
 
         # For parameters
         collapsed_values_min = np.ones((ocp.parameters.shape, 1)) * -np.inf

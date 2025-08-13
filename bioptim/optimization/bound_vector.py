@@ -36,6 +36,7 @@ def _dispatch_state_bounds(
         states,
         states_bounds.min(),
         states_scaling,
+        nlp.n_states_nodes,
         original_repeat,
     )
 
@@ -45,6 +46,48 @@ def _dispatch_state_bounds(
         states,
         states_bounds.max(),
         states_scaling,
+        nlp.n_states_nodes,
+        original_repeat,
+    )
+    return v_bounds_min, v_bounds_max
+
+
+def _dispatch_control_bounds(
+    nlp: "NonLinearProgram",
+    controls: OptimizationVariableContainer,
+    control_bounds: BoundsList,
+    control_scaling: "VariableScalingList",
+    n_steps_callback: Callable,
+) -> DoubleNpArrayTuple:
+    original_repeat = 1
+    nlp.set_node_index(0)
+
+    ns = nlp.ns
+    if nlp.control_type.has_a_final_node:
+        ns += 1
+
+    # Dimension checks
+    real_keys = [key for key in control_bounds.keys() if key is not "None"]
+    for key in real_keys:
+        control_bounds[key].check_and_adjust_dimensions(controls[key].cx.shape[0], ns - 1)
+
+    v_bounds_min = _compute_bounds_for_all_nodes(
+        nlp,
+        DEFAULT_MIN_BOUND,
+        controls,
+        control_bounds.min(),
+        control_scaling,
+        ns,
+        original_repeat,
+    )
+
+    v_bounds_max = _compute_bounds_for_all_nodes(
+        nlp,
+        DEFAULT_MAX_BOUND,
+        controls,
+        control_bounds.max(),
+        control_scaling,
+        ns,
         original_repeat,
     )
     return v_bounds_min, v_bounds_max
@@ -53,9 +96,10 @@ def _dispatch_state_bounds(
 def _compute_bounds_for_all_nodes(
     nlp: "NonLinearProgram",
     default_bound: np.ndarray,
-    states: OptimizationVariableContainer,
-    states_bounds: dict,  # "min" or "max" only, not both
-    states_scaling: "VariableScalingList",
+    optimization_variable: OptimizationVariableContainer,
+    bounds: dict,  # "min" or "max" only, not both
+    scaling: "VariableScalingList",
+    n_nodes: int,
     repeat: int,
 ) -> np.ndarray:
     """
@@ -66,18 +110,21 @@ def _compute_bounds_for_all_nodes(
 
     Parameters
     ----------
-    nlp : NonLinearProgram
-        The non-linear program being solved
+    nlp: NonLinearProgram
+        The non-linear program containing the optimization problem
     default_bound : np.ndarray
         The default bound value (either DEFAULT_MIN_BOUND or DEFAULT_MAX_BOUND)
-    states : OptimizationVariableContainer
+    optimization_variable : OptimizationVariableContainer
         The states variables container
-    states_bounds : dict
+    bounds : dict
         The bounds list object (either min or max bounds)
-    states_scaling : VariableScalingList
+    scaling : VariableScalingList
         The scaling factors for states
+    n_nodes : int
+        The number of state nodes in the optimization problem
     repeat : int
         Number of steps in each interval (for direct collocation, this is the number of nodes per interval)
+        Only relevant for states or algebraic variables not for controls.
 
     Returns
     -------
@@ -85,8 +132,8 @@ def _compute_bounds_for_all_nodes(
         The concatenated bounds for all nodes
     """
     all_bounds = []
-    for node in range(nlp.n_states_nodes):
-        states.node_index = node
+    for node in range(n_nodes):
+        nlp.set_node_index(node)
         is_final_node = node == nlp.ns
         for interval_node in range(1 if is_final_node else repeat):
             collapsed = _compute_bound_for_node(
@@ -94,9 +141,9 @@ def _compute_bounds_for_all_nodes(
                 interval_node,
                 default_bound,
                 repeat,
-                states,
-                states_bounds,
-                states_scaling,
+                optimization_variable,
+                bounds,
+                scaling,
             )
             all_bounds += [np.reshape(collapsed.T, (-1, 1))]
     return np.concatenate(all_bounds, axis=0)
