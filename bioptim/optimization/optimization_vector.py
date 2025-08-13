@@ -110,9 +110,9 @@ class OptimizationVectorHelper:
             else:
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
 
-            for key in nlp.controls.keys():
-                if key in nlp.u_bounds.keys():
-                    nlp.u_bounds[key].check_and_adjust_dimensions(nlp.controls[key].cx.shape[0], ns - 1)
+            real_keys = [key for key in nlp.u_bounds.keys() if key is not "None"]
+            for key in real_keys:
+                nlp.u_bounds[key].check_and_adjust_dimensions(nlp.controls[key].cx.shape[0], ns - 1)
 
             for k in range(ns):
                 nlp.set_node_index(k)
