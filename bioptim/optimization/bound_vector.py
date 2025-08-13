@@ -23,7 +23,7 @@ def _dispatch_state_bounds(
     states.node_index = 0
     repeat = n_steps_callback(0)
 
-    # Dimension check
+    # Dimension checks
     real_keys = [key for key in states_bounds.keys() if key is not "None"]
     for key in real_keys:
         repeat = repeat if states_bounds[key].type == InterpolationType.ALL_POINTS else 1
@@ -71,9 +71,9 @@ def _compute_bound_for_node(
         if states_bounds[key].type == InterpolationType.ALL_POINTS:
             point = k * n_steps_callback(0) + p
         else:
-            # This allows CONSTANT_WITH_FIRST_AND_LAST to work in collocations, but is flawed for the other ones
-            # point refers to the column to use in the bounds matrix
-            point = k if k != 0 else 0 if p == 0 else 1
+            point = _get_interpolation_point(node, interval_node)
+
+        value = states_bounds[key].evaluate_at(shooting_point=point, repeat=repeat)[:, np.newaxis]
 
         value = (
             states_bounds[key].evaluate_at(shooting_point=point, repeat=repeat)[:, np.newaxis]
@@ -86,3 +86,45 @@ def _compute_bound_for_node(
         collapsed_values[states[key].index, :] = default_bound
 
     return collapsed_values
+
+
+def _get_interpolation_point(node: int, interval_node: int) -> int:
+    """
+    This function determines the interpolation point to use for InterpolationType OTHER THAN ALL_POINTS.
+
+    NOTE: This logic allows CONSTANT_WITH_FIRST_AND_LAST to work with OdeSolver.COLLOCATION,
+    This would also work for InterpolationType.CONSTANT, and ALL_POINTS, but not for the others.
+
+    In the case of direct collocation, we ENFORCE the nodes within the first interval to take the value of
+     the node of index 1 instead of 0.
+
+    n = node, i = interval, p = returned point
+
+    Standard Case:                  Collocation Case:
+    (direct multiple shooting)      (Direct Collocation)
+    n0 n1 n2 n3 ... nN              n_{0,0} n_{0,1} n_{0,2} ... n_{0,N}, n_{1,0} ...
+    |  |  |  |      |               /       |       |             |       |
+    p0 p1 p2 p3 ... pN             0        1       1             1       1
+
+    Parameters
+    ----------
+    node: int
+        The current node index
+    interval_node: int
+        The current interval node index (0 for the first node, 1 for the second node, etc.),
+            in the case of direct collocation more decision variable exist within an interval.
+    Returns
+    -------
+    int
+        The new point/node to use for the given node and interval_node
+
+    """
+    is_first_node = node == 0
+    is_first_node_in_interval = interval_node == 0
+
+    if is_first_node and is_first_node_in_interval:
+        return 0
+    elif is_first_node and not is_first_node_in_interval:
+        return 1  # NOTE: This is the hack
+    else:
+        return node
