@@ -53,20 +53,23 @@ def compute_all_states(sol, bio_model: HolonomicTorqueBiorbdModel):
     qdot = np.zeros((bio_model.nb_q, n))
     qddot = np.zeros((bio_model.nb_q, n))
     lambdas = np.zeros((bio_model.nb_dependent_joints, n))
-    tau = np.zeros((bio_model.nb_tau, n_tau))
+    tau = np.zeros((bio_model.nb_tau, n_tau + 1))
 
     for i, independent_joint_index in enumerate(bio_model.independent_joint_index):
         tau[independent_joint_index, :-1] = controls["tau"][i, :]
     for i, dependent_joint_index in enumerate(bio_model.dependent_joint_index):
         tau[dependent_joint_index, :-1] = controls["tau"][i, :]
 
-    q_v_init = DM.zeros(bio_model.nb_dependent_joints)
+    q_v_init = DM.zeros(bio_model.nb_dependent_joints, n)
     for i in range(n):
-        q_v_i = bio_model.compute_q_v()(states["q_u"][:, i], q_v_init).toarray()
+        print(i)
+        q_v_i = bio_model.compute_q_v()(states["q_u"][:, i], q_v_init[:, i]).toarray()
         q[:, i] = bio_model.state_from_partition(states["q_u"][:, i][:, np.newaxis], q_v_i).toarray().squeeze()
         qdot[:, i] = bio_model.compute_qdot()(q[:, i], states["qdot_u"][:, i]).toarray().squeeze()
         qddot_u_i = (
-            bio_model.partitioned_forward_dynamics()(states["q_u"][:, i], states["qdot_u"][:, i], q_v_init, tau[:, i])
+            bio_model.partitioned_forward_dynamics()(
+                states["q_u"][:, i], states["qdot_u"][:, i], q_v_init[:, i], tau[:, i]
+            )
             .toarray()
             .squeeze()
         )
@@ -199,7 +202,7 @@ def main():
     ocp, bio_model = prepare_ocp(biorbd_model_path=model_path)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.IPOPT())
     print(sol.real_time_to_optimize)
 
     # --- Show results --- #
