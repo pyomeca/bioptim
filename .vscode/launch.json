@@ -5,6 +5,17 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Run examples GUI",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "bioptim.examples",
+            "justMyCode": true,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "cwd": "${fileDirname}"
+        },
+        {
             "name": "Python : fichier actif",
             "type": "debugpy",
             "request": "launch",
