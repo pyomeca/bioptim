@@ -15,6 +15,7 @@ from ..misc.parameters_types import (
 from ..misc.enums import ControlType, InterpolationType
 from ..limits.path_conditions import BoundsList, InitialGuessList
 from ..optimization.optimization_variable import OptimizationVariableContainer
+from .vector_layout import VectorLayout
 
 
 class OptimizationVectorHelper:
@@ -60,19 +61,9 @@ class OptimizationVectorHelper:
         -------
         The vector of all variables
         """
-
-        t_scaled = ocp.dt_parameter.cx
-        x_scaled = []
-        u_scaled = []
-        a_scaled = []
-        p_scaled = ocp.parameters.scaled.cx
-
-        for nlp in ocp.nlp:
-            x_scaled += [x.reshape((-1, 1)) for x in nlp.X_scaled]
-            u_scaled += nlp.U_scaled
-            a_scaled += [a.reshape((-1, 1)) for a in nlp.A_scaled]
-
-        return vertcat(t_scaled, *x_scaled, *u_scaled, p_scaled, *a_scaled)
+        vector_layout = VectorLayout(ocp)
+        ocp.vector_layout = vector_layout
+        return vector_layout.stack_from_ocp(ocp)
 
     @staticmethod
     def bounds_vectors(ocp: "OptimalControlProgram") -> DoubleNpArrayTuple:
@@ -478,3 +469,4 @@ def _dispatch_state_initial_guess(
             v_init = np.concatenate((v_init, np.reshape(collapsed_values_init.T, (-1, 1))))
 
     return v_init
+
