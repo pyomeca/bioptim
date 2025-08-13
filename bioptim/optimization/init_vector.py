@@ -1,12 +1,10 @@
-import numpy as np
-
 from ..misc.parameters_types import (
     NpArray,
 )
 
 from ..misc.enums import InterpolationType
 from ..optimization.non_linear_program import NonLinearProgram
-from ..limits.path_conditions import InitialGuessList, InitialGuess
+from ..limits.path_conditions import InitialGuessList
 from ..optimization.optimization_variable import OptimizationVariableContainer
 from .vector_utils import _compute_values_for_all_nodes
 

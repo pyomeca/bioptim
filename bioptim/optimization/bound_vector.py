@@ -2,7 +2,6 @@ import numpy as np
 
 from ..misc.parameters_types import (
     DoubleNpArrayTuple,
-    Callable,
 )
 
 from ..misc.enums import InterpolationType
