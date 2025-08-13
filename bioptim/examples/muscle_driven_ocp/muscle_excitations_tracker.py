@@ -16,7 +16,7 @@ from matplotlib import pyplot as plt
 from scipy.integrate import solve_ivp
 
 from bioptim import (
-    MusclesBiorbdModel,
+    MusclesWithExcitationsBiorbdModel,
     OptimalControlProgram,
     NonLinearProgram,
     BiMapping,
@@ -37,7 +37,7 @@ from bioptim.optimization.optimization_variable import OptimizationVariableConta
 
 
 def generate_data(
-    bio_model: MusclesBiorbdModel,
+    bio_model: MusclesWithExcitationsBiorbdModel,
     final_time: float,
     n_shooting: int,
     use_residual_torque: bool = True,
@@ -210,7 +210,7 @@ def generate_data(
 
 
 def prepare_ocp(
-    bio_model: MusclesBiorbdModel,
+    bio_model: MusclesWithExcitationsBiorbdModel,
     final_time: float,
     n_shooting: int,
     markers_ref: np.ndarray,
@@ -331,9 +331,7 @@ def main():
 
     # Define the problem
     use_residual_torque = True
-    bio_model = MusclesBiorbdModel(
-        "models/arm26.bioMod", with_residual_torque=use_residual_torque, with_excitation=True
-    )
+    bio_model = MusclesWithExcitationsBiorbdModel("models/arm26.bioMod", with_residual_torque=use_residual_torque)
     final_time = 0.5
     n_shooting_points = 30
     phase_dynamics = PhaseDynamics.SHARED_DURING_THE_PHASE
@@ -345,9 +343,7 @@ def main():
 
     # Track these data
     # To allow for non free variable, the model must be reloaded
-    bio_model = MusclesBiorbdModel(
-        "models/arm26.bioMod", with_residual_torque=use_residual_torque, with_excitation=True
-    )
+    bio_model = MusclesWithExcitationsBiorbdModel("models/arm26.bioMod", with_residual_torque=use_residual_torque)
     ocp = prepare_ocp(
         bio_model,
         final_time,

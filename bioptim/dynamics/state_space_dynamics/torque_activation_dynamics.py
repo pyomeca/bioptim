@@ -7,12 +7,11 @@ from .torque_dynamics import TorqueDynamics
 
 class TorqueActivationDynamics(TorqueDynamics):
     def __init__(self, with_residual_torque: Bool, fatigue: FatigueList):
-        super().__init__(fatigue=None)
+        super().__init__(fatigue=fatigue)
 
         if with_residual_torque:
             self.control_configuration += [Controls.RESIDUAL_TAU]
         self.with_residual_torque = with_residual_torque
-        self.fatigue = fatigue
 
     def get_basic_variables(self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries):
         if nlp.model.fatigue is not None:

@@ -22,6 +22,7 @@ from bioptim import (
     ContactType,
     OdeSolver,
     DefectType,
+    MusclesWithExcitationsBiorbdModel,
 )
 
 from ..utils import TestUtils
@@ -1433,12 +1434,12 @@ def test_muscle_driven(
                 external_force_set=external_forces,
             )
     else:
-        nlp.model = MusclesBiorbdModel(
+        muscle_class = MusclesWithExcitationsBiorbdModel if with_excitation else MusclesBiorbdModel
+        nlp.model = muscle_class(
             TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod",
             contact_types=contact_types,
             external_force_set=external_forces,
             with_residual_torque=with_residual_torque,
-            with_excitation=with_excitation,
         )
         nlp.dynamics_type = DynamicsOptions(
             expand_dynamics=True,
