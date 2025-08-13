@@ -12,7 +12,7 @@ from .multi_biorbd_model import MultiBiorbdModel
 from .stochastic_biorbd_model import StochasticBiorbdModel
 from .holonomic_biorbd_model import HolonomicBiorbdModel
 from .variational_biorbd_model import VariationalBiorbdModel
-from ..protocols.abstract_model_dynamics import (
+from ...dynamics.state_space_dynamics import (
     TorqueDynamics,
     StochasticTorqueDynamics,
     HolonomicTorqueDynamics,

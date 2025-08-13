@@ -8,9 +8,9 @@ from ...misc.mapping import BiMappingList
 from ...optimization.parameters import ParameterList
 from ...optimization.variable_scaling import VariableScaling
 from ...optimization.problem_type import SocpType
-from ..protocols.abstract_model_dynamics import DynamicalModel
 
-from ...misc.parameters_types import Int, Str, Bool, NpArray
+
+from ...misc.parameters_types import Int, Bool, NpArray
 
 
 def _compute_torques_from_noise_and_feedback_default(
@@ -43,7 +43,7 @@ class StochasticBiorbdModel(BiorbdModel):
 
     def __init__(
         self,
-        bio_model: list | tuple | DynamicalModel,
+        bio_model: list | tuple,
         problem_type: SocpType,
         n_references: Int,
         n_feedbacks: Int,
