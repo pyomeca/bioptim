@@ -166,3 +166,12 @@ def _get_interpolation_point(node: int, sub_node: int) -> int:
         return 0 if is_first_subnode else 1  # This the enforced hack
     else:
         return node
+
+
+def dimension_check(
+    variable_container: OptimizationVariableContainer, defined_values: dict, nlp_n_shooting: int, repeat: int
+):
+    for key in defined_values.real_keys():
+        repeat_for_key = repeat if defined_values[key].type == InterpolationType.ALL_POINTS else 1
+        n_shooting = nlp_n_shooting * repeat_for_key
+        defined_values[key].check_and_adjust_dimensions(variable_container[key].cx.shape[0], n_shooting)
