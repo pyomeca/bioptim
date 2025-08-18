@@ -684,12 +684,18 @@ class BoundsList(OptionDict):
         raise NotImplementedError("Printing of BoundsList is not ready yet")
 
     def max(self) -> list | dict:
-        """access the max of each element in the list"""
+        """
+        Access the maximal value of each element (e.g. each decision variable) declared by the user.
+        Note that it won't present the values interpolated but only the declared values.
+        """
         max_bounds = [{key: element[key].max for key in element} for element in self.options]
         return max_bounds[0] if len(max_bounds) == 1 else max_bounds
 
     def min(self) -> list | dict:
-        """access the min of each element in the list"""
+        """
+        Access the minimal value of each element (e.g. each decision variable) declared by the user.
+        Note that it won't present the values interpolated but only the declared values.
+        """
         min_bounds = [{key: element[key].min for key in element} for element in self.options]
         return min_bounds[0] if len(min_bounds) == 1 else min_bounds
 
