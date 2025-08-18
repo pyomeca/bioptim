@@ -2,6 +2,7 @@ import numpy as np
 
 from ..misc.enums import InterpolationType
 from ..optimization.optimization_variable import OptimizationVariableContainer
+
 DEFAULT_INITIAL_GUESS = 0
 DEFAULT_MIN_BOUND = -np.inf
 DEFAULT_MAX_BOUND = np.inf
@@ -50,10 +51,10 @@ def _compute_values_for_all_nodes(
     for node in range(n_nodes):
         nlp.set_node_index(node)
         is_final_node = node == nlp.ns
-        for interval_node in range(1 if is_final_node else repeat):
+        for sub_node in range(1 if is_final_node else repeat):
             collapsed = _compute_value_for_node(
                 node,
-                interval_node,
+                sub_node,
                 default_value,
                 repeat,
                 variable_container,
@@ -66,7 +67,7 @@ def _compute_values_for_all_nodes(
 
 def _compute_value_for_node(
     node: int,
-    interval_node: int,
+    sub_node: int,
     default_value: np.ndarray,
     repeat: int,
     variable_container: OptimizationVariableContainer,
@@ -74,13 +75,13 @@ def _compute_value_for_node(
     variable_scaling: "VariableScalingList",
 ) -> np.ndarray:
     """
-    Compute the value for a specific node and interval node.
+    Compute the value for a specific node and sub node.
 
     Parameters
     ----------
     node: int
         The current node index of the interval
-    interval_node: int
+    sub_node: int
         The current interval node index (0 for the first node, 1 for the second node, etc.) within the interval ,
     default_value: np.ndarray
         The default value to use if the variable is not defined
@@ -105,9 +106,9 @@ def _compute_value_for_node(
     for key in real_keys:
 
         if defined_values[key].type == InterpolationType.ALL_POINTS:
-            point = node * repeat + interval_node
+            point = node * repeat + sub_node
         else:
-            point = _get_interpolation_point(node, interval_node)
+            point = _get_interpolation_point(node, sub_node)
 
         value = (
             defined_values[key].evaluate_at(shooting_point=point, repeat=repeat)[:, np.newaxis]
@@ -123,7 +124,7 @@ def _compute_value_for_node(
     return collapsed_values
 
 
-def _get_interpolation_point(node: int, interval_node: int) -> int:
+def _get_interpolation_point(node: int, sub_node: int) -> int:
     """
     This function determines the interpolation point to use
         for InterpolationType except interpolationType.ALL_POINTS
@@ -147,23 +148,21 @@ def _get_interpolation_point(node: int, interval_node: int) -> int:
     ----------
     node: int
         The current node index
-    interval_node: int
+    sub_node: int
         The current interval node index (0 for the first node, 1 for the second node, etc.),
             in the case of direct collocation more decision variable exist within an interval.
     Returns
     -------
     int
-        The new point/node to use for the given node and interval_node
+        The new point/node to use for the given node and sub_node
 
     """
     is_first_node = node == 0
 
     # always true for direct multiple shooting, but not for direct collocation
-    is_first_node_in_interval = interval_node == 0
+    is_first_subnode = sub_node == 0
 
-    if is_first_node and is_first_node_in_interval:
-        return 0
-    elif is_first_node and not is_first_node_in_interval:
-        return 1  # NOTE: This is the hack
+    if is_first_node:
+        return 0 if is_first_subnode else 1  # This the enforced hack
     else:
         return node

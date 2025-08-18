@@ -64,12 +64,9 @@ def _dispatch_control_bounds(
     control_bounds: BoundsList,
     control_scaling: "VariableScalingList",
 ) -> DoubleNpArrayTuple:
-    original_repeat = 1
     nlp.set_node_index(0)
 
-    ns = nlp.ns
-    if nlp.control_type.has_a_final_node:
-        ns += 1
+    ns = nlp.ns + 1 if nlp.control_type.has_a_final_node else nlp.ns
 
     # Dimension checks
     for key in control_bounds.real_keys():
@@ -82,7 +79,7 @@ def _dispatch_control_bounds(
         control_bounds.min(),
         control_scaling,
         ns,
-        original_repeat,
+        repeat=1,
     )
 
     v_bounds_max = _compute_values_for_all_nodes(
@@ -92,6 +89,6 @@ def _dispatch_control_bounds(
         control_bounds.max(),
         control_scaling,
         ns,
-        original_repeat,
+        repeat=1,
     )
     return v_bounds_min, v_bounds_max
