@@ -31,9 +31,6 @@ class TorqueFreeFloatingBaseDynamics(TorqueDynamics):
 
     def get_basic_variables(self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries):
 
-        if nlp.model.fatigue is not None:
-            raise RuntimeError("Fatigue is not implemented yet for free floating base dynamics.")
-
         # Get variables from the right place
         q_roots = DynamicsFunctions.get(nlp.states["q_roots"], states)
         q_joints = DynamicsFunctions.get(nlp.states["q_joints"], states)

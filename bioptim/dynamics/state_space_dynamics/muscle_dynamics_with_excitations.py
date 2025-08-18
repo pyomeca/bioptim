@@ -31,7 +31,6 @@ class MusclesDynamicsWithExcitations(TorqueDynamics):
         self.algebraic_configuration = []
         self.functions = []
         self.with_residual_torque = with_residual_torque
-        self.fatigue = fatigue
 
     def get_basic_variables(
         self,

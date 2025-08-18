@@ -27,6 +27,7 @@ from bioptim import (
     States,
     Controls,
     StateDynamics,
+    MusclesWithExcitationsBiorbdModel,
 )
 
 from ..utils import TestUtils
