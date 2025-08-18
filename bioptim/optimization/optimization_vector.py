@@ -17,6 +17,7 @@ from ..limits.path_conditions import BoundsList, InitialGuessList
 from ..optimization.optimization_variable import OptimizationVariableContainer
 from .bound_vector import _dispatch_state_bounds, _dispatch_control_bounds
 from .init_vector import _dispatch_state_initial_guess
+from .vector_utils import DEFAULT_INITIAL_GUESS, DEFAULT_MIN_BOUND, DEFAULT_MAX_BOUND
 
 
 class OptimizationVectorHelper:
@@ -109,8 +110,8 @@ class OptimizationVectorHelper:
             v_bounds_max = np.concatenate((v_bounds_max, max_bounds))
 
         # For parameters
-        collapsed_values_min = np.ones((ocp.parameters.shape, 1)) * -np.inf
-        collapsed_values_max = np.ones((ocp.parameters.shape, 1)) * np.inf
+        collapsed_values_min = np.ones((ocp.parameters.shape, 1)) * DEFAULT_MIN_BOUND
+        collapsed_values_max = np.ones((ocp.parameters.shape, 1)) * DEFAULT_MAX_BOUND
         for key in ocp.parameters.keys():
             if key not in ocp.parameter_bounds.keys():
                 continue
@@ -193,7 +194,7 @@ class OptimizationVectorHelper:
         collapsed_values = np.zeros((ocp.parameters.shape, 1))
         for key in ocp.parameters.keys():
             if key not in ocp.parameter_init.keys():
-                v_init = np.concatenate((v_init, np.zeros((ocp.parameters[key].size, 1))))
+                v_init = np.concatenate((v_init, DEFAULT_INITIAL_GUESS * np.ones((ocp.parameters[key].size, 1))))
                 continue
 
             scaled_init = ocp.parameter_init[key].scale(ocp.parameters[key].scaling.scaling)

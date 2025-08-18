@@ -7,10 +7,7 @@ from ..misc.parameters_types import (
 from ..misc.enums import InterpolationType
 from ..limits.path_conditions import BoundsList
 from ..optimization.optimization_variable import OptimizationVariableContainer
-from .vector_utils import _compute_values_for_all_nodes
-
-DEFAULT_MIN_BOUND = -np.inf
-DEFAULT_MAX_BOUND = np.inf
+from .vector_utils import _compute_values_for_all_nodes, DEFAULT_MAX_BOUND, DEFAULT_MIN_BOUND
 
 
 def _dispatch_state_bounds(

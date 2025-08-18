@@ -2,11 +2,14 @@ import numpy as np
 
 from ..misc.enums import InterpolationType
 from ..optimization.optimization_variable import OptimizationVariableContainer
+DEFAULT_INITIAL_GUESS = 0
+DEFAULT_MIN_BOUND = -np.inf
+DEFAULT_MAX_BOUND = np.inf
 
 
 def _compute_values_for_all_nodes(
     nlp: "NonLinearProgram",
-    default_value: np.ndarray,
+    default_value: np.ndarray | int,
     variable_container: OptimizationVariableContainer,
     defined_values: dict,  # "min" or "max" only, not both
     scaling: "VariableScalingList",
@@ -28,7 +31,7 @@ def _compute_values_for_all_nodes(
         (either DEFAULT_MIN_BOUND, DEFAULT_MAX_BOUND, or DEFAULT_INITIAL_GUESS)
     variable_container: OptimizationVariableContainer
         The container for the optimization variables for states, controls, or algebraic variables that we refer to
-    defined_values : dict
+    defined_values : dict or InitialGuessList
         The defined values for the variable, which can be min bounds, max bounds, or initial guesses.
     variable_scaling: "VariableScalingList"
         The scaling factors for the variables, which are used to scale the evaluated values.

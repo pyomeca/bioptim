@@ -6,9 +6,7 @@ from ..misc.enums import InterpolationType
 from ..optimization.non_linear_program import NonLinearProgram
 from ..limits.path_conditions import InitialGuessList
 from ..optimization.optimization_variable import OptimizationVariableContainer
-from .vector_utils import _compute_values_for_all_nodes
-
-DEFAULT_INITIAL_GUESS = 0
+from .vector_utils import _compute_values_for_all_nodes, DEFAULT_INITIAL_GUESS
 
 
 def _dispatch_state_initial_guess(
