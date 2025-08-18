@@ -62,7 +62,6 @@ def compute_all_states(sol, bio_model: HolonomicTorqueBiorbdModel):
 
     q_v_init = DM.zeros(bio_model.nb_dependent_joints, n)
     for i in range(n):
-        print(i)
         q_v_i = bio_model.compute_q_v()(states["q_u"][:, i], q_v_init[:, i]).toarray()
         q[:, i] = bio_model.state_from_partition(states["q_u"][:, i][:, np.newaxis], q_v_i).toarray().squeeze()
         qdot[:, i] = bio_model.compute_qdot()(q[:, i], states["qdot_u"][:, i]).toarray().squeeze()
