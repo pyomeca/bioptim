@@ -6,17 +6,13 @@ from ..misc.parameters_types import (
     CX,
     DMList,
     FloatList,
-    Int,
     NpArray,
     DoubleNpArrayTuple,
-    Callable,
 )
 
-from ..misc.enums import ControlType, InterpolationType
-from ..limits.path_conditions import BoundsList, InitialGuessList
-from ..optimization.optimization_variable import OptimizationVariableContainer
+from ..misc.enums import ControlType
 from .bound_vector import _dispatch_state_bounds, _dispatch_control_bounds
-from .init_vector import _dispatch_state_initial_guess
+from .init_vector import _dispatch_state_initial_guess, _dispatch_control_initial_guess
 from .vector_utils import DEFAULT_INITIAL_GUESS, DEFAULT_MIN_BOUND, DEFAULT_MAX_BOUND
 
 
@@ -160,35 +156,8 @@ class OptimizationVectorHelper:
 
         # For controls
         for nlp in ocp.nlp:
-            nlp.set_node_index(0)
-            if nlp.control_type in (ControlType.CONSTANT,):
-                ns = nlp.ns - 1
-            elif nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
-                ns = nlp.ns
-            else:
-                raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
-
-            for key in nlp.controls.keys():
-                if key in nlp.u_init.keys():
-                    nlp.u_init[key].check_and_adjust_dimensions(nlp.controls[key].cx.shape[0], ns)
-
-            for k in range(ns + 1):
-                nlp.set_node_index(k)
-                collapsed_values = np.ndarray((nlp.controls.shape, 1))
-                for key in nlp.controls:
-                    if key in nlp.u_init.keys():
-                        value = (
-                            nlp.u_init[key].init.evaluate_at(shooting_point=k)[:, np.newaxis]
-                            / nlp.u_scaling[key].scaling
-                        )
-                        value = value[:, 0]
-                    else:
-                        value = 0
-
-                    # Organize the controls according to the correct indices
-                    collapsed_values[nlp.controls[key].index, 0] = value
-
-                v_init = np.concatenate((v_init, np.reshape(collapsed_values.T, (-1, 1))))
+            init = _dispatch_control_initial_guess(nlp, nlp.controls, nlp.u_init, nlp.u_scaling)
+            v_init = np.concatenate((v_init, init))
 
         # For parameters
         collapsed_values = np.zeros((ocp.parameters.shape, 1))

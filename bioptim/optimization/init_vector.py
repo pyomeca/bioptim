@@ -34,3 +34,28 @@ def _dispatch_state_initial_guess(
     )
 
     return v_init
+
+
+def _dispatch_control_initial_guess(
+    nlp: "NonLinearProgram",
+    controls: OptimizationVariableContainer,
+    controls_init: InitialGuessList,
+    controls_scaling: "VariableScalingList",
+) -> NpArray:
+    nlp.set_node_index(0)
+    ns = nlp.ns + 1 if nlp.control_type.has_a_final_node else nlp.ns
+
+    for key in controls_init.real_keys():
+        controls_init[key].check_and_adjust_dimensions(controls[key].cx.shape[0], ns - 1)
+
+    v_init = _compute_values_for_all_nodes(
+        nlp,
+        DEFAULT_INITIAL_GUESS,
+        controls,
+        controls_init,
+        controls_scaling,
+        nlp.n_controls_nodes,
+        repeat=1,
+    )
+
+    return v_init
