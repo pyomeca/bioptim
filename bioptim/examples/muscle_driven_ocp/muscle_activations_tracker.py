@@ -324,9 +324,7 @@ def main():
 
     # Define the problem
     use_residual_torque = True
-    bio_model = MusclesBiorbdModel(
-        "models/arm26.bioMod", with_excitation=False, with_residual_torque=use_residual_torque
-    )
+    bio_model = MusclesBiorbdModel("models/arm26.bioMod", with_residual_torque=use_residual_torque)
     final_time = 0.5
     n_shooting_points = 50
 
@@ -340,7 +338,7 @@ def main():
 
     # Track these data
     bio_model = MusclesBiorbdModel(
-        "models/arm26.bioMod", with_excitation=False, with_residual_torque=use_residual_torque
+        "models/arm26.bioMod", with_residual_torque=use_residual_torque
     )  # To allow for non free variable, the model must be reloaded
     ocp = prepare_ocp(
         bio_model,

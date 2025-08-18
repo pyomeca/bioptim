@@ -6,7 +6,7 @@ import io
 import os
 import sys
 
-from bioptim import CostType, OdeSolver, Solver, MusclesBiorbdModel, PhaseDynamics
+from bioptim import CostType, OdeSolver, Solver, MusclesBiorbdModel, PhaseDynamics, MusclesWithExcitationsBiorbdModel
 from bioptim.limits.penalty import PenaltyOption
 from casadi import Function, MX
 import matplotlib
@@ -113,7 +113,7 @@ def test_plot_merged_graphs(phase_dynamics):
 
     # Define the problem
     model_path = bioptim_folder + "/models/arm26.bioMod"
-    bio_model = MusclesBiorbdModel(model_path, with_excitation=True, with_residual_torque=True)
+    bio_model = MusclesWithExcitationsBiorbdModel(model_path, with_residual_torque=True)
     final_time = 0.1
     n_shooting = 5
 
@@ -123,8 +123,8 @@ def test_plot_merged_graphs(phase_dynamics):
         bio_model, final_time, n_shooting, use_sx=False
     )
 
-    bio_model = MusclesBiorbdModel(
-        model_path, with_excitation=True, with_residual_torque=True
+    bio_model = MusclesWithExcitationsBiorbdModel(
+        model_path, with_residual_torque=True
     )  # To prevent from free variable, the model must be reloaded
     ocp = ocp_module.prepare_ocp(
         bio_model,

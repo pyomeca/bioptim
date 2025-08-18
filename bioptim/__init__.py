@@ -214,6 +214,7 @@ from .models.biorbd.model_dynamics import (
     TorqueActivationBiorbdModel,
     TorqueDerivativeBiorbdModel,
     MusclesBiorbdModel,
+    MusclesWithExcitationsBiorbdModel,
     JointAccelerationBiorbdModel,
     MultiTorqueBiorbdModel,
 )
@@ -230,6 +231,7 @@ from .dynamics.state_space_dynamics import (
     TorqueActivationDynamics,
     TorqueDerivativeDynamics,
     MusclesDynamics,
+    MusclesDynamicsWithExcitations,
     JointAccelerationDynamics,
 )
 from .dynamics.state_space_dynamics import StateDynamics
