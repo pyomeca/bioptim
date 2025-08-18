@@ -20,9 +20,7 @@ def _dispatch_state_initial_guess(
 ) -> NpArray:
     states.node_index = 0
 
-    # Dimension checks
-    real_keys = [key for key in states_init.keys() if key is not "None"]
-    for key in real_keys:
+    for key in states_init.real_keys():
         repeat_for_key = original_repeat if states_init[key].type == InterpolationType.ALL_POINTS else 1
         n_shooting = nlp.ns * repeat_for_key
         states_init[key].check_and_adjust_dimensions(states[key].cx.shape[0], n_shooting)

@@ -34,9 +34,7 @@ def _dispatch_state_bounds(
     """
     states.node_index = 0
 
-    # Dimension checks
-    real_keys = [key for key in states_bounds.keys() if key is not "None"]
-    for key in real_keys:
+    for key in states_bounds.real_keys():
         repeat_for_key = original_repeat if states_bounds[key].type == InterpolationType.ALL_POINTS else 1
         n_shooting = nlp.ns * repeat_for_key
         states_bounds[key].check_and_adjust_dimensions(states[key].cx.shape[0], n_shooting)
@@ -77,8 +75,7 @@ def _dispatch_control_bounds(
         ns += 1
 
     # Dimension checks
-    real_keys = [key for key in control_bounds.keys() if key is not "None"]
-    for key in real_keys:
+    for key in control_bounds.real_keys():
         control_bounds[key].check_and_adjust_dimensions(controls[key].cx.shape[0], ns - 1)
 
     v_bounds_min = _compute_values_for_all_nodes(
