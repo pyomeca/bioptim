@@ -25,6 +25,7 @@ from bioptim import (
     MusclesBiorbdModel,
     TorqueActivationBiorbdModel,
     DynamicsOptions,
+    ObjectiveWeight,
 )
 from bioptim.limits.penalty import PenaltyOption
 from bioptim.limits.penalty_controller import PenaltyController
@@ -1487,7 +1488,7 @@ def test_PenaltyFunctionAbstract_get_node(node, ns, phase_dynamics):
     nlp.parameters = tp["param"]
 
     pn = []
-    penalty = PenaltyOption(pn)
+    penalty = PenaltyOption(pn, weight=ObjectiveWeight(1))
     penalty.node = node
 
     if node == Node.MID and ns % 2 != 0:

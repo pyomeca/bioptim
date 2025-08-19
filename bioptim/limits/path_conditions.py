@@ -35,10 +35,11 @@ from ..misc.parameters_types import (
     FloatIterableorNpArray,
     FloatIterableorNpArrayorFloat,
     DoubleIntTuple,
+    CX,
 )
 
 
-class PathCondition(np.ndarray):
+class PathCondition(ndarray):
     """
     A matrix for any component (rows) and time (columns) conditions
 
@@ -102,7 +103,7 @@ class PathCondition(np.ndarray):
                 raise TypeError("The input when using InterpolationType.CUSTOM should be a callable function")
             custom_function = input_array
             input_array = np.array(())
-        if not isinstance(input_array, (MX, SX)):
+        if not isinstance(input_array, CX):
             input_array = np.asarray(input_array, dtype=float)
 
         if len(input_array.shape) == 0:
@@ -682,6 +683,22 @@ class BoundsList(OptionDict):
 
         raise NotImplementedError("Printing of BoundsList is not ready yet")
 
+    def max(self) -> list | dict:
+        """
+        Access the maximal value of each element (e.g. each decision variable) declared by the user.
+        Note that it won't present the values interpolated but only the declared values.
+        """
+        max_bounds = [{key: element[key].max for key in element} for element in self.options]
+        return max_bounds[0] if len(max_bounds) == 1 else max_bounds
+
+    def min(self) -> list | dict:
+        """
+        Access the minimal value of each element (e.g. each decision variable) declared by the user.
+        Note that it won't present the values interpolated but only the declared values.
+        """
+        min_bounds = [{key: element[key].min for key in element} for element in self.options]
+        return min_bounds[0] if len(min_bounds) == 1 else min_bounds
+
 
 class InitialGuess(OptionGeneric):
     """
@@ -864,6 +881,9 @@ class InitialGuess(OptionGeneric):
         )
         self.init = noised_guess.init
         self.type = noised_guess.type
+
+    def evaluate_at(self, shooting_point: Int, repeat: Int = 1):
+        return self.init.evaluate_at(shooting_point, repeat)
 
 
 class NoisedInitialGuess(InitialGuess):

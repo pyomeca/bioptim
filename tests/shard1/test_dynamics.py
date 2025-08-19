@@ -12,6 +12,7 @@ from bioptim import (
     TorqueActivationBiorbdModel,
     TorqueFreeFloatingBaseBiorbdModel,
     MusclesBiorbdModel,
+    MusclesWithExcitationsBiorbdModel,
     BiorbdModel,
     ControlType,
     NonLinearProgram,
@@ -25,7 +26,8 @@ from bioptim import (
     JointAccelerationBiorbdModel,
     States,
     Controls,
-    AbstractModel,
+    StateDynamics,
+    MusclesWithExcitationsBiorbdModel,
 )
 
 from ..utils import TestUtils
@@ -858,12 +860,13 @@ def test_muscle_driven(with_excitation, with_contact, with_residual_torque, with
         )
         numerical_timeseries = {"external_forces": external_forces.to_numerical_time_series()}
 
-    nlp.model = MusclesBiorbdModel(
+    muscle_class = MusclesWithExcitationsBiorbdModel if with_excitation else MusclesBiorbdModel
+
+    nlp.model = muscle_class(
         TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod",
         contact_types=[ContactType.RIGID_EXPLICIT] if with_contact else (),
         external_force_set=external_forces,
         with_residual_torque=with_residual_torque,
-        with_excitation=with_excitation,
     )
     nlp.dynamics_type = DynamicsOptions(
         expand_dynamics=True,
@@ -1089,14 +1092,14 @@ def test_joints_acceleration_driven(cx, phase_dynamics):
 @pytest.mark.parametrize("contact_types", [(), [ContactType.RIGID_EXPLICIT]])
 def test_custom_dynamics(contact_types, phase_dynamics):
 
-    class CustomModel(BiorbdModel, AbstractModel):
+    class CustomModel(BiorbdModel, StateDynamics):
         def __init__(self, model_path, contact_types):
             BiorbdModel.__init__(
                 self,
                 model_path,
                 contact_types=contact_types,
             )
-            AbstractModel.__init__(self)
+            StateDynamics.__init__(self)
 
             self.state_configuration = [States.Q, States.QDOT]
             self.control_configuration = [Controls.TAU]
