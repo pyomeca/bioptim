@@ -346,12 +346,6 @@ class OcpToConsole(GraphAbstract):
                     node_index = self._analyze_nodes(phase_idx, constraint)
                     if node_index == node_idx:
                         print(f"*** Constraint: {constraint.name}")
-                for constraint in self.ocp.nlp[phase_idx].g_implicit:
-                    if not constraint:
-                        continue
-                    node_index = self._analyze_nodes(phase_idx, constraint)
-                    if node_index == node_idx:
-                        print(f"*** Implicit Constraint: {constraint.name}")
                 print("")
 
     def print_bounds(self, bounds: Bounds, col_name: StrIterable):

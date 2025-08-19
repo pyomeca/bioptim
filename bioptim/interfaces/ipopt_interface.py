@@ -114,12 +114,12 @@ class IpoptInterface(SolverInterface):
         """
         sol = generic_set_lagrange_multiplier(self, sol)
 
-    def dispatch_bounds(self, include_g: Bool = True, include_g_internal: Bool = True, include_g_implicit: Bool = True):
+    def dispatch_bounds(self, include_g: Bool = True, include_g_internal: Bool = True):
         """
         Parse the bounds of the full ocp to a Ipopt-friendly one
         """
         return generic_dispatch_bounds(
-            self, include_g=include_g, include_g_internal=include_g_internal, include_g_implicit=include_g_implicit
+            self, include_g=include_g, include_g_internal=include_g_internal
         )
 
     def dispatch_obj_func(self):

@@ -135,6 +135,13 @@ class ControlType(Enum):
     LINEAR_CONTINUOUS = 2  # Linear interpolation between integration steps (=2 columns)
     CONSTANT_WITH_LAST_NODE = 3  # Constant over the integration step, the last node exists (=1 columns)
 
+    @property
+    def has_a_final_node(self):
+        """
+        Check if the control type has a final node
+        """
+        return self in (ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS)
+
 
 class VariableType(Enum):
     """
@@ -167,14 +174,6 @@ class PenaltyType(Enum):  # it's more of a "Category" than "Type"
 
     USER = "user"
     INTERNAL = "internal"
-
-
-class ConstraintType(Enum):
-    """
-    Selection of constraint types
-    """
-
-    IMPLICIT = "implicit"
 
 
 class QuadratureRule(Enum):

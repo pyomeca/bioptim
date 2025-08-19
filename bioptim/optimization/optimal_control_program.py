@@ -98,8 +98,6 @@ class OptimalControlProgram:
         Constraints that are not phase dependent (mostly parameters and continuity constraints)
     g_internal: list[list[Constraint]]
         All the constraints internally defined by the OCP at each of the node of the phase
-    g_implicit: list[list[Constraint]]
-        All the implicit constraints defined by the OCP at each of the node of the phase
     J: list
         Objective values that are not phase dependent (mostly parameters)
     nlp: NLP
@@ -540,7 +538,6 @@ class OptimalControlProgram:
         self.J_internal = []
         self.g = []
         self.g_internal = []
-        self.g_implicit = []
 
         # nlp is the core of a phase
         self.nlp = [NLP(dynamics[i].phase_dynamics, use_sx) for i in range(self.n_phases)]
@@ -1220,11 +1217,9 @@ class OptimalControlProgram:
                 if cost_type == CostType.OBJECTIVES:
                     penalties = nlp.J
                     penalties_internal = nlp.J_internal
-                    penalties_implicit = []
                 else:  # Constraints
                     penalties = nlp.g
                     penalties_internal = nlp.g_internal
-                    penalties_implicit = nlp.g_implicit
 
                 for penalty in penalties:
                     if not penalty:
@@ -1323,7 +1318,6 @@ class OptimalControlProgram:
             elif cost_type == CostType.CONSTRAINTS:
                 penalties = nlp.g
                 penalties_internal = nlp.g_internal
-                penalties_implicit = nlp.g_implicit
             elif cost_type == CostType.ALL:
                 self.add_plot_penalty(CostType.OBJECTIVES)
                 self.add_plot_penalty(CostType.CONSTRAINTS)
@@ -1333,7 +1327,6 @@ class OptimalControlProgram:
 
             add_penalty(penalties)
             add_penalty(penalties_internal)
-            add_penalty(penalties_implicit)
         return
 
     def add_plot_ipopt_outputs(self) -> None:

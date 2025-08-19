@@ -244,6 +244,7 @@ class OptionList:
                     break
             else:
                 list_index = len(self.options[phase])
+        # hack: we forgot why
         for i in range(len(self.options[phase]), list_index + 1):
             self.options[phase].append(None)
         return list_index
@@ -350,6 +351,10 @@ class OptionDict(OptionList):
 
     def keys(self, phase: Int = 0):
         return self.options[phase].keys()
+
+    def real_keys(self, phase: Int = 0):
+        """A None key is used to indicate TOBEDETERMINED, so we do not want to return it"""
+        return [key for key in self.options[phase].keys() if key != "None"]
 
     def phase_duplication(self, n_phases: Int):
         if self.nb_phase != 1:

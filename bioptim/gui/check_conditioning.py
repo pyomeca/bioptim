@@ -120,7 +120,7 @@ def create_conditioning_plots(ocp):
     cmap.set_bad(color="k")
     interface = IpoptInterface(ocp)
     variables_vector = ocp.variables_vector
-    all_g, _ = interface.dispatch_bounds(include_g=True, include_g_implicit=False, include_g_internal=False)
+    all_g, _ = interface.dispatch_bounds(include_g=True, include_g_internal=False)
     all_objectives = interface.dispatch_obj_func()
     nb_variables = variables_vector.shape[0]
     nb_constraints = all_g.shape[0]

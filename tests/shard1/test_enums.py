@@ -133,13 +133,6 @@ def test_penalty_type():
     assert len(PenaltyType) == 2
 
 
-def test_constraint_type():
-    assert ConstraintType.IMPLICIT.value == "implicit"
-
-    # verify the number of elements
-    assert len(ConstraintType) == 1
-
-
 def test_quadrature_rule():
     assert QuadratureRule.DEFAULT.value == "default"
     assert QuadratureRule.RECTANGLE_LEFT.value == "rectangle_left"
