@@ -59,10 +59,7 @@ def _keys_variable_major(ocp) -> Iterator[KeySize]:
                 n_cols = nlp.n_algebraic_states_decision_steps(nlp.ns)
                 yield (p, var, nlp.ns), _len_of(attr.shape), n_cols
 
-            if var == "controls" and nlp.control_type in (
-                ControlType.LINEAR_CONTINUOUS,
-                ControlType.CONSTANT_WITH_LAST_NODE,
-            ):
+            if var == "controls" and nlp.control_type.has_a_final_node:
                 # last node for controls is the final control
                 yield (p, var, nlp.ns), _len_of(attr.shape), method_map["controls"](nlp.ns)
 
