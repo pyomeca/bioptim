@@ -3,8 +3,8 @@ from typing import Any
 import numpy as np
 
 from .path_conditions import Bounds
-from .weight import ObjectiveWeight, ConstraintWeight
-from ..misc.enums import InterpolationType, PenaltyType, ConstraintType
+from .weight import ConstraintWeight
+from ..misc.enums import InterpolationType, PenaltyType
 from ..misc.fcn_enum import FcnEnum
 from .multinode_penalty import MultinodePenalty, MultinodePenaltyList, MultinodePenaltyFunctions
 

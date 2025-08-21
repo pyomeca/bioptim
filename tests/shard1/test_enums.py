@@ -15,7 +15,7 @@ from bioptim import (
     ContactType,
 )
 
-from bioptim.misc.enums import SolverType, PenaltyType, ConstraintType
+from bioptim.misc.enums import SolverType, PenaltyType
 
 
 def test_axis():
