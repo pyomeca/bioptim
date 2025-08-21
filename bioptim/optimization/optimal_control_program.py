@@ -1229,10 +1229,6 @@ class OptimalControlProgram:
                     if not penalty_internal:
                         continue
                     name_unique_objective.append(penalty_internal.name)
-                for penalty_implicit in penalties_implicit:
-                    if not penalty_implicit:
-                        continue
-                    name_unique_objective.append(penalty_implicit.name)
             color = {}
             for i, name in enumerate(name_unique_objective):
                 color[name] = plt.cm.viridis(i / len(name_unique_objective))
