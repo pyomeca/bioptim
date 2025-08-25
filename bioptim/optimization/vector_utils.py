@@ -51,6 +51,7 @@ def _compute_values_for_all_nodes(
     for node in range(n_nodes):
         nlp.set_node_index(node)
         is_final_node = node == nlp.ns
+        sub_node_bounds = []
         for sub_node in range(1 if is_final_node else repeat):
             collapsed = _compute_value_for_node(
                 node,
@@ -61,7 +62,10 @@ def _compute_values_for_all_nodes(
                 defined_values,
                 scaling,
             )
-            all_bounds += [np.reshape(collapsed.T, (-1, 1))]
+            # wont fix
+            sub_node_bounds += [np.reshape(collapsed.T, (-1, 1))]
+        sub_node_bounds = np.concatenate(sub_node_bounds, axis=1)
+        all_bounds += [sub_node_bounds]
     # return np.concatenate(all_bounds, axis=0)
     return all_bounds
 
