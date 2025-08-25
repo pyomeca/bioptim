@@ -1378,7 +1378,8 @@ class ConfigureVariables:
     def configure_variational_functions(ocp, nlp, **extra_params) -> None:
         """
         Configure the functions necessary for the variational integrator.
-        # TODO: This should be done elsewhere, but for now it is the easiest way to bypass the dynamics declaration as the variational dynamics depends on the nodes i-1, i and i+1
+        # TODO: This should be done elsewhere, but for now it is the easiest way to bypass the dynamics declaration
+            as the variational dynamics depends on the nodes i-1, i and i+1
 
         Parameters
         ----------

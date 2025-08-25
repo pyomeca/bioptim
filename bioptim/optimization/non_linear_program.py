@@ -441,7 +441,8 @@ class NonLinearProgram:
         -------
         The number of states
         """
-        if node_idx >= self.ns:
+        is_the_final_node = node_idx >= self.ns
+        if is_the_final_node:
             return 1
         return self.dynamics[node_idx].shape_xf[1] + (
             1 if self.dynamics_type.ode_solver.duplicate_starting_point else 0

@@ -14,6 +14,7 @@ from ..misc.enums import ControlType
 from .bound_vector import _dispatch_state_bounds, _dispatch_control_bounds
 from .init_vector import _dispatch_state_initial_guess, _dispatch_control_initial_guess
 from .vector_utils import DEFAULT_INITIAL_GUESS, DEFAULT_MIN_BOUND, DEFAULT_MAX_BOUND
+from .vector_layout import VectorLayout
 
 
 class OptimizationVectorHelper:
@@ -60,18 +61,13 @@ class OptimizationVectorHelper:
         The vector of all variables
         """
 
-        t_scaled = ocp.dt_parameter.cx
-        x_scaled = []
-        u_scaled = []
-        a_scaled = []
-        p_scaled = ocp.parameters.scaled.cx
+        vector_layout = VectorLayout(ocp)
+        ocp.vector_layout = vector_layout
+        time, states, controls, algebraic_states, parameters = ocp.get_decision_variables()
 
-        for nlp in ocp.nlp:
-            x_scaled += [x.reshape((-1, 1)) for x in nlp.X_scaled]
-            u_scaled += nlp.U_scaled
-            a_scaled += [a.reshape((-1, 1)) for a in nlp.A_scaled]
-
-        return vertcat(t_scaled, *x_scaled, *u_scaled, p_scaled, *a_scaled)
+        return vector_layout.stack_dreamed(
+            time, states, controls, algebraic_states, parameters, vector_layout.ocp_query_function
+        )
 
     @staticmethod
     def bounds_vectors(ocp: "OptimalControlProgram") -> DoubleNpArrayTuple:
@@ -82,28 +78,21 @@ class OptimizationVectorHelper:
         -------
         The vector of all bounds (min, max)
         """
-        v_bounds_min = np.ndarray((0, 1))
-        v_bounds_max = np.ndarray((0, 1))
-
-        # For time
-        v_bounds_min = np.concatenate((v_bounds_min, ocp.dt_parameter_bounds.min))
-        v_bounds_max = np.concatenate((v_bounds_max, ocp.dt_parameter_bounds.max))
-
-        # For states
+        states_min_bounds = []
+        states_max_bounds = []
         for nlp in ocp.nlp:
-            min_bounds, max_bounds = _dispatch_state_bounds(
+            min_bounds_i, max_bounds_i = _dispatch_state_bounds(
                 nlp, nlp.states, nlp.x_bounds, nlp.x_scaling, nlp.n_states_decision_steps(0)
             )
+            states_min_bounds.append(min_bounds_i)
+            states_max_bounds.append(max_bounds_i)
 
-            v_bounds_min = np.concatenate((v_bounds_min, min_bounds))
-            v_bounds_max = np.concatenate((v_bounds_max, max_bounds))
-
-        # For controls
+        controls_min_bounds = []
+        controls_max_bounds = []
         for nlp in ocp.nlp:
-            min_bounds, max_bounds = _dispatch_control_bounds(nlp, nlp.controls, nlp.u_bounds, nlp.u_scaling)
-
-            v_bounds_min = np.concatenate((v_bounds_min, min_bounds))
-            v_bounds_max = np.concatenate((v_bounds_max, max_bounds))
+            min_bounds_i, max_bounds_i = _dispatch_control_bounds(nlp, nlp.controls, nlp.u_bounds, nlp.u_scaling)
+            controls_min_bounds.append(min_bounds_i)
+            controls_max_bounds.append(max_bounds_i)
 
         # For parameters
         collapsed_values_min = np.ones((ocp.parameters.shape, 1)) * DEFAULT_MIN_BOUND
@@ -115,23 +104,93 @@ class OptimizationVectorHelper:
             scaled_bounds = ocp.parameter_bounds[key].scale(ocp.parameters[key].scaling.scaling)
             collapsed_values_min[ocp.parameters[key].index, :] = scaled_bounds.min
             collapsed_values_max[ocp.parameters[key].index, :] = scaled_bounds.max
-        v_bounds_min = np.concatenate((v_bounds_min, np.reshape(collapsed_values_min.T, (-1, 1))))
-        v_bounds_max = np.concatenate((v_bounds_max, np.reshape(collapsed_values_max.T, (-1, 1))))
 
-        # For algebraic_states variables
+        parameters_min_bounds = np.reshape(collapsed_values_min.T, (-1, 1))
+        parameters_max_bounds = np.reshape(collapsed_values_max.T, (-1, 1))
+
+        algebraic_states_min_bounds = []
+        algebraic_states_max_bounds = []
         for nlp in ocp.nlp:
-            min_bounds, max_bounds = _dispatch_state_bounds(
+            min_bounds_i, max_bounds_i = _dispatch_state_bounds(
                 nlp,
                 nlp.algebraic_states,
                 nlp.a_bounds,
                 nlp.a_scaling,
                 nlp.n_algebraic_states_decision_steps(0),
             )
+            algebraic_states_min_bounds.append(min_bounds_i)
+            algebraic_states_max_bounds.append(max_bounds_i)
 
-            v_bounds_min = np.concatenate((v_bounds_min, min_bounds))
-            v_bounds_max = np.concatenate((v_bounds_max, max_bounds))
+        v_bounds_min = ocp.vector_layout.stack_dreamed(
+            time=ocp.dt_parameter_bounds.min,
+            states=states_min_bounds,
+            controls=controls_min_bounds,
+            algebraics=algebraic_states_min_bounds,
+            parameters=parameters_min_bounds,
+            query_function=ocp.vector_layout.ocp_query_function,
+        )
 
+        v_bounds_max = ocp.vector_layout.stack_dreamed(
+            time=ocp.dt_parameter_bounds.max,
+            states=states_max_bounds,
+            controls=controls_max_bounds,
+            algebraics=algebraic_states_max_bounds,
+            parameters=parameters_max_bounds,
+            query_function=ocp.vector_layout.ocp_query_function,
+        )
         return v_bounds_min, v_bounds_max
+
+        # v_bounds_min = np.ndarray((0, 1))
+        # v_bounds_max = np.ndarray((0, 1))
+        #
+        # # For time
+        # v_bounds_min = np.concatenate((v_bounds_min, ocp.dt_parameter_bounds.min))
+        # v_bounds_max = np.concatenate((v_bounds_max, ocp.dt_parameter_bounds.max))
+        #
+        # # For states
+        # for nlp in ocp.nlp:
+        #     min_bounds, max_bounds = _dispatch_state_bounds(
+        #         nlp, nlp.states, nlp.x_bounds, nlp.x_scaling, nlp.n_states_decision_steps(0)
+        #     )
+        #
+        #     v_bounds_min = np.concatenate((v_bounds_min, min_bounds))
+        #     v_bounds_max = np.concatenate((v_bounds_max, max_bounds))
+        #
+        # # For controls
+        # for nlp in ocp.nlp:
+        #     min_bounds, max_bounds = _dispatch_control_bounds(nlp, nlp.controls, nlp.u_bounds, nlp.u_scaling)
+        #
+        #     v_bounds_min = np.concatenate((v_bounds_min, min_bounds))
+        #     v_bounds_max = np.concatenate((v_bounds_max, max_bounds))
+        #
+        # # For parameters
+        # collapsed_values_min = np.ones((ocp.parameters.shape, 1)) * DEFAULT_MIN_BOUND
+        # collapsed_values_max = np.ones((ocp.parameters.shape, 1)) * DEFAULT_MAX_BOUND
+        # for key in ocp.parameters.keys():
+        #     if key not in ocp.parameter_bounds.keys():
+        #         continue
+        #
+        #     scaled_bounds = ocp.parameter_bounds[key].scale(ocp.parameters[key].scaling.scaling)
+        #     collapsed_values_min[ocp.parameters[key].index, :] = scaled_bounds.min
+        #     collapsed_values_max[ocp.parameters[key].index, :] = scaled_bounds.max
+        #
+        # v_bounds_min = np.concatenate((v_bounds_min, np.reshape(collapsed_values_min.T, (-1, 1))))
+        # v_bounds_max = np.concatenate((v_bounds_max, np.reshape(collapsed_values_max.T, (-1, 1))))
+        #
+        # # For algebraic_states variables
+        # for nlp in ocp.nlp:
+        #     min_bounds, max_bounds = _dispatch_state_bounds(
+        #         nlp,
+        #         nlp.algebraic_states,
+        #         nlp.a_bounds,
+        #         nlp.a_scaling,
+        #         nlp.n_algebraic_states_decision_steps(0),
+        #     )
+        #
+        #     v_bounds_min = np.concatenate((v_bounds_min, min_bounds))
+        #     v_bounds_max = np.concatenate((v_bounds_max, max_bounds))
+        #
+        # return v_bounds_min, v_bounds_max
 
     @staticmethod
     def init_vector(ocp: "OptimalControlProgram") -> NpArray:
@@ -142,35 +201,33 @@ class OptimizationVectorHelper:
         -------
         The vector of all bounds (min, max)
         """
-        v_init = np.ndarray((0, 1))
-
-        # For time
-        v_init = np.concatenate((v_init, ocp.dt_parameter_initial_guess.init))
 
         # For states
+        states_init = []
         for nlp in ocp.nlp:
             init = _dispatch_state_initial_guess(
                 nlp, nlp.states, nlp.x_init, nlp.x_scaling, nlp.n_states_decision_steps(0)
             )
-            v_init = np.concatenate((v_init, init))
+            states_init.append(init)
 
         # For controls
+        controls_init = []
         for nlp in ocp.nlp:
             init = _dispatch_control_initial_guess(nlp, nlp.controls, nlp.u_init, nlp.u_scaling)
-            v_init = np.concatenate((v_init, init))
+            controls_init.append(init)
 
         # For parameters
-        collapsed_values = np.zeros((ocp.parameters.shape, 1))
+        collapsed_values = np.ones((ocp.parameters.shape, 1)) * DEFAULT_INITIAL_GUESS
         for key in ocp.parameters.keys():
             if key not in ocp.parameter_init.keys():
-                v_init = np.concatenate((v_init, DEFAULT_INITIAL_GUESS * np.ones((ocp.parameters[key].size, 1))))
                 continue
 
             scaled_init = ocp.parameter_init[key].scale(ocp.parameters[key].scaling.scaling)
             collapsed_values[ocp.parameters[key].index, :] = scaled_init.init
-        v_init = np.concatenate((v_init, np.reshape(collapsed_values.T, (-1, 1))))
+        parameters_init = np.reshape(collapsed_values.T, (-1, 1))
 
         # For algebraic_states variables
+        algebraic_states_init = []
         for nlp in ocp.nlp:
             init = _dispatch_state_initial_guess(
                 nlp,
@@ -179,9 +236,57 @@ class OptimizationVectorHelper:
                 nlp.a_scaling,
                 nlp.n_algebraic_states_decision_steps(0),
             )
+            algebraic_states_init.append(init)
 
-            v_init = np.concatenate((v_init, init))
+        v_init = ocp.vector_layout.stack_dreamed(
+            time=ocp.dt_parameter_initial_guess.init,
+            states=states_init,
+            controls=controls_init,
+            algebraics=algebraic_states_init,
+            parameters=parameters_init,
+            query_function=ocp.vector_layout.array_query_function,
+        )
 
+        # v_init = np.ndarray((0, 1))
+        #
+        # # For time
+        # v_init = np.concatenate((v_init, ocp.dt_parameter_initial_guess.init))
+        #
+        # # For states
+        # for nlp in ocp.nlp:
+        #     init = _dispatch_state_initial_guess(
+        #         nlp, nlp.states, nlp.x_init, nlp.x_scaling, nlp.n_states_decision_steps(0)
+        #     )
+        #     v_init = np.concatenate((v_init, init))
+        #
+        # # For controls
+        # for nlp in ocp.nlp:
+        #     init = _dispatch_control_initial_guess(nlp, nlp.controls, nlp.u_init, nlp.u_scaling)
+        #     v_init = np.concatenate((v_init, init))
+        #
+        # # For parameters
+        # collapsed_values = np.zeros((ocp.parameters.shape, 1))
+        # for key in ocp.parameters.keys():
+        #     if key not in ocp.parameter_init.keys():
+        #         v_init = np.concatenate((v_init, DEFAULT_INITIAL_GUESS * np.ones((ocp.parameters[key].size, 1))))
+        #         continue
+        #
+        #     scaled_init = ocp.parameter_init[key].scale(ocp.parameters[key].scaling.scaling)
+        #     collapsed_values[ocp.parameters[key].index, :] = scaled_init.init
+        # v_init = np.concatenate((v_init, np.reshape(collapsed_values.T, (-1, 1))))
+        #
+        # # For algebraic_states variables
+        # for nlp in ocp.nlp:
+        #     init = _dispatch_state_initial_guess(
+        #         nlp,
+        #         nlp.algebraic_states,
+        #         nlp.a_init,
+        #         nlp.a_scaling,
+        #         nlp.n_algebraic_states_decision_steps(0),
+        #     )
+        #
+        #     v_init = np.concatenate((v_init, init))
+        #
         return v_init
 
     @staticmethod
