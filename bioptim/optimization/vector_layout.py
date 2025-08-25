@@ -13,6 +13,7 @@ import casadi as ca
 _CASADI_TYPES = (ca.MX, ca.SX)
 
 from ..misc.enums import ControlType
+from ..misc.parameters_types import CX
 
 
 def _keys_variable_major(ocp) -> Iterator[KeySize]:
@@ -176,6 +177,23 @@ class VectorLayout:
         else:
             return np.vstack(values)
 
+    def stack_dreamed(self, time, states, controls, algebraics, parameters, query_function: Callable):
+        """
+        Given time, states, controls, algebraics, and parameters,
+        stack them into a flat vector.
+        """
+
+        values = [query_function(time, states, controls, algebraics, parameters, key) for key in self.index_map]
+
+        # best debug found
+        for i, (v, (key, val)) in enumerate(zip(values, self.index_map.items())):
+            print(i, v.shape, key, val)
+
+        if _CASADI_TYPES and isinstance(values[0], _CASADI_TYPES):
+            return ca.vertcat(*values)
+        else:
+            return np.vstack(values)
+
     def unstack(self, vec):
         """
         Given flat vector, return dict with same structure as index_map.
@@ -286,6 +304,53 @@ class VectorLayout:
         idx_map[key] = slice(slice_start, slice_end), horizontal_size
         return slice_end
 
+    @staticmethod
+    def ocp_query_function(
+        time: CX, states: list[list[CX]], controls: list[list[CX]], algebraics: list[list[CX]], parameters: CX, key
+    ) -> CX:
+        """
+        Query function to retrieve values from the OCP based on the key.
+        This is a placeholder and should be replaced with actual logic
+        to retrieve values from the OCP.
+        """
+        if key == ("global", "time"):
+            return time
+        elif key == ("global", "parameters"):
+            return parameters
+        else:
+            phase, var_type, node = key
+            if var_type == "states":
+                return states[phase][node].reshape((-1, 1))
+            elif var_type == "controls":
+                return controls[phase][node]
+            elif var_type == "algebraic_states":
+                return algebraics[phase][node].reshape((-1, 1))
+            else:
+                raise ValueError(f"Unknown key: {key}")
+
+    @staticmethod
+    def array_query_function(
+        time: CX, states: list[list[CX]], controls: list[list[CX]], algebraics: list[list[CX]], parameters: CX, key
+    ) -> CX:
+        """
+        Query function to retrieve values for bounds or initial guesses
+
+        """
+        if key == ("global", "time"):
+            return time
+        elif key == ("global", "parameters"):
+            return parameters
+        else:
+            phase, var_type, node = key
+            if var_type == "states":
+                return states[phase][node].reshape((-1, 1))
+            elif var_type == "controls":
+                return controls[phase][node]
+            elif var_type == "algebraic_states":
+                return algebraics[phase][node].reshape((-1, 1))
+            else:
+                raise ValueError(f"Unknown key: {key}")
+
 
 def _len_of(shape_like) -> int:
     """Return a single integer length from shape-like (int or tuple)."""
@@ -334,4 +399,3 @@ def _extract_controls_dict(list_data, nlp):
 def _extract_algebraics_dict(list_data, nlp):
     """Extract algebraic states into dictionary format for one phase."""
     return _extract_attr_dict(list_data, nlp, "algebraic_states")
-
