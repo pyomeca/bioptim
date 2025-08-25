@@ -203,14 +203,18 @@ class OptimizationVectorHelper:
         """
 
         # For states
+        states_init = []
         for nlp in ocp.nlp:
-            states_init = _dispatch_state_initial_guess(
+            init = _dispatch_state_initial_guess(
                 nlp, nlp.states, nlp.x_init, nlp.x_scaling, nlp.n_states_decision_steps(0)
             )
+            states_init.append(init)
 
         # For controls
+        controls_init = []
         for nlp in ocp.nlp:
-            controls_init = _dispatch_control_initial_guess(nlp, nlp.controls, nlp.u_init, nlp.u_scaling)
+            init = _dispatch_control_initial_guess(nlp, nlp.controls, nlp.u_init, nlp.u_scaling)
+            controls_init.append(init)
 
         # For parameters
         collapsed_values = np.ones((ocp.parameters.shape, 1)) * DEFAULT_INITIAL_GUESS
@@ -223,22 +227,24 @@ class OptimizationVectorHelper:
         parameters_init = np.reshape(collapsed_values.T, (-1, 1))
 
         # For algebraic_states variables
+        algebraic_states_init = []
         for nlp in ocp.nlp:
-            algebraic_states_init = _dispatch_state_initial_guess(
+            init = _dispatch_state_initial_guess(
                 nlp,
                 nlp.algebraic_states,
                 nlp.a_init,
                 nlp.a_scaling,
                 nlp.n_algebraic_states_decision_steps(0),
             )
+            algebraic_states_init.append(init)
 
         v_init = ocp.vector_layout.stack_dreamed(
             time=ocp.dt_parameter_initial_guess.init,
             states=states_init,
             controls=controls_init,
-            algebraic_states=algebraic_states_init,
+            algebraics=algebraic_states_init,
             parameters=parameters_init,
-            query_function=ocp.vector_layout.ocp_query_function,
+            query_function=ocp.vector_layout.array_query_function,
         )
 
         # v_init = np.ndarray((0, 1))

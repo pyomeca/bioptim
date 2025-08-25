@@ -62,7 +62,8 @@ def _compute_values_for_all_nodes(
                 scaling,
             )
             all_bounds += [np.reshape(collapsed.T, (-1, 1))]
-    return np.concatenate(all_bounds, axis=0)
+    # return np.concatenate(all_bounds, axis=0)
+    return all_bounds
 
 
 def _compute_value_for_node(
