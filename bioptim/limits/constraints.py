@@ -6,7 +6,7 @@ from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function, MX_ey
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyController
 from .weight import ConstraintWeight
-from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType
+from ..misc.enums import Node, InterpolationType, PenaltyType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
@@ -130,12 +130,6 @@ class Constraint(PenaltyOption):
                 if controller is not None and controller.get_nlp
                 else controller.ocp.g_internal
             )
-        elif self.penalty_type == ConstraintType.IMPLICIT:
-            pool = (
-                controller.get_nlp.g_implicit
-                if controller is not None and controller.get_nlp
-                else controller.ocp.g_implicit
-            )
         elif self.penalty_type == PenaltyType.USER:
             pool = controller.get_nlp.g if controller is not None and controller.get_nlp else controller.ocp.g
         else:
@@ -146,8 +140,6 @@ class Constraint(PenaltyOption):
     def ensure_penalty_sanity(self, ocp, nlp):
         if self.penalty_type == PenaltyType.INTERNAL:
             g_to_add_to = nlp.g_internal if nlp else ocp.g_internal
-        elif self.penalty_type == ConstraintType.IMPLICIT:
-            g_to_add_to = nlp.g_implicit if nlp else ocp.g_implicit
         elif self.penalty_type == PenaltyType.USER:
             g_to_add_to = nlp.g if nlp else ocp.g
         else:
@@ -1006,12 +998,6 @@ class ParameterConstraint(PenaltyOption):
                 if controller is not None and controller.get_nlp
                 else controller.ocp.g_internal
             )
-        elif self.penalty_type == ConstraintType.IMPLICIT:
-            pool = (
-                controller.get_nlp.g_implicit
-                if controller is not None and controller.get_nlp
-                else controller.ocp.g_implicit
-            )
         elif self.penalty_type == PenaltyType.USER:
             pool = controller.get_nlp.g if controller is not None and controller.get_nlp else controller.ocp.g
         else:
@@ -1022,8 +1008,6 @@ class ParameterConstraint(PenaltyOption):
     def ensure_penalty_sanity(self, ocp, nlp):
         if self.penalty_type == PenaltyType.INTERNAL:
             g_to_add_to = nlp.g_internal if nlp else ocp.g_internal
-        elif self.penalty_type == ConstraintType.IMPLICIT:
-            g_to_add_to = nlp.g_implicit if nlp else ocp.g_implicit
         elif self.penalty_type == PenaltyType.USER:
             g_to_add_to = nlp.g if nlp else ocp.g
         else:

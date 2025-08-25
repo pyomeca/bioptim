@@ -15,7 +15,7 @@ from bioptim import (
     ContactType,
 )
 
-from bioptim.misc.enums import SolverType, PenaltyType, ConstraintType
+from bioptim.misc.enums import SolverType, PenaltyType
 
 
 def test_axis():
@@ -131,13 +131,6 @@ def test_penalty_type():
 
     # verify the number of elements
     assert len(PenaltyType) == 2
-
-
-def test_constraint_type():
-    assert ConstraintType.IMPLICIT.value == "implicit"
-
-    # verify the number of elements
-    assert len(ConstraintType) == 1
 
 
 def test_quadrature_rule():

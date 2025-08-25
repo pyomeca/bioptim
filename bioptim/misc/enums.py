@@ -176,14 +176,6 @@ class PenaltyType(Enum):  # it's more of a "Category" than "Type"
     INTERNAL = "internal"
 
 
-class ConstraintType(Enum):
-    """
-    Selection of constraint types
-    """
-
-    IMPLICIT = "implicit"
-
-
 class QuadratureRule(Enum):
     """
     Selection of quadrature rule to approximate integrals.

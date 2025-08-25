@@ -18,7 +18,6 @@ The latter being especially challenging because of the closed-loop involved in t
 So don't wait any further challenge biorbd to find you the best movement!
 -------------------------------------------------------------------------
 
-
 # --- The main interface --- #
 OptimalControlProgram
     The main class to define an ocp. This class prepares the full program and gives all the needed interface to

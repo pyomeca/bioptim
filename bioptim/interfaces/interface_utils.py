@@ -205,7 +205,7 @@ def generic_set_lagrange_multiplier(interface, sol: Solution):
     return sol
 
 
-def generic_dispatch_bounds(interface, include_g: Bool, include_g_internal: Bool, include_g_implicit: Bool):
+def generic_dispatch_bounds(interface, include_g: Bool, include_g_internal: Bool):
     """
     Parse the bounds of the full ocp to a SQP-friendly one
 
@@ -217,8 +217,6 @@ def generic_dispatch_bounds(interface, include_g: Bool, include_g_internal: Bool
         If the g bounds should be included
     include_g_internal: bool
         If the g_internal bounds should be included
-    include_g_implicit: bool
-        If the g_implicit bounds should be included
     """
 
     all_g = interface.ocp.cx()
@@ -227,12 +225,6 @@ def generic_dispatch_bounds(interface, include_g: Bool, include_g_internal: Bool
     if include_g_internal:
         all_g = vertcat(all_g, interface.get_all_penalties(interface.ocp, interface.ocp.g_internal))
         for g in interface.ocp.g_internal:
-            if g != []:
-                all_g_bounds.concatenate(g.bounds)
-
-    if include_g_implicit:
-        all_g = vertcat(all_g, interface.get_all_penalties(interface.ocp, interface.ocp.g_implicit))
-        for g in interface.ocp.g_implicit:
             if g != []:
                 all_g_bounds.concatenate(g.bounds)
 
@@ -246,13 +238,6 @@ def generic_dispatch_bounds(interface, include_g: Bool, include_g_internal: Bool
         if include_g_internal:
             all_g = vertcat(all_g, interface.get_all_penalties(nlp, nlp.g_internal))
             for g in nlp.g_internal:
-                if g != []:
-                    for _ in g.node_idx:
-                        all_g_bounds.concatenate(g.bounds)
-
-        if include_g_implicit:
-            all_g = vertcat(all_g, interface.get_all_penalties(nlp, nlp.g_implicit))
-            for g in nlp.g_implicit:
                 if g != []:
                     for _ in g.node_idx:
                         all_g_bounds.concatenate(g.bounds)
