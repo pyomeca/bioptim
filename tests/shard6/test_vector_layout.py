@@ -59,7 +59,6 @@ def prepare_ocp(
     x_bounds.add("q", min_bound=q_min_bounds, max_bound=q_max_bounds, interpolation=interpolation_type)
     x_bounds.add("qdot", min_bound=qdot_min_bounds, max_bound=qdot_max_bounds, interpolation=interpolation_type)
 
-    # Initial guess (optional since it is 0, we show how to initialize anyway)
     x_init = InitialGuessList()
     x_init.add("q", q_init, interpolation=interpolation_type)
     x_init.add("qdot", qdot_init, interpolation=interpolation_type)
@@ -68,7 +67,6 @@ def prepare_ocp(
     u_bounds = BoundsList()
     u_bounds.add("tau", min_bound=tau_min, max_bound=tau_max, interpolation=interpolation_type)
 
-    # Initial guess (optional since it is 0, we show how to initialize anyway)
     u_init = InitialGuessList()
     u_init.add("tau", tau_init, interpolation=interpolation_type)
 
@@ -88,9 +86,6 @@ def prepare_ocp(
 
 @pytest.mark.parametrize("min_time", [True, False])
 def test_vector_layout_rk4_shared(min_time):
-    """
-    Test the vector layout for a simple ocp with RK4 and shared control
-    """
     from bioptim.examples.getting_started import pendulum as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
@@ -136,7 +131,6 @@ def test_vector_layout_rk4_shared(min_time):
     )
     v_sym = OptimizationVectorHelper.vector(ocp)
 
-    # Capturer la sortie standard
     f = io.StringIO()
     with redirect_stdout(f):
         print(v_sym)
@@ -151,7 +145,7 @@ def test_vector_layout_rk4_shared(min_time):
     )
     assert (
         output == expected_output
-    ), f"La sortie ne correspond pas à ce qui est attendu.\nAttendu: {expected_output}\nObtenu: {output}"
+    ), f"The output does not match what was expected.\nExpected:{expected_output}\nGot: {output}"
 
     v_bounds = OptimizationVectorHelper.bounds_vectors(ocp)
 
@@ -176,9 +170,6 @@ def test_vector_layout_rk4_shared(min_time):
 
 
 def test_vector_layout_collocation():
-    """
-    Test the vector layout for a simple ocp with RK4 and shared control
-    """
     from bioptim.examples.getting_started import pendulum as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
@@ -238,7 +229,7 @@ def test_vector_layout_collocation():
     expected_output = "vertcat(dt_phase0, vec(X_scaled_0_0), vec(X_scaled_0_1), vec(X_scaled_0_2), vec(X_scaled_0_3), vec(X_scaled_0_4), vec(X_scaled_0_5), vec(X_scaled_0_6), vec(X_scaled_0_7), vec(X_scaled_0_8), vec(X_scaled_0_9), X_scaled_0_10, U_scaled_0_0, U_scaled_0_1, U_scaled_0_2, U_scaled_0_3, U_scaled_0_4, U_scaled_0_5, U_scaled_0_6, U_scaled_0_7, U_scaled_0_8, U_scaled_0_9)"
     assert (
         output == expected_output
-    ), f"La sortie ne correspond pas à ce qui est attendu.\nAttendu: {expected_output}\nObtenu: {output}"
+    ), f"The output does not match what was expected.\nExpected:{expected_output}\nGot: {output}"
 
     v_bounds = OptimizationVectorHelper.bounds_vectors(ocp)
 
@@ -254,9 +245,6 @@ def test_vector_layout_collocation():
 
 
 def test_vector_layout_linear_continuous():
-    """
-    Test the vector layout for a simple ocp with linear continuous and linear control
-    """
     from bioptim.examples.getting_started import pendulum as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
@@ -316,7 +304,7 @@ def test_vector_layout_linear_continuous():
     )
     assert (
         output == expected_output
-    ), f"La sortie ne correspond pas à ce qui est attendu.\nAttendu: {expected_output}\nObtenu: {output}"
+    ), f"The output does not match what was expected.\nExpected:{expected_output}\nGot: {output}"
 
     v_bounds = OptimizationVectorHelper.bounds_vectors(ocp)
 
@@ -375,7 +363,7 @@ def test_parameters():
     )
     assert (
         output == expected_output
-    ), f"La sortie ne correspond pas à ce qui est attendu.\nAttendu: {expected_output}\nObtenu: {output}"
+    ), f"The output does not match what was expected.\nExpected:{expected_output}\nGot: {output}"
 
     v_bounds = OptimizationVectorHelper.bounds_vectors(ocp)
 
@@ -437,9 +425,9 @@ def test_vector_layout_multiple_phases():
 
     assert (
         output == expected_output
-    ), f"La sortie ne correspond pas à ce qui est attendu.\nAttendu: {
+    ), f"The output does not match what was expected.\nExpected:{
         expected_output
-    }\nObtenu: {output}"
+    }\nGot: {output}"
 
     v_bounds = OptimizationVectorHelper.bounds_vectors(ocp)
 
@@ -485,7 +473,7 @@ def test_vector_layout_algebraic_states():
 
     assert (
         output == expected_output
-    ), f"La sortie ne correspond pas à ce qui est attendu.\nAttendu: {expected_output}\nObtenu: {output}"
+    ), f"The output does not match what was expected.\nExpected:{expected_output}\nGot: {output}"
 
     v_bounds = OptimizationVectorHelper.bounds_vectors(ocp)
 
