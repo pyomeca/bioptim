@@ -127,6 +127,9 @@ sandbox/
 !/tests/shard6/v_bounds_max_collocation.npy
 !/tests/shard6/v_bounds_min_collocation.npy
 !/tests/shard6/v_init_collocation.npy
+!/tests/shard6/v_bounds_max_collocation_starting_point.npy
+!/tests/shard6/v_bounds_min_collocation_starting_point.npy
+!/tests/shard6/v_init_collocation_starting_point.npy
 !/tests/shard6/v_bounds_max_parameters.npy
 !/tests/shard6/v_bounds_min_parameters.npy
 !/tests/shard6/v_init_parameters.npy

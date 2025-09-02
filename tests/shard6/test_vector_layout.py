@@ -169,14 +169,20 @@ def test_vector_layout_rk4_shared(min_time):
     np.testing.assert_almost_equal(v_init, v_init_expected)
 
 
-def test_vector_layout_collocation():
+@pytest.mark.parametrize("duplicate_starting_point", [False, True])
+def test_vector_layout_collocation(duplicate_starting_point):
     from bioptim.examples.getting_started import pendulum as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     n_shooting = 10
     intermediate_point = 4
-    total_points = n_shooting * (intermediate_point + 1)
+    actual_intermediate_point = intermediate_point
+
+    if duplicate_starting_point:
+        actual_intermediate_point = intermediate_point + 1
+    total_points = n_shooting * (actual_intermediate_point + 1)
+
     min_bounds = [-i * 1 - 1 for i in range(total_points + 1)]
     max_bounds = [i * 1 + 1 for i in range(total_points + 1)]
 
@@ -204,7 +210,9 @@ def test_vector_layout_collocation():
 
     ocp = prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
-        ode_solver=OdeSolver.COLLOCATION(polynomial_degree=intermediate_point),
+        ode_solver=OdeSolver.COLLOCATION(
+            polynomial_degree=intermediate_point, duplicate_starting_point=duplicate_starting_point
+        ),
         control_type=ControlType.CONSTANT,
         n_shooting=10,
         interpolation_type=InterpolationType.ALL_POINTS,
@@ -233,14 +241,17 @@ def test_vector_layout_collocation():
 
     v_bounds = OptimizationVectorHelper.bounds_vectors(ocp)
 
-    v_bounds_min_expected = np.load(FILE_LOCATION + "/v_bounds_min_collocation.npy", allow_pickle=False)
-    v_bounds_max_expected = np.load(FILE_LOCATION + "/v_bounds_max_collocation.npy", allow_pickle=False)
+    file_suffix = "_starting_point" if duplicate_starting_point else ""
+
+    v_bounds_min_expected = np.load(FILE_LOCATION + f"/v_bounds_min_collocation{file_suffix}.npy", allow_pickle=False)
+    v_bounds_max_expected = np.load(FILE_LOCATION + f"/v_bounds_max_collocation{file_suffix}.npy", allow_pickle=False)
+
     np.testing.assert_almost_equal(v_bounds[0], v_bounds_min_expected)
     np.testing.assert_almost_equal(v_bounds[1], v_bounds_max_expected)
 
     v_init = OptimizationVectorHelper.init_vector(ocp)
 
-    v_init_expected = np.load(FILE_LOCATION + "/v_init_collocation.npy", allow_pickle=False)
+    v_init_expected = np.load(FILE_LOCATION + f"/v_init_collocation{file_suffix}.npy", allow_pickle=False)
     np.testing.assert_almost_equal(v_init, v_init_expected)
 
 
