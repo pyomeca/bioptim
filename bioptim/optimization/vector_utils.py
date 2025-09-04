@@ -62,9 +62,8 @@ def _compute_values_for_all_nodes(
                 defined_values,
                 scaling,
             )
-            # wont fix
             sub_node_bounds += [np.reshape(collapsed.T, (-1, 1))]
-        sub_node_bounds = np.concatenate(sub_node_bounds, axis=1)
+        sub_node_bounds = np.concatenate(sub_node_bounds, axis=0)
         all_bounds += [sub_node_bounds]
     # return np.concatenate(all_bounds, axis=0)
     return all_bounds
