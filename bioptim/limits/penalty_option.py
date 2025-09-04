@@ -73,7 +73,7 @@ class PenaltyOption(OptionGeneric):
     nodes_phase: tuple[int, ...]
         The index of the phases when penalty is multinodes
     penalty_type: PenaltyType
-        If the penalty is from the user or from bioptim (implicit or internal)
+        If the penalty is from the user or from bioptim (internal)
     multi_thread: bool
         If the penalty is multithreaded
 
@@ -152,7 +152,7 @@ class PenaltyOption(OptionGeneric):
         custom_function: Callable
             A user defined function to call to get the penalty
         penalty_type: PenaltyType
-            If the penalty is from the user or from bioptim (implicit or internal)
+            If the penalty is from the user or from bioptim (internal)
         is_stochastic: bool
             If the penalty is stochastic (i.e. if we should look instead at the variation of the penalty)
         **extra_parameters: dict

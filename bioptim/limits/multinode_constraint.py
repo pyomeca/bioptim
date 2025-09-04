@@ -3,8 +3,8 @@ from typing import Any
 import numpy as np
 
 from .path_conditions import Bounds
-from .weight import ObjectiveWeight, ConstraintWeight
-from ..misc.enums import InterpolationType, PenaltyType, ConstraintType
+from .weight import ConstraintWeight
+from ..misc.enums import InterpolationType, PenaltyType
 from ..misc.fcn_enum import FcnEnum
 from .multinode_penalty import MultinodePenalty, MultinodePenaltyList, MultinodePenaltyFunctions
 
@@ -73,8 +73,6 @@ class MultinodeConstraint(MultinodePenalty):
 
         if self.penalty_type == PenaltyType.INTERNAL:
             pool = nlp.g_internal if nlp else ocp.g_internal
-        elif self.penalty_type == ConstraintType.IMPLICIT:
-            pool = nlp.g_implicit if nlp else ocp.g_implicit
         elif self.penalty_type == PenaltyType.USER:
             pool = nlp.g if nlp else ocp.g
         else:

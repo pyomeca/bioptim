@@ -59,16 +59,12 @@ class NonLinearProgram:
         The dynamic function used during the current phase dxdt = f(x,u,p)
     extra_dynamics_func: Callable
         The extra dynamic function used during the current phase dxdt = f(x,u,p)
-    implicit_dynamics_func: Callable
-        The implicit dynamic function used during the current phase f(x,u,p,xdot) = 0
     dynamics_type: DynamicsOptions
         The dynamic option declared by the user for the current phase
     g: list[list[Constraint]]
         All the constraints at each of the node of the phase
     g_internal: list[list[Constraint]]
         All the constraints internally defined by the OCP at each of the node of the phase
-    g_implicit: list[list[Constraint]]
-        All the implicit constraints defined by the OCP at each of the node of the phase
     J: list[list[Objective]]
         All the objectives at each of the node of the phase
     J_internal: list[list[Objective]]
@@ -155,14 +151,12 @@ class NonLinearProgram:
         self.extra_dynamics_func: AnyList = []
         self.dynamics_defects_func: Callable = None
         self.extra_dynamics_defects_func: AnyList = []
-        self.implicit_dynamics_func: Callable | None = None
         self.dynamics_type: "DynamicsFcn" | None = None
         self.extra_dynamics_defects = []
         self.dynamics_defects_func = None
         self.extra_dynamics_defects_func: list = []
         self.g: AnyList = []
         self.g_internal: AnyList = []
-        self.g_implicit: AnyList = []
         self.J: AnyList = []
         self.J_internal: AnyList = []
         self.model: BioModel | StochasticBioModel | HolonomicBioModel | VariationalBioModel | None = None

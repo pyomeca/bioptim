@@ -1519,17 +1519,12 @@ class Solution:
 
             # Todo, min/mean/max
             print(f"\n--------- CONSTRAINTS ---------")
-            if (
-                print_penalty_list(None, ocp.g_internal, True)
-                + print_penalty_list(None, ocp.g_implicit, True)
-                + print_penalty_list(None, ocp.g, True)
-            ):
+            if print_penalty_list(None, ocp.g_internal, True) + print_penalty_list(None, ocp.g, True):
                 print("")
 
             for idx_phase, nlp in enumerate(ocp.nlp):
                 print(f"PHASE {idx_phase}")
                 print_penalty_list(nlp, nlp.g_internal, True)
-                print_penalty_list(nlp, nlp.g_implicit, True)
                 print_penalty_list(nlp, nlp.g, True)
                 print("")
             print(f"------------------------------")
