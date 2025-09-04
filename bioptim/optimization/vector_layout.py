@@ -381,7 +381,8 @@ def _extract_attr_dict(list_data, nlp, attr) -> list[dict[str, list[np.ndarray]]
     var_dict = {key: [None] * len(list_data) for key in keys}
     for node, arr in enumerate(list_data):
         for key in keys:
-            key_index = extracted_attr[key].index
+            # key_index = extracted_attr[key].index
+            key_index = extracted_attr.key_index(key)
             var_dict[key][node] = arr[key_index, :]
     return [var_dict]
 
