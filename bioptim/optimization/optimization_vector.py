@@ -273,20 +273,49 @@ class OptimizationVectorHelper:
                 offset += nx * n_cols
 
         # For controls
+        # for p, nlp in enumerate(ocp.nlp):
+        #     nu = nlp.controls.shape
+        #
+        #     for node in range(nlp.n_controls_nodes):  # Using n_states_nodes on purpose see higher
+        #         n_cols = nlp.n_controls_steps(node)
+        #
+        #         if nu == 0 or node >= nlp.n_controls_nodes:
+        #             u_array = np.ndarray((0, 1))
+        #         else:
+        #             u_array = v_array[offset : offset + nu * n_cols].reshape((nu, -1), order="F")
+        #             offset += nu
+        #
+        #         for key in nlp.controls.keys():
+        #             data_controls[p][key][node] = u_array[nlp.controls.key_index(key), :]
+        # For controls
+        data_controls_temp = []
         for p, nlp in enumerate(ocp.nlp):
             nu = nlp.controls.shape
-
+            data_control_temp_phase = []
             for node in range(nlp.n_controls_nodes):  # Using n_states_nodes on purpose see higher
-                n_cols = nlp.n_controls_steps(node)
+                data_control_temp_phase += [v_array[offset : offset + nu, None]]
+                offset += nu
 
                 if nu == 0 or node >= nlp.n_controls_nodes:
                     u_array = np.ndarray((0, 1))
-                else:
-                    u_array = v_array[offset : offset + nu * n_cols].reshape((nu, -1), order="F")
-                    offset += nu
+                    data_control_temp_phase += [u_array]
+            data_controls_temp += [data_control_temp_phase]
 
+        # For controls: duplication step for linear continuous controls
+        for p, nlp in enumerate(ocp.nlp):
+            for node in range(nlp.n_controls_nodes):
+                n_cols = nlp.n_controls_steps(node)
+                if n_cols > 1:
+                    for i in range(1, n_cols):
+                        data_controls_temp[p][node] = np.hstack(
+                            (data_controls_temp[p][node], data_controls_temp[p][node + i])
+                        )
+
+        # For controls: Distribute the keys
+        for p, nlp in enumerate(ocp.nlp):
+            for node in range(nlp.n_controls_nodes):
                 for key in nlp.controls.keys():
-                    data_controls[p][key][node] = u_array[nlp.controls.key_index(key), :]
+                    data_controls[p][key][node] = data_controls_temp[p][node][nlp.controls.key_index(key), :]
 
         # For parameters
         for key in ocp.parameters.keys():
