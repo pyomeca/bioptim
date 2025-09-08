@@ -183,7 +183,7 @@ class PenaltyHelpers:
                 if (
                     not is_constructing_penalty
                     and node == penalty.ns[idx]
-                    and not penalty.control_types[idx].has_final_node
+                    and not penalty.control_types[idx].has_a_final_node
                 ):
                     # When evaluating penalties, the cx_end must be replaced when calling the last node of a ControlType.CONSTANT because it does not exist
                     # Please note that this is a small hack just to make sure that the casadi functions are called with inputs of the right shape
