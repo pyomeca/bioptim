@@ -323,8 +323,6 @@ class OptimizationVectorHelper:
 
                 current_control = data_controls_temp[p][node]
                 for i in range(1, n_cols):
-                    print("phase", p, "node", node)
-                    print("phase_next_node", phase_next_node, "next_node", next_node)
                     next_control = data_controls_temp[phase_next_node][next_node]
                     current_control = np.hstack((current_control, next_control))
 
@@ -337,7 +335,7 @@ class OptimizationVectorHelper:
                     data_controls[p][key][node] = data_controls_temp[p][node][nlp.controls.key_index(key), :]
 
         offset = save_offset
-        
+
         # For parameters
         for key in ocp.parameters.keys():
             # The list is to simulate the node so it has the same structure as the states and controls
