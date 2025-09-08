@@ -21,7 +21,7 @@ from ..utils import TestUtils
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
-@pytest.mark.parametrize("solver", [Solver.ACADOS, Solver.IPOPT])
+@pytest.mark.parametrize("solver", [Solver.IPOPT, Solver.ACADOS])
 def test_mhe(solver, phase_dynamics):
     solver = solver()
     if solver.type == SolverType.ACADOS:
