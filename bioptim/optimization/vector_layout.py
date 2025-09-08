@@ -43,7 +43,8 @@ def _keys_variable_major(ocp) -> Iterator[KeySize]:
         for p, nlp in enumerate(ocp.nlp):
             method_map = {
                 "states": nlp.n_states_decision_steps,
-                "controls": nlp.n_controls_steps,
+                "controls": lambda node: 1,
+                # "controls": nlp.n_controls_steps,
                 "algebraic_states": nlp.n_algebraic_states_decision_steps,
             }
 
