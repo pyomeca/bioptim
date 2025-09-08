@@ -494,6 +494,7 @@ class NonLinearProgram:
         elif self.control_type == ControlType.CONSTANT_WITH_LAST_NODE:
             return 1
         elif self.control_type == ControlType.LINEAR_CONTINUOUS:
+            # return 2 if node_idx < self.ns else 1
             return 2
         else:
             raise RuntimeError("Not implemented yet")
