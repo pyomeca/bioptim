@@ -392,10 +392,6 @@ def test_vector_layout_linear_continuous_reconstruct():
     sol_states = sol.decision_states()
     sol_controls = sol.decision_controls()
 
-    np.save(FILE_LOCATION + "/sol_states.npy", np.hstack([*sol_states["q"]]), allow_pickle=False)
-    np.save(FILE_LOCATION + "/sol_states_dot.npy", np.hstack([*sol_states["qdot"]]), allow_pickle=False)
-    np.save(FILE_LOCATION + "/sol_controls.npy", np.hstack([*sol_controls["tau"]]), allow_pickle=False)
-
     np.load(FILE_LOCATION + "/sol_states.npy", allow_pickle=False)
     np.load(FILE_LOCATION + "/sol_states_dot.npy", allow_pickle=False)
     np.load(FILE_LOCATION + "/sol_controls.npy", allow_pickle=False)

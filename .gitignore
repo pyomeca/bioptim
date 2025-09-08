@@ -139,3 +139,6 @@ sandbox/
 !/tests/shard6/v_bounds_max_algebraic_states.npy
 !/tests/shard6/v_bounds_min_algebraic_states.npy
 !/tests/shard6/v_init_algebraic_states.npy
+!/tests/shard6/sol_controls.npy
+!/tests/shard6/sol_states.npy
+!/tests/shard6/sol_states_dot.npy
