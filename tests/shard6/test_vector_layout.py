@@ -385,6 +385,8 @@ def test_vector_layout_linear_continuous_reconstruct():
         tau_init=tau_init,
     )
 
+    OptimizationVectorHelper.vector(ocp)  # just to set the layout
+
     v_init = OptimizationVectorHelper.init_vector(ocp)
 
     sol = Solution.from_vector(ocp, v_init)
