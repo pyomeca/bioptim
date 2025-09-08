@@ -17,6 +17,7 @@ from bioptim import (
     InterpolationType,
     ObjectiveList,
     PhaseDynamics,
+    Solution,
 )
 from bioptim.optimization.optimization_vector import OptimizationVectorHelper
 
@@ -334,6 +335,99 @@ def test_vector_layout_linear_continuous():
     v_init_expected = np.vstack((v_init_expected, tau_init[:, -1:]))
 
     np.testing.assert_almost_equal(v_init, v_init_expected)
+
+    sol = Solution.from_vector(ocp, v_init)
+    sol.decision_states()
+    sol.decision_controls()
+
+
+def test_vector_layout_linear_continuous_reconstruct():
+    from bioptim.examples.getting_started import pendulum as ocp_module
+
+    bioptim_folder = TestUtils.module_folder(ocp_module)
+
+    n_shooting = 10
+    min_bounds = [-i * 1 for i in range(n_shooting + 1)]
+    max_bounds = [i * 1 for i in range(n_shooting + 1)]
+
+    q_min_bounds = np.vstack((min_bounds, np.array(min_bounds) * 2))
+    q_max_bounds = np.vstack((max_bounds, np.array(max_bounds) * 2))
+
+    min_bounds = [-i * 0.1 for i in range(n_shooting + 1)]
+    max_bounds = [i * 0.1 for i in range(n_shooting + 1)]
+
+    qdot_min_bounds = np.vstack((min_bounds, np.array(min_bounds) * 2))
+    qdot_max_bounds = np.vstack((max_bounds, np.array(max_bounds) * 2))
+
+    q_init = np.vstack(([i * 0.01 for i in range(n_shooting + 1)], [i * 0.02 for i in range(n_shooting + 1)]))
+    qdot_init = np.vstack([[i * 0.012 for i in range(n_shooting + 1)], [i * 0.024 for i in range(n_shooting + 1)]])
+
+    tau_min = qdot_min_bounds * 1 / 3
+    tau_max = qdot_max_bounds * 1 / 3
+
+    init = [i * 0.00015 for i in range(n_shooting + 1)]
+    tau_init = np.vstack((init, np.array(init) * 2))
+
+    ocp = prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        ode_solver=OdeSolver.RK4(),
+        control_type=ControlType.LINEAR_CONTINUOUS,
+        n_shooting=10,
+        interpolation_type=InterpolationType.EACH_FRAME,
+        q_min_bounds=q_min_bounds,
+        q_max_bounds=q_max_bounds,
+        q_init=q_init,
+        qdot_min_bounds=qdot_min_bounds,
+        qdot_max_bounds=qdot_max_bounds,
+        qdot_init=qdot_init,
+        tau_min=tau_min,
+        tau_max=tau_max,
+        tau_init=tau_init,
+    )
+
+    v_init = OptimizationVectorHelper.init_vector(ocp)
+
+    sol = Solution.from_vector(ocp, v_init)
+
+    sol_states = sol.decision_states()
+    sol_controls = sol.decision_controls()
+
+    np.load(FILE_LOCATION + "/sol_states.npy", allow_pickle=False)
+    np.load(FILE_LOCATION + "/sol_states_dot.npy", allow_pickle=False)
+    np.load(FILE_LOCATION + "/sol_controls.npy", allow_pickle=False)
+
+    np.testing.assert_almost_equal(
+        np.hstack([*sol_states["q"]]), np.load(FILE_LOCATION + "/sol_states.npy", allow_pickle=False)
+    )
+    np.testing.assert_almost_equal(
+        np.hstack([*sol_states["qdot"]]), np.load(FILE_LOCATION + "/sol_states_dot.npy", allow_pickle=False)
+    )
+    np.testing.assert_almost_equal(
+        np.hstack([*sol_controls["tau"]]), np.load(FILE_LOCATION + "/sol_controls.npy", allow_pickle=False)
+    )
+
+    dt = ocp.dt_parameter_initial_guess.init
+    states_init = ocp.nlp[0].x_init
+    controls_init = ocp.nlp[0].u_init
+    param_init = ocp.parameter_init
+    algebraic_init = ocp.nlp[0].a_init
+
+    sol_reconstructed = Solution.from_initial_guess(ocp, [dt, states_init, controls_init, param_init, algebraic_init])
+    sol_states = sol_reconstructed.decision_states()
+    sol_controls = sol_reconstructed.decision_controls()
+
+    np.testing.assert_almost_equal(
+        np.hstack([*sol_states["q"]]),
+        np.load(FILE_LOCATION + "/sol_states.npy", allow_pickle=False),
+    )
+    np.testing.assert_almost_equal(
+        np.hstack([*sol_states["qdot"]]),
+        np.load(FILE_LOCATION + "/sol_states_dot.npy", allow_pickle=False),
+    )
+    np.testing.assert_almost_equal(
+        np.hstack([*sol_controls["tau"]]),
+        np.load(FILE_LOCATION + "/sol_controls.npy", allow_pickle=False),
+    )
 
 
 def test_parameters():
