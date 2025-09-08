@@ -281,6 +281,8 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             parameter_init=self.parameter_init,
             parameter_bounds=self.parameter_bounds,
         )
+        solution_ocp.vector_layout = self.vector_layout
+
         a_init = InitialGuessList()
         return Solution.from_initial_guess(solution_ocp, [np.array([dt]), x_init, u_init, p_init, a_init])
 
