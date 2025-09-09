@@ -277,7 +277,7 @@ class OptimizationVectorHelper:
         for p, nlp in enumerate(ocp.nlp):
             nu = nlp.controls.shape
             data_control_temp_phase = []
-            for node in range(nlp.n_controls_nodes):  # Using n_states_nodes on purpose see higher
+            for node in range(nlp.n_controls_nodes):
                 data_control_temp_phase += [v_array[offset : offset + nu, None]]
                 offset += nu
 
@@ -288,8 +288,8 @@ class OptimizationVectorHelper:
 
         # For controls: Distribute the keys
         for p, nlp in enumerate(ocp.nlp):
-            for node in range(nlp.n_controls_nodes):
-                for key in nlp.controls.keys():
+            for key in nlp.controls.keys():
+                for node in range(nlp.n_controls_nodes):
                     data_controls[p][key][node] = data_controls_temp[p][node][nlp.controls.key_index(key), :]
 
         # For parameters
@@ -327,17 +327,17 @@ class OptimizationVectorHelper:
                 for node in range(nlp.n_controls_nodes):
 
                     # NOTE: hardcoded that phases are sequential 0->1->2 ... not 0->2->3 + 0->1
-                    last_phase = p == (len(nlps) - 1)
-                    last_node = node == (nlp.n_controls_nodes - 1)
+                    is_last_phase = p == (len(nlps) - 1)
+                    is_last_node = node == (nlp.n_controls_nodes - 1)
 
                     # NOTE: only different of 1 for ControlType.LINEAR_CONTINUOUS
                     n_cols = nlp.control_type.displayable_nodes(
-                        no_successor_phase=last_phase,
-                        end_node=last_node,
+                        has_no_successor_phase=is_last_phase,
+                        is_last_node=is_last_node,
                     )
 
                     # NOTE: hardcoded that the next phase is the next in the list. Not a graph.
-                    if last_node and not last_phase:
+                    if is_last_node and not is_last_phase:
                         phase_next_node = p + 1
                         next_node = 0
                     else:
