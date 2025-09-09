@@ -331,7 +331,7 @@ class OptimizationVectorHelper:
                     is_last_node = node == (nlp.n_controls_nodes - 1)
 
                     # NOTE: only different of 1 for ControlType.LINEAR_CONTINUOUS
-                    n_cols = nlp.control_type.displayable_nodes(
+                    n_cols = nlp.control_type.nb_interpolation_points(
                         has_no_successor_phase=is_last_phase,
                         is_last_node=is_last_node,
                     )
