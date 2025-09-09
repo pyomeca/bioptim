@@ -190,7 +190,7 @@ class OptimizationVectorHelper:
             controls=controls_init,
             algebraics=algebraic_states_init,
             parameters=parameters_init,
-            query_function=ocp.vector_layout.array_query_function,
+            query_function=ocp.vector_layout.query_function,
         )
 
         return v_init
