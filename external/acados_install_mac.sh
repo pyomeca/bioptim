@@ -54,11 +54,11 @@ mkdir acados/build
 cd acados/build
 
 # We must manually change the minimum required cmake version in some of acados' dependencies
-sed -i "s/cmake_minimum_required(VERSION 3.5)/cmake_minimum_required(VERSION 3.14)/" ../external/blasfeo/CMakeLists.txt
-sed -i "s/cmake_minimum_required(VERSION 2.6)/cmake_minimum_required(VERSION 3.14)/" ../external/qpoases/CMakeLists.txt
-sed -i "s/CMAKE_MINIMUM_REQUIRED( VERSION 2.8 )/cmake_minimum_required(VERSION 3.14)/" ../external/qpdunes/CMakeLists.txt
-sed -i "s/cmake_minimum_required (VERSION 3.2)/cmake_minimum_required (VERSION 3.14)/" ../external/osqp/CMakeLists.txt
-sed -i "s/cmake_minimum_required (VERSION 3.2)/cmake_minimum_required (VERSION 3.14)/" ../external/osqp/lin_sys/direct/qdldl/qdldl_sources/CMakeLists.txt
+sed -i "" "s/cmake_minimum_required(VERSION 3.5)/cmake_minimum_required(VERSION 3.14)/" ../external/blasfeo/CMakeLists.txt
+sed -i "" "s/cmake_minimum_required(VERSION 2.6)/cmake_minimum_required(VERSION 3.14)/" ../external/qpoases/CMakeLists.txt
+sed -i "" "s/CMAKE_MINIMUM_REQUIRED( VERSION 2.8 )/cmake_minimum_required(VERSION 3.14)/" ../external/qpdunes/CMakeLists.txt
+sed -i "" "s/cmake_minimum_required (VERSION 3.2)/cmake_minimum_required (VERSION 3.14)/" ../external/osqp/CMakeLists.txt
+sed -i "" "s/cmake_minimum_required (VERSION 3.2)/cmake_minimum_required (VERSION 3.14)/" ../external/osqp/lin_sys/direct/qdldl/qdldl_sources/CMakeLists.txt
 
 # Run cmake
 cmake .. \
@@ -76,11 +76,6 @@ make install -j$NB_CPU_MAX
 
 # Prepare the Python interface
 cd ../interfaces/acados_template
-
-# Use gnu-sed instead of osx native sed
-if [ "$CONDA_PREFIX" ]; then
-  conda install sed wget -cconda-forge -y
-fi
 
 # Removing the casadi dependency (already installed from biorbd)
 TO_REPLACE_CASADI_DEP="'casadi"
@@ -102,11 +97,11 @@ TO_REPLACE_LIB_PATH="libacados_ocp_solver_name = f'{lib_prefix}acados_ocp_solver
 REPLACE_LIB_PATH_BY="libacados_ocp_solver_name = f'{lib_prefix}acados_ocp_solver_{self.model_name}{lib_ext}'\n        self.shared_lib_name = os.path.join(code_export_directory, libacados_ocp_solver_name)\n        import site\n        acados_path = site.getsitepackages()\n        libacados_ocp_solver_name = f'{lib_prefix}acados_ocp_solver_{self.model_name}{lib_ext}'\n        # Relink macos lib\n        acados_ext_lib_path = os.path.abspath(acados_path[0]+'\/..\/..')\n        os.system(\n            f'install_name_tool -change libhpipm.dylib {acados_ext_lib_path}\/libhpipm.dylib {self.shared_lib_name}')\n        os.system(\n            f'install_name_tool -change libblasfeo.dylib {acados_ext_lib_path}\/libblasfeo.dylib {self.shared_lib_name}')"
 
 # Perform the modifications
-sed -i "s/$TO_REPLACE_CASADI_DEP/$REPLACE_CASADI_DEP_BY/" setup.py
-sed -i "s/$TO_REPLACE_ACADOS_PYTHON/$REPLACE_ACADOS_PYTHON_BY/" acados_template/utils.py
-sed -i "s/$TO_REPLACE_ACADOS_SOURCE/$REPLACE_ACADOS_SOURCE_BY/" acados_template/utils.py
-sed -i "s/$TO_REPLACE_T_RENDERER/$REPLACE_T_RENDERER_BY/" acados_template/utils.py
-sed -i "s/$TO_REPLACE_LIB_PATH/$REPLACE_LIB_PATH_BY/" acados_template/acados_ocp_solver.py
+sed -i "" "s/$TO_REPLACE_CASADI_DEP/$REPLACE_CASADI_DEP_BY/" setup.py
+sed -i "" "s/$TO_REPLACE_ACADOS_PYTHON/$REPLACE_ACADOS_PYTHON_BY/" acados_template/utils.py
+sed -i "" "s/$TO_REPLACE_ACADOS_SOURCE/$REPLACE_ACADOS_SOURCE_BY/" acados_template/utils.py
+sed -i "" "s/$TO_REPLACE_T_RENDERER/$REPLACE_T_RENDERER_BY/" acados_template/utils.py
+sed -i "" "s/$TO_REPLACE_LIB_PATH/$REPLACE_LIB_PATH_BY/" acados_template/acados_ocp_solver.py
 
 # Change acados external lib linking permanently
 install_name_tool -change libqpOASES_e.3.1.dylib $CONDA_PREFIX/lib/libqpOASES_e.3.1.dylib $CONDA_PREFIX/lib/libacados.dylib
