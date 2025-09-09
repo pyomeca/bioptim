@@ -1,4 +1,3 @@
-from bioptim import InterpolationType, PhaseDynamics, OdeSolver
 import numpy as np
 import pytest
 
