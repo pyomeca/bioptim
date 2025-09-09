@@ -203,9 +203,9 @@ class VectorLayout:
         result = {}
         for i, (key, (sl, n_cols)) in enumerate(self.index_map.items()):
             print(i, "key", key)
-            result[key] = vec[sl].toarray()
-                vec_sliced = vec[sl].toarray() if isinstance(vec[sl], ca.DM) else vec[sl]
-                result[key] = vec_sliced
+            # result[key] = vec[sl].toarray()
+            vec_sliced = vec[sl].toarray() if isinstance(vec[sl], ca.DM) else vec[sl]
+            result[key] = vec_sliced
 
             v_size = sl.stop - sl.start
             if v_size != 0:
