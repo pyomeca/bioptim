@@ -4,9 +4,10 @@ Test for file IO
 
 import io
 import os
+import platform
 import sys
 
-from bioptim import CostType, OdeSolver, Solver, MusclesBiorbdModel, PhaseDynamics, MusclesWithExcitationsBiorbdModel
+from bioptim import CostType, OdeSolver, Solver, PhaseDynamics, MusclesWithExcitationsBiorbdModel
 from bioptim.limits.penalty import PenaltyOption
 from casadi import Function, MX
 import matplotlib
@@ -20,6 +21,9 @@ matplotlib.use("Agg")
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_plot_graphs_one_phase(phase_dynamics):
+    if platform.system() == "Windows":
+        pytest.skip("Skipping on Windows for now, as it creates segmentation fault on Github CI")
+
     # Load graphs_one_phase
     from bioptim.examples.torque_driven_ocp import track_markers_with_torque_actuators as ocp_module
 
@@ -39,6 +43,9 @@ def test_plot_graphs_one_phase(phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_plot_check_conditioning(phase_dynamics):
+    if platform.system() == "Windows":
+        pytest.skip("Skipping on Windows for now, as it creates segmentation fault on Github CI")
+
     # Load graphs check conditioning
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
@@ -57,6 +64,9 @@ def test_plot_check_conditioning(phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_plot_check_conditioning_live(phase_dynamics):
+    if platform.system() == "Windows":
+        pytest.skip("Skipping on Windows for now, as it creates segmentation fault on Github CI")
+
     # Load graphs check conditioning
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
@@ -73,6 +83,9 @@ def test_plot_check_conditioning_live(phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_plot_ipopt_output_live(phase_dynamics):
+    if platform.system() == "Windows":
+        pytest.skip("Skipping on Windows for now, as it creates segmentation fault on Github CI")
+
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
@@ -87,6 +100,9 @@ def test_plot_ipopt_output_live(phase_dynamics):
 
 
 def test_save_ipopt_output():
+    if platform.system() == "Windows":
+        pytest.skip("Skipping on Windows for now, as it creates segmentation fault on Github CI")
+
     from bioptim.examples.getting_started import pendulum as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
@@ -106,6 +122,9 @@ def test_save_ipopt_output():
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_plot_merged_graphs(phase_dynamics):
+    if platform.system() == "Windows":
+        pytest.skip("Skipping on Windows for now, as it creates segmentation fault on Github CI")
+
     # Load graphs_one_phase
     from bioptim.examples.muscle_driven_ocp import muscle_excitations_tracker as ocp_module
 
@@ -147,6 +166,9 @@ def test_plot_merged_graphs(phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_plot_graphs_multi_phases(phase_dynamics):
+    if platform.system() == "Windows":
+        pytest.skip("Skipping on Windows for now, as it creates segmentation fault on Github CI")
+
     # Load graphs_one_phase
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
@@ -163,6 +185,9 @@ def test_plot_graphs_multi_phases(phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE])
 def test_add_new_plot(phase_dynamics):
+    if platform.system() == "Windows":
+        pytest.skip("Skipping on Windows for now, as it creates segmentation fault on Github CI")
+
     # Load graphs_one_phase
     from bioptim.examples.torque_driven_ocp import track_markers_with_torque_actuators as ocp_module
 
@@ -190,6 +215,9 @@ def test_add_new_plot(phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_console_objective_functions(phase_dynamics):
+    if platform.system() == "Windows":
+        pytest.skip("Skipping on Windows for now, as it creates segmentation fault on Github CI")
+
     # Load graphs_one_phase
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
