@@ -196,6 +196,7 @@ class AcadosInterface(SolverInterface):
         self.acados_model.x = x_sym
         self.acados_model.xdot = x_dot_sym
         self.acados_model.u = u_sym
+        self.acados_model.con_h_expr_0 = np.zeros((0, 0))
         self.acados_model.con_h_expr = np.zeros((0, 0))
         self.acados_model.con_h_expr_e = np.zeros((0, 0))
         self.acados_model.p = []
@@ -231,7 +232,7 @@ class AcadosInterface(SolverInterface):
         # set dimensions
         self.acados_ocp.dims.nx = ocp.nlp[0].parameters.shape + ocp.nlp[0].states.shape
         self.acados_ocp.dims.nu = ocp.nlp[0].controls.shape
-        self.acados_ocp.dims.N = ocp.nlp[0].ns
+        self.acados_ocp.solver_options.N_horizon = ocp.nlp[0].ns
 
     def __set_constr_type(self, constr_type: Str = "BGH") -> None:
         """
@@ -339,6 +340,7 @@ class AcadosInterface(SolverInterface):
                         "Except for states and controls, Acados solver only handles constraints on last or all nodes."
                     )
 
+        self.acados_model.con_h_expr_0 = self.all_constr
         self.acados_model.con_h_expr = self.all_constr
         self.acados_model.con_h_expr_e = self.end_constr
 
@@ -401,10 +403,10 @@ class AcadosInterface(SolverInterface):
         self.acados_ocp.dims.nbx_e = self.acados_ocp.dims.nx
 
         # setup algebraic constraint
+        self.acados_ocp.constraints.lh_0 = np.array(self.all_g_bounds.min[:, 0])
+        self.acados_ocp.constraints.uh_0 = np.array(self.all_g_bounds.max[:, 0])
         self.acados_ocp.constraints.lh = np.array(self.all_g_bounds.min[:, 0])
         self.acados_ocp.constraints.uh = np.array(self.all_g_bounds.max[:, 0])
-
-        # setup terminal algebraic constraint
         self.acados_ocp.constraints.lh_e = np.array(self.end_g_bounds.min[:, 0])
         self.acados_ocp.constraints.uh_e = np.array(self.end_g_bounds.max[:, 0])
 
@@ -444,7 +446,7 @@ class AcadosInterface(SolverInterface):
                 else:
                     acados.Vx = np.vstack((acados.Vx, np.zeros((n_controls, n_states))))
                     acados.Vu = np.vstack((acados.Vu, np.diag(v_var)))
-                acados.W = linalg.block_diag(acados.W, np.diag([objectives.weight] * n_variables))
+                acados.W = linalg.block_diag(acados.W, np.diag(objectives.weight.evaluate_at(0, n_variables)))
 
                 node_idx = objectives.node_idx[:-1] if objectives.node[0] == Node.ALL else objectives.node_idx
 
@@ -480,7 +482,7 @@ class AcadosInterface(SolverInterface):
                     else:
                         acados.Vx0 = np.vstack((acados.Vx0, np.zeros((n_controls, n_states))))
                         acados.Vu0 = np.vstack((acados.Vu0, np.diag(v_var)))
-                    acados.W_0 = linalg.block_diag(acados.W_0, np.diag([objectives.weight] * n_variables))
+                    acados.W_0 = linalg.block_diag(acados.W_0, np.diag(objectives.weight.evaluate_at(0, n_variables)))
                     y_ref_start = np.zeros((n_variables, 1))
                     if objectives.target is not None:
                         y_ref_start[rows] = objectives.target[..., 0].T.reshape((-1, 1))
@@ -491,7 +493,7 @@ class AcadosInterface(SolverInterface):
                     if not is_state:
                         raise RuntimeError("Mayer objective at final node for controls is not defined.")
                     acados.Vxe = np.vstack((acados.Vxe, np.diag(v_var)))
-                    acados.W_e = linalg.block_diag(acados.W_e, np.diag([objectives.weight] * n_states))
+                    acados.W_e = linalg.block_diag(acados.W_e, np.diag(objectives.weight.evaluate_at(0, n_states)))
                     y_ref_end = np.zeros((n_states, 1))
                     if objectives.target is not None:
                         y_ref_end[rows] = objectives.target[..., -1].T.reshape((-1, 1))
@@ -513,7 +515,9 @@ class AcadosInterface(SolverInterface):
             acados.lagrange_costs = vertcat(
                 acados.lagrange_costs, objectives.function[0](t, dt, x, u, p, a, d).reshape((-1, 1))
             )
-            acados.W = linalg.block_diag(acados.W, np.diag([objectives.weight] * objectives.function[0].numel_out()))
+            acados.W = linalg.block_diag(
+                acados.W, np.diag(objectives.weight.evaluate_at(0, objectives.function[0].numel_out()))
+            )
 
             node_idx = objectives.node_idx[:-1] if objectives.node[0] == Node.ALL else objectives.node_idx
             if objectives.target is not None:
@@ -524,7 +528,7 @@ class AcadosInterface(SolverInterface):
         def add_nonlinear_ls_mayer(acados, objectives, t, dt, x, u, p, a, d, node=None):
             if objectives.node[0] not in [Node.INTERMEDIATES, Node.PENULTIMATE, Node.END]:
                 acados.W_0 = linalg.block_diag(
-                    acados.W_0, np.diag([objectives.weight] * objectives.function[0].numel_out())
+                    acados.W_0, np.diag(objectives.weight.evaluate_at(0, objectives.function[0].numel_out()))
                 )
 
                 x_tp = x
@@ -548,7 +552,7 @@ class AcadosInterface(SolverInterface):
 
             if objectives.node[0] in [Node.END, Node.ALL]:
                 acados.W_e = linalg.block_diag(
-                    acados.W_e, np.diag([objectives.weight] * objectives.function[-1].numel_out())
+                    acados.W_e, np.diag(objectives.weight.evaluate_at(0, objectives.function[-1].numel_out()))
                 )
                 x_tp = x
                 u_tp = u
@@ -753,7 +757,7 @@ class AcadosInterface(SolverInterface):
             scale_init = self.ocp.parameter_init[key].scale(self.ocp.parameters[key].scaling.scaling)
             param_init = np.concatenate((param_init, scale_init.init[:, 0]))
 
-        for n in range(self.acados_ocp.dims.N):
+        for n in range(self.acados_ocp.solver_options.N_horizon):
             if n == 0:
                 # Initial node
                 if self.y_ref_start:
@@ -816,25 +820,29 @@ class AcadosInterface(SolverInterface):
         # Final
         if self.y_ref_end:
             if len(self.y_ref_end) == 1:
-                self.ocp_solver.cost_set(self.acados_ocp.dims.N, "yref", np.array(self.y_ref_end[0])[:, 0])
+                self.ocp_solver.cost_set(
+                    self.acados_ocp.solver_options.N_horizon, "yref", np.array(self.y_ref_end[0])[:, 0]
+                )
             else:
-                self.ocp_solver.cost_set(self.acados_ocp.dims.N, "yref", np.concatenate(self.y_ref_end)[:, 0])
+                self.ocp_solver.cost_set(
+                    self.acados_ocp.solver_options.N_horizon, "yref", np.concatenate(self.y_ref_end)[:, 0]
+                )
             # check following line
-            # self.ocp_solver.cost_set(self.acados_ocp.dims.N, "W", self.W_e)
-        self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "lbx", self.x_bound_min[:, -1])
-        self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "ubx", self.x_bound_max[:, -1])
+            # self.ocp_solver.cost_set(self.acados_ocp.solver_options.N_horizon, "W", self.W_e)
+        self.ocp_solver.constraints_set(self.acados_ocp.solver_options.N_horizon, "lbx", self.x_bound_min[:, -1])
+        self.ocp_solver.constraints_set(self.acados_ocp.solver_options.N_horizon, "ubx", self.x_bound_max[:, -1])
 
         if len(self.end_g_bounds.max[:, 0]):
-            self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "uh", self.end_g_bounds.max[:, 0])
-            self.ocp_solver.constraints_set(self.acados_ocp.dims.N, "lh", self.end_g_bounds.min[:, 0])
+            self.ocp_solver.constraints_set(self.acados_ocp.solver_options.N_horizon, "uh", self.end_g_bounds.max[:, 0])
+            self.ocp_solver.constraints_set(self.acados_ocp.solver_options.N_horizon, "lh", self.end_g_bounds.min[:, 0])
 
         # The x_init need to be ordered by index that's why we use a for loop
         x_init = np.ndarray((self.ocp.nlp[0].states.shape,))
         for key in self.ocp.nlp[0].states.keys():
             index = self.ocp.nlp[0].states[key].index
-            x_init[index] = self.ocp.nlp[0].x_init[key].init.evaluate_at(self.acados_ocp.dims.N)
+            x_init[index] = self.ocp.nlp[0].x_init[key].init.evaluate_at(self.acados_ocp.solver_options.N_horizon)
 
-        self.ocp_solver.set(self.acados_ocp.dims.N, "x", np.concatenate((param_init, x_init)))
+        self.ocp_solver.set(self.acados_ocp.solver_options.N_horizon, "x", np.concatenate((param_init, x_init)))
 
     def online_optim(self, ocp):
         raise NotImplementedError("online_optim is not implemented yet with ACADOS backend")
@@ -848,7 +856,7 @@ class AcadosInterface(SolverInterface):
         A solution or a list of solution depending on the number of phases
         """
 
-        ns = self.acados_ocp.dims.N
+        ns = self.acados_ocp.solver_options.N_horizon
         n_params = self.ocp.nlp[0].parameters.shape
         acados_x = np.array([self.ocp_solver.get(i, "x") for i in range(ns + 1)]).T
         acados_p = acados_x[:n_params, :]

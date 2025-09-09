@@ -37,8 +37,9 @@ echo ""
 ARG3=${3:-X64_AUTOMATIC}
 if [ -z "$3" ]; then
   echo "  Argument 3 (BLASFEO_TARGET) not provided, falling back on X64_AUTOMATIC"
-  echo ""
 fi
+echo "  set BLASFEO_TARGET=$ARG3"
+echo ""
 
 # Preparing environment
 if [ "$CONDA_PREFIX" ]; then
@@ -51,6 +52,13 @@ echo ""
 rm -rf acados/build/
 mkdir acados/build
 cd acados/build
+
+# We must manually change the minimum required cmake version in some of acados' dependencies
+sed -i "s/cmake_minimum_required(VERSION 3.5)/cmake_minimum_required(VERSION 3.14)/" ../external/blasfeo/CMakeLists.txt
+sed -i "s/cmake_minimum_required(VERSION 2.6)/cmake_minimum_required(VERSION 3.14)/" ../external/qpoases/CMakeLists.txt
+sed -i "s/CMAKE_MINIMUM_REQUIRED( VERSION 2.8 )/cmake_minimum_required(VERSION 3.14)/" ../external/qpdunes/CMakeLists.txt
+sed -i "s/cmake_minimum_required (VERSION 3.2)/cmake_minimum_required (VERSION 3.14)/" ../external/osqp/CMakeLists.txt
+sed -i "s/cmake_minimum_required (VERSION 3.2)/cmake_minimum_required (VERSION 3.14)/" ../external/osqp/lin_sys/direct/qdldl/qdldl_sources/CMakeLists.txt
 
 # Run cmake
 cmake .. \
@@ -65,28 +73,12 @@ cmake .. \
   -DACADOS_NUM_THREADS=$ARG1
 make install -j$NB_CPU_MAX
 
-
-
 # Prepare the Python interface
 cd ../interfaces/acados_template
 
-# Prepare some modification on the files so it works with biorbd
-# Allow for any python
-TO_REPLACE_PYTHON_REQUIRED="python_requires"
-REPLACE_PYTHON_REQUIRED_BY="# python_requires"
-
-# Removing the casadi dependency (already installed from biorbd)
+# Removing the casadi dependency (it will conflit the already installed one from biorbd)
 TO_REPLACE_CASADI_DEP="'casadi"
 REPLACE_CASADI_DEP_BY="# 'casadi"
-
-# Add the simulink file
-TO_REPLACE_JSON_DEP="'acados_sim_layout.json',"
-REPLACE_JSON_DEP_BY="'acados_sim_layout.json',\n       'simulink_default_opts.json',"
-
-# Modify relative path of acados_template is install doesn't have the 
-# same structure as the source folder
-TO_REPLACE_PATH="'..\/..\/..\/'"
-REPLACE_PATH_BY="'..\/..\/..\/..\/'"
 
 # Changed acados path
 TO_REPLACE_ACADOS_SOURCE="    ACADOS_PATH = os.environ.get('ACADOS_SOURCE_DIR')"
@@ -96,10 +88,7 @@ TO_REPLACE_ACADOS_PYTHON="ACADOS_PYTHON_INTERFACE_PATH = os.environ.get('ACADOS_
 REPLACE_ACADOS_PYTHON_BY="import site\n    acados_path = site.getsitepackages()\n    ACADOS_PYTHON_INTERFACE_PATH = os.path.join(acados_path[0], 'acados_template')"
 
 # Perform the modifications
-sed -i "s/$TO_REPLACE_PYTHON_REQUIRED/$REPLACE_PYTHON_REQUIRED_BY/" setup.py
 sed -i "s/$TO_REPLACE_CASADI_DEP/$REPLACE_CASADI_DEP_BY/" setup.py
-sed -i "s/$TO_REPLACE_JSON_DEP/$REPLACE_JSON_DEP_BY/" setup.py
-sed -i "s/$TO_REPLACE_PATH/$REPLACE_PATH_BY/" acados_template/utils.py
 sed -i "s/$TO_REPLACE_ACADOS_PYTHON/$REPLACE_ACADOS_PYTHON_BY/" acados_template/utils.py
 sed -i "s/$TO_REPLACE_ACADOS_SOURCE/$REPLACE_ACADOS_SOURCE_BY/" acados_template/utils.py
 
@@ -107,14 +96,5 @@ sed -i "s/$TO_REPLACE_ACADOS_SOURCE/$REPLACE_ACADOS_SOURCE_BY/" acados_template/
 pip install .
 cd ../..
 
-# Automatically download Tera 
-TERA_INSTALL_SCRIPT=$(pwd)/ci/linux/install_t_renderer.sh
-pushd $ARG2;
-  chmod +x $TERA_INSTALL_SCRIPT;
-  $TERA_INSTALL_SCRIPT;
-popd;
-
 # Undo the modifications to the files (so it is not picked up by Git)
 git reset --hard
-
-
