@@ -270,7 +270,7 @@ class VectorLayout:
             data_algebraics += _extract_algebraics_dict(list_algebraics[p], nlp)
 
         for key in self.ocp.parameters.keys():
-            data_parameters[key] = params[self.ocp.parameters[key].index]
+            data_parameters[key] = [params[self.ocp.parameters[key].index]]
 
         return data_states, data_controls, [data_parameters], data_algebraics
 
