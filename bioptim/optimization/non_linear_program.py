@@ -477,28 +477,6 @@ class NonLinearProgram:
         mod = 1 if self.control_type.has_a_final_node else 0
         return self.ns + mod
 
-    def n_controls_steps(self, node_idx: Int) -> Int:
-        """
-        Parameters
-        ----------
-        node_idx: int
-            The index of the node
-
-        Returns
-        -------
-        The number of states
-        """
-
-        if self.control_type == ControlType.CONSTANT:
-            return 1
-        elif self.control_type == ControlType.CONSTANT_WITH_LAST_NODE:
-            return 1
-        elif self.control_type == ControlType.LINEAR_CONTINUOUS:
-            # return 2 if node_idx < self.ns else 1
-            return 2
-        else:
-            raise RuntimeError("Not implemented yet")
-
     @property
     def n_algebraic_states_nodes(self) -> Int:
         """

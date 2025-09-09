@@ -273,68 +273,24 @@ class OptimizationVectorHelper:
                 offset += nx * n_cols
 
         # For controls
-        save_offset = offset
-        # for p, nlp in enumerate(ocp.nlp):
-        #     nu = nlp.controls.shape
-        #
-        #     for node in range(nlp.n_controls_nodes):  # Using n_states_nodes on purpose see higher
-        #         n_cols = nlp.n_controls_steps(node)
-        #
-        #         if nu == 0 or node >= nlp.n_controls_nodes:
-        #             u_array = np.ndarray((0, 1))
-        #         else:
-        #             u_array = v_array[offset : offset + nu * n_cols].reshape((nu, -1), order="F")
-        #             offset += nu
-        #
-        #         for key in nlp.controls.keys():
-        #             data_controls[p][key][node] = u_array[nlp.controls.key_index(key), :]
-
-        # For controls
         data_controls_temp = []
         for p, nlp in enumerate(ocp.nlp):
             nu = nlp.controls.shape
             data_control_temp_phase = []
             for node in range(nlp.n_controls_nodes):  # Using n_states_nodes on purpose see higher
-                data_control_temp_phase += [v_array[save_offset : save_offset + nu, None]]
-                save_offset += nu
+                data_control_temp_phase += [v_array[offset : offset + nu, None]]
+                offset += nu
 
                 if nu == 0 or node >= nlp.n_controls_nodes:
                     u_array = np.ndarray((0, 1))
                     data_control_temp_phase += [u_array]
             data_controls_temp += [data_control_temp_phase]
 
-        # For controls: duplication step for linear continuous controls
-        for p, nlp in enumerate(ocp.nlp):
-            for node in range(nlp.n_controls_nodes):
-                n_cols = nlp.n_controls_steps(node)
-
-                last_phase = p == (len(ocp.nlp) - 1)
-                last_node = node == (nlp.n_controls_nodes - 1)
-                # NOTE: hardcoded that phases are sequential 0->1->2 ... not 0->2->3 + 0->1
-                if n_cols == 1 or (last_phase and last_node):
-                    continue
-
-                if node == nlp.n_controls_nodes - 1 and not last_phase:
-                    phase_next_node = p + 1
-                    next_node = 0
-                else:
-                    phase_next_node = p
-                    next_node = node + 1
-
-                current_control = data_controls_temp[p][node]
-                for i in range(1, n_cols):
-                    next_control = data_controls_temp[phase_next_node][next_node]
-                    current_control = np.hstack((current_control, next_control))
-
-                data_controls_temp[p][node] = current_control
-
         # For controls: Distribute the keys
         for p, nlp in enumerate(ocp.nlp):
             for node in range(nlp.n_controls_nodes):
                 for key in nlp.controls.keys():
                     data_controls[p][key][node] = data_controls_temp[p][node][nlp.controls.key_index(key), :]
-
-        offset = save_offset
 
         # For parameters
         for key in ocp.parameters.keys():
@@ -361,3 +317,41 @@ class OptimizationVectorHelper:
                 offset += na * n_cols
 
         return data_states, data_controls, data_parameters, data_algebraic_states
+
+    @staticmethod
+    def control_duplication(controls: dict, nlps: list["NonLinearProgram"]) -> dict:
+        """Duplicate the controls for linear continuous control types."""
+        for p, (controls_p, nlp) in enumerate(zip(controls, nlps)):
+            for key in controls_p.keys():
+                controls_p_key = controls_p[key]
+                for node in range(nlp.n_controls_nodes):
+
+
+                    # NOTE: hardcoded that phases are sequential 0->1->2 ... not 0->2->3 + 0->1
+                    last_phase = p == (len(nlps) - 1)
+                    last_node = node == (nlp.n_controls_nodes - 1)
+
+                    # NOTE: only different of 1 for ControlType.LINEAR_CONTINUOUS
+                    n_cols = nlp.control_type.displayable_nodes(
+                        no_successor_phase=last_phase,
+                        end_node=last_node,
+                    )
+
+                    # NOTE: hardcoded that the next phase is the next in the list. Not a graph.
+                    if last_node and not last_phase:
+                        phase_next_node = p + 1
+                        next_node = 0
+                    else:
+                        phase_next_node = p
+                        next_node = node + 1
+
+                    current_control = controls_p_key[node]
+                    for i in range(1, n_cols):
+                        next_control = controls[phase_next_node][key][next_node]
+                        current_control = np.hstack((current_control, next_control))
+
+                    controls_p_key[node] = current_control
+                controls_p[key] = controls_p_key
+            controls[p] = controls_p
+
+        return controls

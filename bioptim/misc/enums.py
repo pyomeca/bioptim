@@ -142,6 +142,21 @@ class ControlType(Enum):
         """
         return self in (ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS)
 
+    def displayable_nodes(self, no_successor_phase: bool, end_node: bool) -> int:
+        """
+        1 if CONSTANT or CONSTANT_WITH_LAST_NODE
+        1 if LINEAR_CONTINUOUS and there is no successor phase and it is the end node
+        2 if LINEAR_CONTINUOUS otherwise
+        """
+        if self == ControlType.CONSTANT:
+            return 1
+        elif self == ControlType.LINEAR_CONTINUOUS:
+            return 1 if (no_successor_phase and end_node) else 2
+        elif self == ControlType.CONSTANT_WITH_LAST_NODE:
+            return 1
+        else:
+            raise ValueError(f"Control type {self} not recognized")
+
 
 class VariableType(Enum):
     """
