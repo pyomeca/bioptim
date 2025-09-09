@@ -18,6 +18,7 @@ from bioptim import (
     PhaseDynamics,
     VariableScaling,
 )
+from bioptim.optimization.vector_layout import VectorLayout
 from tests.utils import TestUtils
 
 
@@ -61,6 +62,7 @@ def test_double_update_bounds_and_init(phase_dynamics):
         x_init=x_init,
         u_init=u_init,
     )
+    ocp.vector_layout = VectorLayout(ocp)
 
     x_bounds = BoundsList()
     x_bounds["q"] = -np.ones((nq, 1)), np.ones((nq, 1))
@@ -210,6 +212,7 @@ def test_update_bounds_and_init_with_param(phase_dynamics):
         parameter_init=parameter_init,
         parameter_bounds=parameter_bounds,
     )
+    ocp.vector_layout = VectorLayout(ocp)
 
     # Before modifying
     expected = np.array([[0.1] + [-np.inf] * (nq * 2) * (ns + 1) + [-np.inf] * nq * ns + [g_min]]).T
@@ -284,6 +287,7 @@ def test_update_noised_init_rk4(interpolation, phase_dynamics):
         x_init=x_init,
         u_init=u_init,
     )
+    ocp.vector_layout = VectorLayout(ocp)
 
     # Path constraint and control path constraints
     x_bounds = BoundsList()
@@ -638,6 +642,7 @@ def test_update_noised_initial_guess_rk4(interpolation, phase_dynamics):
         x_init=x_init,
         u_init=u_init,
     )
+    ocp.vector_layout = VectorLayout(ocp)
 
     # Path constraint and control path constraints
     x_bounds = BoundsList()
