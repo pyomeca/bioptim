@@ -184,7 +184,7 @@ class Solution:
 
             x, u, p, a = self.ocp.vector_layout.unstack_to_dicts(vector)
             # x, u, p, a = OptimizationVectorHelper.to_dictionaries(ocp, vector)
-
+            u = OptimizationVectorHelper.control_duplication(u, ocp.nlp)
             self._decision_states = SolutionData.from_scaled(ocp, x, "x")
             self._stepwise_controls = SolutionData.from_scaled(ocp, u, "u")
             self._parameters = SolutionData.from_scaled(ocp, p, "p")
@@ -305,12 +305,7 @@ class Solution:
         # For controls
         for p, ss in enumerate(sol_controls):
             control_type = ocp.nlp[p].control_type
-            if control_type == ControlType.CONSTANT:
-                off = 0
-            elif control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
-                off = 1
-            else:
-                raise NotImplementedError(f"control_type {control_type} is not implemented in Solution")
+            off = 1 if control_type.has_a_final_node else 0
 
             for key in ss.keys():
                 ss[key].init.check_and_adjust_dimensions(len(ocp.nlp[p].controls[key]), all_ns[p] - 1 + off, "controls")
