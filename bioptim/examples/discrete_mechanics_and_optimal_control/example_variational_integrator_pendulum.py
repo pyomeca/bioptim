@@ -102,7 +102,7 @@ def main():
 
     # --- Show the results in a bioviz animation --- #
     sol.print_cost()  # /!\ Since the last controls are nan the costs are not accurate /!\
-    sol.animate(viewer="pyorerun")
+    sol.animate()
 
     # --- Show the graph results --- #
     # The states are displayed piecewise constant, but actually they are not.

@@ -8,9 +8,9 @@ GeneratorType = Callable[
     [], tuple[Iterator[KeySize], int]
 ]  # Function that returns an iterator yielding (key, size, horizontal_size)
 
-import casadi as ca
+from casadi import MX, SX, vertcat, DM
 
-_CASADI_TYPES = (ca.MX, ca.SX)
+_CASADI_TYPES = (MX, SX)
 
 from ..misc.enums import ControlType
 from ..misc.parameters_types import CX
@@ -148,12 +148,8 @@ class VectorLayout:
 
         values = [query_function(time, states, controls, algebraics, parameters, key) for key in self.index_map]
 
-        # best debug found
-        for i, (v, (key, val)) in enumerate(zip(values, self.index_map.items())):
-            print(i, v.shape, key, val)
-
         if _CASADI_TYPES and isinstance(values[0], _CASADI_TYPES):
-            return ca.vertcat(*values)
+            return vertcat(*values)
         else:
             return np.vstack(values)
 
@@ -165,7 +161,7 @@ class VectorLayout:
         result = {}
         for i, (key, (sl, n_cols)) in enumerate(self.index_map.items()):
 
-            vec_sliced = vec[sl].toarray() if isinstance(vec[sl], ca.DM) else vec[sl]
+            vec_sliced = vec[sl].toarray() if isinstance(vec[sl], DM) else vec[sl]
             result[key] = vec_sliced
 
             v_size = sl.stop - sl.start

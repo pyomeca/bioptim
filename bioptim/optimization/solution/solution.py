@@ -183,8 +183,8 @@ class Solution:
             self._stepwise_times = OptimizationVectorHelper.extract_step_times(ocp, vector)
 
             x, u, p, a = self.ocp.vector_layout.unstack_to_dicts(vector)
-            # x, u, p, a = OptimizationVectorHelper.to_dictionaries(ocp, vector)
             u = OptimizationVectorHelper.control_duplication(u, ocp.nlp)
+
             self._decision_states = SolutionData.from_scaled(ocp, x, "x")
             self._stepwise_controls = SolutionData.from_scaled(ocp, u, "u")
             self._parameters = SolutionData.from_scaled(ocp, p, "p")
@@ -1537,4 +1537,3 @@ class Solution:
             self.print_cost(CostType.CONSTRAINTS)
         else:
             raise ValueError("print can only be called with CostType.OBJECTIVES or CostType.CONSTRAINTS")
-
