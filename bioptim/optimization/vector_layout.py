@@ -140,45 +140,7 @@ class VectorLayout:
         self.generator = self._pick_generator()
         self.index_map = self._build_index_map()  # maps (phase, var_type, node, key) -> slice
 
-    def stack_from_ocp(self, ocp):
-        """Given an OptimalControlProgram, stack all variables into a flat vector."""
-        ocp_values = {}
-        # Global time parameter
-        ocp_values[("global", "time")] = ocp.dt_parameter.cx
-        ocp_values[("global", "parameters")] = ocp.parameters.scaled.cx
-
-        # Per-phase, per-node values
-        for p, nlp in enumerate(ocp.nlp):
-            # States
-            for node, x in enumerate(nlp.X_scaled):
-                ocp_values[(p, "states", node)] = x.reshape((-1, 1))
-            # Controls
-            for node, u in enumerate(nlp.U_scaled):
-                ocp_values[(p, "controls", node)] = u
-            # Algebraic states
-            for node, a in enumerate(nlp.A_scaled):
-                ocp_values[(p, "algebraic_states", node)] = a.reshape((-1, 1))
-
-        return self.stack(ocp_values)
-
-    def stack(self, ocp_values):
-        """
-        Given a dict of values keyed by index_map keys, build a flat vector.
-        If values are CasADi symbols, returns a vertcat.
-        If values are NumPy arrays, returns a stacked array.
-        """
-        values = [ocp_values[key] for key in self.index_map]
-
-        # best debug found
-        for i, (v, (key, val)) in enumerate(zip(values, self.index_map.items())):
-            print(i, v.shape, key, val)
-
-        if _CASADI_TYPES and isinstance(values[0], _CASADI_TYPES):
-            return ca.vertcat(*values)
-        else:
-            return np.vstack(values)
-
-    def stack_dreamed(self, time, states, controls, algebraics, parameters, query_function: Callable):
+    def stack(self, time, states, controls, algebraics, parameters, query_function: Callable):
         """
         Given time, states, controls, algebraics, and parameters,
         stack them into a flat vector.
@@ -198,12 +160,11 @@ class VectorLayout:
     def unstack(self, vec):
         """
         Given flat vector, return dict with same structure as index_map.
-        Works for NumPy arrays and CasADi objects.
+        Works for NumPy arrays and CasADi DM.
         """
         result = {}
         for i, (key, (sl, n_cols)) in enumerate(self.index_map.items()):
-            print(i, "key", key)
-            # result[key] = vec[sl].toarray()
+
             vec_sliced = vec[sl].toarray() if isinstance(vec[sl], ca.DM) else vec[sl]
             result[key] = vec_sliced
 
@@ -308,36 +269,13 @@ class VectorLayout:
         return slice_end
 
     @staticmethod
-    def ocp_query_function(
+    def query_function(
         time: CX, states: list[list[CX]], controls: list[list[CX]], algebraics: list[list[CX]], parameters: CX, key
     ) -> CX:
         """
         Query function to retrieve values from the OCP based on the key.
         This is a placeholder and should be replaced with actual logic
         to retrieve values from the OCP.
-        """
-        if key == ("global", "time"):
-            return time
-        elif key == ("global", "parameters"):
-            return parameters
-        else:
-            phase, var_type, node = key
-            if var_type == "states":
-                return states[phase][node].reshape((-1, 1))
-            elif var_type == "controls":
-                return controls[phase][node]
-            elif var_type == "algebraic_states":
-                return algebraics[phase][node].reshape((-1, 1))
-            else:
-                raise ValueError(f"Unknown key: {key}")
-
-    @staticmethod
-    def array_query_function(
-        time: CX, states: list[list[CX]], controls: list[list[CX]], algebraics: list[list[CX]], parameters: CX, key
-    ) -> CX:
-        """
-        Query function to retrieve values for bounds or initial guesses
-
         """
         if key == ("global", "time"):
             return time
