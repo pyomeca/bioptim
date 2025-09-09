@@ -87,14 +87,39 @@ REPLACE_ACADOS_SOURCE_BY="    ACADOS_PATH = os.environ['CONDA_PREFIX']"
 TO_REPLACE_ACADOS_PYTHON="ACADOS_PYTHON_INTERFACE_PATH = os.environ.get('ACADOS_PYTHON_INTERFACE_PATH')"
 REPLACE_ACADOS_PYTHON_BY="import site\n    acados_path = site.getsitepackages()\n    ACADOS_PYTHON_INTERFACE_PATH = os.path.join(acados_path[0], 'acados_template')"
 
+# Force yes to t_renderer installation prompt
+TO_REPLACE_T_RENDERER="if input(msg) != 'y':"
+REPLACE_T_RENDERER_BY="if False:"
+
 # Perform the modifications
 sed -i "s/$TO_REPLACE_CASADI_DEP/$REPLACE_CASADI_DEP_BY/" setup.py
 sed -i "s/$TO_REPLACE_ACADOS_PYTHON/$REPLACE_ACADOS_PYTHON_BY/" acados_template/utils.py
 sed -i "s/$TO_REPLACE_ACADOS_SOURCE/$REPLACE_ACADOS_SOURCE_BY/" acados_template/utils.py
+sed -i "s/$TO_REPLACE_T_RENDERER/$REPLACE_T_RENDERER_BY/" acados_template/utils.py
 
 # Install the Python interface
 pip install .
 cd ../..
 
 # Undo the modifications to the files (so it is not picked up by Git)
+cd external/blasfeo/
+git reset --hard
+cd ../..
+
+cd external/qpoases/
+git reset --hard
+cd ../..
+
+cd external/qpdunes/
+git reset --hard
+cd ../..
+
+cd external/osqp/lin_sys/direct/qdldl/qdldl_sources/
+git reset --hard
+cd ../../../../../..
+
+cd external/osqp/
+git reset --hard
+cd ../..
+
 git reset --hard

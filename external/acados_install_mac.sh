@@ -114,4 +114,24 @@ pip install .
 cd ../..
 
 # Undo the modifications to the files (so it is not picked up by Git)
+cd external/blasfeo/
+git reset --hard
+cd ../..
+
+cd external/qpoases/
+git reset --hard
+cd ../..
+
+cd external/qpdunes/
+git reset --hard
+cd ../..
+
+cd external/osqp/lin_sys/direct/qdldl/qdldl_sources/
+git reset --hard
+cd ../../../../../..
+
+cd external/osqp/
+git reset --hard
+cd ../..
+
 git reset --hard
