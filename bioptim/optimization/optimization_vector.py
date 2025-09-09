@@ -326,7 +326,6 @@ class OptimizationVectorHelper:
                 controls_p_key = controls_p[key]
                 for node in range(nlp.n_controls_nodes):
 
-
                     # NOTE: hardcoded that phases are sequential 0->1->2 ... not 0->2->3 + 0->1
                     last_phase = p == (len(nlps) - 1)
                     last_node = node == (nlp.n_controls_nodes - 1)
