@@ -88,7 +88,7 @@ def _keys_time_major(ocp) -> Iterator[KeySize]:
     for p, nlp in enumerate(ocp.nlp):
         for node in range(nlp.ns):
             yield (p, "states", node), _len_of(nlp.states.shape), nlp.n_states_decision_steps(node)
-            yield (p, "controls", node), _len_of(nlp.controls.shape), nlp.n_controls_steps(node)
+            yield (p, "controls", node), _len_of(nlp.controls.shape), 1
 
             nlp.algebraic_states.node_index = node
             n_cols = nlp.n_algebraic_states_decision_steps(node)
@@ -97,7 +97,7 @@ def _keys_time_major(ocp) -> Iterator[KeySize]:
         yield (p, "states", nlp.ns), _len_of(nlp.states.shape), nlp.n_states_decision_steps(nlp.ns)
 
         if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
-            yield (p, "controls", nlp.ns), _len_of(nlp.controls.shape), nlp.n_controls_steps(nlp.ns)
+            yield (p, "controls", nlp.ns), _len_of(nlp.controls.shape), 1
 
         nlp.algebraic_states.node_index = node
         n_cols = nlp.n_algebraic_states_decision_steps(node)
