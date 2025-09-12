@@ -139,7 +139,6 @@ def prepare_ocp(
 
     constraints.add(ConstraintFcn.TRACK_CONTROL, key="tau", target=np.ones((3, 1)), node=node, weight=weight)
 
-
     # Path condition
     x_bounds = BoundsList()
     x_bounds.add("q", min_bound=[-100] * nq, max_bound=[100] * nq, interpolation=InterpolationType.CONSTANT)

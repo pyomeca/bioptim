@@ -42,6 +42,7 @@ def get_nb_nodes(node, n_shooting):
         n_nodes = len(node)
     return n_nodes
 
+
 def get_weight(interpolation_type, n_nodes, final_time, weight_type="objective"):
     """
     Get the weight depending on the interpolation type and the type (objective or constraint).
@@ -83,12 +84,17 @@ def get_weight(interpolation_type, n_nodes, final_time, weight_type="objective")
         # For this particular instance, it emulates a Linear interpolation
         extra_params = {"n_nodes": n_nodes}
         if weight_type == "objective":
-            weight = ObjectiveWeight(objective_ocp_module.custom_weight, interpolation=InterpolationType.CUSTOM, **extra_params)
+            weight = ObjectiveWeight(
+                objective_ocp_module.custom_weight, interpolation=InterpolationType.CUSTOM, **extra_params
+            )
         else:
-            weight = ConstraintWeight(constraint_ocp_module.custom_weight, interpolation=InterpolationType.CUSTOM, **extra_params)
+            weight = ConstraintWeight(
+                constraint_ocp_module.custom_weight, interpolation=InterpolationType.CUSTOM, **extra_params
+            )
     else:
         raise NotImplementedError("Not implemented yet")
     return weight
+
 
 def objective_prepare_ocp(
     biorbd_model_path: str,
@@ -184,6 +190,7 @@ def objective_prepare_ocp(
         n_threads=1,
         control_type=control_type,
     )
+
 
 def constraint_prepare_ocp(
     biorbd_model_path: str,
@@ -609,7 +616,9 @@ def test_pendulum_constraint(control_type, interpolation_type, node, phase_dynam
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
     tau = controls["tau"]
     ntau = tau.shape[0]
-    g_computed = np.array(sol.constraints[2 * ntau * n_shooting: ]).reshape(-1, )  # Keep only the user constraint (not the continuity)
+    g_computed = np.array(sol.constraints[2 * ntau * n_shooting :]).reshape(
+        -1,
+    )  # Keep only the user constraint (not the continuity)
 
     # Check constraint function value
     if interpolation_type == InterpolationType.CONSTANT:
@@ -619,34 +628,34 @@ def test_pendulum_constraint(control_type, interpolation_type, node, phase_dynam
         elif node == Node.INTERMEDIATES:
             if control_type == ControlType.CONSTANT:
                 value = tau[:, 1:-1] - np.ones((ntau, n_shooting - 2))
-                npt.assert_almost_equal(g_computed, value.flatten(order='F'))
+                npt.assert_almost_equal(g_computed, value.flatten(order="F"))
             elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
                 value = tau[:, 1:-2] - np.ones((ntau, n_shooting - 2))
-                npt.assert_almost_equal(g_computed, value.flatten(order='F'))
+                npt.assert_almost_equal(g_computed, value.flatten(order="F"))
             else:
                 value = tau[:, 1:-4:2] - np.ones((ntau, n_shooting - 2))
-                npt.assert_almost_equal(g_computed, value.flatten(order='F'))
+                npt.assert_almost_equal(g_computed, value.flatten(order="F"))
         elif node == Node.ALL_SHOOTING:
             if control_type == ControlType.CONSTANT:
                 value = tau - np.ones((ntau, n_shooting))
-                npt.assert_almost_equal(g_computed, value.flatten(order='F'))
+                npt.assert_almost_equal(g_computed, value.flatten(order="F"))
             elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
                 value = tau[:, :-1] - np.ones((ntau, n_shooting))
-                npt.assert_almost_equal(g_computed, value.flatten(order='F'))
+                npt.assert_almost_equal(g_computed, value.flatten(order="F"))
                 # TODO: @pariterre -> the last node seems to be missing from the constraint
             elif control_type == ControlType.LINEAR_CONTINUOUS:
                 value = tau[:, 0:-1:2] - np.ones((ntau, n_shooting))
-                npt.assert_almost_equal(g_computed, value.flatten(order='F'))
+                npt.assert_almost_equal(g_computed, value.flatten(order="F"))
         else:
             if control_type == ControlType.CONSTANT:
                 value = tau[:, node] - np.ones((ntau, len(node)))
-                npt.assert_almost_equal(g_computed, value.flatten(order='F'))
+                npt.assert_almost_equal(g_computed, value.flatten(order="F"))
             elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
                 value = tau[:, node] - np.ones((ntau, len(node)))
-                npt.assert_almost_equal(g_computed, value.flatten(order='F'))
+                npt.assert_almost_equal(g_computed, value.flatten(order="F"))
             elif control_type == ControlType.LINEAR_CONTINUOUS:
                 value = tau[:, np.array(node) * 2] - np.ones((ntau, len(node)))
-                npt.assert_almost_equal(g_computed, value.flatten(order='F'))
+                npt.assert_almost_equal(g_computed, value.flatten(order="F"))
     elif (
         interpolation_type == InterpolationType.LINEAR
         or interpolation_type == InterpolationType.CUSTOM
@@ -658,83 +667,116 @@ def test_pendulum_constraint(control_type, interpolation_type, node, phase_dynam
             if control_type == ControlType.CONSTANT:
                 value = np.zeros((ntau, n_shooting - 2))
                 for i in range(ntau):
-                    value[i, :] = (tau[i, 1:-1] - np.ones((n_shooting - 2, ))) * np.linspace(0, 1, n_shooting - 2)
-                npt.assert_almost_equal(g_computed, value.flatten(order='F'))
+                    value[i, :] = (tau[i, 1:-1] - np.ones((n_shooting - 2,))) * np.linspace(0, 1, n_shooting - 2)
+                npt.assert_almost_equal(g_computed, value.flatten(order="F"))
             elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
                 value = np.zeros((ntau, n_shooting - 2))
                 for i in range(ntau):
-                    value[i, :] = (tau[i, 1:-2] - np.ones((n_shooting - 2, ))) * np.linspace(0, 1, n_shooting - 2)
-                npt.assert_almost_equal(g_computed, value.flatten(order='F'))
+                    value[i, :] = (tau[i, 1:-2] - np.ones((n_shooting - 2,))) * np.linspace(0, 1, n_shooting - 2)
+                npt.assert_almost_equal(g_computed, value.flatten(order="F"))
             elif control_type == ControlType.LINEAR_CONTINUOUS:
                 value = np.zeros((ntau, n_shooting - 2))
                 for i in range(ntau):
-                    value[i, :] = (tau[i, 1:-4:2] - np.ones((n_shooting - 2, ))) * np.linspace(0, 1, n_shooting - 2)
-                npt.assert_almost_equal(g_computed, value.flatten(order='F'))
+                    value[i, :] = (tau[i, 1:-4:2] - np.ones((n_shooting - 2,))) * np.linspace(0, 1, n_shooting - 2)
+                npt.assert_almost_equal(g_computed, value.flatten(order="F"))
         elif node == Node.ALL_SHOOTING:
             if control_type == ControlType.CONSTANT:
                 value = np.zeros((ntau, n_shooting))
                 for i in range(ntau):
-                    value[i, :] = (tau[i, :] - np.ones((n_shooting, ))) * np.linspace(0, 1, n_shooting)
-                npt.assert_almost_equal(g_computed, value.flatten(order='F'))
+                    value[i, :] = (tau[i, :] - np.ones((n_shooting,))) * np.linspace(0, 1, n_shooting)
+                npt.assert_almost_equal(g_computed, value.flatten(order="F"))
             elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
                 value = np.zeros((ntau, n_shooting))
                 for i in range(ntau):
-                    value[i, :] = (tau[i, :-1] - np.ones((n_shooting, ))) * np.linspace(0, 1, n_shooting)
-                npt.assert_almost_equal(g_computed, value.flatten(order='F'))
+                    value[i, :] = (tau[i, :-1] - np.ones((n_shooting,))) * np.linspace(0, 1, n_shooting)
+                npt.assert_almost_equal(g_computed, value.flatten(order="F"))
             elif control_type == ControlType.LINEAR_CONTINUOUS:
                 value = np.zeros((ntau, n_shooting))
                 for i in range(ntau):
-                    value[i, :] = (tau[i, 0:-2:2] - np.ones((n_shooting, ))) * np.linspace(0, 1, n_shooting)
-                npt.assert_almost_equal(g_computed, value.flatten(order='F'))
+                    value[i, :] = (tau[i, 0:-2:2] - np.ones((n_shooting,))) * np.linspace(0, 1, n_shooting)
+                npt.assert_almost_equal(g_computed, value.flatten(order="F"))
         else:
             if control_type == ControlType.CONSTANT:
                 value = np.zeros((ntau, len(node)))
                 for i in range(ntau):
-                    value[i, :] = (tau[i, node] - np.ones((len(node), ))) * np.linspace(0, 1, len(node))
-                npt.assert_almost_equal(g_computed, value.flatten(order='F'))
+                    value[i, :] = (tau[i, node] - np.ones((len(node),))) * np.linspace(0, 1, len(node))
+                npt.assert_almost_equal(g_computed, value.flatten(order="F"))
             elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
                 value = np.zeros((ntau, len(node)))
                 for i in range(ntau):
-                    value[i, :] = (tau[i, node] - np.ones((len(node), ))) * np.linspace(0, 1, len(node))
-                npt.assert_almost_equal(g_computed, value.flatten(order='F'))
+                    value[i, :] = (tau[i, node] - np.ones((len(node),))) * np.linspace(0, 1, len(node))
+                npt.assert_almost_equal(g_computed, value.flatten(order="F"))
             elif control_type == ControlType.LINEAR_CONTINUOUS:
                 value = np.zeros((ntau, len(node)))
                 for i in range(ntau):
-                    value[i, :] = (tau[i, np.array(node) * 2] - np.ones((len(node), ))) * np.linspace(0, 1, len(node))
-                npt.assert_almost_equal(g_computed, value.flatten(order='F'))
+                    value[i, :] = (tau[i, np.array(node) * 2] - np.ones((len(node),))) * np.linspace(0, 1, len(node))
+                npt.assert_almost_equal(g_computed, value.flatten(order="F"))
     elif interpolation_type == InterpolationType.SPLINE:
         # Testing values because too complicated for my small brain
         if node == Node.START:
             if control_type == ControlType.CONSTANT:
-                npt.assert_almost_equal(g_computed, np.array([-3.42388421e-09,  1.09865848e+01]))
+                npt.assert_almost_equal(g_computed, np.array([-3.42388421e-09, 1.09865848e01]))
             elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
-                npt.assert_almost_equal(g_computed, np.array([-3.42388421e-09,  1.09865848e+01]))
+                npt.assert_almost_equal(g_computed, np.array([-3.42388421e-09, 1.09865848e01]))
             else:
-                npt.assert_almost_equal(g_computed, np.array([2.20904876e-09, 1.09865848e+01]))
+                npt.assert_almost_equal(g_computed, np.array([2.20904876e-09, 1.09865848e01]))
         elif node == Node.INTERMEDIATES:
             if control_type == ControlType.CONSTANT:
-                npt.assert_almost_equal(g_computed[[0, 5, 9, 14]], np.array([ 0.07896499, 10.1424261 ,  9.29826735,  0.65405287]))
+                npt.assert_almost_equal(
+                    g_computed[[0, 5, 9, 14]], np.array([0.07896499, 10.1424261, 9.29826735, 0.65405287])
+                )
             elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
-                npt.assert_almost_equal(g_computed[[1, 6, 10, 15]], np.array([10.98658484,  0.14410163,  0.50068864,  8.03202923]))
+                npt.assert_almost_equal(
+                    g_computed[[1, 6, 10, 15]], np.array([10.98658484, 0.14410163, 0.50068864, 8.03202923])
+                )
             elif control_type == ControlType.LINEAR_CONTINUOUS:
-                npt.assert_almost_equal(g_computed[[2, 7, 11, 16]], np.array([-4.40919652e-03,  9.72034673e+00,  8.87618798e+00,  6.50661698e-01]))
+                npt.assert_almost_equal(
+                    g_computed[[2, 7, 11, 16]],
+                    np.array([-4.40919652e-03, 9.72034673e00, 8.87618798e00, 6.50661698e-01]),
+                )
         elif node == Node.ALL_SHOOTING:
             if control_type == ControlType.CONSTANT:
-                npt.assert_almost_equal(g_computed[[3, 8, 12, 17]], np.array([10.59264409,  0.18613381,  0.36485732,  7.83505886]))
+                npt.assert_almost_equal(
+                    g_computed[[3, 8, 12, 17]], np.array([10.59264409, 0.18613381, 0.36485732, 7.83505886])
+                )
             elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
-                npt.assert_almost_equal(g_computed[[4, 9, 13, 18]], np.array([1.1076412e-03, 9.4108218e+00, 8.6229404e+00, 4.6671626e-01]))
+                npt.assert_almost_equal(
+                    g_computed[[4, 9, 13, 18]], np.array([1.1076412e-03, 9.4108218e00, 8.6229404e00, 4.6671626e-01])
+                )
             elif control_type == ControlType.LINEAR_CONTINUOUS:
-                npt.assert_almost_equal(g_computed[[5, 10, 14, 19]], np.array([10.19870335,  0.28270337,  0.43049137,  7.44111811]))
+                npt.assert_almost_equal(
+                    g_computed[[5, 10, 14, 19]], np.array([10.19870335, 0.28270337, 0.43049137, 7.44111811])
+                )
         else:
             if control_type == ControlType.CONSTANT:
-                npt.assert_almost_equal(g_computed, np.array([ 4.6897301 , 10.98658484,  3.42854943,  8.03202923,  2.80024294,
-                                        6.56010175,  2.76576921,  6.47934048]))
+                npt.assert_almost_equal(
+                    g_computed,
+                    np.array(
+                        [4.6897301, 10.98658484, 3.42854943, 8.03202923, 2.80024294, 6.56010175, 2.76576921, 6.47934048]
+                    ),
+                )
             elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
-                npt.assert_almost_equal(g_computed, np.array([ 4.6897301, 10.9865848,  3.4285494,  8.0320292,  2.8002429,
-E                   6.5601017,  2.7657692,  6.4793405]))
+                npt.assert_almost_equal(
+                    g_computed,
+                    np.array([4.6897301, 10.9865848, 3.4285494, 8.0320292, 2.8002429, 6.5601017, 2.7657692, 6.4793405]),
+                )
             elif control_type == ControlType.LINEAR_CONTINUOUS:
-                npt.assert_almost_equal(g_computed, np.array([ 2.77224961, 10.98658484,  2.02672534,  8.03202923,  1.65531325,
-                        6.56010175,  1.63493473,  6.47934048]))
+                npt.assert_almost_equal(
+                    g_computed,
+                    np.array(
+                        [
+                            2.77224961,
+                            10.98658484,
+                            2.02672534,
+                            8.03202923,
+                            1.65531325,
+                            6.56010175,
+                            1.63493473,
+                            6.47934048,
+                        ]
+                    ),
+                )
+
 
 @pytest.mark.parametrize(
     "control_type",
