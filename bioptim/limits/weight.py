@@ -308,18 +308,6 @@ class ConstraintWeight(Weight):
         interpolation: InterpolationType = InterpolationType.CONSTANT,
         **extra_params,
     ) -> "ConstraintWeight":
-
-        # TODO: implement here
-        if value is not None:
-            raise NotImplementedError("ConstraintWeight should not be initialized here.")
+        value = value if value is not None else 1
         obj = super().__new__(cls, value, t, interpolation, **extra_params)
         return obj
-
-    def __repr__(self):
-        return "Constraint weight"
-
-    def check_and_adjust_dimensions(self, n_nodes: Int, element_name: Str):
-        return
-
-    def evaluate_at(self, node: Int, n_elements: int):
-        return 1

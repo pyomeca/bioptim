@@ -475,12 +475,8 @@ class PenaltyOption(OptionGeneric):
         is_trapezoidal = self.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL, QuadratureRule.TRAPEZOIDAL)
         target_shape = tuple([len(self.rows), len(self.cols) + 1 if is_trapezoidal else len(self.cols)])
         target_cx = controller.cx.sym("target", target_shape)
-        if isinstance(self.weight, ObjectiveWeight):
+        if isinstance(self.weight, (ObjectiveWeight, ConstraintWeight)):
             weight_cx = controller.cx.sym("weight", len(self.rows), len(self.cols))
-        elif isinstance(self.weight, ConstraintWeight):
-            # This is a simplification since ConstraintWeight.evaluate at returns 1, but if we want to implement constraint
-            # weights, we should have the same shape as above
-            weight_cx = controller.cx.sym("weight", 1, 1)
         else:
             RuntimeError(f"weight must be a ObjectiveWeight or ConstraintWeight, not {type(self.weight)}")
         exponent = 2 if (self.quadratic and isinstance(self.weight, ObjectiveWeight)) else 1
