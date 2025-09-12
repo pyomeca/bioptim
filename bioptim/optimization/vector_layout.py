@@ -99,8 +99,8 @@ def _keys_time_major(ocp) -> Iterator[KeySize]:
         if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
             yield (p, "controls", nlp.ns), _len_of(nlp.controls.shape), 1
 
-        nlp.algebraic_states.node_index = node
-        n_cols = nlp.n_algebraic_states_decision_steps(node)
+        nlp.algebraic_states.node_index = nlp.ns
+        n_cols = nlp.n_algebraic_states_decision_steps(nlp.ns)
         yield (p, "algebraic_states", nlp.ns), _len_of(nlp.algebraic_states.shape), n_cols
 
 
