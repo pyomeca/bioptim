@@ -1,16 +1,14 @@
 """
-This example is a trivial box sent upward. It is designed to investigate the different types of objective weights one
-can define in bioptim. Therefore, it shows how one can define the weight of the minimize controls objective.
+This example is a trivial box sent upward. It is designed to investigate the different types of constraint weights one
+can define in bioptim. Therefore, it shows how one can define the weight of the control constraint.
 
 All the types of interpolation are shown:
 InterpolationType.CONSTANT: All the values are the same at each node
-InterpolationType.LINEAR: The values are linearly interpolated between the first and last nodes.
+InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT: All the others are the same at each node, except the first and last ones
+InterpolationType.LINEAR: The values are linearly interpolated between the first and last nodes
 InterpolationType.EACH_FRAME: Each node values are specified
 InterpolationType.SPLINE: The values are interpolated from the first to last node using a cubic spline
 InterpolationType.CUSTOM: Provide a user-defined interpolation function
-
-Please note that InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT is available, but does not make much sense in
-this context.
 """
 
 import numpy as np
@@ -26,13 +24,13 @@ from bioptim import (
     BoundsList,
     InterpolationType,
     PhaseDynamics,
-    ObjectiveWeight,
+    ConstraintWeight,
 )
 
 
 def custom_weight(node: int, n_nodes: int) -> float:
     """
-    The custom function for the objective weight (this particular one mimics linear interpolation)
+    The custom function for the constraint weight (this particular one mimics linear interpolation)
 
     Parameters
     ----------
@@ -106,30 +104,8 @@ def prepare_ocp(
     else:
         raise RuntimeError("This example is not designed to work with this node type.")
 
-    # ObjectiveWeight
-    if interpolation_type == InterpolationType.CONSTANT:
-        weight = [1]
-        weight = ObjectiveWeight(weight, interpolation=InterpolationType.CONSTANT)
-    elif interpolation_type == InterpolationType.LINEAR:
-        weight = [0, 1]
-        weight = ObjectiveWeight(weight, interpolation=InterpolationType.LINEAR)
-    elif interpolation_type == InterpolationType.EACH_FRAME:
-        weight = np.linspace(0, 1, n_nodes)
-        weight = ObjectiveWeight(weight, interpolation=InterpolationType.EACH_FRAME)
-    elif interpolation_type == InterpolationType.SPLINE:
-        spline_time = np.hstack((0, np.sort(np.random.random((3,)) * final_time), final_time))
-        spline_points = np.random.random((5,)) * (-10) - 5
-        weight = ObjectiveWeight(spline_points, interpolation=InterpolationType.SPLINE, t=spline_time)
-    elif interpolation_type == InterpolationType.CUSTOM:
-        # The custom functions refer to the one at the beginning of the file.
-        # For this particular instance, they emulate a Linear interpolation
-        extra_params = {"n_nodes": n_nodes}
-        weight = ObjectiveWeight(custom_weight, interpolation=InterpolationType.CUSTOM, **extra_params)
-    else:
-        raise NotImplementedError("Not implemented yet")
-
     # Add objective functions
-    objective_functions = Objective(ObjectiveFcn.Mayer.MINIMIZE_CONTROL, key="tau", node=node, weight=weight)
+    objective_functions = Objective(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="qdot", node=node)
 
     # DynamicsOptions
     dynamics = DynamicsOptions(expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
@@ -138,6 +114,31 @@ def prepare_ocp(
     constraints = ConstraintList()
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker="m0", second_marker="m1")
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2")
+
+    # ConstraintWeight
+    if interpolation_type == InterpolationType.CONSTANT:
+        weight = [1]
+        weight = ConstraintWeight(weight, interpolation=InterpolationType.CONSTANT)
+    elif interpolation_type == InterpolationType.LINEAR:
+        weight = [0, 1]
+        weight = ConstraintWeight(weight, interpolation=InterpolationType.LINEAR)
+    elif interpolation_type == InterpolationType.EACH_FRAME:
+        weight = np.linspace(0, 1, n_nodes)
+        weight = ConstraintWeight(weight, interpolation=InterpolationType.EACH_FRAME)
+    elif interpolation_type == InterpolationType.SPLINE:
+        spline_time = np.hstack((0, np.sort(np.random.random((3,)) * final_time), final_time))
+        spline_points = np.random.random((5,)) * (-10) - 5
+        weight = ConstraintWeight(spline_points, interpolation=InterpolationType.SPLINE, t=spline_time)
+    elif interpolation_type == InterpolationType.CUSTOM:
+        # The custom functions refer to the one at the beginning of the file.
+        # For this particular instance, they emulate a Linear interpolation
+        extra_params = {"n_nodes": n_nodes}
+        weight = ConstraintWeight(custom_weight, interpolation=InterpolationType.CUSTOM, **extra_params)
+    else:
+        raise NotImplementedError("Not implemented yet")
+
+    constraints.add(ConstraintFcn.TRACK_CONTROL, key="tau", target=np.ones((3, 1)), node=node, weight=weight)
+
 
     # Path condition
     x_bounds = BoundsList()
