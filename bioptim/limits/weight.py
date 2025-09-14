@@ -2,7 +2,6 @@ import numpy as np
 from numpy import array, ndarray
 from scipy.interpolate import interp1d
 
-from .path_conditions import PathCondition
 from ..misc.parameters_types import (
     NpArray,
     Callable,
@@ -35,7 +34,7 @@ class Weight(ndarray):
     Methods
     -------
     __array_finalize__(self, obj: "Weight")
-        Finalize the array. This is required since PathCondition inherits from np.ndarray
+        Finalize the array. This is required since Weight inherits from np.ndarray
     __reduce__(self) -> tuple
         Adding some attributes to the reduced state
     __setstate__(self, state: tuple, *args, **kwargs)
@@ -145,7 +144,7 @@ class Weight(ndarray):
 
     def __array_finalize__(self, obj: "Weight"):
         """
-        Finalize the array. This is required since Weight/PathCondition inherits from np.ndarray
+        Finalize the array. This is required since Weight inherits from np.ndarray
 
         Parameters
         ----------
@@ -173,7 +172,7 @@ class Weight(ndarray):
         The reduced state of the class
         """
 
-        pickled_state = super(PathCondition, self).__reduce__()
+        pickled_state = super(Weight, self).__reduce__()
         new_state = pickled_state[2] + (self.n_nodes, self.type, self.t, self.extra_params)
         return pickled_state[0], pickled_state[1], new_state
 
@@ -192,7 +191,7 @@ class Weight(ndarray):
         self.t = state[-2]
         self.extra_params = state[-1]
         # Call the parent's __setstate__ with the other tuple elements.
-        super(PathCondition, self).__setstate__(state[0:-4], *args, **kwargs)
+        super(Weight, self).__setstate__(state[0:-4], *args, **kwargs)
 
     def check_and_adjust_dimensions(self, n_nodes: Int, element_name: Str):
         """

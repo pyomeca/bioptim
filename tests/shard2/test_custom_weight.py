@@ -26,6 +26,7 @@ import pytest
 from ..utils import TestUtils
 from bioptim.examples.getting_started import custom_objective_weights as objective_ocp_module
 from bioptim.examples.getting_started import custom_constraint_weights as constraint_ocp_module
+from bioptim.limits.weight import Weight
 
 
 def get_nb_nodes(node, n_shooting):
@@ -937,3 +938,18 @@ def test_bad_weights():
     weight.check_and_adjust_dimensions(n_nodes=5, element_name="coucou")
     with pytest.raises(RuntimeError, match=r"index too high for evaluate at"):
         weight.evaluate_at(10, 1)
+
+
+def test_weight_instanciation():
+
+    # Create a weight
+    weight1 = Weight(value=1.0)
+    weight1 = Weight.check_and_adjust_dimensions(weight1, 5, "weight1")
+
+    # Create another weight
+    weight2 = Weight(value=10.0)
+    weight2 = Weight.check_and_adjust_dimensions(weight2, 10, "weight2")
+
+    # weight1.n_nodes is still 5, weight2.n_nodes is 10
+    assert weight1.n_nodes == 5
+    assert weight2.n_nodes == 10
