@@ -1,3 +1,4 @@
+from enum import Enum
 import numpy as np
 from typing import Callable, Iterator, Tuple, Any
 
@@ -8,9 +9,7 @@ GeneratorType = Callable[
     [], tuple[Iterator[KeySize], int]
 ]  # Function that returns an iterator yielding (key, size, horizontal_size)
 
-from casadi import MX, SX, vertcat, DM
-
-_CASADI_TYPES = (MX, SX)
+from casadi import vertcat, DM
 
 from ..misc.enums import ControlType
 from ..misc.parameters_types import CX
@@ -104,10 +103,9 @@ def _keys_time_major(ocp) -> Iterator[KeySize]:
         yield (p, "algebraic_states", nlp.ns), _len_of(nlp.algebraic_states.shape), n_cols
 
 
-ORDERING_STRATEGIES: dict[str, GeneratorType] = {
-    "time-major": _keys_time_major,
-    "variable-major": _keys_variable_major,
-}
+class OrderingStrategy(Enum):
+    TIME_MAJOR = _keys_time_major
+    VARIABLE_MAJOR = _keys_variable_major
 
 
 class VectorLayout:
@@ -134,7 +132,7 @@ class VectorLayout:
     Custom orderings can be registered
     """
 
-    def __init__(self, ocp, ordering: str | Callable = "variable-major"):
+    def __init__(self, ocp, ordering: OrderingStrategy | Callable = OrderingStrategy.VARIABLE_MAJOR):
         self.ocp = ocp
         self.ordering = ordering
         self.generator = self._pick_generator()
@@ -148,7 +146,7 @@ class VectorLayout:
 
         values = [query_function(time, states, controls, algebraics, parameters, key) for key in self.index_map]
 
-        if _CASADI_TYPES and isinstance(values[0], _CASADI_TYPES):
+        if isinstance(values[0], CX):
             return vertcat(*values)
         else:
             return np.vstack(values)
@@ -253,7 +251,7 @@ class VectorLayout:
         if callable(self.ordering):
             return self.ordering
         try:
-            return ORDERING_STRATEGIES[self.ordering]
+            return self.ordering.value
         except KeyError:
             raise ValueError(f"Unknown ordering mode: {self.ordering}")
 
