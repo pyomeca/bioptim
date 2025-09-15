@@ -1715,3 +1715,13 @@ class OptimalControlProgram:
         This method is thus overriden in StochasticOptimalControlProgram
         """
         NLP.add(self, "is_stochastic", False, True)
+
+    def get_decision_variables(self):
+        """Get the decision variables of the OCP"""
+        time = self.dt_parameter.cx
+        states = [nlp.X_scaled for nlp in self.nlp]
+        controls = [nlp.U_scaled for nlp in self.nlp]
+        algebraic_states = [nlp.A_scaled for nlp in self.nlp]
+        parameters = self.parameters.scaled.cx
+
+        return time, states, controls, algebraic_states, parameters

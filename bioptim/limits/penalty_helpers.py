@@ -220,9 +220,12 @@ class PenaltyHelpers:
 
     @staticmethod
     def get_controls(ocp, penalty, phase_idx: Int, node_idx: Int, subnodes_idx: Slicy, values: CXorDMorNpArray):
+
         null_element = ocp.cx() if type(values[0]) != np.ndarray else np.array([])
+
         idx = 0 if not penalty.is_multinode_penalty else penalty.nodes_phase.index(phase_idx)
         subnodes_are_decision_states = penalty.subnodes_are_decision_states[idx] and not penalty.is_transition
+
         if subnodes_idx.stop == Node.END:
             if subnodes_idx.start == Node.START:
                 # get all cx_intermediates but not the cx_end

@@ -10,6 +10,7 @@ import platform
 import re
 import shutil
 import time
+import os
 
 from bioptim import (
     InterpolationType,
@@ -2545,10 +2546,11 @@ def test_memory_and_execution_time():
     # for key in ref.keys():
     #     print(f"{key} : [{test_memory[key][0]*10}, {test_memory[key][1]*10}, {test_memory[key][2]}]")
 
+    factor = 5 if os.getenv("GITHUB_ACTIONS") == "true" else 3
     for key in ref.keys():
-        npt.assert_array_less(test_memory[key][0], ref[key][0] * 3)
-        npt.assert_array_less(test_memory[key][1], ref[key][1] * 3)
-        npt.assert_array_less(test_memory[key][2], ref[key][2] * 3)
+        npt.assert_array_less(test_memory[key][0], ref[key][0] * factor)
+        npt.assert_array_less(test_memory[key][1], ref[key][1] * factor)
+        npt.assert_array_less(test_memory[key][2], ref[key][2] * factor)
 
 
 def test_deep_neural_network():

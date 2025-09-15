@@ -25,6 +25,7 @@ from bioptim import (
     VariableScaling,
 )
 from bioptim.optimization.solution.solution import Solution
+from bioptim.optimization.vector_layout import VectorLayout
 from tests.utils import TestUtils
 
 
@@ -150,6 +151,7 @@ def prepare_ocp(phase_time_constraint, use_parameter, phase_dynamics):
 @pytest.mark.parametrize("use_parameter", [True, True])
 def test_variable_time(phase_time_constraint, use_parameter, phase_dynamics):
     ocp = prepare_ocp(phase_time_constraint, use_parameter, phase_dynamics)
+    ocp.vector_layout = VectorLayout(ocp)
 
     # --- Solve the program --- #
     np.random.seed(42)
