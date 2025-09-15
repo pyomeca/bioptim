@@ -1,8 +1,9 @@
-from bioptim import BiorbdModel, BoundsList, InitialGuessList, MagnitudeType, PhaseDynamics
 import numpy as np
 import numpy.testing as npt
 import pytest
 
+from bioptim import BiorbdModel, BoundsList, InitialGuessList, MagnitudeType, PhaseDynamics
+from bioptim.optimization.vector_layout import VectorLayout
 from ..utils import TestUtils
 
 
@@ -16,6 +17,7 @@ def test_noisy_multiphase(phase_dynamics):
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
     )
+    ocp.vector_layout = VectorLayout(ocp)
     bio_model = BiorbdModel(bioptim_folder + "/models/cube.bioMod")
     n_shooting = [20, 30, 20]
 
