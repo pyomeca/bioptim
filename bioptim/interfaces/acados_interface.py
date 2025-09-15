@@ -436,6 +436,10 @@ class AcadosInterface(SolverInterface):
 
         def add_linear_ls_lagrange(acados, objectives):
             def add_objective(n_variables, is_state):
+                # Sanity check for weightings
+                if objectives.weight.interpolation != InterpolationType.CONSTANT:
+                    raise RuntimeError("Lagrange objective weight must be InterpolationType.CONSTANT.")
+
                 v_var = np.zeros(n_variables)
                 var_type = acados.ocp.nlp[0].states if is_state else acados.ocp.nlp[0].controls
                 rows = objectives.rows + var_type[objectives.extra_parameters["key"]].index[0]
