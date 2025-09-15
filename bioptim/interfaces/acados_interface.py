@@ -437,7 +437,7 @@ class AcadosInterface(SolverInterface):
         def add_linear_ls_lagrange(acados, objectives):
             def add_objective(n_variables, is_state):
                 # Sanity check for weightings
-                if objectives.weight.interpolation != InterpolationType.CONSTANT:
+                if objectives.weight.type != InterpolationType.CONSTANT:
                     raise RuntimeError("Lagrange objective weight must be InterpolationType.CONSTANT.")
 
                 v_var = np.zeros(n_variables)
