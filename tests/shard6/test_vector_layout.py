@@ -530,9 +530,7 @@ def test_vector_layout_multiple_phases():
 
     assert (
         output == expected_output
-    ), f"The output does not match what was expected.\nExpected:{
-        expected_output
-    }\nGot: {output}"
+    ), f"The output does not match what was expected.\nExpected:{expected_output}\nGot: {output}"
 
     v_bounds = OptimizationVectorHelper.bounds_vectors(ocp)
 
