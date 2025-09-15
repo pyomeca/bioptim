@@ -18,7 +18,6 @@ from ..interfaces.abstract_options import GenericSolver
 from ..models.protocols.biomodel import BioModel
 from ..optimization.solution.solution_data import SolutionMerge
 from ..optimization.parameters import ParameterList
-from ..optimization.vector_layout import VectorLayout
 from ..misc.parameters_types import (
     Int,
     Float,
@@ -282,7 +281,6 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             parameter_init=self.parameter_init,
             parameter_bounds=self.parameter_bounds,
         )
-        solution_ocp.vector_layout = VectorLayout(solution_ocp)
 
         a_init = InitialGuessList()
         return Solution.from_initial_guess(solution_ocp, [np.array([dt]), x_init, u_init, p_init, a_init])
@@ -555,7 +553,6 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
             parameter_init=p_init,
             parameter_bounds=self.parameter_bounds,
         )
-        solution_ocp.vector_layout = VectorLayout(solution_ocp)
         a_init = (
             InitialGuessList()
         )  # TODO: Algebraic_states are not implemented in MHE, to do implicit contacts, this should be addressed
@@ -881,7 +878,6 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             parameter_init=self.parameter_init,
             parameter_bounds=self.parameter_bounds,
         )
-        solution_ocp.vector_layout = VectorLayout(solution_ocp)
         a_init = InitialGuessList()
         return Solution.from_initial_guess(solution_ocp, [np.array([dt]), x_init, u_init, p_init, a_init])
 
@@ -939,7 +935,6 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             parameter_init=p_init,
             parameter_bounds=self.parameter_bounds,
         )
-        solution_ocp.vector_layout = VectorLayout(solution_ocp)
         a_init = InitialGuessList()
         return Solution.from_initial_guess(solution_ocp, [np.array([dt]), x_init, u_init_for_solution, p_init, a_init])
 

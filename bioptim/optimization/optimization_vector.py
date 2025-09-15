@@ -61,11 +61,11 @@ class OptimizationVectorHelper:
         The vector of all variables
         """
 
-        vector_layout = VectorLayout(ocp)
-        ocp.vector_layout = vector_layout
         time, states, controls, algebraic_states, parameters = ocp.get_decision_variables()
 
-        return vector_layout.stack(time, states, controls, algebraic_states, parameters, vector_layout.query_function)
+        return ocp.vector_layout.stack(
+            time, states, controls, algebraic_states, parameters, ocp.vector_layout.query_function
+        )
 
     @staticmethod
     def bounds_vectors(ocp: "OptimalControlProgram") -> DoubleNpArrayTuple:
