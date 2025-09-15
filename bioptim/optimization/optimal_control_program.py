@@ -9,6 +9,7 @@ from matplotlib import pyplot as plt
 
 from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVectorHelper
+from .vector_layout import VectorLayout
 from ..dynamics.configure_problem import DynamicsOptionsList, DynamicsOptions, ConfigureProblem
 from ..gui.check_conditioning import check_conditioning
 from ..gui.graph import OcpToConsole, OcpToGraph
@@ -185,6 +186,7 @@ class OptimalControlProgram:
         u_scaling: VariableScalingList | None = None,
         a_scaling: VariableScalingList | None = None,
         n_threads: Int = 1,
+        vector_layout: VectorLayout | None = None,
         use_sx: Bool = False,
         integrated_value_functions: dict[Str, Callable] | None = None,
     ) -> None:
@@ -331,6 +333,8 @@ class OptimalControlProgram:
             parameter_objectives,
             phase_transitions,
         )
+
+        self._prepare_vector_layout(vector_layout)
 
     def _check_bioptim_version(self) -> None:
         self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "bioptim": __version__}
@@ -753,6 +757,9 @@ class OptimalControlProgram:
                         .shape[0]
                     )
                     nlp.plot[key].phase_mappings = BiMapping(to_first=range(size), to_second=range(size))
+
+    def _prepare_vector_layout(self, vector_layout: VectorLayout | None) -> None:
+        self.vector_layout = vector_layout if vector_layout is not None else VectorLayout(self)
 
     @property
     def variables_vector(self) -> CX:
