@@ -394,7 +394,7 @@ def test_pendulum_passive_torque(with_passive_torque, phase_dynamics):
         pytest.skip("These tests do not pass on Windows.")
 
     if with_passive_torque:
-        model_filename = "/examples/getting_started/models/pendulum_with_passive_torque.bioMod"
+        model_filename = "/examples/torque_driven_ocp/models/pendulum_with_passive_torque.bioMod"
     else:
         model_filename = "/examples/getting_started/models/pendulum.bioMod"
 
@@ -420,6 +420,9 @@ def test_pendulum_passive_torque(with_passive_torque, phase_dynamics):
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
+    # Check if the solution converged
+    assert sol.status == 0
+
     if with_passive_torque:
         # initial and final position
         npt.assert_almost_equal(q[:, 0], np.array([0.0, 0.0]))
@@ -430,12 +433,12 @@ def test_pendulum_passive_torque(with_passive_torque, phase_dynamics):
         # initial and final controls
         npt.assert_almost_equal(
             tau[:, 0],
-            np.array([97.717082, 0.0]),
+            np.array([6.1617263058229215, 0.0]),
             decimal=6,
         )
         npt.assert_almost_equal(
             tau[:, -1],
-            np.array([-37.470441, 0.0]),
+            np.array([-11.820810710498906, 0.0]),
             decimal=6,
         )
 
