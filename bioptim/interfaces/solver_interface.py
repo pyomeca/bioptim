@@ -45,6 +45,10 @@ class SolverInterface:
         self.ocp = ocp
         self.solver = None
         self.out = {}
+        self.pre_shake_tree_objectives = None
+        self.shaked_objectives = None
+        self.pre_shake_tree_constraints = None
+        self.shaked_constraints = None
 
     def configure(self, **options):
         """
