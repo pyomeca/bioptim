@@ -11,7 +11,7 @@ from ..limits.penalty import PenaltyFunctionAbstract, PenaltyController
 from ..misc.enums import Node, PenaltyType, InterpolationType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.mapping import BiMapping
-from ..misc.options import UniquePerPhaseOptionList
+from ..misc.options import OptionList
 
 
 from ..misc.parameters_types import (
@@ -103,7 +103,7 @@ class PhaseTransition(MultinodePenalty):
             return nlp.J_internal if nlp else ocp.J_internal
 
 
-class PhaseTransitionList(UniquePerPhaseOptionList):
+class PhaseTransitionList(OptionList):
     """
     A list of PhaseTransition
 
