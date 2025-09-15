@@ -15,7 +15,6 @@ from bioptim import (
     SolutionMerge,
 )
 from bioptim.limits.path_conditions import InitialGuess
-from bioptim.optimization.vector_layout import VectorLayout
 import numpy as np
 import numpy.testing as npt
 import pytest
@@ -153,7 +152,6 @@ def test_initial_guess_update(phase_dynamics):
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
     )
-    ocp.vector_layout = VectorLayout(ocp)
 
     npt.assert_almost_equal(ocp.nlp[0].x_init["q"].init, np.zeros((2, 1)))
     npt.assert_almost_equal(ocp.nlp[0].x_init["qdot"].init, np.zeros((2, 1)))
@@ -223,7 +221,6 @@ def test_simulate_from_initial_multiple_shoot(phase_dynamics):
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
     )
-    ocp.vector_layout = VectorLayout(ocp)
 
     phases_dt = np.array([final_time / n_shooting])
     X = InitialGuessList()
@@ -273,7 +270,6 @@ def test_simulate_from_initial_single_shoot(phase_dynamics):
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
     )
-    ocp.vector_layout = VectorLayout(ocp)
 
     phases_dt = np.array([final_time / n_shooting])
     X = InitialGuessList()

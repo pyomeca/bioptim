@@ -27,7 +27,6 @@ from bioptim import (
     SolutionMerge,
     ContactType,
 )
-from bioptim.optimization.vector_layout import VectorLayout
 
 
 def prepare_single_shooting(
@@ -64,7 +63,6 @@ def prepare_single_shooting(
 
 def initial_states_from_single_shooting(model, ns, tf, ode_solver):
     ocp = prepare_single_shooting(model, ns, tf, ode_solver)
-    ocp.vector_layout = VectorLayout(ocp)
 
     # Find equilibrium
     dt = np.array([tf / ns])
