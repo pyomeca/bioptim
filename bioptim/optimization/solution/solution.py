@@ -1,9 +1,10 @@
-import numpy as np
-from casadi import vertcat, DM, Function
 from copy import deepcopy
-from matplotlib import pyplot as plt
-from scipy import interpolate as sci_interp
 from typing import Any
+
+from casadi import vertcat, DM, Function
+from matplotlib import pyplot as plt
+import numpy as np
+from scipy import interpolate as sci_interp
 
 from .solution_data import SolutionData, SolutionMerge, TimeAlignment, TimeResolution
 from ..optimization_vector import OptimizationVectorHelper
