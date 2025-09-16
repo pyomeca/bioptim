@@ -9,6 +9,8 @@ During the optimization process, the graphs are updated real-time (even though i
 appreciate it). Finally, once it finished optimizing, it animates the model using the optimal solution
 """
 
+from time import time
+
 from bioptim import (
     OptimalControlProgram,
     DynamicsOptions,
@@ -24,6 +26,7 @@ from bioptim import (
     ControlType,
     PhaseDynamics,
     OnlineOptim,
+    OrderingStrategy,
 )
 
 
@@ -31,7 +34,7 @@ def prepare_ocp(
     biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
-    ode_solver: OdeSolverBase = OdeSolver.RK4(),
+    ode_solver: OdeSolverBase = OdeSolver.RK4(n_integration_steps=5),
     use_sx: bool = True,
     n_threads: int = 1,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
@@ -119,6 +122,7 @@ def prepare_ocp(
         control_type=control_type,
         use_sx=use_sx,
         n_threads=n_threads,
+        ordering_strategy=OrderingStrategy.TIME_MAJOR,
     )
 
 
@@ -152,7 +156,10 @@ def main():
     # --- Solve the ocp --- #
     # Default is OnlineOptim.MULTIPROCESS on Linux, OnlineOptim.MULTIPROCESS_SERVER on Windows and None on MacOS
     # To see the graphs on MacOS, one must run the server manually (see resources/plotting_server.py)
-    sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
+    tic = time()
+    solver = Solver.IPOPT(online_optim=None)
+    sol = ocp.solve(solver)
+    print(f"Time to solve the OCP: {time() - tic:.2f} seconds")
 
     # --- Show the results graph --- #
     sol.print_cost()
