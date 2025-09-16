@@ -69,7 +69,7 @@ class IpoptInterface(SolverInterface):
 
         self.options_common = {}
         self.opts = Solver.IPOPT()
-        self.solver_name = SolverType.IPOPT.value
+        self.solver_name = "fatrop"  # SolverType.IPOPT.value
 
         self.nlp = {}
         self.limits = {}

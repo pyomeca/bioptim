@@ -95,6 +95,9 @@ def generic_solve(interface: SolverInterface, expand_during_shake_tree: Bool = F
     interface.nlp = {"x": v, "f": sum1(all_objectives), "g": all_g}
     interface.c_compile = interface.opts.c_compile
     options = interface.opts.as_dict(interface)
+    options = {}
+    options["structure_detection"] = "auto"
+    options["equality"] = [all_g_bounds.min[i, 0] == all_g_bounds.max[i, 0] for i in range(all_g_bounds.shape[0])]
 
     if interface.c_compile:
         if not interface.ocp_solver or interface.ocp.program_changed:
