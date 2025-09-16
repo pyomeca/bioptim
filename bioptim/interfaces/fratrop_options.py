@@ -199,6 +199,6 @@ class FATROP(GenericSolver):
                 fatrop_key = f"fatrop.{key[1:]}"
                 options[fatrop_key] = solver_options[key]
         options["structure_detection"] = self._structure_detection
-        options["equality"] = [all_g_bounds.min[i, 0] == all_g_bounds.max[i, 0] for i in range(all_g_bounds.shape[0])]
+        options["equality"] = (solver.limits["lbg"] == solver.limits["ubg"])[:, 0].tolist()
 
         return {**options, **solver.options_common}
