@@ -1,6 +1,12 @@
 """
 This example is a trivial box sent upward. It is designed to investigate the different types of constraint weights one
-can define in bioptim. Therefore, it shows how one can define the weight of the control constraint.
+can define in bioptim. Therefore, it shows how one can define the weight of the TRACK_CONTROL constraint.
+Please note that setting the weight of a constraint plays on :
+    1) The tolerance for this specific constraint. This can be useful if you have a constraint that must be respected
+    strictly (high weight) and another that could be respected more loosely (small weight).
+    2) The conditioning of the problem. You will see that changing a constraint weight might change the constraint
+    scaling performed by IPOPT.
+Therefore, to have a real impact on the optimal control problem, we recommend using power of 10 constraint weights.
 
 All the types of interpolation are shown:
 InterpolationType.CONSTANT: All the values are the same at each node
