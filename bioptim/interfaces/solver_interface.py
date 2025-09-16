@@ -1,8 +1,4 @@
-from ..misc.parameters_types import (
-    Bool,
-    AnyDict,
-    AnyListorDict,
-)
+from ..misc.parameters_types import Bool, AnyDict, AnyListorDict
 
 
 class SolverInterface:

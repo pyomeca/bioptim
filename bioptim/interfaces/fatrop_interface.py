@@ -14,20 +14,20 @@ from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.solution.solution import Solution
 
 
-class IpoptInterface(SolverInterface):
+class FatropInterface(SolverInterface):
     """
-    The Ipopt solver interface
+    The Fatrop solver interface
 
     Attributes
     ----------
     options_common: dict
         Options irrelevant of a specific ocp
-    opts: IPOPT
+    opts: FATROP
         Options of the current ocp
     nlp: dict
-        The declaration of the variables Ipopt-friendly
+        The declaration of the variables Fatrop-friendly
     limits: dict
-        The declaration of the bound Ipopt-friendly
+        The declaration of the bound Fatrop-friendly
     lam_g: np.ndarray
         The lagrange multiplier of the constraints to initialize the solver
     lam_x: np.ndarray
@@ -58,8 +58,8 @@ class IpoptInterface(SolverInterface):
         super().__init__(ocp)
 
         self.options_common = {}
-        self.opts = Solver.IPOPT()
-        self.solver_name = SolverType.IPOPT.value
+        self.opts = Solver.FATROP()
+        self.solver_name = SolverType.FATROP.value
 
         self.nlp = {}
         self.limits = {}

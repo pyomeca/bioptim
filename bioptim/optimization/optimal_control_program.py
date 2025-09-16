@@ -1415,6 +1415,10 @@ class OptimalControlProgram:
                 from ..interfaces.ipopt_interface import IpoptInterface
 
                 self.ocp_solver = IpoptInterface(self)
+            elif solver.type == SolverType.FATROP:
+                from ..interfaces.fatrop_interface import FatropInterface
+
+                self.ocp_solver = FatropInterface(self)
 
             elif solver.type == SolverType.SQP:
                 from ..interfaces.sqp_interface import SQPInterface

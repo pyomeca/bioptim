@@ -34,7 +34,7 @@ def prepare_ocp(
     biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
-    ode_solver: OdeSolverBase = OdeSolver.RK4(n_integration_steps=5),
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
     use_sx: bool = True,
     n_threads: int = 1,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
@@ -157,7 +157,7 @@ def main():
     # Default is OnlineOptim.MULTIPROCESS on Linux, OnlineOptim.MULTIPROCESS_SERVER on Windows and None on MacOS
     # To see the graphs on MacOS, one must run the server manually (see resources/plotting_server.py)
     tic = time()
-    solver = Solver.IPOPT(online_optim=None)
+    solver = Solver.FATROP(online_optim=None)
     sol = ocp.solve(solver)
     print(f"Time to solve the OCP: {time() - tic:.2f} seconds")
 

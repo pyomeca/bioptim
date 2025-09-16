@@ -11,18 +11,8 @@ from ..gui.online_callback_server import OnlineCallbackServer
 from ..limits.path_conditions import Bounds
 from ..limits.penalty_helpers import PenaltyHelpers, Slicy
 from ..misc.enums import InterpolationType, OnlineOptim
+from ..misc.parameters_types import AnyDictOptional, Bool, AnyDict, CX, DoubleNpArrayTuple, Int
 from ..optimization.non_linear_program import NonLinearProgram
-
-
-from ..misc.parameters_types import (
-    AnyDictOptional,
-    Bool,
-    AnyDict,
-    CX,
-    DoubleNpArrayTuple,
-    Int,
-    Range,
-)
 
 
 def generic_online_optim(interface: SolverInterface, ocp, show_options: AnyDictOptional = None):
@@ -95,9 +85,6 @@ def generic_solve(interface: SolverInterface, expand_during_shake_tree: Bool = F
     interface.nlp = {"x": v, "f": sum1(all_objectives), "g": all_g}
     interface.c_compile = interface.opts.c_compile
     options = interface.opts.as_dict(interface)
-    options = {}
-    options["structure_detection"] = "auto"
-    options["equality"] = [all_g_bounds.min[i, 0] == all_g_bounds.max[i, 0] for i in range(all_g_bounds.shape[0])]
 
     if interface.c_compile:
         if not interface.ocp_solver or interface.ocp.program_changed:
