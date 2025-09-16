@@ -160,7 +160,7 @@ def main():
     # Default is OnlineOptim.MULTIPROCESS on Linux, OnlineOptim.MULTIPROCESS_SERVER on Windows and None on MacOS
     # To see the graphs on MacOS, one must run the server manually (see resources/plotting_server.py)
     tic = time()
-    solver = Solver.FATROP(online_optim=None)
+    solver = Solver.FATROP()
     sol = ocp.solve(solver)
     print(f"Time to solve the OCP: {time() - tic:.2f} seconds")
 

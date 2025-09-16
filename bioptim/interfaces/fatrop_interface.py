@@ -81,7 +81,7 @@ class FatropInterface(SolverInterface):
             The options to pass to PlotOcp
         """
 
-        generic_online_optim(self, ocp, show_options)
+        raise NotImplementedError("Fatrop does not support online optimization yet.")
 
     def solve(self, expand_during_shake_tree: Bool) -> AnyDict:
         """
