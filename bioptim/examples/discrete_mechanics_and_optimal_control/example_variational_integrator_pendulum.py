@@ -87,7 +87,7 @@ def prepare_ocp(
 
 def main():
     """
-    If pendulum is run as a script, it will perform the optimization and animates it
+    If pendulum is run as a script, it will perform the optimization and animate it
     """
     n_shooting = 100
 

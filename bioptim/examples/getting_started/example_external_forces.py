@@ -159,7 +159,7 @@ def setup_external_forces(
         )
 
     elif external_force_method == "translational_force_on_a_marker":
-        external_force_set.add_translational_force("force2","Test", Test_force, point_of_application_in_local="m0")
+        external_force_set.add_translational_force("force2", "Test", Test_force, point_of_application_in_local="m0")
 
     elif external_force_method == "in_global":
         external_force_set.add(
