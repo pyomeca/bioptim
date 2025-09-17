@@ -1,27 +1,26 @@
 """
-This example is a trivial example where a stick must keep its coordinate system of axes aligned with the one
-from a box during the whole duration of the movement. The initial and final position of the box are dictated,
-the rest is fully optimized. It is designed to show how one can use the tracking RT function to track
-any RT (for instance Inertial Measurement Unit [IMU]) with a body segment
+This is a clone of the example/getting_started/pendulum.py where a pendulum must be balance. The difference is that
+the time to perform the task is now free for the solver to change. This example shows how to define such an optimal
+control program
 """
 
 import platform
 
 from bioptim import (
     TorqueBiorbdModel,
-    Node,
     OptimalControlProgram,
-    DynamicsOptionsList,
     DynamicsOptions,
-    ObjectiveList,
+    Objective,
     ObjectiveFcn,
-    ConstraintList,
+    Constraint,
     ConstraintFcn,
     BoundsList,
+    Node,
     OdeSolver,
     OdeSolverBase,
     Solver,
     PhaseDynamics,
+    SolutionMerge,
 )
 
 
@@ -29,22 +28,28 @@ def prepare_ocp(
     biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
+    time_min: float,
+    time_max: float,
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
-    Prepare the ocp
+    Prepare the optimal control program
 
     Parameters
     ----------
     biorbd_model_path: str
-        The path to the model
+        The path to the bioMod
     final_time: float
-        The time of the final node
+        The initial guess for the final time
     n_shooting: int
         The number of shooting points
-    ode_solver:
+    time_min: float
+        The minimal time the phase can have
+    time_max: float
+        The maximal time the phase can have
+    ode_solver: OdeSolverBase
         The ode solver to use
     phase_dynamics: PhaseDynamics
         If the dynamics equation within a phase is unique or changes at each node.
@@ -61,30 +66,30 @@ def prepare_ocp(
     """
 
     bio_model = TorqueBiorbdModel(biorbd_model_path)
+    n_tau = bio_model.nb_tau
+    tau_min, tau_max = -100, 100
 
     # Add objective functions
-    objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100)
+    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
-    # DynamicsOptions
-    dynamics = DynamicsOptionsList()
-    dynamics.add(DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics))
+    # Dynamics
+    dynamics = DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     # Constraints
-    constraints = ConstraintList()
-    constraints.add(ConstraintFcn.TRACK_SEGMENT_WITH_CUSTOM_RT, node=Node.ALL, segment="seg_rt", rt_index=0)
+    constraints = Constraint(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, min_bound=time_min, max_bound=time_max)
 
     # Path constraint
     x_bounds = BoundsList()
     x_bounds["q"] = bio_model.bounds_from_ranges("q")
-    x_bounds["q"][2, [0, -1]] = [-1.57, 1.57]
+    x_bounds["q"][:, [0, -1]] = 0
+    x_bounds["q"][-1, -1] = 3.14
     x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
     x_bounds["qdot"][:, [0, -1]] = 0
 
     # Define control path constraint
-    tau_min, tau_max = -100, 100
     u_bounds = BoundsList()
-    u_bounds["tau"] = [tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau
+    u_bounds["tau"] = [tau_min] * n_tau, [tau_max] * n_tau
+    u_bounds["tau"][-1, :] = 0
 
     # ------------- #
 
@@ -102,19 +107,25 @@ def prepare_ocp(
 
 def main():
     """
-    Prepares, solves and animates the program
+    Prepare, solve and animate a free time ocp
     """
 
+    time_min = 0.6
+    time_max = 1
     ocp = prepare_ocp(
-        biorbd_model_path="models/cube_and_line.bioMod",
-        n_shooting=30,
-        final_time=1,
+        biorbd_model_path="models/pendulum.bioMod",
+        final_time=2,
+        n_shooting=50,
+        time_min=time_min,
+        time_max=time_max,
     )
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
+    time = float(sol.decision_time(to_merge=SolutionMerge.NODES)[-1, 0])
+    print(f"The optimized phase time is: {time}")
     sol.animate()
 
 

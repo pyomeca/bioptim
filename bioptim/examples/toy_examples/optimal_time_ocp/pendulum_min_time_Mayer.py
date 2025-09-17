@@ -1,28 +1,29 @@
 """
-This example is a trivial example where a stick must keep a corner of a box in line for the whole duration of the
-movement. The initial and final position of the box are dictated, the rest is fully optimized. It is designed
-to show how one can use the tracking function to track a marker with a body segment
+This is a clone of the example/getting_started/pendulum.py where a pendulum must be balance. The difference is that
+the time to perform the task is now free and minimized by the solver. This example shows how to define such an optimal
+control program with a Mayer criteria (value of final_time)
+
+The difference between Mayer and Lagrange minimization time is that the former can define bounds to
+the values, while the latter is the most common way to define optimal time
 """
 
 import platform
 
+import numpy as np
 from bioptim import (
     TorqueBiorbdModel,
-    Node,
-    Axis,
     OptimalControlProgram,
-    DynamicsOptionsList,
     DynamicsOptions,
     ObjectiveList,
     ObjectiveFcn,
-    ConstraintList,
-    ConstraintFcn,
     BoundsList,
-    InitialGuessList,
     OdeSolver,
     OdeSolverBase,
+    CostType,
     Solver,
+    ControlType,
     PhaseDynamics,
+    SolutionMerge,
 )
 
 
@@ -30,32 +31,33 @@ def prepare_ocp(
     biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
-    initialize_near_solution: bool,
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
-    constr: bool = True,
-    use_sx: bool = False,
+    weight: float = 1,
+    min_time=0,
+    max_time=np.inf,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
+    control_type: ControlType = ControlType.CONSTANT,
 ) -> OptimalControlProgram:
     """
-    Prepare the ocp
+    Prepare the optimal control program
 
     Parameters
     ----------
     biorbd_model_path: str
-        The path to the bioMod file
+        The path to the bioMod
     final_time: float
-        The time at the final node
+        The initial guess for the final time
     n_shooting: int
         The number of shooting points
-    initialize_near_solution: bool
-        If the initial guess should be almost the solution (this is merely to reduce the time of the tests)
     ode_solver: OdeSolverBase
         The ode solver to use
-    constr: bool
-        If the constraint should be applied (this is merely to reduce the time of the tests)
-    use_sx: bool
-        If SX CasADi variables should be used
+    weight: float
+        The weighting of the minimize time objective function
+    min_time: float
+        The minimum time allowed for the final node
+    max_time: float
+        The maximum time allowed for the final node
     phase_dynamics: PhaseDynamics
         If the dynamics equation within a phase is unique or changes at each node.
         PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
@@ -70,48 +72,31 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
+    # --- Options --- #
     bio_model = TorqueBiorbdModel(biorbd_model_path)
+    tau_min, tau_max = -100, 100
+    n_tau = bio_model.nb_tau
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, multi_thread=False)
+    # A weight of -1 will maximize time
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=weight, min_bound=min_time, max_bound=max_time)
 
-    # DynamicsOptions
-    dynamics = DynamicsOptionsList()
-    dynamics.add(DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics))
-
-    # Constraints
-    if constr:
-        constraints = ConstraintList()
-        constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker="m0", second_marker="m4")
-        constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m5")
-        constraints.add(
-            ConstraintFcn.TRACK_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker="m1", segment="seg_rt", axis=Axis.X
-        )
-    else:
-        constraints = ConstraintList()
+    # Dynamics
+    dynamics = DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()
     x_bounds["q"] = bio_model.bounds_from_ranges("q")
-    x_bounds["q"][1:3, [0, -1]] = 0
-    x_bounds["q"][2, -1] = 1.57
+    x_bounds["q"][:, [0, -1]] = 0
+    x_bounds["q"][-1, -1] = 3.14
     x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
     x_bounds["qdot"][:, [0, -1]] = 0
 
-    # Initial guess
-    x_init = InitialGuessList()
-    x_init["q"] = [0] * bio_model.nb_q
-    x_init["qdot"] = [0] * bio_model.nb_qdot
-    if initialize_near_solution:
-        x_init["q"].init[0:2, :] = 1.5
-        x_init["qdot"].init[0:2, :] = 0.7
-        x_init["qdot"].init[2:, :] = 0.6
-
     # Define control path constraint
-    tau_min, tau_max = -100, 100
     u_bounds = BoundsList()
-    u_bounds["tau"] = [tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau
+    u_bounds["tau"] = [tau_min] * n_tau, [tau_max] * n_tau
+    u_bounds["tau"][-1, :] = 0
 
     # ------------- #
 
@@ -122,29 +107,29 @@ def prepare_ocp(
         dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
-        x_init=x_init,
         objective_functions=objective_functions,
-        constraints=constraints,
-        use_sx=use_sx,
+        control_type=control_type,
     )
 
 
 def main():
     """
-    Prepares, solves and animate the program
+    Prepare, solve and animate a time minimizer ocp using a Mayer criteria
     """
 
     ocp = prepare_ocp(
-        biorbd_model_path="models/cube_and_line.bioMod",
-        n_shooting=30,
-        final_time=2,
-        initialize_near_solution=True,
+        biorbd_model_path="models/pendulum.bioMod", final_time=2, n_shooting=50, ode_solver=OdeSolver.RK4()
     )
+
+    # Let's show the objectives
+    ocp.add_plot_penalty(CostType.OBJECTIVES)
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
+    times = float(sol.decision_time(to_merge=SolutionMerge.NODES)[-1, 0])
+    print(f"The optimized phase time is: {times}, good job Mayer!")
     sol.animate()
 
 
