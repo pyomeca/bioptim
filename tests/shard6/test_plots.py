@@ -64,7 +64,7 @@ def test__getting_started__custom_constraints__constant():
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/../../models/cube.bioMod",
         n_shooting=30,
         final_time=2,
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
@@ -85,7 +85,7 @@ def test__getting_started__custom_constraints__constant_with_first_and_last():
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/../../models/cube.bioMod",
         n_shooting=30,
         final_time=2,
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
@@ -106,7 +106,7 @@ def test__getting_started__custom_constraints__linear():
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/../../models/cube.bioMod",
         n_shooting=30,
         final_time=2,
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
@@ -127,7 +127,7 @@ def test__getting_started__custom_constraints__each_frame():
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/../../models/cube.bioMod",
         n_shooting=30,
         final_time=2,
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
@@ -148,7 +148,7 @@ def test__getting_started__custom_constraints__spline():
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/../../models/cube.bioMod",
         n_shooting=30,
         final_time=2,
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,

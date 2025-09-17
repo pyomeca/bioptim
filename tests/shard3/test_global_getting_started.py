@@ -325,7 +325,7 @@ def test_custom_constraint_track_markers(ode_solver, phase_dynamics):
     ode_solver = ode_solver()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/../../models/cube.bioMod",
         ode_solver=ode_solver,
         phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver_orig != OdeSolver.IRK,
@@ -416,7 +416,7 @@ def test_initial_guesses(ode_solver, interpolation, random_init, phase_dynamics)
     if interpolation == InterpolationType.ALL_POINTS and ode_solver.is_direct_shooting:
         with pytest.raises(ValueError, match="InterpolationType.ALL_POINTS must only be used with direct collocation"):
             _ = ocp_module.prepare_ocp(
-                biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+                biorbd_model_path=bioptim_folder + "/../../models/cube.bioMod",
                 final_time=1,
                 n_shooting=5,
                 random_init=random_init,
@@ -428,7 +428,7 @@ def test_initial_guesses(ode_solver, interpolation, random_init, phase_dynamics)
         return
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/../../models/cube.bioMod",
         final_time=1,
         n_shooting=5,
         random_init=random_init,

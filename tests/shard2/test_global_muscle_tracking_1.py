@@ -27,7 +27,7 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver, p
 
     # Define the problem
     use_residual_torque = False
-    model_path = bioptim_folder + "/models/arm26.bioMod"
+    model_path = bioptim_folder + "/../../models/arm26.bioMod"
     bio_model = MusclesBiorbdModel(model_path, with_residual_torque=use_residual_torque)
     final_time = 0.1
     n_shooting = 5

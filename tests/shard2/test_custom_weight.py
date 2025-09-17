@@ -323,8 +323,8 @@ def test_pendulum_objective(control_type, interpolation_type, node, objective, p
         with pytest.raises(
             RuntimeError, match="Lagrange objective are for Node.ALL_SHOOTING or Node.ALL, did you mean Mayer?"
         ):
-            ocp = prepare_ocp(
-                biorbd_model_path=bioptim_folder + "/../models/pendulum.bioMod",
+            ocp = objective_prepare_ocp(
+                biorbd_model_path=bioptim_folder + "/../../models/pendulum.bioMod",
                 n_shooting=n_shooting,
                 objective=objective,
                 interpolation_type=interpolation_type,
@@ -604,7 +604,7 @@ def test_pendulum_constraint(control_type, interpolation_type, node, phase_dynam
     np.random.seed(42)  # For reproducibility of spline
 
     ocp = constraint_prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/../../models/pendulum.bioMod",
         n_shooting=n_shooting,
         interpolation_type=interpolation_type,
         node=node,

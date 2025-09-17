@@ -18,7 +18,7 @@ def test_continuity_as_objective(phase_dynamics):
     )
 
     np.random.seed(42)
-    model_path = TestUtils.bioptim_folder() + "/examples/models/pendulum_maze.bioMod"
+    model_path = TestUtils.bioptim_folder() + "/../../examples/models/pendulum_maze.bioMod"
 
     # first pass
     ocp = ocp_module.prepare_ocp_first_pass(

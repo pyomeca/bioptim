@@ -45,7 +45,7 @@ def test_pendulum_max_time_mayer_constrained(ode_solver, phase_dynamics):
     control_type = ControlType.CONSTANT_WITH_LAST_NODE if ode_solver == OdeSolver.TRAPEZOIDAL else ControlType.CONSTANT
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/../../models/pendulum.bioMod",
         final_time=tf,
         n_shooting=ns,
         ode_solver=ode_solver(),
@@ -120,7 +120,7 @@ def test_time_constraint(ode_solver, phase_dynamics):
         raise ValueError("Test not implemented")
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/../../models/pendulum.bioMod",
         final_time=ft,
         n_shooting=ns,
         time_min=0.2,

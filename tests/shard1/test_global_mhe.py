@@ -22,7 +22,7 @@ def test_cyclic_nmpc(phase_dynamics):
     n_cycles = 3
     cycle_len = 20
     nmpc = ocp_module.prepare_nmpc(
-        model_path=bioptim_folder + "/../models/arm2.bioMod",
+        model_path=bioptim_folder + "/../../models/arm2.bioMod",
         cycle_len=cycle_len,
         cycle_duration=1,
         max_torque=50,

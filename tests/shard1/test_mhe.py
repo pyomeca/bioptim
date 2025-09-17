@@ -35,7 +35,7 @@ def test_mhe(solver, phase_dynamics):
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
-    bio_model = TorqueBiorbdModel(bioptim_folder + "/../models/cart_pendulum.bioMod")
+    bio_model = TorqueBiorbdModel(bioptim_folder + "/../../models/cart_pendulum.bioMod")
     nq = bio_model.nb_q
     torque_max = 5  # Give a bit of slack on the max torque
 

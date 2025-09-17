@@ -41,7 +41,7 @@ def test_example_param_obj_and_param_scaling(
     n_shooting = 10
 
     ocp_to_track = ocp_module.generate_dat_to_track(
-        biorbd_model_path=bioptim_folder + "/models/pendulum_wrong_gravity.bioMod",
+        biorbd_model_path=bioptim_folder + "/../../models/pendulum_wrong_gravity.bioMod",
         final_time=final_time,
         n_shooting=n_shooting,
     )

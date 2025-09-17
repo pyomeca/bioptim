@@ -12,7 +12,7 @@ def test_model_holonomic():
     from bioptim.examples.toy_examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
-    biorbd_model_path = bioptim_folder + "/../models/triple_pendulum.bioMod"
+    biorbd_model_path = bioptim_folder + "/../../models/triple_pendulum.bioMod"
     model = HolonomicBiorbdModel(biorbd_model_path)
 
     holonomic_constrains = HolonomicConstraintsList()
@@ -202,7 +202,7 @@ def test_example_two_pendulums():
 
     # --- Prepare the ocp --- #
     ocp, model = two_pendulums.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../models/two_pendulums.bioMod",
+        biorbd_model_path=bioptim_folder + "/../../models/two_pendulums.bioMod",
         n_shooting=10,
         final_time=1,
         expand_dynamics=False,
@@ -233,7 +233,7 @@ def test_example_two_pendulums_algebraic():
 
     # --- Prepare the ocp --- #
     ocp, model = two_pendulums_algebraic.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../models/two_pendulums.bioMod",
+        biorbd_model_path=bioptim_folder + "/../../models/two_pendulums.bioMod",
         n_shooting=5,
         final_time=1,
         expand_dynamics=False,

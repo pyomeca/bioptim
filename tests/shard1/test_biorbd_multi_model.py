@@ -14,8 +14,8 @@ def test_biorbd_model_import():
     from bioptim.examples.toy_examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
-    biorbd_model_path = "/../models/triple_pendulum.bioMod"
-    biorbd_model_path_modified_inertia = "/../models/triple_pendulum_modified_inertia.bioMod"
+    biorbd_model_path = "/../../models/triple_pendulum.bioMod"
+    biorbd_model_path_modified_inertia = "/../../models/triple_pendulum_modified_inertia.bioMod"
     MultiBiorbdModel((bioptim_folder + biorbd_model_path, bioptim_folder + biorbd_model_path_modified_inertia))
 
     MultiBiorbdModel(
@@ -36,8 +36,8 @@ def test_biorbd_model():
     from bioptim.examples.toy_examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
-    biorbd_model_path = "/../models/triple_pendulum.bioMod"
-    biorbd_model_path_modified_inertia = "/../models/triple_pendulum_modified_inertia.bioMod"
+    biorbd_model_path = "/../../models/triple_pendulum.bioMod"
+    biorbd_model_path_modified_inertia = "/../../models/triple_pendulum_modified_inertia.bioMod"
     models = MultiBiorbdModel(
         bio_model=(bioptim_folder + biorbd_model_path, bioptim_folder + biorbd_model_path_modified_inertia),
         extra_bio_models=(
