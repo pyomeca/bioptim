@@ -227,8 +227,7 @@ def test_torque_driven_soft_contacts_dynamics(contact_types, cx, phase_dynamics)
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
 
     nlp.model = TorqueBiorbdModel(
-        TestUtils.bioptim_folder()
-        + "/examples/models/2segments_4dof_2soft_contacts_1muscle.bioMod",
+        TestUtils.bioptim_folder() + "/examples/models/2segments_4dof_2soft_contacts_1muscle.bioMod",
         contact_types=contact_types,
     )
     nlp.dynamics_type = DynamicsOptions(
@@ -449,8 +448,7 @@ def test_torque_derivative_driven_soft_contacts_dynamics(contact_types, cx, phas
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
 
     nlp.model = TorqueDerivativeBiorbdModel(
-        TestUtils.bioptim_folder()
-        + "/examples/models/2segments_4dof_2soft_contacts_1muscle.bioMod",
+        TestUtils.bioptim_folder() + "/examples/models/2segments_4dof_2soft_contacts_1muscle.bioMod",
         contact_types=contact_types,
     )
     nlp.dynamics_type = DynamicsOptions(
@@ -650,13 +648,10 @@ def test_torque_activation_driven_with_residual_torque(
 ):
     if with_passive_torque:
         model_filename = (
-            TestUtils.bioptim_folder()
-            + "/examples/models/2segments_2dof_2contacts_with_passive_torque.bioMod"
+            TestUtils.bioptim_folder() + "/examples/models/2segments_2dof_2contacts_with_passive_torque.bioMod"
         )
     else:
-        model_filename = (
-            TestUtils.bioptim_folder() + "/examples/models/2segments_2dof_2contacts.bioMod"
-        )
+        model_filename = TestUtils.bioptim_folder() + "/examples/models/2segments_2dof_2contacts.bioMod"
 
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
@@ -1038,9 +1033,7 @@ def test_muscle_driven(with_excitation, with_contact, with_residual_torque, with
 def test_joints_acceleration_driven(cx, phase_dynamics):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
-    nlp.model = JointAccelerationBiorbdModel(
-        TestUtils.bioptim_folder() + "/examples/models/double_pendulum.bioMod"
-    )
+    nlp.model = JointAccelerationBiorbdModel(TestUtils.bioptim_folder() + "/examples/models/double_pendulum.bioMod")
     nlp.dynamics_type = DynamicsOptions(
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
