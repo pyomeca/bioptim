@@ -1,0 +1,147 @@
+"""
+TODO: Cleaning
+This is a basic example on how to use muscle driven to perform an optimal reaching task.
+The arm must reach a marker while minimizing the muscles activity and the states. The problem is solved using both
+ACADOS and Ipopt.
+"""
+
+import numpy as np
+from bioptim import (
+    MusclesBiorbdModel,
+    OptimalControlProgram,
+    ObjectiveList,
+    ObjectiveFcn,
+    DynamicsOptions,
+    BoundsList,
+    InitialGuessList,
+    Solver,
+    InterpolationType,
+)
+
+
+def prepare_ocp(
+    biorbd_model_path,
+    final_time,
+    n_shooting,
+    x_warm=None,
+    use_sx=False,
+    n_threads=1,
+    expand_dynamics=True,
+):
+    # --- Options --- #
+    # BioModel path
+    bio_model = MusclesBiorbdModel(biorbd_model_path, with_residual_torque=True)
+    tau_min, tau_max, tau_init = -50.0, 50.0, 0.0
+    muscle_min, muscle_max, muscle_init = 0.0, 1.0, 0.5
+
+    # Add objective functions
+    objective_functions = ObjectiveList()
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q", weight=10, multi_thread=False)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", weight=10, multi_thread=False)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=10, multi_thread=False)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=10, multi_thread=False)
+    objective_functions.add(
+        ObjectiveFcn.Mayer.SUPERIMPOSE_MARKERS, weight=100000, first_marker="target", second_marker="COM_hand"
+    )
+
+    # DynamicsOptions
+    dynamics = DynamicsOptions(expand_dynamics=expand_dynamics)
+
+    # Path constraint
+    x_bounds = BoundsList()
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["q"][:, 0] = 1.0
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+    x_bounds["qdot"][:, 0] = 1.0
+
+    # Initial guess
+    x_init = InitialGuessList()
+    if x_warm is None:
+        x_init["q"] = [1.57] * bio_model.nb_q
+        x_init["qdot"] = [0] * bio_model.nb_qdot
+    else:
+        x_init.add("q", x_warm[: bio_model.nb_q, :], interpolation=InterpolationType.EACH_FRAME)
+        x_init.add("qdot", x_warm[bio_model.nb_q :], interpolation=InterpolationType.EACH_FRAME)
+
+    # Define control path constraint
+    u_bounds = BoundsList()
+    u_bounds["tau"] = [tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau
+    u_bounds["muscles"] = [muscle_min] * bio_model.nb_muscles, [muscle_max] * bio_model.nb_muscles
+
+    u_init = InitialGuessList()
+    u_init["muscles"] = [muscle_init] * bio_model.nb_muscles
+    # ------------- #
+
+    return OptimalControlProgram(
+        bio_model,
+        n_shooting,
+        final_time,
+        dynamics=dynamics,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        x_init=x_init,
+        u_init=u_init,
+        objective_functions=objective_functions,
+        use_sx=use_sx,
+        n_threads=n_threads,
+    )
+
+
+def main():
+    # --- Solve the program using ACADOS --- #
+    ocp_acados = prepare_ocp(biorbd_model_path="models/arm26.bioMod", final_time=1, n_shooting=100, use_sx=True)
+
+    solver_acados = Solver.ACADOS()
+    solver_acados.set_convergence_tolerance(1e-3)
+
+    sol_acados = ocp_acados.solve(solver=solver_acados)
+
+    # --- Solve the program using IPOPT --- #
+    ocp_ipopt = prepare_ocp(
+        biorbd_model_path="models/arm26.bioMod",
+        final_time=1,
+        x_warm=None,
+        n_shooting=51,
+        use_sx=False,
+        n_threads=6,
+    )
+
+    solver_ipopt = Solver.IPOPT()
+    solver_ipopt.set_linear_solver("ma57")
+    solver_ipopt.set_dual_inf_tol(1e-3)
+    solver_ipopt.set_constraint_tolerance(1e-3)
+    solver_ipopt.set_convergence_tolerance(1e-3)
+    solver_ipopt.set_maximum_iterations(100)
+    solver_ipopt.set_hessian_approximation("exact")
+
+    sol_ipopt = ocp_ipopt.solve(solver=solver_ipopt)
+
+    # --- Show results --- #
+    print("\n\n")
+    print("Results using ACADOS")
+    print(f"Final objective: {np.nansum(sol_acados.cost)}")
+    sol_acados.print_cost()
+    print(f"Time to solve: {sol_acados.real_time_to_optimize}sec")
+    print(f"")
+
+    print(f"Results using Ipopt not warm started from ACADOS solution")
+    print(f"Final objective : {np.nansum(sol_ipopt.cost)}")
+    sol_ipopt.print_cost()
+    print(f"Time to solve: {sol_ipopt.real_time_to_optimize}sec")
+    print(f"")
+
+    visualizer = sol_acados.animate(show_now=False)
+    visualizer.extend(sol_ipopt.animate(show_now=False))
+
+    # Update biorbd-viz by hand so they can be visualized simultaneously
+    should_continue = True
+    while should_continue:
+        for i, b in enumerate(visualizer):
+            if b.vtk_window.is_active:
+                b.update()
+            else:
+                should_continue = False
+
+
+if __name__ == "__main__":
+    main()
