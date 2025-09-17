@@ -29,7 +29,7 @@ class Objective(PenaltyOption):
         custom_type: Any = None,
         phase: Int = -1,
         is_stochastic: Bool = False,
-        weight: Int | Float | ObjectiveWeight = ObjectiveWeight(),
+        weight: Int | Float | ObjectiveWeight = None,
         **extra_parameters: Any,
     ):
         """
@@ -48,6 +48,8 @@ class Objective(PenaltyOption):
         extra_parameters: dict
             Generic parameters for options
         """
+        if weight is None:
+            weight = ObjectiveWeight()
 
         custom_function = None
         if not isinstance(objective, ObjectiveFcn.Lagrange) and not isinstance(objective, ObjectiveFcn.Mayer):
@@ -194,7 +196,7 @@ class ObjectiveList(OptionList):
     def add(
         self,
         objective: Callable | Objective | Any,
-        weight: Int | Float | ObjectiveWeight = ObjectiveWeight(),
+        weight: Int | Float | ObjectiveWeight = None,
         **extra_arguments: Any,
     ):
         """
@@ -209,6 +211,9 @@ class ObjectiveList(OptionList):
         extra_arguments: dict
             Any parameters to pass to ObjectiveFcn
         """
+        if weight is None:
+            weight = ObjectiveWeight()
+
         if isinstance(objective, Objective):
             self.copy(objective)
         else:
@@ -524,7 +529,7 @@ class ParameterObjective(PenaltyOption):
         self,
         parameter_objective: Any,
         custom_type: Any = None,
-        weight: Int | Float | ObjectiveWeight = ObjectiveWeight(),
+        weight: Int | Float | ObjectiveWeight = None,
         **extra_parameters: Any,
     ):
         """
@@ -539,6 +544,9 @@ class ParameterObjective(PenaltyOption):
         extra_parameters: dict
             Generic parameters for options
         """
+        if weight is None:
+            weight = ObjectiveWeight()
+
         custom_function = None
         if not isinstance(parameter_objective, ObjectiveFcn.Parameter):
             custom_function = parameter_objective
@@ -635,7 +643,7 @@ class ParameterObjectiveList(OptionList):
     def add(
         self,
         parameter_objective: Callable | ParameterObjective | Any,
-        weight: Int | Float | ObjectiveWeight = ObjectiveWeight(),
+        weight: Int | Float | ObjectiveWeight = None,
         **extra_arguments: Any,
     ):
         """
@@ -650,6 +658,8 @@ class ParameterObjectiveList(OptionList):
         extra_arguments: dict
             Any parameters to pass to ParameterObjectiveFcn
         """
+        if weight is None:
+            weight = ObjectiveWeight()
 
         if isinstance(parameter_objective, ParameterObjective):
             self.copy(parameter_objective)

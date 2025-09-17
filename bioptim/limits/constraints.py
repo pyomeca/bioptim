@@ -42,7 +42,7 @@ class Constraint(PenaltyOption):
         quadratic: Bool = False,
         phase: Int = -1,
         is_stochastic: Bool = False,
-        weight: Int | Float | ConstraintWeight = ConstraintWeight(),
+        weight: Int | Float | ConstraintWeight = None,
         **extra_parameters: Any,
     ):
         """
@@ -66,6 +66,9 @@ class Constraint(PenaltyOption):
         extra_parameters:
             Generic parameters for options
         """
+        if weight is None:
+            weight = ConstraintWeight()
+
         custom_function = None
         if not isinstance(constraint, ConstraintFcn):
             custom_function = constraint
@@ -174,7 +177,7 @@ class ConstraintList(OptionList):
     def add(
         self,
         constraint: Callable | Constraint | Any,
-        weight: Int | Float | ConstraintWeight = ConstraintWeight(),
+        weight: Int | Float | ConstraintWeight = None,
         **extra_arguments: Any,
     ):
         """
@@ -189,6 +192,8 @@ class ConstraintList(OptionList):
         extra_arguments: dict
             Any parameters to pass to Constraint
         """
+        if weight is None:
+            weight = ConstraintWeight()
 
         if isinstance(constraint, Constraint):
             self.copy(constraint)
@@ -916,7 +921,7 @@ class ParameterConstraint(PenaltyOption):
         min_bound: NpArrayorFloatOptional = None,
         max_bound: NpArrayorFloatOptional = None,
         quadratic: Bool = False,
-        weight: Int | Float | ConstraintWeight = ConstraintWeight(),
+        weight: Int | Float | ConstraintWeight = None,
         **extra_parameters: Any,
     ):
         """
@@ -935,6 +940,9 @@ class ParameterConstraint(PenaltyOption):
         extra_parameters:
             Generic parameters for options
         """
+        if weight is None:
+            weight = ConstraintWeight()
+
         custom_function = None
         if not isinstance(parameter_constraint, ConstraintFcn):
             custom_function = parameter_constraint
@@ -1042,7 +1050,7 @@ class ParameterConstraintList(OptionList):
     def add(
         self,
         parameter_constraint: Callable | ParameterConstraint | Any,
-        weight: Int | Float | ConstraintWeight = ConstraintWeight(),
+        weight: Int | Float | ConstraintWeight = None,
         **extra_arguments: Any,
     ):
         """
@@ -1057,6 +1065,8 @@ class ParameterConstraintList(OptionList):
         extra_arguments: dict
             Any parameters to pass to Constraint
         """
+        if weight is None:
+            weight = ConstraintWeight()
 
         if isinstance(parameter_constraint, Constraint):
             self.copy(parameter_constraint)
