@@ -24,6 +24,7 @@ from bioptim import (
     ControlType,
     PhaseDynamics,
     OnlineOptim,
+    OrderingStrategy,
 )
 
 from bioptim.examples.utils import ExampleUtils
@@ -39,6 +40,7 @@ def prepare_ocp(
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
     control_type: ControlType = ControlType.CONSTANT,
+    ordering_strategy: OrderingStrategy = OrderingStrategy.VARIABLE_MAJOR,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -121,6 +123,7 @@ def prepare_ocp(
         control_type=control_type,
         use_sx=use_sx,
         n_threads=n_threads,
+        ordering_strategy=ordering_strategy,
     )
 
 
