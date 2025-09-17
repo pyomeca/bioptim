@@ -186,7 +186,7 @@ class OptimalControlProgram:
         u_scaling: VariableScalingList | None = None,
         a_scaling: VariableScalingList | None = None,
         n_threads: Int = 1,
-        ordering_strategy: OrderingStrategy = OrderingStrategy.TIME_MAJOR,
+        ordering_strategy: OrderingStrategy = OrderingStrategy.VARIABLE_MAJOR,
         use_sx: Bool = False,
         integrated_value_functions: dict[Str, Callable] | None = None,
     ) -> None:
