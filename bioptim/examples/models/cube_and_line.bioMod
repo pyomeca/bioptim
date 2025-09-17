@@ -1,0 +1,98 @@
+version 4
+
+    
+segment Seg1
+    translations	xz
+    rotations	y
+    rangesQ  -0.70 2.30
+            -1 1
+            -pi pi
+	mass 1
+	inertia 
+	  1 0 0 
+	  0 1 0
+	  0 0 1
+	com 0 0 0
+    mesh 0 -1 -1
+    mesh 0 0 -1
+    mesh 0 0 0
+    mesh 0 -1 0
+    mesh 0 -1 -1
+    mesh 1 -1 -1
+    mesh 1 0 -1
+    mesh 0 0 -1
+    mesh 1 0 -1
+    mesh 1 0 0
+    mesh 0 0 0
+    mesh 1 0 0
+    mesh 1 -1 0
+    mesh 0 -1 0
+    mesh 1 -1 0
+    mesh 1 -1 -1
+endsegment
+	
+    // Marker on Seg1
+    marker m0
+        parent Seg1
+        position 0 0 0
+    endmarker
+    marker m1
+        parent Seg1
+        position 1 0 -1
+    endmarker
+    marker m2
+        parent Seg1
+        position 2 0 -1
+    endmarker
+    marker m3
+        parent Seg1
+        position 1 0 0
+    endmarker
+
+    customRT cRT
+        fromMarkers
+        parent Seg1
+        originMarkerName m1
+        firstAxis x
+        firstAxisMarkerNames m1 m2
+        secondAxis z
+        secondAxisMarkerNames m1 m3
+        recalculate secondAxis
+    endcustomRT
+
+
+segment ground
+endsegment
+    // Markers on ground
+    marker origin
+        parent ground
+		position 0 0 0 
+	endmarker
+    marker m4
+        parent ground
+        position 1 0 0
+    endmarker
+    marker m5
+        parent ground
+        position 2 0 0 
+    endmarker
+
+
+segment seg_rt
+    rotations	y
+    rangesQ -pi/2 pi/2
+    mass 1
+	inertia
+	  1 0 0
+	  0 1 0
+	  0 0 1
+	com 0 0.1 0
+    mesh 0 0 0
+    mesh 2.24 0 0
+endsegment
+
+    // Marker on seg_rt
+    marker m6
+        parent seg_rt
+        position 0.5 0 0
+    endmarker
