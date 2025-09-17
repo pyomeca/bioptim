@@ -808,7 +808,7 @@ def test_pendulum_integration_rule(control_type, interpolation_type, integration
     np.random.seed(42)  # For reproducibility of spline
 
     ocp = objective_prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "../..//models/pendulum.bioMod",
         n_shooting=n_shooting,
         objective="lagrange",
         interpolation_type=interpolation_type,
