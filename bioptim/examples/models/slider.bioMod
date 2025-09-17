@@ -1,0 +1,22 @@
+version 4
+
+gravity 0 -9.81 0
+
+segment Seg1
+    translations    y
+    ranges  -1 1
+    mass    0.5
+    inertia
+            0.1 0 0
+            0 0.1 0
+            0 0 0.1
+    com     0 0.5 0
+    mesh	0 0 0
+    mesh	0 0.5 0
+    mesh	0 0 0
+    mesh	0.2 0 0
+    mesh	0.2 1 0
+    mesh	-0.2 1 0
+    mesh	-0.2 0 0
+    mesh	0 0 0
+endsegment

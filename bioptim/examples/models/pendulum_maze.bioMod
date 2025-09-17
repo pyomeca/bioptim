@@ -1,0 +1,110 @@
+version 4
+
+variables
+    $y1 -0.45
+    $z1 0
+    $r1 0.35
+
+    $y2 0.05
+    $z2 0
+    $r2 0.35
+
+    $y3 0.55
+    $z3 -0.85
+    $r3 0.35
+
+    $y4 0.75
+    $z4 0.2
+    $r4 0.35
+
+    $y5 1.4
+    $z5 0.7
+    $r5 0.35
+
+    $y6 2
+    $z6 1.2
+    $r6 0.35
+endvariables
+
+segment Seg1
+    translations	y
+    rotations	x
+    ranges
+        -4 4
+        -2*pi 2*pi
+    mass 1
+    inertia
+        0.0391  0.0000	0.0000
+	    0.0000	0.0335	-0.0032
+	    0.0000	-0.0032	0.0090
+    com  -0.0005 0.0688 -0.9542
+    meshfile mesh/pendulum.STL
+endsegment
+
+    // Marker 1
+    marker marker_1
+        parent Seg1
+        position 0 0 0
+    endmarker
+
+    // Marker 2
+    marker marker_2
+        parent Seg1
+        position -0.0005 0.0688 -0.9542
+    endmarker
+
+segment Target
+endsegment
+    marker target_2
+        parent Target
+        position -0.0005 -0.0688 0.9542
+    endmarker
+
+// Only to display the circles
+segment NoGoCircle1
+    mesh 0 $y1+$r1 $z1
+    mesh 0 $y1 $z1+$r1
+    mesh 0 $y1+(-$r1) $z1
+    mesh 0 $y1 $z1+(-$r1)  // $z-$r causes a segfault in biorbd
+    mesh 0 $y1+$r1 $z1
+endsegment
+
+segment NoGoCircle2
+    mesh 0 $y2+$r2 $z2
+    mesh 0 $y2 $z2+$r2
+    mesh 0 $y2+(-$r2) $z2
+    mesh 0 $y2 $z2+(-$r2)
+    mesh 0 $y2+$r2 $z2
+endsegment
+
+segment NoGoCircle3
+    mesh 0 $y3+$r3 $z3
+    mesh 0 $y3 $z3+$r3
+    mesh 0 $y3+(-$r3) $z3
+    mesh 0 $y3 $z3+(-$r3)
+    mesh 0 $y3+$r3 $z3
+endsegment
+
+segment NoGoCircle4
+    mesh 0 $y4+$r4 $z4
+    mesh 0 $y4 $z4+$r4
+    mesh 0 $y4+(-$r4) $z4
+    mesh 0 $y4 $z4+(-$r4)
+    mesh 0 $y4+$r4 $z4
+endsegment
+
+segment NoGoCircle5
+    mesh 0 $y5+$r5 $z5
+    mesh 0 $y5 $z5+$r5
+    mesh 0 $y5+(-$r5) $z5
+    mesh 0 $y5 $z5+(-$r5)
+    mesh 0 $y5+$r5 $z5
+endsegment
+
+segment NoGoCircle6
+    mesh 0 $y6+$r6 $z6
+    mesh 0 $y6 $z6+$r6
+    mesh 0 $y6+(-$r6) $z6
+    mesh 0 $y6 $z6+(-$r6)
+    mesh 0 $y6+$r6 $z6
+endsegment

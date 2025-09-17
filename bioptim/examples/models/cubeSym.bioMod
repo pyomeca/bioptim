@@ -1,0 +1,83 @@
+version 3
+
+
+segment Seg0
+    translations	xy
+endsegment
+
+
+segment Seg1
+    parent Seg0
+    rotations	zx
+	mass 1
+	inertia
+	  1 0 0
+	  0 1 0
+	  0 0 1
+	com 0 0 0
+    mesh -0.1 1 -0.1
+    mesh -0.1 0 -0.1
+    mesh -0.1 0 0.1
+    mesh -0.1 1 0.1
+    mesh -0.1 1 -0.1
+    mesh 0.1 1 -0.1
+    mesh 0.1 0 -0.1
+    mesh -0.1 0 -0.1
+    mesh 0.1 0 -0.1
+    mesh 0.1 0 0.1
+    mesh -0.1 0 0.1
+    mesh 0.1 0 0.1
+    mesh 0.1 1 0.1
+    mesh -0.1 1 0.1
+    mesh 0.1 1 0.1
+    mesh 0.1 1 -0.1
+endsegment
+
+
+segment Seg2
+    parent Seg0
+    rotations	x
+    ranges  -pi pi
+	mass 1
+	inertia
+	  1 0 0
+	  0 1 0
+	  0 0 1
+	com 0 0 0
+    mesh -0.1 1 -0.1
+    mesh -0.1 0 -0.1
+    mesh -0.1 0 0.1
+    mesh -0.1 1 0.1
+    mesh -0.1 1 -0.1
+    mesh 0.1 1 -0.1
+    mesh 0.1 0 -0.1
+    mesh -0.1 0 -0.1
+    mesh 0.1 0 -0.1
+    mesh 0.1 0 0.1
+    mesh -0.1 0 0.1
+    mesh 0.1 0 0.1
+    mesh 0.1 1 0.1
+    mesh -0.1 1 0.1
+    mesh 0.1 1 0.1
+    mesh 0.1 1 -0.1
+endsegment
+
+    // Marker on Seg2
+    marker m0
+        parent Seg2
+        position 0 1 0
+    endmarker
+
+// Ground
+segment ground
+endsegment
+
+// Markers on ground
+    marker m1
+        parent ground
+        position -0.2 -0.2 -0.2
+    endmarker
+    marker m2
+        parent ground
+        position 0.2 0.2 0.2
+    endmarker
