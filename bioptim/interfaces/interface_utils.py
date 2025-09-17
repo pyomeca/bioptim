@@ -11,18 +11,8 @@ from ..gui.online_callback_server import OnlineCallbackServer
 from ..limits.path_conditions import Bounds
 from ..limits.penalty_helpers import PenaltyHelpers, Slicy
 from ..misc.enums import InterpolationType, OnlineOptim
+from ..misc.parameters_types import AnyDictOptional, Bool, AnyDict, CX, DoubleNpArrayTuple, Int
 from ..optimization.non_linear_program import NonLinearProgram
-
-
-from ..misc.parameters_types import (
-    AnyDictOptional,
-    Bool,
-    AnyDict,
-    CX,
-    DoubleNpArrayTuple,
-    Int,
-    Range,
-)
 
 
 def generic_online_optim(interface: SolverInterface, ocp, show_options: AnyDictOptional = None):
@@ -94,6 +84,13 @@ def generic_solve(interface: SolverInterface, expand_during_shake_tree: Bool = F
     # Thread here on (f and all_g) instead of individually for each function?
     interface.nlp = {"x": v, "f": sum1(all_objectives), "g": all_g}
     interface.c_compile = interface.opts.c_compile
+    interface.limits = {
+        "lbx": v_bounds[0],
+        "ubx": v_bounds[1],
+        "lbg": all_g_bounds.min,
+        "ubg": all_g_bounds.max,
+        "x0": v_init,
+    }
     options = interface.opts.as_dict(interface)
 
     if interface.c_compile:
@@ -103,14 +100,6 @@ def generic_solve(interface: SolverInterface, expand_during_shake_tree: Bool = F
             interface.ocp.program_changed = False
     else:
         interface.ocp_solver = nlpsol("solver", interface.solver_name.lower(), interface.nlp, options)
-
-    interface.limits = {
-        "lbx": v_bounds[0],
-        "ubx": v_bounds[1],
-        "lbg": all_g_bounds.min,
-        "ubg": all_g_bounds.max,
-        "x0": v_init,
-    }
 
     if interface.lam_g is not None:
         interface.limits["lam_g0"] = interface.lam_g

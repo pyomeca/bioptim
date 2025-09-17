@@ -111,6 +111,11 @@ c_generated_code
 # Bioptim files
 bioptim/sandbox/
 *.pkl
+*.mtx
+*.casadi
+*.pt
+*.png
+_l4c_generated/
 
 # Mac dev
 *.DS_store

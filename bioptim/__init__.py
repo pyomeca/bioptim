@@ -238,6 +238,7 @@ from .optimization.multi_start import MultiStart
 from .optimization.non_linear_program import NonLinearProgram
 from .optimization.optimal_control_program import OptimalControlProgram
 from .optimization.optimization_variable import OptimizationVariableList
+from .optimization.vector_layout import OrderingStrategy
 from .optimization.parameters import ParameterList, ParameterContainer
 from .optimization.problem_type import SocpType
 from .optimization.receding_horizon_optimization import (

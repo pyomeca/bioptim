@@ -29,12 +29,13 @@ def test_axis():
 
 def test_solver_type():
     assert SolverType.IPOPT.value == "Ipopt"
+    assert SolverType.FATROP.value == "Fatrop"
     assert SolverType.ACADOS.value == "ACADOS"
     assert SolverType.SQP.value == "SqpMethod"
     assert SolverType.NONE.value == None
 
     # verify the number of elements
-    assert len(SolverType) == 4
+    assert len(SolverType) == 5
 
 
 def test_node():
