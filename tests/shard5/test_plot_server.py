@@ -10,7 +10,7 @@ from ..utils import TestUtils
 
 def test_serialize_deserialize():
     # Prepare a set of data to serialize and deserialize
-    from bioptim.examples.getting_started import pendulum as ocp_module
+    from bioptim.examples.getting_started import basic_ocp as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 

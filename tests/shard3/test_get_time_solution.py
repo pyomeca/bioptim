@@ -31,7 +31,7 @@ def _get_solution(
             "control_type": control_type,
         }
     else:
-        from bioptim.examples.getting_started import pendulum as ocp_module
+        from bioptim.examples.getting_started import basic_ocp as ocp_module
 
         bioptim_folder = TestUtils.module_folder(ocp_module)
         model_path = bioptim_folder + "/models/pendulum.bioMod"

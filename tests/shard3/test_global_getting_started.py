@@ -59,7 +59,7 @@ test_memory = {}
     ],
 )
 def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type):
-    from bioptim.examples.getting_started import pendulum as ocp_module
+    from bioptim.examples.getting_started import basic_ocp as ocp_module
 
     if platform.system() == "Windows":
         pytest.skip("These tests fail on CI for Windows")
@@ -310,7 +310,7 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type):
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_custom_constraint_track_markers(ode_solver, phase_dynamics):
-    from bioptim.examples.getting_started import custom_constraint as ocp_module
+    from bioptim.examples.toy_examples.feature_examples import custom_constraint as ocp_module
 
     gc.collect()  # Force garbage collection
     time.sleep(0.1)  # Avoiding delay in memory (re)allocation
@@ -398,7 +398,7 @@ def test_custom_constraint_track_markers(ode_solver, phase_dynamics):
 @pytest.mark.parametrize("interpolation", [*InterpolationType])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.COLLOCATION])
 def test_initial_guesses(ode_solver, interpolation, random_init, phase_dynamics):
-    from bioptim.examples.getting_started import custom_initial_guess as ocp_module
+    from bioptim.examples.toy_examples.feature_examples import custom_initial_guess as ocp_module
 
     gc.collect()  # Force garbage collection
     time.sleep(0.1)  # Avoiding delay in memory (re)allocation

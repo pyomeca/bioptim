@@ -32,7 +32,7 @@ from ..utils import TestUtils
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK, OdeSolver.TRAPEZOIDAL])
 def test_pendulum_max_time_mayer_constrained(ode_solver, phase_dynamics):
     # Load pendulum_min_time_Mayer
-    from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
+    from bioptim.examples.toy_examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
     if platform.system() == "Windows" and ode_solver == OdeSolver.COLLOCATION:
         pytest.skip("These tests do not pass on Windows.")
@@ -103,7 +103,7 @@ def test_time_constraint(ode_solver, phase_dynamics):
         pytest.skip("These tests are sensitive on Windows.")
 
     # Load time_constraint
-    from bioptim.examples.optimal_time_ocp import time_constraint as ocp_module
+    from bioptim.examples.toy_examples.optimal_time_ocp import time_constraint as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 

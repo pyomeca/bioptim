@@ -7,7 +7,7 @@ from ..utils import TestUtils
 
 ## examples/acados
 def test__acados__cube():
-    from bioptim.examples.acados import cube as ocp_module
+    from bioptim.examples.toy_examples.acados import cube as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -20,7 +20,7 @@ def test__acados__cube():
 
 
 def test__acados__pendulum():
-    from bioptim.examples.acados import pendulum as ocp_module
+    from bioptim.examples.toy_examples.acados import pendulum as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -33,7 +33,7 @@ def test__acados__pendulum():
 
 
 def test__acados__static_arm():
-    from bioptim.examples.acados import static_arm as ocp_module
+    from bioptim.examples.toy_examples.acados import static_arm as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -50,7 +50,7 @@ def test__acados__static_arm():
 
 ## examples/getting_started
 def test__getting_started__custom_bounds():
-    from bioptim.examples.getting_started import custom_bounds as ocp_module
+    from bioptim.examples.toy_examples.feature_examples import custom_bounds as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -68,7 +68,7 @@ def test__getting_started__custom_bounds():
 
 
 def test__getting_started__custom_objective_weights():
-    from bioptim.examples.getting_started import custom_objective_weights as ocp_module
+    from bioptim.examples.toy_examples.feature_examples import custom_objective_weights as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -94,7 +94,7 @@ def test__getting_started__custom_objective_weights():
 
 
 def test__getting_started__custom_constraints():
-    from bioptim.examples.getting_started import custom_constraint as ocp_module
+    from bioptim.examples.toy_examples.feature_examples import custom_constraint as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -120,7 +120,7 @@ def test__getting_started__custom_dynamics():
 @pytest.mark.parametrize("interpolation", [*InterpolationType])
 @pytest.mark.parametrize("random", [True, False])
 def test__getting_started__custom_initial_guess(interpolation, random):
-    from bioptim.examples.getting_started import custom_initial_guess as ocp_module
+    from bioptim.examples.toy_examples.feature_examples import custom_initial_guess as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -198,7 +198,7 @@ def test__getting_started__custom_plotting():
 
 
 def test__getting_started__example_continuity_as_objective():
-    from bioptim.examples.getting_started import example_continuity_as_objective as ocp_module
+    from bioptim.examples.toy_examples.feature_examples import example_continuity_as_objective as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -263,7 +263,7 @@ def test__getting_started__example_mapping():
 
 
 def test__getting_started__example_multinode_constraints():
-    from bioptim.examples.getting_started import (
+    from bioptim.examples.toy_examples.feature_examples import (
         example_multinode_constraints as ocp_module,
     )
 
@@ -278,7 +278,7 @@ def test__getting_started__example_multinode_constraints():
 
 
 def test__getting_started__example_multinode_objective():
-    from bioptim.examples.getting_started import (
+    from bioptim.examples.toy_examples.feature_examples import (
         example_multinode_objective as ocp_module,
     )
 
@@ -360,7 +360,7 @@ def test__getting_started__example_simulation():
 
 
 def test__getting_started__pendulum():
-    from bioptim.examples.getting_started import pendulum as ocp_module
+    from bioptim.examples.getting_started import basic_ocp as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -374,7 +374,7 @@ def test__getting_started__pendulum():
 
 
 def test__getting_started__pendulum_constrained_states_controls():
-    from bioptim.examples.getting_started import (
+    from bioptim.examples.toy_examples.feature_examples import (
         pendulum_constrained_states_controls as ocp_module,
     )
 
@@ -403,7 +403,7 @@ def test__muscle_driven_ocp__muscle_excitations_tracker():
 
 
 def test__muscle_driven_ocp__static_arm():
-    from bioptim.examples.muscle_driven_ocp import static_arm as ocp_module
+    from bioptim.examples.toy_examples.muscle_driven_ocp import static_arm as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -418,7 +418,7 @@ def test__muscle_driven_ocp__static_arm():
 
 
 def test__muscle_driven_ocp__static_arm_with_contact():
-    from bioptim.examples.muscle_driven_ocp import static_arm_with_contact as ocp_module
+    from bioptim.examples.toy_examples.muscle_driven_ocp import static_arm_with_contact as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -435,7 +435,7 @@ def test__muscle_driven_with_contact__muscle_activations_contacts_tracker():
 
 
 def test__optimal_time_ocp__multiphase_time_constraint():
-    from bioptim.examples.optimal_time_ocp import (
+    from bioptim.examples.toy_examples.optimal_time_ocp import (
         multiphase_time_constraint as ocp_module,
     )
 
@@ -457,7 +457,7 @@ def test__optimal_time_ocp__multiphase_time_constraint():
 
 
 def test__optimal_time_ocp__pendulum_min_time_Mayer():
-    from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
+    from bioptim.examples.toy_examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -471,7 +471,7 @@ def test__optimal_time_ocp__pendulum_min_time_Mayer():
 
 
 def test__optimal_time_ocp__time_constraint():
-    from bioptim.examples.optimal_time_ocp import time_constraint as ocp_module
+    from bioptim.examples.toy_examples.optimal_time_ocp import time_constraint as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -487,7 +487,7 @@ def test__optimal_time_ocp__time_constraint():
 
 ## torque_driven_ocp_folder
 def test__symmetrical_torque_driven_ocp__symmetry_by_constraint():
-    from bioptim.examples.symmetrical_torque_driven_ocp import (
+    from bioptim.examples.toy_examples.symmetrical_torque_driven_ocp import (
         symmetry_by_constraint as ocp_module,
     )
 
@@ -1486,7 +1486,7 @@ def test__track__track_segment_on_rt():
 
 
 def test__getting_started__example_variable_scaling():
-    from bioptim.examples.getting_started import example_variable_scaling as ocp_module
+    from bioptim.examples.toy_examples.feature_examples import example_variable_scaling as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 

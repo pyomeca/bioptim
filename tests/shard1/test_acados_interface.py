@@ -37,7 +37,7 @@ def test_acados_no_obj(cost_type):
     if platform == "win32":
         return
 
-    from bioptim.examples.acados import cube as ocp_module
+    from bioptim.examples.toy_examples.acados import cube as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -61,7 +61,7 @@ def test_acados_one_mayer(cost_type):
     if platform == "win32":
         return
 
-    from bioptim.examples.acados import cube as ocp_module
+    from bioptim.examples.toy_examples.acados import cube as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -91,7 +91,7 @@ def test_acados_mayer_first_node(cost_type):
     if platform == "win32":
         return
 
-    from bioptim.examples.acados import cube as ocp_module
+    from bioptim.examples.toy_examples.acados import cube as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -127,7 +127,7 @@ def test_acados_several_mayer(cost_type):
         print("Test for ACADOS on Windows is skipped")
         return
 
-    from bioptim.examples.acados import cube as ocp_module
+    from bioptim.examples.toy_examples.acados import cube as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -164,7 +164,7 @@ def test_acados_one_lagrange(cost_type):
         print("Test for ACADOS on Windows is skipped")
         return
 
-    from bioptim.examples.acados import cube as ocp_module
+    from bioptim.examples.toy_examples.acados import cube as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -209,7 +209,7 @@ def test_acados_one_lagrange_and_one_mayer(cost_type):
         print("Test for ACADOS on Windows is skipped")
         return
 
-    from bioptim.examples.acados import cube as ocp_module
+    from bioptim.examples.toy_examples.acados import cube as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -257,7 +257,7 @@ def test_acados_control_lagrange_and_state_mayer(cost_type):
         print("Test for ACADOS on Windows is skipped")
         return
 
-    from bioptim.examples.acados import cube as ocp_module
+    from bioptim.examples.toy_examples.acados import cube as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -296,7 +296,7 @@ def test_acados_options(cost_type):
         print("Tests for ACADOS options on Windows and Mac are skipped")
         return
 
-    from bioptim.examples.acados import pendulum as ocp_module
+    from bioptim.examples.toy_examples.acados import pendulum as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -330,7 +330,7 @@ def test_acados_fail_external():
         print("Test for ACADOS on Windows is skipped")
         return
 
-    from bioptim.examples.acados import pendulum as ocp_module
+    from bioptim.examples.toy_examples.acados import pendulum as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -353,7 +353,7 @@ def test_acados_fail_lls():
         print("Test for ACADOS on Windows is skipped")
         return
 
-    from bioptim.examples.acados import static_arm as ocp_module
+    from bioptim.examples.toy_examples.acados import static_arm as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -568,7 +568,7 @@ def test_acados_one_end_constraints():
         print("Test for ACADOS on Windows is skipped")
         return
 
-    from bioptim.examples.acados import cube as ocp_module
+    from bioptim.examples.toy_examples.acados import cube as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -621,7 +621,7 @@ def test_acados_constraints_all():
         print("Test for ACADOS on Windows is skipped")
         return
 
-    from bioptim.examples.track import track_marker_on_segment as ocp_module
+    from bioptim.examples.toy_examples.track import track_marker_on_segment as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -665,7 +665,7 @@ def test_acados_constraints_end_all():
         print("Test for ACADOS on Windows is skipped")
         return
 
-    from bioptim.examples.track import track_marker_on_segment as ocp_module
+    from bioptim.examples.toy_examples.track import track_marker_on_segment as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -710,7 +710,7 @@ def test_acados_phase_dynamics_reject():
         print("Test for ACADOS on Windows is skipped")
         return
 
-    from bioptim.examples.getting_started import pendulum as ocp_module
+    from bioptim.examples.getting_started import basic_ocp as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 

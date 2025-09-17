@@ -15,7 +15,7 @@ from tests.utils import TestUtils
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_track_segment_on_rt(ode_solver, phase_dynamics):
-    from bioptim.examples.track import track_segment_on_rt as ocp_module
+    from bioptim.examples.toy_examples.track import track_segment_on_rt as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -61,7 +61,7 @@ def test_track_segment_on_rt(ode_solver, phase_dynamics):
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_track_marker_on_segment(ode_solver, phase_dynamics):
-    from bioptim.examples.track import track_marker_on_segment as ocp_module
+    from bioptim.examples.toy_examples.track import track_marker_on_segment as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 

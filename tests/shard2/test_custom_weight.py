@@ -24,8 +24,8 @@ import numpy.testing as npt
 import pytest
 
 from ..utils import TestUtils
-from bioptim.examples.getting_started import custom_objective_weights as objective_ocp_module
-from bioptim.examples.getting_started import custom_constraint_weights as constraint_ocp_module
+from bioptim.examples.toy_examples.feature_examples import custom_objective_weights as objective_ocp_module
+from bioptim.examples.toy_examples.feature_examples import custom_constraint_weights as constraint_ocp_module
 from bioptim.limits.weight import Weight
 
 

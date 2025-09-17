@@ -14,7 +14,7 @@ from ..utils import TestUtils
 @pytest.mark.parametrize("scaled", [True, False])
 def test_merge_combinations(scaled):
     # Load pendulum
-    from bioptim.examples.getting_started import pendulum as ocp_module
+    from bioptim.examples.getting_started import basic_ocp as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
     ocp = ocp_module.prepare_ocp(
@@ -59,7 +59,7 @@ def test_merge_combinations(scaled):
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_merge_phases_one_phase(phase_dynamics):
     # Load pendulum
-    from bioptim.examples.getting_started import pendulum as ocp_module
+    from bioptim.examples.getting_started import basic_ocp as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -112,7 +112,7 @@ def test_merge_phases_multi_phase(phase_dynamics):
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_interpolate(phase_dynamics):
     # Load pendulum
-    from bioptim.examples.getting_started import pendulum as ocp_module
+    from bioptim.examples.getting_started import basic_ocp as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -229,7 +229,7 @@ def test_interpolate_multiphases_merge_phase(phase_dynamics):
 @pytest.mark.parametrize("integrator", [SolutionIntegrator.SCIPY_RK45, SolutionIntegrator.OCP])
 def test_integrate(integrator, ode_solver, phase_dynamics):
     # Load pendulum
-    from bioptim.examples.getting_started import pendulum as ocp_module
+    from bioptim.examples.getting_started import basic_ocp as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -281,7 +281,7 @@ def test_integrate(integrator, ode_solver, phase_dynamics):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 def test_integrate_single_shoot(ode_solver, phase_dynamics):
     # Load pendulum
-    from bioptim.examples.getting_started import pendulum as ocp_module
+    from bioptim.examples.getting_started import basic_ocp as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -337,7 +337,7 @@ def test_integrate_single_shoot_use_scipy(ode_solver, phase_dynamics):
         return
 
     # Load pendulum
-    from bioptim.examples.getting_started import pendulum as ocp_module
+    from bioptim.examples.getting_started import basic_ocp as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -480,7 +480,7 @@ def test_integrate_single_shoot_use_scipy(ode_solver, phase_dynamics):
 @pytest.mark.parametrize("control_type", [ControlType.CONSTANT, ControlType.LINEAR_CONTINUOUS])
 def test_integrate_all_cases(shooting, merge, integrator, ode_solver, phase_dynamics, control_type):
     # Load pendulum
-    from bioptim.examples.getting_started import pendulum as ocp_module
+    from bioptim.examples.getting_started import basic_ocp as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 

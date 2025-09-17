@@ -207,7 +207,7 @@ def test_initial_guess_custom():
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_simulate_from_initial_multiple_shoot(phase_dynamics):
-    from bioptim.examples.getting_started import pendulum as ocp_module
+    from bioptim.examples.getting_started import basic_ocp as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
     final_time = 2
@@ -256,7 +256,7 @@ def test_simulate_from_initial_multiple_shoot(phase_dynamics):
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_simulate_from_initial_single_shoot(phase_dynamics):
     # Load pendulum
-    from bioptim.examples.getting_started import pendulum as ocp_module
+    from bioptim.examples.getting_started import basic_ocp as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
     final_time = 2
@@ -307,7 +307,7 @@ def test_initial_guess_error_messages(phase_dynamics):
     """
     This tests that the error messages are properly raised. The OCP is adapted from the getting_started/pendulum.py example.
     """
-    from bioptim.examples.getting_started import pendulum as ocp_module
+    from bioptim.examples.getting_started import basic_ocp as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
     biorbd_model_path = bioptim_folder + "/models/pendulum.bioMod"

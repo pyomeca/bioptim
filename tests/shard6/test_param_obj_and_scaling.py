@@ -33,7 +33,7 @@ def test_example_param_obj_and_param_scaling(
     if platform == "darwin" or platform == "win32":
         pytest.skip("This test is not working on MacOS or Windows")
 
-    from bioptim.examples.getting_started import example_parameter_scaling as ocp_module
+    from bioptim.examples.toy_examples.feature_examples import example_parameter_scaling as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 

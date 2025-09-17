@@ -13,7 +13,7 @@ from tests.utils import TestUtils
     [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE],
 )
 def test_continuity_as_objective(phase_dynamics):
-    from bioptim.examples.getting_started import (
+    from bioptim.examples.toy_examples.feature_examples import (
         example_continuity_as_objective as ocp_module,
     )
 

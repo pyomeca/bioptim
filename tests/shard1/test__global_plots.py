@@ -25,7 +25,7 @@ def test_plot_graphs_one_phase(phase_dynamics):
         pytest.skip("Skipping on Windows for now, as it creates segmentation fault on Github CI")
 
     # Load graphs_one_phase
-    from bioptim.examples.torque_driven_ocp import track_markers_with_torque_actuators as ocp_module
+    from bioptim.examples.toy_examples.torque_driven_ocp import track_markers_with_torque_actuators as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -103,7 +103,7 @@ def test_save_ipopt_output():
     if platform.system() == "Windows":
         pytest.skip("Skipping on Windows for now, as it creates segmentation fault on Github CI")
 
-    from bioptim.examples.getting_started import pendulum as ocp_module
+    from bioptim.examples.getting_started import basic_ocp as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -126,7 +126,7 @@ def test_plot_merged_graphs(phase_dynamics):
         pytest.skip("Skipping on Windows for now, as it creates segmentation fault on Github CI")
 
     # Load graphs_one_phase
-    from bioptim.examples.muscle_driven_ocp import muscle_excitations_tracker as ocp_module
+    from bioptim.examples.toy_examples.muscle_driven_ocp import muscle_excitations_tracker as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -189,7 +189,7 @@ def test_add_new_plot(phase_dynamics):
         pytest.skip("Skipping on Windows for now, as it creates segmentation fault on Github CI")
 
     # Load graphs_one_phase
-    from bioptim.examples.torque_driven_ocp import track_markers_with_torque_actuators as ocp_module
+    from bioptim.examples.toy_examples.torque_driven_ocp import track_markers_with_torque_actuators as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 

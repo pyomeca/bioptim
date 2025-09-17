@@ -10,7 +10,7 @@ from ..utils import TestUtils
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_xia_fatigable_muscles(phase_dynamics):
-    from bioptim.examples.fatigue import static_arm_with_fatigue as ocp_module
+    from bioptim.examples.toy_examples.fatigue import static_arm_with_fatigue as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -98,7 +98,7 @@ def test_xia_fatigable_muscles(phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_xia_stabilized_fatigable_muscles(phase_dynamics):
-    from bioptim.examples.fatigue import static_arm_with_fatigue as ocp_module
+    from bioptim.examples.toy_examples.fatigue import static_arm_with_fatigue as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -186,7 +186,7 @@ def test_xia_stabilized_fatigable_muscles(phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_michaud_fatigable_muscles(phase_dynamics):
-    from bioptim.examples.fatigue import static_arm_with_fatigue as ocp_module
+    from bioptim.examples.toy_examples.fatigue import static_arm_with_fatigue as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -223,7 +223,7 @@ def test_michaud_fatigable_muscles(phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_effort_fatigable_muscles(phase_dynamics):
-    from bioptim.examples.fatigue import static_arm_with_fatigue as ocp_module
+    from bioptim.examples.toy_examples.fatigue import static_arm_with_fatigue as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -302,7 +302,7 @@ def test_effort_fatigable_muscles(phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_fatigable_xia_torque_non_split(phase_dynamics):
-    from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
+    from bioptim.examples.toy_examples.fatigue import pendulum_with_fatigue as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -336,7 +336,7 @@ def test_fatigable_xia_torque_non_split(phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_fatigable_xia_torque_split(phase_dynamics):
-    from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
+    from bioptim.examples.toy_examples.fatigue import pendulum_with_fatigue as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -414,7 +414,7 @@ def test_fatigable_xia_torque_split(phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_fatigable_xia_stabilized_torque_split(phase_dynamics):
-    from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
+    from bioptim.examples.toy_examples.fatigue import pendulum_with_fatigue as ocp_module
 
     if platform.system() == "Windows":
         pytest.skip("These tests do not pass on Windows.")
@@ -483,7 +483,7 @@ def test_fatigable_xia_stabilized_torque_split(phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_fatigable_michaud_torque_non_split(phase_dynamics):
-    from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
+    from bioptim.examples.toy_examples.fatigue import pendulum_with_fatigue as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -517,7 +517,7 @@ def test_fatigable_michaud_torque_non_split(phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_fatigable_michaud_torque_split(phase_dynamics):
-    from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
+    from bioptim.examples.toy_examples.fatigue import pendulum_with_fatigue as ocp_module
 
     if platform.system() == "Windows":
         pytest.skip("These tests do not pass on Windows.")
@@ -588,7 +588,7 @@ def test_fatigable_michaud_torque_split(phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_fatigable_effort_torque_non_split(phase_dynamics):
-    from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
+    from bioptim.examples.toy_examples.fatigue import pendulum_with_fatigue as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -622,7 +622,7 @@ def test_fatigable_effort_torque_non_split(phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_fatigable_effort_torque_split(phase_dynamics):
-    from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
+    from bioptim.examples.toy_examples.fatigue import pendulum_with_fatigue as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 

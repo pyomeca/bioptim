@@ -11,7 +11,7 @@ from ..utils import TestUtils
 
 
 def test_biorbd_model_import():
-    from bioptim.examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
+    from bioptim.examples.toy_examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
     biorbd_model_path = "/../models/triple_pendulum.bioMod"
@@ -33,7 +33,7 @@ def test_biorbd_model_import():
 
 # TODO: test all cases with models containing at least on element (muscles, contacts, ...)
 def test_biorbd_model():
-    from bioptim.examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
+    from bioptim.examples.toy_examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
     biorbd_model_path = "/../models/triple_pendulum.bioMod"

@@ -17,7 +17,7 @@ from ..utils import TestUtils
 @pytest.mark.parametrize("n_threads", [1, 2])
 def test_muscle_activations_and_states_tracking(ode_solver, n_threads, phase_dynamics):
     # Load muscle_activations_tracker
-    from bioptim.examples.muscle_driven_ocp import muscle_activations_tracker as ocp_module
+    from bioptim.examples.toy_examples.muscle_driven_ocp import muscle_activations_tracker as ocp_module
 
     # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:

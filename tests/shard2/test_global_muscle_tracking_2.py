@@ -13,7 +13,7 @@ from ..utils import TestUtils
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 def test_muscle_excitation_with_torque_and_markers_tracking(ode_solver):
     # Load muscle_excitations_tracker
-    from bioptim.examples.muscle_driven_ocp import muscle_excitations_tracker as ocp_module
+    from bioptim.examples.toy_examples.muscle_driven_ocp import muscle_excitations_tracker as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 

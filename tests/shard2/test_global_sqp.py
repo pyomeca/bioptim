@@ -12,7 +12,7 @@ from ..utils import TestUtils
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_pendulum(phase_dynamics):
-    from bioptim.examples.sqp_method import pendulum as ocp_module
+    from bioptim.examples.toy_examples.sqp_method import pendulum as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 

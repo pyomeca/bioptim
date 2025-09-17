@@ -31,7 +31,7 @@ def test_mhe(solver, phase_dynamics):
         if phase_dynamics == PhaseDynamics.ONE_PER_NODE:
             return
 
-    from bioptim.examples.moving_horizon_estimation import mhe as ocp_module
+    from bioptim.examples.toy_examples.moving_horizon_estimation import mhe as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 

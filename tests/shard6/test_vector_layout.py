@@ -87,7 +87,7 @@ def prepare_ocp(
 
 @pytest.mark.parametrize("min_time", [True, False])
 def test_vector_layout_rk4_shared(min_time):
-    from bioptim.examples.getting_started import pendulum as ocp_module
+    from bioptim.examples.getting_started import basic_ocp as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -172,7 +172,7 @@ def test_vector_layout_rk4_shared(min_time):
 
 @pytest.mark.parametrize("duplicate_starting_point", [False, True])
 def test_vector_layout_collocation(duplicate_starting_point):
-    from bioptim.examples.getting_started import pendulum as ocp_module
+    from bioptim.examples.getting_started import basic_ocp as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -257,7 +257,7 @@ def test_vector_layout_collocation(duplicate_starting_point):
 
 
 def test_vector_layout_linear_continuous():
-    from bioptim.examples.getting_started import pendulum as ocp_module
+    from bioptim.examples.getting_started import basic_ocp as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -342,7 +342,7 @@ def test_vector_layout_linear_continuous():
 
 
 def test_vector_layout_linear_continuous_reconstruct():
-    from bioptim.examples.getting_started import pendulum as ocp_module
+    from bioptim.examples.getting_started import basic_ocp as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 

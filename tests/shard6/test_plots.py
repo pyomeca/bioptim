@@ -59,7 +59,7 @@ def test_custom_plotting_4(plots_generator_for_custom_plotting):
 # Test 2 : bounds
 @pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__getting_started__custom_constraints__constant():
-    from bioptim.examples.getting_started import custom_bounds as ocp_module
+    from bioptim.examples.toy_examples.feature_examples import custom_bounds as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -80,7 +80,7 @@ def test__getting_started__custom_constraints__constant():
 
 @pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__getting_started__custom_constraints__constant_with_first_and_last():
-    from bioptim.examples.getting_started import custom_bounds as ocp_module
+    from bioptim.examples.toy_examples.feature_examples import custom_bounds as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -101,7 +101,7 @@ def test__getting_started__custom_constraints__constant_with_first_and_last():
 
 @pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__getting_started__custom_constraints__linear():
-    from bioptim.examples.getting_started import custom_bounds as ocp_module
+    from bioptim.examples.toy_examples.feature_examples import custom_bounds as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -122,7 +122,7 @@ def test__getting_started__custom_constraints__linear():
 
 @pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__getting_started__custom_constraints__each_frame():
-    from bioptim.examples.getting_started import custom_bounds as ocp_module
+    from bioptim.examples.toy_examples.feature_examples import custom_bounds as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -143,7 +143,7 @@ def test__getting_started__custom_constraints__each_frame():
 
 @pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__getting_started__custom_constraints__spline():
-    from bioptim.examples.getting_started import custom_bounds as ocp_module
+    from bioptim.examples.toy_examples.feature_examples import custom_bounds as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -164,7 +164,7 @@ def test__getting_started__custom_constraints__spline():
 
 @pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__getting_started__custom_constraints__custom():
-    from bioptim.examples.getting_started import custom_bounds as ocp_module
+    from bioptim.examples.toy_examples.feature_examples import custom_bounds as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -322,7 +322,7 @@ def test__optimal_time_ocp__min_time_mayer__linear_continuous():
 # Test 6: solvers
 @pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__getting_started__pendulum__rk1():
-    from bioptim.examples.getting_started import pendulum as ocp_module
+    from bioptim.examples.getting_started import basic_ocp as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -343,7 +343,7 @@ def test__getting_started__pendulum__rk1():
 
 @pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__getting_started__pendulum__rk2():
-    from bioptim.examples.getting_started import pendulum as ocp_module
+    from bioptim.examples.getting_started import basic_ocp as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -364,7 +364,7 @@ def test__getting_started__pendulum__rk2():
 
 @pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__getting_started__pendulum__rk4():
-    from bioptim.examples.getting_started import pendulum as ocp_module
+    from bioptim.examples.getting_started import basic_ocp as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -385,7 +385,7 @@ def test__getting_started__pendulum__rk4():
 
 @pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__getting_started__pendulum__trapezoidal():
-    from bioptim.examples.getting_started import pendulum as ocp_module
+    from bioptim.examples.getting_started import basic_ocp as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -407,7 +407,7 @@ def test__getting_started__pendulum__trapezoidal():
 
 @pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__getting_started__pendulum__irk():
-    from bioptim.examples.getting_started import pendulum as ocp_module
+    from bioptim.examples.getting_started import basic_ocp as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -429,7 +429,7 @@ def test__getting_started__pendulum__irk():
 
 @pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__getting_started__pendulum__collocation_legendre():
-    from bioptim.examples.getting_started import pendulum as ocp_module
+    from bioptim.examples.getting_started import basic_ocp as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
@@ -450,7 +450,7 @@ def test__getting_started__pendulum__collocation_legendre():
 
 @pytest.mark.mpl_image_compare(savefig_kwargs={"dpi": 100})
 def test__getting_started__pendulum__collocation_radau():
-    from bioptim.examples.getting_started import pendulum as ocp_module
+    from bioptim.examples.getting_started import basic_ocp as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
