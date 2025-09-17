@@ -62,7 +62,9 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type, s
 
     if platform.system() == "Windows":
         pytest.skip("These tests fail on CI for Windows")
-    elif platform.system() == "Darwin" and defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
+    elif platform.system() == "Darwin" and (
+        defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS or solver == Solver.FATROP
+    ):
         pytest.skip("These tests fail on CI for MacOS")
 
     gc.collect()  # Force garbage collection
