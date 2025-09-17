@@ -203,7 +203,7 @@ def test_pendulum(control_type, interpolation_type, node, objective, phase_dynam
             RuntimeError, match="Lagrange objective are for Node.ALL_SHOOTING or Node.ALL, did you mean Mayer?"
         ):
             ocp = prepare_ocp(
-                biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+                biorbd_model_path=bioptim_folder + "/../models/pendulum.bioMod",
                 n_shooting=n_shooting,
                 objective=objective,
                 interpolation_type=interpolation_type,
@@ -214,7 +214,7 @@ def test_pendulum(control_type, interpolation_type, node, objective, phase_dynam
         return
 
     ocp = prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/../models/pendulum.bioMod",
         n_shooting=n_shooting,
         objective=objective,
         interpolation_type=interpolation_type,

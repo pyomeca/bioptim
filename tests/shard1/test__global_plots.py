@@ -30,7 +30,7 @@ def test_plot_graphs_one_phase(phase_dynamics):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/../models/cube.bioMod",
         n_shooting=30,
         final_time=2,
         phase_dynamics=phase_dynamics,
@@ -52,7 +52,7 @@ def test_plot_check_conditioning(phase_dynamics):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/../models/cube.bioMod",
         long_optim=False,
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
@@ -73,7 +73,7 @@ def test_plot_check_conditioning_live(phase_dynamics):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/../models/cube.bioMod",
         long_optim=False,
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
@@ -91,7 +91,7 @@ def test_plot_ipopt_output_live(phase_dynamics):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/../models/cube.bioMod",
         long_optim=False,
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
@@ -108,7 +108,7 @@ def test_save_ipopt_output():
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/../models/pendulum.bioMod",
         final_time=1,
         n_shooting=40,
     )
@@ -131,7 +131,7 @@ def test_plot_merged_graphs(phase_dynamics):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     # Define the problem
-    model_path = bioptim_folder + "/models/arm26.bioMod"
+    model_path = bioptim_folder + "/../models/arm26.bioMod"
     bio_model = MusclesWithExcitationsBiorbdModel(model_path, with_residual_torque=True)
     final_time = 0.1
     n_shooting = 5
@@ -175,7 +175,7 @@ def test_plot_graphs_multi_phases(phase_dynamics):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/../models/cube.bioMod",
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
     )
@@ -194,7 +194,7 @@ def test_add_new_plot(phase_dynamics):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/../models/cube.bioMod",
         n_shooting=20,
         final_time=0.5,
         phase_dynamics=phase_dynamics,

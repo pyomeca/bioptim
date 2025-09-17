@@ -14,7 +14,7 @@ def test_xia_fatigable_muscles(phase_dynamics):
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
-    model_path = f"{bioptim_folder}/models/arm26_constant.bioMod"
+    model_path = f"{bioptim_folder}/../models/arm26_constant.bioMod"
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
         final_time=0.9,
@@ -102,7 +102,7 @@ def test_xia_stabilized_fatigable_muscles(phase_dynamics):
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
-    model_path = f"{bioptim_folder}/models/arm26_constant.bioMod"
+    model_path = f"{bioptim_folder}/../models/arm26_constant.bioMod"
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
         final_time=0.9,
@@ -190,7 +190,7 @@ def test_michaud_fatigable_muscles(phase_dynamics):
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
-    model_path = f"{bioptim_folder}/models/arm26_constant.bioMod"
+    model_path = f"{bioptim_folder}/../models/arm26_constant.bioMod"
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
         final_time=0.9,
@@ -227,7 +227,7 @@ def test_effort_fatigable_muscles(phase_dynamics):
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
-    model_path = f"{bioptim_folder}/models/arm26_constant.bioMod"
+    model_path = f"{bioptim_folder}/../models/arm26_constant.bioMod"
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
         final_time=0.9,
@@ -306,7 +306,7 @@ def test_fatigable_xia_torque_non_split(phase_dynamics):
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
-    model_path = f"{bioptim_folder}/models/pendulum.bioMod"
+    model_path = f"{bioptim_folder}/../models/pendulum.bioMod"
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
@@ -340,7 +340,7 @@ def test_fatigable_xia_torque_split(phase_dynamics):
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
-    model_path = f"{bioptim_folder}/models/pendulum.bioMod"
+    model_path = f"{bioptim_folder}/../models/pendulum.bioMod"
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
@@ -420,7 +420,7 @@ def test_fatigable_xia_stabilized_torque_split(phase_dynamics):
         pytest.skip("These tests do not pass on Windows.")
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
-    model_path = f"{bioptim_folder}/models/pendulum.bioMod"
+    model_path = f"{bioptim_folder}/../models/pendulum.bioMod"
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
@@ -487,7 +487,7 @@ def test_fatigable_michaud_torque_non_split(phase_dynamics):
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
-    model_path = f"{bioptim_folder}/models/pendulum.bioMod"
+    model_path = f"{bioptim_folder}/../models/pendulum.bioMod"
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
@@ -524,7 +524,7 @@ def test_fatigable_michaud_torque_split(phase_dynamics):
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
-    model_path = f"{bioptim_folder}/models/pendulum.bioMod"
+    model_path = f"{bioptim_folder}/../models/pendulum.bioMod"
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
@@ -592,7 +592,7 @@ def test_fatigable_effort_torque_non_split(phase_dynamics):
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
-    model_path = f"{bioptim_folder}/models/pendulum.bioMod"
+    model_path = f"{bioptim_folder}/../models/pendulum.bioMod"
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
@@ -626,7 +626,7 @@ def test_fatigable_effort_torque_split(phase_dynamics):
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
-    model_path = f"{bioptim_folder}/models/pendulum.bioMod"
+    model_path = f"{bioptim_folder}/../models/pendulum.bioMod"
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
