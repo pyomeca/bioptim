@@ -9,10 +9,10 @@ from ..utils import TestUtils
 def test__acados__cube():
     from bioptim.examples.toy_examples.acados import cube as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../../models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
         n_shooting=10,
         tf=2,
         expand_dynamics=True,
@@ -22,10 +22,10 @@ def test__acados__cube():
 def test__acados__pendulum():
     from bioptim.examples.toy_examples.acados import pendulum as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../../models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
         n_shooting=41,
         final_time=3,
         expand_dynamics=True,
@@ -35,10 +35,10 @@ def test__acados__pendulum():
 def test__acados__static_arm():
     from bioptim.examples.toy_examples.acados import static_arm as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../../models/arm26.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/arm26.bioMod",
         final_time=2,
         x_warm=None,
         n_shooting=51,
@@ -52,13 +52,13 @@ def test__acados__static_arm():
 def test__getting_started__custom_bounds():
     from bioptim.examples.toy_examples.feature_examples import custom_bounds as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     for interpolation_type in InterpolationType:
         if interpolation_type == InterpolationType.ALL_POINTS:
             continue
         ocp_module.prepare_ocp(
-            biorbd_model_path=bioptim_folder + "/../../models/cube.bioMod",
+            biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
             n_shooting=30,
             final_time=2,
             interpolation_type=interpolation_type,
@@ -70,7 +70,7 @@ def test__getting_started__custom_bounds():
 def test__getting_started__custom_objective_weights():
     from bioptim.examples.toy_examples.feature_examples import custom_objective_weights as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     nodes_to_test = [Node.START, Node.INTERMEDIATES, Node.ALL_SHOOTING]
 
@@ -83,7 +83,7 @@ def test__getting_started__custom_objective_weights():
                 continue
 
             ocp_module.prepare_ocp(
-                biorbd_model_path=bioptim_folder + "/../../models/cube.bioMod",
+                biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
                 n_shooting=30,
                 final_time=2,
                 interpolation_type=interpolation_type,
@@ -96,10 +96,10 @@ def test__getting_started__custom_objective_weights():
 def test__getting_started__custom_constraints():
     from bioptim.examples.toy_examples.feature_examples import custom_constraint as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../../models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )
@@ -108,10 +108,10 @@ def test__getting_started__custom_constraints():
 def test__getting_started__custom_dynamics():
     from tests import test_utils_ocp as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../bioptim/examples/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )
@@ -122,10 +122,10 @@ def test__getting_started__custom_dynamics():
 def test__getting_started__custom_initial_guess(interpolation, random):
     from bioptim.examples.toy_examples.feature_examples import custom_initial_guess as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp_module.prepare_ocp(
-        bioptim_folder + "/../../models/cube.bioMod",
+        bioptim_folder + "examples/models/cube.bioMod",
         n_shooting=30,
         final_time=2,
         random_init=random,
@@ -138,10 +138,10 @@ def test__getting_started__custom_initial_guess(interpolation, random):
 def test__getting_started__custom_objectives():
     from bioptim.examples.getting_started import custom_objectives as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )
@@ -150,12 +150,12 @@ def test__getting_started__custom_objectives():
 def test__getting_started__custom_parameters():
     from bioptim.examples.getting_started import custom_parameters as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     target_g = np.zeros((3, 1))
     target_g[2] = -9.81
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
         final_time=3,
         n_shooting=100,
         optim_gravity=True,
@@ -174,10 +174,10 @@ def test__getting_started__custom_parameters():
 def test__getting_started__custom_phase_transitions():
     from bioptim.examples.getting_started import custom_phase_transitions as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )
@@ -186,10 +186,10 @@ def test__getting_started__custom_phase_transitions():
 def test__getting_started__custom_plotting():
     from bioptim.examples.getting_started import custom_plotting as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
         final_time=2,
         n_shooting=50,
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
@@ -200,10 +200,10 @@ def test__getting_started__custom_plotting():
 def test__getting_started__example_continuity_as_objective():
     from bioptim.examples.toy_examples.feature_examples import example_continuity_as_objective as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp_module.prepare_ocp_first_pass(
-        biorbd_model_path=bioptim_folder + "/../../models/pendulum_maze.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/pendulum_maze.bioMod",
         final_time=1,
         n_shooting=100,
         state_continuity_weight=1_000_000,
@@ -213,10 +213,10 @@ def test__getting_started__example_continuity_as_objective():
 def test__getting_started__example_cyclic_movement():
     from bioptim.examples.getting_started import example_cyclic_movement as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
         n_shooting=30,
         final_time=2,
         loop_from_constraint=True,
@@ -228,10 +228,10 @@ def test__getting_started__example_cyclic_movement():
 def test__getting_started__example_external_forces():
     from bioptim.examples.getting_started import example_external_forces as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../models/cube_with_forces.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube_with_forces.bioMod",
         expand_dynamics=False,
     )
 
@@ -241,10 +241,10 @@ def test__getting_started__example_inequality_constraint():
         example_inequality_constraint as ocp_module,
     )
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../models/2segments_4dof_2contacts.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/2segments_4dof_2contacts.bioMod",
         phase_time=0.3,
         n_shooting=10,
         min_bound=50,
@@ -267,10 +267,10 @@ def test__getting_started__example_multinode_constraints():
         example_multinode_constraints as ocp_module,
     )
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../../models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         n_shootings=(8, 8, 8),
         expand_dynamics=False,
@@ -282,10 +282,10 @@ def test__getting_started__example_multinode_objective():
         example_multinode_objective as ocp_module,
     )
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
         final_time=1,
         n_shooting=10,
         expand_dynamics=False,
@@ -309,10 +309,10 @@ def test__getting_started__example_multinode_objective():
 def test__getting_started__example_multiphase():
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
         long_optim=True,
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
@@ -322,10 +322,10 @@ def test__getting_started__example_multiphase():
 def test__getting_started__example_multiphase_different_ode_solvers():
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
         long_optim=True,
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
@@ -337,7 +337,7 @@ def test__getting_started__example_multiphase_different_ode_solvers():
         match="ode_solver should be built an instance of OdeSolver",
     ):
         ocp_module.prepare_ocp(
-            biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+            biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
             long_optim=True,
             phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
             expand_dynamics=False,
@@ -362,10 +362,10 @@ def test__getting_started__example_simulation():
 def test__getting_started__pendulum():
     from bioptim.examples.getting_started import basic_ocp as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
         final_time=3,
         n_shooting=100,
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
@@ -378,10 +378,10 @@ def test__getting_started__pendulum_constrained_states_controls():
         pendulum_constrained_states_controls as ocp_module,
     )
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../../models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
         final_time=3,
         n_shooting=100,
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
@@ -405,10 +405,10 @@ def test__muscle_driven_ocp__muscle_excitations_tracker():
 def test__muscle_driven_ocp__static_arm():
     from bioptim.examples.toy_examples.muscle_driven_ocp import static_arm as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../../models/arm26.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/arm26.bioMod",
         final_time=3,
         n_shooting=50,
         weight=1000,
@@ -420,10 +420,10 @@ def test__muscle_driven_ocp__static_arm():
 def test__muscle_driven_ocp__static_arm_with_contact():
     from bioptim.examples.toy_examples.muscle_driven_ocp import static_arm_with_contact as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../../models/arm26_with_contact.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/arm26_with_contact.bioMod",
         final_time=1,
         n_shooting=30,
         weight=1000,
@@ -439,14 +439,14 @@ def test__optimal_time_ocp__multiphase_time_constraint():
         multiphase_time_constraint as ocp_module,
     )
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     final_time = (2, 5, 4)
     time_min = (1, 3, 0.1)
     time_max = (2, 4, 0.8)
     ns = (20, 30, 20)
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../../models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
         final_time=final_time,
         time_min=time_min,
         time_max=time_max,
@@ -459,10 +459,10 @@ def test__optimal_time_ocp__multiphase_time_constraint():
 def test__optimal_time_ocp__pendulum_min_time_Mayer():
     from bioptim.examples.toy_examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../../models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
         final_time=2,
         n_shooting=50,
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
@@ -473,10 +473,10 @@ def test__optimal_time_ocp__pendulum_min_time_Mayer():
 def test__optimal_time_ocp__time_constraint():
     from bioptim.examples.toy_examples.optimal_time_ocp import time_constraint as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../../models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
         final_time=2,
         n_shooting=50,
         time_min=0.6,
@@ -491,10 +491,10 @@ def test__symmetrical_torque_driven_ocp__symmetry_by_constraint():
         symmetry_by_constraint as ocp_module,
     )
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../../models/cubeSym.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cubeSym.bioMod",
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )

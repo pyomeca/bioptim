@@ -24,10 +24,10 @@ def test_muscle_driven_ocp(ode_solver, phase_dynamics):
     else:
         control_type = ControlType.CONSTANT
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
-        bioptim_folder + "/../../models/arm26_muscle_driven_ocp.bioMod",
+        bioptim_folder + "examples/models/arm26_muscle_driven_ocp.bioMod",
         final_time=0.1,
         n_shooting=5,
         weight=1,

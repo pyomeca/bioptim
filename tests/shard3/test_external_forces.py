@@ -54,7 +54,7 @@ def test_example_external_forces(
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube_with_forces.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube_with_forces.bioMod",
         phase_dynamics=phase_dynamics,
         external_force_method=method,
         use_sx=use_sx,
@@ -239,7 +239,7 @@ def test_example_external_forces_all_at_once(together: bool):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube_with_forces.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube_with_forces.bioMod",
         together=together,
     )
 

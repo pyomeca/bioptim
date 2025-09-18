@@ -15,7 +15,7 @@ def test_serialize_deserialize():
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
         final_time=1,
         n_shooting=40,
     )

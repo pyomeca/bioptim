@@ -12,11 +12,11 @@ def test_noisy_multiphase(phase_dynamics):
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
     )
-    bio_model = BiorbdModel(bioptim_folder + "/models/cube.bioMod")
+    bio_model = BiorbdModel(bioptim_folder + "examples/models/cube.bioMod")
     n_shooting = [20, 30, 20]
 
     # Path constraint
@@ -741,11 +741,11 @@ def test_add_wrong_magnitude(magnitude, raised_str, phase_dynamics):
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
     )
-    bio_model = BiorbdModel(bioptim_folder + "/models/cube.bioMod")
+    bio_model = BiorbdModel(bioptim_folder + "examples/models/cube.bioMod")
     n_shooting = [20, 30, 20]
 
     # Path constraint
@@ -791,11 +791,11 @@ def test_add_wrong_bound_push(bound_push, raised_str):
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=True,
     )
-    bio_model = BiorbdModel(bioptim_folder + "/models/cube.bioMod")
+    bio_model = BiorbdModel(bioptim_folder + "examples/models/cube.bioMod")
     n_shooting = [20, 30, 20]
 
     # Path constraint
@@ -838,11 +838,11 @@ def test_add_wrong_seed(seed, raised_str):
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=True,
     )
-    bio_model = BiorbdModel(bioptim_folder + "/models/cube.bioMod")
+    bio_model = BiorbdModel(bioptim_folder + "examples/models/cube.bioMod")
     n_shooting = [20, 30, 20]
 
     # Path constraint
@@ -878,11 +878,11 @@ def test_add_wrong_bounds():
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=True,
     )
-    bio_model = BiorbdModel(bioptim_folder + "/models/cube.bioMod")
+    bio_model = BiorbdModel(bioptim_folder + "examples/models/cube.bioMod")
     n_shooting = [20, 30, 20]
 
     nb_phases = ocp.n_phases
@@ -928,11 +928,11 @@ def test_add_wrong_n_shooting():
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=True,
     )
-    bio_model = BiorbdModel(bioptim_folder + "/models/cube.bioMod")
+    bio_model = BiorbdModel(bioptim_folder + "examples/models/cube.bioMod")
 
     nb_phases = ocp.n_phases
 

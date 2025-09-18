@@ -29,7 +29,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_socp(
-        biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/LeuvenArmModel.bioMod",
         final_time=final_time,
         n_shooting=n_shooting,
         polynomial_degree=3,
@@ -96,7 +96,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
 
     # Test the automatic initialization of the stochastic variables
     socp = ocp_module.prepare_socp(
-        biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/LeuvenArmModel.bioMod",
         final_time=final_time,
         n_shooting=n_shooting,
         polynomial_degree=3,

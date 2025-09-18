@@ -18,7 +18,7 @@ def test_pendulum_min_time_mayer(ode_solver, phase_dynamics):
     # Load pendulum_min_time_Mayer
     from bioptim.examples.toy_examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     if ode_solver == OdeSolver.IRK:
         ft = 2
@@ -33,7 +33,7 @@ def test_pendulum_min_time_mayer(ode_solver, phase_dynamics):
         raise ValueError("Test not implemented")
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../../models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
         final_time=ft,
         n_shooting=ns,
         ode_solver=ode_solver(),
@@ -104,13 +104,13 @@ def test_pendulum_min_time_mayer_constrained(ode_solver, phase_dynamics):
     # Load pendulum_min_time_Mayer
     from bioptim.examples.toy_examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     tf = 1
     ns = 30
     min_tf = 0.5
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../../models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
         final_time=tf,
         n_shooting=ns,
         ode_solver=ode_solver(),

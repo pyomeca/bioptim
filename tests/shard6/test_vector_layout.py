@@ -114,7 +114,7 @@ def test_vector_layout_rk4_shared(min_time):
     tau_init = np.vstack((init, np.array(init) * 2))
 
     ocp = prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
         ode_solver=OdeSolver.RK4(),
         control_type=ControlType.CONSTANT,
         n_shooting=10,
@@ -210,7 +210,7 @@ def test_vector_layout_collocation(duplicate_starting_point):
     tau_init = np.vstack((init, np.array(init) * 2))
 
     ocp = prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
         ode_solver=OdeSolver.COLLOCATION(
             polynomial_degree=intermediate_point, duplicate_starting_point=duplicate_starting_point
         ),
@@ -284,7 +284,7 @@ def test_vector_layout_linear_continuous():
     tau_init = np.vstack((init, np.array(init) * 2))
 
     ocp = prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
         ode_solver=OdeSolver.RK4(),
         control_type=ControlType.LINEAR_CONTINUOUS,
         n_shooting=10,
@@ -369,7 +369,7 @@ def test_vector_layout_linear_continuous_reconstruct():
     tau_init = np.vstack((init, np.array(init) * 2))
 
     ocp = prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
         ode_solver=OdeSolver.RK4(),
         control_type=ControlType.LINEAR_CONTINUOUS,
         n_shooting=10,
@@ -440,7 +440,7 @@ def test_parameters():
     target_g = np.zeros((3, 1))
     target_g[2] = -9.81
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
         final_time=3,
         n_shooting=10,
         optim_gravity=True,
@@ -492,7 +492,7 @@ def test_vector_layout_multiple_phases():
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
         long_optim=False,
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
@@ -555,7 +555,7 @@ def test_vector_layout_algebraic_states():
 
     # --- Prepare the ocp --- #
     ocp, model = two_pendulums_algebraic.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/two_pendulums.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/two_pendulums.bioMod",
         n_shooting=5,
         final_time=1,
         expand_dynamics=False,

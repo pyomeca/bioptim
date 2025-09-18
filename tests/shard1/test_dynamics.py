@@ -1198,10 +1198,10 @@ def test_custom_dynamics(contact_types, phase_dynamics):
 def test_with_contact_error():
     from bioptim.examples.getting_started import basic_ocp as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()    
 
     with pytest.raises(ValueError, match="No rigid contact defined in the model, consider changing the ContactType."):
         TorqueBiorbdModel(
-            bioptim_folder + "/../models/pendulum.bioMod",
+            bioptim_folder + "examples/models/pendulum.bioMod",
             contact_types=[ContactType.RIGID_EXPLICIT],
         )

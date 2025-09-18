@@ -24,7 +24,7 @@ def test_maximize_predicted_height_CoM(objective_name, phase_dynamics):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/2segments_4dof_2contacts.bioMod",
         phase_time=0.5,
         n_shooting=5,
         use_actuators=False,
@@ -98,7 +98,7 @@ def test_maximize_predicted_height_CoM_with_actuators(phase_dynamics):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/2segments_4dof_2contacts.bioMod",
         phase_time=0.5,
         n_shooting=20,
         use_actuators=True,
@@ -146,7 +146,7 @@ def test_maximize_predicted_height_CoM_rigidbody_dynamics(phase_dynamics):
     ode_solver = OdeSolver.RK4()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/2segments_4dof_2contacts.bioMod",
         phase_time=0.5,
         n_shooting=20,
         use_actuators=False,

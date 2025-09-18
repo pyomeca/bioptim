@@ -247,7 +247,7 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
             match="use_sx=True and OdeSolver.IRK are not yet compatible",
         ):
             ocp = prepare_ocp(
-                biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+                biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
                 n_phase=n_phase,
                 ode_solver=integrator(),
                 control_type=control_type,
@@ -262,7 +262,7 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
             match="TRAPEZOIDAL cannot be used with piece-wise constant controls, please use ControlType.CONSTANT_WITH_LAST_NODE or ControlType.LINEAR_CONTINUOUS instead.",
         ):
             ocp = prepare_ocp(
-                biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+                biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
                 n_phase=n_phase,
                 ode_solver=integrator(),
                 control_type=control_type,
@@ -273,7 +273,7 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
 
     # --- Solve the program --- #
     ocp = prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
         n_phase=n_phase,
         ode_solver=integrator(),
         control_type=control_type,

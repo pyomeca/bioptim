@@ -314,7 +314,7 @@ def constraint_prepare_ocp(
 )
 def test_pendulum_objective(control_type, interpolation_type, node, objective, phase_dynamics):
 
-    bioptim_folder = TestUtils.module_folder(objective_ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
     n_shooting = 30
     np.random.seed(42)  # For reproducibility of spline
 
@@ -324,7 +324,7 @@ def test_pendulum_objective(control_type, interpolation_type, node, objective, p
             RuntimeError, match="Lagrange objective are for Node.ALL_SHOOTING or Node.ALL, did you mean Mayer?"
         ):
             ocp = objective_prepare_ocp(
-                biorbd_model_path=bioptim_folder + "/../../models/pendulum.bioMod",
+                biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
                 n_shooting=n_shooting,
                 objective=objective,
                 interpolation_type=interpolation_type,
@@ -334,8 +334,8 @@ def test_pendulum_objective(control_type, interpolation_type, node, objective, p
             )
         return
 
-    ocp = prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../models/pendulum.bioMod",
+    ocp = objective_prepare_ocp(
+        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
         n_shooting=n_shooting,
         objective=objective,
         interpolation_type=interpolation_type,
@@ -599,12 +599,12 @@ def test_pendulum_objective(control_type, interpolation_type, node, objective, p
 )
 def test_pendulum_constraint(control_type, interpolation_type, node, phase_dynamics):
 
-    bioptim_folder = TestUtils.module_folder(objective_ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
     n_shooting = 30
     np.random.seed(42)  # For reproducibility of spline
 
     ocp = constraint_prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../../models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
         n_shooting=n_shooting,
         interpolation_type=interpolation_type,
         node=node,
@@ -803,12 +803,12 @@ def test_pendulum_constraint(control_type, interpolation_type, node, phase_dynam
 )
 def test_pendulum_integration_rule(control_type, interpolation_type, integration_rule):
 
-    bioptim_folder = TestUtils.module_folder(objective_ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
     n_shooting = 30
     np.random.seed(42)  # For reproducibility of spline
 
     ocp = objective_prepare_ocp(
-        biorbd_model_path=bioptim_folder + "../../models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
         n_shooting=n_shooting,
         objective="lagrange",
         interpolation_type=interpolation_type,
@@ -886,8 +886,6 @@ def test_pendulum_integration_rule(control_type, interpolation_type, integration
 
 
 def test_bad_weights():
-
-    bioptim_folder = TestUtils.module_folder(objective_ocp_module)
 
     with pytest.raises(
         ValueError,

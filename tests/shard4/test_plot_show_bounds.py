@@ -14,7 +14,7 @@ def test_pendulum_show_bounds():
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
         final_time=1,
         n_shooting=30,
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,

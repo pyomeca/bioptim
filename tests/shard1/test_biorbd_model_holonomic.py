@@ -9,10 +9,9 @@ from ..utils import TestUtils
 
 
 def test_model_holonomic():
-    from bioptim.examples.toy_examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
-    biorbd_model_path = bioptim_folder + "/../../models/triple_pendulum.bioMod"
+    bioptim_folder = TestUtils.bioptim_folder()    
+    biorbd_model_path = bioptim_folder + "examples/models/triple_pendulum.bioMod"
     model = HolonomicBiorbdModel(biorbd_model_path)
 
     holonomic_constrains = HolonomicConstraintsList()
@@ -198,11 +197,11 @@ def test_example_two_pendulums():
     """Test the holonomic_constraints/two_pendulums example"""
     from bioptim.examples.toy_examples.holonomic_constraints import two_pendulums
 
-    bioptim_folder = TestUtils.module_folder(two_pendulums)
+    bioptim_folder = TestUtils.bioptim_folder()    
 
     # --- Prepare the ocp --- #
     ocp, model = two_pendulums.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../../models/two_pendulums.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/two_pendulums.bioMod",
         n_shooting=10,
         final_time=1,
         expand_dynamics=False,
@@ -229,11 +228,11 @@ def test_example_two_pendulums_algebraic():
     if platform.system() == "Windows":
         pytest.skip("This test is skipped on Windows because too sensitive.")
 
-    bioptim_folder = TestUtils.module_folder(two_pendulums_algebraic)
+    bioptim_folder = TestUtils.bioptim_folder()    
 
     # --- Prepare the ocp --- #
     ocp, model = two_pendulums_algebraic.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../../models/two_pendulums.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/two_pendulums.bioMod",
         n_shooting=5,
         final_time=1,
         expand_dynamics=False,

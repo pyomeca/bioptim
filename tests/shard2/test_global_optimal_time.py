@@ -37,7 +37,7 @@ def test_pendulum_max_time_mayer_constrained(ode_solver, phase_dynamics):
     if platform.system() == "Windows" and ode_solver == OdeSolver.COLLOCATION:
         pytest.skip("These tests do not pass on Windows.")
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ns = 30
     tf = 1
@@ -45,7 +45,7 @@ def test_pendulum_max_time_mayer_constrained(ode_solver, phase_dynamics):
     control_type = ControlType.CONSTANT_WITH_LAST_NODE if ode_solver == OdeSolver.TRAPEZOIDAL else ControlType.CONSTANT
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../../models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
         final_time=tf,
         n_shooting=ns,
         ode_solver=ode_solver(),
@@ -105,7 +105,7 @@ def test_time_constraint(ode_solver, phase_dynamics):
     # Load time_constraint
     from bioptim.examples.toy_examples.optimal_time_ocp import time_constraint as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     if ode_solver == OdeSolver.IRK:
         ft = 2
@@ -120,7 +120,7 @@ def test_time_constraint(ode_solver, phase_dynamics):
         raise ValueError("Test not implemented")
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../../models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
         final_time=ft,
         n_shooting=ns,
         time_min=0.2,
@@ -203,10 +203,10 @@ def test_monophase_time_constraint(ode_solver, phase_dynamics):
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.RK8:
         return
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
         final_time=(2, 5, 4),
         time_min=(1, 3, 0.1),
         time_max=(2, 4, 0.8),
@@ -268,10 +268,10 @@ def test_multiphase_time_constraint(ode_solver, phase_dynamics):
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
         return
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
         final_time=(2, 5, 4),
         time_min=(1, 3, 0.1),
         time_max=(2, 4, 0.8),
@@ -342,7 +342,7 @@ def test_multiphase_time_constraint_with_phase_time_equality(ode_solver, phase_d
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
         final_time=(2, 5, 4),
         time_min=(0.7, 3, 0.1),
         time_max=(2, 4, 1),

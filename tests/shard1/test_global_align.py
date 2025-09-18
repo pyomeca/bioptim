@@ -17,10 +17,10 @@ from tests.utils import TestUtils
 def test_track_segment_on_rt(ode_solver, phase_dynamics):
     from bioptim.examples.toy_examples.tracking import track_segment_on_rt as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../../models/cube_and_line.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube_and_line.bioMod",
         final_time=0.5,
         n_shooting=8,
         ode_solver=ode_solver(),
@@ -63,10 +63,10 @@ def test_track_segment_on_rt(ode_solver, phase_dynamics):
 def test_track_marker_on_segment(ode_solver, phase_dynamics):
     from bioptim.examples.toy_examples.tracking import track_marker_on_segment as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../../models/cube_and_line.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube_and_line.bioMod",
         final_time=0.5,
         n_shooting=8,
         initialize_near_solution=True,

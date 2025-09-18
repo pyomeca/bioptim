@@ -263,7 +263,7 @@ from ..utils import TestUtils
 #             NotImplementedError, match="Wrong number or type of arguments for overloaded function 'MX_set'"
 #         ):
 #             ocp = ocp_module.prepare_socp(
-#                 biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
+#                 biorbd_model_path=bioptim_folder + "examples/models/LeuvenArmModel.bioMod",
 #                 final_time=final_time,
 #                 n_shooting=n_shooting,
 #                 hand_final_position=hand_final_position,
@@ -274,7 +274,7 @@ from ..utils import TestUtils
 #         return
 #
 #     ocp = ocp_module.prepare_socp(
-#         biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
+#         biorbd_model_path=bioptim_folder + "examples/models/LeuvenArmModel.bioMod",
 #         final_time=final_time,
 #         n_shooting=n_shooting,
 #         hand_final_position=hand_final_position,
@@ -421,7 +421,7 @@ from ..utils import TestUtils
 #     bioptim_folder = TestUtils.module_folder(ocp_module)
 #
 #     ocp = ocp_module.prepare_socp(
-#         biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
+#         biorbd_model_path=bioptim_folder + "examples/models/LeuvenArmModel.bioMod",
 #         final_time=final_time,
 #         n_shooting=n_shooting,
 #         hand_final_position=hand_final_position,

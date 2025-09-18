@@ -18,7 +18,7 @@ def test_merge_combinations(scaled):
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod", final_time=2, n_shooting=10
+        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod", final_time=2, n_shooting=10
     )
 
     solver = Solver.IPOPT()
@@ -64,7 +64,7 @@ def test_merge_phases_one_phase(phase_dynamics):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
         final_time=2,
         n_shooting=10,
         phase_dynamics=phase_dynamics,
@@ -91,7 +91,7 @@ def test_merge_phases_multi_phase(phase_dynamics):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
     )
@@ -119,7 +119,7 @@ def test_interpolate(phase_dynamics):
     n_shooting = 10
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
         final_time=1,
         n_shooting=n_shooting,
         phase_dynamics=phase_dynamics,
@@ -161,7 +161,7 @@ def test_interpolate_multiphases(ode_solver, phase_dynamics):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
         ode_solver=ode_solver(),
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
@@ -200,7 +200,7 @@ def test_interpolate_multiphases_merge_phase(phase_dynamics):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
     )
@@ -236,7 +236,7 @@ def test_integrate(integrator, ode_solver, phase_dynamics):
     n_shooting = 30 if integrator == SolutionIntegrator.SCIPY_RK45 else 10
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
         final_time=0.9,
         n_shooting=n_shooting,
         ode_solver=ode_solver(),
@@ -288,7 +288,7 @@ def test_integrate_single_shoot(ode_solver, phase_dynamics):
     n_shooting = 10
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
         final_time=0.9,
         n_shooting=n_shooting,
         ode_solver=ode_solver(),
@@ -344,7 +344,7 @@ def test_integrate_single_shoot_use_scipy(ode_solver, phase_dynamics):
     n_shooting = 10
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
         final_time=0.9,
         n_shooting=n_shooting,
         ode_solver=ode_solver(),
@@ -487,7 +487,7 @@ def test_integrate_all_cases(shooting, merge, integrator, ode_solver, phase_dyna
     n_shooting = 10 if integrator == SolutionIntegrator.OCP else 30
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
         final_time=1,
         n_shooting=n_shooting,
         ode_solver=ode_solver(),
@@ -542,7 +542,7 @@ def test_integrate_multiphase(shooting, integrator, ode_solver, phase_dynamics, 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
         ode_solver=ode_solver(),
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
@@ -627,7 +627,7 @@ def test_check_models_comes_from_same_super_class():
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=True,
     )
@@ -665,7 +665,7 @@ def test_integrate_multiphase_merged(shooting, integrator, ode_solver, phase_dyn
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
         ode_solver=ode_solver(),
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,

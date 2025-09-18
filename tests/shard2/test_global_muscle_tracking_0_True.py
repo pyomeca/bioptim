@@ -25,11 +25,11 @@ def test_muscle_activations_and_states_tracking(ode_solver, n_threads, phase_dyn
     if n_threads > 1 and phase_dynamics == PhaseDynamics.ONE_PER_NODE:
         pytest.skip("Redundant test")
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     # Define the problem
     use_residual_torque = True
-    model_path = bioptim_folder + "/../../models/arm26.bioMod"
+    model_path = bioptim_folder + "examples/models/arm26.bioMod"
     bio_model = MusclesBiorbdModel(model_path, with_residual_torque=use_residual_torque)
     final_time = 0.1
     n_shooting = 5

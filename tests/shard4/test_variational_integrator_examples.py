@@ -20,7 +20,7 @@ def test_variational_pendulum(use_sx):
 
     # --- Prepare the ocp --- #
     ocp = example_variational_integrator_pendulum.prepare_ocp(
-        bio_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        bio_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
         final_time=1,
         n_shooting=20,
         use_sx=use_sx,

@@ -13,10 +13,10 @@ def test_continuity_linear_continuous_global():
     """
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()    
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
         long_optim=False,
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=True,
