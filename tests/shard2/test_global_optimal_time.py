@@ -333,13 +333,13 @@ def test_multiphase_time_constraint(ode_solver, phase_dynamics):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 def test_multiphase_time_constraint_with_phase_time_equality(ode_solver, phase_dynamics):
     # Load time_constraint
-    from bioptim.examples.optimal_time_ocp import multiphase_time_constraint as ocp_module
+    from bioptim.examples.toy_examples.optimal_time_ocp import multiphase_time_constraint as ocp_module
 
     # For reducing time phase_dynamics == PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
         return
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
