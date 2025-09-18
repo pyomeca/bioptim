@@ -17,7 +17,7 @@ def test_pendulum(phase_dynamics):
     bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
         final_time=1,
         n_shooting=5,
         phase_dynamics=phase_dynamics,

@@ -11,7 +11,7 @@ from ..utils import TestUtils
 def test_model_holonomic():
 
     bioptim_folder = TestUtils.bioptim_folder()
-    biorbd_model_path = bioptim_folder + "examples/models/triple_pendulum.bioMod"
+    biorbd_model_path = bioptim_folder + "/examples/models/triple_pendulum.bioMod"
     model = HolonomicBiorbdModel(biorbd_model_path)
 
     holonomic_constrains = HolonomicConstraintsList()
@@ -201,7 +201,7 @@ def test_example_two_pendulums():
 
     # --- Prepare the ocp --- #
     ocp, model = two_pendulums.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "examples/models/two_pendulums.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/two_pendulums.bioMod",
         n_shooting=10,
         final_time=1,
         expand_dynamics=False,
@@ -232,7 +232,7 @@ def test_example_two_pendulums_algebraic():
 
     # --- Prepare the ocp --- #
     ocp, model = two_pendulums_algebraic.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "examples/models/two_pendulums.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/two_pendulums.bioMod",
         n_shooting=5,
         final_time=1,
         expand_dynamics=False,

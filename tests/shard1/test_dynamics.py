@@ -1202,6 +1202,6 @@ def test_with_contact_error():
 
     with pytest.raises(ValueError, match="No rigid contact defined in the model, consider changing the ContactType."):
         TorqueBiorbdModel(
-            bioptim_folder + "examples/models/pendulum.bioMod",
+            bioptim_folder + "/examples/models/pendulum.bioMod",
             contact_types=[ContactType.RIGID_EXPLICIT],
         )

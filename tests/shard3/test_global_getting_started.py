@@ -98,7 +98,7 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type):
             match=f"CVODES is not yet implemented",
         ):
             ocp_module.prepare_ocp(
-                biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
+                biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
                 final_time=2,
                 n_shooting=10,
                 n_threads=n_threads,
@@ -115,7 +115,7 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type):
             match=f"use_sx=True and OdeSolver.{ode_solver_obj.integrator.__name__} are not yet compatible",
         ):
             ocp_module.prepare_ocp(
-                biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
+                biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
                 final_time=2,
                 n_shooting=10,
                 n_threads=n_threads,
@@ -131,7 +131,7 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type):
             match=f"CVODES cannot be used with dynamics that depends on time",
         ):
             ocp_module.prepare_ocp(
-                biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
+                biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
                 final_time=2,
                 n_shooting=10,
                 n_threads=n_threads,
@@ -148,7 +148,7 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type):
         control_type = ControlType.CONSTANT
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
         final_time=1,
         n_shooting=30,
         n_threads=n_threads,
@@ -512,7 +512,7 @@ def test_cyclic_objective(ode_solver, phase_dynamics):
 
     np.random.seed(42)
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
         final_time=1,
         n_shooting=10,
         loop_from_constraint=False,
@@ -588,7 +588,7 @@ def test_cyclic_constraint(ode_solver, phase_dynamics):
 
     np.random.seed(42)
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
         final_time=1,
         n_shooting=10,
         loop_from_constraint=True,
@@ -664,7 +664,7 @@ def test_phase_transitions(ode_solver, phase_dynamics):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
         ode_solver=ode_solver(),
         phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver != OdeSolver.IRK,
@@ -747,7 +747,7 @@ def test_parameter_optimization(ode_solver, phase_dynamics):
     ode_solver_orig = ode_solver
     ode_solver = ode_solver()
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
         final_time=1,
         n_shooting=20,
         optim_gravity=True,
@@ -967,7 +967,7 @@ def test_example_external_forces(ode_solver, phase_dynamics, n_threads, use_sx, 
     ode_solver = ode_solver()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "examples/models/cube_with_forces.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cube_with_forces.bioMod",
         ode_solver=ode_solver,
         expand_dynamics=ode_solver_orig != OdeSolver.IRK,
         phase_dynamics=phase_dynamics,
@@ -1105,7 +1105,7 @@ def test_example_multiphase(ode_solver_type, phase_dynamics):
 
     ode_solver = ode_solver_type()
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
         ode_solver=ode_solver,
         phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver_type != OdeSolver.IRK,
@@ -1209,7 +1209,7 @@ def test_contact_forces_inequality_greater_than_constraint(ode_solver, phase_dyn
     if expand_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and ode_solver == OdeSolver.IRK:
         with pytest.raises(RuntimeError):
             ocp_module.prepare_ocp(
-                biorbd_model_path=bioptim_folder + "examples/models/2segments_4dof_2contacts.bioMod",
+                biorbd_model_path=bioptim_folder + "/examples/models/2segments_4dof_2contacts.bioMod",
                 phase_time=0.1,
                 n_shooting=10,
                 min_bound=min_bound,
@@ -1222,7 +1222,7 @@ def test_contact_forces_inequality_greater_than_constraint(ode_solver, phase_dyn
         return
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "examples/models/2segments_4dof_2contacts.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/2segments_4dof_2contacts.bioMod",
         phase_time=0.1,
         n_shooting=10,
         min_bound=min_bound,
@@ -1294,7 +1294,7 @@ def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
 
     max_bound = 75
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "examples/models/2segments_4dof_2contacts.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/2segments_4dof_2contacts.bioMod",
         phase_time=0.1,
         n_shooting=10,
         min_bound=-np.inf,
@@ -1366,7 +1366,7 @@ def test_multinode_objective(ode_solver, phase_dynamics):
             ),
         ):
             ocp = ocp_module.prepare_ocp(
-                biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
+                biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
                 n_shooting=n_shooting,
                 final_time=1,
                 ode_solver=ode_solver,
@@ -1376,7 +1376,7 @@ def test_multinode_objective(ode_solver, phase_dynamics):
         return
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
         n_shooting=n_shooting,
         final_time=1,
         ode_solver=ode_solver,
@@ -1509,7 +1509,7 @@ def test_multinode_constraints_too_much_constraints(ode_solver, too_much_constra
             "into more penalties or use phase_dynamics=PhaseDynamics.ONE_PER_NODE",
         ):
             ocp_module.prepare_ocp(
-                biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
+                biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
                 n_shootings=(8, 8, 8),
                 ode_solver=ode_solver,
                 phase_dynamics=phase_dynamics,
@@ -1518,7 +1518,7 @@ def test_multinode_constraints_too_much_constraints(ode_solver, too_much_constra
             )
     else:
         ocp_module.prepare_ocp(
-            biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
+            biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
             n_shootings=(8, 8, 8),
             ode_solver=ode_solver,
             phase_dynamics=phase_dynamics,
@@ -1549,7 +1549,7 @@ def test_multinode_constraints(ode_solver, phase_dynamics):
     ode_solver = ode_solver()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
         n_shootings=(8, 10, 8),
         ode_solver=ode_solver,
         phase_dynamics=phase_dynamics,
@@ -1617,7 +1617,7 @@ def test_multistart():
     tik = time.time()  # Time before starting to build the problem
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
-    bio_model_path = [bioptim_folder + "examples/models/pendulum.bioMod"]
+    bio_model_path = [bioptim_folder + "/examples/models/pendulum.bioMod"]
     final_time = [1]
     n_shooting = [5, 10]
     seed = [2, 1]
@@ -1828,7 +1828,7 @@ def test_example_variable_scaling(phase_dynamics):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
         final_time=1 / 10,
         n_shooting=30,
         phase_dynamics=phase_dynamics,

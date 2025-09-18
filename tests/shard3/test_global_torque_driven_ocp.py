@@ -36,7 +36,7 @@ def test_track_markers(ode_solver, actuator_type, phase_dynamics):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
         n_shooting=30,
         final_time=2,
         actuator_type=actuator_type,
@@ -91,7 +91,7 @@ def test_track_markers_changing_constraints(ode_solver, phase_dynamics):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
         n_shooting=30,
         final_time=2,
         ode_solver=ode_solver(),
@@ -189,7 +189,7 @@ def test_track_markers_with_actuators(ode_solver, phase_dynamics):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
         n_shooting=30,
         final_time=2,
         actuator_type=1,
@@ -244,7 +244,7 @@ def test_track_marker_2D_pendulum(ode_solver, phase_dynamics):
     ode_solver = ode_solver()
 
     # Define the problem
-    model_path = bioptim_folder + "examples/models/pendulum.bioMod"
+    model_path = bioptim_folder + "/examples/models/pendulum.bioMod"
     bio_model = TorqueBiorbdModel(model_path)
 
     final_time = 2
@@ -376,7 +376,7 @@ def test_example_quaternions(phase_dynamics):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     # Define the problem
-    model_path = bioptim_folder + "examples/models/trunk_and_2arm_quaternion.bioMod"
+    model_path = bioptim_folder + "/examples/models/trunk_and_2arm_quaternion.bioMod"
     final_time = 0.25
     n_shooting = 6
 
@@ -469,7 +469,7 @@ def test_phase_transition_uneven_variable_number_by_bounds(phase_dynamics):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     # Define the problem
-    biorbd_model_path_with_translations = bioptim_folder + "examples/models/double_pendulum_with_translations.bioMod"
+    biorbd_model_path_with_translations = bioptim_folder + "/examples/models/double_pendulum_with_translations.bioMod"
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path_with_translations=biorbd_model_path_with_translations,
@@ -500,8 +500,8 @@ def test_phase_transition_uneven_variable_number_by_mapping(phase_dynamics):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     # Define the problem
-    biorbd_model_path = bioptim_folder + "examples/models/double_pendulum.bioMod"
-    biorbd_model_path_with_translations = bioptim_folder + "examples/models/double_pendulum_with_translations.bioMod"
+    biorbd_model_path = bioptim_folder + "/examples/models/double_pendulum.bioMod"
+    biorbd_model_path_with_translations = bioptim_folder + "/examples/models/double_pendulum_with_translations.bioMod"
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=biorbd_model_path,
@@ -557,7 +557,7 @@ def test_torque_activation_driven(ode_solver, phase_dynamics):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "examples/models/2segments_2dof_2contacts.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/2segments_2dof_2contacts.bioMod",
         n_shooting=30,
         final_time=2,
         ode_solver=ode_solver(),
@@ -601,8 +601,8 @@ def test_example_multi_biorbd_model(phase_dynamics):
     from bioptim.examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
-    biorbd_model_path = bioptim_folder + "examples/models/triple_pendulum.bioMod"
-    biorbd_model_path_modified_inertia = bioptim_folder + "examples/models/triple_pendulum_modified_inertia.bioMod"
+    biorbd_model_path = bioptim_folder + "/examples/models/triple_pendulum.bioMod"
+    biorbd_model_path_modified_inertia = bioptim_folder + "/examples/models/triple_pendulum_modified_inertia.bioMod"
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=biorbd_model_path,
@@ -628,7 +628,7 @@ def test_example_minimize_segment_velocity():
 
     # Define the problem
 
-    biorbd_model_path = bioptim_folder + "examples/models/triple_pendulum.bioMod"
+    biorbd_model_path = bioptim_folder + "/examples/models/triple_pendulum.bioMod"
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=biorbd_model_path,

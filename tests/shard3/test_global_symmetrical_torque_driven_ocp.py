@@ -24,14 +24,14 @@ def test_symmetry_by_mapping(ode_solver, phase_dynamics):
             match="COLLOCATION transcription is not compatible with mapping for states. Please note that concept of states mapping in already sketchy on it's own, but is particularly not appropriate for COLLOCATION transcriptions.",
         ):
             ocp = ocp_module.prepare_ocp(
-                biorbd_model_path=bioptim_folder + "examples/models/cubeSym.bioMod",
+                biorbd_model_path=bioptim_folder + "/examples/models/cubeSym.bioMod",
                 ode_solver=ode_solver(),
                 phase_dynamics=phase_dynamics,
                 expand_dynamics=ode_solver != OdeSolver.IRK,
             )
     else:
         ocp = ocp_module.prepare_ocp(
-            biorbd_model_path=bioptim_folder + "examples/models/cubeSym.bioMod",
+            biorbd_model_path=bioptim_folder + "/examples/models/cubeSym.bioMod",
             ode_solver=ode_solver(),
             phase_dynamics=phase_dynamics,
             expand_dynamics=ode_solver != OdeSolver.IRK,
@@ -81,7 +81,7 @@ def test_symmetry_by_constraint(ode_solver, phase_dynamics):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "examples/models/cubeSym.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cubeSym.bioMod",
         ode_solver=ode_solver(),
         phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver != OdeSolver.IRK,

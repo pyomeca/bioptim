@@ -51,7 +51,7 @@ def test_example_param_obj_and_param_scaling(
     tau_to_track = sol_to_track.decision_controls(to_merge=SolutionMerge.NODES)["tau"]
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
         final_time=final_time,
         n_shooting=n_shooting,
         min_g=np.array([0, -5, -50]),

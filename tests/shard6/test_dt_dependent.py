@@ -163,7 +163,7 @@ def test_dt_dependent_problem(minimize_time, use_sx):
 
     # --- Solve the program --- #
     ocp = prepare_ocp_state_as_time(
-        biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
         n_phase=1,
         control_type=ControlType.CONSTANT,
         minimize_time=minimize_time,

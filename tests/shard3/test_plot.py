@@ -36,7 +36,7 @@ def test_plot_ocp_creation():
     from tests.utils import TestUtils
 
     bioptim_folder = TestUtils.bioptim_folder()
-    model_path = bioptim_folder + "examples/models/cube.bioMod"
+    model_path = bioptim_folder + "/examples/models/cube.bioMod"
     biorbd_model = TorqueBiorbdModel(model_path)
     n_shooting = 10
     final_time = 1.0
@@ -96,7 +96,7 @@ def test_plot_options():
     from tests.utils import TestUtils
 
     bioptim_folder = TestUtils.bioptim_folder()
-    model_path = bioptim_folder + "examples/models/cube.bioMod"
+    model_path = bioptim_folder + "/examples/models/cube.bioMod"
     biorbd_model = TorqueBiorbdModel(model_path)
     n_shooting = 10
     final_time = 1.0

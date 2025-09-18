@@ -18,7 +18,7 @@ def test_muscle_excitation_with_torque_and_markers_tracking(ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
 
     # Define the problem
-    model_path = bioptim_folder + "examples/models/arm26.bioMod"
+    model_path = bioptim_folder + "/examples/models/arm26.bioMod"
     bio_model = MusclesWithExcitationsBiorbdModel(model_path, with_residual_torque=True)
     final_time = 0.1
     n_shooting = 5
@@ -156,7 +156,7 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
     bioptim_folder = TestUtils.bioptim_folder()
 
     # Define the problem
-    model_path = bioptim_folder + "examples/models/arm26.bioMod"
+    model_path = bioptim_folder + "/examples/models/arm26.bioMod"
     bio_model = MusclesWithExcitationsBiorbdModel(model_path, with_residual_torque=False)
     final_time = 0.1
     n_shooting = 5

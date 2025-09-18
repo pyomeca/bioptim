@@ -29,7 +29,7 @@ def test_muscle_activations_and_states_tracking(ode_solver, n_threads, phase_dyn
 
     # Define the problem
     use_residual_torque = True
-    model_path = bioptim_folder + "examples/models/arm26.bioMod"
+    model_path = bioptim_folder + "/examples/models/arm26.bioMod"
     bio_model = MusclesBiorbdModel(model_path, with_residual_torque=use_residual_torque)
     final_time = 0.1
     n_shooting = 5

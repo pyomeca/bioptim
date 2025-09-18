@@ -116,7 +116,7 @@ def test_variational_model():
         compute_final_states(time_step, q_prev, q_cur, qdot, control_prev, control_cur), [3.83070605, 7.36751722]
     )
 
-    biorbd_model_path = bioptim_folder + "examples/models/pendulum_holonomic.bioMod"
+    biorbd_model_path = bioptim_folder + "/examples/models/pendulum_holonomic.bioMod"
     holonomic_model = VariationalBiorbdModel(biorbd_model_path)
     (
         constraints_func,
