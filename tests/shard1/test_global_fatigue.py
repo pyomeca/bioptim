@@ -227,7 +227,7 @@ def test_effort_fatigable_muscles(phase_dynamics):
 
     bioptim_folder = TestUtils.bioptim_folder()
 
-    model_path = bioptim_folder+ "/models/arm26_constant.bioMod"
+    model_path = bioptim_folder + "/models/arm26_constant.bioMod"
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
         final_time=0.9,

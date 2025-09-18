@@ -27,7 +27,7 @@ def test_plot_graphs_one_phase(phase_dynamics):
     # Load graphs_one_phase
     from bioptim.examples.toy_examples.torque_driven_ocp import track_markers_with_torque_actuators as ocp_module
 
-    bioptim_folder = TestUtils.bioptim_folder()    
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
@@ -49,7 +49,7 @@ def test_plot_check_conditioning(phase_dynamics):
     # Load graphs check conditioning
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    bioptim_folder = TestUtils.bioptim_folder()    
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
@@ -70,7 +70,7 @@ def test_plot_check_conditioning_live(phase_dynamics):
     # Load graphs check conditioning
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    bioptim_folder = TestUtils.bioptim_folder()    
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
@@ -88,7 +88,7 @@ def test_plot_ipopt_output_live(phase_dynamics):
 
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    bioptim_folder = TestUtils.bioptim_folder()    
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
@@ -105,7 +105,7 @@ def test_save_ipopt_output():
 
     from bioptim.examples.getting_started import basic_ocp as ocp_module
 
-    bioptim_folder = TestUtils.bioptim_folder()    
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "examples/models/pendulum.bioMod",
@@ -128,7 +128,7 @@ def test_plot_merged_graphs(phase_dynamics):
     # Load graphs_one_phase
     from bioptim.examples.toy_examples.muscle_driven_ocp import muscle_excitations_tracker as ocp_module
 
-    bioptim_folder = TestUtils.bioptim_folder()    
+    bioptim_folder = TestUtils.bioptim_folder()
 
     # Define the problem
     model_path = bioptim_folder + "examples/models/arm26.bioMod"
@@ -172,7 +172,7 @@ def test_plot_graphs_multi_phases(phase_dynamics):
     # Load graphs_one_phase
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    bioptim_folder = TestUtils.bioptim_folder()    
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
@@ -191,7 +191,7 @@ def test_add_new_plot(phase_dynamics):
     # Load graphs_one_phase
     from bioptim.examples.toy_examples.torque_driven_ocp import track_markers_with_torque_actuators as ocp_module
 
-    bioptim_folder = TestUtils.bioptim_folder()    
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",
@@ -221,7 +221,7 @@ def test_console_objective_functions(phase_dynamics):
     # Load graphs_one_phase
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    bioptim_folder = TestUtils.bioptim_folder()    
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "examples/models/cube.bioMod",

@@ -14,7 +14,9 @@ from ..utils import TestUtils
 @pytest.mark.parametrize("use_sx", [False, True])
 def test_variational_pendulum(use_sx):
     """Test the variational integrator pendulum example"""
-    from bioptim.examples.toy_examples.discrete_mechanics_and_optimal_control import example_variational_integrator_pendulum
+    from bioptim.examples.toy_examples.discrete_mechanics_and_optimal_control import (
+        example_variational_integrator_pendulum,
+    )
 
     bioptim_folder = TestUtils.module_folder(example_variational_integrator_pendulum)
 

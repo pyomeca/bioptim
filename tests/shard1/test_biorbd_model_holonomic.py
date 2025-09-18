@@ -10,7 +10,7 @@ from ..utils import TestUtils
 
 def test_model_holonomic():
 
-    bioptim_folder = TestUtils.bioptim_folder()    
+    bioptim_folder = TestUtils.bioptim_folder()
     biorbd_model_path = bioptim_folder + "examples/models/triple_pendulum.bioMod"
     model = HolonomicBiorbdModel(biorbd_model_path)
 
@@ -197,7 +197,7 @@ def test_example_two_pendulums():
     """Test the holonomic_constraints/two_pendulums example"""
     from bioptim.examples.toy_examples.holonomic_constraints import two_pendulums
 
-    bioptim_folder = TestUtils.bioptim_folder()    
+    bioptim_folder = TestUtils.bioptim_folder()
 
     # --- Prepare the ocp --- #
     ocp, model = two_pendulums.prepare_ocp(
@@ -228,7 +228,7 @@ def test_example_two_pendulums_algebraic():
     if platform.system() == "Windows":
         pytest.skip("This test is skipped on Windows because too sensitive.")
 
-    bioptim_folder = TestUtils.bioptim_folder()    
+    bioptim_folder = TestUtils.bioptim_folder()
 
     # --- Prepare the ocp --- #
     ocp, model = two_pendulums_algebraic.prepare_ocp(
