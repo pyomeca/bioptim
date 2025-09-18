@@ -15,6 +15,7 @@ def test_cyclic_nmpc(phase_dynamics):
     def update_functions(_nmpc, cycle_idx, _sol):
         return cycle_idx < n_cycles  # True if there are still some cycle to perform
 
+    from bioptim.examples.toy_examples.moving_horizon_estimation import cyclic_nmpc as ocp_module
     bioptim_folder = TestUtils.bioptim_folder()
 
     n_cycles = 3

@@ -298,7 +298,7 @@ def test__getting_started__example_multinode_objective():
         "into more penalties or use phase_dynamics=PhaseDynamics.ONE_PER_NODE",
     ):
         ocp_module.prepare_ocp(
-            biorbd_model_path=bioptim_folder + "/../models/pendulum.bioMod",
+            biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
             final_time=1,
             n_shooting=10,
             phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
@@ -556,7 +556,7 @@ def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_mapping(
 
     ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/double_pendulum.bioMod",
-        biorbd_model_path_with_translations=bioptim_folder + "/../../models/double_pendulum_with_translations.bioMod",
+        biorbd_model_path_with_translations=bioptim_folder + "/examples/models/double_pendulum_with_translations.bioMod",
         n_shooting=(5, 5),
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
@@ -1419,7 +1419,7 @@ def test__torque_driven_ocp__track_markers_with_torque_actuators():
     bioptim_folder = TestUtils.bioptim_folder()
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cube_with_actuators.bioMod",
         n_shooting=30,
         final_time=2,
         actuator_type=1,

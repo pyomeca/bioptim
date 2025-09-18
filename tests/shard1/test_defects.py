@@ -1417,7 +1417,7 @@ def test_muscle_driven(
         with pytest.raises(NotImplementedError):
             nlp.model = MusclesBiorbdModel(
                 TestUtils.bioptim_folder()
-                + "/examples/toy_examples/muscle_driven_ocp/models/arm26_with_contact.bioMod",
+                + "/examples/models/arm26_with_contact.bioMod",
                 contact_types=contact_types,
                 external_force_set=external_forces,
             )
@@ -1426,14 +1426,14 @@ def test_muscle_driven(
             # TODO: This is a bug... The index of the parent of the contact is not correctly identified when it is the root
             nlp.model = MusclesBiorbdModel(
                 TestUtils.bioptim_folder()
-                + "/examples/toy_examples/muscle_driven_ocp/models/arm26_with_contact.bioMod",
+                + "/examples/models/arm26_with_contact.bioMod",
                 contact_types=contact_types,
                 external_force_set=external_forces,
             )
     else:
         muscle_class = MusclesWithExcitationsBiorbdModel if with_excitation else MusclesBiorbdModel
         nlp.model = muscle_class(
-            TestUtils.bioptim_folder() + "/examples/toy_examples/muscle_driven_ocp/models/arm26_with_contact.bioMod",
+            TestUtils.bioptim_folder() + "/examples/models/arm26_with_contact.bioMod",
             contact_types=contact_types,
             external_force_set=external_forces,
             with_residual_torque=with_residual_torque,
