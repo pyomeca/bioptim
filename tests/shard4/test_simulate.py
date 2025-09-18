@@ -350,6 +350,7 @@ def test_integrate_single_shoot_use_scipy(ode_solver, phase_dynamics):
         ode_solver=ode_solver(),
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
+        control_type=ControlType.CONSTANT,
     )
 
     solver = Solver.IPOPT()

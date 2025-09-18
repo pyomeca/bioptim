@@ -2457,6 +2457,16 @@ It will turn MX symbolic variables into SX symbolic variables, which is faster b
 Despite our best efforts to assist you with this long Readme and several examples, you may experience some problems with bioptim.
 Fortunately, this troubleshooting section will guide you through solving some known issues.
 
+## Git errors with ACADOS when upgrading to latest
+If you encounter a submodule error when updating your Git repo, most likely it is due to a change in submodule repositories path. The easiest way to fix this is to run the following commands from the root directory:
+
+```bash
+git submodule deinit -f -- external/acados
+rm -rf .git/modules/external/acados
+rm -rf external/acados
+git submodule update --init --recursive
+```
+
 ## Freezing compute
 If your computer freezes before any optimization is performed, it is probably because your problem requires too much RAM.
 If you are using use_sx and/or expand options, try turning them off. If it does not work, try reducing the number of nodes.

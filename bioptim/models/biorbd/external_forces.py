@@ -13,6 +13,7 @@ BIOPTIM_TO_VECTOR_MAP = {
     "torque_in_local": 3,
 }
 
+
 class ExternalForceSetCommon:
 
     def __init__(self):
@@ -60,12 +61,11 @@ class ExternalForceSetCommon:
 
         return components
 
-
     def check_segment_names(self, segment_names: StrTuple) -> None:
         attributes = ["in_global", "torque_in_global", "translational_in_global", "in_local", "torque_in_local"]
         wrong_segments = []
         for attr in attributes:
-            for force_name , force in getattr(self, attr).items():
+            for force_name, force in getattr(self, attr).items():
                 if force["segment"] not in segment_names:
                     wrong_segments.append(force["segment"])
 
@@ -94,7 +94,9 @@ class ExternalForceSetCommon:
 
     # Specific functions for adding each force type to improve readability
     @staticmethod
-    def add_global_force(biorbd_external_forces, segment: str, force: CXorDMorNpArray, point_of_application: CXorDMorNpArray):
+    def add_global_force(
+        biorbd_external_forces, segment: str, force: CXorDMorNpArray, point_of_application: CXorDMorNpArray
+    ):
         biorbd_external_forces.add(segment, force, point_of_application)
 
     @staticmethod
@@ -102,7 +104,9 @@ class ExternalForceSetCommon:
         biorbd_external_forces.add(segment, vertcat(torque, MX([0, 0, 0])), MX([0, 0, 0]))
 
     @staticmethod
-    def add_translational_global(biorbd_external_forces, segment: str, force: CXorDMorNpArray, point_of_application: CXorDMorNpArray):
+    def add_translational_global(
+        biorbd_external_forces, segment: str, force: CXorDMorNpArray, point_of_application: CXorDMorNpArray
+    ):
         biorbd_external_forces.addTranslationalForce(force, segment, point_of_application)
 
     @staticmethod
@@ -168,7 +172,11 @@ class ExternalForceSetTimeSeries(ExternalForceSetCommon):
         point_of_application = np.zeros((3, self._nb_frames)) if point_of_application is None else point_of_application
         self._check_point_of_application(point_of_application)
 
-        self.in_global[force_name] = {"segment": segment, "values": values, "point_of_application": point_of_application}
+        self.in_global[force_name] = {
+            "segment": segment,
+            "values": values,
+            "point_of_application": point_of_application,
+        }
 
     def add_torque(self, force_name: str, segment: str, values: NpArray):
         self._check_if_can_be_modified()
@@ -179,7 +187,11 @@ class ExternalForceSetTimeSeries(ExternalForceSetCommon):
         self.torque_in_global[force_name] = {"segment": segment, "values": values, "point_of_application": None}
 
     def add_translational_force(
-        self, force_name: str, segment: str, values: NpArray, point_of_application_in_local: NpArrayOptional | Str = None
+        self,
+        force_name: str,
+        segment: str,
+        values: NpArray,
+        point_of_application_in_local: NpArrayOptional | Str = None,
     ):
         self._check_if_can_be_modified()
         if values.shape[0] != 3:
@@ -191,10 +203,18 @@ class ExternalForceSetTimeSeries(ExternalForceSetCommon):
         )
         self._check_point_of_application(point_of_application_in_local)
 
-        self.translational_in_global[force_name] = {"segment": segment, "values": values, "point_of_application": point_of_application_in_local}
+        self.translational_in_global[force_name] = {
+            "segment": segment,
+            "values": values,
+            "point_of_application": point_of_application_in_local,
+        }
 
     def add_in_segment_frame(
-        self, force_name: str, segment: str, values: NpArray, point_of_application_in_local: NpArrayOptional | Str = None
+        self,
+        force_name: str,
+        segment: str,
+        values: NpArray,
+        point_of_application_in_local: NpArrayOptional | Str = None,
     ):
         """
         Add external forces in the segment frame.
@@ -217,9 +237,13 @@ class ExternalForceSetTimeSeries(ExternalForceSetCommon):
             np.zeros((3, self._nb_frames)) if point_of_application_in_local is None else point_of_application_in_local
         )
         self._check_point_of_application(point_of_application_in_local)
-        self.in_local[force_name] = {"segment": segment, "values": values, "point_of_application": point_of_application_in_local}
+        self.in_local[force_name] = {
+            "segment": segment,
+            "values": values,
+            "point_of_application": point_of_application_in_local,
+        }
 
-    def add_torque_in_segment_frame(self, force_name:str, segment: str, values: np.ndarray):
+    def add_torque_in_segment_frame(self, force_name: str, segment: str, values: np.ndarray):
         self._check_if_can_be_modified()
         if values.shape[0] != 3:
             raise ValueError(f"External torques must have 3 rows, got {values.shape[0]}")
@@ -282,16 +306,24 @@ class ExternalForceSetVariables(ExternalForceSetCommon):
         Dictionary to store local torques for each segment.
     """
 
-    def add(self, force_name:str, segment: str, use_point_of_application: bool = False):
+    def add(self, force_name: str, segment: str, use_point_of_application: bool = False):
         """
         Add moments XYZ, forces XYZ (and the point of application if requested) in the global reference frame.
         """
         self._check_if_can_be_modified()
-        point_of_application = MX.sym(f"point_of_application_{force_name}_{segment}", 3, 1) if use_point_of_application else np.zeros((3, 1))
+        point_of_application = (
+            MX.sym(f"point_of_application_{force_name}_{segment}", 3, 1)
+            if use_point_of_application
+            else np.zeros((3, 1))
+        )
         moments_forces = MX.sym(f"moments_forces_{force_name}_{segment}", 6, 1)
-        self.in_global[force_name] = {"segment": segment, "force": moments_forces, "point_of_application": point_of_application}
+        self.in_global[force_name] = {
+            "segment": segment,
+            "force": moments_forces,
+            "point_of_application": point_of_application,
+        }
 
-    def add_torque(self, force_name:str, segment: str):
+    def add_torque(self, force_name: str, segment: str):
         """
         Add moments XYZ in the global reference frame.
         """
@@ -299,29 +331,41 @@ class ExternalForceSetVariables(ExternalForceSetCommon):
         moments = MX.sym(f"moments_{force_name}_{segment}", 3, 1)
         self.torque_in_global[force_name] = {"segment": segment, "force": moments, "point_of_application": None}
 
-    def add_translational_force(
-        self, force_name:str, segment: str, use_point_of_application_in_local: bool = False
-    ):
+    def add_translational_force(self, force_name: str, segment: str, use_point_of_application_in_local: bool = False):
         """
         Add forces XYZ (and the point of application if requested) in the local reference frame.
         """
         self._check_if_can_be_modified()
-        point_of_application_in_local = MX.sym(f"point_of_application_in_local_{force_name}_{segment}", 3, 1) if use_point_of_application_in_local else np.zeros((3, 1))
+        point_of_application_in_local = (
+            MX.sym(f"point_of_application_in_local_{force_name}_{segment}", 3, 1)
+            if use_point_of_application_in_local
+            else np.zeros((3, 1))
+        )
         forces = MX.sym(f"forces_{force_name}_{segment}", 3, 1)
-        self.translational_in_global[force_name] = {"segment": segment, "force": forces, "point_of_application": point_of_application_in_local}
+        self.translational_in_global[force_name] = {
+            "segment": segment,
+            "force": forces,
+            "point_of_application": point_of_application_in_local,
+        }
 
-    def add_in_segment_frame(
-        self, force_name:str, segment: str, use_point_of_application_in_local: bool = False
-    ):
+    def add_in_segment_frame(self, force_name: str, segment: str, use_point_of_application_in_local: bool = False):
         """
         Add moments XYZ, forces XYZ (and the point of application if requested) in the local reference frame.
         """
         self._check_if_can_be_modified()
-        point_of_application_in_local = MX.sym(f"point_of_application_in_local_{force_name}_{segment}", 3, 1) if use_point_of_application_in_local else np.zeros((3, 1))
+        point_of_application_in_local = (
+            MX.sym(f"point_of_application_in_local_{force_name}_{segment}", 3, 1)
+            if use_point_of_application_in_local
+            else np.zeros((3, 1))
+        )
         moments_forces = MX.sym(f"moments_forces_{force_name}_{segment}", 6, 1)
-        self.in_local[force_name] = {"segment": segment, "force": moments_forces, "point_of_application": point_of_application_in_local}
+        self.in_local[force_name] = {
+            "segment": segment,
+            "force": moments_forces,
+            "point_of_application": point_of_application_in_local,
+        }
 
-    def add_torque_in_segment_frame(self, force_name:str, segment: str):
+    def add_torque_in_segment_frame(self, force_name: str, segment: str):
         """
         Add moments XYZ in the local reference frame.
         """

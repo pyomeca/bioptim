@@ -65,7 +65,7 @@ class MultinodeObjectiveList(MultinodePenaltyList):
     def add(
         self,
         multinode_objective: Any,
-        weight: Int | Float | ObjectiveWeight = ObjectiveWeight(),
+        weight: Int | Float | ObjectiveWeight = None,
         **extra_arguments: Any,
     ):
         """
@@ -78,6 +78,8 @@ class MultinodeObjectiveList(MultinodePenaltyList):
         extra_arguments: dict
             Any parameters to pass to Objective
         """
+        if weight is None:
+            weight = ObjectiveWeight()
 
         if not isinstance(weight, ObjectiveWeight):
             if isinstance(weight, (int, float)):

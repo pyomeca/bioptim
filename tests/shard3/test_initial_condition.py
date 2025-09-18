@@ -221,6 +221,7 @@ def test_simulate_from_initial_multiple_shoot(phase_dynamics):
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
     )
+
     phases_dt = np.array([final_time / n_shooting])
     X = InitialGuessList()
     X["q"] = [-1, -2]
@@ -269,6 +270,7 @@ def test_simulate_from_initial_single_shoot(phase_dynamics):
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
     )
+
     phases_dt = np.array([final_time / n_shooting])
     X = InitialGuessList()
     X["q"] = [-1, -2]

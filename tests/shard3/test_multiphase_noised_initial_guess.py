@@ -1,8 +1,8 @@
-from bioptim import BiorbdModel, BoundsList, InitialGuessList, MagnitudeType, PhaseDynamics
 import numpy as np
 import numpy.testing as npt
 import pytest
 
+from bioptim import BiorbdModel, BoundsList, InitialGuessList, MagnitudeType, PhaseDynamics
 from ..utils import TestUtils
 
 
