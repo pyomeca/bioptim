@@ -40,9 +40,9 @@ class OptimalControlProgram:
 def test_torque_driven_with_passive_torque(with_passive_torque, cx, phase_dynamics):
 
     if with_passive_torque:
-        model_filename = "/examples/getting_started/models/2segments_4dof_2contacts_with_passive_torque.bioMod"
+        model_filename = "/examples/models/2segments_4dof_2contacts_with_passive_torque.bioMod"
     else:
-        model_filename = "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+        model_filename = "/examples/models/2segments_4dof_2contacts.bioMod"
 
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = TorqueBiorbdModel(
@@ -106,9 +106,9 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, phase_dynami
 def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx, phase_dynamics):
 
     if with_passive_torque:
-        model_filename = "/examples/getting_started/models/2segments_4dof_2contacts_with_passive_torque.bioMod"
+        model_filename = "/examples/models/2segments_4dof_2contacts_with_passive_torque.bioMod"
     else:
-        model_filename = "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+        model_filename = "/examples/models/2segments_4dof_2contacts.bioMod"
 
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = TorqueDerivativeBiorbdModel(TestUtils.bioptim_folder() + model_filename)
@@ -199,9 +199,9 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx, p
 def test_torque_activation_driven_with_passive_torque(with_passive_torque, with_residual_torque, cx, phase_dynamics):
 
     if with_passive_torque:
-        model_filename = "/examples/getting_started/models/2segments_4dof_2contacts_with_passive_torque.bioMod"
+        model_filename = "/examples/models/2segments_4dof_2contacts_with_passive_torque.bioMod"
     else:
-        model_filename = "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+        model_filename = "/examples/models/2segments_4dof_2contacts.bioMod"
 
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = TorqueActivationBiorbdModel(
@@ -316,9 +316,9 @@ def test_torque_activation_driven_with_passive_torque(with_passive_torque, with_
 @pytest.mark.parametrize("with_passive_torque", [False, True])
 def test_muscle_driven_with_passive_torque(with_passive_torque, cx, phase_dynamics):
     if with_passive_torque:
-        model_filename = "/examples/muscle_driven_ocp/models/arm26_with_passive_torque_and_contact.bioMod"
+        model_filename = "/examples/models/arm26_with_passive_torque_and_contact.bioMod"
     else:
-        model_filename = "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod"
+        model_filename = "/examples/models/arm26_with_contact.bioMod"
 
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = MusclesBiorbdModel(TestUtils.bioptim_folder() + model_filename)
@@ -388,15 +388,15 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, cx, phase_dynami
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("with_passive_torque", [False, True])
 def test_pendulum_passive_torque(with_passive_torque, phase_dynamics):
-    from bioptim.examples.torque_driven_ocp import pendulum_with_passive_torque as ocp_module
+    from bioptim.examples.toy_examples.torque_driven_ocp import pendulum_with_passive_torque as ocp_module
 
     if platform.system() != "Linux":
         pytest.skip("These tests do not pass on Windows.")
 
     if with_passive_torque:
-        model_filename = "/examples/torque_driven_ocp/models/pendulum_with_passive_torque.bioMod"
+        model_filename = "/examples/models/pendulum_with_passive_torque.bioMod"
     else:
-        model_filename = "/examples/getting_started/models/pendulum.bioMod"
+        model_filename = "/examples/models/pendulum.bioMod"
 
     # Define the problem
     biorbd_model_path = TestUtils.bioptim_folder() + model_filename

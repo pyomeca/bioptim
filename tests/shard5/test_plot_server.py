@@ -12,7 +12,7 @@ def test_serialize_deserialize():
     # Prepare a set of data to serialize and deserialize
     from bioptim.examples.getting_started import basic_ocp as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",

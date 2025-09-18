@@ -16,7 +16,7 @@ def test_merge_combinations(scaled):
     # Load pendulum
     from bioptim.examples.getting_started import basic_ocp as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod", final_time=2, n_shooting=10
     )
@@ -61,7 +61,7 @@ def test_merge_phases_one_phase(phase_dynamics):
     # Load pendulum
     from bioptim.examples.getting_started import basic_ocp as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
@@ -88,7 +88,7 @@ def test_merge_phases_multi_phase(phase_dynamics):
     # Load pendulum
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
@@ -114,7 +114,7 @@ def test_interpolate(phase_dynamics):
     # Load pendulum
     from bioptim.examples.getting_started import basic_ocp as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     n_shooting = 10
 
@@ -158,7 +158,7 @@ def test_interpolate_multiphases(ode_solver, phase_dynamics):
     # Load pendulum
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bbioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
@@ -197,7 +197,7 @@ def test_interpolate_multiphases_merge_phase(phase_dynamics):
     # Load pendulum
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
@@ -231,7 +231,7 @@ def test_integrate(integrator, ode_solver, phase_dynamics):
     # Load pendulum
     from bioptim.examples.getting_started import basic_ocp as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     n_shooting = 30 if integrator == SolutionIntegrator.SCIPY_RK45 else 10
 
@@ -283,7 +283,7 @@ def test_integrate_single_shoot(ode_solver, phase_dynamics):
     # Load pendulum
     from bioptim.examples.getting_started import basic_ocp as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     n_shooting = 10
 
@@ -339,7 +339,7 @@ def test_integrate_single_shoot_use_scipy(ode_solver, phase_dynamics):
     # Load pendulum
     from bioptim.examples.getting_started import basic_ocp as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     n_shooting = 10
 
@@ -482,7 +482,7 @@ def test_integrate_all_cases(shooting, merge, integrator, ode_solver, phase_dyna
     # Load pendulum
     from bioptim.examples.getting_started import basic_ocp as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     n_shooting = 10 if integrator == SolutionIntegrator.OCP else 30
 
@@ -539,7 +539,7 @@ def test_integrate_multiphase(shooting, integrator, ode_solver, phase_dynamics, 
     # Load pendulum
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
@@ -624,7 +624,7 @@ def test_integrate_multiphase(shooting, integrator, ode_solver, phase_dynamics, 
 def test_check_models_comes_from_same_super_class():
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
@@ -662,7 +662,7 @@ def test_integrate_multiphase_merged(shooting, integrator, ode_solver, phase_dyn
     # Load pendulum
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",

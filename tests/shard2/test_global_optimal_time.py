@@ -197,7 +197,7 @@ def test_time_constraint(ode_solver, phase_dynamics):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 def test_monophase_time_constraint(ode_solver, phase_dynamics):
     # Load time_constraint
-    from bioptim.examples.optimal_time_ocp import multiphase_time_constraint as ocp_module
+    from bioptim.examples.toy_examples.optimal_time_ocp import multiphase_time_constraint as ocp_module
 
     # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.RK8:
@@ -262,7 +262,7 @@ def test_monophase_time_constraint(ode_solver, phase_dynamics):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 def test_multiphase_time_constraint(ode_solver, phase_dynamics):
     # Load time_constraint
-    from bioptim.examples.optimal_time_ocp import multiphase_time_constraint as ocp_module
+    from bioptim.examples.toy_examples.optimal_time_ocp import multiphase_time_constraint as ocp_module
 
     # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:

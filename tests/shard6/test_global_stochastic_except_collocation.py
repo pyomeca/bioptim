@@ -256,7 +256,7 @@ from ..utils import TestUtils
 #     wPqdot_magnitude = DM(np.array([wPqdot_std**2 / dt, wPqdot_std**2 / dt]))
 #     sensory_noise_magnitude = vertcat(wPq_magnitude, wPqdot_magnitude)
 #
-#     bioptim_folder = TestUtils.module_folder(ocp_module)
+#     bioptim_folder = TestUtils.bioptim_folder()
 #
 #     if use_sx:
 #         with pytest.raises(
@@ -418,7 +418,7 @@ from ..utils import TestUtils
 #     wPqdot_magnitude = DM(np.array([wPqdot_std**2 / dt, wPqdot_std**2 / dt]))
 #     sensory_noise_magnitude = vertcat(wPq_magnitude, wPqdot_magnitude)
 #
-#     bioptim_folder = TestUtils.module_folder(ocp_module)
+#     bioptim_folder = TestUtils.bioptim_folder()
 #
 #     ocp = ocp_module.prepare_socp(
 #         biorbd_model_path=bioptim_folder + "/examples/models/LeuvenArmModel.bioMod",

@@ -141,9 +141,9 @@ def test_initial_guess_spline():
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_initial_guess_update(phase_dynamics):
     # Load pendulum
-    from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
+    from bioptim.examples.toy_examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
@@ -209,7 +209,7 @@ def test_initial_guess_custom():
 def test_simulate_from_initial_multiple_shoot(phase_dynamics):
     from bioptim.examples.getting_started import basic_ocp as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
     final_time = 2
     n_shooting = 10
 
@@ -258,7 +258,7 @@ def test_simulate_from_initial_single_shoot(phase_dynamics):
     # Load pendulum
     from bioptim.examples.getting_started import basic_ocp as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
     final_time = 2
     n_shooting = 10
 
@@ -309,7 +309,7 @@ def test_initial_guess_error_messages(phase_dynamics):
     """
     from bioptim.examples.getting_started import basic_ocp as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
     biorbd_model_path = bioptim_folder + "/examples/models/pendulum.bioMod"
 
     # Add objective functions

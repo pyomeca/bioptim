@@ -89,7 +89,7 @@ def prepare_ocp(
 def test_vector_layout_rk4_shared(min_time):
     from bioptim.examples.getting_started import basic_ocp as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     n_shooting = 10
     min_bounds = [-i * 1 for i in range(n_shooting + 1)]
@@ -174,7 +174,7 @@ def test_vector_layout_rk4_shared(min_time):
 def test_vector_layout_collocation(duplicate_starting_point):
     from bioptim.examples.getting_started import basic_ocp as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     n_shooting = 10
     intermediate_point = 4
@@ -259,7 +259,7 @@ def test_vector_layout_collocation(duplicate_starting_point):
 def test_vector_layout_linear_continuous():
     from bioptim.examples.getting_started import basic_ocp as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     n_shooting = 10
     min_bounds = [-i * 1 for i in range(n_shooting + 1)]
@@ -344,7 +344,7 @@ def test_vector_layout_linear_continuous():
 def test_vector_layout_linear_continuous_reconstruct():
     from bioptim.examples.getting_started import basic_ocp as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     n_shooting = 10
     min_bounds = [-i * 1 for i in range(n_shooting + 1)]
@@ -435,7 +435,7 @@ def test_vector_layout_linear_continuous_reconstruct():
 def test_parameters():
     from bioptim.examples.getting_started import custom_parameters as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     target_g = np.zeros((3, 1))
     target_g[2] = -9.81
@@ -489,7 +489,7 @@ def test_parameters():
 def test_vector_layout_multiple_phases():
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
@@ -549,9 +549,9 @@ def test_vector_layout_multiple_phases():
 
 def test_vector_layout_algebraic_states():
     """Test the holonomic_constraints/two_pendulums_algebraic example"""
-    from bioptim.examples.holonomic_constraints import two_pendulums_algebraic
+    from bioptim.examples.toy_examples.holonomic_constraints import two_pendulums_algebraic
 
-    bioptim_folder = TestUtils.module_folder(two_pendulums_algebraic)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     # --- Prepare the ocp --- #
     ocp, model = two_pendulums_algebraic.prepare_ocp(

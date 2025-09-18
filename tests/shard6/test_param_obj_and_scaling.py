@@ -35,13 +35,13 @@ def test_example_param_obj_and_param_scaling(
 
     from bioptim.examples.toy_examples.feature_examples import example_parameter_scaling as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bbioptim_folder = TestUtils.bioptim_folder()
 
     final_time = 1
     n_shooting = 10
 
     ocp_to_track = ocp_module.generate_dat_to_track(
-        biorbd_model_path=bioptim_folder + "/../../models/pendulum_wrong_gravity.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/pendulum_wrong_gravity.bioMod",
         final_time=final_time,
         n_shooting=n_shooting,
     )

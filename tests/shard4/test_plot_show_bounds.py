@@ -9,9 +9,9 @@ def test_pendulum_show_bounds():
     It doesn"t test that bounds are shown, b
     but we test that the bounds are added to the plot"
     """
-    from bioptim.examples.sqp_method import pendulum as ocp_module
+    from bioptim.examples.toy_examples.sqp_method import pendulum as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",

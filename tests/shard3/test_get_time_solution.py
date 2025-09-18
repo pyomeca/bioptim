@@ -22,7 +22,7 @@ def _get_solution(
     if is_multi_phase:
         from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-        bioptim_folder = TestUtils.module_folder(ocp_module)
+        bioptim_folder = TestUtils.bioptim_folder()
         model_path = bioptim_folder + "/examples/models/cube.bioMod"
         prepare_args = {
             "biorbd_model_path": model_path,
@@ -33,7 +33,7 @@ def _get_solution(
     else:
         from bioptim.examples.getting_started import basic_ocp as ocp_module
 
-        bioptim_folder = TestUtils.module_folder(ocp_module)
+        bioptim_folder = TestUtils.bioptim_folder()
         model_path = bioptim_folder + "/examples/models/pendulum.bioMod"
         prepare_args = {
             "biorbd_model_path": model_path,

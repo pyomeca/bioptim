@@ -157,9 +157,9 @@ def integrate_RK4(time_vector, dt, states, controls, dyn_fun, n_shooting=30, n_s
 @pytest.mark.parametrize("use_sx", [False, True])
 def test_dt_dependent_problem(minimize_time, use_sx):
 
-    from bioptim.examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
+    from bioptim.examples.toy_examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     # --- Solve the program --- #
     ocp = prepare_ocp_state_as_time(

@@ -522,7 +522,7 @@ def test_fatigable_michaud_torque_split(phase_dynamics):
     if platform.system() == "Windows":
         pytest.skip("These tests do not pass on Windows.")
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     model_path = bioptim_folder + "/examples/models/pendulum.bioMod"
 

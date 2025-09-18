@@ -11,7 +11,7 @@ def test_time(ode_solver, phase_dynamics):
     # Load pendulum
     from bioptim.examples.getting_started import basic_ocp as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
@@ -44,9 +44,9 @@ def test_time(ode_solver, phase_dynamics):
 @pytest.mark.parametrize("continuous", [True, False])
 def test_time_multiphase(ode_solver, phase_dynamics, continuous):
     # Load slider
-    from bioptim.examples.torque_driven_ocp import slider as ocp_module
+    from bioptim.examples.toy_examples.torque_driven_ocp import slider as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/slider.bioMod",
@@ -122,9 +122,9 @@ def test_time_multiphase(ode_solver, phase_dynamics, continuous):
 @pytest.mark.parametrize("continuous", [True, False])
 def test_generate_stepwise_time(ode_solver, merge_phase, phase_dynamics, continuous):
     # Load slider
-    from bioptim.examples.torque_driven_ocp import slider as ocp_module
+    from bioptim.examples.toy_examples.torque_driven_ocp import slider as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/slider.bioMod",
@@ -218,9 +218,9 @@ def test_generate_stepwise_time(ode_solver, merge_phase, phase_dynamics, continu
 @pytest.mark.parametrize("continuous", [True, False])
 def test_generate_decision_time(ode_solver, merge_phase, phase_dynamics, continuous):
     # Load slider
-    from bioptim.examples.torque_driven_ocp import slider as ocp_module
+    from bioptim.examples.toy_examples.torque_driven_ocp import slider as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/slider.bioMod",
@@ -316,9 +316,9 @@ def test_generate_decision_time(ode_solver, merge_phase, phase_dynamics, continu
 @pytest.mark.parametrize("control_type", [ControlType.CONSTANT, ControlType.LINEAR_CONTINUOUS])
 def test_generate_integrate(ode_solver, merge_phase, shooting_type, integrator, phase_dynamics, control_type):
     # Load slider
-    from bioptim.examples.torque_driven_ocp import slider as ocp_module
+    from bioptim.examples.toy_examples.torque_driven_ocp import slider as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/slider.bioMod",

@@ -51,7 +51,7 @@ def test_example_external_forces(
 ):
     from bioptim.examples.getting_started import example_external_forces as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/cube_with_forces.bioMod",
@@ -236,7 +236,7 @@ def test_example_external_forces_all_at_once(together: bool):
 
     from bioptim.examples.getting_started import example_external_forces as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/cube_with_forces.bioMod",

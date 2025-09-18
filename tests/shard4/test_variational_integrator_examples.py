@@ -18,7 +18,7 @@ def test_variational_pendulum(use_sx):
         example_variational_integrator_pendulum,
     )
 
-    bioptim_folder = TestUtils.module_folder(example_variational_integrator_pendulum)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     # --- Prepare the ocp --- #
     ocp = example_variational_integrator_pendulum.prepare_ocp(
@@ -52,11 +52,11 @@ def test_variational_pendulum_with_holonomic_constraints(use_sx):
         example_variational_integrator_with_holonomic_constraints_pendulum,
     )
 
-    bioptim_folder = TestUtils.module_folder(example_variational_integrator_with_holonomic_constraints_pendulum)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     # --- Prepare the ocp --- #
     ocp = example_variational_integrator_with_holonomic_constraints_pendulum.prepare_ocp(
-        bio_model_path=bioptim_folder + "/../../models/pendulum_holonomic.bioMod",
+        bio_model_path=bioptim_folder + "/examples/models/pendulum_holonomic.bioMod",
         final_time=1,
         n_shooting=20,
         use_sx=use_sx,
