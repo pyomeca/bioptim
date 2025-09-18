@@ -731,8 +731,9 @@ def test_acados_bounds_not_implemented(failing):
     if platform == "win32":
         print("Test for ACADOS on Windows is skipped")
         return
-    root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
-    bio_model = TorqueBiorbdModel(root_folder + "../models/cart_pendulum.bioMod")
+    bioptim_folder = TestUtils.bioptim_folder()
+    bio_model_path = bioptim_folder + "/examples/models/cart_pendulum.bioMod"
+    bio_model = TorqueBiorbdModel(bio_model_path)
 
     nq = bio_model.nb_q
     ntau = bio_model.nb_tau

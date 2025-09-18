@@ -1416,7 +1416,7 @@ def test_muscle_driven(
     if ContactType.RIGID_IMPLICIT in contact_types and with_external_force:
         with pytest.raises(NotImplementedError):
             nlp.model = MusclesBiorbdModel(
-                TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod",
+                TestUtils.bioptim_folder() + "/examples/toy_examples/muscle_driven_ocp/models/arm26_with_contact.bioMod",
                 contact_types=contact_types,
                 external_force_set=external_forces,
             )
@@ -1424,14 +1424,14 @@ def test_muscle_driven(
         with pytest.raises(RuntimeError, match="The segment for the rigid contact index 0 was not found."):
             # TODO: This is a bug... The index of the parent of the contact is not correctly identified when it is the root
             nlp.model = MusclesBiorbdModel(
-                TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod",
+                TestUtils.bioptim_folder() + "/examples/toy_examples/muscle_driven_ocp/models/arm26_with_contact.bioMod",
                 contact_types=contact_types,
                 external_force_set=external_forces,
             )
     else:
         muscle_class = MusclesWithExcitationsBiorbdModel if with_excitation else MusclesBiorbdModel
         nlp.model = muscle_class(
-            TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod",
+            TestUtils.bioptim_folder() + "/examples/toy_examples/muscle_driven_ocp/models/arm26_with_contact.bioMod",
             contact_types=contact_types,
             external_force_set=external_forces,
             with_residual_torque=with_residual_torque,
@@ -1894,7 +1894,7 @@ def test_joints_acceleration_driven(cx, phase_dynamics, defects_type):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = JointAccelerationBiorbdModel(
-        TestUtils.bioptim_folder() + "/examples/getting_started/models/double_pendulum.bioMod"
+        TestUtils.bioptim_folder() + "/examples/models/double_pendulum.bioMod"
     )
     nlp.dynamics_type = DynamicsOptions(
         expand_dynamics=True,

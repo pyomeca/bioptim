@@ -21,7 +21,7 @@ from bioptim import (
 )
 
 # import the custom model
-from bioptim.examples.custom_model.custom_package import MyModel
+from bioptim.examples.toy_examples.custom_model.custom_package import MyModel
 
 
 def prepare_ocp(

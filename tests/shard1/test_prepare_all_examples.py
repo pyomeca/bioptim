@@ -285,7 +285,7 @@ def test__getting_started__example_multinode_objective():
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../../models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/../models/pendulum.bioMod",
         final_time=1,
         n_shooting=10,
         expand_dynamics=False,
@@ -325,7 +325,7 @@ def test__getting_started__example_multiphase_different_ode_solvers():
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../../models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/../models/cube.bioMod",
         long_optim=True,
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
@@ -365,7 +365,7 @@ def test__getting_started__pendulum():
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/../models/pendulum.bioMod",
         final_time=3,
         n_shooting=100,
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
@@ -539,8 +539,8 @@ def test__torque_driven_ocp__multi_biorbd_model():
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/triple_pendulum.bioMod",
-        biorbd_model_path_modified_inertia=bioptim_folder + "/models/triple_pendulum_modified_inertia.bioMod",
+        biorbd_model_path=bioptim_folder + "/../../models/triple_pendulum.bioMod",
+        biorbd_model_path_modified_inertia=bioptim_folder + "/../../models/triple_pendulum_modified_inertia.bioMod",
         n_shooting=40,
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
@@ -1610,7 +1610,7 @@ def test_contact_forces_inverse_dynamics_constraint_muscle(defects_type, contact
         return
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts_1muscle.bioMod",
+        biorbd_model_path=bioptim_folder + "/../../models/2segments_4dof_2contacts_1muscle.bioMod",
         phase_time=0.3,
         n_shooting=10,
         defects_type=defects_type,

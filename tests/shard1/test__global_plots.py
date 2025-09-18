@@ -224,7 +224,7 @@ def test_console_objective_functions(phase_dynamics):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/../models/cube.bioMod",
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
     )
