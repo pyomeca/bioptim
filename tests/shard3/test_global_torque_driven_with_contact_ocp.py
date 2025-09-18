@@ -21,7 +21,7 @@ from ..utils import TestUtils
 def test_maximize_predicted_height_CoM(objective_name, phase_dynamics):
     from bioptim.examples.toy_examples.torque_driven_ocp import maximize_predicted_height_CoM as ocp_module
 
-    bbioptim_folder = TestUtils.bioptim_folder()
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/2segments_4dof_2contacts.bioMod",

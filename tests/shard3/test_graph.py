@@ -446,7 +446,7 @@ def prepare_ocp_custom_objectives(
 @pytest.mark.parametrize("with_constraints", [True, False])
 def test_phase_transitions(with_mayer, with_lagrange, with_constraints, phase_dynamics):
     bioptim_folder = TestUtils.bioptim_folder()
-    model_path = bioptim_folder + "/examples/getting_started/models/cube.bioMod"
+    model_path = bioptim_folder + "/examples/models/cube.bioMod"
     ocp = prepare_ocp_phase_transitions(
         model_path,
         with_mayer=with_mayer,
@@ -466,7 +466,7 @@ def test_parameters(phase_dynamics):
     optim_gravity = True
     optim_mass = True
     bioptim_folder = TestUtils.bioptim_folder()
-    model_path = bioptim_folder + "/examples/getting_started/models/pendulum.bioMod"
+    model_path = bioptim_folder + "/examples/models/pendulum.bioMod"
     target_g = np.zeros((3, 1))
     target_g[2] = -9.81
     ocp = prepare_ocp_parameters(
@@ -491,7 +491,7 @@ def test_parameters(phase_dynamics):
 @pytest.mark.parametrize("quadratic", [True, False])
 def test_objectives_target(quadratic, phase_dynamics):
     bioptim_folder = TestUtils.bioptim_folder()
-    model_path = bioptim_folder + "/examples/getting_started/models/cube.bioMod"
+    model_path = bioptim_folder + "/examples/models/cube.bioMod"
     ocp = prepare_ocp_custom_objectives(biorbd_model_path=model_path, phase_dynamics=phase_dynamics)
     ocp.nlp[0].J[1].quadratic = quadratic
     ocp.nlp[0].J[1].target = np.repeat([[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]], ocp.nlp[0].ns, axis=0).T

@@ -15,9 +15,8 @@ class MockData:
 BIOPTIM_FOLDER = TestUtils.bioptim_folder()
 MODEL_RIGID_CONTACT = BiorbdModel(BIOPTIM_FOLDER + "/examples/models/2segments_4dof_2contacts_1muscle.bioMod")
 MODEL_SOFT_CONTACT = BiorbdModel(BIOPTIM_FOLDER + "/examples/models/2segments_4dof_2soft_contacts_1muscle.bioMod")
-from bioptim.examples.getting_started import basic_ocp as ocp_module
 
-BIOPTIM_FOLDER = TestUtils.bioptim_folder(ocp_module)
+BIOPTIM_FOLDER = TestUtils.bioptim_folder()
 MODEL_NO_CONTACT = BiorbdModel(BIOPTIM_FOLDER + "/examples/models/pendulum.bioMod")
 
 

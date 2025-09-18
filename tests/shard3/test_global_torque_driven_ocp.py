@@ -36,7 +36,7 @@ def test_track_markers(ode_solver, actuator_type, phase_dynamics):
     bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cube_with_actuators.bioMod",
         n_shooting=30,
         final_time=2,
         actuator_type=actuator_type,
@@ -91,7 +91,7 @@ def test_track_markers_changing_constraints(ode_solver, phase_dynamics):
     bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cube_with_actuators.bioMod",
         n_shooting=30,
         final_time=2,
         ode_solver=ode_solver(),
@@ -189,7 +189,7 @@ def test_track_markers_with_actuators(ode_solver, phase_dynamics):
     bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cube_with_actuators.bioMod",
         n_shooting=30,
         final_time=2,
         actuator_type=1,

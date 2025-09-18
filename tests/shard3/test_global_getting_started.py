@@ -428,7 +428,7 @@ def test_initial_guesses(ode_solver, interpolation, random_init, phase_dynamics)
         return
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../../models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
         final_time=1,
         n_shooting=5,
         random_init=random_init,
@@ -883,7 +883,7 @@ def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver, phase
     ode_solver = ode_solver()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/../bioptim/examples/getting_started/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
         problem_type_custom=problem_type_custom,
         ode_solver=ode_solver,
         phase_dynamics=phase_dynamics,
@@ -1341,7 +1341,7 @@ def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8])  # use_SX and IRK are not compatible
 def test_multinode_objective(ode_solver, phase_dynamics):
-    from bioptim.examples.getting_started import example_multinode_objective as ocp_module
+    from bioptim.examples.toy_examples.feature_examples import example_multinode_objective as ocp_module
 
     gc.collect()  # Force garbage collection
     time.sleep(0.1)  # Avoiding delay in memory (re)allocation
@@ -1530,7 +1530,7 @@ def test_multinode_constraints_too_much_constraints(ode_solver, too_much_constra
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_multinode_constraints(ode_solver, phase_dynamics):
-    from bioptim.examples.getting_started import example_multinode_constraints as ocp_module
+    from bioptim.examples.toy_examples.feature_examples import example_multinode_constraints as ocp_module
 
     gc.collect()  # Force garbage collection
     time.sleep(0.1)  # Avoiding delay in memory (re)allocation
@@ -1616,7 +1616,7 @@ def test_multistart():
 
     tik = time.time()  # Time before starting to build the problem
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
     bio_model_path = [bioptim_folder + "/examples/models/pendulum.bioMod"]
     final_time = [1]
     n_shooting = [5, 10]
@@ -1816,7 +1816,7 @@ def test_multistart():
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_example_variable_scaling(phase_dynamics):
-    from bioptim.examples.getting_started import example_variable_scaling as ocp_module
+    from bioptim.examples.toy_examples.feature_examples import example_variable_scaling as ocp_module
 
     gc.collect()  # Force garbage collection
     time.sleep(0.1)  # Avoiding delay in memory (re)allocation

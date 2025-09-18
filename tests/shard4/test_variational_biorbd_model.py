@@ -14,7 +14,7 @@ def test_variational_model():
         example_variational_integrator_pendulum as ocp_module,
     )
 
-    bbioptim_folder = TestUtils.bioptim_folder()
+    bioptim_folder = TestUtils.bioptim_folder()
     biorbd_model_path = bioptim_folder + "/examples/models/pendulum.bioMod"
     model = VariationalBiorbdModel(biorbd_model_path)
 

@@ -70,7 +70,7 @@ def test_symmetry_by_mapping(ode_solver, phase_dynamics):
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 def test_symmetry_by_constraint(ode_solver, phase_dynamics):
-    from bioptim.examples.symmetrical_torque_driven_ocp import symmetry_by_constraint as ocp_module
+    from bioptim.examples.toy_examples.symmetrical_torque_driven_ocp import symmetry_by_constraint as ocp_module
 
     if platform.system() == "Darwin":
         pytest.skip("This test does not pass in one case on MacOS.")

@@ -35,7 +35,7 @@ def test_example_param_obj_and_param_scaling(
 
     from bioptim.examples.toy_examples.feature_examples import example_parameter_scaling as ocp_module
 
-    bbioptim_folder = TestUtils.bioptim_folder()
+    bioptim_folder = TestUtils.bioptim_folder()
 
     final_time = 1
     n_shooting = 10

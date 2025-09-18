@@ -967,7 +967,7 @@ def test_update_noised_initial_guess_rk4(interpolation, phase_dynamics):
 @pytest.mark.parametrize("interpolation", [*InterpolationType])
 def test_update_noised_initial_guess_collocation(interpolation, phase_dynamics):
     bioptim_folder = TestUtils.bioptim_folder()
-    bio_model = TorqueBiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
+    bio_model = TorqueBiorbdModel(bioptim_folder + "/examples/models/cube.bioMod")
     nq = bio_model.nb_q
     nqdot = bio_model.nb_qdot
     ntau = bio_model.nb_tau

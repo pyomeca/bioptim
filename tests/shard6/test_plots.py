@@ -186,7 +186,7 @@ def test__getting_started__custom_constraints__custom():
 # Test 3: variable mapping
 @pytest.fixture(scope="module")
 def plots_generator_for_mapping():
-    from bioptim.examples.symmetrical_torque_driven_ocp import symmetry_by_mapping as ocp_module
+    from bioptim.examples.toy_examples.symmetrical_torque_driven_ocp import symmetry_by_mapping as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
 

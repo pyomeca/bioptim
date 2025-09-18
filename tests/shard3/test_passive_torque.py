@@ -394,7 +394,7 @@ def test_pendulum_passive_torque(with_passive_torque, phase_dynamics):
         pytest.skip("These tests do not pass on Windows.")
 
     if with_passive_torque:
-        model_filename = "/examples/models/pendulum_with_passive_torque.bioMod"
+        model_filename = "/examples/models/pendulum_with_constant_passive_torque.bioMod"
     else:
         model_filename = "/examples/models/pendulum.bioMod"
 
@@ -412,7 +412,6 @@ def test_pendulum_passive_torque(with_passive_torque, phase_dynamics):
     )
     solver = Solver.IPOPT()
 
-    # solver.set_maximum_iterations(10)
     sol = ocp.solve(solver)
 
     # Check some results
