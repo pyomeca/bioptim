@@ -353,11 +353,28 @@ def test_get_time_aligned_with_states_multi_phases(
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 @pytest.mark.parametrize(
-    "control_type", [ControlType.CONSTANT, ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE]
+    "control_type",
+    [
+        ControlType.CONSTANT,
+        ControlType.LINEAR_CONTINUOUS,
+        ControlType.CONSTANT_WITH_LAST_NODE,
+    ],
 )
 @pytest.mark.parametrize("collocation_type", ["none", "radau", "legendre"])
-@pytest.mark.parametrize("duplicate_first", [False, True])
-@pytest.mark.parametrize("continuous", [False, True])
+@pytest.mark.parametrize(
+    "duplicate_first",
+    [
+        False,
+        True,
+    ],
+)
+@pytest.mark.parametrize(
+    "continuous",
+    [
+        False,
+        True,
+    ],
+)
 def test_get_time_aligned_with_controls_multi_phases(
     phase_dynamics, ode_solver, control_type, collocation_type, duplicate_first, continuous
 ):

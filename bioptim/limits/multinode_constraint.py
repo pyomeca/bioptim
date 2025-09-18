@@ -98,7 +98,7 @@ class MultinodeConstraintList(MultinodePenaltyList):
     def add(
         self,
         multinode_constraint: Any,
-        weight: Int | Float | ConstraintWeight = ConstraintWeight(),
+        weight: Int | Float | ConstraintWeight = None,
         **extra_arguments: Any,
     ):
         """
@@ -111,6 +111,9 @@ class MultinodeConstraintList(MultinodePenaltyList):
         extra_arguments: dict
             Any parameters to pass to Constraint
         """
+
+        if weight is None:
+            weight = ConstraintWeight()
 
         if not isinstance(weight, ConstraintWeight):
             if isinstance(weight, (int, float)):
