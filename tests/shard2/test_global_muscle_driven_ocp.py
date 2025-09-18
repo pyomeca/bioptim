@@ -27,7 +27,7 @@ def test_muscle_driven_ocp(ode_solver, phase_dynamics):
     bioptim_folder = TestUtils.module_folder(ocp_module)
 
     ocp = ocp_module.prepare_ocp(
-        bioptim_folder + "/../../models/arm26.bioMod",
+        bioptim_folder + "/../../models/arm26_muscle_driven_ocp.bioMod",
         final_time=0.1,
         n_shooting=5,
         weight=1,

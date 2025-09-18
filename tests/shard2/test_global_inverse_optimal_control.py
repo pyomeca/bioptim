@@ -13,7 +13,7 @@ from ..utils import TestUtils
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_double_pendulum_torque_driven_IOCP(phase_dynamics):
     # Load double pendulum ocp
-    from bioptim.examples.inverse_optimal_control import double_pendulum_torque_driven_IOCP as ocp_module
+    from bioptim.examples.toy_examples.inverse_optimal_control import double_pendulum_torque_driven_IOCP as ocp_module
 
     bioptim_folder = TestUtils.module_folder(ocp_module)
     biorbd_model_path = bioptim_folder + "/models/double_pendulum.bioMod"

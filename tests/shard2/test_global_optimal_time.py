@@ -410,7 +410,7 @@ def partial_ocp_parameters(n_phases, phase_dynamics):
     if n_phases != 1 and n_phases != 3:
         raise RuntimeError("n_phases should be 1 or 3")
 
-    biorbd_model_path = TestUtils.bioptim_folder() + "/examples/optimal_time_ocp/models/cube.bioMod"
+    biorbd_model_path = TestUtils.bioptim_folder() + "/examples/models/cube.bioMod"
     bio_model = (
         TorqueBiorbdModel(biorbd_model_path),
         TorqueBiorbdModel(biorbd_model_path),
