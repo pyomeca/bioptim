@@ -109,12 +109,15 @@ def launch_rerun(
 
         prerun.add_phase(t_span=data["time"], phase=idx_phase)
 
-        if not isinstance(model, biorbd.Model):
+        if isinstance(model, biorbd.Model):
+            biorbd_model = pyorerun.BiorbdModel.from_biorbd_object(model)
+        elif isinstance(model, BiorbdModel):
+            biorbd_model = pyorerun.BiorbdModel.from_biorbd_object(model.model)
+        else:
             raise NotImplementedError(
                 f"Animation is only implemented for biorbd models. Got {model.__class__.__name__}"
             )
 
-        biorbd_model = pyorerun.BiorbdModel.from_biorbd_object(model)
         tm = (
             pyorerun.PyoMarkers(tm, channels=[n.to_string() for n in biorbd_model.model.markerNames()])
             if tm is not None
