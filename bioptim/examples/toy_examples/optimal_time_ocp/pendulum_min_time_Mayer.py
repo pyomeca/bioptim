@@ -119,9 +119,7 @@ def main():
     """
 
     biorbd_model_path = ExampleUtils.examples_folder() + "/models/pendulum.bioMod"
-    ocp = prepare_ocp(
-        biorbd_model_path=biorbd_model_path, final_time=2, n_shooting=50, ode_solver=OdeSolver.RK4()
-    )
+    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, final_time=2, n_shooting=50, ode_solver=OdeSolver.RK4())
 
     # Let's show the objectives
     ocp.add_plot_penalty(CostType.OBJECTIVES)

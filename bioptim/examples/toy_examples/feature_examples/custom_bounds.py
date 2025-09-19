@@ -317,7 +317,9 @@ def main():
             continue
 
         print(f"Solving problem using {interpolation_type} bounds")
-        ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, n_shooting=30, final_time=2, interpolation_type=interpolation_type)
+        ocp = prepare_ocp(
+            biorbd_model_path=biorbd_model_path, n_shooting=30, final_time=2, interpolation_type=interpolation_type
+        )
         sol = ocp.solve()
         print("\n")
 

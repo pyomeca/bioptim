@@ -66,7 +66,10 @@ def test_acados_one_mayer(cost_type):
     bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/models/cube_acados.bioMod", n_shooting=10, tf=2, expand_dynamics=True
+        biorbd_model_path=bioptim_folder + "/examples/models/cube_acados.bioMod",
+        n_shooting=10,
+        tf=2,
+        expand_dynamics=True,
     )
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="q", index=[0], target=np.array([[1.0]]).T)

@@ -185,7 +185,11 @@ def main():
 
             print(f"Solving problem using {interpolation_type} weight applied at {node} nodes.")
             ocp = prepare_ocp(
-                biorbd_model_path=biorbd_model_path, n_shooting=30, final_time=2, interpolation_type=interpolation_type, node=node
+                biorbd_model_path=biorbd_model_path,
+                n_shooting=30,
+                final_time=2,
+                interpolation_type=interpolation_type,
+                node=node,
             )
             sol = ocp.solve()
             print("\n")

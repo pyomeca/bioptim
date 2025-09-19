@@ -33,6 +33,7 @@ from bioptim import (
 
 from bioptim.examples.utils import ExampleUtils
 
+
 def my_parameter_function(bio_model: TorqueBiorbdModel, value: MX, extra_value: Any):
     """
     The pre dynamics function is called right before defining the dynamics of the system. If one wants to

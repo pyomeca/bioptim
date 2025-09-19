@@ -201,7 +201,12 @@ def main():
     time_min = (0.7, 3)
     time_max = (2, 4)
     ocp = prepare_ocp(
-        biorbd_model_path=biorbd_model_path, final_time=final_time, time_min=time_min, time_max=time_max, n_shooting=ns, with_phase_time_equality=True
+        biorbd_model_path=biorbd_model_path,
+        final_time=final_time,
+        time_min=time_min,
+        time_max=time_max,
+        n_shooting=ns,
+        with_phase_time_equality=True,
     )
 
     # --- Solve the program --- #
