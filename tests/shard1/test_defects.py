@@ -1416,8 +1416,7 @@ def test_muscle_driven(
     if ContactType.RIGID_IMPLICIT in contact_types and with_external_force:
         with pytest.raises(NotImplementedError):
             nlp.model = MusclesBiorbdModel(
-                TestUtils.bioptim_folder()
-                + "/examples/models/arm26_with_contact.bioMod",
+                TestUtils.bioptim_folder() + "/examples/models/arm26_with_contact.bioMod",
                 contact_types=contact_types,
                 external_force_set=external_forces,
             )
@@ -1425,8 +1424,7 @@ def test_muscle_driven(
         with pytest.raises(RuntimeError, match="The segment for the rigid contact index 0 was not found."):
             # TODO: This is a bug... The index of the parent of the contact is not correctly identified when it is the root
             nlp.model = MusclesBiorbdModel(
-                TestUtils.bioptim_folder()
-                + "/examples/models/arm26_with_contact.bioMod",
+                TestUtils.bioptim_folder() + "/examples/models/arm26_with_contact.bioMod",
                 contact_types=contact_types,
                 external_force_set=external_forces,
             )

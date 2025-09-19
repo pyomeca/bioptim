@@ -11,7 +11,9 @@ from ..utils import TestUtils
 
 @pytest.mark.parametrize("use_sx", [False, True])
 def test_arm_reaching_torque_driven_collocations(use_sx: bool):
-    from bioptim.examples.toy_examples.stochastic_optimal_control import arm_reaching_torque_driven_collocations as ocp_module
+    from bioptim.examples.toy_examples.stochastic_optimal_control import (
+        arm_reaching_torque_driven_collocations as ocp_module,
+    )
 
     final_time = 0.4
     n_shooting = 4

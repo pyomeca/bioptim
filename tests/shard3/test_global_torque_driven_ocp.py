@@ -235,7 +235,9 @@ def test_track_marker_2D_pendulum(ode_solver, phase_dynamics):
     from bioptim.examples.toy_examples.torque_driven_ocp import track_markers_2D_pendulum as ocp_module
 
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
-        pytest.skip("For reducing time phase_dynamics == PhaseDynamics.ONE_PER_NODE is skipped as it is a redundant tests")
+        pytest.skip(
+            "For reducing time phase_dynamics == PhaseDynamics.ONE_PER_NODE is skipped as it is a redundant tests"
+        )
 
     bioptim_folder = TestUtils.bioptim_folder()
 
@@ -463,7 +465,9 @@ def test_example_quaternions(phase_dynamics):
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_phase_transition_uneven_variable_number_by_bounds(phase_dynamics):
     # Load phase_transition_uneven_variable_number_by_bounds
-    from bioptim.examples.toy_examples.torque_driven_ocp import phase_transition_uneven_variable_number_by_bounds as ocp_module
+    from bioptim.examples.toy_examples.torque_driven_ocp import (
+        phase_transition_uneven_variable_number_by_bounds as ocp_module,
+    )
 
     bioptim_folder = TestUtils.bioptim_folder()
 
@@ -494,7 +498,9 @@ def test_phase_transition_uneven_variable_number_by_bounds(phase_dynamics):
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_phase_transition_uneven_variable_number_by_mapping(phase_dynamics):
     # Load phase_transition_uneven_variable_number_by_mapping
-    from bioptim.examples.toy_examples.torque_driven_ocp import phase_transition_uneven_variable_number_by_mapping as ocp_module
+    from bioptim.examples.toy_examples.torque_driven_ocp import (
+        phase_transition_uneven_variable_number_by_mapping as ocp_module,
+    )
 
     bioptim_folder = TestUtils.bioptim_folder()
 

@@ -483,7 +483,8 @@ def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_mapping(
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/double_pendulum.bioMod",
-        biorbd_model_path_with_translations=bioptim_folder + "/examples/models/double_pendulum_with_translations.bioMod",
+        biorbd_model_path_with_translations=bioptim_folder
+        + "/examples/models/double_pendulum_with_translations.bioMod",
         n_shooting=(5, 5),
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,

@@ -116,9 +116,7 @@ def prepare_test_ocp(
     if with_muscles and with_contact or with_muscles and with_actuator or with_contact and with_actuator:
         raise RuntimeError("With muscles and with contact and with_actuator together is not defined")
     elif with_muscles:
-        bio_model = MusclesBiorbdModel(
-            bioptim_folder + "/examples/models/arm26.bioMod", with_residual_torque=True
-        )
+        bio_model = MusclesBiorbdModel(bioptim_folder + "/examples/models/arm26.bioMod", with_residual_torque=True)
         dynamics = DynamicsOptionsList()
         dynamics.add(expand_dynamics=True, phase_dynamics=phase_dynamics)
     elif with_contact:
