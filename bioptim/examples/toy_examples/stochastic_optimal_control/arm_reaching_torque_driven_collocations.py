@@ -16,7 +16,6 @@ from bioptim import (
     StochasticTorqueBiorbdModel,
     ObjectiveList,
     NonLinearProgram,
-    DynamicsOptionsList,
     BoundsList,
     InterpolationType,
     SocpType,
@@ -30,7 +29,7 @@ from bioptim import (
     DynamicsOptions,
 )
 
-from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
+from bioptim.examples.toy_examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
 
 
 def sensory_reference(
