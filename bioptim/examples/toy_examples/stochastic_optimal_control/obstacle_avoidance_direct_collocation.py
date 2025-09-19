@@ -38,12 +38,12 @@ from bioptim import (
     SolutionIntegrator,
     Shooting,
 )
-from bioptim.examples.stochastic_optimal_control.common import (
+from bioptim.examples.toy_examples.stochastic_optimal_control.common import (
     test_matrix_semi_definite_positiveness,
     test_eigen_values,
     reshape_to_matrix,
 )
-from bioptim.examples.stochastic_optimal_control.models.mass_point_model import (
+from bioptim.examples.toy_examples.stochastic_optimal_control.models.mass_point_model import (
     MassPointDynamicsModel,
     StochasticMassPointDynamicsModel,
 )
