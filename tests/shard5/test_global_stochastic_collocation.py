@@ -395,7 +395,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
 
 @pytest.mark.parametrize("use_sx", [False, True])
 def test_obstacle_avoidance_direct_collocation(use_sx: bool):
-    from bioptim.examples.stochastic_optimal_control import obstacle_avoidance_direct_collocation as ocp_module
+    from bioptim.examples.toy_examples.stochastic_optimal_control import obstacle_avoidance_direct_collocation as ocp_module
 
     polynomial_degree = 3
     n_shooting = 10

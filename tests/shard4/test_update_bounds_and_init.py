@@ -43,7 +43,7 @@ def test_option_dict_method():
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_double_update_bounds_and_init(phase_dynamics):
     bioptim_folder = TestUtils.bioptim_folder()
-    bio_model = TorqueBiorbdModel(bioptim_folder + "/examples/track/models/cube_and_line.bioMod")
+    bio_model = TorqueBiorbdModel(bioptim_folder + "/examples/models/cube_and_line.bioMod")
     nq = bio_model.nb_q
     ns = 10
 
@@ -262,7 +262,7 @@ def test_update_bounds_and_init_with_param(phase_dynamics):
 @pytest.mark.parametrize("interpolation", [*InterpolationType])
 def test_update_noised_init_rk4(interpolation, phase_dynamics):
     bioptim_folder = TestUtils.bioptim_folder()
-    bio_model = TorqueBiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
+    bio_model = TorqueBiorbdModel(bioptim_folder + "/examples/models/cube.bioMod")
     nq = bio_model.nb_q
     nqdot = bio_model.nb_qdot
     ntau = bio_model.nb_tau

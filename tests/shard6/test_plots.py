@@ -188,7 +188,7 @@ def test__getting_started__custom_constraints__custom():
 def plots_generator_for_mapping():
     from bioptim.examples.toy_examples.symmetrical_torque_driven_ocp import symmetry_by_mapping as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/cubeSym.bioMod",
@@ -222,7 +222,7 @@ def test_mapping_2(plots_generator_for_mapping):
 def plots_generator_for_multi_phase():
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
@@ -257,7 +257,7 @@ def test_multi_phase_2(plots_generator_for_multi_phase):
 def test__optimal_time_ocp__min_time_mayer__constant():
     from bioptim.examples.toy_examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
@@ -278,7 +278,7 @@ def test__optimal_time_ocp__min_time_mayer__constant():
 def test__optimal_time_ocp__min_time_mayer__constant_with_last():
     from bioptim.examples.toy_examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
@@ -299,7 +299,7 @@ def test__optimal_time_ocp__min_time_mayer__constant_with_last():
 def test__optimal_time_ocp__min_time_mayer__linear_continuous():
     from bioptim.examples.toy_examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
@@ -324,7 +324,7 @@ def test__optimal_time_ocp__min_time_mayer__linear_continuous():
 def test__getting_started__pendulum__rk1():
     from bioptim.examples.getting_started import basic_ocp as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
@@ -345,7 +345,7 @@ def test__getting_started__pendulum__rk1():
 def test__getting_started__pendulum__rk2():
     from bioptim.examples.getting_started import basic_ocp as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
@@ -366,7 +366,7 @@ def test__getting_started__pendulum__rk2():
 def test__getting_started__pendulum__rk4():
     from bioptim.examples.getting_started import basic_ocp as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
@@ -387,7 +387,7 @@ def test__getting_started__pendulum__rk4():
 def test__getting_started__pendulum__trapezoidal():
     from bioptim.examples.getting_started import basic_ocp as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
@@ -409,7 +409,7 @@ def test__getting_started__pendulum__trapezoidal():
 def test__getting_started__pendulum__irk():
     from bioptim.examples.getting_started import basic_ocp as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
@@ -431,7 +431,7 @@ def test__getting_started__pendulum__irk():
 def test__getting_started__pendulum__collocation_legendre():
     from bioptim.examples.getting_started import basic_ocp as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
@@ -452,7 +452,7 @@ def test__getting_started__pendulum__collocation_legendre():
 def test__getting_started__pendulum__collocation_radau():
     from bioptim.examples.getting_started import basic_ocp as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
@@ -479,7 +479,7 @@ def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_mapping(
         phase_transition_uneven_variable_number_by_mapping as ocp_module,
     )
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/double_pendulum.bioMod",
@@ -501,7 +501,7 @@ def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_mapping(
 def test__torque_driven_ocp__track_markers_2D_pendulum():
     from bioptim.examples.toy_examples.torque_driven_ocp import track_markers_2D_pendulum as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
     model_path = bioptim_folder + "/examples/models/pendulum.bioMod"
 
     np.random.seed(42)
@@ -525,7 +525,7 @@ def test__torque_driven_ocp__track_markers_2D_pendulum():
 def test__torque_driven_ocp__example_quaternions():
     from bioptim.examples.toy_examples.torque_driven_ocp import example_quaternions as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/trunk_and_2arm_quaternion.bioMod",
@@ -547,7 +547,7 @@ def plots_generator_for_muscle_driven_with_contact():
         contact_forces_inequality_constraint_muscle as ocp_module,
     )
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/2segments_4dof_2contacts_1muscle.bioMod",
