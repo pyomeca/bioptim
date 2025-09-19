@@ -542,7 +542,7 @@ def test__torque_driven_ocp__example_quaternions():
 # Test 10: muscle-driven with contact
 @pytest.fixture(scope="module")
 def plots_generator_for_muscle_driven_with_contact():
-    from bioptim.examples.muscle_driven_with_contact import (
+    from bioptim.examples.toy_examples.muscle_driven_with_contact import (
         contact_forces_inequality_constraint_muscle as ocp_module,
     )
 

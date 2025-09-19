@@ -1543,7 +1543,7 @@ def test_multinode_constraints(ode_solver, phase_dynamics):
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.RK8:
         return
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ode_solver_orig = ode_solver
     ode_solver = ode_solver()
@@ -1825,7 +1825,7 @@ def test_example_variable_scaling(phase_dynamics):
 
     tik = time.time()  # Time before starting to build the problem
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",

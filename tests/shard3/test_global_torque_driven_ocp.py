@@ -234,9 +234,8 @@ def test_track_marker_2D_pendulum(ode_solver, phase_dynamics):
     # Load muscle_activations_contact_tracker
     from bioptim.examples.toy_examples.torque_driven_ocp import track_markers_2D_pendulum as ocp_module
 
-    # For reducing time phase_dynamics == PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
-        pytest.skip("Redundant test")
+        pytest.skip("For reducing time phase_dynamics == PhaseDynamics.ONE_PER_NODE is skipped as it is a redundant tests")
 
     bioptim_folder = TestUtils.bioptim_folder()
 

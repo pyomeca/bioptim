@@ -180,7 +180,7 @@ def test_update_bounds_and_init_with_param(phase_dynamics):
         new_gravity[2] = value + extra_value
         bio_model.set_gravity(new_gravity)
 
-    bio_model = TorqueBiorbdModel(TestUtils.bioptim_folder() + "/examples/track/models/cube_and_line.bioMod")
+    bio_model = TorqueBiorbdModel(TestUtils.bioptim_folder() + "/examples/models/cube_and_line.bioMod")
     nq = bio_model.nb_q
     ns = 10
     g_min, g_max, g_init = -10, -6, -8
@@ -617,7 +617,7 @@ def test_update_noised_init_rk4(interpolation, phase_dynamics):
 @pytest.mark.parametrize("interpolation", [*InterpolationType])
 def test_update_noised_initial_guess_rk4(interpolation, phase_dynamics):
     bioptim_folder = TestUtils.bioptim_folder()
-    bio_model = TorqueBiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
+    bio_model = TorqueBiorbdModel(bioptim_folder + "/examples/models/cube.bioMod")
     nq = bio_model.nb_q
     nqdot = bio_model.nb_qdot
     ntau = bio_model.nb_tau

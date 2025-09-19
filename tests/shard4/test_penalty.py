@@ -148,7 +148,7 @@ def prepare_test_ocp(
                 )
             )
     elif with_actuator:
-        bio_model = TorqueActivationBiorbdModel(bioptim_folder + "/examples/models/cube.bioMod")
+        bio_model = TorqueActivationBiorbdModel(bioptim_folder + "/examples/models/cube_with_actuators.bioMod")
         dynamics = DynamicsOptions(expand_dynamics=True, phase_dynamics=phase_dynamics)
     else:
         bio_model = TorqueBiorbdModel(bioptim_folder + "/examples/models/cube_and_line.bioMod")
