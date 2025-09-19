@@ -29,7 +29,7 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
 )
-from from bioptim.examples.utils import ExampleUtils
+from bioptim.examples.utils import ExampleUtils
 
 
 def eul2quat(eul: np.ndarray) -> np.ndarray:

@@ -42,7 +42,7 @@ def test_acados_no_obj(cost_type):
     bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cube_acados.bioMod",
         n_shooting=10,
         tf=2,
         expand_dynamics=True,
@@ -66,7 +66,7 @@ def test_acados_one_mayer(cost_type):
     bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod", n_shooting=10, tf=2, expand_dynamics=True
+        biorbd_model_path=bioptim_folder + "/examples/models/cube_acados.bioMod", n_shooting=10, tf=2, expand_dynamics=True
     )
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="q", index=[0], target=np.array([[1.0]]).T)
@@ -96,7 +96,7 @@ def test_acados_mayer_first_node(cost_type):
     bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cube_acados.bioMod",
         n_shooting=10,
         tf=2,
         expand_dynamics=True,
@@ -132,7 +132,7 @@ def test_acados_several_mayer(cost_type):
     bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cube_acados.bioMod",
         n_shooting=10,
         tf=2,
         expand_dynamics=True,
@@ -172,7 +172,7 @@ def test_acados_one_lagrange(cost_type):
     target = np.expand_dims(np.arange(0, n_shooting + 1), axis=0)
     target[0, -1] = n_shooting - 2
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cube_acados.bioMod",
         n_shooting=n_shooting,
         tf=2,
         expand_dynamics=True,
@@ -217,7 +217,7 @@ def test_acados_one_lagrange_and_one_mayer(cost_type):
     target = np.expand_dims(np.arange(0, n_shooting + 1), axis=0)
     target[0, -1] = n_shooting - 2
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cube_acados.bioMod",
         n_shooting=n_shooting,
         tf=2,
         expand_dynamics=True,
@@ -264,7 +264,7 @@ def test_acados_control_lagrange_and_state_mayer(cost_type):
     n_shooting = 10
     target = np.array([[2]])
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cube_acados.bioMod",
         n_shooting=n_shooting,
         tf=2,
         expand_dynamics=True,
@@ -385,7 +385,7 @@ def test_acados_custom_dynamics(problem_type_custom):
     bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cube_acados.bioMod",
         problem_type_custom=problem_type_custom,
         ode_solver=OdeSolver.RK4(),
         use_sx=True,
@@ -573,7 +573,7 @@ def test_acados_one_end_constraints():
     bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cube_acados.bioMod",
         n_shooting=10,
         tf=2,
         expand_dynamics=True,
