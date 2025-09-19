@@ -151,7 +151,7 @@ def main():
     Solve and animate the solution
     """
 
-    model_path = "models/cube.bioMod"
+    model_path = "../models/cube.bioMod"
     ocp = prepare_ocp(biorbd_model_path=model_path)
 
     # Custom plots
