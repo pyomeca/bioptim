@@ -39,9 +39,9 @@ class OptimalControlProgram:
 def test_torque_driven_with_ligament(with_ligament, cx, phase_dynamics):
 
     if with_ligament:
-        model_filename = "/examples/torque_driven_ocp/models/mass_point_with_ligament.bioMod"
+        model_filename = "/examples/models/mass_point_with_ligament.bioMod"
     else:
-        model_filename = "/examples/torque_driven_ocp/models/mass_point_without_ligament.bioMod"
+        model_filename = "/examples/models/mass_point_without_ligament.bioMod"
 
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = TorqueBiorbdModel(TestUtils.bioptim_folder() + model_filename)
@@ -102,9 +102,9 @@ def test_torque_driven_with_ligament(with_ligament, cx, phase_dynamics):
 def test_torque_derivative_driven_with_ligament(with_ligament, cx, phase_dynamics):
 
     if with_ligament:
-        model_filename = "/examples/torque_driven_ocp/models/mass_point_with_ligament.bioMod"
+        model_filename = "/examples/models/mass_point_with_ligament.bioMod"
     else:
-        model_filename = "/examples/torque_driven_ocp/models/mass_point_without_ligament.bioMod"
+        model_filename = "/examples/models/mass_point_without_ligament.bioMod"
 
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = TorqueDerivativeBiorbdModel(TestUtils.bioptim_folder() + model_filename)
@@ -166,9 +166,9 @@ def test_torque_derivative_driven_with_ligament(with_ligament, cx, phase_dynamic
 def test_torque_activation_driven_with_ligament(with_ligament, cx, phase_dynamics):
 
     if with_ligament:
-        model_filename = "/examples/torque_driven_ocp/models/mass_point_with_ligament.bioMod"
+        model_filename = "/examples/models/mass_point_with_ligament.bioMod"
     else:
-        model_filename = "/examples/torque_driven_ocp/models/mass_point_without_ligament.bioMod"
+        model_filename = "/examples/models/mass_point_without_ligament.bioMod"
 
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = TorqueActivationBiorbdModel(TestUtils.bioptim_folder() + model_filename)
@@ -228,9 +228,9 @@ def test_torque_activation_driven_with_ligament(with_ligament, cx, phase_dynamic
 def test_muscle_driven_with_ligament(with_ligament, cx, phase_dynamics):
 
     if with_ligament:
-        model_filename = "/examples/muscle_driven_ocp/models/arm26_with_ligament.bioMod"
+        model_filename = "/examples/models/arm26_with_ligament.bioMod"
     else:
-        model_filename = "/examples/muscle_driven_ocp/models/arm26.bioMod"
+        model_filename = "/examples/models/arm26.bioMod"
 
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = MusclesBiorbdModel(TestUtils.bioptim_folder() + model_filename)
