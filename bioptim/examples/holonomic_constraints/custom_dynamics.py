@@ -1,16 +1,25 @@
-from casadi import vertcat
+from typing import Callable
 
+import numpy as np
+from casadi import vertcat, DM
+
+import biorbd
 from bioptim import (
-    PenaltyController,
+    ConfigureVariables,
+    Controls,
     DynamicsEvaluation,
     DynamicsFunctions,
-    NonLinearProgram,
-    OptimalControlProgram,
-    ConfigureProblem,
-    OdeSolver,
-    HolonomicTorqueBiorbdModel,
-    ConfigureVariables,
+    HolonomicBiorbdModel,
     HolonomicConstraintsList,
+    HolonomicTorqueBiorbdModel,
+    HolonomicTorqueDynamics,
+    OdeSolver,
+    ParameterList,
+    PenaltyController,
+    States,
+    DefectType,
+    TorqueDynamics,
+    MusclesDynamics,
 )
 
 
@@ -152,3 +161,160 @@ class ModifiedHolonomicTorqueBiorbdModel(HolonomicTorqueBiorbdModel):
             defects = vertcat(slope_q_u, slope_qdot_u) - dxdt
 
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
+
+
+class HolonomicMusclesDynamics(HolonomicTorqueDynamics):
+
+    def __init__(self):
+        super().__init__()
+        self.state_configuration = [States.Q_U, States.QDOT_U]
+        self.control_configuration = [Controls.TAU, Controls.MUSCLE_EXCITATION]
+        self.algebraic_configuration = []
+        self.functions = [
+            ConfigureVariables.configure_qv,
+            ConfigureVariables.configure_qdotv,
+            ConfigureVariables.configure_lagrange_multipliers_function,
+        ]
+        self.with_residual_torque = True
+
+    def get_basic_variables(
+        self,
+        nlp,
+        states,
+        controls,
+        parameters,
+        algebraic_states,
+        numerical_timeseries,
+    ):
+
+        # Get variables from the right place
+        # q = DynamicsFunctions.get(nlp.states["q"], states)
+        # qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+        q_u = DynamicsFunctions.get(nlp.states["q_u"], states)
+        qdot_u = DynamicsFunctions.get(nlp.states["qdot_u"], states)
+        q_v_init = DM.zeros(nlp.model.nb_dependent_joints)
+        mus_activations = DynamicsFunctions.get(nlp.controls["muscles"], controls)
+        fatigue_states, mus_activations = DynamicsFunctions.get_fatigue_states(states, nlp, mus_activations)
+
+        q = nlp.model.compute_q()(q_u, q_v_init)
+        qdot = nlp.model.compute_qdot()(q, qdot_u)
+
+        # Compute the torques due to muscles
+        muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations, fatigue_states)
+
+        # Add additional torques
+        if self.with_residual_torque:
+            muscles_tau += DynamicsFunctions.get_fatigable_tau(nlp, states, controls)
+        muscles_tau += DynamicsFunctions.collect_tau(nlp, q, qdot, parameters)
+
+        # Get external forces
+        external_forces = nlp.get_external_forces(
+            "external_forces", states, controls, algebraic_states, numerical_timeseries
+        )
+        return q_u, qdot_u, muscles_tau, external_forces, mus_activations
+
+    def dynamics(
+        self,
+        time,
+        states,
+        controls,
+        parameters,
+        algebraic_states,
+        numerical_timeseries,
+        nlp,
+    ):
+
+        # q_u = DynamicsFunctions.get(nlp.states["q_u"], states)
+        # qdot_u = DynamicsFunctions.get(nlp.states["qdot_u"], states)
+        # tau = DynamicsFunctions.get(nlp.controls["tau"], controls) # Get torques from muscles + residual torques
+        q_u, qdot_u, tau, _, _ = self.get_basic_variables(
+            nlp, states, controls, parameters, algebraic_states, numerical_timeseries
+        )
+        q_v_init = DM.zeros(nlp.model.nb_dependent_joints)
+
+        qddot_u = nlp.model.partitioned_forward_dynamics()(q_u, qdot_u, q_v_init, tau)
+        dxdt = vertcat(qdot_u, qddot_u)
+
+        defects = None
+        if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
+            slope_q_u = DynamicsFunctions.get(nlp.states_dot["q_u"], nlp.states_dot.scaled.cx)
+            slope_qdot_u = DynamicsFunctions.get(nlp.states_dot["qdot_u"], nlp.states_dot.scaled.cx)
+            defects = vertcat(slope_q_u, slope_qdot_u) - dxdt
+
+        return DynamicsEvaluation(dxdt=dxdt, defects=defects)
+
+    def get_rigid_contact_forces(self, time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp):
+        return
+
+    @property
+    def extra_dynamics(self):
+        return None
+
+
+class HolonomicMusclesBiorbdModel(HolonomicBiorbdModel, HolonomicMusclesDynamics):
+    def __init__(
+        self,
+        bio_model: str | biorbd.Model,
+        friction_coefficients: np.ndarray = None,
+        parameters: ParameterList = None,
+        holonomic_constraints: HolonomicConstraintsList | None = None,
+        dependent_joint_index: list[int] | tuple[int, ...] = None,
+        independent_joint_index: list[int] | tuple[int, ...] = None,
+    ):
+        HolonomicBiorbdModel.__init__(self, bio_model, friction_coefficients, parameters)
+        if holonomic_constraints is not None:
+            self.set_holonomic_configuration(holonomic_constraints, dependent_joint_index, independent_joint_index)
+        HolonomicMusclesDynamics.__init__(self)
+
+    def serialize(self) -> tuple[Callable, dict]:
+        return HolonomicMusclesBiorbdModel, dict(bio_model=self.path, friction_coefficients=self.friction_coefficients)
+
+
+class AlgebraicHolonomicMusclesBiorbdModel(HolonomicMusclesBiorbdModel):
+    def __init__(
+        self,
+        bio_model_path: str,
+        holonomic_constraints: HolonomicConstraintsList = None,
+        independent_joint_index: tuple[int] = None,
+        dependent_joint_index: tuple[int] = None,
+    ):
+        super().__init__(
+            bio_model_path,
+            holonomic_constraints=holonomic_constraints,
+            independent_joint_index=independent_joint_index,
+            dependent_joint_index=dependent_joint_index,
+        )
+        self.algebraic_configuration += [configure_qv]
+
+    def get_basic_variables(
+        self,
+        nlp,
+        states,
+        controls,
+        parameters,
+        algebraic_states,
+        numerical_timeseries,
+    ):
+
+        q_u = DynamicsFunctions.get(nlp.states["q_u"], states)
+        qdot_u = DynamicsFunctions.get(nlp.states["qdot_u"], states)
+        q_v = DynamicsFunctions.get(nlp.algebraic_states["q_v"], algebraic_states)
+        mus_activations = DynamicsFunctions.get(nlp.controls["muscles"], controls)
+        fatigue_states, mus_activations = DynamicsFunctions.get_fatigue_states(states, nlp, mus_activations)
+
+        q = nlp.model.compute_q()(q_u, q_v)
+        qdot = nlp.model.compute_qdot()(q, qdot_u)
+
+        # Compute the torques due to muscles
+        muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations, fatigue_states)
+
+        # Add additional torques
+        if self.with_residual_torque:
+            muscles_tau += DynamicsFunctions.get_fatigable_tau(nlp, states, controls)
+        muscles_tau += DynamicsFunctions.collect_tau(nlp, q, qdot, parameters)
+
+        # Get external forces
+        external_forces = nlp.get_external_forces(
+            "external_forces", states, controls, algebraic_states, numerical_timeseries
+        )
+        return q_u, qdot_u, muscles_tau, external_forces, mus_activations
