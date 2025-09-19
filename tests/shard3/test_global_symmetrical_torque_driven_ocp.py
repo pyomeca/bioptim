@@ -14,9 +14,9 @@ from ..utils import TestUtils
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 def test_symmetry_by_mapping(ode_solver, phase_dynamics):
-    from bioptim.examples.symmetrical_torque_driven_ocp import symmetry_by_mapping as ocp_module
+    from bioptim.examples.toy_examples.symmetrical_torque_driven_ocp import symmetry_by_mapping as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     if ode_solver == OdeSolver.COLLOCATION or ode_solver == OdeSolver.IRK:
         with pytest.raises(
@@ -24,14 +24,14 @@ def test_symmetry_by_mapping(ode_solver, phase_dynamics):
             match="COLLOCATION transcription is not compatible with mapping for states. Please note that concept of states mapping in already sketchy on it's own, but is particularly not appropriate for COLLOCATION transcriptions.",
         ):
             ocp = ocp_module.prepare_ocp(
-                biorbd_model_path=bioptim_folder + "/models/cubeSym.bioMod",
+                biorbd_model_path=bioptim_folder + "/examples/models/cubeSym.bioMod",
                 ode_solver=ode_solver(),
                 phase_dynamics=phase_dynamics,
                 expand_dynamics=ode_solver != OdeSolver.IRK,
             )
     else:
         ocp = ocp_module.prepare_ocp(
-            biorbd_model_path=bioptim_folder + "/models/cubeSym.bioMod",
+            biorbd_model_path=bioptim_folder + "/examples/models/cubeSym.bioMod",
             ode_solver=ode_solver(),
             phase_dynamics=phase_dynamics,
             expand_dynamics=ode_solver != OdeSolver.IRK,
@@ -70,7 +70,7 @@ def test_symmetry_by_mapping(ode_solver, phase_dynamics):
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 def test_symmetry_by_constraint(ode_solver, phase_dynamics):
-    from bioptim.examples.symmetrical_torque_driven_ocp import symmetry_by_constraint as ocp_module
+    from bioptim.examples.toy_examples.symmetrical_torque_driven_ocp import symmetry_by_constraint as ocp_module
 
     if platform.system() == "Darwin":
         pytest.skip("This test does not pass in one case on MacOS.")
@@ -78,10 +78,10 @@ def test_symmetry_by_constraint(ode_solver, phase_dynamics):
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
         pytest.skip("For reducing time phase_dynamics == PhaseDynamics.ONE_PER_NODE is skipped for redundant tests")
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cubeSym.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cubeSym.bioMod",
         ode_solver=ode_solver(),
         phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver != OdeSolver.IRK,

@@ -206,7 +206,7 @@ def test_fail_within_biomod_timeseries(external_forces_timeseries):
     """Test inserting the external forces in a model."""
     from bioptim.examples.getting_started import example_external_forces as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     invalid_segment_name = "segment1"
     force_array = np.random.rand(6, 10)
@@ -229,7 +229,7 @@ def test_fail_within_biomod_timeseries(external_forces_timeseries):
         ),
     ):
         BiorbdModel(
-            f"{bioptim_folder}/models/cube_with_forces.bioMod",
+            f"{bioptim_folder}/examples/models/cube_with_forces.bioMod",
             external_force_set=external_forces_timeseries,
         )
 
@@ -237,7 +237,7 @@ def test_fail_within_biomod_variables(external_forces_variables):
     """Test inserting the external forces in a model."""
     from bioptim.examples.getting_started import example_external_forces as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     invalid_segment_name = "segment1"
 
@@ -257,7 +257,7 @@ def test_fail_within_biomod_variables(external_forces_variables):
             ),
     ):
         BiorbdModel(
-            f"{bioptim_folder}/models/cube_with_forces.bioMod",
+            f"{bioptim_folder}/examples/models/cube_with_forces.bioMod",
             external_force_set=external_forces_variables,
         )
 
@@ -266,7 +266,7 @@ def test_success_within_biomod_timeseries(external_forces_timeseries):
     """Test inserting the external forces in a model."""
     from bioptim.examples.getting_started import example_external_forces as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     force_array = np.random.rand(6, 10)
     torque_array = np.random.rand(3, 10)
@@ -276,7 +276,7 @@ def test_success_within_biomod_timeseries(external_forces_timeseries):
     external_forces_timeseries.add_torque("force1", "Test", torque_array)
 
     model = BiorbdModel(
-        f"{bioptim_folder}/models/cube_with_forces.bioMod",
+        f"{bioptim_folder}/examples/models/cube_with_forces.bioMod",
         external_force_set=external_forces_timeseries,
     )
 
@@ -290,13 +290,13 @@ def test_success_within_biomod_variables(external_forces_variables):
     """Test inserting the external forces in a model."""
     from bioptim.examples.getting_started import example_external_forces as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     external_forces_variables.add("force0", "Seg1")
     external_forces_variables.add_torque("force1", "Test")
 
     model = BiorbdModel(
-        f"{bioptim_folder}/models/cube_with_forces.bioMod",
+        f"{bioptim_folder}/examples/models/cube_with_forces.bioMod",
         external_force_set=external_forces_variables,
     )
 

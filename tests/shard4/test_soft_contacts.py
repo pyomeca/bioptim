@@ -8,14 +8,14 @@ from ..utils import TestUtils
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_soft_contact(phase_dynamics):
-    from bioptim.examples.torque_driven_ocp import example_soft_contact as ocp_module
+    from bioptim.examples.toy_examples.torque_driven_ocp import example_soft_contact as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ode_solver = OdeSolver.RK8()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/soft_contact_sphere.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/soft_contact_sphere.bioMod",
         final_time=0.37,
         n_shooting=37,
         n_threads=8 if phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else 1,

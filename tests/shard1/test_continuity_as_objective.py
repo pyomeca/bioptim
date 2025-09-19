@@ -13,12 +13,12 @@ from tests.utils import TestUtils
     [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE],
 )
 def test_continuity_as_objective(phase_dynamics):
-    from bioptim.examples.getting_started import (
+    from bioptim.examples.toy_examples.feature_examples import (
         example_continuity_as_objective as ocp_module,
     )
 
     np.random.seed(42)
-    model_path = TestUtils.bioptim_folder() + "/examples/getting_started/models/pendulum_maze.bioMod"
+    model_path = TestUtils.bioptim_folder() + "/examples/models/pendulum_maze.bioMod"
 
     # first pass
     ocp = ocp_module.prepare_ocp_first_pass(

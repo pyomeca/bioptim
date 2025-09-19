@@ -14,7 +14,7 @@ from ..utils import TestUtils
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK, OdeSolver.COLLOCATION, OdeSolver.TRAPEZOIDAL])
 def test_muscle_driven_ocp(ode_solver, phase_dynamics):
-    from bioptim.examples.muscle_driven_ocp import static_arm as ocp_module
+    from bioptim.examples.toy_examples.muscle_driven_ocp import static_arm as ocp_module
 
     # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
@@ -24,10 +24,10 @@ def test_muscle_driven_ocp(ode_solver, phase_dynamics):
     else:
         control_type = ControlType.CONSTANT
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
-        bioptim_folder + "/models/arm26.bioMod",
+        bioptim_folder + "/examples/models/arm26_muscle_driven_ocp.bioMod",
         final_time=0.1,
         n_shooting=5,
         weight=1,

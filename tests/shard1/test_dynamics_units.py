@@ -12,15 +12,12 @@ class MockData:
     pass
 
 
-from bioptim.examples.muscle_driven_with_contact import contact_forces_inequality_constraint_muscle as ocp_module
+BIOPTIM_FOLDER = TestUtils.bioptim_folder()
+MODEL_RIGID_CONTACT = BiorbdModel(BIOPTIM_FOLDER + "/examples/models/2segments_4dof_2contacts_1muscle.bioMod")
+MODEL_SOFT_CONTACT = BiorbdModel(BIOPTIM_FOLDER + "/examples/models/2segments_4dof_2soft_contacts_1muscle.bioMod")
 
-BIOPTIM_FOLDER = TestUtils.module_folder(ocp_module)
-MODEL_RIGID_CONTACT = BiorbdModel(BIOPTIM_FOLDER + "/models/2segments_4dof_2contacts_1muscle.bioMod")
-MODEL_SOFT_CONTACT = BiorbdModel(BIOPTIM_FOLDER + "/models/2segments_4dof_2soft_contacts_1muscle.bioMod")
-from bioptim.examples.getting_started import pendulum as ocp_module
-
-BIOPTIM_FOLDER = TestUtils.module_folder(ocp_module)
-MODEL_NO_CONTACT = BiorbdModel(BIOPTIM_FOLDER + "/models/pendulum.bioMod")
+BIOPTIM_FOLDER = TestUtils.bioptim_folder()
+MODEL_NO_CONTACT = BiorbdModel(BIOPTIM_FOLDER + "/examples/models/pendulum.bioMod")
 
 
 def test_check_external_forces_format_valid():

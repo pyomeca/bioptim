@@ -15,10 +15,9 @@ from ..utils import TestUtils
 
 
 def test_biorbd_model_import():
-    from bioptim.examples.getting_started import pendulum as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
-    model_path = "/models/pendulum.bioMod"
+    bioptim_folder = TestUtils.bioptim_folder()
+    model_path = "/examples/models/pendulum.bioMod"
     BiorbdModel(bioptim_folder + model_path)
 
     BiorbdModel(biorbd.Model(bioptim_folder + model_path))
@@ -47,7 +46,7 @@ def test_biorbd_model_import():
     ],
 )
 def test_bounds_from_ranges(my_keys):
-    from bioptim.examples.getting_started import pendulum as ocp_module
+    from bioptim.examples.getting_started import basic_ocp as ocp_module
 
     x_min_q = [[-1.0, -1.0, -1.0], [-6.28318531, -6.28318531, -6.28318531]]
     x_min_qdot = [[-31.41592654, -31.41592654, -31.41592654], [-31.41592654, -31.41592654, -31.41592654]]
@@ -56,8 +55,8 @@ def test_bounds_from_ranges(my_keys):
     x_max_qdot = [[31.41592654, 31.41592654, 31.41592654], [31.41592654, 31.41592654, 31.41592654]]
     x_max_qddot = [[314.15926536, 314.15926536, 314.15926536], [314.15926536, 314.15926536, 314.15926536]]
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
-    model_path = "/models/pendulum.bioMod"
+    bioptim_folder = TestUtils.bioptim_folder()
+    model_path = "/examples/models/pendulum.bioMod"
     bio_model = BiorbdModel(bioptim_folder + model_path)
 
     for key in my_keys:
@@ -84,10 +83,9 @@ def test_bounds_from_ranges(my_keys):
 
 
 def test_function_cached():
-    from bioptim.examples.getting_started import pendulum as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
-    model_path = "/models/pendulum.bioMod"
+    bioptim_folder = TestUtils.bioptim_folder()
+    model_path = "/examples/models/pendulum.bioMod"
     bio_model = BiorbdModel(bioptim_folder + model_path)
 
     # No cached function

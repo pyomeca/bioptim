@@ -11,7 +11,9 @@ from ..utils import TestUtils
 
 @pytest.mark.parametrize("use_sx", [False, True])
 def test_arm_reaching_torque_driven_collocations(use_sx: bool):
-    from bioptim.examples.stochastic_optimal_control import arm_reaching_torque_driven_collocations as ocp_module
+    from bioptim.examples.toy_examples.stochastic_optimal_control import (
+        arm_reaching_torque_driven_collocations as ocp_module,
+    )
 
     final_time = 0.4
     n_shooting = 4
@@ -26,10 +28,10 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     wPqdot_magnitude = DM(np.array([wPqdot_std**2 / dt, wPqdot_std**2 / dt]))
     sensory_noise_magnitude = vertcat(wPq_magnitude, wPqdot_magnitude)
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_socp(
-        biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/LeuvenArmModel.bioMod",
         final_time=final_time,
         n_shooting=n_shooting,
         polynomial_degree=3,
@@ -96,7 +98,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
 
     # Test the automatic initialization of the stochastic variables
     socp = ocp_module.prepare_socp(
-        biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/LeuvenArmModel.bioMod",
         final_time=final_time,
         n_shooting=n_shooting,
         polynomial_degree=3,
@@ -393,7 +395,9 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
 
 @pytest.mark.parametrize("use_sx", [False, True])
 def test_obstacle_avoidance_direct_collocation(use_sx: bool):
-    from bioptim.examples.stochastic_optimal_control import obstacle_avoidance_direct_collocation as ocp_module
+    from bioptim.examples.toy_examples.stochastic_optimal_control import (
+        obstacle_avoidance_direct_collocation as ocp_module,
+    )
 
     polynomial_degree = 3
     n_shooting = 10

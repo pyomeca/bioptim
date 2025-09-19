@@ -33,6 +33,7 @@ from bioptim import (
     ContactType,
     DynamicsOptions,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(
@@ -158,12 +159,12 @@ def prepare_ocp(
 
 
 def main():
-    model_path = "../torque_driven_ocp/models/2segments_4dof_2contacts.bioMod"
+    biorbd_model_path = ExampleUtils.examples_folder() + "/models/2segments_4dof_2contacts.bioMod"
     t = 0.3
     ns = 10
     mu = 0.2
     ocp = prepare_ocp(
-        biorbd_model_path=model_path,
+        biorbd_model_path=biorbd_model_path,
         phase_time=t,
         n_shooting=ns,
         min_bound=50,
