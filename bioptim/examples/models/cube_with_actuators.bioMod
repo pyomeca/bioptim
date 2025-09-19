@@ -1,7 +1,8 @@
 version 4
 
 
-segment Seg1
+// Seg1
+    segment Seg1
     translations	xz
     rotations	y
     rangesQ  -0.70 2.30
@@ -45,7 +46,7 @@ endsegment
         direction    positive
         Tmax    10.000000
     endactuator
-	actuator    Seg1
+    actuator    Seg1
         type    Constant
         dof    TransX
         direction    negative
