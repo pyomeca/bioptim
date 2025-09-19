@@ -16,7 +16,7 @@ from bioptim import (
     Solver,
     PhaseDynamics,
 )
-
+from bioptim.examples.utils import ExampleUtils
 
 def prepare_ocp(
     biorbd_model_path: str,
@@ -102,7 +102,8 @@ def main():
     """
 
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=30)
+    biorbd_model_path = ExampleUtils.examples_folder() + "/models/pendulum.bioMod"
+    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, final_time=1, n_shooting=30)
 
     # --- Solve the ocp --- #
     solver = Solver.SQP_METHOD(show_online_optim=False)

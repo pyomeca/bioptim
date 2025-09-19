@@ -23,6 +23,7 @@ from bioptim import (
     ControlType,
     MusclesBiorbdModel,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(
@@ -128,9 +129,9 @@ def main():
     """
     Prepare and solve and animate a reaching task ocp
     """
-
+    biorbd_model_path = ExampleUtils.examples_folder() + "/models/arm26_muscle_driven_ocp.bioMod"
     ocp = prepare_ocp(
-        biorbd_model_path="models/arm26_muscle_driven_ocp.bioMod", final_time=0.5, n_shooting=50, weight=1000
+        biorbd_model_path=biorbd_model_path, final_time=0.5, n_shooting=50, weight=1000
     )
 
     # --- Solve the program --- #

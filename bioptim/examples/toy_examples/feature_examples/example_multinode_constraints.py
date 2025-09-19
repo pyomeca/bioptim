@@ -28,6 +28,7 @@ from bioptim import (
     BiMapping,
     PhaseDynamics,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def custom_multinode_constraint(
@@ -207,8 +208,8 @@ def main():
     """
     Defines a multiphase ocp and animate the results
     """
-
-    ocp = prepare_ocp(biorbd_model_path="models/cube.bioMod", n_shootings=(100, 300, 100))
+    biorbd_model_path = ExampleUtils.examples_folder() + "/models/cube.bioMod"
+    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, n_shootings=(100, 300, 100))
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))

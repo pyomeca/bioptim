@@ -22,7 +22,7 @@ from bioptim import (
     Solver,
     ContactType,
 )
-
+from bioptim.examples.utils import ExampleUtils
 
 def prepare_ocp(
     biorbd_model_path: str,
@@ -112,7 +112,8 @@ def main():
     Prepare and solve and animate a reaching task ocp
     """
 
-    ocp = prepare_ocp(biorbd_model_path="models/arm26_with_contact.bioMod", final_time=1, n_shooting=30, weight=1000)
+    biorbd_model_path = ExampleUtils.examples_folder() + "/models/arm26_with_contact.bioMod"
+    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, final_time=1, n_shooting=30, weight=1000)
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))

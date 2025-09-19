@@ -17,11 +17,12 @@ from bioptim import (
     BiMapping,
     PhaseDynamics,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(
-    biorbd_model_path: str = "models/double_pendulum.bioMod",
-    biorbd_model_path_with_translations: str = "models/double_pendulum_with_translations.bioMod",
+    biorbd_model_path: str,
+    biorbd_model_path_with_translations: str,
     n_shooting: tuple = (40, 40),
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
@@ -121,7 +122,12 @@ def prepare_ocp(
 
 def main():
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp()
+    biorbd_model_path = ExampleUtils.examples_folder() + "/models/double_pendulum.bioMod"
+    biorbd_model_path_with_translations = ExampleUtils.examples_folder() + "/models/double_pendulum_with_translations.bioMod"
+    ocp = prepare_ocp(
+        biorbd_model_path=biorbd_model_path,
+        biorbd_model_path_with_translations=biorbd_model_path_with_translations,
+    )
 
     # --- Solve the program --- #
     sol = ocp.solve()

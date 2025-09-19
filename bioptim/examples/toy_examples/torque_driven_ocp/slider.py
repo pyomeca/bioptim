@@ -21,10 +21,11 @@ from bioptim import (
     ControlType,
     PhaseDynamics,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(
-    biorbd_model_path: str = "models/slider.bioMod",
+    biorbd_model_path: str,
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     n_shooting: tuple = (20, 20, 20),
     phase_time: tuple = (0.2, 0.3, 0.5),
@@ -127,8 +128,9 @@ def main():
     """
     n_shooting = (20, 30, 50)
     phase_time = (0.2, 0.3, 0.5)
+    biorbd_model_path = ExampleUtils.examples_folder() + "/models/slider.bioMod"
 
-    ocp = prepare_ocp(n_shooting=n_shooting, phase_time=phase_time)
+    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, n_shooting=n_shooting, phase_time=phase_time)
 
     ocp.add_plot_penalty(CostType.ALL)
 

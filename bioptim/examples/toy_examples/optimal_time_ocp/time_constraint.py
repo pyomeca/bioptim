@@ -22,6 +22,7 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(
@@ -110,10 +111,11 @@ def main():
     Prepare, solve and animate a free time ocp
     """
 
+    biorbd_model_path = ExampleUtils.examples_folder() + "/models/pendulum.bioMod"
     time_min = 0.6
     time_max = 1
     ocp = prepare_ocp(
-        biorbd_model_path="models/pendulum.bioMod",
+        biorbd_model_path=biorbd_model_path,
         final_time=2,
         n_shooting=50,
         time_min=time_min,

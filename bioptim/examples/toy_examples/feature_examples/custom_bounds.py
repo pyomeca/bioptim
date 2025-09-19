@@ -29,6 +29,7 @@ from bioptim import (
     InterpolationType,
     PhaseDynamics,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def custom_x_bounds_min(current_shooting_point: int, n_elements: int, n_shooting: int, slicer: slice) -> np.ndarray:
@@ -308,6 +309,7 @@ def main():
     """
     Show all the InterpolationType implemented in bioptim
     """
+    biorbd_model_path = ExampleUtils.examples_folder() + "/models/cube.bioMod"
 
     print(f"Show the bounds")
     for interpolation_type in InterpolationType:
@@ -315,7 +317,7 @@ def main():
             continue
 
         print(f"Solving problem using {interpolation_type} bounds")
-        ocp = prepare_ocp("models/cube.bioMod", n_shooting=30, final_time=2, interpolation_type=interpolation_type)
+        ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, n_shooting=30, final_time=2, interpolation_type=interpolation_type)
         sol = ocp.solve()
         print("\n")
 

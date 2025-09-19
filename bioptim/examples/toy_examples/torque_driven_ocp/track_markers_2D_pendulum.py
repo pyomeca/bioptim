@@ -29,6 +29,7 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
 )
+from bioptim.examples.utils import ExampleUtils
 
 # Load track_segment_on_rt
 EXAMPLES_FOLDER = Path(__file__).parent / ".."
@@ -151,14 +152,13 @@ def main():
     Firstly, it solves the getting_started/pendulum.py example. Afterward, it gets the marker positions and joint
     torque from the solution and uses them to track. It then creates and solves this ocp and show the results
     """
-
-    biorbd_path = str(EXAMPLES_FOLDER) + "/getting_started/models/pendulum.bioMod"
-    bio_model = TorqueBiorbdModel(biorbd_path)
+    biorbd_model_path = ExampleUtils.examples_folder() + "/models/pendulum.bioMod"
+    bio_model = TorqueBiorbdModel(biorbd_model_path)
     final_time = 1
     n_shooting = 20
 
     ocp_to_track = data_to_track.prepare_ocp(
-        biorbd_model_path=biorbd_path, final_time=final_time, n_shooting=n_shooting
+        biorbd_model_path=biorbd_model_path, final_time=final_time, n_shooting=n_shooting
     )
     sol = ocp_to_track.solve()
     states = sol.decision_states(to_merge=SolutionMerge.NODES)

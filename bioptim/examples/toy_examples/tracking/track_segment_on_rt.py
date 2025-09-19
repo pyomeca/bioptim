@@ -23,6 +23,7 @@ from bioptim import (
     Solver,
     PhaseDynamics,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(
@@ -104,9 +105,9 @@ def main():
     """
     Prepares, solves and animates the program
     """
-
+    biorbd_model_path = ExampleUtils.examples_folder() + "/models/cube_and_line.bioMod"
     ocp = prepare_ocp(
-        biorbd_model_path="models/cube_and_line.bioMod",
+        biorbd_model_path=biorbd_model_path,
         n_shooting=30,
         final_time=1,
     )

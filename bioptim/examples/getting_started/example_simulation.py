@@ -11,14 +11,16 @@ can be held in the solution.
 
 import numpy as np
 
-import pendulum
+import basic_ocp
 from bioptim import InitialGuessList, Solution, Shooting, InterpolationType, SolutionIntegrator
+from bioptim.examples.utils import ExampleUtils
 
 
 def main():
     # --- Load pendulum --- #
-    ocp = pendulum.prepare_ocp(
-        biorbd_model_path="models/pendulum.bioMod",
+    biorbd_model_path = ExampleUtils.examples_folder() + "/models/pendulum.bioMod"
+    ocp = basic_ocp.prepare_ocp(
+        biorbd_model_path=biorbd_model_path,
         final_time=1,
         n_shooting=30,
     )

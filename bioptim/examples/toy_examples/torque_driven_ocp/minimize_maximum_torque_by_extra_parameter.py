@@ -27,6 +27,7 @@ from bioptim import (
     ParameterObjectiveList,
     VariableScaling,
 )
+from bioptim.examples.utils import ExampleUtils
 from matplotlib import pyplot as plt
 
 
@@ -43,8 +44,8 @@ def my_parameter_function(bio_model: biorbd.Model, value: MX):
 
 
 def prepare_ocp(
+    bio_model_path: str,
     method_bound_states: int = 0,
-    bio_model_path: str = "models/double_pendulum.bioMod",
 ) -> OptimalControlProgram:
 
     # Problem parameters
@@ -148,9 +149,11 @@ def main():
 
     linestyles = ["solid", "dashed"]
 
+    biorbd_model_path = ExampleUtils.examples_folder() + "/models/double_pendulum.bioMod"
+
     for i, linestyle in enumerate(linestyles):
         # --- Prepare the ocp --- #
-        ocp = prepare_ocp(method_bound_states=i)
+        ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, method_bound_states=i)
 
         # --- Solve the ocp --- #
         sol = ocp.solve()

@@ -26,6 +26,7 @@ from bioptim import (
     BiMappingList,
     SolutionMerge,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def get_markers_pos(x: DM | np.ndarray, idx_marker: int, fun: Callable, n_q: int) -> DM | np.ndarray:
@@ -199,8 +200,7 @@ def main():
     2) Noise is added to the marker positions to simulate experimental data.
     3) The marker positions are tracked to find the torques that best match the experimental kinematics.
     """
-
-    biorbd_model_path = "models/cube_6dofs.bioMod"
+    biorbd_model_path = ExampleUtils.examples_folder() + "/models/cube_6dofs.bioMod"
     final_time = 3
     n_shooting = 30
 

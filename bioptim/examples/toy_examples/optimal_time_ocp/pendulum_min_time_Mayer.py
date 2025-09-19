@@ -25,6 +25,7 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(
@@ -117,8 +118,9 @@ def main():
     Prepare, solve and animate a time minimizer ocp using a Mayer criteria
     """
 
+    biorbd_model_path = ExampleUtils.examples_folder() + "/models/pendulum.bioMod"
     ocp = prepare_ocp(
-        biorbd_model_path="models/pendulum.bioMod", final_time=2, n_shooting=50, ode_solver=OdeSolver.RK4()
+        biorbd_model_path=biorbd_model_path, final_time=2, n_shooting=50, ode_solver=OdeSolver.RK4()
     )
 
     # Let's show the objectives

@@ -27,6 +27,7 @@ from bioptim import (
     Solver,
     PhaseDynamics,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(
@@ -121,8 +122,8 @@ def main():
     """
     Runs and animate the program
     """
-
-    ocp = prepare_ocp("models/cube.bioMod", n_shooting=30, final_time=2, loop_from_constraint=True)
+    biorbd_model_path = ExampleUtils.examples_folder() + "/models/cube.bioMod"
+    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, n_shooting=30, final_time=2, loop_from_constraint=True)
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))

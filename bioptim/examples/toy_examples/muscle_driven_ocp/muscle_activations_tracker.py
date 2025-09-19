@@ -34,6 +34,7 @@ from bioptim import (
     DynamicsOptions,
 )
 from bioptim.optimization.optimization_variable import OptimizationVariableContainer
+from bioptim.examples.utils import ExampleUtils
 
 
 def generate_data(
@@ -323,8 +324,9 @@ def main():
     """
 
     # Define the problem
+    biorbd_model_path = ExampleUtils.examples_folder() + "/models/arm26_muscle_driven_ocp.bioMod"
     use_residual_torque = True
-    bio_model = MusclesBiorbdModel("models/arm26_muscle_driven_ocp.bioMod", with_residual_torque=use_residual_torque)
+    bio_model = MusclesBiorbdModel(biorbd_model_path, with_residual_torque=use_residual_torque)
     final_time = 0.5
     n_shooting_points = 50
 
@@ -338,7 +340,7 @@ def main():
 
     # Track these data
     bio_model = MusclesBiorbdModel(
-        "models/arm26_muscle_driven_ocp.bioMod", with_residual_torque=use_residual_torque
+        biorbd_model_path, with_residual_torque=use_residual_torque
     )  # To allow for non free variable, the model must be reloaded
     ocp = prepare_ocp(
         bio_model,

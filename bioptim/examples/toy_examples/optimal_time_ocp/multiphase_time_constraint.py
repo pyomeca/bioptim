@@ -24,7 +24,7 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
 )
-import numpy as np
+from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(
@@ -32,7 +32,7 @@ def prepare_ocp(
     time_min: tuple,
     time_max: tuple,
     n_shooting: tuple,
-    biorbd_model_path: str = "models/cube.bioMod",
+    biorbd_model_path: str,
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     with_phase_time_equality: bool = False,
@@ -195,12 +195,13 @@ def main():
 
     # Even though three phases are declared (len(ns) = 3), we only need to declare two final times because of the
     # time phase mapping
+    biorbd_model_path = ExampleUtils.examples_folder() + "/models/cube.bioMod"
     ns = (20, 30, 20)
     final_time = (2, 5)
     time_min = (0.7, 3)
     time_max = (2, 4)
     ocp = prepare_ocp(
-        final_time=final_time, time_min=time_min, time_max=time_max, n_shooting=ns, with_phase_time_equality=True
+        biorbd_model_path=biorbd_model_path, final_time=final_time, time_min=time_min, time_max=time_max, n_shooting=ns, with_phase_time_equality=True
     )
 
     # --- Solve the program --- #

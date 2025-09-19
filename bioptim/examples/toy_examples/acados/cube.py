@@ -16,6 +16,7 @@ from bioptim import (
     OdeSolver,
     Solver,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(biorbd_model_path, n_shooting, tf, ode_solver=OdeSolver.RK4(), use_sx=True, expand_dynamics=True):
@@ -47,10 +48,10 @@ def prepare_ocp(biorbd_model_path, n_shooting, tf, ode_solver=OdeSolver.RK4(), u
 
 
 def main():
-    model_path = "models/cube.bioMod"
+    biorbd_model_path = ExampleUtils.examples_folder() + "/models/cube.bioMod"
     ns = 30
     tf = 2
-    ocp = prepare_ocp(biorbd_model_path=model_path, n_shooting=ns, tf=tf)
+    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, n_shooting=ns, tf=tf)
 
     # --- Add objective functions --- #
     objective_functions = ObjectiveList()

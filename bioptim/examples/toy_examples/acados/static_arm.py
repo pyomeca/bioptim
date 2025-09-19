@@ -17,6 +17,7 @@ from bioptim import (
     Solver,
     InterpolationType,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(
@@ -89,7 +90,8 @@ def prepare_ocp(
 
 def main():
     # --- Solve the program using ACADOS --- #
-    ocp_acados = prepare_ocp(biorbd_model_path="models/arm26.bioMod", final_time=1, n_shooting=100, use_sx=True)
+    biorbd_model_path = ExampleUtils.examples_folder() + "/models/arm26.bioMod"
+    ocp_acados = prepare_ocp(biorbd_model_path=biorbd_model_path, final_time=1, n_shooting=100, use_sx=True)
 
     solver_acados = Solver.ACADOS()
     solver_acados.set_convergence_tolerance(1e-3)
@@ -98,7 +100,7 @@ def main():
 
     # --- Solve the program using IPOPT --- #
     ocp_ipopt = prepare_ocp(
-        biorbd_model_path="models/arm26.bioMod",
+        biorbd_model_path=biorbd_model_path,
         final_time=1,
         x_warm=None,
         n_shooting=51,

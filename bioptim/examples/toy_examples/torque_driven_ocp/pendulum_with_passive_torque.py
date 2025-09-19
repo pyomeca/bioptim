@@ -19,6 +19,7 @@ from bioptim import (
     BoundsList,
     PhaseDynamics,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(
@@ -101,8 +102,9 @@ def main():
     """
 
     # --- Prepare the ocp --- #
+    biorbd_model_path = ExampleUtils.examples_folder() + "/models/pendulum_with_passive_torque.bioMod"
     ocp = prepare_ocp(
-        biorbd_model_path="models/pendulum_with_passive_torque.bioMod",
+        biorbd_model_path=biorbd_model_path,
         final_time=1,
         n_shooting=30,
     )

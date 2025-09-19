@@ -21,6 +21,7 @@ from bioptim import (
     VariableScalingList,
     PhaseDynamics,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(
@@ -116,7 +117,8 @@ def main():
     """
 
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1 / 10, n_shooting=30)
+    biorbd_model_path = ExampleUtils.examples_folder() + "/models/pendulum.bioMod"
+    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, final_time=1 / 10, n_shooting=30)
 
     # Custom plots
     ocp.add_plot_penalty(CostType.ALL)

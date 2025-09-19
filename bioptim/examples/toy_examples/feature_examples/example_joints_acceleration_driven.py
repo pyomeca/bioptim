@@ -23,6 +23,7 @@ from bioptim import (
     Solver,
     JointAccelerationBiorbdModel,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(
@@ -111,7 +112,8 @@ def main():
     """
 
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(biorbd_model_path="models/double_pendulum.bioMod", final_time=10, n_shooting=100)
+    biorbd_model_path = ExampleUtils.examples_folder() + "/models/double_pendulum.bioMod"
+    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, final_time=10, n_shooting=100)
 
     # Custom plots
     ocp.add_plot_penalty(CostType.ALL)

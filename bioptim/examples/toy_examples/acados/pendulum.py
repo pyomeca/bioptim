@@ -17,6 +17,7 @@ from bioptim import (
     BoundsList,
     Solver,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(
@@ -99,8 +100,8 @@ def main():
     """
     If pendulum is run as a script, it will perform the optimization using ACADOS and animates it
     """
-
-    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=100)
+    biorbd_model_path = ExampleUtils.examples_folder() + "/models/pendulum.bioMod"
+    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, final_time=1, n_shooting=100)
 
     # --- Solve the program --- #
     solver = Solver.ACADOS()

@@ -33,6 +33,7 @@ from bioptim import (
     MagnitudeType,
     PhaseDynamics,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def custom_init_func(
@@ -251,12 +252,13 @@ def main():
     """
     Solve the program for all the InterpolationType available
     """
+    biorbd_model_path = ExampleUtils.examples_folder() + "/models/cube.bioMod"
 
     ocp = None
     for initial_guess in InterpolationType:
         print(f"Solving problem using {initial_guess} initial guess")
         ocp = prepare_ocp(
-            "models/cube.bioMod", n_shooting=30, final_time=2, random_init=False, initial_guess=initial_guess
+            biorbd_model_path=biorbd_model_path, n_shooting=30, final_time=2, random_init=False, initial_guess=initial_guess
         )
 
     sol = ocp.solve()

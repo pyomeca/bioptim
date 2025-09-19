@@ -29,6 +29,7 @@ from bioptim import (
     QuadratureRule,
     DynamicsOptions,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def minimize_difference(controllers: list[PenaltyController, PenaltyController]):
@@ -37,7 +38,7 @@ def minimize_difference(controllers: list[PenaltyController, PenaltyController])
 
 
 def prepare_ocp(
-    biorbd_model_path: str = "../../models/cube.bioMod",
+    biorbd_model_path,
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     long_optim: bool = False,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
@@ -193,8 +194,8 @@ def main():
     """
     Defines a multiphase ocp and animate the results
     """
-
-    ocp = prepare_ocp(long_optim=False)
+    biorbd_model_path = ExampleUtils.examples_folder() + "/models/cube.bioMod"
+    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, long_optim=False)
     ocp.add_plot_penalty(CostType.ALL)
 
     # --- Solve the program --- #

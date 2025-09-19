@@ -39,6 +39,7 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def out_of_sphere(controller: PenaltyController, y, z):
@@ -273,12 +274,13 @@ def main():
     """
     If pendulum is run as a script, it will perform the optimization and animates it
     """
+    biorbd_model_path = ExampleUtils.examples_folder() + "/models/pendulum_maze.bioMod"
 
     # --- First pass --- #
     # --- Prepare the ocp --- #
     np.random.seed(123456)
     ocp_first = prepare_ocp_first_pass(
-        biorbd_model_path="models/pendulum_maze.bioMod",
+        biorbd_model_path=biorbd_model_path,
         final_time=5,
         n_shooting=500,
         # change the weight to observe the impact on the continuity of the solution
@@ -312,7 +314,7 @@ def main():
     solver_second.set_maximum_iterations(10000)
 
     ocp_second = prepare_ocp_second_pass(
-        biorbd_model_path="models/pendulum_maze.bioMod", n_shooting=500, solution=sol_first, n_threads=3
+        biorbd_model_path=biorbd_model_path, n_shooting=500, solution=sol_first, n_threads=3
     )
 
     # Custom plots

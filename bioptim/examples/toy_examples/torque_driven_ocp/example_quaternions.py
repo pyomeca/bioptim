@@ -29,6 +29,7 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
 )
+from from bioptim.examples.utils import ExampleUtils
 
 
 def eul2quat(eul: np.ndarray) -> np.ndarray:
@@ -264,7 +265,8 @@ def main():
     """
 
     n_shooting = 6
-    ocp = prepare_ocp("models/trunk_and_2arm_quaternion.bioMod", n_shooting=n_shooting, final_time=0.25)
+    biorbd_model_path = ExampleUtils.examples_folder() + "/models/trunk_and_2arm_quaternion.bioMod"
+    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, n_shooting=n_shooting, final_time=0.25)
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #

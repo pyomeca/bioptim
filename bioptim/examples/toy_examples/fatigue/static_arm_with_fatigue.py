@@ -36,7 +36,7 @@ from bioptim import (
     Solver,
     PhaseDynamics,
 )
-
+from bioptim.examples.utils import ExampleUtils
 
 def prepare_ocp(
     biorbd_model_path: str,
@@ -216,9 +216,9 @@ def main():
     """
     Prepare and solve and animate a reaching task ocp
     """
-
+    biorbd_model_path = ExampleUtils.examples_folder() + "/models/arm26_constant.bioMod"
     ocp = prepare_ocp(
-        biorbd_model_path="models/arm26_constant.bioMod",
+        biorbd_model_path=biorbd_model_path,
         final_time=0.8,
         n_shooting=50,
         fatigue_type="effort",

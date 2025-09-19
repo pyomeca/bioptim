@@ -15,10 +15,11 @@ from bioptim import (
     ObjectiveFcn,
     PhaseDynamics,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(
-    biorbd_model_path: str = "models/triple_pendulum.bioMod",
+    biorbd_model_path: str,
     n_shooting: int = 40,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
@@ -69,7 +70,8 @@ def prepare_ocp(
 
 def main():
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp()
+    biorbd_model_path = ExampleUtils.examples_folder() + "/models/triple_pendulum.bioMod"
+    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path)
 
     # --- Solve the program --- #
     sol = ocp.solve()
