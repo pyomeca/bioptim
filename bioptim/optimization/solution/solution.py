@@ -1319,11 +1319,8 @@ class Solution:
         else:
             return np.ndarray((0, 1))
 
-    def _get_penalty_cost(self, nlp: "NonLinearProgram", penalty: PenaltyOption) -> FloatTuple:
+    def _get_penalty_cost(self, penalty: PenaltyOption) -> FloatTuple:
         from ...interfaces.interface_utils import get_numerical_timeseries
-
-        if nlp is None:
-            raise NotImplementedError("penalty cost over the full ocp is not implemented yet")
 
         val = []
         val_weighted = []
@@ -1393,12 +1390,12 @@ class Solution:
         if self._cost is None:
             self._cost = 0
             for J in self.ocp.J:
-                _, val_weighted = self._get_penalty_cost(None, J)
+                _, val_weighted = self._get_penalty_cost(J)
                 self._cost += val_weighted
 
             for idx_phase, nlp in enumerate(self.ocp.nlp):
                 for J in nlp.J:
-                    _, val_weighted = self._get_penalty_cost(nlp, J)
+                    _, val_weighted = self._get_penalty_cost(J)
                     self._cost += val_weighted
             self._cost = DM(self._cost)
         return self._cost
@@ -1422,12 +1419,12 @@ class Solution:
             for penalty in nlp.J_internal + nlp.J:
                 if not penalty:
                     continue
-                val, val_weighted = self._get_penalty_cost(nlp, penalty)
+                val, val_weighted = self._get_penalty_cost(penalty)
                 self._detailed_cost += [
                     {"name": penalty.type.__str__(), "cost_value_weighted": val_weighted, "cost_value": val}
                 ]
         for penalty in self.ocp.J:
-            val, val_weighted = self._get_penalty_cost(self.ocp.nlp[0], penalty)
+            val, val_weighted = self._get_penalty_cost(penalty)
             self._detailed_cost += [
                 {"name": penalty.type.__str__(), "cost_value_weighted": val_weighted, "cost_value": val}
             ]
@@ -1443,14 +1440,14 @@ class Solution:
             The type of cost to console print
         """
 
-        def print_penalty_list(nlp, penalties, print_only_weighted):
+        def print_penalty_list(penalties, print_only_weighted):
             running_total = 0
 
             for penalty in penalties:
                 if not penalty:
                     continue
 
-                val, val_weighted = self._get_penalty_cost(nlp, penalty)
+                val, val_weighted = self._get_penalty_cost(penalty)
                 running_total += val_weighted
 
                 if penalty.node in [Node.MULTINODES, Node.TRANSITION]:
@@ -1487,15 +1484,15 @@ class Solution:
             Print the values of each objective function to the console
             """
             print(f"\n---- COST FUNCTION VALUES ----")
-            running_total = print_penalty_list(None, ocp.J_internal, False)
-            running_total += print_penalty_list(None, ocp.J, False)
+            running_total = print_penalty_list(ocp.J_internal, False)
+            running_total += print_penalty_list(ocp.J, False)
             if running_total:
                 print("")
 
             for nlp in ocp.nlp:
                 print(f"PHASE {nlp.phase_idx}")
-                running_total += print_penalty_list(nlp, nlp.J_internal, False)
-                running_total += print_penalty_list(nlp, nlp.J, False)
+                running_total += print_penalty_list(nlp.J_internal, False)
+                running_total += print_penalty_list(nlp.J, False)
                 print("")
 
             print(f"Sum cost functions: {running_total}")
@@ -1511,13 +1508,13 @@ class Solution:
 
             # Todo, min/mean/max
             print(f"\n--------- CONSTRAINTS ---------")
-            if print_penalty_list(None, ocp.g_internal, True) + print_penalty_list(None, ocp.g, True):
+            if print_penalty_list(ocp.g_internal, True) + print_penalty_list(ocp.g, True):
                 print("")
 
             for idx_phase, nlp in enumerate(ocp.nlp):
                 print(f"PHASE {idx_phase}")
-                print_penalty_list(nlp, nlp.g_internal, True)
-                print_penalty_list(nlp, nlp.g, True)
+                print_penalty_list(nlp.g_internal, True)
+                print_penalty_list(nlp.g, True)
                 print("")
             print(f"------------------------------")
 
