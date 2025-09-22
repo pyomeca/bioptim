@@ -66,9 +66,8 @@ def test_example_param_obj_and_param_scaling(
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
 
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(sum([cost["cost_value_weighted"] for cost in sol.detailed_cost]), f[0, 0])
+    # Test the objective values
+    TestUtils.assert_objective_value(sol=sol, expected_value=35328792.2512389, decimal=4)
 
     g = np.array(sol.constraints)
     npt.assert_equal(g.shape, (0, 1))

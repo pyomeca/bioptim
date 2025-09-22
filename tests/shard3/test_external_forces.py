@@ -62,10 +62,6 @@ def test_example_external_forces(
     )
     sol = ocp.solve()
 
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], f[0, 0])
-
     g = np.array(sol.constraints)
     npt.assert_equal(g.shape, (246, 1))
     npt.assert_almost_equal(g, np.zeros((246, 1)))
@@ -83,7 +79,7 @@ def test_example_external_forces(
         npt.assert_almost_equal(qdot[:, 0], np.array([0.0, 0.0, 0.0, 0.0]), decimal=5)
         npt.assert_almost_equal(qdot[:, -1], np.array([0.0, 0.0, 0.0, 0.0]), decimal=5)
 
-        npt.assert_almost_equal(f[0, 0], 19847.887805189126)
+        TestUtils.assert_objective_value(sol=sol, expected_value=19847.887805189126)
 
         # initial and final controls
         npt.assert_almost_equal(tau[:, 0], np.array([2.03776708e-09, 1.27132259e01, 2.32230666e-27, 0.0]))
@@ -97,7 +93,7 @@ def test_example_external_forces(
 
     if method in ["translational_force", "in_global", "in_segment"]:
 
-        npt.assert_almost_equal(f[0, 0], 7067.851604540217)
+        TestUtils.assert_objective_value(sol=sol, expected_value=7067.851604540217)
 
         # initial and final controls
         npt.assert_almost_equal(tau[:, 0], np.array([2.03776698e-09, 6.98419368e00, -8.87085933e-09, 0.0]))
@@ -244,11 +240,8 @@ def test_example_external_forces_all_at_once(together: bool):
     )
 
     sol = ocp.solve()
-    # # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 5507.938264053537)
-    npt.assert_almost_equal(f[0, 0], sol.detailed_cost[0]["cost_value_weighted"])
+    # Check objective function value
+    TestUtils.assert_objective_value(sol=sol, expected_value=5507.938264053537)
 
     # Check constraints
     g = np.array(sol.constraints)

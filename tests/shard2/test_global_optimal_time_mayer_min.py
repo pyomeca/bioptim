@@ -70,7 +70,7 @@ def test_pendulum_min_time_mayer(ode_solver, phase_dynamics):
     npt.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
     if ode_solver == OdeSolver.IRK:
-        npt.assert_almost_equal(f[0, 0], 0.2855606738489079)
+        TestUtils.assert_objective_value(sol=sol, expected_value=0.2855606738489079)
 
         # initial and final controls
         npt.assert_almost_equal(tau[:, 0], np.array((87.13363409, 0)), decimal=6)
@@ -83,7 +83,7 @@ def test_pendulum_min_time_mayer(ode_solver, phase_dynamics):
         pass
 
     elif ode_solver == OdeSolver.RK4:
-        npt.assert_almost_equal(f[0, 0], 0.2862324498580764)
+        TestUtils.assert_objective_value(sol=sol, expected_value=0.2862324498580764)
 
         # initial and final controls
         npt.assert_almost_equal(tau[:, 0], np.array((70.46224716, 0)), decimal=6)
@@ -168,9 +168,7 @@ def test_pendulum_min_time_mayer_constrained(ode_solver, phase_dynamics):
     npt.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], min_tf, decimal=4)
+    TestUtils.assert_objective_value(sol=sol, expected_value=min_tf, decimal=4)
 
     # optimized time
     npt.assert_almost_equal(tf, min_tf, decimal=4)

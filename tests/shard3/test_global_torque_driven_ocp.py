@@ -47,9 +47,7 @@ def test_track_markers(ode_solver, actuator_type, phase_dynamics):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 19767.53312569522)
+    TestUtils.assert_objective_value(sol=sol, expected_value=19767.53312569522)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -109,9 +107,7 @@ def test_track_markers_changing_constraints(ode_solver, phase_dynamics):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 20370.211697123825)
+    TestUtils.assert_objective_value(sol=sol, expected_value=20370.211697123825)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -148,9 +144,7 @@ def test_track_markers_changing_constraints(ode_solver, phase_dynamics):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 31670.93770220887)
+    TestUtils.assert_objective_value(sol=sol, expected_value=31670.93770220887)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -200,9 +194,7 @@ def test_track_markers_with_actuators(ode_solver, phase_dynamics):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 204.18087334169184)
+    TestUtils.assert_objective_value(sol=sol, expected_value=204.18087334169184)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -305,9 +297,7 @@ def test_track_marker_2D_pendulum(ode_solver, phase_dynamics):
         npt.assert_almost_equal(g, np.zeros((n_shooting * 4, 1)))
 
         # Check objective function value
-        f = np.array(sol.cost)
-        npt.assert_equal(f.shape, (1, 1))
-        npt.assert_almost_equal(f[0, 0], 47.19432362677269)
+        TestUtils.assert_objective_value(sol=sol, expected_value=47.19432362677269)
 
         # initial and final position
         npt.assert_almost_equal(q[:, 0], np.array((0, 0)))
@@ -326,9 +316,7 @@ def test_track_marker_2D_pendulum(ode_solver, phase_dynamics):
         npt.assert_almost_equal(g, np.zeros((n_shooting * 4 * 5, 1)))
 
         # Check objective function value
-        f = np.array(sol.cost)
-        npt.assert_equal(f.shape, (1, 1))
-        npt.assert_almost_equal(f[0, 0], 40.92496227517089)
+        TestUtils.assert_objective_value(sol=sol, expected_value=40.92496227517089)
 
         # initial and final position
         npt.assert_almost_equal(q[:, 0], np.array((0, 0)))
@@ -391,9 +379,7 @@ def test_example_quaternions(phase_dynamics):
     assert sol.status == 0  # The optimization converged
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 4.899532845500326)
+    TestUtils.assert_objective_value(sol=sol, expected_value=4.899532845500326)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -513,9 +499,7 @@ def test_phase_transition_uneven_variable_number_by_mapping(phase_dynamics):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], -12397.11475053)
+    TestUtils.assert_objective_value(sol=sol, expected_value=-12397.11475053)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -567,9 +551,7 @@ def test_torque_activation_driven(ode_solver, phase_dynamics):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 0.04880295023323905, decimal=3)
+    TestUtils.assert_objective_value(sol=sol, expected_value=0.04880295023323905, decimal=3)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -650,9 +632,7 @@ def test_example_minimize_segment_velocity():
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 41.40771798838792)
+    TestUtils.assert_objective_value(sol=sol, expected_value=41.40771798838792)
 
     # Check constraints
     g = np.array(sol.constraints)

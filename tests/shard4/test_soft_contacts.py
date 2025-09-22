@@ -34,9 +34,9 @@ def test_soft_contact(phase_dynamics):
     f = np.array(sol.cost)
     npt.assert_equal(f.shape, (1, 1))
     if isinstance(ode_solver, OdeSolver.RK8):
-        npt.assert_almost_equal(f[0, 0], 23.679065887950486)
+        TestUtils.assert_objective_value(sol=sol, expected_value=23.679065887950486)
     else:
-        npt.assert_almost_equal(f[0, 0], 41.58259426)
+        TestUtils.assert_objective_value(sol=sol, expected_value=41.58259426)
 
     # Check constraints
     g = np.array(sol.constraints)

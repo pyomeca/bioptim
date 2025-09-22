@@ -249,7 +249,7 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
         )
 
     elif ode_solver == OdeSolver.RK4:
-        npt.assert_almost_equal(f[0, 0], 1.956741750742022e-05)
+        TestUtils.assert_objective_value(sol=sol, expected_value=1.956741750742022e-05)
 
         # initial and final position
         npt.assert_almost_equal(q[:, 0], np.array([-0.00224508, -0.00055229]))

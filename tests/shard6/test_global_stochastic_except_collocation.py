@@ -54,16 +54,11 @@ from ..utils import TestUtils
 #     sol = ocp.solve(solver)
 #
 #     # Check objective function value
-#     f = np.array(sol.cost)
-#     npt.assert_equal(f.shape, (1, 1))
-#     npt.assert_almost_equal(f[0, 0], 13.32287163458417)
+#     TestUtils.assert_objective_value(sol=sol, expected_value=13.32287163458417)
 #
 #     # detailed cost values
 #     npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 0.6783119392800087)
 #     npt.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 0.4573562887022004)
-#     npt.assert_almost_equal(
-#         f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
-#     )
 #
 #     # Check constraints
 #     g = np.array(sol.constraints)
@@ -291,16 +286,11 @@ from ..utils import TestUtils
 #     sol = ocp.solve(solver)
 #
 #     # Check objective function value
-#     f = np.array(sol.cost)
-#     npt.assert_equal(f.shape, (1, 1))
-#     npt.assert_almost_equal(f[0, 0], 46.99030175091475)
+#     TestUtils.assert_objective_value(sol=sol, expected_value=46.99030175091475)
 #
 #     # detailed cost values
 #     npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 0.055578630313992475)
 #     npt.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 6.038226210163837)
-#     npt.assert_almost_equal(
-#         f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
-#     )
 #
 #     # Check constraints
 #     g = np.array(sol.constraints)
@@ -479,14 +469,11 @@ from ..utils import TestUtils
 #     )
 #     if not with_scaling:
 #         # Check objective function value
-#         npt.assert_almost_equal(f[0, 0], 95.49928267855638, decimal=4)
+#         TestUtils.assert_objective_value(sol=sol, expected_value=95.49928267855638, decimal=4)
 #
 #         # detailed cost values
 #         npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 95.43029410036674, decimal=4)
 #         npt.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 0.06898857818965713, decimal=4)
-#         npt.assert_almost_equal(
-#             f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
-#         )
 #
 #         # initial and final position
 #         npt.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))

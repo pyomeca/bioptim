@@ -39,9 +39,7 @@ def test_symmetry_by_mapping(ode_solver, phase_dynamics):
         sol = ocp.solve()
 
         # Check objective function value
-        f = np.array(sol.cost)
-        npt.assert_equal(f.shape, (1, 1))
-        npt.assert_almost_equal(f[0, 0], 216.56763999010334)
+        TestUtils.assert_objective_value(sol=sol, expected_value=216.56763999010334)
 
         # Check constraints
         g = np.array(sol.constraints)
@@ -95,11 +93,11 @@ def test_symmetry_by_constraint(ode_solver, phase_dynamics):
     # Check constraints
     g = np.array(sol.constraints)
     if ode_solver == OdeSolver.COLLOCATION:
-        npt.assert_almost_equal(f[0, 0], 216.567618843852)
+        TestUtils.assert_objective_value(sol=sol, expected_value=216.567618843852)
         npt.assert_equal(g.shape, (300 * 5 + 36, 1))
         npt.assert_almost_equal(g, np.zeros((300 * 5 + 36, 1)))
     else:
-        npt.assert_almost_equal(f[0, 0], 216.56763999010465)
+        TestUtils.assert_objective_value(sol=sol, expected_value=216.56763999010465)
         npt.assert_equal(g.shape, (336, 1))
         npt.assert_almost_equal(g, np.zeros((336, 1)))
 
