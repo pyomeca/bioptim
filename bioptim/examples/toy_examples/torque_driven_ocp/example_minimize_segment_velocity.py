@@ -70,7 +70,7 @@ def prepare_ocp(
 
 def main():
     # --- Prepare the ocp --- #
-    biorbd_model_path = ExampleUtils.examples_folder() + "/models/triple_pendulum.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/triple_pendulum.bioMod"
     ocp = prepare_ocp(biorbd_model_path=biorbd_model_path)
 
     # --- Solve the program --- #

@@ -48,7 +48,7 @@ def prepare_ocp(biorbd_model_path, n_shooting, tf, ode_solver=OdeSolver.RK4(), u
 
 
 def main():
-    biorbd_model_path = ExampleUtils.examples_folder() + "/models/cube.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/cube.bioMod"
     ns = 30
     tf = 2
     ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, n_shooting=ns, tf=tf)

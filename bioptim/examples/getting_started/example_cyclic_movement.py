@@ -122,7 +122,7 @@ def main():
     """
     Runs and animate the program
     """
-    biorbd_model_path = ExampleUtils.examples_folder() + "/models/cube.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/cube.bioMod"
     ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, n_shooting=30, final_time=2, loop_from_constraint=True)
 
     # --- Solve the program --- #

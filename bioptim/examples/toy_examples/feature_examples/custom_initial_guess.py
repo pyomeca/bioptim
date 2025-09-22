@@ -252,7 +252,7 @@ def main():
     """
     Solve the program for all the InterpolationType available
     """
-    biorbd_model_path = ExampleUtils.examples_folder() + "/models/cube.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/cube.bioMod"
 
     ocp = None
     for initial_guess in InterpolationType:

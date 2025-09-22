@@ -265,7 +265,7 @@ def main():
     """
 
     n_shooting = 6
-    biorbd_model_path = ExampleUtils.examples_folder() + "/models/trunk_and_2arm_quaternion.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/trunk_and_2arm_quaternion.bioMod"
     ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, n_shooting=n_shooting, final_time=0.25)
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 

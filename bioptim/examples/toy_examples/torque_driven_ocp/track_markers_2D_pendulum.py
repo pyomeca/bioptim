@@ -152,7 +152,7 @@ def main():
     Firstly, it solves the getting_started/pendulum.py example. Afterward, it gets the marker positions and joint
     torque from the solution and uses them to track. It then creates and solves this ocp and show the results
     """
-    biorbd_model_path = ExampleUtils.examples_folder() + "/models/pendulum.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/pendulum.bioMod"
     bio_model = TorqueBiorbdModel(biorbd_model_path)
     final_time = 1
     n_shooting = 20

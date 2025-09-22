@@ -119,7 +119,7 @@ def main():
     """
 
     # Prepare the Optimal Control Program
-    biorbd_model_path = ExampleUtils.examples_folder() + "/models/pendulum.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/pendulum.bioMod"
     ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, final_time=2, n_shooting=50)
 
     # --- Solve the program --- #

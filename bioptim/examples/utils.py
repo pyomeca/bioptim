@@ -3,8 +3,8 @@ from pathlib import Path
 
 
 class ExampleUtils:
-    @staticmethod
-    def examples_folder() -> str:
+    @property
+    def folder(self) -> str:
         """Returns the path to the examples folder."""
         return ExampleUtils._capitalize_folder_drive(str(Path(__file__).parent))
 

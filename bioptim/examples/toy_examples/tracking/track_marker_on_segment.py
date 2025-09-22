@@ -134,7 +134,7 @@ def main():
     """
     Prepares, solves and animate the program
     """
-    biorbd_model_path = ExampleUtils.examples_folder() + "/models/cube_and_line.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/cube_and_line.bioMod"
     ocp = prepare_ocp(
         biorbd_model_path=biorbd_model_path,
         n_shooting=30,

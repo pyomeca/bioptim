@@ -206,7 +206,7 @@ def prepare_ocp(
 
 
 def main():
-    biorbd_model_path = ExampleUtils.examples_folder() + "/models/cube.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/cube.bioMod"
     ocp = prepare_ocp(biorbd_model_path=biorbd_model_path)
 
     # --- Solve the program --- #

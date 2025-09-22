@@ -159,7 +159,7 @@ def prepare_ocp(
 
 
 def main():
-    biorbd_model_path = ExampleUtils.examples_folder() + "/models/2segments_4dof_2contacts.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/2segments_4dof_2contacts.bioMod"
     t = 0.3
     ns = 10
     mu = 0.2

@@ -194,7 +194,7 @@ def main():
     """
     Defines a multiphase ocp and animate the results
     """
-    biorbd_model_path = ExampleUtils.examples_folder() + "/models/cube.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/cube.bioMod"
     ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, long_optim=False)
     ocp.add_plot_penalty(CostType.ALL)
 

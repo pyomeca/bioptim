@@ -12,7 +12,7 @@ If pendulum is run as a script, it will perform the optimization and animates it
 """
 
 # --- Prepare the ocp --- #
-biorbd_model_path = ExampleUtils.examples_folder() + "/models/pendulum.bioMod"
+biorbd_model_path = ExampleUtils.folder + "/models/pendulum.bioMod"
 ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, final_time=1, n_shooting=400, n_threads=2)
 
 # --- Solve the ocp --- #

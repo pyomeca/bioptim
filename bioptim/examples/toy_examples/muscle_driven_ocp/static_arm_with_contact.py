@@ -113,7 +113,7 @@ def main():
     Prepare and solve and animate a reaching task ocp
     """
 
-    biorbd_model_path = ExampleUtils.examples_folder() + "/models/arm26_with_contact.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/arm26_with_contact.bioMod"
     ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, final_time=1, n_shooting=30, weight=1000)
 
     # --- Solve the program --- #

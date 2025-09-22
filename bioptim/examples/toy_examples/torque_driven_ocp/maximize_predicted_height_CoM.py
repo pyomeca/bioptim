@@ -157,7 +157,7 @@ def main():
     """
     Prepares and solves a maximal velocity at center of mass program and animates it
     """
-    biorbd_model_path = ExampleUtils.examples_folder() + "/models/2segments_4dof_2contacts.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/2segments_4dof_2contacts.bioMod"
     t = 0.5
     ns = 20
     ocp = prepare_ocp(

@@ -309,7 +309,7 @@ def main():
     """
     Show all the InterpolationType implemented in bioptim
     """
-    biorbd_model_path = ExampleUtils.examples_folder() + "/models/cube.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/cube.bioMod"
 
     print(f"Show the bounds")
     for interpolation_type in InterpolationType:

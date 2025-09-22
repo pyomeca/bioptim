@@ -149,7 +149,7 @@ def main():
 
     linestyles = ["solid", "dashed"]
 
-    biorbd_model_path = ExampleUtils.examples_folder() + "/models/double_pendulum.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/double_pendulum.bioMod"
 
     for i, linestyle in enumerate(linestyles):
         # --- Prepare the ocp --- #

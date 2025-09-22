@@ -128,7 +128,7 @@ def main():
     """
     n_shooting = (20, 30, 50)
     phase_time = (0.2, 0.3, 0.5)
-    biorbd_model_path = ExampleUtils.examples_folder() + "/models/slider.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/slider.bioMod"
 
     ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, n_shooting=n_shooting, phase_time=phase_time)
 

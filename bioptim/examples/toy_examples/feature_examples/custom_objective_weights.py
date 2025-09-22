@@ -165,7 +165,7 @@ def main():
     """
     Show all the InterpolationType implemented in bioptim
     """
-    biorbd_model_path = ExampleUtils.examples_folder() + "/models/cube.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/cube.bioMod"
 
     nodes_to_test = [Node.START, Node.INTERMEDIATES, Node.ALL_SHOOTING]
 

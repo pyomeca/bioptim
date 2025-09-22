@@ -90,7 +90,7 @@ def prepare_ocp(
 
 def main():
     # --- Solve the program using ACADOS --- #
-    biorbd_model_path = ExampleUtils.examples_folder() + "/models/arm26.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/arm26.bioMod"
     ocp_acados = prepare_ocp(biorbd_model_path=biorbd_model_path, final_time=1, n_shooting=100, use_sx=True)
 
     solver_acados = Solver.ACADOS()

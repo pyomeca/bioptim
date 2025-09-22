@@ -195,7 +195,7 @@ def main():
 
     # Even though three phases are declared (len(ns) = 3), we only need to declare two final times because of the
     # time phase mapping
-    biorbd_model_path = ExampleUtils.examples_folder() + "/models/cube.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/cube.bioMod"
     ns = (20, 30, 20)
     final_time = (2, 5)
     time_min = (0.7, 3)

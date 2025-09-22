@@ -324,7 +324,7 @@ def main():
     """
 
     # Define the problem
-    biorbd_model_path = ExampleUtils.examples_folder() + "/models/arm26_muscle_driven_ocp.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/arm26_muscle_driven_ocp.bioMod"
     use_residual_torque = True
     bio_model = MusclesBiorbdModel(biorbd_model_path, with_residual_torque=use_residual_torque)
     final_time = 0.5

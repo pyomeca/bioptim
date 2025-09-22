@@ -249,7 +249,7 @@ def main():
     """
     final_time = 1
     n_shooting = 100
-    biorbd_model_path = ExampleUtils.examples_folder() + "/models/pendulum_wrong_gravity.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/pendulum_wrong_gravity.bioMod"
 
     ocp_to_track = generate_dat_to_track(
         biorbd_model_path=biorbd_model_path, final_time=final_time, n_shooting=n_shooting
@@ -259,7 +259,7 @@ def main():
     qdot_to_track = sol_to_track.decision_states(to_merge=SolutionMerge.NODES)["qdot"]
     tau_to_track = sol_to_track.decision_controls(to_merge=SolutionMerge.NODES)["tau"]
 
-    biorbd_model_path = ExampleUtils.examples_folder() + "/models/pendulum.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/pendulum.bioMod"
     ocp = prepare_ocp(
         biorbd_model_path=biorbd_model_path,
         final_time=final_time,

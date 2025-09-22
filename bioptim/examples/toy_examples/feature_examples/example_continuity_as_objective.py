@@ -274,7 +274,7 @@ def main():
     """
     If pendulum is run as a script, it will perform the optimization and animates it
     """
-    biorbd_model_path = ExampleUtils.examples_folder() + "/models/pendulum_maze.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/pendulum_maze.bioMod"
 
     # --- First pass --- #
     # --- Prepare the ocp --- #
