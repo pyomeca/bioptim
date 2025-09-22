@@ -30,9 +30,7 @@ def test_track_segment_on_rt(ode_solver, phase_dynamics):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 197120.95524154368)
+    TestUtils.assert_objective_value(sol=sol, expected_value=197120.95524154368)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -88,9 +86,7 @@ def test_track_marker_on_segment(ode_solver, phase_dynamics):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 42127.04677760122)
+    TestUtils.assert_objective_value(sol=sol, expected_value=42127.04677760122)
 
     # Check constraints
     g = np.array(sol.constraints)

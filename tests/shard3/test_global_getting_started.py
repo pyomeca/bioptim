@@ -1561,9 +1561,7 @@ def test_multinode_constraints(ode_solver, phase_dynamics):
     sol.print_cost()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 106577.60874445777)
+    TestUtils.assert_objective_value(sol=sol, expected_value=106577.60874445777)
 
     # Check constraints
     g = np.array(sol.constraints)

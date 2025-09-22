@@ -41,9 +41,7 @@ def test_double_pendulum_torque_driven_IOCP(phase_dynamics):
     npt.assert_almost_equal(g, np.zeros((120, 1)))
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 12.0765913088802)
+    TestUtils.assert_objective_value(sol=sol, expected_value=2.0765913088802)
 
     # initial and final position
     npt.assert_almost_equal(q[:, 0], np.array([-3.14159265, 0.0]))

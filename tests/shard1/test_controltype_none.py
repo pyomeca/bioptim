@@ -257,9 +257,7 @@ def test_main_control_type_none(use_sx, phase_dynamics):
     sol = ocp.solve(Solver.IPOPT())
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 0.2919065990591678)
+    TestUtils.assert_objective_value(sol=sol, expected_value=0.2919065990591678)
 
     # Check finishing time
     times = [float(t[-1, 0]) for t in sol.decision_time(to_merge=SolutionMerge.NODES)]

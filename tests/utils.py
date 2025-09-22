@@ -246,3 +246,37 @@ class TestUtils:
         output = captured_output.getvalue()[idx:].split("\n")[0]
         idx = len("Sum cost functions: ")
         return float(output[idx:])
+
+    @staticmethod
+    def assert_objective_value(sol: Solution, expected_value: float, decimal: int = 6):
+        """
+        Check that the objective value is correct:
+            1) Check that the actual value is close to the expected value
+            2) Check that the sum of the detailed cost is close to the total cost
+            3) Test that the detailed cost printed is close to the detailed cost
+
+        Parameters
+        ----------
+        sol: Solution
+            The solution to test
+        expected_value: float
+            The expected value of the total cost
+        decimal: int
+            The number of decimal to use in the comparison
+        """
+        # 1)
+        f = np.array(sol.cost)
+        npt.assert_equal(f.shape, (1, 1))
+        npt.assert_almost_equal(f[0, 0], expected_value, decimal=decimal)
+
+        # 2)
+        # Loop over phases
+        detailed_cost_sum = 0
+        for obj in sol.detailed_cost:
+            detailed_cost_sum += obj["cost_value_weighted"]
+        npt.assert_almost_equal(detailed_cost_sum, f[0, 0], decimal=decimal)
+
+        # 3)
+        detailed_cost_printed = TestUtils.sum_cost_function_output(sol)
+        npt.assert_almost_equal(detailed_cost_sum, detailed_cost_printed, decimal=decimal)
+

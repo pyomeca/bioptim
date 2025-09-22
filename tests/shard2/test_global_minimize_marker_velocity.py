@@ -151,9 +151,8 @@ def test_track_and_minimize_marker_displacement_global(ode_solver, phase_dynamic
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], -143.5854887928483)
+    TestUtils.assert_objective_value(sol=sol, expected_value=-143.5854887928483)
+
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -210,9 +209,7 @@ def test_track_and_minimize_marker_displacement_RT(ode_solver, phase_dynamics):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], -200.80194174353494)
+    TestUtils.assert_objective_value(sol=sol, expected_value=-200.80194174353494)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -268,9 +265,7 @@ def test_track_and_minimize_marker_velocity(ode_solver, phase_dynamics):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], -80.20048585400944)
+    TestUtils.assert_objective_value(sol=sol, expected_value=-80.20048585400944)
 
     # Check constraints
     g = np.array(sol.constraints)

@@ -40,9 +40,7 @@ def test_xia_fatigable_muscles(phase_dynamics):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 18.904691471277165)
+    TestUtils.assert_objective_value(sol=sol, expected_value=18.904691471277165)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -128,9 +126,7 @@ def test_xia_stabilized_fatigable_muscles(phase_dynamics):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 18.904691471277303)
+    TestUtils.assert_objective_value(sol=sol, expected_value=18.904691471277303)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -253,9 +249,7 @@ def test_effort_fatigable_muscles(phase_dynamics):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 15.670790035133818)
+    TestUtils.assert_objective_value(sol=sol, expected_value=15.670790035133818)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -366,9 +360,7 @@ def test_fatigable_xia_torque_split(phase_dynamics):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 73.27929222817079)
+    TestUtils.assert_objective_value(sol=sol, expected_value=73.27929222817079)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -435,9 +427,7 @@ def test_fatigable_xia_stabilized_torque_split(phase_dynamics):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 73.2792922281799)
+    TestUtils.assert_objective_value(sol=sol, expected_value=73.2792922281799)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -539,9 +529,7 @@ def test_fatigable_michaud_torque_split(phase_dynamics):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 66.4869989782804, decimal=5)
+    TestUtils.assert_objective_value(sol=sol, expected_value=66.4869989782804, decimal=5)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -642,9 +630,7 @@ def test_fatigable_effort_torque_split(phase_dynamics):
 
     # Check objective function value
     if platform.system() != "Linux":
-        f = np.array(sol.cost)
-        npt.assert_equal(f.shape, (1, 1))
-        npt.assert_almost_equal(f[0, 0], 124.09811263203727)
+        TestUtils.assert_objective_value(sol=sol, expected_value=124.09811263203727)
 
         # Check constraints
         g = np.array(sol.constraints)
