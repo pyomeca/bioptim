@@ -123,9 +123,7 @@ def prepare_ocp(
 def main():
     # --- Prepare the ocp --- #
     biorbd_model_path = ExampleUtils.folder + "/models/double_pendulum.bioMod"
-    biorbd_model_path_with_translations = (
-        ExampleUtils.folder + "/models/double_pendulum_with_translations.bioMod"
-    )
+    biorbd_model_path_with_translations = ExampleUtils.folder + "/models/double_pendulum_with_translations.bioMod"
     ocp = prepare_ocp(
         biorbd_model_path=biorbd_model_path,
         biorbd_model_path_with_translations=biorbd_model_path_with_translations,
