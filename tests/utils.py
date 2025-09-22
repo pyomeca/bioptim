@@ -279,4 +279,3 @@ class TestUtils:
         # 3)
         detailed_cost_printed = TestUtils.sum_cost_function_output(sol)
         npt.assert_almost_equal(detailed_cost_sum, detailed_cost_printed, decimal=decimal)
-

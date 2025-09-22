@@ -153,7 +153,6 @@ def test_track_and_minimize_marker_displacement_global(ode_solver, phase_dynamic
     # Check objective function value
     TestUtils.assert_objective_value(sol=sol, expected_value=-143.5854887928483)
 
-
     # Check constraints
     g = np.array(sol.constraints)
     npt.assert_equal(g.shape, (40, 1))
