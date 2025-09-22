@@ -270,7 +270,7 @@ class TestUtils:
         npt.assert_almost_equal(f[0, 0], expected_value, decimal=decimal)
 
         # 2)
-        # Loop over phases
+        # Loop over objectives
         detailed_cost_sum = 0
         for obj in sol.detailed_cost:
             detailed_cost_sum += obj["cost_value_weighted"]
