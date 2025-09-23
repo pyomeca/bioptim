@@ -185,7 +185,6 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type):
             npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [0.55457473, -0.41280843])
         TestUtils.assert_objective_value(sol=sol, expected_value=optimal_cost)
 
-
     elif isinstance(ode_solver_obj, OdeSolver.RK1):
         TestUtils.assert_objective_value(sol=sol, expected_value=47.360621044913245)
         npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [0.1463538, 0.0215651])
@@ -763,7 +762,6 @@ def test_parameter_optimization(ode_solver, phase_dynamics):
 
         # gravity parameter
         npt.assert_almost_equal(gravity, np.array([[0, 5.19787253e-03, -9.84722491e00]]).T)
-
 
     else:
         npt.assert_equal(g.shape, (400, 1))

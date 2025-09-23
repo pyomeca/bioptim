@@ -1362,7 +1362,9 @@ class Solution:
 
             node_idx = penalty.node_idx[idx]
             val.append(penalty.function_non_threaded[node_idx](t0, phases_dt, x, u, params, a, d))
-            val_weighted.append(penalty.weighted_function_non_threaded[node_idx](t0, phases_dt, x, u, params, a, d, weight, target))
+            val_weighted.append(
+                penalty.weighted_function_non_threaded[node_idx](t0, phases_dt, x, u, params, a, d, weight, target)
+            )
 
         if self.ocp.n_threads > 1:
             val = [v[:, 0] for v in val]
