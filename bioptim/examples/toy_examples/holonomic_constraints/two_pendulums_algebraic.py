@@ -35,7 +35,7 @@ def prepare_ocp(
     final_time: float = 1,
     expand_dynamics: bool = False,
     ode_solver: OdeSolver = OdeSolver.COLLOCATION(polynomial_degree=2),
-) -> (HolonomicBiorbdModel, OptimalControlProgram):
+) -> (ModifiedHolonomicTorqueBiorbdModel, OptimalControlProgram):
     """
     Prepare the program
 

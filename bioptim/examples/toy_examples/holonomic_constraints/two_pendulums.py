@@ -5,6 +5,7 @@ pendulum simulation.
 """
 
 import numpy as np
+from casadi import DM
 from bioptim import (
     BiMappingList,
     BoundsList,
@@ -19,6 +20,7 @@ from bioptim import (
     ObjectiveList,
     OdeSolver,
     OptimalControlProgram,
+    SolutionMerge,
     Solver,
 )
 from bioptim.examples.utils import ExampleUtils
