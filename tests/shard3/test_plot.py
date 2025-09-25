@@ -34,10 +34,9 @@ def test_plot_ocp_creation():
     """Test the creation of a PlotOcp object"""
     # Create a simple OCP
     from tests.utils import TestUtils
-    from bioptim.examples.getting_started import example_external_forces as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
-    model_path = bioptim_folder + "/models/cube.bioMod"
+    bioptim_folder = TestUtils.bioptim_folder()
+    model_path = bioptim_folder + "/examples/models/cube.bioMod"
     biorbd_model = TorqueBiorbdModel(model_path)
     n_shooting = 10
     final_time = 1.0
@@ -95,10 +94,9 @@ def test_default_colors():
 def test_plot_options():
     """Test the plot options of PlotOcp"""
     from tests.utils import TestUtils
-    from bioptim.examples.getting_started import example_external_forces as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
-    model_path = bioptim_folder + "/models/cube.bioMod"
+    bioptim_folder = TestUtils.bioptim_folder()
+    model_path = bioptim_folder + "/examples/models/cube.bioMod"
     biorbd_model = TorqueBiorbdModel(model_path)
     n_shooting = 10
     final_time = 1.0

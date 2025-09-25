@@ -14,13 +14,15 @@ from ..utils import TestUtils
 @pytest.mark.parametrize("use_sx", [False, True])
 def test_variational_pendulum(use_sx):
     """Test the variational integrator pendulum example"""
-    from bioptim.examples.discrete_mechanics_and_optimal_control import example_variational_integrator_pendulum
+    from bioptim.examples.toy_examples.discrete_mechanics_and_optimal_control import (
+        example_variational_integrator_pendulum,
+    )
 
-    bioptim_folder = TestUtils.module_folder(example_variational_integrator_pendulum)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     # --- Prepare the ocp --- #
     ocp = example_variational_integrator_pendulum.prepare_ocp(
-        bio_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        bio_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
         final_time=1,
         n_shooting=20,
         use_sx=use_sx,
@@ -46,15 +48,15 @@ def test_variational_pendulum(use_sx):
 @pytest.mark.parametrize("use_sx", [False, True])
 def test_variational_pendulum_with_holonomic_constraints(use_sx):
     """Test the variational integrator pendulum with holonomic constraints example"""
-    from bioptim.examples.discrete_mechanics_and_optimal_control import (
+    from bioptim.examples.toy_examples.discrete_mechanics_and_optimal_control import (
         example_variational_integrator_with_holonomic_constraints_pendulum,
     )
 
-    bioptim_folder = TestUtils.module_folder(example_variational_integrator_with_holonomic_constraints_pendulum)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     # --- Prepare the ocp --- #
     ocp = example_variational_integrator_with_holonomic_constraints_pendulum.prepare_ocp(
-        bio_model_path=bioptim_folder + "/models/pendulum_holonomic.bioMod",
+        bio_model_path=bioptim_folder + "/examples/models/pendulum_holonomic.bioMod",
         final_time=1,
         n_shooting=20,
         use_sx=use_sx,

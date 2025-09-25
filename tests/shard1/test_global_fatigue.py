@@ -10,11 +10,11 @@ from ..utils import TestUtils
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_xia_fatigable_muscles(phase_dynamics):
-    from bioptim.examples.fatigue import static_arm_with_fatigue as ocp_module
+    from bioptim.examples.toy_examples.fatigue import static_arm_with_fatigue as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
-    model_path = f"{bioptim_folder}/models/arm26_constant.bioMod"
+    model_path = bioptim_folder + "/examples/models/arm26_constant.bioMod"
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
         final_time=0.9,
@@ -98,11 +98,11 @@ def test_xia_fatigable_muscles(phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_xia_stabilized_fatigable_muscles(phase_dynamics):
-    from bioptim.examples.fatigue import static_arm_with_fatigue as ocp_module
+    from bioptim.examples.toy_examples.fatigue import static_arm_with_fatigue as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
-    model_path = f"{bioptim_folder}/models/arm26_constant.bioMod"
+    model_path = bioptim_folder + "/examples/models/arm26_constant.bioMod"
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
         final_time=0.9,
@@ -186,11 +186,11 @@ def test_xia_stabilized_fatigable_muscles(phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_michaud_fatigable_muscles(phase_dynamics):
-    from bioptim.examples.fatigue import static_arm_with_fatigue as ocp_module
+    from bioptim.examples.toy_examples.fatigue import static_arm_with_fatigue as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
-    model_path = f"{bioptim_folder}/models/arm26_constant.bioMod"
+    model_path = bioptim_folder + "/examples/models/arm26_constant.bioMod"
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
         final_time=0.9,
@@ -223,11 +223,11 @@ def test_michaud_fatigable_muscles(phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_effort_fatigable_muscles(phase_dynamics):
-    from bioptim.examples.fatigue import static_arm_with_fatigue as ocp_module
+    from bioptim.examples.toy_examples.fatigue import static_arm_with_fatigue as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
-    model_path = f"{bioptim_folder}/models/arm26_constant.bioMod"
+    model_path = bioptim_folder + "/examples/models/arm26_constant.bioMod"
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
         final_time=0.9,
@@ -302,11 +302,11 @@ def test_effort_fatigable_muscles(phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_fatigable_xia_torque_non_split(phase_dynamics):
-    from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
+    from bioptim.examples.toy_examples.fatigue import pendulum_with_fatigue as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
-    model_path = f"{bioptim_folder}/models/pendulum.bioMod"
+    model_path = bioptim_folder + "/examples/models/pendulum.bioMod"
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
@@ -336,11 +336,11 @@ def test_fatigable_xia_torque_non_split(phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_fatigable_xia_torque_split(phase_dynamics):
-    from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
+    from bioptim.examples.toy_examples.fatigue import pendulum_with_fatigue as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
-    model_path = f"{bioptim_folder}/models/pendulum.bioMod"
+    model_path = bioptim_folder + "/examples/models/pendulum.bioMod"
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
@@ -414,13 +414,13 @@ def test_fatigable_xia_torque_split(phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_fatigable_xia_stabilized_torque_split(phase_dynamics):
-    from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
+    from bioptim.examples.toy_examples.fatigue import pendulum_with_fatigue as ocp_module
 
     if platform.system() == "Windows":
         pytest.skip("These tests do not pass on Windows.")
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
-    model_path = f"{bioptim_folder}/models/pendulum.bioMod"
+    bioptim_folder = TestUtils.bioptim_folder()
+    model_path = bioptim_folder + "/examples/models/pendulum.bioMod"
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
@@ -483,11 +483,11 @@ def test_fatigable_xia_stabilized_torque_split(phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_fatigable_michaud_torque_non_split(phase_dynamics):
-    from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
+    from bioptim.examples.toy_examples.fatigue import pendulum_with_fatigue as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
-    model_path = f"{bioptim_folder}/models/pendulum.bioMod"
+    model_path = bioptim_folder + "/examples/models/pendulum.bioMod"
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
@@ -517,14 +517,14 @@ def test_fatigable_michaud_torque_non_split(phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_fatigable_michaud_torque_split(phase_dynamics):
-    from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
+    from bioptim.examples.toy_examples.fatigue import pendulum_with_fatigue as ocp_module
 
     if platform.system() == "Windows":
         pytest.skip("These tests do not pass on Windows.")
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
-    model_path = f"{bioptim_folder}/models/pendulum.bioMod"
+    model_path = bioptim_folder + "/examples/models/pendulum.bioMod"
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
@@ -588,11 +588,11 @@ def test_fatigable_michaud_torque_split(phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_fatigable_effort_torque_non_split(phase_dynamics):
-    from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
+    from bioptim.examples.toy_examples.fatigue import pendulum_with_fatigue as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
-    model_path = f"{bioptim_folder}/models/pendulum.bioMod"
+    model_path = bioptim_folder + "/examples/models/pendulum.bioMod"
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,
@@ -622,11 +622,11 @@ def test_fatigable_effort_torque_non_split(phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_fatigable_effort_torque_split(phase_dynamics):
-    from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
+    from bioptim.examples.toy_examples.fatigue import pendulum_with_fatigue as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
-    model_path = f"{bioptim_folder}/models/pendulum.bioMod"
+    model_path = bioptim_folder + "/examples/models/pendulum.bioMod"
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=model_path,

@@ -116,16 +116,14 @@ def prepare_test_ocp(
     if with_muscles and with_contact or with_muscles and with_actuator or with_contact and with_actuator:
         raise RuntimeError("With muscles and with contact and with_actuator together is not defined")
     elif with_muscles:
-        bio_model = MusclesBiorbdModel(
-            bioptim_folder + "/examples/muscle_driven_ocp/models/arm26.bioMod", with_residual_torque=True
-        )
+        bio_model = MusclesBiorbdModel(bioptim_folder + "/examples/models/arm26.bioMod", with_residual_torque=True)
         dynamics = DynamicsOptionsList()
         dynamics.add(expand_dynamics=True, phase_dynamics=phase_dynamics)
     elif with_contact:
         dynamics = DynamicsOptionsList()
         if with_external_forces:
             bio_model = TorqueBiorbdModel(
-                bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod",
+                bioptim_folder + "/examples/models/2segments_4dof_2contacts_1muscle.bioMod",
                 contact_types=[ContactType.RIGID_EXPLICIT],
                 external_force_set=external_forces,
             )
@@ -138,7 +136,7 @@ def prepare_test_ocp(
             )
         else:
             bio_model = TorqueBiorbdModel(
-                bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod",
+                bioptim_folder + "/examples/models/2segments_4dof_2contacts_1muscle.bioMod",
                 contact_types=[ContactType.RIGID_EXPLICIT],
             )
             dynamics.add(
@@ -148,10 +146,10 @@ def prepare_test_ocp(
                 )
             )
     elif with_actuator:
-        bio_model = TorqueActivationBiorbdModel(bioptim_folder + "/examples/torque_driven_ocp/models/cube.bioMod")
+        bio_model = TorqueActivationBiorbdModel(bioptim_folder + "/examples/models/cube_with_actuators.bioMod")
         dynamics = DynamicsOptions(expand_dynamics=True, phase_dynamics=phase_dynamics)
     else:
-        bio_model = TorqueBiorbdModel(bioptim_folder + "/examples/track/models/cube_and_line.bioMod")
+        bio_model = TorqueBiorbdModel(bioptim_folder + "/examples/models/cube_and_line.bioMod")
         dynamics = DynamicsOptions(expand_dynamics=True, phase_dynamics=phase_dynamics)
 
     objective_functions = Objective(ObjectiveFcn.Mayer.MINIMIZE_TIME)
@@ -1579,7 +1577,7 @@ def test_bad_shape_output_penalty():
     def prepare_test_ocp_error():
         bioptim_folder = TestUtils.bioptim_folder()
 
-        bio_model = TorqueBiorbdModel(bioptim_folder + "/examples/track/models/cube_and_line.bioMod")
+        bio_model = TorqueBiorbdModel(bioptim_folder + "/examples/models/cube_and_line.bioMod")
         dynamics = DynamicsOptions()
 
         constraints = ConstraintList()

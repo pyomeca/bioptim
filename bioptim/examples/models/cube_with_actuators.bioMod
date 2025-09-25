@@ -1,0 +1,98 @@
+version 4
+
+
+// Seg1
+    segment Seg1
+    translations	xz
+    rotations	y
+    rangesQ  -0.70 2.30
+            -3 3
+            -pi pi
+	mass 1
+	inertia
+	  1 0 0
+	  0 1 0
+	  0 0 1
+	com 0 0 0
+    mesh 0 -1 -1
+    mesh 0 0 -1
+    mesh 0 0 0
+    mesh 0 -1 0
+    mesh 0 -1 -1
+    mesh 1 -1 -1
+    mesh 1 0 -1
+    mesh 0 0 -1
+    mesh 1 0 -1
+    mesh 1 0 0
+    mesh 0 0 0
+    mesh 1 0 0
+    mesh 1 -1 0
+    mesh 0 -1 0
+    mesh 1 -1 0
+    mesh 1 -1 -1
+endsegment
+
+    // Marker on Seg1
+    marker m0
+        parent Seg1
+        position 0 0 0
+    endmarker
+
+
+    // Actuators Seg1
+    actuator    Seg1
+        type    Constant
+        dof    TransX
+        direction    positive
+        Tmax    10.000000
+    endactuator
+    actuator    Seg1
+        type    Constant
+        dof    TransX
+        direction    negative
+        Tmax    5.000000
+    endactuator
+
+    actuator    Seg1
+        type    Constant
+        dof    TransZ
+        direction    positive
+        Tmax    10.000000
+    endactuator
+	actuator    Seg1
+        type    Constant
+        dof    TransZ
+        direction    negative
+        Tmax    5.000000
+    endactuator
+
+    actuator    Seg1
+        type    Constant
+        dof    RotY
+        direction    positive
+        Tmax    10.000000
+    endactuator
+	actuator    Seg1
+        type    Constant
+        dof    RotY
+        direction    negative
+        Tmax    5.000000
+    endactuator
+
+
+segment ground
+endsegment
+
+    // Markers on ground
+    marker m1
+        parent ground
+        position 1 0 0
+    endmarker
+    marker m2
+        parent ground
+        position 2 0 0
+    endmarker
+    marker m3
+        parent ground
+        position 1 0 2
+    endmarker

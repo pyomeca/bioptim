@@ -51,7 +51,7 @@ class TestUtils:
     @staticmethod
     def _capitalize_folder_drive(folder: str) -> str:
         if platform.system() == "Windows" and folder[1] == ":":
-            # Capitilize the drive letter if it is windows
+            # Capitalize the drive letter if it is windows
             folder = folder[0].upper() + folder[1:]
         return folder
 

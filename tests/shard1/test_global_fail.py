@@ -24,7 +24,7 @@ def test_custom_constraint_multiple_nodes_fail():
         return MX.zeros(u.shape), u.cx_start, MX.zeros(u.shape)
 
     bioptim_folder = TestUtils.bioptim_folder()
-    model_path = bioptim_folder + "/examples/getting_started/models/cube.bioMod"
+    model_path = bioptim_folder + "/examples/getting_started/../models/cube.bioMod"
 
     constraints = ConstraintList()
     constraints.add(custom_mx_fail, node=Node.ALL)
@@ -64,7 +64,7 @@ def test_custom_constraint_mx_fail(phase_dynamics):
         return MX.zeros(u.shape), u.cx_start, MX.zeros(u.shape)
 
     bioptim_folder = TestUtils.bioptim_folder()
-    model_path = bioptim_folder + "/examples/getting_started/models/cube.bioMod"
+    model_path = bioptim_folder + "/examples/models/cube.bioMod"
 
     constraints = ConstraintList()
     constraints.add(custom_mx_fail, node=0)
