@@ -5,8 +5,6 @@ pendulum simulation.
 """
 
 import numpy as np
-from three_bar import compute_all_q
-
 from bioptim import (
     BiMappingList,
     BoundsList,
@@ -21,11 +19,11 @@ from bioptim import (
     ObjectiveList,
     OdeSolver,
     OptimalControlProgram,
-    SolutionMerge,
     Solver,
-    TorqueBiorbdModel,
 )
 from bioptim.examples.utils import ExampleUtils
+
+from .common import compute_all_q
 
 
 def prepare_ocp(

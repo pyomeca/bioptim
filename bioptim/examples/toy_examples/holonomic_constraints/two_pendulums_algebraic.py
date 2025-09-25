@@ -5,9 +5,7 @@ pendulum simulation. But this time, the dynamics are computed with the algebraic
 """
 
 import platform
-
 import numpy as np
-
 from bioptim import (
     BiMappingList,
     BoundsList,
@@ -15,7 +13,6 @@ from bioptim import (
     CostType,
     DynamicsOptions,
     DynamicsOptionsList,
-    HolonomicBiorbdModel,
     HolonomicConstraintsFcn,
     HolonomicConstraintsList,
     InitialGuessList,
