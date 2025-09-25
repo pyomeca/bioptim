@@ -4,9 +4,8 @@ The simulation is two single pendulum that are forced to be coherent with a holo
 pendulum simulation.
 """
 
-import platform
 import numpy as np
-from casadi import DM
+from two_pendulums_2constraint_4DOF import compute_all_q
 
 from bioptim import (
     BiMappingList,
@@ -14,18 +13,17 @@ from bioptim import (
     ConstraintList,
     DynamicsOptions,
     DynamicsOptionsList,
-    HolonomicTorqueBiorbdModel,
     HolonomicConstraintsFcn,
     HolonomicConstraintsList,
+    HolonomicTorqueBiorbdModel,
     InitialGuessList,
     ObjectiveFcn,
     ObjectiveList,
+    OdeSolver,
     OptimalControlProgram,
     Solver,
-    SolutionMerge,
-    OdeSolver,
 )
-from two_pendulums_2constraint_4DOF import compute_all_states
+from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(
@@ -147,7 +145,7 @@ def main():
     Runs the optimization and animates it
     """
 
-    model_path = "models/two_pendulums_2.bioMod"
+    model_path = ExampleUtils.folder + "/models/two_pendulums_2.bioMod"
     ocp, bio_model = prepare_ocp(biorbd_model_path=model_path)
 
     # --- Solve the program --- #
@@ -155,7 +153,7 @@ def main():
     print(sol.real_time_to_optimize)
 
     # --- Show results --- #
-    q = compute_all_states(sol, bio_model)
+    q = compute_all_q(sol, bio_model)
 
     viewer = "pyorerun"
     if viewer == "bioviz":

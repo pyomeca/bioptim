@@ -4,9 +4,8 @@ The simulation is two single pendulum that are forced to be coherent with a holo
 pendulum simulation.
 """
 
-import platform
 import numpy as np
-from casadi import DM
+from three_bar import compute_all_q
 
 from bioptim import (
     BiMappingList,
@@ -14,47 +13,17 @@ from bioptim import (
     ConstraintList,
     DynamicsOptions,
     DynamicsOptionsList,
-    HolonomicTorqueBiorbdModel,
     HolonomicConstraintsFcn,
     HolonomicConstraintsList,
+    HolonomicTorqueBiorbdModel,
     InitialGuessList,
     ObjectiveFcn,
     ObjectiveList,
+    OdeSolver,
     OptimalControlProgram,
     Solver,
-    SolutionMerge,
-    OdeSolver,
 )
-
-
-def compute_all_states(sol, bio_model: HolonomicTorqueBiorbdModel):
-    """
-    Compute all the states from the solution of the optimal control program
-
-    Parameters
-    ----------
-    bio_model: HolonomicTorqueBiorbdModel
-        The biorbd model
-    sol:
-        The solution of the optimal control program
-
-    Returns
-    -------
-
-    """
-
-    states = sol.decision_states(to_merge=SolutionMerge.NODES)
-
-    n = states["q_u"].shape[1]
-
-    q = np.zeros((bio_model.nb_q, n))
-
-    q_v_init = DM.zeros(bio_model.nb_dependent_joints, n)
-    for i in range(n):
-        q_v_i = bio_model.compute_q_v()(states["q_u"][:, i], q_v_init[:, i]).toarray()
-        q[:, i] = bio_model.state_from_partition(states["q_u"][:, i][:, np.newaxis], q_v_i).toarray().squeeze()
-
-    return q
+from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(
@@ -173,7 +142,7 @@ def main():
     Runs the optimization and animates it
     """
 
-    model_path = "models/two_pendulums.bioMod"
+    model_path = ExampleUtils.folder + "/models/two_pendulums.bioMod"
     ocp, bio_model = prepare_ocp(biorbd_model_path=model_path)
 
     # --- Solve the program --- #
@@ -181,7 +150,7 @@ def main():
     print(sol.real_time_to_optimize)
 
     # --- Show results --- #
-    q = compute_all_states(sol, bio_model)
+    q = compute_all_q(sol, bio_model)
 
     viewer = "pyorerun"
     if viewer == "bioviz":

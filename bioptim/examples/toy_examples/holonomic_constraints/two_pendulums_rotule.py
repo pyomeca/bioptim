@@ -4,28 +4,28 @@ The simulation is two single pendulum that are forced to be coherent with a holo
 pendulum simulation.
 """
 
+import numpy as np
+from three_bar import compute_all_q
+
 from bioptim import (
     BiMappingList,
     BoundsList,
     ConstraintList,
     DynamicsOptions,
     DynamicsOptionsList,
-    HolonomicTorqueBiorbdModel,
     HolonomicConstraintsFcn,
     HolonomicConstraintsList,
+    HolonomicTorqueBiorbdModel,
     InitialGuessList,
     ObjectiveFcn,
     ObjectiveList,
-    OptimalControlProgram,
-    Solver,
-    SolutionMerge,
     OdeSolver,
+    OptimalControlProgram,
+    SolutionMerge,
+    Solver,
     TorqueBiorbdModel,
 )
-
-import numpy as np
-
-from three_bar import compute_all_states
+from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(
@@ -142,14 +142,14 @@ def main():
     Runs the optimization and animates it
     """
 
-    model_path = "models/two_pendulums_rotule.bioMod"
+    model_path = ExampleUtils.folder + "/models/two_pendulums_rotule.bioMod"
     ocp, bio_model = prepare_ocp(biorbd_model_path=model_path)
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
     print(sol.real_time_to_optimize)
 
-    q = compute_all_states(sol, bio_model)
+    q = compute_all_q(sol, bio_model)
 
     viewer = "pyorerun"
     if viewer == "bioviz":

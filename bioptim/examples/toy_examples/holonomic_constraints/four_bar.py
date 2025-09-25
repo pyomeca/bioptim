@@ -4,9 +4,7 @@ The simulation is two single pendulum that are forced to be coherent with a holo
 pendulum simulation.
 """
 
-import platform
 import numpy as np
-from casadi import DM
 
 from bioptim import (
     BiMappingList,
@@ -22,11 +20,12 @@ from bioptim import (
     ObjectiveList,
     OptimalControlProgram,
     Solver,
-    SolutionMerge,
     OdeSolver,
 )
 
-from three_bar import compute_all_states
+from bioptim.examples.utils import ExampleUtils
+
+from three_bar import compute_all_q
 
 
 def prepare_ocp(
@@ -161,7 +160,7 @@ def main():
     Runs the optimization and animates it
     """
 
-    model_path = "models/4bar.bioMod"
+    model_path = ExampleUtils.folder + "/models/4bar.bioMod"
     ocp, bio_model = prepare_ocp(biorbd_model_path=model_path)
 
     # --- Solve the program --- #
@@ -169,7 +168,7 @@ def main():
     print(sol.real_time_to_optimize)
 
     # --- Show results --- #
-    q = compute_all_states(sol, bio_model)
+    q = compute_all_q(sol, bio_model)
 
     viewer = "pyorerun"
     if viewer == "bioviz":

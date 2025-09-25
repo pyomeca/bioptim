@@ -4,7 +4,6 @@ The simulation is two single pendulum that are forced to be coherent with a holo
 pendulum simulation.
 """
 
-import platform
 import numpy as np
 from casadi import DM
 
@@ -26,10 +25,10 @@ from bioptim import (
     OdeSolver,
 )
 
-# from two_pendulums import compute_all_states
+from bioptim.examples.utils import ExampleUtils
 
 
-def compute_all_states(sol, bio_model: HolonomicTorqueBiorbdModel):
+def compute_all_q(sol, bio_model: HolonomicTorqueBiorbdModel):
     """
     Compute all the states from the solution of the optimal control program
 
@@ -180,20 +179,29 @@ def main():
     Runs the optimization and animates it
     """
 
-    model_path = "models/3bar.bioMod"
+    model_path = ExampleUtils.folder + "/models/3bar.bioMod"
     ocp, bio_model = prepare_ocp(biorbd_model_path=model_path)
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
 
-    # q, qdot, qddot, lambdas = compute_all_states(sol, bio_model)
-    q = compute_all_states(sol, bio_model)
+    q = compute_all_q(sol, bio_model)
 
-    import bioviz
+    viewer = "pyorerun"
+    if viewer == "bioviz":
+        import bioviz
 
-    viz = bioviz.Viz(model_path)
-    viz.load_movement(q)
-    viz.exec()
+        viz = bioviz.Viz(model_path)
+        viz.load_movement(q)
+        viz.exec()
+
+    if viewer == "pyorerun":
+        import pyorerun
+
+        viz = pyorerun.PhaseRerun(t_span=np.concatenate(sol.decision_time()).squeeze())
+        viz.add_animated_model(pyorerun.BiorbdModel(model_path), q=q)
+
+        viz.rerun("double_pendulum")
 
     sol.graphs()
 

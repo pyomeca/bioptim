@@ -4,9 +4,8 @@ The simulation is two single pendulum that are forced to be coherent with a holo
 pendulum simulation.
 """
 
-import platform
 import numpy as np
-from casadi import DM
+from three_bar import compute_all_q
 
 from bioptim import (
     BiMappingList,
@@ -14,74 +13,18 @@ from bioptim import (
     ConstraintList,
     DynamicsOptions,
     DynamicsOptionsList,
-    HolonomicTorqueBiorbdModel,
     HolonomicConstraintsFcn,
     HolonomicConstraintsList,
+    HolonomicTorqueBiorbdModel,
     InitialGuessList,
     ObjectiveFcn,
     ObjectiveList,
-    OptimalControlProgram,
-    Solver,
-    SolutionMerge,
     OdeSolver,
+    OptimalControlProgram,
+    SolutionMerge,
+    Solver,
 )
-
-
-def compute_all_states(sol, bio_model: HolonomicTorqueBiorbdModel):
-    """
-    Compute all the states from the solution of the optimal control program
-
-    Parameters
-    ----------
-    bio_model: HolonomicTorqueBiorbdModel
-        The biorbd model
-    sol:
-        The solution of the optimal control program
-
-    Returns
-    -------
-
-    """
-
-    states = sol.decision_states(to_merge=SolutionMerge.NODES)
-    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
-
-    n = states["q_u"].shape[1]
-    n_tau = controls["tau"].shape[1]
-
-    q = np.zeros((bio_model.nb_q, n))
-    qdot = np.zeros((bio_model.nb_q, n))
-    qddot = np.zeros((bio_model.nb_q, n))
-    lambdas = np.zeros((bio_model.nb_dependent_joints, n))
-    tau = np.zeros((bio_model.nb_tau, n_tau + 1))
-
-    for i, independent_joint_index in enumerate(bio_model.independent_joint_index):
-        tau[independent_joint_index, :-1] = controls["tau"][i, :]
-    for i, dependent_joint_index in enumerate(bio_model.dependent_joint_index):
-        tau[dependent_joint_index, :-1] = controls["tau"][i, :]
-
-    q_v_init = DM.zeros(bio_model.nb_dependent_joints, n)
-    for i in range(n):
-        q_v_i = bio_model.compute_q_v()(states["q_u"][:, i], q_v_init[:, i]).toarray()
-        q[:, i] = bio_model.state_from_partition(states["q_u"][:, i][:, np.newaxis], q_v_i).toarray().squeeze()
-        qdot[:, i] = bio_model.compute_qdot()(q[:, i], states["qdot_u"][:, i]).toarray().squeeze()
-        qddot_u_i = (
-            bio_model.partitioned_forward_dynamics()(
-                states["q_u"][:, i], states["qdot_u"][:, i], q_v_init[:, i], tau[:, i]
-            )
-            .toarray()
-            .squeeze()
-        )
-        qddot[:, i] = bio_model.compute_qddot()(q[:, i], qdot[:, i], qddot_u_i).toarray().squeeze()
-        lambdas[:, i] = (
-            bio_model.compute_the_lagrangian_multipliers()(
-                states["q_u"][:, i][:, np.newaxis], states["qdot_u"][:, i], q_v_init[:, i], tau[:, i]
-            )
-            .toarray()
-            .squeeze()
-        )
-
-    return q, qdot, qddot, lambdas
+from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(
@@ -197,7 +140,7 @@ def main():
     Runs the optimization and animates it
     """
 
-    model_path = "models/two_pendulums.bioMod"
+    model_path = ExampleUtils.folder + "/models/two_pendulums.bioMod"
     ocp, bio_model = prepare_ocp(biorbd_model_path=model_path)
 
     # --- Solve the program --- #
@@ -205,7 +148,7 @@ def main():
     print(sol.real_time_to_optimize)
 
     # --- Show results --- #
-    q, qdot, qddot, lambdas = compute_all_states(sol, bio_model)
+    q = compute_all_q(sol, bio_model)
 
     viewer = "pyorerun"
     if viewer == "bioviz":
