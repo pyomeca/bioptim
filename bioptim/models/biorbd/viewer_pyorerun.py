@@ -87,7 +87,7 @@ def launch_rerun(
     solution: "SolutionData",
     show_now: Bool = True,
     tracked_markers: list[NpArray] = None,
-    models: BiorbdModel | list[BiorbdModel] = None,
+    models: BiorbdModel | list[BiorbdModel] | list[MultiBiorbdModel] = None,
     **kwargs: Any,
 ):
     if not isinstance(solution, (list, tuple)):
