@@ -1345,13 +1345,11 @@ def test_penalty_custom(penalty_origin, value, phase_dynamics):
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom_fail(penalty_origin, value, phase_dynamics):
-    def custom_no_mult(ocp, nlp, t, x, u, p):
-        my_values = DM.zeros((12, 1)) + x[0]
-        return my_values
+    def custom_no_mult(controller: PenaltyController):
+        return DM.zeros((12, 1)) + controller.x[0]
 
-    def custom_with_mult(ocp, nlp, t, x, u, p, mult):
-        my_values = DM.zeros((12, 1)) + x[0] * mult
-        return my_values
+    def custom_with_mult(controller: PenaltyController, mult):
+        return DM.zeros((12, 1)) + controller.x[0] * mult
 
     ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
     x = [DM.ones((12, 1)) * value]
@@ -1362,38 +1360,47 @@ def test_penalty_custom_fail(penalty_origin, value, phase_dynamics):
     else:
         penalty = Constraint(penalty_type)
 
+    controller = PenaltyController(ocp, ocp.nlp[0], [], x, [], [], [], [], [], [], [], 0)
     with pytest.raises(TypeError):
         penalty.custom_function = custom_no_mult
-        penalty_type(penalty, ocp, ocp.nlp[0], [], x, [], [], mult=2)
+        penalty_type(penalty)
 
     with pytest.raises(TypeError):
         penalty.custom_function = custom_with_mult
-        penalty_type(penalty, ocp, ocp.nlp[0], [], x, [], [])
+        penalty_type(penalty, controller)
 
-    with pytest.raises(TypeError):
-        keywords = [
-            "phase",
-            "list_index",
-            "name",
-            "type",
-            "params",
-            "node",
-            "quadratic",
-            "index",
-            "target",
-            "min_bound",
-            "max_bound",
-            "custom_function",
-            "weight",
-        ]
-        for keyword in keywords:
-            exec(
-                f"""def custom_with_keyword(ocp, nlp, t, x, u, p, {keyword}):
-                            my_values = DM.zeros((12, 1)) + x[index]
-                            return my_values"""
-            )
-            exec("""penalty.custom_function = custom_with_keyword""")
-            exec(f"""penalty_type(penalty, ocp, ocp.nlp[0], [], x, [], [], {keyword}=0)""")
+    keywords = [
+        "phase",
+        "list_index",
+        "name",
+        "type",
+        "params",
+        "extra_parameters",
+        "node",
+        "quadratic",
+        "index",
+        "target",
+        "min_bound",
+        "max_bound",
+        "function",
+        "weighted_function",
+        "custom_function",
+        "weight",
+        "expand",
+        "is_stochastic",
+    ]
+
+    def create_function_with_keyword(keyword):
+        code = f"""def custom_with_keyword(ocp, controller, {keyword}):
+            assert False  # This should never be hit"""
+        ns = {}
+        exec(code, {"DM": DM, "np": np}, ns)
+        return ns["custom_with_keyword"]
+
+    for keyword in keywords:
+        penalty.custom_function = create_function_with_keyword(keyword)
+        with pytest.raises(TypeError):
+            penalty_type(penalty, controller, **{keyword: 0})
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
