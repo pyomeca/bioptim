@@ -16,18 +16,18 @@ from ..utils import TestUtils
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver, phase_dynamics):
     # Load muscle_activations_tracker
-    from bioptim.examples.muscle_driven_ocp import muscle_activations_tracker as ocp_module
+    from bioptim.examples.toy_examples.muscle_driven_ocp import muscle_activations_tracker as ocp_module
 
     # For reducing time phase_dynamics=False is skipped for redundant tests
     # and because test fails on CI
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver in (OdeSolver.RK4, OdeSolver.COLLOCATION):
         pytest.skip("Redundant test")
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     # Define the problem
     use_residual_torque = False
-    model_path = bioptim_folder + "/models/arm26.bioMod"
+    model_path = bioptim_folder + "/examples/models/arm26.bioMod"
     bio_model = MusclesBiorbdModel(model_path, with_residual_torque=use_residual_torque)
     final_time = 0.1
     n_shooting = 5

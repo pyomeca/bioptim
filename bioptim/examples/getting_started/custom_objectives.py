@@ -24,6 +24,7 @@ from bioptim import (
     Solver,
     PhaseDynamics,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def custom_func_track_markers(controller: PenaltyController, first_marker: str, second_marker: str) -> MX:
@@ -151,7 +152,7 @@ def main():
     Solve and animate the solution
     """
 
-    model_path = "models/cube.bioMod"
+    model_path = ExampleUtils.folder + "/models/cube.bioMod"
     ocp = prepare_ocp(biorbd_model_path=model_path)
 
     # Custom plots

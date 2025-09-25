@@ -3,15 +3,17 @@ This example shows how to extract the data from the Solution object and plot it 
 """
 
 import matplotlib.pyplot as plt
-from bioptim.examples.getting_started.pendulum import prepare_ocp
+from bioptim.examples.getting_started.basic_ocp import prepare_ocp
 from bioptim import Solver, SolutionMerge, TimeAlignment
+from bioptim.examples.utils import ExampleUtils
 
 """
 If pendulum is run as a script, it will perform the optimization and animates it
 """
 
 # --- Prepare the ocp --- #
-ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=400, n_threads=2)
+biorbd_model_path = ExampleUtils.folder + "/models/pendulum.bioMod"
+ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, final_time=1, n_shooting=400, n_threads=2)
 
 # --- Solve the ocp --- #
 sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
