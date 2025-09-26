@@ -537,7 +537,6 @@ class OptimalControlProgram:
         self.cx = SX if use_sx else MX
 
         # Declare optimization variables
-        self.program_changed = True
         self.J = []
         self.J_internal = []
         self.g = []
@@ -1674,8 +1673,6 @@ class OptimalControlProgram:
         phase_idx = new_penalty.phase
         new_penalty.add_or_replace_to_penalty_pool(self, self.nlp[phase_idx])
 
-        self.program_changed = True
-
     def _modify_parameter_penalty(self, new_penalty: PenaltyOption | Parameter) -> None:
         """
         The internal function to modify a parameter penalty.
@@ -1690,7 +1687,6 @@ class OptimalControlProgram:
             return
 
         new_penalty.add_or_replace_to_penalty_pool(self, self.nlp[new_penalty.phase])
-        self.program_changed = True
 
     def node_time(self, phase_idx: Int, node_idx: Int) -> Float:
         """

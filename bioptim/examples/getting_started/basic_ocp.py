@@ -158,7 +158,19 @@ def main():
     # --- Solve the ocp --- #
     # Default is OnlineOptim.MULTIPROCESS on Linux, OnlineOptim.MULTIPROCESS_SERVER on Windows and None on MacOS
     # To see the graphs on MacOS, one must run the server manually (see resources/plotting_server.py)
-    sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
+    solver = Solver.IPOPT(online_optim=OnlineOptim.DEFAULT)
+    sol = ocp.solve(solver)
+
+    # # --- Warm restart --- #
+    # # If one is interested in restarting an optimization from a previous solution with different objective or constraint
+    # # functions, they can do as follows:
+    #
+    # # We first swap the objective (list_index=0) to a minimize state (instead minimize control)
+    # ocp.update_objectives(Objective(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q", list_index=0))
+    # # Then, we resolve the ocp from the last solution (warm_start=sol).
+    # # Please note that sending the same "solver" will greatly improve launch time as the internal structure of the
+    # # solver is already initialized for the non-changed parts of the problem
+    # sol = ocp.solve(solver, warm_start=sol)
 
     # --- Show the results graph --- #
     sol.print_cost()
