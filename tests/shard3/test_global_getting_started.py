@@ -4,6 +4,7 @@ Test for file IO
 
 import tracemalloc
 import gc
+import os
 import pickle
 import platform
 import re
@@ -2515,3 +2516,16 @@ def test_memory_and_execution_time():
         npt.assert_array_less(test_memory[key][0], ref[key][0] * factor)
         npt.assert_array_less(test_memory[key][1], ref[key][1] * factor)
         npt.assert_array_less(test_memory[key][2], ref[key][2] * factor)
+
+
+def test_deep_neural_network():
+    from bioptim.examples.deep_neural_network import pytorch_ocp as ocp_module
+
+    model = ocp_module.NeuralNetworkModel(layer_node_count=(6, 8, 2), dropout_probability=0.2)
+    ocp = ocp_module.prepare_ocp(model=model, final_time=1, n_shooting=3)
+    solver = Solver.IPOPT()
+    solver.set_maximum_iterations(1)
+
+    # We can launch the solving, but won't be able to check the results as the model is not trained so it is random
+    os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
+    ocp.solve(solver=solver)
