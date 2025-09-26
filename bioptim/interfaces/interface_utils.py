@@ -118,16 +118,16 @@ def generic_solve(interface: SolverInterface, expand_during_shake_tree: Bool = F
         interface.online_optim(interface.ocp, interface.opts.show_options)
 
     # Thread here on (f and all_g) instead of individually for each function?
+    interface.limits = {
+        "lbx": v_bounds[0],
+        "ubx": v_bounds[1],
+        "lbg": all_g_bounds.min,
+        "ubg": all_g_bounds.max,
+        "x0": v_init,
+    }
     if interface.shaked_ocp_solver is None or not can_skip_shake_objectives or not can_skip_shake_constraints:
         interface.nlp = {"x": v, "f": sum1(interface.shaked_objectives), "g": interface.shaked_constraints}
         interface.c_compile = interface.opts.c_compile
-        interface.limits = {
-            "lbx": v_bounds[0],
-            "ubx": v_bounds[1],
-            "lbg": all_g_bounds.min,
-            "ubg": all_g_bounds.max,
-            "x0": v_init,
-        }
         options = interface.opts.as_dict(interface)
 
         if interface.c_compile:
