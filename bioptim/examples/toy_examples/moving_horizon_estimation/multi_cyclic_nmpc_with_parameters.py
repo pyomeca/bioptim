@@ -8,7 +8,6 @@ the latter has more cycle at a time giving the knowledge to the solver that 'som
 import platform
 from typing import Callable
 
-import biorbd
 import numpy as np
 from casadi import MX, SX, vertcat
 

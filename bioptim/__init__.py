@@ -136,7 +136,7 @@ Requirements and Installation
 bioptim requires minimally CasADi, [Ipopt, ACADOS], biorbd and bioviz. To install ACADOS, one is invited to have a look
 at the installation script at 'external/acados_install.sh'. All the other requirements can be installed from conda
 on the conda-forge channel using the following command:
-`conda install -c conda-forge biorbd=*=*casadi* bioviz=*=*casadi*`
+`conda install -c conda-forge biorbd`
 
 If one is interested in the conda-forge version of bioptim, they can install every requirements and bioptim using the
 following command
@@ -238,6 +238,7 @@ from .optimization.multi_start import MultiStart
 from .optimization.non_linear_program import NonLinearProgram
 from .optimization.optimal_control_program import OptimalControlProgram
 from .optimization.optimization_variable import OptimizationVariableList
+from .optimization.vector_layout import OrderingStrategy
 from .optimization.parameters import ParameterList, ParameterContainer
 from .optimization.problem_type import SocpType
 from .optimization.receding_horizon_optimization import (

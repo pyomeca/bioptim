@@ -2,8 +2,8 @@ from time import perf_counter
 
 from casadi import Importer, Function
 from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, DM, reshape
+import numpy as np
 
-from bioptim.optimization.solution.solution import Solution
 from .solver_interface import SolverInterface
 from ..gui.online_callback_multiprocess import OnlineCallbackMultiprocess
 from ..gui.online_callback_multiprocess_server import OnlineCallbackMultiprocessServer
@@ -11,18 +11,9 @@ from ..gui.online_callback_server import OnlineCallbackServer
 from ..limits.path_conditions import Bounds
 from ..limits.penalty_helpers import PenaltyHelpers, Slicy
 from ..misc.enums import InterpolationType, OnlineOptim
+from ..misc.parameters_types import AnyDictOptional, Bool, AnyDict, CX, DoubleNpArrayTuple, Int
 from ..optimization.non_linear_program import NonLinearProgram
-
-
-from ..misc.parameters_types import (
-    AnyDictOptional,
-    Bool,
-    AnyDict,
-    CX,
-    DoubleNpArrayTuple,
-    Int,
-    Range,
-)
+from ..optimization.solution.solution import Solution
 
 
 def generic_online_optim(interface: SolverInterface, ocp, show_options: AnyDictOptional = None):
@@ -57,6 +48,24 @@ def generic_online_optim(interface: SolverInterface, ocp, show_options: AnyDictO
     interface.options_common["iteration_callback"] = to_call(ocp, **show_options)
 
 
+def _vectors_are_equal(
+    vector1: CX,
+    vector2: CX,
+    v: CX,
+    v_init: DM,
+    v_min: DM,
+    v_max: DM,
+) -> Bool:
+    if vector1 is None or vector2 is None:
+        return False
+    if vector1.size1() != vector2.size1() or vector1.size2() != vector2.size2():
+        return False
+
+    # We test the equality at three points (min, max, init) hoping any differences will be caught
+    func = Function("equality", [v], [vector1 - vector2])
+    return np.sum(func(v_init)) == 0.0 and np.sum(func(v_min)) == 0.0 and np.sum(func(v_max)) == 0.0
+
+
 def generic_solve(interface: SolverInterface, expand_during_shake_tree: Bool = False) -> AnyDict:
     """
     Solve the prepared ocp
@@ -77,12 +86,29 @@ def generic_solve(interface: SolverInterface, expand_during_shake_tree: Bool = F
     v_bounds = interface.ocp.bounds_vectors
     v_init = interface.ocp.init_vector
 
-    all_objectives = interface.dispatch_obj_func()
-    all_objectives = _shake_tree_for_penalties(interface.ocp, all_objectives, v, v_bounds, expand_during_shake_tree)
+    # Shake the tree if needed for objectives
+    raw_objectives = interface.dispatch_obj_func()
+    can_skip_shake_objectives = _vectors_are_equal(
+        interface.pre_shake_tree_objectives, raw_objectives, v=v, v_init=v_init, v_min=v_bounds[0], v_max=v_bounds[1]
+    )
+    interface.pre_shake_tree_objectives = raw_objectives
+    if interface.shaked_objectives is None or not can_skip_shake_objectives:
+        interface.shaked_objectives = _shake_penalties_tree(
+            interface.ocp, raw_objectives, v, v_bounds, expand_during_shake_tree
+        )
 
-    all_g, all_g_bounds = interface.dispatch_bounds()
-    all_g = _shake_tree_for_penalties(interface.ocp, all_g, v, v_bounds, expand_during_shake_tree)
+    # Shake the tree if needed for constraints
+    raw_g, all_g_bounds = interface.dispatch_bounds()
+    can_skip_shake_constraints = _vectors_are_equal(
+        interface.pre_shake_tree_constraints, raw_g, v=v, v_init=v_init, v_min=v_bounds[0], v_max=v_bounds[1]
+    )
+    interface.pre_shake_tree_constraints = raw_g
+    if interface.shaked_constraints is None or not can_skip_shake_constraints:
+        interface.shaked_constraints = _shake_penalties_tree(
+            interface.ocp, raw_g, v, v_bounds, expand_during_shake_tree
+        )
 
+    # Set online_optim and show_online_optim options
     if interface.opts.show_online_optim is not None:
         if interface.opts.online_optim is not None:
             raise ValueError("show_online_optim and online_optim cannot be simultaneous set")
@@ -92,18 +118,6 @@ def generic_solve(interface: SolverInterface, expand_during_shake_tree: Bool = F
         interface.online_optim(interface.ocp, interface.opts.show_options)
 
     # Thread here on (f and all_g) instead of individually for each function?
-    interface.nlp = {"x": v, "f": sum1(all_objectives), "g": all_g}
-    interface.c_compile = interface.opts.c_compile
-    options = interface.opts.as_dict(interface)
-
-    if interface.c_compile:
-        if not interface.ocp_solver or interface.ocp.program_changed:
-            nlpsol("nlpsol", interface.solver_name.lower(), interface.nlp, options).generate_dependencies("nlp.c")
-            interface.ocp_solver = nlpsol("nlpsol", interface.solver_name, Importer("nlp.c", "shell"), options)
-            interface.ocp.program_changed = False
-    else:
-        interface.ocp_solver = nlpsol("solver", interface.solver_name.lower(), interface.nlp, options)
-
     interface.limits = {
         "lbx": v_bounds[0],
         "ubx": v_bounds[1],
@@ -111,6 +125,16 @@ def generic_solve(interface: SolverInterface, expand_during_shake_tree: Bool = F
         "ubg": all_g_bounds.max,
         "x0": v_init,
     }
+    if interface.shaked_ocp_solver is None or not can_skip_shake_objectives or not can_skip_shake_constraints:
+        interface.nlp = {"x": v, "f": sum1(interface.shaked_objectives), "g": interface.shaked_constraints}
+        interface.c_compile = interface.opts.c_compile
+        options = interface.opts.as_dict(interface)
+
+        if interface.c_compile:
+            nlpsol("nlpsol", interface.solver_name.lower(), interface.nlp, options).generate_dependencies("nlp.c")
+            interface.shaked_ocp_solver = nlpsol("nlpsol", interface.solver_name, Importer("nlp.c", "shell"), options)
+        else:
+            interface.shaked_ocp_solver = nlpsol("solver", interface.solver_name.lower(), interface.nlp, options)
 
     if interface.lam_g is not None:
         interface.limits["lam_g0"] = interface.lam_g
@@ -119,18 +143,22 @@ def generic_solve(interface: SolverInterface, expand_during_shake_tree: Bool = F
 
     # Solve the problem
     tic = perf_counter()
-    interface.out = {"sol": interface.ocp_solver.call(interface.limits)}
-    interface.out["sol"]["solver_time_to_optimize"] = interface.ocp_solver.stats()["t_wall_total"]
+    interface.out = {"sol": interface.shaked_ocp_solver.call(interface.limits)}
+    interface.out["sol"]["solver_time_to_optimize"] = interface.shaked_ocp_solver.stats()["t_wall_total"]
     interface.out["sol"]["real_time_to_optimize"] = perf_counter() - tic
-    interface.out["sol"]["iter"] = interface.ocp_solver.stats()["iter_count"]
+    interface.out["sol"]["iter"] = interface.shaked_ocp_solver.stats()["iter_count"]
     interface.out["sol"]["inf_du"] = (
-        interface.ocp_solver.stats()["iterations"]["inf_du"] if "iteration" in interface.ocp_solver.stats() else None
+        interface.shaked_ocp_solver.stats()["iterations"]["inf_du"]
+        if "iteration" in interface.shaked_ocp_solver.stats()
+        else None
     )
     interface.out["sol"]["inf_pr"] = (
-        interface.ocp_solver.stats()["iterations"]["inf_pr"] if "iteration" in interface.ocp_solver.stats() else None
+        interface.shaked_ocp_solver.stats()["iterations"]["inf_pr"]
+        if "iteration" in interface.shaked_ocp_solver.stats()
+        else None
     )
     # To match acados convention (0 = success, 1 = error)
-    interface.out["sol"]["status"] = int(not interface.ocp_solver.stats()["success"])
+    interface.out["sol"]["status"] = int(not interface.shaked_ocp_solver.stats()["success"])
     interface.out["sol"]["solver"] = interface.solver_name
 
     # Make sure the graphs are showing the last iteration
@@ -147,7 +175,7 @@ def generic_solve(interface: SolverInterface, expand_during_shake_tree: Bool = F
     return interface.out
 
 
-def _shake_tree_for_penalties(ocp, penalties_cx: CX, v: CX, v_bounds: DoubleNpArrayTuple, expand: Bool):
+def _shake_penalties_tree(ocp, penalties_cx: CX, v: CX, v_bounds: DoubleNpArrayTuple, expand: Bool):
     """
     Remove the dt in the objectives and constraints if they are constant
 

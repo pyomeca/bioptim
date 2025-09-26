@@ -11,12 +11,10 @@ All graphical results are presented using pyplot
 """
 
 import numpy as np
-import biorbd_casadi as biorbd
 from casadi import MX
 from bioptim import (
     OptimalControlProgram,
-    DynamicsOptionsList,
-    DynamicsOptions,
+    BioModel,
     ObjectiveList,
     ConstraintList,
     ConstraintFcn,
@@ -48,7 +46,7 @@ def custom_constraint_min_max_tau(controller: PenaltyController) -> MX:
     return controller.parameters["min_max_tau"].cx - controller.controls["tau"].cx  # [mini, maxi]
 
 
-def my_parameter_function(bio_model: biorbd.Model, value: MX):
+def my_parameter_function(bio_model: BioModel, value: MX):
     return
 
 

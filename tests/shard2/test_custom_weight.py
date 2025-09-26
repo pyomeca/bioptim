@@ -353,62 +353,47 @@ def test_pendulum_objective(control_type, interpolation_type, node, objective, p
     dt = sol.t_span()[0][-1]
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
     if interpolation_type == InterpolationType.CONSTANT:
         if node == Node.START:
             value = tau[:, 0]
             if objective == "mayer":
-                npt.assert_almost_equal(f[0, 0], np.sum(value**2))
-                npt.assert_almost_equal(j_printed, np.sum(value**2))
+                TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value**2))
             # else raise error above
         elif node == Node.INTERMEDIATES:
             if objective == "mayer":
                 if control_type == ControlType.CONSTANT:
                     value = tau[:, 1:-1]
-                    npt.assert_almost_equal(f[0, 0], np.sum(value**2))
-                    npt.assert_almost_equal(j_printed, np.sum(value**2))
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value**2))
                 elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
                     value = tau[:, 1:-2]
-                    npt.assert_almost_equal(f[0, 0], np.sum(value**2))
-                    npt.assert_almost_equal(j_printed, np.sum(value**2))
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value**2))
                 else:
                     value = tau[:, 1:-4:2]
-                    npt.assert_almost_equal(f[0, 0], np.sum(value**2))
-                    npt.assert_almost_equal(j_printed, np.sum(value**2))
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value**2))
             # else raise error above
         elif node == Node.ALL_SHOOTING:
             if objective == "mayer":
                 if control_type == ControlType.CONSTANT:
-                    npt.assert_almost_equal(f[0, 0], np.sum(tau**2))
-                    npt.assert_almost_equal(j_printed, np.sum(tau**2))
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(tau**2))
                 elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
-                    npt.assert_almost_equal(f[0, 0], np.sum(tau**2))
-                    npt.assert_almost_equal(j_printed, np.sum(tau**2))
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(tau**2))
                 elif control_type == ControlType.LINEAR_CONTINUOUS:
-                    npt.assert_almost_equal(f[0, 0], np.sum(tau[:, 0:-1:2] ** 2))
-                    npt.assert_almost_equal(j_printed, np.sum(tau[:, 0:-1:2] ** 2))
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(tau[:, 0:-1:2] ** 2))
             else:
                 if control_type == ControlType.CONSTANT:
-                    npt.assert_almost_equal(f[0, 0], np.sum(tau**2 * dt))
-                    npt.assert_almost_equal(j_printed, np.sum(tau**2 * dt))
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(tau**2 * dt))
                 elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
-                    npt.assert_almost_equal(f[0, 0], np.sum(tau**2 * dt))
-                    npt.assert_almost_equal(j_printed, np.sum(tau**2 * dt))
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(tau**2 * dt))
                 elif control_type == ControlType.LINEAR_CONTINUOUS:
-                    npt.assert_almost_equal(f[0, 0], np.sum(tau[:, 0:-1:2] ** 2 * dt))
-                    npt.assert_almost_equal(j_printed, np.sum(tau[:, 0:-1:2] ** 2 * dt))
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(tau[:, 0:-1:2] ** 2 * dt))
         else:
             if objective == "mayer":
                 if control_type == ControlType.CONSTANT:
-                    npt.assert_almost_equal(f[0, 0], np.sum(tau[:, node] ** 2))
-                    npt.assert_almost_equal(j_printed, np.sum(tau[:, node] ** 2))
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(tau[:, node] ** 2))
                 elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
-                    npt.assert_almost_equal(f[0, 0], np.sum(tau[:, node] ** 2))
-                    npt.assert_almost_equal(j_printed, np.sum(tau[:, node] ** 2))
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(tau[:, node] ** 2))
                 elif control_type == ControlType.LINEAR_CONTINUOUS:
-                    npt.assert_almost_equal(f[0, 0], np.sum(tau[:, np.array(node) * 2] ** 2))
-                    npt.assert_almost_equal(j_printed, np.sum(tau[:, np.array(node) * 2] ** 2))
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(tau[:, np.array(node) * 2] ** 2))
             # else raise error above
     elif (
         interpolation_type == InterpolationType.LINEAR
@@ -417,8 +402,7 @@ def test_pendulum_objective(control_type, interpolation_type, node, objective, p
     ):
         if node == Node.START:
             if objective == "mayer":
-                npt.assert_almost_equal(f[0, 0], 0)
-                npt.assert_almost_equal(j_printed, 0)
+                TestUtils.assert_objective_value(sol=sol, expected_value=0)
             # else raise error above
         elif node == Node.INTERMEDIATES:
             if objective == "mayer":
@@ -426,20 +410,17 @@ def test_pendulum_objective(control_type, interpolation_type, node, objective, p
                     value = np.zeros((ntau, n_shooting - 2))
                     for i in range(ntau):
                         value[i, :] = tau[i, 1:-1] ** 2 * np.linspace(0, 1, n_shooting - 2)
-                    npt.assert_almost_equal(f[0, 0], np.sum(value))
-                    npt.assert_almost_equal(j_printed, np.sum(value))
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value))
                 elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
                     value = np.zeros((ntau, n_shooting - 2))
                     for i in range(ntau):
                         value[i, :] = tau[i, 1:-2] ** 2 * np.linspace(0, 1, n_shooting - 2)
-                    npt.assert_almost_equal(f[0, 0], np.sum(value))
-                    npt.assert_almost_equal(j_printed, np.sum(value))
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value))
                 elif control_type == ControlType.LINEAR_CONTINUOUS:
                     value = np.zeros((ntau, n_shooting - 2))
                     for i in range(ntau):
                         value[i, :] = tau[i, 1:-4:2] ** 2 * np.linspace(0, 1, n_shooting - 2)
-                    npt.assert_almost_equal(f[0, 0], np.sum(value))
-                    npt.assert_almost_equal(j_printed, np.sum(value))
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value))
             # else raise error above
         elif node == Node.ALL_SHOOTING:
             if objective == "mayer":
@@ -447,118 +428,94 @@ def test_pendulum_objective(control_type, interpolation_type, node, objective, p
                     value = np.zeros((ntau, n_shooting))
                     for i in range(ntau):
                         value[i, :] = tau[i, :] ** 2 * np.linspace(0, 1, n_shooting)
-                    npt.assert_almost_equal(f[0, 0], np.sum(value))
-                    npt.assert_almost_equal(j_printed, np.sum(value))
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value))
                 elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
                     value = np.zeros((ntau, n_shooting))
                     for i in range(ntau):
                         value[i, :] = tau[i, :-1] ** 2 * np.linspace(0, 1, n_shooting)
-                    npt.assert_almost_equal(f[0, 0], np.sum(value))
-                    npt.assert_almost_equal(j_printed, np.sum(value))
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value))
                 elif control_type == ControlType.LINEAR_CONTINUOUS:
                     value = np.zeros((ntau, n_shooting))
                     for i in range(ntau):
                         value[i, :] = tau[i, 0:-2:2] ** 2 * np.linspace(0, 1, n_shooting)
-                    npt.assert_almost_equal(f[0, 0], np.sum(value))
-                    npt.assert_almost_equal(j_printed, np.sum(value))
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value))
             else:
                 if control_type == ControlType.CONSTANT:
                     value = np.zeros((ntau, n_shooting))
                     for i in range(ntau):
                         value[i, :] = tau[i, :] ** 2 * np.linspace(0, 1, n_shooting)
-                    npt.assert_almost_equal(f[0, 0], np.sum(value * dt))
-                    npt.assert_almost_equal(j_printed, np.sum(value * dt))
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value * dt))
                 elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
                     value = np.zeros((ntau, n_shooting))
                     for i in range(ntau):
                         value[i, :] = tau[i, :-1] ** 2 * np.linspace(0, 1, n_shooting)
-                    npt.assert_almost_equal(f[0, 0], np.sum(value * dt))
-                    npt.assert_almost_equal(j_printed, np.sum(value * dt))
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value * dt))
                 elif control_type == ControlType.LINEAR_CONTINUOUS:
                     value = np.zeros((ntau, n_shooting))
                     for i in range(ntau):
                         value[i, :] = tau[i, 0:-1:2] ** 2 * np.linspace(0, 1, n_shooting)
-                    npt.assert_almost_equal(f[0, 0], np.sum((value * dt)))
-                    npt.assert_almost_equal(j_printed, np.sum((value * dt)))
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum((value * dt)))
         else:
             if objective == "mayer":
                 if control_type == ControlType.CONSTANT:
                     value = np.zeros((ntau, len(node)))
                     for i in range(ntau):
                         value[i, :] = tau[i, node] ** 2 * np.linspace(0, 1, len(node))
-                    npt.assert_almost_equal(f[0, 0], np.sum(value))
-                    npt.assert_almost_equal(j_printed, np.sum(value))
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value))
                 elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
                     value = np.zeros((ntau, len(node)))
                     for i in range(ntau):
                         value[i, :] = tau[i, node] ** 2 * np.linspace(0, 1, len(node))
-                    npt.assert_almost_equal(f[0, 0], np.sum(value))
-                    npt.assert_almost_equal(j_printed, np.sum(value))
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value))
                 elif control_type == ControlType.LINEAR_CONTINUOUS:
                     value = np.zeros((ntau, len(node)))
                     for i in range(ntau):
                         value[i, :] = tau[i, np.array(node) * 2] ** 2 * np.linspace(0, 1, len(node))
-                    npt.assert_almost_equal(f[0, 0], np.sum(value))
-                    npt.assert_almost_equal(j_printed, np.sum(value))
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value))
             # else raise error above
     elif interpolation_type == InterpolationType.SPLINE:
         # Testing values because too complicated for my small brain
         if node == Node.START:
             if objective == "mayer":
                 if control_type == ControlType.CONSTANT:
-                    npt.assert_almost_equal(f[0, 0], -4969.650216032278)
-                    npt.assert_almost_equal(j_printed, -4969.650216032278)
+                    TestUtils.assert_objective_value(sol=sol, expected_value=-4969.650216032278)
                 elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
-                    npt.assert_almost_equal(f[0, 0], -4969.650216032278)
-                    npt.assert_almost_equal(j_printed, -4969.650216032278)
+                    TestUtils.assert_objective_value(sol=sol, expected_value=-4969.650216032278)
                 else:
-                    npt.assert_almost_equal(f[0, 0], -1368.4151423970898)
-                    npt.assert_almost_equal(j_printed, -1368.4151423970898)
+                    TestUtils.assert_objective_value(sol=sol, expected_value=-1368.4151423970898)
             # else raise error above
         elif node == Node.INTERMEDIATES:
             if objective == "mayer":
                 if control_type == ControlType.CONSTANT:
-                    npt.assert_almost_equal(f[0, 0], -66855.99375991023)
-                    npt.assert_almost_equal(j_printed, -66855.99375991023)
+                    TestUtils.assert_objective_value(sol=sol, expected_value=-66855.99375991023)
                 elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
-                    npt.assert_almost_equal(f[0, 0], -66855.99375991023)
-                    npt.assert_almost_equal(j_printed, -66855.99375991023)
+                    TestUtils.assert_objective_value(sol=sol, expected_value=-66855.99375991023)
                 elif control_type == ControlType.LINEAR_CONTINUOUS:
-                    npt.assert_almost_equal(f[0, 0], -62189.06584139419)
-                    npt.assert_almost_equal(j_printed, -62189.06584139419)
+                    TestUtils.assert_objective_value(sol=sol, expected_value=-62189.06584139419)
             # else raise error above
         elif node == Node.ALL_SHOOTING:
             if objective == "mayer":
                 if control_type == ControlType.CONSTANT:
-                    npt.assert_almost_equal(f[0, 0], -67592.34632346843)
-                    npt.assert_almost_equal(j_printed, -67592.34632346843)
+                    TestUtils.assert_objective_value(sol=sol, expected_value=-67592.34632346843)
                 elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
-                    npt.assert_almost_equal(f[0, 0], -67592.34632346843)
-                    npt.assert_almost_equal(j_printed, -67592.34632346843)
+                    TestUtils.assert_objective_value(sol=sol, expected_value=-67592.34632346843)
                 elif control_type == ControlType.LINEAR_CONTINUOUS:
-                    npt.assert_almost_equal(f[0, 0], -68421.45149762284)
-                    npt.assert_almost_equal(j_printed, -68421.45149762284)
+                    TestUtils.assert_objective_value(sol=sol, expected_value=-68421.45149762284)
             else:
                 if control_type == ControlType.CONSTANT:
-                    npt.assert_almost_equal(f[0, 0], -2069.98362328184)
-                    npt.assert_almost_equal(j_printed, -2069.98362328184)
+                    TestUtils.assert_objective_value(sol=sol, expected_value=-2069.98362328184)
                 elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
-                    npt.assert_almost_equal(f[0, 0], -2069.98362328184)
-                    npt.assert_almost_equal(j_printed, -2069.98362328184)
+                    TestUtils.assert_objective_value(sol=sol, expected_value=-2069.98362328184)
                 elif control_type == ControlType.LINEAR_CONTINUOUS:
-                    npt.assert_almost_equal(f[0, 0], -3315.0557682774315)
-                    npt.assert_almost_equal(j_printed, -3315.0557682774315)
+                    TestUtils.assert_objective_value(sol=sol, expected_value=-3315.0557682774315)
         else:
             if objective == "mayer":
                 if control_type == ControlType.CONSTANT:
-                    npt.assert_almost_equal(f[0, 0], -14340.247184500638)
-                    npt.assert_almost_equal(j_printed, -14340.247184500638)
+                    TestUtils.assert_objective_value(sol=sol, expected_value=-14340.247184500638)
                 elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
-                    npt.assert_almost_equal(f[0, 0], -14340.247184500638)
-                    npt.assert_almost_equal(j_printed, -14340.247184500638)
+                    TestUtils.assert_objective_value(sol=sol, expected_value=-14340.247184500638)
                 elif control_type == ControlType.LINEAR_CONTINUOUS:
-                    npt.assert_almost_equal(f[0, 0], -14746.563287583314)
-                    npt.assert_almost_equal(j_printed, -14746.563287583314)
+                    TestUtils.assert_objective_value(sol=sol, expected_value=-14746.563287583314)
             # else raise error above
 
 
@@ -827,22 +784,17 @@ def test_pendulum_integration_rule(control_type, interpolation_type, integration
     dt = sol.t_span()[0][-1]
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
     if interpolation_type == InterpolationType.CONSTANT:
         if control_type == ControlType.CONSTANT or control_type == ControlType.CONSTANT_WITH_LAST_NODE:
-            npt.assert_almost_equal(f[0, 0], np.sum(tau**2 * dt))
-            npt.assert_almost_equal(j_printed, np.sum(tau**2 * dt))
+            TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(tau**2 * dt))
         else:
             if integration_rule == QuadratureRule.TRAPEZOIDAL:
                 out = 0
                 for i in range(round((tau[0, :].shape[0] - 1) / 2)):
                     out += (tau[0, i * 2] ** 2 + tau[0, i * 2 + 1] ** 2) / 2 * dt
-                npt.assert_almost_equal(f[0, 0], out)
-                npt.assert_almost_equal(j_printed, out)
+                TestUtils.assert_objective_value(sol=sol, expected_value=out)
             elif integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
-                npt.assert_almost_equal(f[0, 0], np.sum(tau[0, 0:-1:2] ** 2 * dt))
-                npt.assert_almost_equal(j_printed, np.sum(tau[0, 0:-1:2] ** 2 * dt))
+                TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(tau[0, 0:-1:2] ** 2 * dt))
     elif (
         interpolation_type == InterpolationType.LINEAR
         or interpolation_type == InterpolationType.CUSTOM
@@ -852,37 +804,30 @@ def test_pendulum_integration_rule(control_type, interpolation_type, integration
             value = np.zeros((ntau, n_shooting))
             for i in range(ntau):
                 value[i, :] = tau[i, :] ** 2 * np.linspace(0, 1, n_shooting)
-            npt.assert_almost_equal(f[0, 0], np.sum(value * dt))
-            npt.assert_almost_equal(j_printed, np.sum(value * dt))
+            TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value * dt))
         elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
             value = np.zeros((ntau, n_shooting))
             for i in range(ntau):
                 value[i, :] = tau[i, :-1] ** 2 * np.linspace(0, 1, n_shooting)
-            npt.assert_almost_equal(f[0, 0], np.sum(value * dt))
-            npt.assert_almost_equal(j_printed, np.sum(value * dt))
+            TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value * dt))
         else:
             if integration_rule == QuadratureRule.TRAPEZOIDAL:
                 out = 0
                 weight = np.linspace(0, 1, n_shooting)
                 for i in range(round((tau[0, :].shape[0] - 1) / 2)):
                     out += (tau[0, i * 2] ** 2 + tau[0, i * 2 + 1] ** 2) / 2 * dt * weight[i]
-                npt.assert_almost_equal(f[0, 0], out)
-                npt.assert_almost_equal(j_printed, out)
+                TestUtils.assert_objective_value(sol=sol, expected_value=out)
             elif integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
-                npt.assert_almost_equal(f[0, 0], 9.55437614886297)
-                npt.assert_almost_equal(j_printed, 9.55437614886297)
+                TestUtils.assert_objective_value(sol=sol, expected_value=9.55437614886297)
     elif interpolation_type == InterpolationType.SPLINE:
         # Testing values because too complicated for my small brain
         if control_type == ControlType.CONSTANT or control_type == ControlType.CONSTANT_WITH_LAST_NODE:
-            npt.assert_almost_equal(f[0, 0], -2069.98362328184)
-            npt.assert_almost_equal(j_printed, -2069.98362328184)
+            TestUtils.assert_objective_value(sol=sol, expected_value=-2069.98362328184)
         else:
             if integration_rule == QuadratureRule.TRAPEZOIDAL:
-                npt.assert_almost_equal(f[0, 0], -4120.763073947789)
-                npt.assert_almost_equal(j_printed, -4120.763073947789)
+                TestUtils.assert_objective_value(sol=sol, expected_value=-4120.763073947789)
             elif integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
-                npt.assert_almost_equal(f[0, 0], -3315.0557682774315)
-                npt.assert_almost_equal(j_printed, -3315.0557682774315)
+                TestUtils.assert_objective_value(sol=sol, expected_value=-3315.0557682774315)
 
 
 def test_bad_weights():

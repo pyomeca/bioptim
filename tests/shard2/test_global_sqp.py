@@ -32,12 +32,7 @@ def test_pendulum(phase_dynamics):
     sol = ocp.solve(solver)
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-
-    npt.assert_almost_equal(f[0, 0], 124.90212482956895)
-    # detailed cost values
-    npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 124.90212482956895)
+    TestUtils.assert_objective_value(sol=sol, expected_value=124.90212482956895)
 
     # Check some of the results
     states = sol.decision_states(to_merge=SolutionMerge.NODES)

@@ -15,8 +15,6 @@ estimated data can be compared to real data.
 
 from copy import copy
 
-import biorbd_casadi as biorbd
-import casadi as cas
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.integrate import solve_ivp

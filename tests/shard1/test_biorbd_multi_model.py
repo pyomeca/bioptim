@@ -1,5 +1,3 @@
-import os
-
 from bioptim import MultiBiorbdModel, BiMappingList, BoundsList
 import biorbd_casadi as biorbd
 import numpy as np
