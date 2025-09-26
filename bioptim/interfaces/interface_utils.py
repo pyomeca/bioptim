@@ -122,7 +122,11 @@ def generic_solve(interface: SolverInterface, expand_during_shake_tree: Bool = F
         interface.nlp = {"x": v, "f": sum1(interface.shaked_objectives), "g": interface.shaked_constraints}
         interface.c_compile = interface.opts.c_compile
         interface.limits = {
-            "lbx": v_bounds[0], "ubx": v_bounds[1], "lbg": all_g_bounds.min, "ubg": all_g_bounds.max, "x0": v_init
+            "lbx": v_bounds[0],
+            "ubx": v_bounds[1],
+            "lbg": all_g_bounds.min,
+            "ubg": all_g_bounds.max,
+            "x0": v_init,
         }
         options = interface.opts.as_dict(interface)
 
