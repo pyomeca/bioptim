@@ -5,13 +5,8 @@ from casadi import MX, SX, integrator as casadi_integrator, horzcat, Function, v
 from . import integrator
 from .ode_solver_base import OdeSolverBase
 from .rk_base import RK
-from ..misc.enums import ControlType, DefectType, PhaseDynamics
-from ..misc.parameters_types import (
-    Bool,
-    Int,
-    Str,
-    CX,
-)
+from ..misc.enums import ControlType, DefectType
+from ..misc.parameters_types import Bool, Int, Str, CX
 
 
 class OdeSolver:

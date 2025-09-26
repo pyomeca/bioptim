@@ -21,6 +21,8 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
     DefectType,
+    OrderingStrategy,
+    Solver,
 )
 from casadi import sum1, sum2
 import numpy as np
@@ -43,28 +45,34 @@ test_memory = {}
     [
         OdeSolver.RK1,
         OdeSolver.RK2,
-        OdeSolver.CVODES,
         OdeSolver.RK4,
         OdeSolver.RK8,
         OdeSolver.IRK,
+        OdeSolver.CVODES,
         OdeSolver.COLLOCATION,
         OdeSolver.TRAPEZOIDAL,
     ],
 )
 @pytest.mark.parametrize(
-    "defects_type",
-    [
-        DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS,
-        DefectType.TAU_EQUALS_INVERSE_DYNAMICS,
-    ],
+    "defects_type", [DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS, DefectType.TAU_EQUALS_INVERSE_DYNAMICS]
 )
-def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type):
+@pytest.mark.parametrize("solver", [Solver.IPOPT, Solver.FATROP])
+@pytest.mark.parametrize("ordering_strategy", [OrderingStrategy.TIME_MAJOR, OrderingStrategy.VARIABLE_MAJOR])
+def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type, solver, ordering_strategy):
     from bioptim.examples.getting_started import basic_ocp as ocp_module
 
     if platform.system() == "Windows":
         pytest.skip("These tests fail on CI for Windows")
-    elif platform.system() == "Darwin" and defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS:
+    elif platform.system() == "Darwin" and (
+        defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS or solver == Solver.FATROP
+    ):
         pytest.skip("These tests fail on CI for MacOS")
+
+    if solver == Solver.FATROP and defects_type in (
+        DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS,
+        DefectType.TAU_EQUALS_INVERSE_DYNAMICS,
+    ):
+        pytest.skip("These tests fail on CI for FATROP")
 
     gc.collect()  # Force garbage collection
     time.sleep(0.1)  # Avoiding delay in memory (re)allocation
@@ -75,11 +83,11 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type):
 
     # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
     if n_threads > 1 and phase_dynamics == PhaseDynamics.ONE_PER_NODE:
-        return
+        pytest.skip("PhaseDynamics.ONE_PER_NODE is only tested with RK4 and COLLOCATION to reduce time")
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver not in (OdeSolver.RK4, OdeSolver.COLLOCATION):
-        return
+        pytest.skip("PhaseDynamics.ONE_PER_NODE is only tested with RK4 and COLLOCATION to reduce time")
     if ode_solver == OdeSolver.RK8 and not use_sx:
-        return
+        pytest.skip("OdeSolver.RK8 is only tested with use_sx=True")
 
     bioptim_folder = TestUtils.bioptim_folder()
 
@@ -106,6 +114,7 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type):
                 ode_solver=ode_solver_obj,
                 phase_dynamics=phase_dynamics,
                 expand_dynamics=False,
+                ordering_strategy=ordering_strategy,
             )
         return
 
@@ -123,6 +132,7 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type):
                 ode_solver=ode_solver_obj,
                 phase_dynamics=phase_dynamics,
                 expand_dynamics=False,
+                ordering_strategy=ordering_strategy,
             )
         return
     elif isinstance(ode_solver_obj, OdeSolver.CVODES):
@@ -139,6 +149,7 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type):
                 ode_solver=ode_solver_obj,
                 phase_dynamics=phase_dynamics,
                 expand_dynamics=False,
+                ordering_strategy=ordering_strategy,
             )
         return
 
@@ -157,6 +168,7 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type):
         phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver not in (OdeSolver.IRK, OdeSolver.CVODES),
         control_type=control_type,
+        ordering_strategy=ordering_strategy,
     )
     tak = time.time()  # Time after building, but before solving
     ocp.print(to_console=True, to_graph=False)
@@ -164,7 +176,7 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type):
     if isinstance(ode_solver_obj, OdeSolver.CVODES):
         pytest.skip("The test is too long with CVODES")
 
-    sol = ocp.solve()
+    sol = ocp.solve(solver())
     tok = time.time()  # This after solving
 
     # Check objective function value
@@ -188,19 +200,38 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type):
         npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [-0.5010317, 0.6824593])
 
     elif isinstance(ode_solver_obj, OdeSolver.IRK):
-        npt.assert_almost_equal(f[0, 0], 65.8236055171619)
-        # detailed cost values
-        if detailed_cost is not None:
-            npt.assert_almost_equal(detailed_cost["cost_value_weighted"], 65.8236055171619)
-        npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [0.5536468, -0.4129719])
+        if solver == Solver.IPOPT:
+            npt.assert_almost_equal(f[0, 0], 65.8236055171619)
+            # detailed cost values
+            if detailed_cost is not None:
+                npt.assert_almost_equal(detailed_cost["cost_value_weighted"], 65.8236055171619)
+            npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [0.5536468, -0.4129719])
+        elif solver == Solver.FATROP:
+            npt.assert_almost_equal(f[0, 0], 58.65307209221627)
+            # detailed cost values
+            if detailed_cost is not None:
+                npt.assert_almost_equal(detailed_cost["cost_value_weighted"], 58.65307209221627)
+            npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [0.42226046, -0.2856726])
+        else:
+            raise RuntimeError("Unexpected solver")
 
     elif isinstance(ode_solver_obj, OdeSolver.COLLOCATION):
-        if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
-            optimal_cost = 51.03624140672109
-            npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [0.00282762, 0.14317854])
+        if solver == Solver.IPOPT:
+            if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
+                optimal_cost = 51.03624140672109
+                npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [0.00282762, 0.14317854])
+            else:
+                optimal_cost = 65.86214777650544
+                npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [0.55457473, -0.41280843])
+        elif solver == Solver.FATROP:
+            if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
+                optimal_cost = 46.66734569903588
+                npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [-0.17805071, 0.32542015])
+            else:
+                optimal_cost = 65.86214777650544
+                npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [0.55457473, -0.41280843])
         else:
-            optimal_cost = 65.86214777650544
-            npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [0.55457473, -0.41280843])
+            raise RuntimeError("Unexpected solver")
 
         npt.assert_almost_equal(f[0, 0], optimal_cost)
         # detailed cost values
@@ -208,11 +239,20 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type):
             npt.assert_almost_equal(detailed_cost["cost_value_weighted"], optimal_cost)
 
     elif isinstance(ode_solver_obj, OdeSolver.RK1):
-        npt.assert_almost_equal(f[0, 0], 47.360621044913245)
-        # detailed cost values
-        if detailed_cost is not None:
-            npt.assert_almost_equal(detailed_cost["cost_value_weighted"], 47.360621044913245)
-        npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [0.1463538, 0.0215651])
+        if solver == Solver.IPOPT:
+            npt.assert_almost_equal(f[0, 0], 47.360621044913245)
+            # detailed cost values
+            if detailed_cost is not None:
+                npt.assert_almost_equal(detailed_cost["cost_value_weighted"], 47.360621044913245)
+            npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [0.1463538, 0.0215651])
+        elif solver == Solver.FATROP:
+            npt.assert_almost_equal(f[0, 0], 48.86934816227037)
+            # detailed cost values
+            if detailed_cost is not None:
+                npt.assert_almost_equal(detailed_cost["cost_value_weighted"], 48.86934816227037)
+            npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [0.27981801, -0.11551382])
+        else:
+            raise RuntimeError("Unexpected solver")
 
     elif isinstance(ode_solver_obj, OdeSolver.RK2):
         npt.assert_almost_equal(f[0, 0], 76.24887695462857)
@@ -262,18 +302,40 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type):
         npt.assert_almost_equal(tau[:, 0], np.array((6.03763589, 0)))
         npt.assert_almost_equal(tau[:, -1], np.array((-13.59527556, 0)))
     elif isinstance(ode_solver_obj, OdeSolver.IRK):
-        npt.assert_almost_equal(tau[:, 0], np.array((5.40765381, 0)))
-        npt.assert_almost_equal(tau[:, -1], np.array((-25.26494109, 0)))
-    elif isinstance(ode_solver_obj, OdeSolver.COLLOCATION):
-        if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
-            npt.assert_almost_equal(tau[:, 0], np.array((5.71088029, 0)))
-            npt.assert_almost_equal(tau[:, -1], np.array((-19.89491045, 0)))
+        if solver == Solver.IPOPT:
+            npt.assert_almost_equal(tau[:, 0], np.array((5.40765381, 0)))
+            npt.assert_almost_equal(tau[:, -1], np.array((-25.26494109, 0)))
+        elif solver == Solver.FATROP:
+            npt.assert_almost_equal(tau[:, 0], np.array((5.48109258, 0)))
+            npt.assert_almost_equal(tau[:, -1], np.array((-23.15753116, 0)))
         else:
-            npt.assert_almost_equal(tau[:, 0], np.array((5.42317977, 0)))
-            npt.assert_almost_equal(tau[:, -1], np.array((-25.26762264, 0)))
+            raise RuntimeError("Unexpected solver")
+    elif isinstance(ode_solver_obj, OdeSolver.COLLOCATION):
+        if solver == Solver.IPOPT:
+            if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
+                npt.assert_almost_equal(tau[:, 0], np.array((5.71088029, 0)))
+                npt.assert_almost_equal(tau[:, -1], np.array((-19.89491045, 0)))
+            else:
+                npt.assert_almost_equal(tau[:, 0], np.array((5.42317977, 0)))
+                npt.assert_almost_equal(tau[:, -1], np.array((-25.26762264, 0)))
+        elif solver == Solver.FATROP:
+            if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
+                npt.assert_almost_equal(tau[:, 0], np.array((5.78386568, 0)))
+                npt.assert_almost_equal(tau[:, -1], np.array((-18.22245516, 0)))
+            else:
+                npt.assert_almost_equal(tau[:, 0], np.array((5.42317977, 0)))
+                npt.assert_almost_equal(tau[:, -1], np.array((-25.26762264, 0)))
+        else:
+            raise RuntimeError("Unexpected solver")
     elif isinstance(ode_solver_obj, OdeSolver.RK1):
-        npt.assert_almost_equal(tau[:, 0], np.array((5.498956, 0)))
-        npt.assert_almost_equal(tau[:, -1], np.array((-17.6888209, 0)))
+        if solver == Solver.IPOPT:
+            npt.assert_almost_equal(tau[:, 0], np.array((5.498956, 0)))
+            npt.assert_almost_equal(tau[:, -1], np.array((-17.6888209, 0)))
+        elif solver == Solver.FATROP:
+            npt.assert_almost_equal(tau[:, 0], np.array([5.38396582, 0]))
+            npt.assert_almost_equal(tau[:, -1], np.array([-18.81942426, 0]))
+        else:
+            raise RuntimeError("Unexpected solver")
     elif isinstance(ode_solver_obj, OdeSolver.RK2):
         npt.assert_almost_equal(tau[:, 0], np.array((5.6934385, 0)))
         npt.assert_almost_equal(tau[:, -1], np.array((-27.6610711, 0)))
@@ -297,14 +359,13 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type):
     mem_used = sum(stat.size_diff for stat in top_stats)
     tracemalloc.stop()
 
-    global test_memory
-    test_memory[f"pendulum-{ode_solver}-{use_sx}-{n_threads}-{phase_dynamics}"] = [
-        building_duration,
-        solving_duration,
-        mem_used,
-    ]
-
-    return
+    if solver == Solver.IPOPT:
+        global test_memory
+        test_memory[f"pendulum-{ode_solver}-{use_sx}-{n_threads}-{phase_dynamics}"] = [
+            building_duration,
+            solving_duration,
+            mem_used,
+        ]
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -659,7 +720,7 @@ def test_phase_transitions(ode_solver, phase_dynamics):
 
     # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.RK8:
-        return
+        pytest.skip("PhaseDynamics.ONE_PER_NODE is only tested with RK4 and IRK to reduce time")
 
     bioptim_folder = TestUtils.bioptim_folder()
 
@@ -740,7 +801,7 @@ def test_parameter_optimization(ode_solver, phase_dynamics):
     return  # TODO: Fix parameter scaling :(
     # For reducing time phase_dynamics == PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver in (OdeSolver.RK8, OdeSolver.COLLOCATION):
-        return
+        pytest.skip("PhaseDynamics.ONE_PER_NODE is only tested with RK4 and IRK to reduce time")
 
     bioptim_folder = TestUtils.bioptim_folder()
 
@@ -875,7 +936,7 @@ def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver, phase
 
     # For reducing time phase_dynamics == PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.RK8:
-        return
+        pytest.skip("PhaseDynamics.ONE_PER_NODE is only tested with RK4 and IRK to reduce time")
 
     bioptim_folder = TestUtils.bioptim_folder()
 
@@ -957,9 +1018,9 @@ def test_example_external_forces(ode_solver, phase_dynamics, n_threads, use_sx, 
     tik = time.time()  # Time before starting to build the problem
 
     if use_sx and ode_solver == OdeSolver.IRK:
-        return
+        pytest.skip("OdeSolver.IRK is only tested with use_sx=True")
     if n_threads == 2 and phase_dynamics == PhaseDynamics.ONE_PER_NODE:
-        return
+        pytest.skip("PhaseDynamics.ONE_PER_NODE is only tested with RK4 and IRK to reduce time")
 
     bioptim_folder = TestUtils.bioptim_folder()
 
@@ -1099,7 +1160,7 @@ def test_example_multiphase(ode_solver_type, phase_dynamics):
 
     # For reducing time phase_dynamics == PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver_type in [OdeSolver.RK8, OdeSolver.COLLOCATION]:
-        return
+        pytest.skip("PhaseDynamics.ONE_PER_NODE is only tested with RK4 and IRK to reduce time")
 
     bioptim_folder = TestUtils.bioptim_folder()
 
@@ -1162,7 +1223,7 @@ def test_example_multiphase(ode_solver_type, phase_dynamics):
     # Test warm start
     if ode_solver_type == OdeSolver.COLLOCATION:
         # We don't have test value for this one
-        return
+        pytest.skip("No warm start test for collocation yet")
 
     TestUtils.assert_warm_start(ocp, sol)
 
@@ -1205,7 +1266,7 @@ def test_contact_forces_inequality_greater_than_constraint(ode_solver, phase_dyn
 
     if not expand_dynamics and ode_solver != OdeSolver.IRK:
         # There is no point testing that
-        return
+        pytest.skip("PhaseDynamics.ONE_PER_NODE is only tested with RK4 and IRK to reduce time")
     if expand_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and ode_solver == OdeSolver.IRK:
         with pytest.raises(RuntimeError):
             ocp_module.prepare_ocp(
@@ -1541,7 +1602,7 @@ def test_multinode_constraints(ode_solver, phase_dynamics):
 
     # For reducing time phase_dynamics == PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.RK8:
-        return
+        pytest.skip("OdeSolver.RK8 is only tested with use_sx=True")
 
     bioptim_folder = TestUtils.bioptim_folder()
 

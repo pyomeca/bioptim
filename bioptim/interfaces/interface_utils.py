@@ -11,19 +11,9 @@ from ..gui.online_callback_server import OnlineCallbackServer
 from ..limits.path_conditions import Bounds
 from ..limits.penalty_helpers import PenaltyHelpers, Slicy
 from ..misc.enums import InterpolationType, OnlineOptim
+from ..misc.parameters_types import AnyDictOptional, Bool, AnyDict, CX, DoubleNpArrayTuple, Int
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.solution.solution import Solution
-
-
-from ..misc.parameters_types import (
-    AnyDictOptional,
-    Bool,
-    AnyDict,
-    CX,
-    DoubleNpArrayTuple,
-    Int,
-    Range,
-)
 
 
 def generic_online_optim(interface: SolverInterface, ocp, show_options: AnyDictOptional = None):
@@ -131,6 +121,9 @@ def generic_solve(interface: SolverInterface, expand_during_shake_tree: Bool = F
     if interface.shaked_ocp_solver is None or not can_skip_shake_objectives or not can_skip_shake_constraints:
         interface.nlp = {"x": v, "f": sum1(interface.shaked_objectives), "g": interface.shaked_constraints}
         interface.c_compile = interface.opts.c_compile
+        interface.limits = {
+            "lbx": v_bounds[0], "ubx": v_bounds[1], "lbg": all_g_bounds.min, "ubg": all_g_bounds.max, "x0": v_init
+        }
         options = interface.opts.as_dict(interface)
 
         if interface.c_compile:
@@ -138,14 +131,6 @@ def generic_solve(interface: SolverInterface, expand_during_shake_tree: Bool = F
             interface.shaked_ocp_solver = nlpsol("nlpsol", interface.solver_name, Importer("nlp.c", "shell"), options)
         else:
             interface.shaked_ocp_solver = nlpsol("solver", interface.solver_name.lower(), interface.nlp, options)
-
-    interface.limits = {
-        "lbx": v_bounds[0],
-        "ubx": v_bounds[1],
-        "lbg": all_g_bounds.min,
-        "ubg": all_g_bounds.max,
-        "x0": v_init,
-    }
 
     if interface.lam_g is not None:
         interface.limits["lam_g0"] = interface.lam_g
