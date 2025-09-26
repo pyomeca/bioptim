@@ -23,7 +23,7 @@ from ...optimization.parameters import ParameterList
 
 from ...misc.parameters_types import Int, IntTuple, CX, CXOptional
 
-check_version(biorbd, "1.11.1", "1.12.0")
+check_version(biorbd, "1.11.1", "1.13.0")
 
 
 class BiorbdModel:

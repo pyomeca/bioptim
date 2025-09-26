@@ -3,8 +3,6 @@ Test for file IO.
 It tests that a model path with another type than string or biorbdmodel return an error
 """
 
-import os
-
 import biorbd_casadi as biorbd
 from bioptim import BiorbdModel
 import pytest
