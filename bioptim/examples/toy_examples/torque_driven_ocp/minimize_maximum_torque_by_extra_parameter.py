@@ -7,7 +7,6 @@ minimized. Two options are provided and compared to define initial and final sta
 """
 
 import numpy as np
-import biorbd_casadi as biorbd
 from casadi import MX
 from bioptim import (
     OptimalControlProgram,
@@ -26,6 +25,7 @@ from bioptim import (
     PenaltyController,
     ParameterObjectiveList,
     VariableScaling,
+    BioModel,
 )
 from bioptim.examples.utils import ExampleUtils
 from matplotlib import pyplot as plt
@@ -39,7 +39,7 @@ def custom_constraint_min_tau(controller: PenaltyController) -> MX:
     return controller.parameters["min_tau"].cx - controller.controls["tau"].cx
 
 
-def my_parameter_function(bio_model: biorbd.Model, value: MX):
+def my_parameter_function(bio_model: BioModel, value: MX):
     return
 
 

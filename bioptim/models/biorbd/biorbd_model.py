@@ -23,7 +23,7 @@ from ...optimization.parameters import ParameterList
 
 from ...misc.parameters_types import Int, IntTuple, CX, CXOptional
 
-check_version(biorbd, "1.11.1", "1.12.0")
+check_version(biorbd, "1.11.1", "1.13.0")
 
 
 class BiorbdModel:
@@ -614,7 +614,10 @@ class BiorbdModel:
         elif isinstance(force["point_of_application"], MX):
             return self.external_forces[slice(stop_index, stop_index + 3)]
         elif isinstance(force["point_of_application"], str):
-            return self.model.marker(self.marker_index(force["point_of_application"]))
+            value = self.model.marker(self.marker_index(force["point_of_application"]))
+            if not isinstance(value, MX):
+                value = value.to_mx()
+            return value
         else:
             return None
 
