@@ -1,8 +1,4 @@
-from ..misc.parameters_types import (
-    Bool,
-    AnyDict,
-    AnyListorDict,
-)
+from ..misc.parameters_types import Bool, AnyDict, AnyListorDict
 
 
 class SolverInterface:
@@ -45,6 +41,13 @@ class SolverInterface:
         self.ocp = ocp
         self.solver = None
         self.out = {}
+
+        # This is to perform long preparation only once (if not changed)
+        self.pre_shake_tree_objectives = None
+        self.shaked_objectives = None
+        self.pre_shake_tree_constraints = None
+        self.shaked_constraints = None
+        self.shaked_ocp_solver = None
 
     def configure(self, **options):
         """

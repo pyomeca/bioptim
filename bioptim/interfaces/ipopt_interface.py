@@ -1,5 +1,3 @@
-import numpy as np
-
 from .interface_utils import (
     generic_online_optim,
     generic_solve,
@@ -10,18 +8,10 @@ from .interface_utils import (
 )
 from .solver_interface import SolverInterface
 from ..interfaces import Solver
-from ..misc.enums import (
-    SolverType,
-)
+from ..misc.enums import SolverType
+from ..misc.parameters_types import Bool, AnyDict, AnyDictOptional
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.solution.solution import Solution
-
-
-from ..misc.parameters_types import (
-    Bool,
-    AnyDict,
-    AnyDictOptional,
-)
 
 
 class IpoptInterface(SolverInterface):

@@ -9,7 +9,7 @@ from matplotlib import pyplot as plt
 
 from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVectorHelper
-from .vector_layout import VectorLayout
+from .vector_layout import VectorLayout, OrderingStrategy
 from ..dynamics.configure_problem import DynamicsOptionsList, DynamicsOptions, ConfigureProblem
 from ..gui.check_conditioning import check_conditioning
 from ..gui.graph import OcpToConsole, OcpToGraph
@@ -186,7 +186,7 @@ class OptimalControlProgram:
         u_scaling: VariableScalingList | None = None,
         a_scaling: VariableScalingList | None = None,
         n_threads: Int = 1,
-        vector_layout: VectorLayout | None = None,
+        ordering_strategy: OrderingStrategy = OrderingStrategy.VARIABLE_MAJOR,
         use_sx: Bool = False,
         integrated_value_functions: dict[Str, Callable] | None = None,
     ) -> None:
@@ -334,7 +334,7 @@ class OptimalControlProgram:
             phase_transitions,
         )
 
-        self._prepare_vector_layout(vector_layout)
+        self._prepare_vector_layout(ordering_strategy)
 
     def _check_bioptim_version(self) -> None:
         self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "bioptim": __version__}
@@ -537,7 +537,6 @@ class OptimalControlProgram:
         self.cx = SX if use_sx else MX
 
         # Declare optimization variables
-        self.program_changed = True
         self.J = []
         self.J_internal = []
         self.g = []
@@ -758,8 +757,8 @@ class OptimalControlProgram:
                     )
                     nlp.plot[key].phase_mappings = BiMapping(to_first=range(size), to_second=range(size))
 
-    def _prepare_vector_layout(self, vector_layout: VectorLayout | None) -> None:
-        self.vector_layout = vector_layout if vector_layout is not None else VectorLayout(self)
+    def _prepare_vector_layout(self, ordering_strategy: OrderingStrategy | None) -> None:
+        self.vector_layout = VectorLayout(self, ordering=ordering_strategy)
 
     @property
     def variables_vector(self) -> CX:
@@ -1415,6 +1414,10 @@ class OptimalControlProgram:
                 from ..interfaces.ipopt_interface import IpoptInterface
 
                 self.ocp_solver = IpoptInterface(self)
+            elif solver.type == SolverType.FATROP:
+                from ..interfaces.fatrop_interface import FatropInterface
+
+                self.ocp_solver = FatropInterface(self)
 
             elif solver.type == SolverType.SQP:
                 from ..interfaces.sqp_interface import SQPInterface
@@ -1670,8 +1673,6 @@ class OptimalControlProgram:
         phase_idx = new_penalty.phase
         new_penalty.add_or_replace_to_penalty_pool(self, self.nlp[phase_idx])
 
-        self.program_changed = True
-
     def _modify_parameter_penalty(self, new_penalty: PenaltyOption | Parameter) -> None:
         """
         The internal function to modify a parameter penalty.
@@ -1686,7 +1687,6 @@ class OptimalControlProgram:
             return
 
         new_penalty.add_or_replace_to_penalty_pool(self, self.nlp[new_penalty.phase])
-        self.program_changed = True
 
     def node_time(self, phase_idx: Int, node_idx: Int) -> Float:
         """

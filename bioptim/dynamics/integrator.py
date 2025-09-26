@@ -22,7 +22,7 @@ class Integrator:
     Attributes
     ----------
     model: BioModel
-        The biorbd model to integrate
+        The biomodel to integrate
     time_integration_grid = tuple[float, ...]
         The time integration grid
     cx: MX | SX

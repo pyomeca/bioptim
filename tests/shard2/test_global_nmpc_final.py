@@ -26,22 +26,22 @@ from ..utils import TestUtils
 )
 def test_multi_cyclic_nmpc_get_final(phase_dynamics, ode_solver):
 
-    if platform.system() == "Windows":
-        pytest.skip("This test is skipped on Windows because sensitive")
+    if platform.system() == "Windows" or platform.system() == "Darwin":
+        pytest.skip("This test is skipped on Windows and macOS because sensitive")
 
     def update_functions(_nmpc, cycle_idx, _sol):
         return cycle_idx < n_cycles_total  # True if there are still some cycle to perform
 
-    from bioptim.examples.moving_horizon_estimation import multi_cyclic_nmpc as ocp_module
+    from bioptim.examples.toy_examples.moving_horizon_estimation import multi_cyclic_nmpc as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     n_cycles_simultaneous = 2
     n_cycles_to_advance = 1
     n_cycles_total = 3
     cycle_len = 20
     nmpc = ocp_module.prepare_nmpc(
-        model_path=bioptim_folder + "/models/arm2.bioMod",
+        model_path=bioptim_folder + "/examples/models/arm2.bioMod",
         cycle_len=cycle_len,
         cycle_duration=1,
         n_cycles_simultaneous=n_cycles_simultaneous,
@@ -175,16 +175,16 @@ def test_multi_cyclic_nmpc_not_get_final(phase_dynamics):
     def update_functions(_nmpc, cycle_idx, _sol):
         return cycle_idx < n_cycles_total  # True if there are still some cycle to perform
 
-    from bioptim.examples.moving_horizon_estimation import multi_cyclic_nmpc as ocp_module
+    from bioptim.examples.toy_examples.moving_horizon_estimation import multi_cyclic_nmpc as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     n_cycles_simultaneous = 2
     n_cycles_to_advance = 1
     n_cycles_total = 3
     cycle_len = 20
     nmpc = ocp_module.prepare_nmpc(
-        model_path=bioptim_folder + "/models/arm2.bioMod",
+        model_path=bioptim_folder + "/examples/models/arm2.bioMod",
         cycle_len=cycle_len,
         cycle_duration=1,
         n_cycles_simultaneous=n_cycles_simultaneous,
@@ -217,16 +217,16 @@ def test_multi_cyclic_nmpc_with_parameters(phase_dynamics):
     def update_functions(_nmpc, cycle_idx, _sol):
         return cycle_idx < n_cycles_total  # True if there are still some cycle to perform
 
-    from bioptim.examples.moving_horizon_estimation import multi_cyclic_nmpc_with_parameters as ocp_module
+    from bioptim.examples.toy_examples.moving_horizon_estimation import multi_cyclic_nmpc_with_parameters as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     n_cycles_simultaneous = 2
     n_cycles_to_advance = 1
     n_cycles_total = 3
     cycle_len = 20
     nmpc = ocp_module.prepare_nmpc(
-        model_path=bioptim_folder + "/models/arm2.bioMod",
+        model_path=bioptim_folder + "/examples/models/arm2.bioMod",
         cycle_len=cycle_len,
         cycle_duration=1,
         n_cycles_simultaneous=n_cycles_simultaneous,

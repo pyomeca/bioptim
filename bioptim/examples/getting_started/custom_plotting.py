@@ -13,6 +13,7 @@ from bioptim import (
     Solver,
     PhaseDynamics,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def custom_plot_callback(x: MX, q_to_plot: list) -> MX:
@@ -118,7 +119,8 @@ def main():
     """
 
     # Prepare the Optimal Control Program
-    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=2, n_shooting=50)
+    biorbd_model_path = ExampleUtils.folder + "/models/pendulum.bioMod"
+    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, final_time=2, n_shooting=50)
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))

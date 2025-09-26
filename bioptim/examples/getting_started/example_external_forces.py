@@ -26,10 +26,11 @@ from bioptim import (
     PhaseDynamics,
     ExternalForceSetTimeSeries,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(
-    biorbd_model_path: str = "models/cube_with_forces.bioMod",
+    biorbd_model_path,
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     expand_dynamics: bool = True,
     phase_dynamics: PhaseDynamics = PhaseDynamics.ONE_PER_NODE,
@@ -193,8 +194,8 @@ def main():
     """
     Solve an ocp with external forces and animates the solution
     """
-
-    ocp = prepare_ocp()
+    biorbd_model_path = ExampleUtils.folder + "/models/cube_with_forces.bioMod"
+    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path)
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))

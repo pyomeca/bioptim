@@ -139,7 +139,7 @@ def test_track_and_minimize_marker_displacement_global(ode_solver, phase_dynamic
     # Load track_and_minimize_marker_velocity
     ode_solver = ode_solver()
     ocp = prepare_ocp(
-        biorbd_model_path=TestUtils.bioptim_folder() + "/examples/track/models/cube_and_line.bioMod",
+        biorbd_model_path=TestUtils.bioptim_folder() + "/examples/models/cube_and_line.bioMod",
         n_shooting=5,
         final_time=1,
         marker_velocity_or_displacement="disp",
@@ -151,9 +151,7 @@ def test_track_and_minimize_marker_displacement_global(ode_solver, phase_dynamic
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], -143.5854887928483)
+    TestUtils.assert_objective_value(sol=sol, expected_value=-143.5854887928483)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -186,7 +184,7 @@ def test_track_and_minimize_marker_displacement_RT(ode_solver, phase_dynamics):
     # Load track_and_minimize_marker_velocity
     ode_solver = ode_solver()
     ocp = prepare_ocp(
-        biorbd_model_path=TestUtils.bioptim_folder() + "/examples/track/models/cube_and_line.bioMod",
+        biorbd_model_path=TestUtils.bioptim_folder() + "/examples/models/cube_and_line.bioMod",
         n_shooting=5,
         final_time=1,
         marker_velocity_or_displacement="disp",
@@ -210,9 +208,7 @@ def test_track_and_minimize_marker_displacement_RT(ode_solver, phase_dynamics):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], -200.80194174353494)
+    TestUtils.assert_objective_value(sol=sol, expected_value=-200.80194174353494)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -244,7 +240,7 @@ def test_track_and_minimize_marker_velocity(ode_solver, phase_dynamics):
     # Load track_and_minimize_marker_velocity
     ode_solver = ode_solver()
     ocp = prepare_ocp(
-        biorbd_model_path=TestUtils.bioptim_folder() + "/examples/track/models/cube_and_line.bioMod",
+        biorbd_model_path=TestUtils.bioptim_folder() + "/examples/models/cube_and_line.bioMod",
         n_shooting=5,
         final_time=1,
         marker_velocity_or_displacement="velo",
@@ -268,9 +264,7 @@ def test_track_and_minimize_marker_velocity(ode_solver, phase_dynamics):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], -80.20048585400944)
+    TestUtils.assert_objective_value(sol=sol, expected_value=-80.20048585400944)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -305,7 +299,7 @@ def test_track_and_minimize_marker_velocity_linear_controls(ode_solver, phase_dy
 
     # Load track_and_minimize_marker_velocity
     ocp = prepare_ocp(
-        biorbd_model_path=TestUtils.bioptim_folder() + "/examples/track/models/cube_and_line.bioMod",
+        biorbd_model_path=TestUtils.bioptim_folder() + "/examples/models/cube_and_line.bioMod",
         n_shooting=5,
         final_time=1,
         marker_velocity_or_displacement="velo",

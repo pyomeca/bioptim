@@ -33,15 +33,15 @@ def test_example_param_obj_and_param_scaling(
     if platform == "darwin" or platform == "win32":
         pytest.skip("This test is not working on MacOS or Windows")
 
-    from bioptim.examples.getting_started import example_parameter_scaling as ocp_module
+    from bioptim.examples.toy_examples.feature_examples import example_parameter_scaling as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     final_time = 1
     n_shooting = 10
 
     ocp_to_track = ocp_module.generate_dat_to_track(
-        biorbd_model_path=bioptim_folder + "/models/pendulum_wrong_gravity.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/pendulum_wrong_gravity.bioMod",
         final_time=final_time,
         n_shooting=n_shooting,
     )
@@ -51,7 +51,7 @@ def test_example_param_obj_and_param_scaling(
     tau_to_track = sol_to_track.decision_controls(to_merge=SolutionMerge.NODES)["tau"]
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
         final_time=final_time,
         n_shooting=n_shooting,
         min_g=np.array([0, -5, -50]),
@@ -66,9 +66,8 @@ def test_example_param_obj_and_param_scaling(
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
 
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(sum([cost["cost_value_weighted"] for cost in sol.detailed_cost]), f[0, 0])
+    # Test the objective values
+    TestUtils.assert_objective_value(sol=sol, expected_value=35328792.2512389, decimal=4)
 
     g = np.array(sol.constraints)
     npt.assert_equal(g.shape, (0, 1))

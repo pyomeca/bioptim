@@ -6,8 +6,8 @@ from bioptim import Solver, PhaseDynamics, SolutionMerge
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_custom_model(phase_dynamics):
-    from bioptim.examples.custom_model import main as ocp_module
-    from bioptim.examples.custom_model.custom_package import my_model as model
+    from bioptim.examples.toy_examples.custom_model import main as ocp_module
+    from bioptim.examples.toy_examples.custom_model.custom_package import my_model as model
 
     ocp = ocp_module.prepare_ocp(
         model=model.MyModel(),
