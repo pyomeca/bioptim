@@ -5,7 +5,7 @@ from bioptim.optimization.stochastic_optimal_control_program import (
     _check_multi_threading_and_problem_type,
     _check_has_no_phase_dynamics_shared_during_the_phase,
 )
-from bioptim.examples.stochastic_optimal_control.models.mass_point_model import MassPointDynamicsModel
+from bioptim.examples.toy_examples.stochastic_optimal_control.models.mass_point_model import MassPointDynamicsModel
 
 bio_model = MassPointDynamicsModel(problem_type=SocpType.COLLOCATION)
 

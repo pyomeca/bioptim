@@ -126,12 +126,11 @@ def prepare_ocp(
     [QuadratureRule.RECTANGLE_LEFT, QuadratureRule.APPROXIMATE_TRAPEZOIDAL, QuadratureRule.TRAPEZOIDAL],
 )
 def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
-    from bioptim.examples.getting_started import pendulum as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
         n_shooting=30,
         integration_rule=integration_rule,
         objective=objective,
@@ -241,9 +240,8 @@ def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
     ],
 )
 def test_pendulum_collocation(control_type, integration_rule, objective, phase_dynamics):
-    from bioptim.examples.getting_started import pendulum as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     if integration_rule not in (
         QuadratureRule.RECTANGLE_LEFT,
@@ -255,7 +253,7 @@ def test_pendulum_collocation(control_type, integration_rule, objective, phase_d
             match=f"{integration_rule} has not been implemented yet for objective functions.",
         ):
             prepare_ocp(
-                biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+                biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
                 n_shooting=10,
                 integration_rule=integration_rule,
                 objective=objective,
@@ -266,7 +264,7 @@ def test_pendulum_collocation(control_type, integration_rule, objective, phase_d
         return
 
     ocp = prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
         n_shooting=10,
         integration_rule=integration_rule,
         objective=objective,
@@ -310,9 +308,8 @@ def test_pendulum_collocation(control_type, integration_rule, objective, phase_d
     [QuadratureRule.RECTANGLE_LEFT, QuadratureRule.APPROXIMATE_TRAPEZOIDAL, QuadratureRule.TRAPEZOIDAL],
 )
 def test_pendulum_target(control_type, integration_rule, objective, phase_dynamics):
-    from bioptim.examples.getting_started import pendulum as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     if objective == "qdot":
         target = np.array(
@@ -457,7 +454,7 @@ def test_pendulum_target(control_type, integration_rule, objective, phase_dynami
         target = np.concatenate((target, np.zeros((2, 1))), axis=1)
 
     ocp = prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
         n_shooting=30,
         integration_rule=integration_rule,
         objective=objective,
@@ -532,9 +529,8 @@ def test_pendulum_target(control_type, integration_rule, objective, phase_dynami
     ],
 )
 def test_error_mayer_trapz(integration_rule, phase_dynamics):
-    from bioptim.examples.getting_started import pendulum as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     with pytest.raises(
         ValueError,
@@ -542,7 +538,7 @@ def test_error_mayer_trapz(integration_rule, phase_dynamics):
         "remove the argument integration_rule or use a Lagrange objective function",
     ):
         ocp = prepare_ocp(
-            biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+            biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
             n_shooting=30,
             integration_rule=integration_rule,
             objective="mayer",

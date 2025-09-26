@@ -19,12 +19,12 @@ from ..utils import TestUtils
     "objective_name", ["MINIMIZE_PREDICTED_COM_HEIGHT", "MINIMIZE_COM_POSITION", "MINIMIZE_COM_VELOCITY"]
 )
 def test_maximize_predicted_height_CoM(objective_name, phase_dynamics):
-    from bioptim.examples.torque_driven_ocp import maximize_predicted_height_CoM as ocp_module
+    from bioptim.examples.toy_examples.torque_driven_ocp import maximize_predicted_height_CoM as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/2segments_4dof_2contacts.bioMod",
         phase_time=0.5,
         n_shooting=5,
         use_actuators=False,
@@ -93,12 +93,12 @@ def test_maximize_predicted_height_CoM(objective_name, phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE])
 def test_maximize_predicted_height_CoM_with_actuators(phase_dynamics):
-    from bioptim.examples.torque_driven_ocp import maximize_predicted_height_CoM as ocp_module
+    from bioptim.examples.toy_examples.torque_driven_ocp import maximize_predicted_height_CoM as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/2segments_4dof_2contacts.bioMod",
         phase_time=0.5,
         n_shooting=20,
         use_actuators=True,
@@ -137,14 +137,14 @@ def test_maximize_predicted_height_CoM_with_actuators(phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE])
 def test_maximize_predicted_height_CoM_rigidbody_dynamics(phase_dynamics):
-    from bioptim.examples.torque_driven_ocp import maximize_predicted_height_CoM as ocp_module
+    from bioptim.examples.toy_examples.torque_driven_ocp import maximize_predicted_height_CoM as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ode_solver = OdeSolver.RK4()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/2segments_4dof_2contacts.bioMod",
         phase_time=0.5,
         n_shooting=20,
         use_actuators=False,

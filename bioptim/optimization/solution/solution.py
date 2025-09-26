@@ -1,9 +1,10 @@
-import numpy as np
-from casadi import vertcat, DM, Function
 from copy import deepcopy
-from matplotlib import pyplot as plt
-from scipy import interpolate as sci_interp
 from typing import Any
+
+from casadi import vertcat, DM, Function
+from matplotlib import pyplot as plt
+import numpy as np
+from scipy import interpolate as sci_interp
 
 from .solution_data import SolutionData, SolutionMerge, TimeAlignment, TimeResolution
 from ..optimization_vector import OptimizationVectorHelper
@@ -206,18 +207,18 @@ class Solution:
         if not isinstance(sol, dict):
             raise ValueError("The _sol entry should be a dictionary")
 
-        is_ipopt = sol["solver"] == SolverType.IPOPT.value
+        is_ipopt_like = sol["solver"] in (SolverType.IPOPT.value, SolverType.FATROP.value)
 
         return cls(
             ocp=ocp,
             vector=sol["x"],
-            cost=sol["f"] if is_ipopt else None,
-            constraints=sol["g"] if is_ipopt else None,
-            lam_g=sol["lam_g"] if is_ipopt else None,
-            lam_p=sol["lam_p"] if is_ipopt else None,
-            lam_x=sol["lam_x"] if is_ipopt else None,
-            inf_pr=sol["inf_pr"] if is_ipopt else None,
-            inf_du=sol["inf_du"] if is_ipopt else None,
+            cost=sol["f"] if is_ipopt_like else None,
+            constraints=sol["g"] if is_ipopt_like else None,
+            lam_g=sol["lam_g"] if is_ipopt_like else None,
+            lam_p=sol["lam_p"] if is_ipopt_like else None,
+            lam_x=sol["lam_x"] if is_ipopt_like else None,
+            inf_pr=sol["inf_pr"] if is_ipopt_like else None,
+            inf_du=sol["inf_du"] if is_ipopt_like else None,
             solver_time_to_optimize=sol["solver_time_to_optimize"],
             real_time_to_optimize=sol["real_time_to_optimize"],
             iterations=sol["iter"],
