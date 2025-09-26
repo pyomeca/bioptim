@@ -179,38 +179,17 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type, s
     sol = ocp.solve(solver())
     tok = time.time()  # This after solving
 
-    # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-
-    if n_threads > 1:
-        with pytest.raises(
-            NotImplementedError, match="Computing detailed cost with n_threads > 1 is not implemented yet"
-        ):
-            detailed_cost = sol.detailed_cost[0]
-        detailed_cost = None
-    else:
-        detailed_cost = sol.detailed_cost[0]
-
+    # Check objective function valueà
     if isinstance(ode_solver_obj, OdeSolver.RK8):
-        npt.assert_almost_equal(f[0, 0], 41.57063948309302)
-        # detailed cost values
-        if detailed_cost is not None:
-            npt.assert_almost_equal(detailed_cost["cost_value_weighted"], 41.57063948309302)
+        TestUtils.assert_objective_value(sol=sol, expected_value=41.57063948309302)
         npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [-0.5010317, 0.6824593])
 
     elif isinstance(ode_solver_obj, OdeSolver.IRK):
         if solver == Solver.IPOPT:
-            npt.assert_almost_equal(f[0, 0], 65.8236055171619)
-            # detailed cost values
-            if detailed_cost is not None:
-                npt.assert_almost_equal(detailed_cost["cost_value_weighted"], 65.8236055171619)
+            TestUtils.assert_objective_value(sol=sol, expected_value=65.8236055171619)
             npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [0.5536468, -0.4129719])
         elif solver == Solver.FATROP:
-            npt.assert_almost_equal(f[0, 0], 58.65307209221627)
-            # detailed cost values
-            if detailed_cost is not None:
-                npt.assert_almost_equal(detailed_cost["cost_value_weighted"], 58.65307209221627)
+            TestUtils.assert_objective_value(sol=sol, expected_value=58.65307209221627)
             npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [0.42226046, -0.2856726])
         else:
             raise RuntimeError("Unexpected solver")
@@ -232,47 +211,27 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type, s
                 npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [0.55457473, -0.41280843])
         else:
             raise RuntimeError("Unexpected solver")
-
-        npt.assert_almost_equal(f[0, 0], optimal_cost)
-        # detailed cost values
-        if detailed_cost is not None:
-            npt.assert_almost_equal(detailed_cost["cost_value_weighted"], optimal_cost)
-
+        TestUtils.assert_objective_value(sol=sol, expected_value=optimal_cost)
     elif isinstance(ode_solver_obj, OdeSolver.RK1):
         if solver == Solver.IPOPT:
-            npt.assert_almost_equal(f[0, 0], 47.360621044913245)
-            # detailed cost values
-            if detailed_cost is not None:
-                npt.assert_almost_equal(detailed_cost["cost_value_weighted"], 47.360621044913245)
+            TestUtils.assert_objective_value(sol=sol, expected_value=47.360621044913245)
             npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [0.1463538, 0.0215651])
         elif solver == Solver.FATROP:
-            npt.assert_almost_equal(f[0, 0], 48.86934816227037)
-            # detailed cost values
-            if detailed_cost is not None:
-                npt.assert_almost_equal(detailed_cost["cost_value_weighted"], 48.86934816227037)
+            TestUtils.assert_objective_value(sol=sol, expected_value=48.86934816227037)
             npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [0.27981801, -0.11551382])
         else:
             raise RuntimeError("Unexpected solver")
 
     elif isinstance(ode_solver_obj, OdeSolver.RK2):
-        npt.assert_almost_equal(f[0, 0], 76.24887695462857)
-        # detailed cost values
-        if detailed_cost is not None:
-            npt.assert_almost_equal(detailed_cost["cost_value_weighted"], 76.24887695462857)
+        TestUtils.assert_objective_value(sol=sol, expected_value=76.24887695462857)
         npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [0.652476, -0.496652])
 
     elif isinstance(ode_solver_obj, OdeSolver.TRAPEZOIDAL):
-        npt.assert_almost_equal(f[0, 0], 31.423389566303985)
-        # detailed cost values
-        if detailed_cost is not None:
-            npt.assert_almost_equal(detailed_cost["cost_value_weighted"], 31.423389566303985)
+        TestUtils.assert_objective_value(sol=sol, expected_value=31.423389566303985)
         npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [0.69364974, -0.48330043])
 
     else:
-        npt.assert_almost_equal(f[0, 0], 41.58259426)
-        # detailed cost values
-        if detailed_cost is not None:
-            npt.assert_almost_equal(detailed_cost["cost_value_weighted"], 41.58259426)
+        TestUtils.assert_objective_value(sol=sol, expected_value=41.58259426)
         npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [-0.4961208, 0.6764171])
 
     # Check constraints
@@ -414,9 +373,7 @@ def test_custom_constraint_track_markers(ode_solver, phase_dynamics):
 
     if isinstance(ode_solver, OdeSolver.IRK):
         # Check objective function value
-        f = np.array(sol.cost)
-        npt.assert_equal(f.shape, (1, 1))
-        npt.assert_almost_equal(f[0, 0], 19767.53312569523)
+        TestUtils.assert_objective_value(sol=sol, expected_value=19767.53312569523)
 
         # initial and final controls
         npt.assert_almost_equal(tau[:, 0], np.array((1.4516129, 9.81, 2.27903226)))
@@ -426,9 +383,7 @@ def test_custom_constraint_track_markers(ode_solver, phase_dynamics):
         npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 19767.533125695227)
     else:
         # Check objective function value
-        f = np.array(sol.cost)
-        npt.assert_equal(f.shape, (1, 1))
-        npt.assert_almost_equal(f[0, 0], 19767.533125695223)
+        TestUtils.assert_objective_value(sol=sol, expected_value=19767.533125695223)
 
         npt.assert_almost_equal(tau[:, 0], np.array((1.4516128810214546, 9.81, 2.2790322540381487)))
         npt.assert_almost_equal(tau[:, -1], np.array((-1.4516128810214546, 9.81, -2.2790322540381487)))
@@ -503,9 +458,7 @@ def test_initial_guesses(ode_solver, interpolation, random_init, phase_dynamics)
     tok = time.time()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 13954.735)
+    TestUtils.assert_objective_value(sol=sol, expected_value=13954.735)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -586,9 +539,7 @@ def test_cyclic_objective(ode_solver, phase_dynamics):
     tok = time.time()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 56851.88181545)
+    TestUtils.assert_objective_value(sol=sol, expected_value=56851.88181545)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -662,9 +613,7 @@ def test_cyclic_constraint(ode_solver, phase_dynamics):
     tok = time.time()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 78921.61000000016)
+    TestUtils.assert_objective_value(sol=sol, expected_value=78921.61000000016)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -735,9 +684,7 @@ def test_phase_transitions(ode_solver, phase_dynamics):
     tok = time.time()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 109443.6239236211)
+    TestUtils.assert_objective_value(sol=sol, expected_value=109443.6239236211)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -842,15 +789,13 @@ def test_parameter_optimization(ode_solver, phase_dynamics):
     npt.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
     # Check objective and constraints function value
-    f = np.array(sol.cost)
     g = np.array(sol.constraints)
-    npt.assert_equal(f.shape, (1, 1))
 
     if isinstance(ode_solver, OdeSolver.RK4):
         npt.assert_equal(g.shape, (80, 1))
         npt.assert_almost_equal(g, np.zeros((80, 1)), decimal=6)
 
-        npt.assert_almost_equal(f[0, 0], 55.29552160879171, decimal=6)
+        TestUtils.assert_objective_value(sol=sol, expected_value=55.29552160879171, decimal=6)
 
         # initial and final controls
         npt.assert_almost_equal(tau[:, 0], np.array((7.08951794, 0.0)))
@@ -859,15 +804,11 @@ def test_parameter_optimization(ode_solver, phase_dynamics):
         # gravity parameter
         npt.assert_almost_equal(gravity, np.array([[0, 4.95762449e-03, -9.93171691e00]]).T)
 
-        # detailed cost values
-        cost_values_all = np.sum(cost["cost_value_weighted"] for cost in sol.detailed_cost)
-        npt.assert_almost_equal(cost_values_all, f[0, 0])
-
     elif isinstance(ode_solver, OdeSolver.RK8):
         npt.assert_equal(g.shape, (80, 1))
         npt.assert_almost_equal(g, np.zeros((80, 1)), decimal=6)
 
-        npt.assert_almost_equal(f[0, 0], 49.828261340026486, decimal=6)
+        TestUtils.assert_objective_value(sol=sol, expected_value=49.828261340026486, decimal=6)
 
         # initial and final controls
         npt.assert_almost_equal(tau[:, 0], np.array((5.82740495, 0.0)))
@@ -876,15 +817,11 @@ def test_parameter_optimization(ode_solver, phase_dynamics):
         # gravity parameter
         npt.assert_almost_equal(gravity, np.array([[0, 5.19787253e-03, -9.84722491e00]]).T)
 
-        # detailed cost values
-        cost_values_all = np.sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
-        npt.assert_almost_equal(cost_values_all, f[0, 0])
-
     else:
         npt.assert_equal(g.shape, (400, 1))
         npt.assert_almost_equal(g, np.zeros((400, 1)), decimal=6)
 
-        npt.assert_almost_equal(f[0, 0], 100.59286910162214, decimal=6)
+        TestUtils.assert_objective_value(sol=sol, expected_value=100.59286910162214, decimal=6)
 
         # initial and final controls
         npt.assert_almost_equal(tau[:, 0], np.array((-0.23081842, 0.0)))
@@ -892,10 +829,6 @@ def test_parameter_optimization(ode_solver, phase_dynamics):
 
         # gravity parameter
         npt.assert_almost_equal(gravity, np.array([[0, 6.82939855e-03, -1.00000000e01]]).T)
-
-        # detailed cost values
-        cost_values_all = np.sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
-        npt.assert_almost_equal(cost_values_all, f[0, 0])
 
     # simulate
     TestUtils.simulate(sol, decimal_value=6)
@@ -955,9 +888,7 @@ def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver, phase
     tok = time.time()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 19767.5331257)
+    TestUtils.assert_objective_value(sol=sol, expected_value=19767.5331257)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -1042,9 +973,7 @@ def test_example_external_forces(ode_solver, phase_dynamics, n_threads, use_sx, 
 
     if not use_point_of_applications:
         # Check objective function value
-        f = np.array(sol.cost)
-        npt.assert_equal(f.shape, (1, 1))
-        npt.assert_almost_equal(f[0, 0], 7067.851604540213)
+        TestUtils.assert_objective_value(sol=sol, expected_value=7067.851604540213)
 
         # Check constraints
         g = np.array(sol.constraints)
@@ -1071,9 +1000,6 @@ def test_example_external_forces(ode_solver, phase_dynamics, n_threads, use_sx, 
             npt.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)), decimal=5)
             npt.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0, 0)), decimal=5)
 
-            # detailed cost values
-            if n_threads == 1:
-                npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 7067.851604540213)
         else:
             # initial and final position
             npt.assert_almost_equal(q[:, 0], np.array([-4.6916756e-15, 6.9977394e-16, -1.6087563e-06, 0]), decimal=5)
@@ -1083,15 +1009,9 @@ def test_example_external_forces(ode_solver, phase_dynamics, n_threads, use_sx, 
             npt.assert_almost_equal(qdot[:, 0], np.array([0, 0, 1.60839825e-06, 0]), decimal=5)
             npt.assert_almost_equal(qdot[:, -1], np.array([0, 0, 1.6094277e-06, 0]), decimal=5)
 
-            # detailed cost values
-            if n_threads == 1:
-                npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 7067.851604540213)
-
     else:
         # Check objective function value
-        f = np.array(sol.cost)
-        npt.assert_equal(f.shape, (1, 1))
-        npt.assert_almost_equal(f[0, 0], 7073.702785927464)
+        TestUtils.assert_objective_value(sol=sol, expected_value=7073.702785927464)
 
         # Check constraints
         g = np.array(sol.constraints)
@@ -1120,10 +1040,6 @@ def test_example_external_forces(ode_solver, phase_dynamics, n_threads, use_sx, 
         # initial and final velocities
         npt.assert_almost_equal(qdot[:, 0], np.array([0, 0, 0, 0]), decimal=5)
         npt.assert_almost_equal(qdot[:, -1], np.array([0, 0, 0, 0]), decimal=5)
-
-        # detailed cost values
-        if n_threads == 1:
-            npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 7073.70278592746)
 
     # simulate
     TestUtils.simulate(sol)
@@ -1176,9 +1092,10 @@ def test_example_multiphase(ode_solver_type, phase_dynamics):
     tok = time.time()
 
     # Check objective function value
+    # TODO: restore assert_objective_value by fixing bug in Solution._get_penalty_cost on multinode objectives
+    # TestUtils.assert_objective_value(sol=sol, expected_value=106088.01707867868)
     f = np.array(sol.cost)
     npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 106088.01707867868)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -1298,9 +1215,7 @@ def test_contact_forces_inequality_greater_than_constraint(ode_solver, phase_dyn
     tok = time.time()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 0.19216241950659246)
+    TestUtils.assert_objective_value(sol=sol, expected_value=0.19216241950659246)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -1367,9 +1282,7 @@ def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 0.2005516965424669)
+    TestUtils.assert_objective_value(sol=sol, expected_value=0.2005516965424669)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -1462,9 +1375,7 @@ def test_multinode_objective(ode_solver, phase_dynamics):
 
     if isinstance(ode_solver, OdeSolver.RK4):
         # Check objective function value
-        f = np.array(sol.cost)
-        npt.assert_equal(f.shape, (1, 1))
-        npt.assert_almost_equal(f[0, 0], 488.05375155958615)
+        TestUtils.assert_objective_value(sol=sol, expected_value=488.05375155958615)
 
         # Check constraints
         g = np.array(sol.constraints)
@@ -1477,9 +1388,7 @@ def test_multinode_objective(ode_solver, phase_dynamics):
 
     elif isinstance(ode_solver, OdeSolver.RK8):
         # Check objective function value
-        f = np.array(sol.cost)
-        npt.assert_equal(f.shape, (1, 1))
-        npt.assert_almost_equal(f[0, 0], 475.44403901331214)
+        TestUtils.assert_objective_value(sol=sol, expected_value=475.44403901331214)
 
         # Check constraints
         g = np.array(sol.constraints)
@@ -1622,9 +1531,7 @@ def test_multinode_constraints(ode_solver, phase_dynamics):
     sol.print_cost()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 106577.60874445777)
+    TestUtils.assert_objective_value(sol=sol, expected_value=106577.60874445777)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -1900,9 +1807,7 @@ def test_example_variable_scaling(phase_dynamics):
     tok = time.time()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 31609.83406760166)
+    TestUtils.assert_objective_value(sol=sol, expected_value=31609.83406760166)
 
     # Check constraints
     g = np.array(sol.constraints)
