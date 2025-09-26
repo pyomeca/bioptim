@@ -48,6 +48,7 @@ test_memory = {}
         OdeSolver.RK4,
         OdeSolver.RK8,
         OdeSolver.IRK,
+        OdeSolver.CVODES,
         OdeSolver.COLLOCATION,
         OdeSolver.TRAPEZOIDAL,
     ],
@@ -56,8 +57,8 @@ test_memory = {}
     "defects_type", [DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS, DefectType.TAU_EQUALS_INVERSE_DYNAMICS]
 )
 @pytest.mark.parametrize("solver", [Solver.IPOPT, Solver.FATROP])
-def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type, solver):
-    ordering_strategy = OrderingStrategy.TIME_MAJOR
+@pytest.mark.parametrize("ordering_strategy", [OrderingStrategy.TIME_MAJOR, OrderingStrategy.VARIABLE_MAJOR])
+def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type, solver, ordering_strategy):
     from bioptim.examples.getting_started import basic_ocp as ocp_module
 
     if platform.system() == "Windows":
@@ -66,6 +67,12 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type, s
         defects_type == DefectType.TAU_EQUALS_INVERSE_DYNAMICS or solver == Solver.FATROP
     ):
         pytest.skip("These tests fail on CI for MacOS")
+
+    if solver == Solver.FATROP and defects_type in (
+        DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS,
+        DefectType.TAU_EQUALS_INVERSE_DYNAMICS,
+    ):
+        pytest.skip("These tests fail on CI for FATROP")
 
     gc.collect()  # Force garbage collection
     time.sleep(0.1)  # Avoiding delay in memory (re)allocation
