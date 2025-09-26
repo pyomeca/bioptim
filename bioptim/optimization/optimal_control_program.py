@@ -521,10 +521,6 @@ class OptimalControlProgram:
 
         if not isinstance(use_sx, bool):
             raise RuntimeError("use_sx should be a bool")
-        if use_sx and self.n_threads > 1:
-            raise RuntimeError(
-                "SX shows no improvement with multi-threading, but may be very long to prepare. So it is disabled."
-            )
 
         if dynamics is None:
             dynamics = DynamicsOptionsList()
