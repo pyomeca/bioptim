@@ -87,7 +87,7 @@ def test_muscle_activations_and_states_tracking(ode_solver, n_threads, phase_dyn
     q, qdot, tau, mus = states["q"], states["qdot"], controls["tau"], controls["muscles"]
 
     if ode_solver == OdeSolver.IRK:
-        npt.assert_almost_equal(f[0, 0], 8.776096413864758e-09)
+        TestUtils.assert_objective_value(sol=sol, expected_value=8.776096413864758e-09)
 
         # initial and final position
         npt.assert_almost_equal(q[:, 0], np.array([-6.94616318e-06, 5.36043303e-06]))
@@ -108,7 +108,7 @@ def test_muscle_activations_and_states_tracking(ode_solver, n_threads, phase_dyn
         )
 
     elif ode_solver == OdeSolver.COLLOCATION:
-        npt.assert_almost_equal(f[0, 0], 4.15552736658107e-09)
+        TestUtils.assert_objective_value(sol=sol, expected_value=4.15552736658107e-09)
 
         # initial and final position
         npt.assert_almost_equal(q[:, 0], np.array([-4.31570204e-06, 3.86467256e-06]))
@@ -128,7 +128,7 @@ def test_muscle_activations_and_states_tracking(ode_solver, n_threads, phase_dyn
         )
 
     elif ode_solver == OdeSolver.RK4:
-        npt.assert_almost_equal(f[0, 0], 8.759278201846765e-09)
+        TestUtils.assert_objective_value(sol=sol, expected_value=8.759278201846765e-09)
 
         # initial and final position
         npt.assert_almost_equal(q[:, 0], np.array([-7.00609088e-06, 5.41894006e-06]))

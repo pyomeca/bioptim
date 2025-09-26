@@ -48,9 +48,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     sol = ocp.solve(solver)
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 433.119929307444)
+    TestUtils.assert_objective_value(sol=sol, expected_value=433.119929307444)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -441,9 +439,7 @@ def test_obstacle_avoidance_direct_collocation(use_sx: bool):
     sol = ocp.solve(solver)
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 5.831644440290965)
+    TestUtils.assert_objective_value(sol=sol, expected_value=5.831644440290965)
 
     # Check constraints
     g = np.array(sol.constraints)
