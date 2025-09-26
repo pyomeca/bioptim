@@ -5,7 +5,6 @@ pendulum simulation.
 """
 
 import numpy as np
-from casadi import DM
 from bioptim import (
     BiMappingList,
     BoundsList,
@@ -20,67 +19,11 @@ from bioptim import (
     ObjectiveList,
     OdeSolver,
     OptimalControlProgram,
-    SolutionMerge,
     Solver,
 )
 from bioptim.examples.utils import ExampleUtils
 
-
-def compute_all_states(sol, bio_model: HolonomicTorqueBiorbdModel):
-    """
-    Compute all the states from the solution of the optimal control program
-
-    Parameters
-    ----------
-    bio_model: HolonomicTorqueBiorbdModel
-        The biorbd model
-    sol:
-        The solution of the optimal control program
-
-    Returns
-    -------
-
-    """
-
-    states = sol.decision_states(to_merge=SolutionMerge.NODES)
-    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
-
-    n = states["q_u"].shape[1]
-    n_tau = controls["tau"].shape[1]
-
-    q = np.zeros((bio_model.nb_q, n))
-    qdot = np.zeros((bio_model.nb_q, n))
-    qddot = np.zeros((bio_model.nb_q, n))
-    lambdas = np.zeros((bio_model.nb_dependent_joints, n))
-    tau = np.zeros((bio_model.nb_tau, n_tau + 1))
-
-    for i, independent_joint_index in enumerate(bio_model.independent_joint_index):
-        tau[independent_joint_index, :-1] = controls["tau"][i, :]
-    for i, dependent_joint_index in enumerate(bio_model.dependent_joint_index):
-        tau[dependent_joint_index, :-1] = controls["tau"][i, :]
-
-    q_v_init = DM.zeros(bio_model.nb_dependent_joints, n)
-    for i in range(n):
-        q_v_i = bio_model.compute_q_v()(states["q_u"][:, i], q_v_init[:, i]).toarray()
-        q[:, i] = bio_model.state_from_partition(states["q_u"][:, i][:, np.newaxis], q_v_i).toarray().squeeze()
-        qdot[:, i] = bio_model.compute_qdot()(q[:, i], states["qdot_u"][:, i]).toarray().squeeze()
-        qddot_u_i = (
-            bio_model.partitioned_forward_dynamics()(
-                states["q_u"][:, i], states["qdot_u"][:, i], q_v_init[:, i], tau[:, i]
-            )
-            .toarray()
-            .squeeze()
-        )
-        qddot[:, i] = bio_model.compute_qddot()(q[:, i], qdot[:, i], qddot_u_i).toarray().squeeze()
-        lambdas[:, i] = (
-            bio_model.compute_the_lagrangian_multipliers()(
-                states["q_u"][:, i][:, np.newaxis], states["qdot_u"][:, i], q_v_init[:, i], tau[:, i]
-            )
-            .toarray()
-            .squeeze()
-        )
-
-    return q, qdot, qddot, lambdas
+from .common import compute_all_q
 
 
 def prepare_ocp(
@@ -112,12 +55,20 @@ def prepare_ocp(
     # Create a holonomic constraint to create a double pendulum from two single pendulums
     holonomic_constraints = HolonomicConstraintsList()
     holonomic_constraints.add(
-        "holonomic_constraints",
+        "holonomic_constraintsP01",
         HolonomicConstraintsFcn.superimpose_markers,
         marker_1="marker_1",
         marker_2="marker_3",
         index=slice(1, 3),
         local_frame_index=0,
+    )
+    holonomic_constraints.add(
+        "holonomic_constraintsP12",
+        HolonomicConstraintsFcn.superimpose_markers,
+        marker_1="marker_4",
+        marker_2="marker_6",
+        index=slice(1, 3),
+        local_frame_index=2,
     )
 
     # The rotations (joint 0 and 3) are independent. The translations (joint 1 and 2) are constrained by the holonomic
@@ -125,8 +76,8 @@ def prepare_ocp(
     bio_model = HolonomicTorqueBiorbdModel(
         biorbd_model_path,
         holonomic_constraints=holonomic_constraints,
-        independent_joint_index=[0, 3],
-        dependent_joint_index=[1, 2],
+        independent_joint_index=[0],
+        dependent_joint_index=[1, 2, 3, 4],
     )
 
     # Add objective functions
@@ -146,8 +97,8 @@ def prepare_ocp(
     # The rotations (joint 0 and 3) are independent. The translations (joint 1 and 2) are constrained by the holonomic
     # constraint, so we need to map the states and controls to only compute the dynamics of the independent joints
     # The dynamics of the dependent joints will be computed from the holonomic constraint
-    variable_bimapping.add("q", to_second=[0, None, None, 1], to_first=[0, 3])
-    variable_bimapping.add("qdot", to_second=[0, None, None, 1], to_first=[0, 3])
+    variable_bimapping.add("q", to_second=[0, None, None, None, None], to_first=[0])
+    variable_bimapping.add("qdot", to_second=[0, None, None, None, None], to_first=[0])
     x_bounds = BoundsList()
     # q_u and qdot_u are the states of the independent joints
     x_bounds["q_u"] = bio_model.bounds_from_ranges("q", mapping=variable_bimapping)
@@ -155,21 +106,21 @@ def prepare_ocp(
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add("q_u", [1.54, 1.54])
-    x_init.add("qdot_u", [0, 0])
-    x_bounds["q_u"][:, 0] = [1.54, 1.54]
-    x_bounds["qdot_u"][:, 0] = [0, 0]
-    x_bounds["q_u"][0, -1] = -1.54
-    x_bounds["q_u"][1, -1] = 0
+    x_init.add("q_u", [1.3])
+    x_init.add("qdot_u", [0])
+    x_bounds["q_u"][0, 0] = 1.3
+    x_bounds["qdot_u"][0, 0] = 0
+    x_bounds["q_u"][0, -1] = 0
+    # x_bounds["q_u"][1, -1] = 0
 
     # Define control path constraint
     tau_min, tau_max, tau_init = -100, 100, 0
     # Only the rotations are controlled
-    variable_bimapping.add("tau", to_second=[0, None, None, 1], to_first=[0, 3])
+    variable_bimapping.add("tau", to_second=[0, None, None, None, None], to_first=[0])
     u_bounds = BoundsList()
-    u_bounds.add("tau", min_bound=[tau_min] * 2, max_bound=[tau_max] * 2)
+    u_bounds.add("tau", min_bound=[tau_min], max_bound=[tau_max])
     u_init = InitialGuessList()
-    u_init.add("tau", [tau_init] * 2)
+    u_init.add("tau", [tau_init])
 
     # ------------- #
 
@@ -196,15 +147,13 @@ def main():
     Runs the optimization and animates it
     """
 
-    model_path = ExampleUtils.folder + "/models/two_pendulums.bioMod"
+    model_path = ExampleUtils.folder + "/models/3bar.bioMod"
     ocp, bio_model = prepare_ocp(biorbd_model_path=model_path)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT())
-    print(sol.real_time_to_optimize)
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
 
-    # --- Show results --- #
-    q, qdot, qddot, lambdas = compute_all_states(sol, bio_model)
+    q = compute_all_q(sol, bio_model)
 
     viewer = "pyorerun"
     if viewer == "bioviz":
