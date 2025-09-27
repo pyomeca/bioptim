@@ -32,6 +32,7 @@ from bioptim import (
     PhaseDynamics,
     ConstraintWeight,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def custom_weight(node: int, n_nodes: int) -> float:
@@ -172,6 +173,7 @@ def main():
     """
 
     nodes_to_test = [Node.START, Node.INTERMEDIATES, Node.ALL_SHOOTING]
+    biorbd_model_path = ExampleUtils.folder + "/models/cube.bioMod"
 
     for interpolation_type in InterpolationType:
         for node in nodes_to_test:
@@ -183,7 +185,11 @@ def main():
 
             print(f"Solving problem using {interpolation_type} weight applied at {node} nodes.")
             ocp = prepare_ocp(
-                "models/cube.bioMod", n_shooting=30, final_time=2, interpolation_type=interpolation_type, node=node
+                biorbd_model_path=biorbd_model_path,
+                n_shooting=30,
+                final_time=2,
+                interpolation_type=interpolation_type,
+                node=node,
             )
             sol = ocp.solve()
             print("\n")

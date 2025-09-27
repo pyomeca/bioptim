@@ -25,6 +25,7 @@ from bioptim import (
     SolutionMerge,
     OdeSolver,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def compute_all_states(sol, bio_model: HolonomicTorqueBiorbdModel):
@@ -197,8 +198,8 @@ def main():
     Runs the optimization and animates it
     """
 
-    model_path = "models/two_pendulums.bioMod"
-    ocp, bio_model = prepare_ocp(biorbd_model_path=model_path)
+    biorbd_model_path = ExampleUtils.folder + "/models/two_pendulums.bioMod"
+    ocp, bio_model = prepare_ocp(biorbd_model_path=biorbd_model_path)
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT())
@@ -211,7 +212,7 @@ def main():
     if viewer == "bioviz":
         import bioviz
 
-        viz = bioviz.Viz(model_path)
+        viz = bioviz.Viz(biorbd_model_path)
         viz.load_movement(q)
         viz.exec()
 
@@ -219,7 +220,7 @@ def main():
         import pyorerun
 
         viz = pyorerun.PhaseRerun(t_span=np.concatenate(sol.decision_time()).squeeze())
-        viz.add_animated_model(pyorerun.BiorbdModel(model_path), q=q)
+        viz.add_animated_model(pyorerun.BiorbdModel(biorbd_model_path), q=q)
 
         viz.rerun("double_pendulum")
 

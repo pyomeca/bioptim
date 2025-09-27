@@ -30,10 +30,11 @@ from bioptim import (
     Solver,
     PhaseDynamics,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(
-    biorbd_model_path: str = "models/cubeSym.bioMod",
+    biorbd_model_path,
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
@@ -114,7 +115,8 @@ def main():
     Solves an ocp where the symmetry is enforced by constraints, and animates it
     """
 
-    ocp = prepare_ocp()
+    biorbd_model_path = ExampleUtils.folder + "/models/cubeSym.bioMod"
+    ocp = prepare_ocp(biorbd_model_path)
 
     # Objective and constraints plots
     ocp.add_plot_penalty()
