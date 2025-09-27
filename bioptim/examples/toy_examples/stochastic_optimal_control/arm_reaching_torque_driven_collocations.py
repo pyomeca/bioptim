@@ -28,6 +28,7 @@ from bioptim import (
     SolutionMerge,
     DynamicsOptions,
 )
+from bioptim.examples.utils import ExampleUtils
 
 from bioptim.examples.toy_examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
 
@@ -272,7 +273,7 @@ def main():
     use_sx = True
     vizualize_sol_flag = True
 
-    biorbd_model_path = "models/LeuvenArmModel.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/LeuvenArmModel.bioMod"
 
     hand_final_position = np.array([9.359873986980460e-12, 0.527332023564034])  # Directly from Tom's version
 
