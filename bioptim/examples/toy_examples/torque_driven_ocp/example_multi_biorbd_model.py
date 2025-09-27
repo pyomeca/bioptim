@@ -81,7 +81,9 @@ def main():
     biorbd_model_path_modified_inertia = example_folder + "/models/triple_pendulum_modified_inertia.bioMod"
 
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, biorbd_model_path_modified_inertia=biorbd_model_path_modified_inertia)
+    ocp = prepare_ocp(
+        biorbd_model_path=biorbd_model_path, biorbd_model_path_modified_inertia=biorbd_model_path_modified_inertia
+    )
     ocp.add_plot_penalty()
 
     # --- Solve the program --- #
