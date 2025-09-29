@@ -23,7 +23,10 @@ except ModuleNotFoundError:
 # Avoid clash with module name
 examples_ = OrderedDict(
     [
-        ("toy_examples/acados", OrderedDict([("Static arm", "static_arm.py"), ("Cube", "cube.py"), ("Pendulum", "pendulum.py")])),
+        (
+            "toy_examples/acados",
+            OrderedDict([("Static arm", "static_arm.py"), ("Cube", "cube.py"), ("Pendulum", "pendulum.py")]),
+        ),
         (
             "toy_examples/fatigue",
             OrderedDict(
