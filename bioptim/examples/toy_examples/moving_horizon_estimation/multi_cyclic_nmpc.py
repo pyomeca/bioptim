@@ -67,7 +67,7 @@ def prepare_nmpc(
     u_bounds = BoundsList()
     u_bounds["tau"] = [-max_torque] * model.nb_q, [max_torque] * model.nb_q
 
-    new_objectives = Objective(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q")
+    new_objectives = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
     # Rotate the wheel and force the marker of the hand to follow the marker on the wheel
     wheel_target = np.linspace(-2 * np.pi * n_cycles_simultaneous, 0, cycle_len * n_cycles_simultaneous + 1)[

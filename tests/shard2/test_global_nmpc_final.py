@@ -25,7 +25,6 @@ from ..utils import TestUtils
     ],
 )
 def test_multi_cyclic_nmpc_get_final(phase_dynamics, ode_solver):
-
     if platform.system() == "Windows" or platform.system() == "Darwin":
         pytest.skip("This test is skipped on Windows and macOS because sensitive")
 
@@ -71,12 +70,12 @@ def test_multi_cyclic_nmpc_get_final(phase_dynamics, ode_solver):
         npt.assert_almost_equal(q[:, -1], np.array([1.37753244e-40, 1.04359174e00, 1.03625065e00]))
 
         # initial and final velocities
-        npt.assert_almost_equal(qdot[:, 0], np.array((6.28293718, 2.5617072, -0.00942694)))
-        npt.assert_almost_equal(qdot[:, -1], np.array([6.28293718, 2.41433059, -0.59773899]), decimal=5)
+        npt.assert_almost_equal(qdot[:, 0], np.array([6.28318531, 2.57685385, -0.06542029]))
+        npt.assert_almost_equal(qdot[:, -1], np.array([6.28318531, 2.40501008, -0.63136038]), decimal=5)
 
         # initial and final controls
-        npt.assert_almost_equal(tau[:, 0], np.array((0.00992505, 4.88488618, 2.4400698)))
-        npt.assert_almost_equal(tau[:, -1], np.array([-0.00992505, 5.19414727, 2.34022319]), decimal=4)
+        npt.assert_almost_equal(tau[:, 0], np.array([1.34399907e-11, 4.92501368e00, 2.53191286e00]))
+        npt.assert_almost_equal(tau[:, -1], np.array([2.82405932e-12, 4.96328211e00, 2.20504597e00]), decimal=4)
 
         # check time
         n_steps = nmpc.nlp[0].dynamics_type.ode_solver.n_integration_steps
@@ -122,11 +121,11 @@ def test_multi_cyclic_nmpc_get_final(phase_dynamics, ode_solver):
             npt.assert_almost_equal(q[:, 0], np.array((-12.56637061, 1.04359174, 1.03625065)))
             npt.assert_almost_equal(q[:, -1], np.array([0.0, 1.04359174, 1.03625065]))
             # initial and final velocities
-            npt.assert_almost_equal(qdot[:, 0], np.array([6.28810582, 2.55280178, 0.02627301]), decimal=5)
-            npt.assert_almost_equal(qdot[:, -1], np.array([6.28810582, 2.42201137, -0.57799103]), decimal=5)
+            npt.assert_almost_equal(qdot[:, 0], np.array([6.28318531, 2.5769604, -0.06617214]), decimal=5)
+            npt.assert_almost_equal(qdot[:, -1], np.array([6.28318531, 2.40569762, -0.63227535]), decimal=5)
             # initial and final controls
-            npt.assert_almost_equal(tau[:, 0], np.array([-0.19682043, 4.84862251, 2.37825343]), decimal=4)
-            npt.assert_almost_equal(tau[:, -1], np.array([0.19682043, 5.35831142, 2.43094827]), decimal=4)
+            npt.assert_almost_equal(tau[:, 0], np.array([-1.57225142e-10, 4.92697679e00, 2.53359257e00]), decimal=4)
+            npt.assert_almost_equal(tau[:, -1], np.array([1.75585447e-10, 4.96765087e00, 2.20617819e00]), decimal=4)
 
         # check time
         n_steps = nmpc.nlp[0].dynamics_type.ode_solver.polynomial_degree
@@ -168,9 +167,9 @@ def test_multi_cyclic_nmpc_get_final(phase_dynamics, ode_solver):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_multi_cyclic_nmpc_not_get_final(phase_dynamics):
-    if platform.system() != "Linux":
-        # This is a long test and CI is already long for Windows and Mac
-        return
+    # if platform.system() != "Linux":
+    #     # This is a long test and CI is already long for Windows and Mac
+    #     return
 
     def update_functions(_nmpc, cycle_idx, _sol):
         return cycle_idx < n_cycles_total  # True if there are still some cycle to perform
@@ -203,9 +202,9 @@ def test_multi_cyclic_nmpc_not_get_final(phase_dynamics):
     # check some result of the third structure
     assert len(sol[2]) == 3
 
-    npt.assert_almost_equal(sol[2][0].cost.toarray().squeeze(), 0.0002)
-    npt.assert_almost_equal(sol[2][1].cost.toarray().squeeze(), 0.0002)
-    npt.assert_almost_equal(sol[2][2].cost.toarray().squeeze(), 0.0002)
+    npt.assert_almost_equal(sol[2][0].cost.toarray().squeeze(), 0.0)
+    npt.assert_almost_equal(sol[2][1].cost.toarray().squeeze(), 0.0)
+    npt.assert_almost_equal(sol[2][2].cost.toarray().squeeze(), 0.0)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE])
