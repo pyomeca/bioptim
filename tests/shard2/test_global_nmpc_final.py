@@ -167,9 +167,9 @@ def test_multi_cyclic_nmpc_get_final(phase_dynamics, ode_solver):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_multi_cyclic_nmpc_not_get_final(phase_dynamics):
-    # if platform.system() != "Linux":
-    #     # This is a long test and CI is already long for Windows and Mac
-    #     return
+    if platform.system() != "Linux":
+        # This is a long test and CI is already long for Windows and Mac
+        return
 
     def update_functions(_nmpc, cycle_idx, _sol):
         return cycle_idx < n_cycles_total  # True if there are still some cycle to perform
