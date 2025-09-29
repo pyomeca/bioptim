@@ -26,6 +26,7 @@ from bioptim import (
     ContactType,
     MusclesWithExcitationsBiorbdModel,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver=OdeSolver.RK4(), expand_dynamics=True):
@@ -117,7 +118,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
 
 
 def main():
-    biorbd_model_path = "models/2segments_4dof_2contacts_1muscle.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/2segments_4dof_2contacts_1muscle.bioMod"
     t = 0.3
     ns = 10
     dt = t / ns

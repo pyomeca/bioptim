@@ -36,6 +36,7 @@ from bioptim import (
     ControlType,
     VariableScalingList,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 class ExampleType(Enum):
@@ -343,7 +344,7 @@ def main():
     with_cholesky = True
     with_scaling = True
 
-    biorbd_model_path = "models/LeuvenArmModel.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/LeuvenArmModel.bioMod"
 
     hand_final_position = np.array([9.359873986980460e-12, 0.527332023564034])  # Directly from Tom's version
 

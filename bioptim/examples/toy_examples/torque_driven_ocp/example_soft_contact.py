@@ -27,6 +27,7 @@ from bioptim import (
     SolutionMerge,
     ContactType,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_single_shooting(
@@ -194,7 +195,7 @@ def main():
     """
     Defines a multiphase ocp and animate the results
     """
-    biorbd_model_path = "../torque_driven_ocp/models/soft_contact_sphere.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/soft_contact_sphere.bioMod"
     ode_solver = OdeSolver.RK8()
 
     # Prepare OCP to reach the second marker

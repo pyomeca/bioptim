@@ -106,7 +106,7 @@ def _compute_value_for_node(
     """
     collapsed_values = np.ndarray((variable_container.shape, 1))
 
-    real_keys = [key for key in defined_values.keys() if key is not "None"]
+    real_keys = [key for key in defined_values.keys() if key != "None"]
     for key in real_keys:
 
         if defined_values[key].type == InterpolationType.ALL_POINTS:

@@ -33,6 +33,7 @@ from bioptim import (
     SolutionIntegrator,
     ContactType,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def contact_velocity_all_points(controller):
@@ -188,7 +189,7 @@ def prepare_ocp(
 
 
 def main():
-    biorbd_model_path = "models/2segments_4dof_2contacts_1muscle.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/2segments_4dof_2contacts_1muscle.bioMod"
     t = 0.1
     ns = 100
 

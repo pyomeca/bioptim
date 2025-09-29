@@ -461,7 +461,7 @@ def test_phase_transition_uneven_variable_number_by_bounds(phase_dynamics):
     biorbd_model_path_with_translations = bioptim_folder + "/examples/models/double_pendulum_with_translations.bioMod"
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path_with_translations=biorbd_model_path_with_translations,
+        biorbd_model_path=biorbd_model_path_with_translations,
         n_shooting=(10, 10),
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
