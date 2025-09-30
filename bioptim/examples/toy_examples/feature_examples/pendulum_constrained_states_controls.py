@@ -11,8 +11,6 @@ During the optimization process, the graphs are updated real-time (even though i
 appreciate it). Finally, once it finished optimizing, it animates the model using the optimal solution
 """
 
-import platform
-
 import numpy as np
 
 from bioptim import (
@@ -30,7 +28,7 @@ from bioptim import (
     ControlType,
     PhaseDynamics,
     Node,
-    OrderingStrategy,
+    OnlineOptim,
 )
 from bioptim.examples.utils import ExampleUtils
 
@@ -126,7 +124,6 @@ def prepare_ocp(
         use_sx=use_sx,
         n_threads=n_threads,
         control_type=control_type,
-        ordering_strategy=OrderingStrategy.TIME_MAJOR,
     )
 
 
@@ -137,7 +134,7 @@ def main():
 
     # --- Prepare the ocp --- #
     biorbd_model_path = ExampleUtils.folder + "/models/pendulum.bioMod"
-    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, final_time=1, n_shooting=400, n_threads=10, use_sx=False)
+    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, final_time=1, n_shooting=400, n_threads=2)
 
     # Custom plots
     ocp.add_plot_penalty(CostType.ALL)
@@ -149,12 +146,12 @@ def main():
     ocp.print(to_console=False, to_graph=False)
 
     # --- Solve the ocp. Please note that online graphics only works with the Linux operating system --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=OnlineOptim.DEFAULT))
     sol.print_cost()
 
     # --- Show the results (graph or animation) --- #
-    sol.graphs(show_bounds=True)
-    # sol.animate(n_frames=100)
+    # sol.graphs(show_bounds=True)
+    sol.animate(n_frames=100)
 
     # # --- Save the solution --- #
     # import pickle
