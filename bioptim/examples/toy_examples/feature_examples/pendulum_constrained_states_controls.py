@@ -30,6 +30,7 @@ from bioptim import (
     ControlType,
     PhaseDynamics,
     Node,
+    OrderingStrategy,
 )
 from bioptim.examples.utils import ExampleUtils
 
@@ -123,8 +124,9 @@ def prepare_ocp(
         constraints=constraints,
         objective_functions=objective_functions,
         use_sx=use_sx,
-        n_threads=n_threads,
+        n_threads=1,
         control_type=control_type,
+        ordering_strategy=OrderingStrategy.TIME_MAJOR,
     )
 
 
@@ -147,7 +149,7 @@ def main():
     ocp.print(to_console=False, to_graph=False)
 
     # --- Solve the ocp. Please note that online graphics only works with the Linux operating system --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.FATROP(show_online_optim=False))
     sol.print_cost()
 
     # --- Show the results (graph or animation) --- #
