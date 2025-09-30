@@ -75,6 +75,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Setup environment
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-version: latest
+          activate-environment: bioptim
+          environment-file: environment.yml
+
+      - name: Print conda info
+        run: |
+          conda info
+          conda list
+
       - name: Install extra dependencies
         run: |
           sudo apt install -y python3-pip

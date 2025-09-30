@@ -1,3 +1,4 @@
+import warnings
 from time import perf_counter
 
 from casadi import Importer, Function
@@ -214,6 +215,7 @@ def _shake_penalties_tree(ocp, penalties_cx: CX, v: CX, v_bounds: DoubleNpArrayT
             penalty = penalty.expand()
         except RuntimeError:
             # This happens mostly when, for instance, there is a Newton decent in the penalty
+            warnings.warn("Could not expand during the shake_tree.")
             pass
     return penalty(vertcat(*dt, v[len(dt) :]))
 
