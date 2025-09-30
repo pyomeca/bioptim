@@ -385,8 +385,6 @@ def generic_get_all_penalties(
         phases_dt = PenaltyHelpers.phases_dt(penalty, interface.ocp, lambda _: interface.ocp.dt_parameter.cx)
 
         if penalty.multi_thread:
-            # TODO Fix this
-
             if penalty.target is not None and len(penalty.target.shape) != 2:
                 raise NotImplementedError("multi_thread penalty with target shape != [n x m] is not implemented yet")
 
@@ -397,6 +395,8 @@ def generic_get_all_penalties(
             d = None
             weight = DM()
             target = DM()
+            if get_bounds:
+                bound_tp = Bounds(f"penalty_multi_thread_{penalty.name}", interpolation=InterpolationType.CONSTANT)
             for idx in range(len(penalty.node_idx)):
                 t0_tp, x_tp, u_tp, p, a_tp, d_tp, weight_tp, target_tp = _get_weighted_function_inputs(
                     penalty, idx, ocp, nlp, scaled
@@ -421,9 +421,19 @@ def generic_get_all_penalties(
                 d = horzcat(d, d_tp) if d is not None else d_tp
                 weight = horzcat(weight, weight_tp)
                 target = horzcat(target, target_tp)
+                if get_bounds:
+                    if penalty.bounds is None:
+                        raise RuntimeError("Cannot get bounds if penalty.bounds is None")
+                    bound_tp.concatenate(penalty.bounds)
 
             # We can call penalty.weighted_function[0] since multi-thread declares all the node at [0]
-            tp = reshape(penalty.weighted_function[0](t0, phases_dt, x, u, p, a, d, weight, target), -1, 1)
+            out[0] = vertcat(
+                out[0], sum2(reshape(penalty.weighted_function[0](t0, phases_dt, x, u, p, a, d, weight, target), -1, 1))
+            )
+            if get_bounds:
+                if penalty.bounds is None:
+                    raise RuntimeError("Cannot get bounds if penalty.bounds is None")
+                out_bounds[0].concatenate(bound_tp)
         else:
             for idx in range(len(penalty.node_idx)):
                 if nlp:

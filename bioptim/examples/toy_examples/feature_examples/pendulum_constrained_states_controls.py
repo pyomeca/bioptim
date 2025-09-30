@@ -124,7 +124,7 @@ def prepare_ocp(
         constraints=constraints,
         objective_functions=objective_functions,
         use_sx=use_sx,
-        n_threads=1,
+        n_threads=n_threads,
         control_type=control_type,
         ordering_strategy=OrderingStrategy.TIME_MAJOR,
     )
@@ -137,7 +137,7 @@ def main():
 
     # --- Prepare the ocp --- #
     biorbd_model_path = ExampleUtils.folder + "/models/pendulum.bioMod"
-    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, final_time=1, n_shooting=400, n_threads=2)
+    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, final_time=1, n_shooting=400, n_threads=10, use_sx=False)
 
     # Custom plots
     ocp.add_plot_penalty(CostType.ALL)
@@ -149,12 +149,12 @@ def main():
     ocp.print(to_console=False, to_graph=False)
 
     # --- Solve the ocp. Please note that online graphics only works with the Linux operating system --- #
-    sol = ocp.solve(Solver.FATROP(show_online_optim=False))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
     sol.print_cost()
 
     # --- Show the results (graph or animation) --- #
-    # sol.graphs(show_bounds=True)
-    sol.animate(n_frames=100)
+    sol.graphs(show_bounds=True)
+    # sol.animate(n_frames=100)
 
     # # --- Save the solution --- #
     # import pickle
