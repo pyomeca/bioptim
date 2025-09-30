@@ -13,11 +13,6 @@ the model using the optimal solution.
 User might want to start reading the script by the `main` function to get a better feel.
 """
 
-import platform
-
-import numpy as np
-from casadi import sqrt
-
 from bioptim import (
     TorqueBiorbdModel,
     OptimalControlProgram,
@@ -38,8 +33,11 @@ from bioptim import (
     PenaltyController,
     PhaseDynamics,
     SolutionMerge,
+    OnlineOptim,
 )
 from bioptim.examples.utils import ExampleUtils
+import numpy as np
+from casadi import sqrt
 
 
 def out_of_sphere(controller: PenaltyController, y, z):
@@ -291,7 +289,7 @@ def main():
     # ocp_first.print(to_console=True)
 
     solver_first = Solver.IPOPT(
-        show_online_optim=platform.system() == "Linux",
+        online_optim=OnlineOptim.DEFAULT,
         show_options=dict(show_bounds=True),
     )
     # change maximum iterations to affect the initial solution
@@ -308,7 +306,7 @@ def main():
     # # --- Second pass ---#
     # # --- Prepare the ocp --- #
     solver_second = Solver.IPOPT(
-        show_online_optim=platform.system() == "Linux",
+        online_optim=OnlineOptim.DEFAULT,
         show_options=dict(show_bounds=True),
     )
     solver_second.set_maximum_iterations(10000)

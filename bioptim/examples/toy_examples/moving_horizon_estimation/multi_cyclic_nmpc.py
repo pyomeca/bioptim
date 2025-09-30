@@ -5,9 +5,6 @@ cycle at a time while optimizing three cycles at a time (main difference between
 the latter has more cycle at a time giving the knowledge to the solver that 'something' is coming after)
 """
 
-import platform
-
-import numpy as np
 from bioptim import (
     TorqueBiorbdModel,
     MultiCyclicNonlinearModelPredictiveControl,
@@ -24,7 +21,10 @@ from bioptim import (
     Solution,
     SolutionMerge,
     OdeSolver,
+    OnlineOptim,
 )
+from bioptim.examples.utils import ExampleUtils
+import numpy as np
 
 
 class MyCyclicNMPC(MultiCyclicNonlinearModelPredictiveControl):
@@ -97,7 +97,7 @@ def prepare_nmpc(
 
 
 def main():
-    model_path = "models/arm2.bioMod"
+    model_path = ExampleUtils.folder + "/models/arm2.bioMod"
     torque_max = 50
 
     cycle_duration = 1
@@ -121,7 +121,7 @@ def main():
     # Solve the program
     sol = nmpc.solve(
         update_functions,
-        solver=Solver.IPOPT(show_online_optim=platform.system() == "Linux"),
+        solver=Solver.IPOPT(online_optim=OnlineOptim.DEFAULT),
         n_cycles_simultaneous=n_cycles_simultaneous,
     )
     sol.print_cost()

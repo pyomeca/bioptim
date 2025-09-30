@@ -2,13 +2,6 @@
 A very simple optimal control program where a 2D leg want to jump as high as possible by pushing on the ground.
 """
 
-from operator import index
-
-import matplotlib.pyplot as plt
-import numpy as np
-from casadi import MX
-from scipy.odr import quadratic
-
 from bioptim import (
     TorqueBiorbdModel,
     OptimalControlProgram,
@@ -24,7 +17,6 @@ from bioptim import (
     Node,
     Solver,
     Shooting,
-    Solution,
     SolutionIntegrator,
     PhaseDynamics,
     SolutionMerge,
@@ -32,8 +24,11 @@ from bioptim import (
     Axis,
     ContactType,
     PenaltyController,
-    ExternalForceSetVariables,
 )
+from casadi import MX
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.odr import quadratic
 
 
 def custom_com_over_contact(controller: PenaltyController) -> MX:

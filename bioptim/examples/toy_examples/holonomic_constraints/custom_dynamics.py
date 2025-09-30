@@ -1,17 +1,14 @@
-from casadi import vertcat
-
 from bioptim import (
     PenaltyController,
     DynamicsEvaluation,
     DynamicsFunctions,
-    NonLinearProgram,
-    OptimalControlProgram,
-    ConfigureProblem,
     OdeSolver,
     HolonomicTorqueBiorbdModel,
     ConfigureVariables,
     HolonomicConstraintsList,
 )
+from bioptim.examples.utils import ExampleUtils
+from casadi import vertcat
 
 
 def constraint_holonomic_end(

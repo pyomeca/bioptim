@@ -122,7 +122,7 @@ def test_example_external_forces(
 
 
 def prepare_ocp(
-    biorbd_model_path: str = "models/cube_with_forces.bioMod",
+    biorbd_model_path: str,
     together: bool = False,
 ) -> OptimalControlProgram:
 
@@ -167,16 +167,28 @@ def prepare_ocp(
     else:
         external_forces = ExternalForceSetTimeSeries(nb_frames=n_shooting)
         external_forces.add(
-            "force2", "Seg1", np.vstack((Seg1_torque, np.zeros((3, n_shooting)))), point_of_application=Seg1_point_of_application
+            "force2",
+            "Seg1",
+            np.vstack((Seg1_torque, np.zeros((3, n_shooting)))),
+            point_of_application=Seg1_point_of_application,
         )
         external_forces.add(
-            "force3", "Seg1", np.vstack((np.zeros((3, n_shooting)), Seg1_force)), point_of_application=Seg1_point_of_application
+            "force3",
+            "Seg1",
+            np.vstack((np.zeros((3, n_shooting)), Seg1_force)),
+            point_of_application=Seg1_point_of_application,
         )
         external_forces.add(
-            "force4", "Test", np.vstack((Test_torque, np.zeros((3, n_shooting)))), point_of_application=Test_point_of_application
+            "force4",
+            "Test",
+            np.vstack((Test_torque, np.zeros((3, n_shooting)))),
+            point_of_application=Test_point_of_application,
         )
         external_forces.add(
-            "force5", "Test", np.vstack((np.zeros((3, n_shooting)), Test_force)), point_of_application=Test_point_of_application
+            "force5",
+            "Test",
+            np.vstack((np.zeros((3, n_shooting)), Test_force)),
+            point_of_application=Test_point_of_application,
         )
 
     bio_model = TorqueBiorbdModel(biorbd_model_path, external_force_set=external_forces)

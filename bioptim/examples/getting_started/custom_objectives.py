@@ -158,7 +158,7 @@ def main():
     ocp.add_plot_penalty()
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=OnlineOptim.DEFAULT))
+    sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
 
     # --- Show results --- #
     sol.animate()

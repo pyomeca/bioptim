@@ -5,9 +5,6 @@ It is designed to give a sense of the goal of the different MINIMIZE_COM functio
 weight=-1 to maximize instead of minimizing.
 """
 
-import platform
-
-import numpy as np
 from bioptim import (
     TorqueActivationBiorbdModel,
     TorqueBiorbdModel,
@@ -27,8 +24,10 @@ from bioptim import (
     Solver,
     PhaseDynamics,
     ContactType,
+    OnlineOptim,
 )
 from bioptim.examples.utils import ExampleUtils
+import numpy as np
 
 
 def prepare_ocp(
@@ -170,7 +169,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
 
     # --- Show results --- #
     sol.animate(n_frames=40)

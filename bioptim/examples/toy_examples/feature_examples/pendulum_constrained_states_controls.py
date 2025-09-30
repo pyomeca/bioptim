@@ -11,8 +11,6 @@ During the optimization process, the graphs are updated real-time (even though i
 appreciate it). Finally, once it finished optimizing, it animates the model using the optimal solution
 """
 
-import numpy as np
-
 from bioptim import (
     OptimalControlProgram,
     DynamicsOptions,
@@ -31,6 +29,7 @@ from bioptim import (
     OnlineOptim,
 )
 from bioptim.examples.utils import ExampleUtils
+import numpy as np
 
 
 def prepare_ocp(
@@ -146,7 +145,7 @@ def main():
     ocp.print(to_console=False, to_graph=False)
 
     # --- Solve the ocp. Please note that online graphics only works with the Linux operating system --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=OnlineOptim.DEFAULT))
+    sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
     sol.print_cost()
 
     # --- Show the results (graph or animation) --- #

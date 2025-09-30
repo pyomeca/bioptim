@@ -15,10 +15,6 @@ estimated data can be compared to real data.
 
 from copy import copy
 
-import matplotlib.pyplot as plt
-import numpy as np
-from scipy.integrate import solve_ivp
-
 from bioptim import (
     BioModel,
     TorqueBiorbdModel,
@@ -34,6 +30,10 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
 )
+from bioptim.examples.utils import ExampleUtils
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.integrate import solve_ivp
 
 
 def states_to_markers(bio_model, states):
@@ -182,7 +182,7 @@ def get_solver_options(solver):
 
 
 def main():
-    biorbd_model_path = "models/cart_pendulum.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/cart_pendulum.bioMod"
     bio_model = TorqueBiorbdModel(biorbd_model_path)
 
     solver = Solver.IPOPT()  # or Solver.ACADOS()  # If ACADOS is used, it must be manually installed

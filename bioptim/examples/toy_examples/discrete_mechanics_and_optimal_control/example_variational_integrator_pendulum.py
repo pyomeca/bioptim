@@ -14,6 +14,7 @@ from bioptim import (
     VariationalTorqueBiorbdModel,
     VariationalOptimalControlProgram,
 )
+from bioptim.examples.utils import ExampleUtils
 import numpy as np
 
 
@@ -92,7 +93,9 @@ def main():
     n_shooting = 100
 
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(bio_model_path="models/pendulum.bioMod", final_time=1, n_shooting=n_shooting)
+    ocp = prepare_ocp(
+        bio_model_path=ExampleUtils.folder + "/models/pendulum.bioMod", final_time=1, n_shooting=n_shooting
+    )
 
     # --- Print ocp structure --- #
     ocp.print(to_console=False, to_graph=False)

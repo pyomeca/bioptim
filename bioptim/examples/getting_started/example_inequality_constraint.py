@@ -11,9 +11,6 @@ It is designed to show how to use min_bound and max_bound values so they define 
 of equality constraints, which can be used with any ConstraintFcn
 """
 
-import platform
-
-import numpy as np
 from bioptim import (
     TorqueBiorbdModel,
     Node,
@@ -32,8 +29,10 @@ from bioptim import (
     PhaseDynamics,
     ContactType,
     DynamicsOptions,
+    OnlineOptim,
 )
 from bioptim.examples.utils import ExampleUtils
+import numpy as np
 
 
 def prepare_ocp(
@@ -173,7 +172,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
 
     # --- Show results --- #
     sol.animate()
