@@ -30,6 +30,7 @@ from bioptim import (
     ContactType,
     DynamicsOptions,
     OnlineOptim,
+    OrderingStrategy,
 )
 from bioptim.examples.utils import ExampleUtils
 import numpy as np
@@ -45,6 +46,7 @@ def prepare_ocp(
     ode_solver: OdeSolverBase = OdeSolver.IRK(),
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
+    ordering_strategy: OrderingStrategy = OrderingStrategy.VARIABLE_MAJOR,
 ):
     """
     Prepare the actual control program to be solved
@@ -154,6 +156,7 @@ def prepare_ocp(
         objective_functions=objective_functions,
         constraints=constraints,
         variable_mappings=dof_mapping,
+        ordering_strategy=ordering_strategy,
     )
 
 

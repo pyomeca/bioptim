@@ -1167,7 +1167,14 @@ def test_example_multiphase(ode_solver_type, phase_dynamics):
 @pytest.mark.parametrize("expand_dynamics", [True, False])
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK])
-def test_contact_forces_inequality_greater_than_constraint(ode_solver, phase_dynamics, expand_dynamics):
+@pytest.mark.parametrize("solver", [Solver.IPOPT, Solver.FATROP])
+@pytest.mark.parametrize("ordering_strategy", [OrderingStrategy.VARIABLE_MAJOR, OrderingStrategy.TIME_MAJOR])
+def test_contact_forces_inequality_greater_than_constraint(
+    ode_solver, phase_dynamics, expand_dynamics, solver, ordering_strategy
+):
+    if solver == Solver.FATROP and ordering_strategy == OrderingStrategy.VARIABLE_MAJOR:
+        pytest.skip("FATROP only works with TIME_MAJOR ordering strategy")
+
     from bioptim.examples.getting_started import example_inequality_constraint as ocp_module
 
     gc.collect()  # Force garbage collection
@@ -1196,6 +1203,7 @@ def test_contact_forces_inequality_greater_than_constraint(ode_solver, phase_dyn
                 ode_solver=ode_solver(),
                 phase_dynamics=phase_dynamics,
                 expand_dynamics=expand_dynamics,
+                ordering_strategy=ordering_strategy,
             )
         return
 
@@ -1209,9 +1217,10 @@ def test_contact_forces_inequality_greater_than_constraint(ode_solver, phase_dyn
         ode_solver=ode_solver(),
         phase_dynamics=phase_dynamics,
         expand_dynamics=expand_dynamics,
+        ordering_strategy=ordering_strategy,
     )
     tak = time.time()
-    sol = ocp.solve()
+    sol = ocp.solve(solver=solver())
     tok = time.time()
 
     # Check objective function value
@@ -1220,8 +1229,9 @@ def test_contact_forces_inequality_greater_than_constraint(ode_solver, phase_dyn
     # Check constraints
     g = np.array(sol.constraints)
     npt.assert_equal(g.shape, (120, 1))
-    npt.assert_almost_equal(g[:80], np.zeros((80, 1)))
-    npt.assert_array_less(-g[80:100], -min_bound)
+    for i in range(9):
+        npt.assert_almost_equal(g[i * 12 : i * 12 + 8], np.zeros((8, 1)))
+        npt.assert_array_less(-g[i * 12 + 8 : i * 12 + 10], -min_bound)
 
     # Check some of the results
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
@@ -1229,14 +1239,26 @@ def test_contact_forces_inequality_greater_than_constraint(ode_solver, phase_dyn
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
-    npt.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.75, 0.75)))
-    npt.assert_almost_equal(q[:, -1], np.array((-0.027221, 0.02358599, -0.67794882, 0.67794882)))
-    # initial and final velocities
-    npt.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
-    npt.assert_almost_equal(qdot[:, -1], np.array((-0.53979971, 0.43468705, 1.38612634, -1.38612634)))
-    # initial and final controls
-    npt.assert_almost_equal(tau[:, 0], np.array((-33.50557304)))
-    npt.assert_almost_equal(tau[:, -1], np.array((-29.43209257)))
+    if solver == Solver.IPOPT:
+        npt.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.75, 0.75)))
+        npt.assert_almost_equal(q[:, -1], np.array((-0.027221, 0.02358599, -0.67794882, 0.67794882)))
+        # initial and final velocities
+        npt.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
+        npt.assert_almost_equal(qdot[:, -1], np.array((-0.53979971, 0.43468705, 1.38612634, -1.38612634)))
+        # initial and final controls
+        npt.assert_almost_equal(tau[:, 0], np.array((-33.50557304)))
+        npt.assert_almost_equal(tau[:, -1], np.array((-29.43209257)))
+    elif solver == Solver.FATROP:
+        npt.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.75, 0.75)))
+        npt.assert_almost_equal(q[:, -1], np.array([-0.02722091, 0.02358592, -0.67794905, 0.67794905]))
+        # initial and final velocities
+        npt.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)))
+        npt.assert_almost_equal(qdot[:, -1], np.array([-0.5397984, 0.43468608, 1.38612308, -1.38612308]))
+        # initial and final controls
+        npt.assert_almost_equal(tau[:, 0], np.array([-33.50553641]))
+        npt.assert_almost_equal(tau[:, -1], np.array([-29.43216919]))
+    else:
+        raise RuntimeError("Solver not implemented")
 
     # simulate
     TestUtils.simulate(sol)
@@ -1287,8 +1309,9 @@ def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
     # Check constraints
     g = np.array(sol.constraints)
     npt.assert_equal(g.shape, (120, 1))
-    npt.assert_almost_equal(g[:80], np.zeros((80, 1)))
-    npt.assert_array_less(g[80:100], max_bound)
+    for i in range(9):
+        npt.assert_almost_equal(g[i * 12 : i * 12 + 8], np.zeros((8, 1)))
+        npt.assert_array_less(-g[i * 12 + 10 : i * 12 + 12], -max_bound)
 
     # Check some of the results
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
