@@ -444,7 +444,8 @@ def generic_get_all_penalties(
 
                 node_idx = penalty.node_idx[idx]
                 out[node_idx] = vertcat(
-                    out[node_idx], penalty.weighted_function[node_idx](t0, phases_dt, x, u, p, a, d, weight, target)
+                    out[node_idx],
+                    sum2(penalty.weighted_function[node_idx](t0, phases_dt, x, u, p, a, d, weight, target)),
                 )
                 if get_bounds:
                     if penalty.bounds is None:

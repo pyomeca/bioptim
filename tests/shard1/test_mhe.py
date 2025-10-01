@@ -26,10 +26,9 @@ def test_mhe(solver, phase_dynamics):
     solver = solver()
     if solver.type == SolverType.ACADOS:
         if platform == "win32":
-            # ACADOS is not installed on the CI for Windows
-            return
+            pytest.skip("ACADOS is not available on Windows in the CI")
         if phase_dynamics == PhaseDynamics.ONE_PER_NODE:
-            return
+            pytest.skip("ACADOS is not available for ONE_PER_NODE in the CI")
 
     from bioptim.examples.toy_examples.moving_horizon_estimation import mhe as ocp_module
 
