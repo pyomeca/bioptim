@@ -1172,6 +1172,9 @@ def test_example_multiphase(ode_solver_type, phase_dynamics):
 def test_contact_forces_inequality_greater_than_constraint(
     ode_solver, phase_dynamics, expand_dynamics, solver, ordering_strategy
 ):
+    if solver == Solver.FATROP and platform.system() == "Windows":
+        pytest.skip("FATROP is not available on Windows yet")
+
     if solver == Solver.FATROP and ordering_strategy == OrderingStrategy.VARIABLE_MAJOR:
         pytest.skip("FATROP only works with TIME_MAJOR ordering strategy")
 
