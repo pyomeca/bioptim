@@ -527,70 +527,70 @@ def test_pendulum_objective(control_type, interpolation_type, node, objective, p
             if objective == "mayer":
                 if control_type == ControlType.CONSTANT:
                     value = tau[:, 1:-1]
-                    value[:, 0] *= 0 # First node has weight 0
-                    value[:, -1] *= 2 # First node has weight 2
+                    value[:, 0] *= 0  # First node has weight 0
+                    value[:, -1] *= 2  # First node has weight 2
                     TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value**2))
                 elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
                     value = tau[:, 1:-2]
-                    value[:, 0] *= 0 # First node has weight 0
-                    value[:, -1] *= 2 # First node has weight 2
+                    value[:, 0] *= 0  # First node has weight 0
+                    value[:, -1] *= 2  # First node has weight 2
                     TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value**2))
                 else:
                     value = tau[:, 1:-4:2]
-                    value[:, 0] *= 0 # First node has weight 0
-                    value[:, -1] *= 2 # First node has weight 2
+                    value[:, 0] *= 0  # First node has weight 0
+                    value[:, -1] *= 2  # First node has weight 2
                     TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value**2))
             # else raise error above
         elif node == Node.ALL_SHOOTING:
             if objective == "mayer":
                 if control_type == ControlType.CONSTANT:
                     value = tau
-                    value[:, 0] *= 0 # First node has weight 0
-                    value[:, -1] *= 2 # First node has weight 2
+                    value[:, 0] *= 0  # First node has weight 0
+                    value[:, -1] *= 2  # First node has weight 2
                     TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value**2))
                 elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
                     value = tau
-                    value[:, 0] *= 0 # First node has weight 0
-                    value[:, -1] *= 2 # First node has weight 2
+                    value[:, 0] *= 0  # First node has weight 0
+                    value[:, -1] *= 2  # First node has weight 2
                     TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value**2))
                 elif control_type == ControlType.LINEAR_CONTINUOUS:
                     value = tau[:, 0:-1:2]
-                    value[:, 0] *= 0 # First node has weight 0
-                    value[:, -1] *= 2 # First node has weight 2
-                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value ** 2))
+                    value[:, 0] *= 0  # First node has weight 0
+                    value[:, -1] *= 2  # First node has weight 2
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value**2))
             else:
                 if control_type == ControlType.CONSTANT:
                     value = tau
-                    value[:, 0] *= 0 # First node has weight 0
-                    value[:, -1] *= 2 # First node has weight 2
+                    value[:, 0] *= 0  # First node has weight 0
+                    value[:, -1] *= 2  # First node has weight 2
                     TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value**2 * dt))
                 elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
                     value = tau
-                    value[:, 0] *= 0 # First node has weight 0
-                    value[:, -1] *= 2 # First node has weight 2
+                    value[:, 0] *= 0  # First node has weight 0
+                    value[:, -1] *= 2  # First node has weight 2
                     TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value**2 * dt))
                 elif control_type == ControlType.LINEAR_CONTINUOUS:
                     value = tau[:, 0:-1:2]
-                    value[:, 0] *= 0 # First node has weight 0
-                    value[:, -1] *= 2 # First node has weight 2
-                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value ** 2 * dt))
+                    value[:, 0] *= 0  # First node has weight 0
+                    value[:, -1] *= 2  # First node has weight 2
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value**2 * dt))
         else:
             if objective == "mayer":
                 if control_type == ControlType.CONSTANT:
                     value = tau[:, node]
-                    value[:, 0] *= 0 # First node has weight 0
-                    value[:, -1] *= 2 # First node has weight 2
-                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value ** 2))
+                    value[:, 0] *= 0  # First node has weight 0
+                    value[:, -1] *= 2  # First node has weight 2
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value**2))
                 elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
                     value = tau[:, node]
-                    value[:, 0] *= 0 # First node has weight 0
-                    value[:, -1] *= 2 # First node has weight 2
-                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value ** 2))
+                    value[:, 0] *= 0  # First node has weight 0
+                    value[:, -1] *= 2  # First node has weight 2
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value**2))
                 elif control_type == ControlType.LINEAR_CONTINUOUS:
                     value = tau[:, np.array(node) * 2]
-                    value[:, 0] *= 0 # First node has weight 0
-                    value[:, -1] *= 2 # First node has weight 2
-                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value ** 2))
+                    value[:, 0] *= 0  # First node has weight 0
+                    value[:, -1] *= 2  # First node has weight 2
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value**2))
             # else raise error above
     else:
         raise RuntimeError("Should not happen")
@@ -818,17 +818,17 @@ def test_pendulum_constraint(control_type, interpolation_type, node, phase_dynam
         elif node == Node.INTERMEDIATES:
             if control_type == ControlType.CONSTANT:
                 value = tau[:, 1:-1] - np.ones((ntau, n_shooting - 2))
-                value[:, 0] *= 0 # First node has weight 0
+                value[:, 0] *= 0  # First node has weight 0
                 value[:, -1] *= 2  # Last node has weight 2
                 npt.assert_almost_equal(g_computed, value.flatten(order="F"))
             elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
                 value = tau[:, 1:-2] - np.ones((ntau, n_shooting - 2))
-                value[:, 0] *= 0 # First intermediate node has weight 0
+                value[:, 0] *= 0  # First intermediate node has weight 0
                 value[:, -1] *= 2  # Last node has weight 2
                 npt.assert_almost_equal(g_computed, value.flatten(order="F"))
             else:
                 value = tau[:, 1:-4:2] - np.ones((ntau, n_shooting - 2))
-                value[:, 0] *= 0 # First intermediate node has weight 0
+                value[:, 0] *= 0  # First intermediate node has weight 0
                 value[:, -1] *= 2  # Last node has weight 2
                 npt.assert_almost_equal(g_computed, value.flatten(order="F"))
         elif node == Node.ALL_SHOOTING:
@@ -865,6 +865,7 @@ def test_pendulum_constraint(control_type, interpolation_type, node, phase_dynam
                 npt.assert_almost_equal(g_computed, value.flatten(order="F"))
     else:
         raise RuntimeError("Should not happen")
+
 
 @pytest.mark.parametrize(
     "control_type",
