@@ -8,8 +8,6 @@ A phase transition loop constraint is treated as hard penalty (constraint)
 if weight is <= 0 [or if no weight is provided], or as a soft penalty (objective) otherwise
 """
 
-import platform
-
 from bioptim import (
     TorqueBiorbdModel,
     Node,
@@ -26,6 +24,7 @@ from bioptim import (
     PhaseTransitionFcn,
     Solver,
     PhaseDynamics,
+    OnlineOptim,
 )
 from bioptim.examples.utils import ExampleUtils
 
@@ -126,7 +125,7 @@ def main():
     ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, n_shooting=30, final_time=2, loop_from_constraint=True)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
 
     # --- Show results --- #
     sol.animate()

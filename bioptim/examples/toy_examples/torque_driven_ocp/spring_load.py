@@ -4,12 +4,6 @@ pulling downward and afterward to let it go so it gains velocity. It is designed
 forces to interact with the body.
 """
 
-import platform
-
-import numpy as np
-from casadi import MX, vertcat, sign
-from matplotlib import pyplot as plt
-
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -24,7 +18,13 @@ from bioptim import (
     DynamicsEvaluation,
     PhaseDynamics,
     SolutionMerge,
+    OnlineOptim,
 )
+from bioptim.examples.utils import ExampleUtils
+from casadi import MX, vertcat, sign
+from matplotlib import pyplot as plt
+import numpy as np
+
 
 # scenarios are based on a Mayer term (at Tf)
 # 0: maximize upward speed - expected kinematics: negative torque to get as low as possible and release
@@ -166,7 +166,7 @@ class CustomModel(BiorbdModel, TorqueDynamics):
 
 
 def prepare_ocp(
-    biorbd_model_path: str = "models/mass_point.bioMod",
+    biorbd_model_path: str = ExampleUtils.folder + "/models/mass_point.bioMod",
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
     phase_time: float = 0.5,
@@ -246,7 +246,7 @@ def main():
         ocp.print(to_console=True, to_graph=False)
 
         # --- Solve the program --- #
-        sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+        sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
         q = sol.decision_states(to_merge=SolutionMerge.NODES)["q"]
         qdot = sol.decision_states(to_merge=SolutionMerge.NODES)["qdot"]
         tau = sol.decision_controls(to_merge=SolutionMerge.NODES)["tau"]

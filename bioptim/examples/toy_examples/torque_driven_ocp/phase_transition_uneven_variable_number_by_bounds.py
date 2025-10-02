@@ -15,10 +15,11 @@ from bioptim import (
     Solver,
     PhaseDynamics,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(
-    biorbd_model_path_with_translations: str = "models/double_pendulum_with_translations.bioMod",
+    biorbd_model_path_with_translations: str = ExampleUtils.folder + "/models/double_pendulum_with_translations.bioMod",
     n_shooting: tuple = (40, 40),
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,

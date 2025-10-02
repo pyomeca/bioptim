@@ -14,7 +14,6 @@ InterpolationType.SPLINE: The values are interpolated from the first to last nod
 InterpolationType.CUSTOM: Provide a user-defined interpolation function
 """
 
-import numpy as np
 from bioptim import (
     TorqueBiorbdModel,
     Node,
@@ -34,6 +33,7 @@ from bioptim import (
     PhaseDynamics,
 )
 from bioptim.examples.utils import ExampleUtils
+import numpy as np
 
 
 def custom_init_func(

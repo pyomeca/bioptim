@@ -10,8 +10,6 @@ minimized using 3 approches:
 All graphical results are presented using pyplot
 """
 
-import numpy as np
-from casadi import MX
 from bioptim import (
     OptimalControlProgram,
     BioModel,
@@ -29,6 +27,9 @@ from bioptim import (
     PenaltyController,
     ParameterObjectiveList,
 )
+from bioptim.examples.utils import ExampleUtils
+from casadi import MX
+import numpy as np
 from matplotlib import pyplot as plt
 
 
@@ -52,7 +53,7 @@ def my_parameter_function(bio_model: BioModel, value: MX):
 
 def prepare_ocp(
     parameter_option: int = 0,
-    bio_model_path: str = "models/double_pendulum.bioMod",
+    bio_model_path: str = ExampleUtils.folder + "/models/double_pendulum.bioMod",
 ) -> OptimalControlProgram:
     bio_model = (TorqueBiorbdModel(bio_model_path), TorqueBiorbdModel(bio_model_path))
 

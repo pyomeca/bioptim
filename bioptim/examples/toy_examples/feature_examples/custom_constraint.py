@@ -7,9 +7,6 @@ sufficient.
 More specifically this example reproduces the behavior of the SUPERIMPOSE_MARKERS constraint.
 """
 
-import platform
-
-from casadi import MX
 from bioptim import (
     TorqueBiorbdModel,
     Node,
@@ -24,8 +21,10 @@ from bioptim import (
     OdeSolverBase,
     Solver,
     PhaseDynamics,
+    OnlineOptim,
 )
 from bioptim.examples.utils import ExampleUtils
+from casadi import MX
 
 
 def custom_func_track_markers(controller: PenaltyController, first_marker: str, second_marker: str) -> MX:
@@ -140,7 +139,7 @@ def main():
     ocp = prepare_ocp(biorbd_model_path=biorbd_model_path)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
 
     # --- Show results --- #
     sol.animate()

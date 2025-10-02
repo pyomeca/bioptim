@@ -6,8 +6,6 @@ of the previous phase is the last shooting node (and not the node arrival).
 It is designed to show how one can define a multiphase optimal control program
 """
 
-import platform
-
 from bioptim import (
     TorqueBiorbdModel,
     OptimalControlProgram,
@@ -28,6 +26,7 @@ from bioptim import (
     ControlType,
     QuadratureRule,
     DynamicsOptions,
+    OnlineOptim,
 )
 from bioptim.examples.utils import ExampleUtils
 
@@ -199,7 +198,7 @@ def main():
     ocp.add_plot_penalty(CostType.ALL)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
     sol.graphs(show_bounds=True)
 
     # --- Show results --- #

@@ -11,9 +11,6 @@ It is designed to show how to use min_bound and max_bound values so they define 
 of equality constraints, which can be used with any ConstraintFcn
 """
 
-import platform
-
-import numpy as np
 from bioptim import (
     TorqueBiorbdModel,
     Node,
@@ -32,8 +29,11 @@ from bioptim import (
     PhaseDynamics,
     ContactType,
     DynamicsOptions,
+    OnlineOptim,
+    OrderingStrategy,
 )
 from bioptim.examples.utils import ExampleUtils
+import numpy as np
 
 
 def prepare_ocp(
@@ -46,6 +46,7 @@ def prepare_ocp(
     ode_solver: OdeSolverBase = OdeSolver.IRK(),
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
+    ordering_strategy: OrderingStrategy = OrderingStrategy.VARIABLE_MAJOR,
 ):
     """
     Prepare the actual control program to be solved
@@ -155,6 +156,7 @@ def prepare_ocp(
         objective_functions=objective_functions,
         constraints=constraints,
         variable_mappings=dof_mapping,
+        ordering_strategy=ordering_strategy,
     )
 
 
@@ -173,7 +175,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
 
     # --- Show results --- #
     sol.animate()

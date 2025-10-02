@@ -53,9 +53,14 @@ def test_track_markers(ode_solver, actuator_type, phase_dynamics):
     g = np.array(sol.constraints)
     if not actuator_type:
         npt.assert_equal(g.shape, (186, 1))
+        npt.assert_almost_equal(g[:186], np.zeros((186, 1)))
     else:
         npt.assert_equal(g.shape, (366, 1))
-    npt.assert_almost_equal(g[:186], np.zeros((186, 1)))
+        for i in range(30):
+            if i == 0:
+                npt.assert_almost_equal(g[: 2 * 2 + 2 + 3], 0)
+            else:
+                npt.assert_almost_equal(g[3 + ((2 * 2 + 2) * 2) * i : 3 + (((2 * 2 + 2) * 2) * i + (2 * 2 + 2))], 0)
 
     # Check some of the results
     states = sol.decision_states(to_merge=SolutionMerge.NODES)

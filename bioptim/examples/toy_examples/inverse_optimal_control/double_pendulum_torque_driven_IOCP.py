@@ -6,9 +6,6 @@ Please note that this example is dependent on the external library Pygmo which c
 conda install -c conda-forge pygmo
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
-
 from bioptim import (
     OptimalControlProgram,
     DynamicsOptions,
@@ -23,12 +20,15 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
 )
+from bioptim.examples.utils import ExampleUtils
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 def prepare_ocp(
     weights,
     coefficients,
-    biorbd_model_path="models/double_pendulum.bioMod",
+    biorbd_model_path=ExampleUtils.folder + "/models/double_pendulum.bioMod",
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     n_threads: int = 4,
     expand_dynamics: bool = True,
@@ -221,7 +221,7 @@ def main():
     controls = sol_final.decision_controls(to_merge=SolutionMerge.NODES)
     q_final, qdot_final, tau_final = states["q"], states["qdot"], controls["tau"]
 
-    m = biorbd.Model("models/double_pendulum.bioMod")
+    m = biorbd.Model(ExampleUtils.folder + "/models/double_pendulum.bioMod")
     markers_to_track = np.zeros((2, np.shape(q_to_track)[1], 3))
     markers_final = np.zeros((2, np.shape(q_to_track)[1], 3))
     for i in range(np.shape(q_to_track)[1]):

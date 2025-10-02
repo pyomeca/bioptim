@@ -6,8 +6,6 @@ commits less integration errors than using a trapezoidal scheme and is closer to
 """
 
 import pickle
-import casadi as cas
-import numpy as np
 
 from bioptim import (
     StochasticOptimalControlProgram,
@@ -28,8 +26,10 @@ from bioptim import (
     SolutionMerge,
     DynamicsOptions,
 )
-
 from bioptim.examples.toy_examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
+from bioptim.examples.utils import ExampleUtils
+import casadi as cas
+import numpy as np
 
 
 def sensory_reference(
@@ -272,7 +272,7 @@ def main():
     use_sx = True
     vizualize_sol_flag = True
 
-    biorbd_model_path = "models/LeuvenArmModel.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/LeuvenArmModel.bioMod"
 
     hand_final_position = np.array([9.359873986980460e-12, 0.527332023564034])  # Directly from Tom's version
 

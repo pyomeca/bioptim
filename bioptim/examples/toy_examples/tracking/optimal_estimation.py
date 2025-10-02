@@ -8,10 +8,6 @@ See https://www.tandfonline.com/doi/full/10.1080/14763141.2022.2066015 for compa
 
 from typing import Callable
 
-import biorbd_casadi as biorbd
-import numpy as np
-import matplotlib.pyplot as plt
-from casadi import MX, horzcat, DM
 from bioptim import (
     TorqueBiorbdModel,
     OptimalControlProgram,
@@ -27,6 +23,10 @@ from bioptim import (
     SolutionMerge,
 )
 from bioptim.examples.utils import ExampleUtils
+import biorbd_casadi as biorbd
+from casadi import MX, horzcat, DM
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 def get_markers_pos(x: DM | np.ndarray, idx_marker: int, fun: Callable, n_q: int) -> DM | np.ndarray:

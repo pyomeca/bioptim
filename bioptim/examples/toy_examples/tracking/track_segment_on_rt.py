@@ -5,8 +5,6 @@ the rest is fully optimized. It is designed to show how one can use the tracking
 any RT (for instance Inertial Measurement Unit [IMU]) with a body segment
 """
 
-import platform
-
 from bioptim import (
     TorqueBiorbdModel,
     Node,
@@ -22,6 +20,7 @@ from bioptim import (
     OdeSolverBase,
     Solver,
     PhaseDynamics,
+    OnlineOptim,
 )
 from bioptim.examples.utils import ExampleUtils
 
@@ -113,7 +112,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
 
     # --- Show results --- #
     sol.animate()

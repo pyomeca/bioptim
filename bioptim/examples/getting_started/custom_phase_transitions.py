@@ -6,8 +6,6 @@ It is designed to show how one can define its phase transition constraints if th
 More specifically, this example mimics the behaviour of the most common PhaseTransitionFcn.CONTINUOUS
 """
 
-import platform
-
 from casadi import MX
 from bioptim import (
     TorqueBiorbdModel,
@@ -29,6 +27,7 @@ from bioptim import (
     Solver,
     PenaltyController,
     PhaseDynamics,
+    OnlineOptim,
 )
 from bioptim.examples.utils import ExampleUtils
 
@@ -210,7 +209,7 @@ def main():
     ocp = prepare_ocp(biorbd_model_path=biorbd_model_path)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
 
     # --- Show results --- #
     sol.print_cost()

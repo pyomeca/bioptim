@@ -12,9 +12,6 @@ WARNING: These examples are not maintained anymore, please use SocpType.COLLOCAT
 import pickle
 from enum import Enum
 
-import casadi as cas
-import numpy as np
-
 from bioptim import (
     StochasticOptimalControlProgram,
     ObjectiveFcn,
@@ -22,7 +19,6 @@ from bioptim import (
     StochasticTorqueBiorbdModel,
     ObjectiveList,
     NonLinearProgram,
-    DynamicsOptionsList,
     DynamicsOptions,
     BoundsList,
     InterpolationType,
@@ -36,6 +32,9 @@ from bioptim import (
     ControlType,
     VariableScalingList,
 )
+from bioptim.examples.utils import ExampleUtils
+import casadi as cas
+import numpy as np
 
 
 class ExampleType(Enum):
@@ -343,7 +342,7 @@ def main():
     with_cholesky = True
     with_scaling = True
 
-    biorbd_model_path = "models/LeuvenArmModel.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/LeuvenArmModel.bioMod"
 
     hand_final_position = np.array([9.359873986980460e-12, 0.527332023564034])  # Directly from Tom's version
 

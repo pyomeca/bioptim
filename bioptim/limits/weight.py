@@ -244,7 +244,7 @@ class Weight(ndarray):
         elif self.type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
             if node == 0:
                 value = self[0]
-            elif node == self.n_nodes:
+            elif node == self.n_nodes - 1:
                 value = self[2]
             else:
                 value = self[1]

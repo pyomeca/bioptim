@@ -7,8 +7,6 @@ to not converge when it is used on more complicated model. A solution that defin
 better idea. An example of which can be found with the bioptim paper.
 """
 
-import platform
-
 from bioptim import (
     TorqueBiorbdModel,
     TorqueActivationBiorbdModel,
@@ -25,7 +23,9 @@ from bioptim import (
     OdeSolverBase,
     Solver,
     PhaseDynamics,
+    OnlineOptim,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(
@@ -130,10 +130,10 @@ def main():
     Prepares and solves an ocp with torque actuators, the animates it
     """
 
-    ocp = prepare_ocp("models/cube.bioMod", n_shooting=30, final_time=2, actuator_type=2)
+    ocp = prepare_ocp(ExampleUtils.folder + "/models/cube.bioMod", n_shooting=30, final_time=2, actuator_type=2)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
 
     # --- Show results --- #
     sol.animate()

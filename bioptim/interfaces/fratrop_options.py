@@ -73,6 +73,10 @@ class FATROP(GenericSolver):
     _print_level: Int = 5
     _c_compile: Bool = False
 
+    def __post_init__(self):
+        if self.online_optim == OnlineOptim.DEFAULT:
+            self.online_optim = None
+
     @property
     def tol(self) -> Float:
         return self._tol

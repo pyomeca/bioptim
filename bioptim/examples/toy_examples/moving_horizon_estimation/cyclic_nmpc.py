@@ -4,9 +4,6 @@ perform a rotation of the arm in a quasi-cyclic manner. The sliding window acros
 cycle at a time (main difference between cyclic and normal NMPC where NMPC advance for a single frame).
 """
 
-import platform
-
-import numpy as np
 from bioptim import (
     TorqueBiorbdModel,
     CyclicNonlinearModelPredictiveControl,
@@ -21,7 +18,10 @@ from bioptim import (
     Axis,
     Solution,
     PhaseDynamics,
+    OnlineOptim,
 )
+from bioptim.examples.utils import ExampleUtils
+import numpy as np
 
 
 class MyCyclicNMPC(CyclicNonlinearModelPredictiveControl):
@@ -76,7 +76,7 @@ def prepare_nmpc(
 
 
 def main():
-    model_path = "models/arm2.bioMod"
+    model_path = ExampleUtils.folder + "/models/arm2.bioMod"
     torque_max = 50
 
     cycle_duration = 1
@@ -89,7 +89,7 @@ def main():
         return cycle_idx < n_cycles  # True if there are still some cycle to perform
 
     # Solve the program
-    sol = nmpc.solve(update_functions, solver=Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = nmpc.solve(update_functions, solver=Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
     sol.graphs()
     sol.print_cost()
     sol.animate(n_frames=100)

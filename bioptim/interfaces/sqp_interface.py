@@ -134,7 +134,7 @@ class SQPInterface(SolverInterface):
         """
         return generic_dispatch_obj_func(self)
 
-    def get_all_penalties(self, nlp: NonLinearProgram, penalties) -> CX:
+    def get_all_penalties(self, nlp: NonLinearProgram, penalties, get_bounds: bool = False) -> CX:
         """
         Parse the penalties of the full ocp to a SQP-friendly one
 
@@ -144,8 +144,11 @@ class SQPInterface(SolverInterface):
             The nonlinear program to parse the penalties from
         penalties:
             The penalties to parse
+        get_bounds: bool
+            If the bounds should also be returned. This can only be used if the penalties are constraints
+
         Returns
         -------
 
         """
-        return generic_get_all_penalties(self, nlp, penalties, scaled=True)
+        return generic_get_all_penalties(self, nlp, penalties, scaled=True, get_bounds=get_bounds)

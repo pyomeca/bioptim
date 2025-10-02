@@ -9,10 +9,7 @@ Note that the final node is not tracked.
 from typing import Callable
 import importlib.util
 from pathlib import Path
-import platform
 
-import numpy as np
-from casadi import MX, horzcat, DM
 from bioptim import (
     TorqueBiorbdModel,
     OptimalControlProgram,
@@ -28,8 +25,11 @@ from bioptim import (
     Solver,
     PhaseDynamics,
     SolutionMerge,
+    OnlineOptim,
 )
 from bioptim.examples.utils import ExampleUtils
+from casadi import MX, horzcat, DM
+import numpy as np
 
 # Load track_segment_on_rt
 EXAMPLES_FOLDER = Path(__file__).parent / ".."
@@ -217,7 +217,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
 
     # --- Show results --- #
     sol.animate(n_frames=100)
