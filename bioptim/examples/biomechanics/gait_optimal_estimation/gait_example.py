@@ -98,8 +98,7 @@ def prepare_ocp(
     numerical_time_series = {"external_forces": external_force_set.to_numerical_time_series()}
 
     # Model
-    bio_model = WithResidualExternalForces(biorbd_model_path,
-                                            external_force_set=external_force_set)
+    bio_model = WithResidualExternalForces(biorbd_model_path, external_force_set=external_force_set)
 
     nb_q = bio_model.nb_q
     nb_muscles = bio_model.nb_muscles
@@ -174,7 +173,7 @@ def prepare_ocp(
         target=np.vstack((f_ext_exp["left_leg"][0:3, :-1], f_ext_exp["right_leg"][0:3, :-1])),
     )
 
-     # No constraints
+    # No constraints
 
     dynamics = DynamicsOptionsList()
     dynamics.add(
@@ -210,24 +209,21 @@ def prepare_ocp(
         max_bound=[1.0] * nb_muscles,
         interpolation=InterpolationType.CONSTANT,
     )
+    u_bounds.add("contact_forces", min_bound=[-100] * 6, max_bound=[100] * 6, interpolation=InterpolationType.CONSTANT)
     u_bounds.add(
-        "contact_forces", min_bound=[-100] * 6, max_bound=[100] * 6, interpolation=InterpolationType.CONSTANT
-    )
-    u_bounds.add(
-        "contact_positions", min_bound=[-2, -2, 0.0, -2, -2, 0.0], max_bound=[2, 2, 0.005, 2, 2, 0.005], interpolation=InterpolationType.CONSTANT
+        "contact_positions",
+        min_bound=[-2, -2, 0.0, -2, -2, 0.0],
+        max_bound=[2, 2, 0.005, 2, 2, 0.005],
+        interpolation=InterpolationType.CONSTANT,
     )
 
     u_init = InitialGuessList()
     u_init.add("tau", initial_guess=tau_exp[:, :-1], interpolation=InterpolationType.EACH_FRAME)
-    u_init.add(
-        "muscles", initial_guess=emg_normalized_exp[:, :-1], interpolation=InterpolationType.EACH_FRAME
-    )
+    u_init.add("muscles", initial_guess=emg_normalized_exp[:, :-1], interpolation=InterpolationType.EACH_FRAME)
     u_init.add("contact_forces", initial_guess=[0] * 6, interpolation=InterpolationType.CONSTANT)
     u_init.add(
         "contact_positions",
-        initial_guess=np.vstack(
-            (f_ext_exp["left_leg"][0:3, :-1], f_ext_exp["right_leg"][0:3, :-1])
-        ),
+        initial_guess=np.vstack((f_ext_exp["left_leg"][0:3, :-1], f_ext_exp["right_leg"][0:3, :-1])),
         interpolation=InterpolationType.EACH_FRAME,
     )
 
@@ -306,16 +302,17 @@ def main():
     f_ext_position_opt = sol.decision_controls(to_merge=SolutionMerge.NODES)["contact_positions"]
 
     # --- Animation --- #
-    animate_solution(biorbd_model_path,
-                     float(time_opt),
-                     n_shooting,
-                    markers_exp,
-                    f_ext_exp,
-                    q_opt,
-                    muscles_opt,
-                    f_ext_position_opt,
-                    f_ext_value_opt,
-                    )
+    animate_solution(
+        biorbd_model_path,
+        float(time_opt),
+        n_shooting,
+        markers_exp,
+        f_ext_exp,
+        q_opt,
+        muscles_opt,
+        f_ext_position_opt,
+        f_ext_value_opt,
+    )
 
 
 if __name__ == "__main__":
