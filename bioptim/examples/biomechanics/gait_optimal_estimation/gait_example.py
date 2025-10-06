@@ -3,7 +3,14 @@ This example shows how to reconstruct a walking movement to match as closely as 
 Please note that, in this example, the forces measured by the force plates are applied directly to the model's feet,
 meaning that contacts between the participant and the treadmill are not modeled. Moreover, residual forces applied on
 the feet were added as controls to help convergence and mitigate the effect of noise in the force platform data.
+
+Please note that using `ode_solver=OdeSolver.RK2(n_integration_steps=1)` allows the problem to converge faster.
+However, we recommend using `ode_solver=OdeSolver.RK4(n_integration_steps=5)` for a more acceptable dynamical consistency.
+
+WARNING: This example requires a lot of RAM (~ 20 GB) to run. If you encounter a sigsegv error, it is probably due to
+insufficient RAM ressources.
 """
+
 import pickle
 import numpy as np
 
@@ -24,13 +31,12 @@ from bioptim import (
     SolutionMerge,
     TimeAlignment,
 )
-
+from bioptim.examples.utils import ExampleUtils
 from model import WithResidualExternalForces, animate_solution
 
 
 def prepare_ocp(
     biorbd_model_path: str,
-    mesh_file_folder: str,
     n_shooting: int,
     phase_time: float,
     q_exp: np.ndarray[float],
@@ -39,7 +45,7 @@ def prepare_ocp(
     f_ext_exp: dict[str, np.ndarray[float]],
     emg_normalized_exp: np.ndarray[float],
     markers_exp: np.ndarray[float],
-    ode_solver: OdeSolverBase = OdeSolver.RK4(n_integration_steps=5),
+    ode_solver: OdeSolverBase,
     n_threads: int = 8,
 ) -> OptimalControlProgram:
     """
@@ -93,7 +99,6 @@ def prepare_ocp(
 
     # Model
     bio_model = WithResidualExternalForces(biorbd_model_path,
-                                            mesh_file_folder=mesh_file_folder,
                                             external_force_set=external_force_set)
 
     nb_q = bio_model.nb_q
@@ -243,8 +248,17 @@ def prepare_ocp(
 
 def main():
 
+    # You can change the integrator here:
+    # ode_solver = OdeSolver.RK2(n_integration_steps=1)
+    ode_solver = OdeSolver.RK4(n_integration_steps=5)
+
+    # Get paths
+    example_folder = ExampleUtils.folder
+    data_path = example_folder + "/biomechanics/gait_optimal_estimation/ocp_data.pkl"
+    biorbd_model_path = example_folder + "/models/wholebody_model.bioMod"
+
     # Get the experimental data
-    with open("opc_data.pkl", "rb") as f:
+    with open(data_path, "rb") as f:
         data = pickle.load(f)
         n_shooting = data["n_shooting"]
         phase_time = data["phase_time"]
@@ -256,11 +270,8 @@ def main():
         markers_exp = data["markers_exp"]
 
     # --- Prepare the ocp --- #
-    biorbd_model_path = "../../models/wholebody_model.bioMod"
-    mesh_file_folder = "../../../external/biomechanics_models/Geometry_triangles"
     ocp = prepare_ocp(
         biorbd_model_path,
-        mesh_file_folder,
         n_shooting,
         phase_time,
         q_exp,
@@ -269,6 +280,7 @@ def main():
         f_ext_exp,
         emg_normalized_exp,
         markers_exp,
+        ode_solver=ode_solver,
     )
     ocp.add_plot_penalty()
     ocp.add_plot_ipopt_outputs()
@@ -279,6 +291,10 @@ def main():
     solver.set_maximum_iterations(1000)
     solver.set_tol(1e-6)
     sol = ocp.solve(solver=solver)
+    if sol.status == 0:
+        print(f"The problem converged in {sol.real_time_to_optimize} s :)")
+    else:
+        print("The problem did not converge :(")
 
     # Get the optimal solution
     time_opt = sol.decision_time(to_merge=SolutionMerge.NODES, time_alignment=TimeAlignment.STATES)

@@ -101,7 +101,7 @@ segment	pelvis_geom_2
 		0.000000	1.000000	0.000000	0.000000
 		0.000000	0.000000	1.000000	0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/pelvis.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/pelvis.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	1.0	1.0	1.0
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -117,7 +117,7 @@ segment	pelvis_geom_3
 		0.000000	1.000000	0.000000	0.000000
 		0.000000	0.000000	1.000000	0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/l_pelvis.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/l_pelvis.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.9014157967790553	0.9014157967790553	0.9014157967790553
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -139,7 +139,7 @@ segment	pelvis
 		0.065284	0.000000	0.000000
 		0.000000	0.055314	0.000000
 		0.000000	0.000000	0.036770
-	meshfile	../../Geometry_cleaned/sacrum.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/sacrum.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.9014157967790553	0.9014157967790553	0.9014157967790553
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -240,7 +240,7 @@ segment	femur_r
 		0.145050	0.000000	0.000000
 		0.000000	0.038023	0.000000
 		0.000000	0.000000	0.152958
-	meshfile	../../Geometry_cleaned/femur_r.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/femur_r.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	1.0770412567359982	1.0770412567359982	1.0770412567359982
 	meshrt	2.096757952957943e-14	-1.1276762184014019e-14	2.9576735465216797e-14	xyz	-0.017280026200913734	0.004687248713868719	-0.007569517883396826
@@ -345,7 +345,7 @@ segment	tibia_r_geom_2
 		0.000000	1.000000	0.000000	0.000000
 		0.000000	0.000000	1.000000	-0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/fibula_r.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/fibula_r.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.9450941486722327	0.9450941486722327	0.9450941486722327
 	meshrt	0.10145596859198872	-0.1142853708731239	0.0977810643527413	xyz	-0.0011125274526863072	0.002610808563512146	-0.0007831021649323533
@@ -367,7 +367,7 @@ segment	tibia_r
 		0.036503	0.003568	0.000310
 		0.003568	0.004466	-0.003356
 		0.000310	-0.003356	0.037054
-	meshfile	../../Geometry_cleaned/tibia_r.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/tibia_r.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.9450941486722327	0.9450941486722327	0.9450941486722327
 	meshrt	0.10145596859198872	-0.1142853708731239	0.0977810643527413	xyz	-0.0011125274526863072	0.002610808563512146	-0.0007831021649323533
@@ -502,7 +502,7 @@ segment	talus_r
 		0.000937	0.000000	0.000000
 		0.000000	0.000937	0.000000
 		0.000000	0.000000	0.000937
-	meshfile	../../Geometry_cleaned/talus_rv.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/talus_rv.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	1.0262637463639717	1.0262637463639717	1.0262637463639717
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -600,7 +600,7 @@ segment	calcn_r
 		0.001312	0.000000	0.000000
 		0.000000	0.003655	0.000000
 		0.000000	0.000000	0.003842
-	meshfile	../../Geometry_cleaned/foot.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/foot.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	1.0262637463639717	1.0262637463639717	1.0262637463639717
 	meshrt	3.11696285043559e-08	-5.474421102759546e-09	1.521410846716708e-08	xyz	-0.00322839339440828	0.00044867937216294673	-0.0187681184697715
@@ -695,7 +695,7 @@ segment	toes_r
 		0.000094	0.000000	0.000000
 		0.000000	0.000187	0.000000
 		0.000000	0.000000	0.000937
-	meshfile	../../Geometry_cleaned/bofoot.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/bofoot.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	1.0262637463639717	1.0262637463639717	1.0262637463639717
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -778,7 +778,7 @@ segment	femur_l
 		0.145050	0.000000	-0.000000
 		0.000000	0.038023	-0.000000
 		-0.000000	-0.000000	0.152958
-	meshfile	../../Geometry_cleaned/femur_l.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/femur_l.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	1.0770412567359982	1.0770412567359982	1.0770412567359982
 	meshrt	-1.825219544747546e-14	4.6493561032084505e-15	2.708952455071059e-14	xyz	-0.011477817077876318	0.002610088009225131	0.006409334814825196
@@ -883,7 +883,7 @@ segment	tibia_l_geom_2
 		0.000000	1.000000	-0.000000	0.000000
 		-0.000000	-0.000000	1.000000	0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/fibula_l.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/fibula_l.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.9450941486722327	0.9450941486722327	0.9450941486722327
 	meshrt	-0.11266351371163852	0.024533391728328472	0.05710255188814971	xyz	-0.0011029533855569928	0.008475969487999058	-0.0010707804420467815
@@ -905,7 +905,7 @@ segment	tibia_l
 		0.036772	0.001957	-0.000212
 		0.001957	0.004275	0.003754
 		-0.000212	0.003754	0.036976
-	meshfile	../../Geometry_cleaned/tibia_l.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/tibia_l.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.9450941486722327	0.9450941486722327	0.9450941486722327
 	meshrt	-0.11266351371163852	0.024533391728328472	0.05710255188814971	xyz	-0.0011029533855569928	0.008475969487999058	-0.0010707804420467815
@@ -1040,7 +1040,7 @@ segment	talus_l
 		0.000937	0.000000	0.000000
 		0.000000	0.000937	0.000000
 		0.000000	0.000000	0.000937
-	meshfile	../../Geometry_cleaned/talus_lv.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/talus_lv.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	1.0262637463639717	1.0262637463639717	1.0262637463639717
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -1138,7 +1138,7 @@ segment	calcn_l
 		0.001312	0.000000	-0.000000
 		0.000000	0.003655	-0.000000
 		-0.000000	-0.000000	0.003842
-	meshfile	../../Geometry_cleaned/l_foot.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/l_foot.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	1.0262637463639717	1.0262637463639717	1.0262637463639717
 	meshrt	-1.4231652111469506e-08	2.326326416648446e-09	2.3644120259124122e-08	xyz	0.0006192919380287876	4.462459488917617e-05	-0.0042536163107009806
@@ -1233,7 +1233,7 @@ segment	toes_l
 		0.000094	0.000000	0.000000
 		0.000000	0.000187	0.000000
 		0.000000	0.000000	0.000937
-	meshfile	../../Geometry_cleaned/l_bofoot.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/l_bofoot.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	1.0262637463639717	1.0262637463639717	1.0262637463639717
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -1310,7 +1310,7 @@ segment	torso_geom_2
 		0.000000	1.000000	-0.000000	0.000000
 		0.000000	-0.000000	1.000000	-0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/hat_ribs_scap.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/hat_ribs_scap.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	1.0645222389724176	0.8736517762090814	1.0483017247559567
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -1332,7 +1332,7 @@ segment	torso
 		0.611349	0.000000	0.000000
 		0.000000	0.411771	0.000000
 		0.000000	0.000000	0.798906
-	meshfile	../../Geometry_cleaned/hat_spine.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/hat_spine.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	1.0645222389724176	0.8736517762090814	1.0483017247559567
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -1439,7 +1439,7 @@ segment	head_and_neck_geom_2
 		0.000000	1.000000	-0.000000	0.060000
 		-0.000000	-0.000000	1.000000	-0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/skull.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/skull.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.9724893537183223	0.9724893537183223	0.9724893537183223
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -1461,7 +1461,7 @@ segment	head_and_neck
 		0.021398	0.000180	0.000200
 		0.000180	0.013916	0.000089
 		0.000200	0.000089	0.021478
-	meshfile	../../Geometry_cleaned/jaw.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/jaw.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.9724893537183223	0.9724893537183223	0.9724893537183223
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -1568,7 +1568,7 @@ segment	humerus_r
 		0.011330	0.000000	0.000000
 		0.000000	0.003908	0.000000
 		0.000000	0.000000	0.012717
-	meshfile	../../Geometry_cleaned/humerus_rv.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/humerus_rv.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	1.0303474221129751	1.0303474221129751	1.0303474221129751
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -1697,7 +1697,7 @@ segment	ulna_r
 		0.002315	0.000000	0.000000
 		0.000000	0.000483	0.000000
 		0.000000	0.000000	0.002511
-	meshfile	../../Geometry_cleaned/ulna_rv.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/ulna_rv.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.9659599118180414	0.9659599118180414	0.9659599118180414
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -1795,7 +1795,7 @@ segment	radius_r
 		0.002315	0.000000	0.000000
 		0.000000	0.000483	0.000000
 		0.000000	0.000000	0.002511
-	meshfile	../../Geometry_cleaned/radius_rv.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/radius_rv.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.9659599118180414	0.9659599118180414	0.9659599118180414
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -1896,7 +1896,7 @@ segment	lunate_r
 		0.000008	0.000000	0.000000
 		0.000000	0.000008	0.000000
 		0.000000	0.000000	0.000008
-	meshfile	../../Geometry_cleaned/lunate_rvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/lunate_rvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.8210659250453352	0.8210659250453352	0.8210659250453352
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -1960,7 +1960,7 @@ segment	hand_r_geom_2
 		0.000000	1.000000	0.000000	0.000000
 		0.000000	0.000000	1.000000	-0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/scaphoid_rvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/scaphoid_rvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -1976,7 +1976,7 @@ segment	hand_r_geom_3
 		0.000000	1.000000	0.000000	0.000000
 		0.000000	0.000000	1.000000	-0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/triquetrum_rvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/triquetrum_rvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -1992,7 +1992,7 @@ segment	hand_r_geom_4
 		0.000000	1.000000	0.000000	0.000000
 		0.000000	0.000000	1.000000	-0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/hamate_rvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/hamate_rvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2008,7 +2008,7 @@ segment	hand_r_geom_5
 		0.000000	1.000000	0.000000	0.000000
 		0.000000	0.000000	1.000000	-0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/capitate_rvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/capitate_rvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2024,7 +2024,7 @@ segment	hand_r_geom_6
 		0.000000	1.000000	0.000000	0.000000
 		0.000000	0.000000	1.000000	-0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/trapezoid_rvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/trapezoid_rvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2040,7 +2040,7 @@ segment	hand_r_geom_7
 		0.000000	1.000000	0.000000	0.000000
 		0.000000	0.000000	1.000000	-0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/trapezium_rvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/trapezium_rvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2056,7 +2056,7 @@ segment	hand_r_geom_8
 		0.000000	1.000000	0.000000	0.000000
 		0.000000	0.000000	1.000000	-0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/metacarpal2_rvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/metacarpal2_rvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2072,7 +2072,7 @@ segment	hand_r_geom_9
 		0.000000	1.000000	0.000000	0.000000
 		0.000000	0.000000	1.000000	-0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/metacarpal3_rvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/metacarpal3_rvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2088,7 +2088,7 @@ segment	hand_r_geom_10
 		0.000000	1.000000	0.000000	0.000000
 		0.000000	0.000000	1.000000	-0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/metacarpal4_rvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/metacarpal4_rvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2104,7 +2104,7 @@ segment	hand_r_geom_11
 		0.000000	1.000000	0.000000	0.000000
 		0.000000	0.000000	1.000000	-0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/metacarpal5_rvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/metacarpal5_rvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2120,7 +2120,7 @@ segment	hand_r_geom_12
 		0.000000	1.000000	0.000000	0.000000
 		0.000000	0.000000	1.000000	-0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/metacarpal1_rvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/metacarpal1_rvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2136,7 +2136,7 @@ segment	hand_r_geom_13
 		0.000000	1.000000	0.000000	0.000000
 		0.000000	0.000000	1.000000	-0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/thumb_proximal_rvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/thumb_proximal_rvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2152,7 +2152,7 @@ segment	hand_r_geom_14
 		0.000000	1.000000	0.000000	0.000000
 		0.000000	0.000000	1.000000	-0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/thumb_distal_rvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/thumb_distal_rvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	1.191255740979975	1.191255740979975	1.191255740979975
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2174,7 +2174,7 @@ segment	hand_r
 		0.002129	0.000000	0.000000
 		0.000000	0.001306	0.000000
 		0.000000	0.000000	0.003198
-	meshfile	../../Geometry_cleaned/pisiform_rvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/pisiform_rvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	1.191255740979975	1.191255740979975	1.191255740979975
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2251,7 +2251,7 @@ segment	fingers_r_geom_2
 		-0.000000	1.000000	0.000000	0.090000
 		0.000000	0.000000	1.000000	0.010000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/index_medial_rvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/index_medial_rvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2267,7 +2267,7 @@ segment	fingers_r_geom_3
 		-0.000000	1.000000	0.000000	0.090000
 		0.000000	0.000000	1.000000	0.010000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/index_distal_rvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/index_distal_rvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2283,7 +2283,7 @@ segment	fingers_r_geom_4
 		-0.000000	1.000000	0.000000	0.090000
 		0.000000	0.000000	1.000000	0.010000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/middle_proximal_rvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/middle_proximal_rvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2299,7 +2299,7 @@ segment	fingers_r_geom_5
 		-0.000000	1.000000	0.000000	0.090000
 		0.000000	0.000000	1.000000	0.010000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/middle_medial_rvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/middle_medial_rvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2315,7 +2315,7 @@ segment	fingers_r_geom_6
 		-0.000000	1.000000	0.000000	0.090000
 		0.000000	0.000000	1.000000	0.010000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/middle_distal_rvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/middle_distal_rvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2331,7 +2331,7 @@ segment	fingers_r_geom_7
 		-0.000000	1.000000	0.000000	0.090000
 		0.000000	0.000000	1.000000	0.010000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/ring_proximal_rvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/ring_proximal_rvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2347,7 +2347,7 @@ segment	fingers_r_geom_8
 		-0.000000	1.000000	0.000000	0.090000
 		0.000000	0.000000	1.000000	0.010000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/ring_medial_rvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/ring_medial_rvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2363,7 +2363,7 @@ segment	fingers_r_geom_9
 		-0.000000	1.000000	0.000000	0.090000
 		0.000000	0.000000	1.000000	0.010000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/ring_distal_rvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/ring_distal_rvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2379,7 +2379,7 @@ segment	fingers_r_geom_10
 		-0.000000	1.000000	0.000000	0.090000
 		0.000000	0.000000	1.000000	0.010000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/little_proximal_rvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/little_proximal_rvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2395,7 +2395,7 @@ segment	fingers_r_geom_11
 		-0.000000	1.000000	0.000000	0.090000
 		0.000000	0.000000	1.000000	0.010000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/little_medial_rvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/little_medial_rvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2411,7 +2411,7 @@ segment	fingers_r_geom_12
 		-0.000000	1.000000	0.000000	0.090000
 		0.000000	0.000000	1.000000	0.010000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/little_distal_rvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/little_distal_rvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	1.191255740979975	1.191255740979975	1.191255740979975
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2433,7 +2433,7 @@ segment	fingers_r
 		0.002387	0.000000	0.000000
 		0.000000	0.002387	0.000000
 		0.000000	0.000000	0.002387
-	meshfile	../../Geometry_cleaned/index_proximal_rvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/index_proximal_rvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	1.191255740979975	1.191255740979975	1.191255740979975
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2516,7 +2516,7 @@ segment	humerus_l
 		0.011330	0.000000	0.000000
 		0.000000	0.003908	0.000000
 		0.000000	0.000000	0.012717
-	meshfile	../../Geometry_cleaned/humerus_lv.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/humerus_lv.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	1.0303474221129751	1.0303474221129751	1.0303474221129751
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2645,7 +2645,7 @@ segment	ulna_l
 		0.002315	0.000000	0.000000
 		0.000000	0.000483	0.000000
 		0.000000	0.000000	0.002511
-	meshfile	../../Geometry_cleaned/ulna_lv.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/ulna_lv.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.9659599118180414	0.9659599118180414	0.9659599118180414
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2743,7 +2743,7 @@ segment	radius_l
 		0.002315	0.000000	0.000000
 		0.000000	0.000483	0.000000
 		0.000000	0.000000	0.002511
-	meshfile	../../Geometry_cleaned/radius_lv.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/radius_lv.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.9659599118180414	0.9659599118180414	0.9659599118180414
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2844,7 +2844,7 @@ segment	lunate_l
 		0.000008	0.000000	0.000000
 		0.000000	0.000008	0.000000
 		0.000000	0.000000	0.000008
-	meshfile	../../Geometry_cleaned/lunate_lvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/lunate_lvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.8210659250453352	0.8210659250453352	0.8210659250453352
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2908,7 +2908,7 @@ segment	hand_l_geom_2
 		0.000000	1.000000	-0.000000	-0.000000
 		-0.000000	-0.000000	1.000000	0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/scaphoid_lvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/scaphoid_lvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2924,7 +2924,7 @@ segment	hand_l_geom_3
 		0.000000	1.000000	-0.000000	-0.000000
 		-0.000000	-0.000000	1.000000	0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/triquetrum_lvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/triquetrum_lvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2940,7 +2940,7 @@ segment	hand_l_geom_4
 		0.000000	1.000000	-0.000000	-0.000000
 		-0.000000	-0.000000	1.000000	0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/hamate_lvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/hamate_lvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2956,7 +2956,7 @@ segment	hand_l_geom_5
 		0.000000	1.000000	-0.000000	-0.000000
 		-0.000000	-0.000000	1.000000	0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/capitate_lvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/capitate_lvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2972,7 +2972,7 @@ segment	hand_l_geom_6
 		0.000000	1.000000	-0.000000	-0.000000
 		-0.000000	-0.000000	1.000000	0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/trapezoid_lvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/trapezoid_lvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -2988,7 +2988,7 @@ segment	hand_l_geom_7
 		0.000000	1.000000	-0.000000	-0.000000
 		-0.000000	-0.000000	1.000000	0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/trapezium_lvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/trapezium_lvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -3004,7 +3004,7 @@ segment	hand_l_geom_8
 		0.000000	1.000000	-0.000000	-0.000000
 		-0.000000	-0.000000	1.000000	0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/metacarpal2_lvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/metacarpal2_lvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -3020,7 +3020,7 @@ segment	hand_l_geom_9
 		0.000000	1.000000	-0.000000	-0.000000
 		-0.000000	-0.000000	1.000000	0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/metacarpal3_lvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/metacarpal3_lvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -3036,7 +3036,7 @@ segment	hand_l_geom_10
 		0.000000	1.000000	-0.000000	-0.000000
 		-0.000000	-0.000000	1.000000	0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/metacarpal4_lvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/metacarpal4_lvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -3052,7 +3052,7 @@ segment	hand_l_geom_11
 		0.000000	1.000000	-0.000000	-0.000000
 		-0.000000	-0.000000	1.000000	0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/metacarpal5_lvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/metacarpal5_lvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -3068,7 +3068,7 @@ segment	hand_l_geom_12
 		0.000000	1.000000	-0.000000	-0.000000
 		-0.000000	-0.000000	1.000000	0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/metacarpal1_lvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/metacarpal1_lvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -3084,7 +3084,7 @@ segment	hand_l_geom_13
 		0.000000	1.000000	-0.000000	-0.000000
 		-0.000000	-0.000000	1.000000	0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/thumb_proximal_lvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/thumb_proximal_lvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -3100,7 +3100,7 @@ segment	hand_l_geom_14
 		0.000000	1.000000	-0.000000	-0.000000
 		-0.000000	-0.000000	1.000000	0.000000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/thumb_distal_lvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/thumb_distal_lvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	1.191255740979975	1.191255740979975	1.191255740979975
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -3122,7 +3122,7 @@ segment	hand_l
 		0.002129	0.000000	0.000000
 		0.000000	0.001306	0.000000
 		0.000000	0.000000	0.003198
-	meshfile	../../Geometry_cleaned/pisiform_lvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/pisiform_lvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	1.191255740979975	1.191255740979975	1.191255740979975
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -3199,7 +3199,7 @@ segment	fingers_l_geom_2
 		0.000000	1.000000	-0.000000	0.090000
 		-0.000000	-0.000000	1.000000	-0.010000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/index_medial_lvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/index_medial_lvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -3215,7 +3215,7 @@ segment	fingers_l_geom_3
 		0.000000	1.000000	-0.000000	0.090000
 		-0.000000	-0.000000	1.000000	-0.010000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/index_distal_lvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/index_distal_lvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -3231,7 +3231,7 @@ segment	fingers_l_geom_4
 		0.000000	1.000000	-0.000000	0.090000
 		-0.000000	-0.000000	1.000000	-0.010000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/middle_proximal_lvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/middle_proximal_lvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -3247,7 +3247,7 @@ segment	fingers_l_geom_5
 		0.000000	1.000000	-0.000000	0.090000
 		-0.000000	-0.000000	1.000000	-0.010000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/middle_medial_lvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/middle_medial_lvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -3263,7 +3263,7 @@ segment	fingers_l_geom_6
 		0.000000	1.000000	-0.000000	0.090000
 		-0.000000	-0.000000	1.000000	-0.010000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/middle_distal_lvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/middle_distal_lvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -3279,7 +3279,7 @@ segment	fingers_l_geom_7
 		0.000000	1.000000	-0.000000	0.090000
 		-0.000000	-0.000000	1.000000	-0.010000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/ring_proximal_lvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/ring_proximal_lvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -3295,7 +3295,7 @@ segment	fingers_l_geom_8
 		0.000000	1.000000	-0.000000	0.090000
 		-0.000000	-0.000000	1.000000	-0.010000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/ring_medial_lvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/ring_medial_lvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -3311,7 +3311,7 @@ segment	fingers_l_geom_9
 		0.000000	1.000000	-0.000000	0.090000
 		-0.000000	-0.000000	1.000000	-0.010000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/ring_distal_lvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/ring_distal_lvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -3327,7 +3327,7 @@ segment	fingers_l_geom_10
 		0.000000	1.000000	-0.000000	0.090000
 		-0.000000	-0.000000	1.000000	-0.010000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/little_proximal_lvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/little_proximal_lvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -3343,7 +3343,7 @@ segment	fingers_l_geom_11
 		0.000000	1.000000	-0.000000	0.090000
 		-0.000000	-0.000000	1.000000	-0.010000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/little_medial_lvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/little_medial_lvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	0.85	0.85	0.85
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -3359,7 +3359,7 @@ segment	fingers_l_geom_12
 		0.000000	1.000000	-0.000000	0.090000
 		-0.000000	-0.000000	1.000000	-0.010000
 		0.000000	0.000000	0.000000	1.000000
-	meshfile	../../Geometry_cleaned/little_distal_lvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/little_distal_lvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	1.191255740979975	1.191255740979975	1.191255740979975
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0
@@ -3381,7 +3381,7 @@ segment	fingers_l
 		0.002387	0.000000	0.000000
 		0.000000	0.002387	0.000000
 		0.000000	0.000000	0.002387
-	meshfile	../../Geometry_cleaned/index_proximal_lvs.vtp
+	meshfile	../../../external/biomechanics_models/Geometry_triangle/index_proximal_lvs.vtp
 	meshcolor	1.0	1.0	1.0
 	meshscale	1.191255740979975	1.191255740979975	1.191255740979975
 	meshrt	0.0	0.0	0.0	xyz	0.0	0.0	0.0

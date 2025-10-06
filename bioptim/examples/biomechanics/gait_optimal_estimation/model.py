@@ -13,7 +13,7 @@ from bioptim import (
 
 
 class WithResidualExternalForces(MusclesBiorbdModel):
-    def __init__(self, biorbd_model_path: str, mesh_file_folder: str, external_force_set: ExternalForceSetTimeSeries=None, with_residual_torque=True):
+    def __init__(self, biorbd_model_path: str, external_force_set: ExternalForceSetTimeSeries=None, with_residual_torque=True):
         """
         Custom muscle-driven model to handle the residual external forces.
         """
