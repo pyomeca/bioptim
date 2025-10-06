@@ -110,7 +110,6 @@ c_generated_code
 
 # Bioptim files
 bioptim/sandbox/
-*.pkl
 *.mtx
 *.casadi
 *.pt
@@ -123,6 +122,10 @@ _l4c_generated/
 *.png
 
 sandbox/
+
+# Ignore all pkl files except those we explicitly commit
+*.pkl
+!/bioptim/examples/biomechanics/gait_optimal_estimation/ocp_data.pkl
 
 # Ignore all npy files in tests folder except those in tests/shard6
 /tests/*.npy
