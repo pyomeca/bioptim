@@ -88,7 +88,7 @@ class CustomModel(BiorbdModel, TorqueDynamics):
         if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
             slope_q = DynamicsFunctions.get(nlp.states_dot["q"], nlp.states_dot.scaled.cx)
             slope_qdot = DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.scaled.cx)
-            defects = vertcat(slope_q, slope_qdot) * nlp.dt - dxdt * nlp.dt
+            defects = vertcat(slope_q, slope_qdot) - dxdt
 
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
@@ -237,9 +237,9 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
     Firstly, it solves the getting_started/pendulum.py example.
     It then creates and solves this ocp and show the results.
     """
-    from bioptim.examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
+    from bioptim.examples.toy_examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     if integrator == OdeSolver.IRK and use_sx:
         with pytest.raises(
@@ -247,7 +247,7 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
             match="use_sx=True and OdeSolver.IRK are not yet compatible",
         ):
             ocp = prepare_ocp(
-                biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+                biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
                 n_phase=n_phase,
                 ode_solver=integrator(),
                 control_type=control_type,
@@ -262,7 +262,7 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
             match="TRAPEZOIDAL cannot be used with piece-wise constant controls, please use ControlType.CONSTANT_WITH_LAST_NODE or ControlType.LINEAR_CONTINUOUS instead.",
         ):
             ocp = prepare_ocp(
-                biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+                biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
                 n_phase=n_phase,
                 ode_solver=integrator(),
                 control_type=control_type,
@@ -273,7 +273,7 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
 
     # --- Solve the program --- #
     ocp = prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
         n_phase=n_phase,
         ode_solver=integrator(),
         control_type=control_type,
@@ -305,22 +305,22 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
             if control_type == ControlType.CONSTANT:
                 v_len = 665 * n_phase
                 expected = (
-                    [66.5, 80006.0 if minimize_time else 6.0, 6.035552847184389]
+                    [66.5, 80006.0 if minimize_time else 6.0, 60.355528471843854]
                     if n_phase == 1
-                    else [133.0, 400012.00000000006 if minimize_time else 12.0, 28.618666282170977]
+                    else [133.0, 400012.00000000006 if minimize_time else 12.0, 286.1866628217095]
                 )
             elif control_type == ControlType.LINEAR_CONTINUOUS:
                 v_len = 667 * n_phase
                 if minimize_time:
                     if n_phase == 1:
-                        expected = [66.69999999999999, 80006.0, 6.035552847184389]
+                        expected = [66.69999999999999, 80006.0, 60.355528471843854]
                     else:
-                        expected = [133.39999999999998, 400012.00000000006, 28.61866628217097]
+                        expected = [133.39999999999998, 400012.00000000006, 286.1866628217095]
                 else:
                     if n_phase == 1:
-                        expected = [66.69999999999999, 6.000000000000002, 6.035552847184389]
+                        expected = [66.69999999999999, 6.000000000000002, 60.355528471843854]
                     else:
-                        expected = [133.39999999999998, 12.000000000000009, 28.61866628217097]
+                        expected = [133.39999999999998, 12.000000000000009, 286.1866628217095]
 
         case OdeSolver.IRK:
             if control_type == ControlType.CONSTANT:

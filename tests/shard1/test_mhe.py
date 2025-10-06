@@ -21,7 +21,7 @@ from ..utils import TestUtils
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
-@pytest.mark.parametrize("solver", [Solver.ACADOS, Solver.IPOPT])
+@pytest.mark.parametrize("solver", [Solver.IPOPT, Solver.ACADOS])
 def test_mhe(solver, phase_dynamics):
     solver = solver()
     if solver.type == SolverType.ACADOS:
@@ -31,11 +31,11 @@ def test_mhe(solver, phase_dynamics):
         if phase_dynamics == PhaseDynamics.ONE_PER_NODE:
             return
 
-    from bioptim.examples.moving_horizon_estimation import mhe as ocp_module
+    from bioptim.examples.toy_examples.moving_horizon_estimation import mhe as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
+    bio_model = TorqueBiorbdModel(bioptim_folder + "/examples/models/cart_pendulum.bioMod")
 
-    bio_model = TorqueBiorbdModel(bioptim_folder + "/models/cart_pendulum.bioMod")
     nq = bio_model.nb_q
     torque_max = 5  # Give a bit of slack on the max torque
 
@@ -60,7 +60,7 @@ def test_mhe(solver, phase_dynamics):
         mhe.update_objectives_target(target=target_func(t), list_index=0)
         return t < n_frame_by_cycle * n_cycles - window_len - 1
 
-    bio_model = TorqueBiorbdModel(bioptim_folder + "/models/cart_pendulum.bioMod")
+    bio_model = TorqueBiorbdModel(bioptim_folder + "/examples/models/cart_pendulum.bioMod")
     sol = ocp_module.prepare_mhe(
         bio_model=bio_model,
         window_len=window_len,
@@ -83,8 +83,8 @@ def test_mhe(solver, phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_mhe_redim_xbounds_and_init(phase_dynamics):
-    root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
-    bio_model = TorqueBiorbdModel(root_folder + "models/cart_pendulum.bioMod")
+    bioptim_folder = TestUtils.bioptim_folder()
+    bio_model = TorqueBiorbdModel(bioptim_folder + "/examples/models/cart_pendulum.bioMod")
 
     nq = bio_model.nb_q
     ntau = bio_model.nb_tau
@@ -120,8 +120,8 @@ def test_mhe_redim_xbounds_and_init(phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_mhe_redim_xbounds_not_implemented(phase_dynamics):
-    root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
-    bio_model = TorqueBiorbdModel(root_folder + "models/cart_pendulum.bioMod")
+    bioptim_folder = TestUtils.bioptim_folder()
+    bio_model = TorqueBiorbdModel(bioptim_folder + "/examples/models/cart_pendulum.bioMod")
     nq = bio_model.nb_q
     ntau = bio_model.nb_tau
 

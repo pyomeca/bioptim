@@ -10,12 +10,12 @@ from tests.utils import TestUtils
 
 
 def test_variational_model():
-    from bioptim.examples.discrete_mechanics_and_optimal_control import (
+    from bioptim.examples.toy_examples.discrete_mechanics_and_optimal_control import (
         example_variational_integrator_pendulum as ocp_module,
     )
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
-    biorbd_model_path = bioptim_folder + "/models/pendulum.bioMod"
+    bioptim_folder = TestUtils.bioptim_folder()
+    biorbd_model_path = bioptim_folder + "/examples/models/pendulum.bioMod"
     model = VariationalBiorbdModel(biorbd_model_path)
 
     q = MX([3.0, 4.0])
@@ -116,7 +116,7 @@ def test_variational_model():
         compute_final_states(time_step, q_prev, q_cur, qdot, control_prev, control_cur), [3.83070605, 7.36751722]
     )
 
-    biorbd_model_path = bioptim_folder + "/models/pendulum_holonomic.bioMod"
+    biorbd_model_path = bioptim_folder + "/examples/models/pendulum_holonomic.bioMod"
     holonomic_model = VariationalBiorbdModel(biorbd_model_path)
     (
         constraints_func,

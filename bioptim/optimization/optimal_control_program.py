@@ -9,6 +9,7 @@ from matplotlib import pyplot as plt
 
 from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVectorHelper
+from .vector_layout import VectorLayout, OrderingStrategy
 from ..dynamics.configure_problem import DynamicsOptionsList, DynamicsOptions, ConfigureProblem
 from ..gui.check_conditioning import check_conditioning
 from ..gui.graph import OcpToConsole, OcpToGraph
@@ -40,6 +41,7 @@ from ..limits.penalty import PenaltyOption
 from ..limits.penalty_helpers import PenaltyHelpers
 from ..limits.phase_transition import PhaseTransition, PhaseTransitionList, PhaseTransitionFcn
 from ..limits.phase_transtion_factory import PhaseTransitionFactory
+from ..limits.weight import ConstraintWeight
 from ..misc.__version__ import __version__
 from ..misc.enums import (
     ControlType,
@@ -56,8 +58,7 @@ from ..misc.mapping import BiMappingList, Mapping, BiMapping
 from ..misc.options import OptionDict
 from ..models.biorbd.variational_biorbd_model import VariationalBiorbdModel
 from ..models.protocols.biomodel import BioModel
-from ..models.protocols.abstract_model_dynamics import DynamicalModel
-from ..models.protocols.abstract_model import AbstractModel
+from ..dynamics.state_space_dynamics import StateDynamics
 from ..optimization.optimization_variable import OptimizationVariableList
 from ..optimization.parameters import ParameterList, Parameter, ParameterContainer
 from ..optimization.solution.solution import Solution
@@ -98,8 +99,6 @@ class OptimalControlProgram:
         Constraints that are not phase dependent (mostly parameters and continuity constraints)
     g_internal: list[list[Constraint]]
         All the constraints internally defined by the OCP at each of the node of the phase
-    g_implicit: list[list[Constraint]]
-        All the implicit constraints defined by the OCP at each of the node of the phase
     J: list
         Objective values that are not phase dependent (mostly parameters)
     nlp: NLP
@@ -187,6 +186,7 @@ class OptimalControlProgram:
         u_scaling: VariableScalingList | None = None,
         a_scaling: VariableScalingList | None = None,
         n_threads: Int = 1,
+        ordering_strategy: OrderingStrategy = OrderingStrategy.VARIABLE_MAJOR,
         use_sx: Bool = False,
         integrated_value_functions: dict[Str, Callable] | None = None,
     ) -> None:
@@ -334,6 +334,8 @@ class OptimalControlProgram:
             phase_transitions,
         )
 
+        self._prepare_vector_layout(ordering_strategy)
+
     def _check_bioptim_version(self) -> None:
         self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "bioptim": __version__}
         return
@@ -346,7 +348,7 @@ class OptimalControlProgram:
         if not isinstance(bio_model, (list, tuple)):
             bio_model = [bio_model]
         for model in bio_model:
-            if not isinstance(model, AbstractModel):
+            if not isinstance(model, StateDynamics):
                 raise RuntimeError("The bio_model should inherit from AbstractModel")
         bio_model = self._check_quaternions_hasattr(bio_model)
         self.n_phases = len(bio_model)
@@ -535,12 +537,10 @@ class OptimalControlProgram:
         self.cx = SX if use_sx else MX
 
         # Declare optimization variables
-        self.program_changed = True
         self.J = []
         self.J_internal = []
         self.g = []
         self.g_internal = []
-        self.g_implicit = []
 
         # nlp is the core of a phase
         self.nlp = [NLP(dynamics[i].phase_dynamics, use_sx) for i in range(self.n_phases)]
@@ -757,6 +757,9 @@ class OptimalControlProgram:
                     )
                     nlp.plot[key].phase_mappings = BiMapping(to_first=range(size), to_second=range(size))
 
+    def _prepare_vector_layout(self, ordering_strategy: OrderingStrategy | None) -> None:
+        self.vector_layout = VectorLayout(self, ordering=ordering_strategy)
+
     @property
     def variables_vector(self) -> CX:
         return OptimizationVectorHelper.vector(self)
@@ -869,7 +872,7 @@ class OptimalControlProgram:
         if nlp.dynamics_type.skip_continuity:
             return
 
-        if nlp.dynamics_type.state_continuity_weight is None:
+        if isinstance(nlp.dynamics_type.state_continuity_weight, ConstraintWeight):
             # Continuity as constraints
             penalty = Constraint(
                 ConstraintFcn.STATE_CONTINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL
@@ -1220,11 +1223,9 @@ class OptimalControlProgram:
                 if cost_type == CostType.OBJECTIVES:
                     penalties = nlp.J
                     penalties_internal = nlp.J_internal
-                    penalties_implicit = []
                 else:  # Constraints
                     penalties = nlp.g
                     penalties_internal = nlp.g_internal
-                    penalties_implicit = nlp.g_implicit
 
                 for penalty in penalties:
                     if not penalty:
@@ -1234,10 +1235,6 @@ class OptimalControlProgram:
                     if not penalty_internal:
                         continue
                     name_unique_objective.append(penalty_internal.name)
-                for penalty_implicit in penalties_implicit:
-                    if not penalty_implicit:
-                        continue
-                    name_unique_objective.append(penalty_implicit.name)
             color = {}
             for i, name in enumerate(name_unique_objective):
                 color[name] = plt.cm.viridis(i / len(name_unique_objective))
@@ -1283,7 +1280,7 @@ class OptimalControlProgram:
             Values computed for the given time, state, control, parameters, penalty and time step
             """
 
-            weight = PenaltyHelpers.weight(penalty)
+            weight = PenaltyHelpers.weight(penalty, penalty.node_idx.index(node_idx))
             target = PenaltyHelpers.target(penalty, penalty.node_idx.index(node_idx))
 
             val = penalty.weighted_function_non_threaded[node_idx](t0, phases_dt, x, u, p, a, d, weight, target)
@@ -1323,7 +1320,6 @@ class OptimalControlProgram:
             elif cost_type == CostType.CONSTRAINTS:
                 penalties = nlp.g
                 penalties_internal = nlp.g_internal
-                penalties_implicit = nlp.g_implicit
             elif cost_type == CostType.ALL:
                 self.add_plot_penalty(CostType.OBJECTIVES)
                 self.add_plot_penalty(CostType.CONSTRAINTS)
@@ -1333,7 +1329,6 @@ class OptimalControlProgram:
 
             add_penalty(penalties)
             add_penalty(penalties_internal)
-            add_penalty(penalties_implicit)
         return
 
     def add_plot_ipopt_outputs(self) -> None:
@@ -1419,6 +1414,10 @@ class OptimalControlProgram:
                 from ..interfaces.ipopt_interface import IpoptInterface
 
                 self.ocp_solver = IpoptInterface(self)
+            elif solver.type == SolverType.FATROP:
+                from ..interfaces.fatrop_interface import FatropInterface
+
+                self.ocp_solver = FatropInterface(self)
 
             elif solver.type == SolverType.SQP:
                 from ..interfaces.sqp_interface import SQPInterface
@@ -1674,8 +1673,6 @@ class OptimalControlProgram:
         phase_idx = new_penalty.phase
         new_penalty.add_or_replace_to_penalty_pool(self, self.nlp[phase_idx])
 
-        self.program_changed = True
-
     def _modify_parameter_penalty(self, new_penalty: PenaltyOption | Parameter) -> None:
         """
         The internal function to modify a parameter penalty.
@@ -1690,7 +1687,6 @@ class OptimalControlProgram:
             return
 
         new_penalty.add_or_replace_to_penalty_pool(self, self.nlp[new_penalty.phase])
-        self.program_changed = True
 
     def node_time(self, phase_idx: Int, node_idx: Int) -> Float:
         """
@@ -1726,3 +1722,13 @@ class OptimalControlProgram:
         This method is thus overriden in StochasticOptimalControlProgram
         """
         NLP.add(self, "is_stochastic", False, True)
+
+    def get_decision_variables(self):
+        """Get the decision variables of the OCP"""
+        time = self.dt_parameter.cx
+        states = [nlp.X_scaled for nlp in self.nlp]
+        controls = [nlp.U_scaled for nlp in self.nlp]
+        algebraic_states = [nlp.A_scaled for nlp in self.nlp]
+        parameters = self.parameters.scaled.cx
+
+        return time, states, controls, algebraic_states, parameters

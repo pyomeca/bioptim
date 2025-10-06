@@ -1,5 +1,6 @@
 from .objective_functions import ObjectiveFunction
 from .phase_transition import PhaseTransition, PhaseTransitionFcn, PhaseTransitionList
+from .weight import ConstraintWeight
 from ..misc.enums import ControlType
 
 
@@ -49,7 +50,7 @@ class PhaseTransitionFactory:
                     PhaseTransition(
                         phase_pre_idx=phase,
                         transition=PhaseTransitionFcn.CONTINUOUS_CONTROLS,
-                        weight=None,  # Continuity always enforced by the linear continuous control
+                        weight=ConstraintWeight(),  # Continuity always enforced by the linear continuous control
                     )
                 )
 
@@ -75,11 +76,12 @@ class PhaseTransitionFactory:
         """Update the existing phase transitions with Mayer functions and add cyclic transitions."""
         existing_phases = []
         for pt in phase_transition_list:
-            idx_phase = pt.nodes_phase[0]
-            self.check_phase_index(idx_phase)
-            existing_phases.append(idx_phase)
-            self.update_transition_base(pt)
-            self.handle_cyclic_transition(idx_phase, pt)
+            for transition in pt:
+                idx_phase = transition.nodes_phase[0]
+                self.check_phase_index(idx_phase)
+                existing_phases.append(idx_phase)
+                self.update_transition_base(transition)
+                self.handle_cyclic_transition(idx_phase, transition)
         return self.full_phase_transitions
 
     def prepare_phase_transitions(self, phase_transition_list: PhaseTransitionList) -> list[PhaseTransition]:

@@ -18,7 +18,6 @@ The latter being especially challenging because of the closed-loop involved in t
 So don't wait any further challenge biorbd to find you the best movement!
 -------------------------------------------------------------------------
 
-
 # --- The main interface --- #
 OptimalControlProgram
     The main class to define an ocp. This class prepares the full program and gives all the needed interface to
@@ -137,7 +136,7 @@ Requirements and Installation
 bioptim requires minimally CasADi, [Ipopt, ACADOS], biorbd and bioviz. To install ACADOS, one is invited to have a look
 at the installation script at 'external/acados_install.sh'. All the other requirements can be installed from conda
 on the conda-forge channel using the following command:
-`conda install -c conda-forge biorbd=*=*casadi* bioviz=*=*casadi*`
+`conda install -c conda-forge biorbd`
 
 If one is interested in the conda-forge version of bioptim, they can install every requirements and bioptim using the
 following command
@@ -177,6 +176,7 @@ from .limits.path_conditions import BoundsList, InitialGuessList, Bounds, Initia
 from .limits.penalty_controller import PenaltyController
 from .limits.penalty_helpers import PenaltyHelpers
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
+from .limits.weight import ObjectiveWeight, ConstraintWeight
 from .misc.__version__ import __version__
 from .misc.enums import (
     Axis,
@@ -213,13 +213,14 @@ from .models.biorbd.model_dynamics import (
     TorqueActivationBiorbdModel,
     TorqueDerivativeBiorbdModel,
     MusclesBiorbdModel,
+    MusclesWithExcitationsBiorbdModel,
     JointAccelerationBiorbdModel,
     MultiTorqueBiorbdModel,
 )
 from .models.protocols.biomodel import BioModel
 from .models.protocols.holonomic_constraints import HolonomicConstraintsFcn, HolonomicConstraintsList
 from .models.protocols.stochastic_biomodel import StochasticBioModel
-from .models.protocols.abstract_model_dynamics import (
+from .dynamics.state_space_dynamics import (
     TorqueDynamics,
     StochasticTorqueDynamics,
     HolonomicTorqueDynamics,
@@ -229,13 +230,15 @@ from .models.protocols.abstract_model_dynamics import (
     TorqueActivationDynamics,
     TorqueDerivativeDynamics,
     MusclesDynamics,
+    MusclesDynamicsWithExcitations,
     JointAccelerationDynamics,
 )
-from .models.protocols.abstract_model import AbstractModel
+from .dynamics.state_space_dynamics import StateDynamics
 from .optimization.multi_start import MultiStart
 from .optimization.non_linear_program import NonLinearProgram
 from .optimization.optimal_control_program import OptimalControlProgram
 from .optimization.optimization_variable import OptimizationVariableList
+from .optimization.vector_layout import OrderingStrategy
 from .optimization.parameters import ParameterList, ParameterContainer
 from .optimization.problem_type import SocpType
 from .optimization.receding_horizon_optimization import (

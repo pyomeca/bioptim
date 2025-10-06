@@ -5,7 +5,8 @@ from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function, MX_ey
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyController
-from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType
+from .weight import ConstraintWeight
+from ..misc.enums import Node, InterpolationType, PenaltyType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
@@ -41,6 +42,7 @@ class Constraint(PenaltyOption):
         quadratic: Bool = False,
         phase: Int = -1,
         is_stochastic: Bool = False,
+        weight: Int | Float | ConstraintWeight = None,
         **extra_parameters: Any,
     ):
         """
@@ -59,13 +61,24 @@ class Constraint(PenaltyOption):
         is_stochastic: bool
             If the constraint is stochastic (if we should instead look at the rate of variation of the inequality
             constraint)
+        weight: ConstraintWeight
+            The weight to apply to the constraint
         extra_parameters:
             Generic parameters for options
         """
+        if weight is None:
+            weight = ConstraintWeight()
+
         custom_function = None
         if not isinstance(constraint, ConstraintFcn):
             custom_function = constraint
             constraint = ConstraintFcn.CUSTOM
+
+        if not isinstance(weight, ConstraintWeight):
+            if isinstance(weight, (int, float)):
+                weight = ConstraintWeight(weight)
+            else:
+                raise ValueError(f"The weight must be a ConstraintWeight, int or float, not {type(weight)}")
 
         super(Constraint, self).__init__(
             penalty=constraint,
@@ -73,6 +86,7 @@ class Constraint(PenaltyOption):
             quadratic=quadratic,
             custom_function=custom_function,
             is_stochastic=is_stochastic,
+            weight=weight,
             **extra_parameters,
         )
 
@@ -119,12 +133,6 @@ class Constraint(PenaltyOption):
                 if controller is not None and controller.get_nlp
                 else controller.ocp.g_internal
             )
-        elif self.penalty_type == ConstraintType.IMPLICIT:
-            pool = (
-                controller.get_nlp.g_implicit
-                if controller is not None and controller.get_nlp
-                else controller.ocp.g_implicit
-            )
         elif self.penalty_type == PenaltyType.USER:
             pool = controller.get_nlp.g if controller is not None and controller.get_nlp else controller.ocp.g
         else:
@@ -135,8 +143,6 @@ class Constraint(PenaltyOption):
     def ensure_penalty_sanity(self, ocp, nlp):
         if self.penalty_type == PenaltyType.INTERNAL:
             g_to_add_to = nlp.g_internal if nlp else ocp.g_internal
-        elif self.penalty_type == ConstraintType.IMPLICIT:
-            g_to_add_to = nlp.g_implicit if nlp else ocp.g_implicit
         elif self.penalty_type == PenaltyType.USER:
             g_to_add_to = nlp.g if nlp else ocp.g
         else:
@@ -168,7 +174,12 @@ class ConstraintList(OptionList):
         Print the ConstraintList to the console
     """
 
-    def add(self, constraint: Callable | Constraint | Any, **extra_arguments: Any):
+    def add(
+        self,
+        constraint: Callable | Constraint | Any,
+        weight: Int | Float | ConstraintWeight = None,
+        **extra_arguments: Any,
+    ):
         """
         Add a new constraint to the list
 
@@ -176,15 +187,27 @@ class ConstraintList(OptionList):
         ----------
         constraint: Callable | Constraint | ConstraintFcn
             The chosen constraint
+        weight: Int | Float | ConstraintWeight
+            The weight to apply to the constraint.
         extra_arguments: dict
             Any parameters to pass to Constraint
         """
+        if weight is None:
+            weight = ConstraintWeight()
 
         if isinstance(constraint, Constraint):
             self.copy(constraint)
 
         else:
-            super(ConstraintList, self)._add(option_type=Constraint, constraint=constraint, **extra_arguments)
+            if not isinstance(weight, ConstraintWeight):
+                if isinstance(weight, (int, float)):
+                    weight = ConstraintWeight(weight)
+                else:
+                    raise ValueError(f"The weight must be a ConstraintWeight, int or float, not {type(weight)}")
+
+            super(ConstraintList, self)._add(
+                option_type=Constraint, constraint=constraint, weight=weight, **extra_arguments
+            )
             # TODO: add an InternalConstraint option type? Because now the list_index is wrong
 
     def print(self):
@@ -898,6 +921,7 @@ class ParameterConstraint(PenaltyOption):
         min_bound: NpArrayorFloatOptional = None,
         max_bound: NpArrayorFloatOptional = None,
         quadratic: Bool = False,
+        weight: Int | Float | ConstraintWeight = None,
         **extra_parameters: Any,
     ):
         """
@@ -911,16 +935,31 @@ class ParameterConstraint(PenaltyOption):
             The vector of maximal bound of the constraint. Default is 0
         quadratic: bool
             If the penalty is quadratic
+        weight: ConstraintWeight
+            The weight to apply to the constraint
         extra_parameters:
             Generic parameters for options
         """
+        if weight is None:
+            weight = ConstraintWeight()
+
         custom_function = None
         if not isinstance(parameter_constraint, ConstraintFcn):
             custom_function = parameter_constraint
             parameter_constraint = ConstraintFcn.CUSTOM
 
+        if not isinstance(weight, ConstraintWeight):
+            if isinstance(weight, (int, float)):
+                weight = ConstraintWeight(weight)
+            else:
+                raise ValueError(f"The weight must be a ConstraintWeight, int or float, not {type(weight)}")
+
         super(ParameterConstraint, self).__init__(
-            penalty=parameter_constraint, quadratic=quadratic, custom_function=custom_function, **extra_parameters
+            penalty=parameter_constraint,
+            quadratic=quadratic,
+            custom_function=custom_function,
+            weight=weight,
+            **extra_parameters,
         )
 
         self.min_bound = min_bound
@@ -967,12 +1006,6 @@ class ParameterConstraint(PenaltyOption):
                 if controller is not None and controller.get_nlp
                 else controller.ocp.g_internal
             )
-        elif self.penalty_type == ConstraintType.IMPLICIT:
-            pool = (
-                controller.get_nlp.g_implicit
-                if controller is not None and controller.get_nlp
-                else controller.ocp.g_implicit
-            )
         elif self.penalty_type == PenaltyType.USER:
             pool = controller.get_nlp.g if controller is not None and controller.get_nlp else controller.ocp.g
         else:
@@ -983,8 +1016,6 @@ class ParameterConstraint(PenaltyOption):
     def ensure_penalty_sanity(self, ocp, nlp):
         if self.penalty_type == PenaltyType.INTERNAL:
             g_to_add_to = nlp.g_internal if nlp else ocp.g_internal
-        elif self.penalty_type == ConstraintType.IMPLICIT:
-            g_to_add_to = nlp.g_implicit if nlp else ocp.g_implicit
         elif self.penalty_type == PenaltyType.USER:
             g_to_add_to = nlp.g if nlp else ocp.g
         else:
@@ -1016,7 +1047,12 @@ class ParameterConstraintList(OptionList):
         Print the ParameterConstraintList to the console
     """
 
-    def add(self, parameter_constraint: Callable | ParameterConstraint | Any, **extra_arguments: Any):
+    def add(
+        self,
+        parameter_constraint: Callable | ParameterConstraint | Any,
+        weight: Int | Float | ConstraintWeight = None,
+        **extra_arguments: Any,
+    ):
         """
         Add a new constraint to the list
 
@@ -1024,14 +1060,24 @@ class ParameterConstraintList(OptionList):
         ----------
         parameter_constraint: Callable | Constraint | ConstraintFcn
             The chosen parameter constraint
+        weight: Int | Float | ConstraintWeight
+            The weight to apply to the constraint.
         extra_arguments: dict
             Any parameters to pass to Constraint
         """
+        if weight is None:
+            weight = ConstraintWeight()
 
         if isinstance(parameter_constraint, Constraint):
             self.copy(parameter_constraint)
 
         else:
+            if not isinstance(weight, ConstraintWeight):
+                if isinstance(weight, (int, float)):
+                    weight = ConstraintWeight(weight)
+                else:
+                    raise ValueError(f"The weight must be a ConstraintWeight, int or float, not {type(weight)}")
+
             super(ParameterConstraintList, self)._add(
                 option_type=ParameterConstraint, parameter_constraint=parameter_constraint, **extra_arguments
             )

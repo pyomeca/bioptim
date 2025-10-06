@@ -183,10 +183,7 @@ class PenaltyHelpers:
                 if (
                     not is_constructing_penalty
                     and node == penalty.ns[idx]
-                    and (
-                        penalty.control_types[idx] != ControlType.LINEAR_CONTINUOUS
-                        and penalty.control_types[idx] != ControlType.CONSTANT_WITH_LAST_NODE
-                    )
+                    and not penalty.control_types[idx].has_a_final_node
                 ):
                     # When evaluating penalties, the cx_end must be replaced when calling the last node of a ControlType.CONSTANT because it does not exist
                     # Please note that this is a small hack just to make sure that the casadi functions are called with inputs of the right shape
@@ -223,9 +220,12 @@ class PenaltyHelpers:
 
     @staticmethod
     def get_controls(ocp, penalty, phase_idx: Int, node_idx: Int, subnodes_idx: Slicy, values: CXorDMorNpArray):
+
         null_element = ocp.cx() if type(values[0]) != np.ndarray else np.array([])
+
         idx = 0 if not penalty.is_multinode_penalty else penalty.nodes_phase.index(phase_idx)
         subnodes_are_decision_states = penalty.subnodes_are_decision_states[idx] and not penalty.is_transition
+
         if subnodes_idx.stop == Node.END:
             if subnodes_idx.start == Node.START:
                 # get all cx_intermediates but not the cx_end
@@ -275,8 +275,8 @@ class PenaltyHelpers:
         return d
 
     @staticmethod
-    def weight(penalty) -> Float:
-        return penalty.weight
+    def weight(penalty, penalty_node_idx: Int) -> Float:
+        return penalty.weight.evaluate_at(penalty_node_idx, len(penalty.rows))
 
     @staticmethod
     def target(penalty, penalty_node_idx: Int) -> NpArray:

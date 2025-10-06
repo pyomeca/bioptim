@@ -22,6 +22,7 @@ from bioptim import (
     ContactType,
     OdeSolver,
     DefectType,
+    MusclesWithExcitationsBiorbdModel,
 )
 
 from ..utils import TestUtils
@@ -127,13 +128,13 @@ def test_torque_driven(contact_types, with_external_force, cx, phase_dynamics, d
         with pytest.raises(NotImplementedError):
             # "Your contact_types [<ContactType.RIGID_IMPLICIT: 'rigid_implicit'>] is not supported yet with external_force_set of type ExternalForceSetTimeSeries."
             nlp.model = TorqueBiorbdModel(
-                TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod",
+                TestUtils.bioptim_folder() + "/examples/models/2segments_4dof_2contacts.bioMod",
                 contact_types=contact_types,
                 external_force_set=external_forces,
             )
     else:
         nlp.model = TorqueBiorbdModel(
-            TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod",
+            TestUtils.bioptim_folder() + "/examples/models/2segments_4dof_2contacts.bioMod",
             contact_types=contact_types,
             external_force_set=external_forces,
         )
@@ -206,14 +207,14 @@ def test_torque_driven(contact_types, with_external_force, cx, phase_dynamics, d
                             x_defects[:, 0],
                             np.array(
                                 [
-                                    -0.04383072,
-                                    -0.04283728,
-                                    0.10537375,
-                                    -0.04831128,
-                                    0.52484935,
-                                    0.18769219,
-                                    -1.00117517,
-                                    0.87117926,
+                                    -0.19733986,
+                                    -0.19286707,
+                                    0.47442614,
+                                    -0.21751276,
+                                    2.36303867,
+                                    0.84504995,
+                                    -4.50760903,
+                                    3.92232611,
                                 ]
                             ),
                         )
@@ -223,14 +224,14 @@ def test_torque_driven(contact_types, with_external_force, cx, phase_dynamics, d
                             x_defects[:, 0],
                             np.array(
                                 [
-                                    -0.31172315,
-                                    -0.07805808,
-                                    0.23040588,
-                                    0.07221787,
-                                    0.17309483,
-                                    0.4613264,
-                                    0.63518686,
-                                    0.05627764,
+                                    -0.48981466,
+                                    -0.12265368,
+                                    0.36203978,
+                                    0.11347689,
+                                    0.27198618,
+                                    0.7248882,
+                                    0.99807742,
+                                    0.08842979,
                                 ]
                             ),
                         )
@@ -240,14 +241,14 @@ def test_torque_driven(contact_types, with_external_force, cx, phase_dynamics, d
                         x_defects[:, 0],
                         np.array(
                             [
-                                -0.39365036,
-                                -0.09857334,
-                                0.29096126,
-                                0.09119821,
-                                -0.1654925,
-                                8.56753594,
-                                1.90034696,
-                                -15.91347941,
+                                -0.48981466,
+                                -0.12265368,
+                                0.36203978,
+                                0.11347689,
+                                -0.20592043,
+                                10.66048726,
+                                2.36458005,
+                                -19.80096095,
                                 0.77091916,
                                 0.73515993,
                                 1.10755289,
@@ -259,10 +260,10 @@ def test_torque_driven(contact_types, with_external_force, cx, phase_dynamics, d
                         x_defects[:, 0],
                         np.array(
                             [
-                                -3.93650365e-01,
-                                -9.85733354e-02,
-                                2.90961259e-01,
-                                9.11982054e-02,
+                                -4.89814660e-01,
+                                -1.22653677e-01,
+                                3.62039776e-01,
+                                1.13476887e-01,
                                 -6.86116772e00,
                                 -1.41889201e02,
                                 -4.93022460e00,
@@ -281,14 +282,14 @@ def test_torque_driven(contact_types, with_external_force, cx, phase_dynamics, d
                             x_defects[:, 0],
                             np.array(
                                 [
-                                    -0.04383072,
-                                    -0.04283728,
-                                    0.10537375,
-                                    -0.04831128,
-                                    0.28869817,
-                                    2.36916856,
-                                    -1.15701705,
-                                    -3.82699645,
+                                    -0.19733986,
+                                    -0.19286707,
+                                    0.47442614,
+                                    -0.21751276,
+                                    1.29981099,
+                                    10.66675032,
+                                    -5.20925874,
+                                    -17.23035513,
                                 ]
                             ),
                         )
@@ -297,14 +298,14 @@ def test_torque_driven(contact_types, with_external_force, cx, phase_dynamics, d
                             x_defects[:, 0],
                             np.array(
                                 [
-                                    -4.38307239e-02,
-                                    -4.28372820e-02,
-                                    1.05373750e-01,
-                                    -4.83112831e-02,
-                                    -1.07342160e00,
-                                    -1.39608973e02,
-                                    -5.36386140e00,
-                                    -9.73899501e-01,
+                                    -0.19733986,
+                                    -0.19286707,
+                                    0.47442614,
+                                    -0.21751276,
+                                    -1.0734216,
+                                    -139.60897337,
+                                    -5.3638614,
+                                    -0.9738995,
                                 ]
                             ),
                             decimal=6,
@@ -315,14 +316,14 @@ def test_torque_driven(contact_types, with_external_force, cx, phase_dynamics, d
                             x_defects[:, 0],
                             np.array(
                                 [
-                                    -0.31172315,
-                                    -0.07805808,
-                                    0.23040588,
-                                    0.07221787,
-                                    -0.13508945,
-                                    6.797133,
-                                    1.523731,
-                                    -12.70223002,
+                                    -0.48981466,
+                                    -0.12265368,
+                                    0.36203978,
+                                    0.11347689,
+                                    -0.21226781,
+                                    10.68042395,
+                                    2.39425844,
+                                    -19.95918011,
                                 ]
                             ),
                         )
@@ -331,10 +332,10 @@ def test_torque_driven(contact_types, with_external_force, cx, phase_dynamics, d
                             x_defects[:, 0],
                             np.array(
                                 [
-                                    -3.11723149e-01,
-                                    -7.80580770e-02,
-                                    2.30405883e-01,
-                                    7.22178723e-02,
+                                    -4.89814660e-01,
+                                    -1.22653677e-01,
+                                    3.62039776e-01,
+                                    1.13476887e-01,
                                     -6.89259691e00,
                                     -1.42138493e02,
                                     -4.94850146e00,
@@ -359,8 +360,7 @@ def test_torque_driven_soft_contacts_dynamics(contact_types, cx, phase_dynamics,
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
 
     nlp.model = TorqueBiorbdModel(
-        TestUtils.bioptim_folder()
-        + "/examples/muscle_driven_with_contact/models/2segments_4dof_2soft_contacts_1muscle.bioMod",
+        TestUtils.bioptim_folder() + "/examples/models/2segments_4dof_2soft_contacts_1muscle.bioMod",
         contact_types=contact_types,
     )
     nlp.dynamics_type = DynamicsOptions(
@@ -415,14 +415,14 @@ def test_torque_driven_soft_contacts_dynamics(contact_types, cx, phase_dynamics,
                 x_defects[:, 0],
                 np.array(
                     [
-                        -3.09712665e-01,
-                        -7.75546351e-02,
-                        2.28919861e-01,
-                        7.17520972e-02,
-                        2.61640603e-02,
-                        7.03511775e00,
-                        6.83158357e-01,
-                        -3.28035543e01,
+                        -4.89814660e-01,
+                        -1.22653677e-01,
+                        3.62039776e-01,
+                        1.13476887e-01,
+                        4.13788060e-02,
+                        1.11261314e01,
+                        1.08042394e00,
+                        -5.18792532e01,
                         -3.14291857e-02,
                         -2.49292229e-01,
                         -2.89751453e-01,
@@ -443,10 +443,10 @@ def test_torque_driven_soft_contacts_dynamics(contact_types, cx, phase_dynamics,
                 x_defects[:, 0],
                 np.array(
                     [
-                        -3.09712665e-01,
-                        -7.75546351e-02,
-                        2.28919861e-01,
-                        7.17520972e-02,
+                        -4.89814660e-01,
+                        -1.22653677e-01,
+                        3.62039776e-01,
+                        1.13476887e-01,
                         -6.64330468e00,
                         -1.41848741e02,
                         -4.01919389e00,
@@ -472,7 +472,16 @@ def test_torque_driven_soft_contacts_dynamics(contact_types, cx, phase_dynamics,
             npt.assert_almost_equal(
                 x_defects[:, 0],
                 np.array(
-                    [-0.31172315, -0.07805808, 0.23040588, 0.07221787, -0.13508945, 6.797133, 1.523731, -12.70223002]
+                    [
+                        -0.48981466,
+                        -0.12265368,
+                        0.36203978,
+                        0.11347689,
+                        -0.21226781,
+                        10.68042395,
+                        2.39425844,
+                        -19.95918011,
+                    ]
                 ),
             )
         else:
@@ -480,10 +489,10 @@ def test_torque_driven_soft_contacts_dynamics(contact_types, cx, phase_dynamics,
                 x_defects[:, 0],
                 np.array(
                     [
-                        -3.11723149e-01,
-                        -7.80580770e-02,
-                        2.30405883e-01,
-                        7.22178723e-02,
+                        -4.89814660e-01,
+                        -1.22653677e-01,
+                        3.62039776e-01,
+                        1.13476887e-01,
                         -6.89259691e00,
                         -1.42138493e02,
                         -4.94850146e00,
@@ -519,7 +528,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
         numerical_timeseries = {"external_forces": external_forces.to_numerical_time_series()}
 
     nlp.model = TorqueDerivativeBiorbdModel(
-        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod",
+        TestUtils.bioptim_folder() + "/examples/models/2segments_4dof_2contacts.bioMod",
         contact_types=[ContactType.RIGID_EXPLICIT] if with_contact else (),
         external_force_set=external_forces,
     )
@@ -591,18 +600,18 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
                     x_defects[:, 0],
                     np.array(
                         [
-                            -0.0140995,
-                            -0.0071009,
-                            -0.00592597,
-                            -0.00486693,
-                            0.04135072,
-                            0.02020007,
-                            -0.06055008,
-                            0.06666342,
-                            -0.00814222,
-                            0.00134606,
-                            0.00986419,
-                            -0.01324398,
+                            -0.84999038,
+                            -0.42807864,
+                            -0.3572481,
+                            -0.29340385,
+                            2.49283506,
+                            1.21776478,
+                            -3.65027157,
+                            4.01881518,
+                            -0.49085488,
+                            0.08114766,
+                            0.59466416,
+                            -0.79841555,
                         ]
                     ),
                 )
@@ -630,18 +639,18 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
                         x_defects[:, 0],
                         np.array(
                             [
-                                -0.0140995,
-                                -0.0071009,
-                                -0.00592597,
-                                -0.00486693,
-                                0.02289304,
-                                0.18246443,
-                                -0.06771473,
-                                -0.21721173,
-                                -0.00814222,
-                                0.00134606,
-                                0.00986419,
-                                -0.01324398,
+                                -0.84999038,
+                                -0.42807864,
+                                -0.3572481,
+                                -0.29340385,
+                                1.38011043,
+                                10.99989806,
+                                -4.08219355,
+                                -13.09464479,
+                                -0.49085488,
+                                0.08114766,
+                                0.59466416,
+                                -0.79841555,
                             ]
                         ),
                     )
@@ -650,18 +659,18 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
                         x_defects[:, 0],
                         np.array(
                             [
-                                -1.40994950e-02,
-                                -7.10089523e-03,
-                                -5.92597043e-03,
-                                -4.86693294e-03,
+                                -8.49990382e-01,
+                                -4.28078639e-01,
+                                -3.57248104e-01,
+                                -2.93403854e-01,
                                 -5.70258892e00,
                                 -1.45376254e02,
                                 -7.08538520e00,
                                 -1.08402622e00,
-                                -8.14221682e-03,
-                                1.34606351e-03,
-                                9.86418739e-03,
-                                -1.32439805e-02,
+                                -4.90854883e-01,
+                                8.11476605e-02,
+                                5.94664162e-01,
+                                -7.98415548e-01,
                             ]
                         ),
                         decimal=6,
@@ -716,8 +725,7 @@ def test_torque_derivative_driven_soft_contacts_dynamics(contact_types, cx, phas
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
 
     nlp.model = TorqueDerivativeBiorbdModel(
-        TestUtils.bioptim_folder()
-        + "/examples/muscle_driven_with_contact/models/2segments_4dof_2soft_contacts_1muscle.bioMod",
+        TestUtils.bioptim_folder() + "/examples/models/2segments_4dof_2soft_contacts_1muscle.bioMod",
         contact_types=contact_types,
     )
     nlp.dynamics_type = DynamicsOptions(
@@ -772,30 +780,30 @@ def test_torque_derivative_driven_soft_contacts_dynamics(contact_types, cx, phas
                 x_defects[:, 0],
                 np.array(
                     [
-                        -0.01877799,
-                        -0.02040225,
-                        0.01385785,
-                        -0.00667989,
-                        0.10275146,
-                        0.90393653,
-                        -0.14864133,
-                        -3.54475834,
-                        -0.06529354,
-                        -0.01496139,
-                        -0.01074127,
-                        0.04613038,
-                        -0.96244729,
-                        -0.03688695,
-                        -0.90826589,
-                        -0.24205527,
-                        -0.36778313,
-                        -0.8353025,
-                        -0.67756436,
-                        -0.17436643,
-                        -0.34106635,
-                        -0.65998405,
-                        -0.09310277,
-                        -0.34920957,
+                        -2.23175605e-01,
+                        -2.42479878e-01,
+                        1.64699917e-01,
+                        -7.93901801e-02,
+                        1.22119681e00,
+                        1.07432483e01,
+                        -1.76659607e00,
+                        -4.21293061e01,
+                        -7.76010969e-01,
+                        -1.77815559e-01,
+                        -1.27659550e-01,
+                        5.48257658e-01,
+                        -9.62447295e-01,
+                        -3.68869474e-02,
+                        -9.08265886e-01,
+                        -2.42055272e-01,
+                        -3.67783133e-01,
+                        -8.35302496e-01,
+                        -6.77564362e-01,
+                        -1.74366429e-01,
+                        -3.41066351e-01,
+                        -6.59984046e-01,
+                        -9.31027678e-02,
+                        -3.49209575e-01,
                     ]
                 ),
             )
@@ -804,18 +812,18 @@ def test_torque_derivative_driven_soft_contacts_dynamics(contact_types, cx, phas
                 x_defects[:, 0],
                 np.array(
                     [
-                        -1.87779876e-02,
-                        -2.04022485e-02,
-                        1.38578453e-02,
-                        -6.67988697e-03,
+                        -2.23175605e-01,
+                        -2.42479878e-01,
+                        1.64699917e-01,
+                        -7.93901801e-02,
                         -1.16039573e01,
                         -1.37716732e02,
                         -4.76824404e00,
                         -8.16422811e-01,
-                        -6.52935358e-02,
-                        -1.49613950e-02,
-                        -1.07412701e-02,
-                        4.61303802e-02,
+                        -7.76010969e-01,
+                        -1.77815559e-01,
+                        -1.27659550e-01,
+                        5.48257658e-01,
                         -9.62447295e-01,
                         -3.68869474e-02,
                         -9.08265886e-01,
@@ -838,18 +846,18 @@ def test_torque_derivative_driven_soft_contacts_dynamics(contact_types, cx, phas
                 x_defects[:, 0],
                 np.array(
                     [
-                        -0.05619167,
-                        -0.06105214,
-                        0.04146852,
-                        -0.01998904,
-                        0.29345657,
-                        2.69664409,
-                        -0.37386083,
-                        -8.89007806,
-                        -0.19538582,
-                        -0.04477081,
-                        -0.03214241,
-                        0.13804157,
+                        -0.22317561,
+                        -0.24247988,
+                        0.16469992,
+                        -0.07939018,
+                        1.16551709,
+                        10.71022124,
+                        -1.48485748,
+                        -35.30859082,
+                        -0.77601097,
+                        -0.17781556,
+                        -0.12765955,
+                        0.54825766,
                     ]
                 ),
             )
@@ -858,18 +866,18 @@ def test_torque_derivative_driven_soft_contacts_dynamics(contact_types, cx, phas
                 x_defects[:, 0],
                 np.array(
                     [
-                        -5.61916662e-02,
-                        -6.10521404e-02,
-                        4.14685233e-02,
-                        -1.99890418e-02,
+                        -2.23175605e-01,
+                        -2.42479878e-01,
+                        1.64699917e-01,
+                        -7.93901801e-02,
                         -1.16408442e01,
                         -1.38624998e02,
                         -4.97910457e00,
                         -9.99496342e-01,
-                        -1.95385823e-01,
-                        -4.47708098e-02,
-                        -3.21424146e-02,
-                        1.38041572e-01,
+                        -7.76010969e-01,
+                        -1.77815559e-01,
+                        -1.27659550e-01,
+                        5.48257658e-01,
                     ]
                 ),
                 decimal=6,
@@ -901,7 +909,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
         numerical_timeseries = {"external_forces": external_forces.to_numerical_time_series()}
 
     nlp.model = TorqueActivationBiorbdModel(
-        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod",
+        TestUtils.bioptim_folder() + "/examples/models/2segments_4dof_2contacts.bioMod",
         contact_types=[ContactType.RIGID_EXPLICIT] if with_contact else (),
         external_force_set=external_forces,
     )
@@ -974,14 +982,14 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
                         x_defects[:, 0],
                         np.array(
                             [
-                                -0.04383072,
-                                -0.04283728,
-                                0.10537375,
-                                -0.04831128,
-                                2.74968269,
-                                0.46056293,
-                                -5.48418391,
-                                5.354188,
+                                -0.19733986,
+                                -0.19286707,
+                                0.47442614,
+                                -0.21751276,
+                                12.37994595,
+                                2.07360077,
+                                -24.69154011,
+                                24.10625719,
                             ]
                         ),
                         decimal=5,
@@ -993,14 +1001,14 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
                         x_defects[:, 0],
                         np.array(
                             [
-                                -0.31172315,
-                                -0.07805808,
-                                0.23040588,
-                                0.07221787,
-                                -28.13827671,
-                                -0.1215312,
-                                57.2699282,
-                                -56.5784637,
+                                -0.48981466,
+                                -0.12265368,
+                                0.36203978,
+                                0.11347689,
+                                -44.21404209,
+                                -0.19096356,
+                                89.98898695,
+                                -88.90247974,
                             ]
                         ),
                         decimal=5,
@@ -1013,14 +1021,14 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
                         x_defects[:, 0],
                         np.array(
                             [
-                                -4.38307239e-02,
-                                -4.28372820e-02,
-                                1.05373750e-01,
-                                -4.83112831e-02,
-                                1.61331714e01,
-                                8.13653930e00,
-                                -7.65761291e01,
-                                -3.89924217e02,
+                                -1.97339858e-01,
+                                -1.92867067e-01,
+                                4.74426136e-01,
+                                -2.17512761e-01,
+                                7.26366684e01,
+                                3.66332876e01,
+                                -3.44770087e02,
+                                -1.75556283e03,
                             ]
                         ),
                         decimal=5,
@@ -1030,14 +1038,14 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
                         x_defects[:, 0],
                         np.array(
                             [
-                                -4.38307239e-02,
-                                -4.28372820e-02,
-                                1.05373750e-01,
-                                -4.83112831e-02,
-                                2.76119722e01,
-                                -5.33343749e01,
-                                7.45727140e01,
-                                4.13097716e01,
+                                -0.19733986,
+                                -0.19286707,
+                                0.47442614,
+                                -0.21751276,
+                                27.61197224,
+                                -53.33437494,
+                                74.57271396,
+                                41.30977157,
                             ]
                         ),
                         decimal=5,
@@ -1048,14 +1056,14 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
                         x_defects[:, 0],
                         np.array(
                             [
-                                -3.11723149e-01,
-                                -7.80580770e-02,
-                                2.30405883e-01,
-                                7.22178723e-02,
-                                -4.20800305e01,
-                                2.16475239e01,
-                                1.24723562e02,
-                                -1.37029516e03,
+                                -4.89814660e-01,
+                                -1.22653677e-01,
+                                3.62039776e-01,
+                                1.13476887e-01,
+                                -6.61209021e01,
+                                3.40150373e01,
+                                1.95979764e02,
+                                -2.15316271e03,
                             ]
                         ),
                         decimal=5,
@@ -1065,14 +1073,14 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
                         x_defects[:, 0],
                         np.array(
                             [
-                                -3.11723149e-01,
-                                -7.80580770e-02,
-                                2.30405883e-01,
-                                7.22178723e-02,
-                                7.85546423e01,
-                                -1.09945344e02,
-                                6.89132889e00,
-                                4.73862588e01,
+                                -0.48981466,
+                                -0.12265368,
+                                0.36203978,
+                                0.11347689,
+                                78.55464226,
+                                -109.94534391,
+                                6.89132889,
+                                47.38625878,
                             ]
                         ),
                         decimal=5,
@@ -1095,13 +1103,10 @@ def test_torque_activation_driven_with_residual_torque(
 
     if with_passive_torque:
         model_filename = (
-            TestUtils.bioptim_folder()
-            + "/examples/torque_driven_ocp/models/2segments_2dof_2contacts_with_passive_torque.bioMod"
+            TestUtils.bioptim_folder() + "/examples/models/2segments_2dof_2contacts_with_passive_torque.bioMod"
         )
     else:
-        model_filename = (
-            TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/2segments_2dof_2contacts.bioMod"
-        )
+        model_filename = TestUtils.bioptim_folder() + "/examples/models/2segments_2dof_2contacts.bioMod"
 
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
@@ -1182,46 +1187,46 @@ def test_torque_activation_driven_with_residual_torque(
                 if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
                     npt.assert_almost_equal(
                         x_defects[:, 0],
-                        np.array([6.04508047e-01, 1.84981427e-01, -8.70762306e01, -1.03464970e03]),
+                        np.array([8.47546393e-01, 2.59351951e-01, -1.22084636e02, -1.45062357e03]),
                         decimal=5,
                     )
                 else:
                     npt.assert_almost_equal(
                         x_defects[:, 0],
-                        np.array([0.60450805, 0.18498143, 83.57439118, 34.05025566]),
+                        np.array([0.84754639, 0.25935195, 83.57439118, 34.05025566]),
                         decimal=5,
                     )
             else:
                 if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
                     npt.assert_almost_equal(
-                        x_defects[:, 0], np.array([0.16044011, 0.1632901, -1.06310829, -27.22644766]), decimal=5
+                        x_defects[:, 0], np.array([0.5912684, 0.60177145, -3.91786284, -100.33736802]), decimal=5
                     )
                 else:
                     npt.assert_almost_equal(
-                        x_defects[:, 0], np.array([0.16044011, 0.1632901, 6.29890182, 2.76062726]), decimal=5
+                        x_defects[:, 0], np.array([0.5912684, 0.60177145, 6.29890182, 2.76062726]), decimal=5
                     )
         else:
             if with_external_force:
                 if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
                     npt.assert_almost_equal(
                         x_defects[:, 0],
-                        np.array([6.04508047e-01, 1.84981427e-01, -8.35362294e01, -1.00272333e03]),
+                        np.array([8.47546393e-01, 2.59351951e-01, -1.17121402e02, -1.40586142e03]),
                         decimal=5,
                     )
                 else:
                     npt.assert_almost_equal(
                         x_defects[:, 0],
-                        np.array([0.60450805, 0.18498143, 79.57439118, 33.05025566]),
+                        np.array([0.84754639, 0.25935195, 79.57439118, 33.05025566]),
                         decimal=5,
                     )
             else:
                 if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
                     npt.assert_almost_equal(
-                        x_defects[:, 0], np.array([0.16044011, 0.1632901, -0.31706506, -17.5258886]), decimal=5
+                        x_defects[:, 0], np.array([0.5912684, 0.60177145, -1.16847683, -64.58799018]), decimal=5
                     )
                 else:
                     npt.assert_almost_equal(
-                        x_defects[:, 0], np.array([0.16044011, 0.1632901, 2.29890182, 1.76062726]), decimal=5
+                        x_defects[:, 0], np.array([0.5912684, 0.60177145, 2.29890182, 1.76062726]), decimal=5
                     )
     else:
         if with_passive_torque:
@@ -1229,46 +1234,46 @@ def test_torque_activation_driven_with_residual_torque(
                 if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
                     npt.assert_almost_equal(
                         x_defects[:, 0],
-                        np.array([5.28274079e-01, 1.61653585e-01, -7.53323145e01, -8.95479455e02]),
+                        np.array([8.47546393e-01, 2.59351951e-01, -1.20860807e02, -1.43667920e03]),
                         decimal=5,
                     )
                 else:
                     npt.assert_almost_equal(
                         x_defects[:, 0],
-                        np.array([0.52827408, 0.16165359, 82.71128776, 33.72507234]),
+                        np.array([0.84754639, 0.25935195, 82.71128776, 33.72507234]),
                         decimal=5,
                     )
             else:
                 if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
                     npt.assert_almost_equal(
-                        x_defects[:, 0], np.array([0.45831154, 0.4664528, -2.70311395, -51.49785706]), decimal=5
+                        x_defects[:, 0], np.array([0.5912684, 0.60177145, -3.48729129, -66.43746144]), decimal=5
                     )
                 else:
                     npt.assert_almost_equal(
-                        x_defects[:, 0], np.array([0.45831154, 0.4664528, 5.32931719, 1.83875302]), decimal=5
+                        x_defects[:, 0], np.array([0.5912684, 0.60177145, 5.32931719, 1.83875302]), decimal=5
                     )
         else:
             if with_external_force:
                 if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
                     npt.assert_almost_equal(
                         x_defects[:, 0],
-                        np.array([5.28274079e-01, 1.61653585e-01, -7.22387397e01, -8.67579288e02]),
+                        np.array([8.47546393e-01, 2.59351951e-01, -1.15897572e02, -1.39191705e03]),
                         decimal=5,
                     )
                 else:
                     npt.assert_almost_equal(
                         x_defects[:, 0],
-                        np.array([0.52827408, 0.16165359, 78.71128776, 32.72507234]),
+                        np.array([0.84754639, 0.25935195, 78.71128776, 32.72507234]),
                         decimal=5,
                     )
             else:
                 if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
                     npt.assert_almost_equal(
-                        x_defects[:, 0], np.array([0.45831154, 0.4664528, -0.57197461, -23.78734089]), decimal=5
+                        x_defects[:, 0], np.array([0.5912684, 0.60177145, -0.73790529, -30.6880836]), decimal=5
                     )
                 else:
                     npt.assert_almost_equal(
-                        x_defects[:, 0], np.array([0.45831154, 0.4664528, 1.32931719, 0.83875302]), decimal=5
+                        x_defects[:, 0], np.array([0.5912684, 0.60177145, 1.32931719, 0.83875302]), decimal=5
                     )
 
 
@@ -1284,7 +1289,7 @@ def test_torque_driven_free_floating_base(cx, phase_dynamics, defects_type):
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = TorqueFreeFloatingBaseBiorbdModel(
-        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+        TestUtils.bioptim_folder() + "/examples/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.dynamics_type = DynamicsOptions(
         expand_dynamics=True,
@@ -1338,7 +1343,7 @@ def test_torque_driven_free_floating_base(cx, phase_dynamics, defects_type):
         npt.assert_almost_equal(
             x_defects[:, 0],
             np.array(
-                [-0.3573718, -0.08948888, 0.26414646, 0.08279344, -0.25072741, 7.9598835, 2.1430355, -25.96856935]
+                [-0.48981466, -0.12265368, 0.36203978, 0.11347689, -0.3436476, 10.90983566, 2.93724966, -35.59258422]
             ),
             decimal=5,
         )
@@ -1346,7 +1351,7 @@ def test_torque_driven_free_floating_base(cx, phase_dynamics, defects_type):
         npt.assert_almost_equal(
             x_defects[:, 0],
             np.array(
-                [-0.3573718, -0.08948888, 0.26414646, 0.08279344, -1.99330085, -1.99330085, -1.99330085, -1.13019743]
+                [-0.48981466, -0.12265368, 0.36203978, 0.11347689, -1.99330085, -1.99330085, -1.99330085, -1.13019743]
             ),
             decimal=6,
         )
@@ -1411,7 +1416,7 @@ def test_muscle_driven(
     if ContactType.RIGID_IMPLICIT in contact_types and with_external_force:
         with pytest.raises(NotImplementedError):
             nlp.model = MusclesBiorbdModel(
-                TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod",
+                TestUtils.bioptim_folder() + "/examples/models/arm26_with_contact.bioMod",
                 contact_types=contact_types,
                 external_force_set=external_forces,
             )
@@ -1419,17 +1424,17 @@ def test_muscle_driven(
         with pytest.raises(RuntimeError, match="The segment for the rigid contact index 0 was not found."):
             # TODO: This is a bug... The index of the parent of the contact is not correctly identified when it is the root
             nlp.model = MusclesBiorbdModel(
-                TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod",
+                TestUtils.bioptim_folder() + "/examples/models/arm26_with_contact.bioMod",
                 contact_types=contact_types,
                 external_force_set=external_forces,
             )
     else:
-        nlp.model = MusclesBiorbdModel(
-            TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod",
+        muscle_class = MusclesWithExcitationsBiorbdModel if with_excitation else MusclesBiorbdModel
+        nlp.model = muscle_class(
+            TestUtils.bioptim_folder() + "/examples/models/arm26_with_contact.bioMod",
             contact_types=contact_types,
             external_force_set=external_forces,
             with_residual_torque=with_residual_torque,
-            with_excitation=with_excitation,
         )
         nlp.dynamics_type = DynamicsOptions(
             expand_dynamics=True,
@@ -1503,18 +1508,18 @@ def test_muscle_driven(
                                 x_defects[:, 0],
                                 np.array(
                                     [
-                                        -0.39414169,
-                                        -0.34540175,
-                                        -0.64642364,
-                                        -0.32407953,
-                                        28.31157446,
-                                        11.05514434,
-                                        -29.35153822,
-                                        -7.14085992,
-                                        18.29768098,
-                                        11.45405575,
-                                        7.31449586,
-                                        4.18729136,
+                                        -0.54292804,
+                                        -0.47578903,
+                                        -0.89044505,
+                                        -0.44641779,
+                                        38.99903987,
+                                        15.22840121,
+                                        -40.43158428,
+                                        -9.8364957,
+                                        25.20495604,
+                                        15.77789951,
+                                        10.07567827,
+                                        5.76797109,
                                     ]
                                 ),
                                 decimal=5,
@@ -1524,18 +1529,18 @@ def test_muscle_driven(
                                 x_defects[:, 0],
                                 np.array(
                                     [
-                                        6.58474157e-02,
-                                        -2.21841265e-02,
-                                        -4.14806864e-03,
-                                        1.51595699e00,
-                                        -4.10616583e01,
-                                        1.46386667e02,
-                                        3.25656270e00,
-                                        -2.72705314e00,
-                                        4.76521837e-01,
-                                        -5.19721258e00,
-                                        1.14956080e01,
-                                        8.64588438e00,
+                                        2.05272780e-01,
+                                        -6.91568116e-02,
+                                        -1.29311921e-02,
+                                        4.72584539e00,
+                                        -1.28005642e02,
+                                        4.56345900e02,
+                                        1.01520109e01,
+                                        -8.50131737e00,
+                                        1.48550951e00,
+                                        -1.62017941e01,
+                                        3.58364164e01,
+                                        2.69526860e01,
                                     ]
                                 ),
                                 decimal=5,
@@ -1545,14 +1550,14 @@ def test_muscle_driven(
                             npt.assert_almost_equal(
                                 x_defects[:, 0],
                                 np.array(
-                                    [-0.14206822, -0.22146577, -0.07762636, -0.18970781, 31.78037536, -23.11015379]
+                                    [-0.27384499, -0.42688854, -0.14962947, -0.36567318, 61.25857721, -44.54620577]
                                 ),
                                 decimal=5,
                             )
                         else:
                             npt.assert_almost_equal(
                                 x_defects[:, 0],
-                                np.array([0.17405995, 0.08065849, -0.2721404, 0.46729892, -1.66989605, 49.55158537]),
+                                np.array([0.42414034, 0.19654445, -0.66313773, 1.13868998, -4.0691168, 120.74475469]),
                                 decimal=5,
                             )
                 else:
@@ -1562,18 +1567,18 @@ def test_muscle_driven(
                                 x_defects[:, 0],
                                 np.array(
                                     [
-                                        -6.16079563e-02,
-                                        -5.39894568e-02,
-                                        -1.01041935e-01,
-                                        -2.17790397e-03,
-                                        3.85980483e00,
-                                        3.53803553e00,
-                                        -5.35239171e00,
-                                        1.16917330e00,
-                                        1.95016256e00,
-                                        -7.20251522e-01,
-                                        1.05381874e00,
-                                        4.26798401e-01,
+                                        -5.42928038e-01,
+                                        -4.75789031e-01,
+                                        -8.90445049e-01,
+                                        -1.91930588e-02,
+                                        3.40150265e01,
+                                        3.11793932e01,
+                                        -4.71686403e01,
+                                        1.03034901e01,
+                                        1.71860583e01,
+                                        -6.34730917e00,
+                                        9.28691316e00,
+                                        3.76121580e00,
                                     ]
                                 ),
                                 decimal=5,
@@ -1583,18 +1588,18 @@ def test_muscle_driven(
                                 x_defects[:, 0],
                                 np.array(
                                     [
-                                        4.91755352e-02,
-                                        -1.65673365e-02,
-                                        -3.09782083e-03,
-                                        1.22322499e00,
-                                        -3.17079402e01,
-                                        1.12985229e02,
-                                        -3.36444200e00,
-                                        4.02911242e00,
-                                        -1.03517852e01,
-                                        3.09538706e00,
-                                        1.52954858e-01,
-                                        1.01881033e01,
+                                        2.05272780e-01,
+                                        -6.91568116e-02,
+                                        -1.29311921e-02,
+                                        5.10609172e00,
+                                        -1.32358031e02,
+                                        4.71632733e02,
+                                        -1.40441453e01,
+                                        1.68186702e01,
+                                        -4.32113186e01,
+                                        1.29210328e01,
+                                        6.38477420e-01,
+                                        4.25280634e01,
                                     ]
                                 ),
                                 decimal=5,
@@ -1603,7 +1608,7 @@ def test_muscle_driven(
                         if with_external_force:
                             npt.assert_almost_equal(
                                 x_defects[:, 0],
-                                np.array([-0.24539012, -0.38253111, -0.13408166, 0.49788677, 13.85407958, 9.69500013]),
+                                np.array([-0.27384499, -0.42688854, -0.14962947, 0.55562059, 15.460567, 10.819210193]),
                                 decimal=5,
                             )
                         else:
@@ -1611,138 +1616,14 @@ def test_muscle_driven(
                                 x_defects[:, 0],
                                 np.array(
                                     [
-                                        3.02515888e-01,
-                                        1.40184307e-01,
-                                        -4.72979527e-01,
-                                        1.72167922e00,
-                                        -3.48494533e01,
-                                        1.46223566e02,
+                                        4.24140342e-01,
+                                        1.96544453e-01,
+                                        -6.63137727e-01,
+                                        2.41386864e00,
+                                        -4.88604389e01,
+                                        2.05011756e02,
                                     ]
                                 ),
-                                decimal=5,
-                            )
-            elif ContactType.RIGID_IMPLICIT in contact_types:
-                if with_residual_torque:
-                    if with_excitation:
-                        if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
-                            npt.assert_almost_equal(
-                                x_defects[:, 0],
-                                np.array(
-                                    [
-                                        6.58474157e-02,
-                                        -2.21841265e-02,
-                                        -4.14806864e-03,
-                                        1.51595699e00,
-                                        -4.10616583e01,
-                                        1.46386667e02,
-                                        3.25656270e00,
-                                        -2.72705314e00,
-                                        4.76521837e-01,
-                                        -5.19721258e00,
-                                        1.14956080e01,
-                                        8.64588438e00,
-                                    ]
-                                ),
-                                decimal=5,
-                            )
-                        else:
-                            npt.assert_almost_equal(
-                                x_defects[:, 0],
-                                np.array(
-                                    [
-                                        6.58474157e-02,
-                                        -2.21841265e-02,
-                                        -4.14806864e-03,
-                                        -1.70266428e00,
-                                        -1.31826147e01,
-                                        -1.28447704e01,
-                                        3.25656270e00,
-                                        -2.72705314e00,
-                                        4.76521837e-01,
-                                        -5.19721258e00,
-                                        1.14956080e01,
-                                        8.64588438e00,
-                                    ]
-                                ),
-                                decimal=5,
-                            )
-                    else:
-                        if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
-                            npt.assert_almost_equal(
-                                x_defects[:, 0],
-                                np.array([0.17405995, 0.08065849, -0.2721404, 0.46729892, -1.66989605, 49.55158537]),
-                                decimal=5,
-                            )
-                        else:
-                            npt.assert_almost_equal(
-                                x_defects[:, 0],
-                                np.array([0.17405995, 0.08065849, -0.2721404, -1.89342602, -16.46421687, -7.88393296]),
-                                decimal=5,
-                            )
-                else:
-                    if with_excitation:
-                        if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
-                            npt.assert_almost_equal(
-                                x_defects[:, 0],
-                                np.array(
-                                    [
-                                        4.91755352e-02,
-                                        -1.65673365e-02,
-                                        -3.09782083e-03,
-                                        1.22322499e00,
-                                        -3.17079402e01,
-                                        1.12985229e02,
-                                        -3.36444200e00,
-                                        4.02911242e00,
-                                        -1.03517852e01,
-                                        3.09538706e00,
-                                        1.52954858e-01,
-                                        1.01881033e01,
-                                    ]
-                                ),
-                                decimal=5,
-                            )
-                        else:
-                            npt.assert_almost_equal(
-                                x_defects[:, 0],
-                                np.array(
-                                    [
-                                        4.91755352e-02,
-                                        -1.65673365e-02,
-                                        -3.09782083e-03,
-                                        -2.51010444e00,
-                                        -1.36097225e01,
-                                        -1.32621814e01,
-                                        -3.36444200e00,
-                                        4.02911242e00,
-                                        -1.03517852e01,
-                                        3.09538706e00,
-                                        1.52954858e-01,
-                                        1.01881033e01,
-                                    ]
-                                ),
-                                decimal=5,
-                            )
-                    else:
-                        if defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
-                            npt.assert_almost_equal(
-                                x_defects[:, 0],
-                                np.array(
-                                    [
-                                        3.02515888e-01,
-                                        1.40184307e-01,
-                                        -4.72979527e-01,
-                                        1.72167922e00,
-                                        -3.48494533e01,
-                                        1.46223566e02,
-                                    ]
-                                ),
-                                decimal=5,
-                            )
-                        else:
-                            npt.assert_almost_equal(
-                                x_defects[:, 0],
-                                np.array([0.30251589, 0.14018431, -0.47297953, -2.28210331, -9.70670533, -7.06713657]),
                                 decimal=5,
                             )
             else:
@@ -1754,18 +1635,18 @@ def test_muscle_driven(
                                     x_defects[:, 0],
                                     np.array(
                                         [
-                                            -0.39414169,
-                                            -0.34540175,
-                                            -0.64642364,
-                                            -0.32407953,
-                                            28.31157446,
-                                            11.05514434,
-                                            -29.35153822,
-                                            -7.14085992,
-                                            18.29768098,
-                                            11.45405575,
-                                            7.31449586,
-                                            4.18729136,
+                                            -0.54292804,
+                                            -0.47578903,
+                                            -0.89044505,
+                                            -0.44641779,
+                                            38.99903987,
+                                            15.22840121,
+                                            -40.43158428,
+                                            -9.8364957,
+                                            25.20495604,
+                                            15.77789951,
+                                            10.07567827,
+                                            5.76797109,
                                         ]
                                     ),
                                     decimal=5,
@@ -1775,18 +1656,18 @@ def test_muscle_driven(
                                     x_defects[:, 0],
                                     np.array(
                                         [
-                                            -0.39414169,
-                                            -0.34540175,
-                                            -0.64642364,
+                                            -0.54292804,
+                                            -0.47578903,
+                                            -0.89044505,
                                             0.31041669,
                                             -19.22248632,
                                             -6.93204239,
-                                            -29.35153822,
-                                            -7.14085992,
-                                            18.29768098,
-                                            11.45405575,
-                                            7.31449586,
-                                            4.18729136,
+                                            -40.43158428,
+                                            -9.8364957,
+                                            25.20495604,
+                                            15.77789951,
+                                            10.07567827,
+                                            5.76797109,
                                         ]
                                     ),
                                     decimal=5,
@@ -1797,18 +1678,18 @@ def test_muscle_driven(
                                     x_defects[:, 0],
                                     np.array(
                                         [
-                                            6.58474157e-02,
-                                            -2.21841265e-02,
-                                            -4.14806864e-03,
-                                            1.51595699e00,
-                                            -4.10616583e01,
-                                            1.46386667e02,
-                                            3.25656270e00,
-                                            -2.72705314e00,
-                                            4.76521837e-01,
-                                            -5.19721258e00,
-                                            1.14956080e01,
-                                            8.64588438e00,
+                                            2.05272780e-01,
+                                            -6.91568116e-02,
+                                            -1.29311921e-02,
+                                            4.72584539e00,
+                                            -1.28005642e02,
+                                            4.56345900e02,
+                                            1.01520109e01,
+                                            -8.50131737e00,
+                                            1.48550951e00,
+                                            -1.62017941e01,
+                                            3.58364164e01,
+                                            2.69526860e01,
                                         ]
                                     ),
                                     decimal=5,
@@ -1818,18 +1699,18 @@ def test_muscle_driven(
                                     x_defects[:, 0],
                                     np.array(
                                         [
-                                            6.58474157e-02,
-                                            -2.21841265e-02,
-                                            -4.14806864e-03,
+                                            2.05272780e-01,
+                                            -6.91568116e-02,
+                                            -1.29311921e-02,
                                             -1.70266428e00,
                                             -1.31826147e01,
                                             -1.28447704e01,
-                                            3.25656270e00,
-                                            -2.72705314e00,
-                                            4.76521837e-01,
-                                            -5.19721258e00,
-                                            1.14956080e01,
-                                            8.64588438e00,
+                                            1.01520109e01,
+                                            -8.50131737e00,
+                                            1.48550951e00,
+                                            -1.62017941e01,
+                                            3.58364164e01,
+                                            2.69526860e01,
                                         ]
                                     ),
                                     decimal=5,
@@ -1840,7 +1721,7 @@ def test_muscle_driven(
                                 npt.assert_almost_equal(
                                     x_defects[:, 0],
                                     np.array(
-                                        [-0.14206822, -0.22146577, -0.07762636, -0.18970781, 31.78037536, -23.11015379]
+                                        [-0.27384499, -0.42688854, -0.14962947, -0.36567318, 61.25857721, -44.54620577]
                                     ),
                                     decimal=5,
                                 )
@@ -1848,7 +1729,7 @@ def test_muscle_driven(
                                 npt.assert_almost_equal(
                                     x_defects[:, 0],
                                     np.array(
-                                        [-0.14206822, -0.22146577, -0.07762636, -2.14326015, -19.93936948, -6.05447738]
+                                        [-0.27384499, -0.42688854, -0.14962947, -2.14326015, -19.93936948, -6.05447738]
                                     ),
                                     decimal=5,
                                 )
@@ -1857,7 +1738,7 @@ def test_muscle_driven(
                                 npt.assert_almost_equal(
                                     x_defects[:, 0],
                                     np.array(
-                                        [0.17405995, 0.08065849, -0.2721404, 0.46729892, -1.66989605, 49.55158537]
+                                        [0.42414034, 0.19654445, -0.66313773, 1.13868998, -4.0691168, 120.74475469]
                                     ),
                                     decimal=5,
                                 )
@@ -1865,7 +1746,7 @@ def test_muscle_driven(
                                 npt.assert_almost_equal(
                                     x_defects[:, 0],
                                     np.array(
-                                        [0.17405995, 0.08065849, -0.2721404, -1.89342602, -16.46421687, -7.88393296]
+                                        [0.42414034, 0.19654445, -0.66313773, -1.89342602, -16.46421687, -7.88393296]
                                     ),
                                     decimal=5,
                                 )
@@ -1877,18 +1758,18 @@ def test_muscle_driven(
                                     x_defects[:, 0],
                                     np.array(
                                         [
-                                            -6.16079563e-02,
-                                            -5.39894568e-02,
-                                            -1.01041935e-01,
-                                            -2.17790397e-03,
-                                            3.85980483e00,
-                                            3.53803553e00,
-                                            -5.35239171e00,
-                                            1.16917330e00,
-                                            1.95016256e00,
-                                            -7.20251522e-01,
-                                            1.05381874e00,
-                                            4.26798401e-01,
+                                            -5.42928038e-01,
+                                            -4.75789031e-01,
+                                            -8.90445049e-01,
+                                            -1.91930588e-02,
+                                            3.40150265e01,
+                                            3.11793932e01,
+                                            -4.71686403e01,
+                                            1.03034901e01,
+                                            1.71860583e01,
+                                            -6.34730917e00,
+                                            9.28691316e00,
+                                            3.76121580e00,
                                         ]
                                     ),
                                     decimal=5,
@@ -1898,18 +1779,18 @@ def test_muscle_driven(
                                     x_defects[:, 0],
                                     np.array(
                                         [
-                                            -0.06160796,
-                                            -0.05398946,
-                                            -0.10104194,
+                                            -0.54292804,
+                                            -0.47578903,
+                                            -0.89044505,
                                             -0.59784919,
                                             -19.46454159,
                                             -7.29982552,
-                                            -5.35239171,
-                                            1.1691733,
-                                            1.95016256,
-                                            -0.72025152,
-                                            1.05381874,
-                                            0.4267984,
+                                            -47.16864032,
+                                            10.30349009,
+                                            17.18605833,
+                                            -6.34730917,
+                                            9.28691316,
+                                            3.7612158,
                                         ]
                                     ),
                                     decimal=5,
@@ -1920,18 +1801,18 @@ def test_muscle_driven(
                                     x_defects[:, 0],
                                     np.array(
                                         [
-                                            4.91755352e-02,
-                                            -1.65673365e-02,
-                                            -3.09782083e-03,
-                                            1.22322499e00,
-                                            -3.17079402e01,
-                                            1.12985229e02,
-                                            -3.36444200e00,
-                                            4.02911242e00,
-                                            -1.03517852e01,
-                                            3.09538706e00,
-                                            1.52954858e-01,
-                                            1.01881033e01,
+                                            2.05272780e-01,
+                                            -6.91568116e-02,
+                                            -1.29311921e-02,
+                                            5.10609172e00,
+                                            -1.32358031e02,
+                                            4.71632733e02,
+                                            -1.40441453e01,
+                                            1.68186702e01,
+                                            -4.32113186e01,
+                                            1.29210328e01,
+                                            6.38477420e-01,
+                                            4.25280634e01,
                                         ]
                                     ),
                                     decimal=5,
@@ -1941,18 +1822,18 @@ def test_muscle_driven(
                                     x_defects[:, 0],
                                     np.array(
                                         [
-                                            4.91755352e-02,
-                                            -1.65673365e-02,
-                                            -3.09782083e-03,
+                                            2.05272780e-01,
+                                            -6.91568116e-02,
+                                            -1.29311921e-02,
                                             -2.51010444e00,
                                             -1.36097225e01,
                                             -1.32621814e01,
-                                            -3.36444200e00,
-                                            4.02911242e00,
-                                            -1.03517852e01,
-                                            3.09538706e00,
-                                            1.52954858e-01,
-                                            1.01881033e01,
+                                            -1.40441453e01,
+                                            1.68186702e01,
+                                            -4.32113186e01,
+                                            1.29210328e01,
+                                            6.38477420e-01,
+                                            4.25280634e01,
                                         ]
                                     ),
                                     decimal=5,
@@ -1963,7 +1844,7 @@ def test_muscle_driven(
                                 npt.assert_almost_equal(
                                     x_defects[:, 0],
                                     np.array(
-                                        [-0.24539012, -0.38253111, -0.13408166, 0.49788677, 13.85407958, 9.69500013]
+                                        [-0.27384499, -0.42688854, -0.14962947, 0.55562059, 15.460567, 10.81921019]
                                     ),
                                     decimal=5,
                                 )
@@ -1971,7 +1852,7 @@ def test_muscle_driven(
                                 npt.assert_almost_equal(
                                     x_defects[:, 0],
                                     np.array(
-                                        [-0.24539012, -0.38253111, -0.13408166, -2.2628544, -8.36653992, -3.06929409]
+                                        [-0.27384499, -0.42688854, -0.14962947, -2.2628544, -8.36653992, -3.06929409]
                                     ),
                                     decimal=5,
                                 )
@@ -1981,12 +1862,12 @@ def test_muscle_driven(
                                     x_defects[:, 0],
                                     np.array(
                                         [
-                                            3.02515888e-01,
-                                            1.40184307e-01,
-                                            -4.72979527e-01,
-                                            1.72167922e00,
-                                            -3.48494533e01,
-                                            1.46223566e02,
+                                            4.24140342e-01,
+                                            1.96544453e-01,
+                                            -6.63137727e-01,
+                                            2.41386864e00,
+                                            -4.88604389e01,
+                                            2.05011756e02,
                                         ]
                                     ),
                                     decimal=5,
@@ -1995,7 +1876,7 @@ def test_muscle_driven(
                                 npt.assert_almost_equal(
                                     x_defects[:, 0],
                                     np.array(
-                                        [0.30251589, 0.14018431, -0.47297953, -2.28210331, -9.70670533, -7.06713657]
+                                        [0.42414034, 0.19654445, -0.66313773, -2.28210331, -9.70670533, -7.06713657]
                                     ),
                                     decimal=5,
                                 )
@@ -2012,9 +1893,7 @@ def test_joints_acceleration_driven(cx, phase_dynamics, defects_type):
 
     # Prepare the program
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
-    nlp.model = JointAccelerationBiorbdModel(
-        TestUtils.bioptim_folder() + "/examples/getting_started/models/double_pendulum.bioMod"
-    )
+    nlp.model = JointAccelerationBiorbdModel(TestUtils.bioptim_folder() + "/examples/models/double_pendulum.bioMod")
     nlp.dynamics_type = DynamicsOptions(
         expand_dynamics=True,
         phase_dynamics=phase_dynamics,
@@ -2069,4 +1948,4 @@ def test_joints_acceleration_driven(cx, phase_dynamics, defects_type):
                 time, states[:, 0], controls[:, 0], params[:, 0], algebraic_states[:, 0], [], states_dot[:, 0]
             )
         )
-        npt.assert_almost_equal(x_defects[:, 0], np.array([0.18430491, 0.18757883, 1.05031557, 0.21394574]), decimal=5)
+        npt.assert_almost_equal(x_defects[:, 0], np.array([0.5912684, 0.60177145, 3.36951637, 0.68635911]), decimal=5)

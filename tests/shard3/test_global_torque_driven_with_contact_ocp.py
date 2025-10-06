@@ -19,12 +19,12 @@ from ..utils import TestUtils
     "objective_name", ["MINIMIZE_PREDICTED_COM_HEIGHT", "MINIMIZE_COM_POSITION", "MINIMIZE_COM_VELOCITY"]
 )
 def test_maximize_predicted_height_CoM(objective_name, phase_dynamics):
-    from bioptim.examples.torque_driven_ocp import maximize_predicted_height_CoM as ocp_module
+    from bioptim.examples.toy_examples.torque_driven_ocp import maximize_predicted_height_CoM as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/2segments_4dof_2contacts.bioMod",
         phase_time=0.5,
         n_shooting=5,
         use_actuators=False,
@@ -55,7 +55,7 @@ def test_maximize_predicted_height_CoM(objective_name, phase_dynamics):
 
     if objective_name == "MINIMIZE_PREDICTED_COM_HEIGHT":
         # Check objective function value
-        npt.assert_almost_equal(f[0, 0], 0.7719447987404187)
+        TestUtils.assert_objective_value(sol=sol, expected_value=0.7719447987404187)
 
         # final position
         npt.assert_almost_equal(q[:, -1], np.array((0.1189654, -0.0904378, -0.7999996, 0.7999996)))
@@ -66,7 +66,7 @@ def test_maximize_predicted_height_CoM(objective_name, phase_dynamics):
         npt.assert_almost_equal(tau[:, -1], np.array(-0.5142317))
     elif objective_name == "MINIMIZE_COM_POSITION":
         # Check objective function value
-        npt.assert_almost_equal(f[0, 0], 0.4652603337905152)
+        TestUtils.assert_objective_value(sol=sol, expected_value=0.4652603337905152)
 
         # final position
         npt.assert_almost_equal(q[:, -1], np.array((0.1189654, -0.0904378, -0.7999997, 0.7999997)))
@@ -77,7 +77,7 @@ def test_maximize_predicted_height_CoM(objective_name, phase_dynamics):
         npt.assert_almost_equal(tau[:, -1], np.array(-0.9187262))
     elif objective_name == "MINIMIZE_COM_VELOCITY":
         # Check objective function value
-        npt.assert_almost_equal(f[0, 0], 0.46678212036841293)
+        TestUtils.assert_objective_value(sol=sol, expected_value=0.46678212036841293)
 
         # final position
         npt.assert_almost_equal(q[:, -1], np.array((0.1189654, -0.0904379, -0.7999998, 0.7999998)))
@@ -93,12 +93,12 @@ def test_maximize_predicted_height_CoM(objective_name, phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE])
 def test_maximize_predicted_height_CoM_with_actuators(phase_dynamics):
-    from bioptim.examples.torque_driven_ocp import maximize_predicted_height_CoM as ocp_module
+    from bioptim.examples.toy_examples.torque_driven_ocp import maximize_predicted_height_CoM as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/2segments_4dof_2contacts.bioMod",
         phase_time=0.5,
         n_shooting=20,
         use_actuators=True,
@@ -109,9 +109,7 @@ def test_maximize_predicted_height_CoM_with_actuators(phase_dynamics):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 0.21850679397314332)
+    TestUtils.assert_objective_value(sol=sol, expected_value=0.21850679397314332)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -139,14 +137,14 @@ def test_maximize_predicted_height_CoM_with_actuators(phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE])
 def test_maximize_predicted_height_CoM_rigidbody_dynamics(phase_dynamics):
-    from bioptim.examples.torque_driven_ocp import maximize_predicted_height_CoM as ocp_module
+    from bioptim.examples.toy_examples.torque_driven_ocp import maximize_predicted_height_CoM as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ode_solver = OdeSolver.RK4()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/2segments_4dof_2contacts.bioMod",
         phase_time=0.5,
         n_shooting=20,
         use_actuators=False,
@@ -159,9 +157,7 @@ def test_maximize_predicted_height_CoM_rigidbody_dynamics(phase_dynamics):
     sol = ocp.solve(sol_opt)
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 0.8032447451950947)
+    TestUtils.assert_objective_value(sol=sol, expected_value=0.8032447451950947)
 
     # Check constraints
     g = np.array(sol.constraints)

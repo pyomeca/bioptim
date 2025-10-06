@@ -22,8 +22,8 @@ def _get_solution(
     if is_multi_phase:
         from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-        bioptim_folder = TestUtils.module_folder(ocp_module)
-        model_path = bioptim_folder + "/models/cube.bioMod"
+        bioptim_folder = TestUtils.bioptim_folder()
+        model_path = bioptim_folder + "/examples/models/cube.bioMod"
         prepare_args = {
             "biorbd_model_path": model_path,
             "phase_dynamics": phase_dynamics,
@@ -31,10 +31,10 @@ def _get_solution(
             "control_type": control_type,
         }
     else:
-        from bioptim.examples.getting_started import pendulum as ocp_module
+        from bioptim.examples.getting_started import basic_ocp as ocp_module
 
-        bioptim_folder = TestUtils.module_folder(ocp_module)
-        model_path = bioptim_folder + "/models/pendulum.bioMod"
+        bioptim_folder = TestUtils.bioptim_folder()
+        model_path = bioptim_folder + "/examples/models/pendulum.bioMod"
         prepare_args = {
             "biorbd_model_path": model_path,
             "final_time": 2,
@@ -353,11 +353,28 @@ def test_get_time_aligned_with_states_multi_phases(
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 @pytest.mark.parametrize(
-    "control_type", [ControlType.CONSTANT, ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE]
+    "control_type",
+    [
+        ControlType.CONSTANT,
+        ControlType.LINEAR_CONTINUOUS,
+        ControlType.CONSTANT_WITH_LAST_NODE,
+    ],
 )
 @pytest.mark.parametrize("collocation_type", ["none", "radau", "legendre"])
-@pytest.mark.parametrize("duplicate_first", [False, True])
-@pytest.mark.parametrize("continuous", [False, True])
+@pytest.mark.parametrize(
+    "duplicate_first",
+    [
+        False,
+        True,
+    ],
+)
+@pytest.mark.parametrize(
+    "continuous",
+    [
+        False,
+        True,
+    ],
+)
 def test_get_time_aligned_with_controls_multi_phases(
     phase_dynamics, ode_solver, control_type, collocation_type, duplicate_first, continuous
 ):
@@ -431,12 +448,12 @@ def test_get_time_aligned_with_controls_multi_phases(
     )
     assert time.shape[0] == controls["tau"].shape[1]
     if continuous:
-        if control_type in (ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS):
+        if control_type.has_a_final_node:
             assert time[-1] == 11
         else:
             assert time[-1] == 10.8
     else:
-        if control_type in (ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS):
+        if control_type.has_a_final_node:
             npt.assert_almost_equal(time[-1, 0], 4.0)
         else:
             npt.assert_almost_equal(time[-1, 0], 3.8)
@@ -449,12 +466,12 @@ def test_get_time_aligned_with_controls_multi_phases(
     )
     assert time.shape[0] == controls.shape[1]
     if continuous:
-        if control_type in (ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS):
+        if control_type.has_a_final_node:
             assert time[-1] == 11
         else:
             assert time[-1] == 10.8
     else:
-        if control_type in (ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS):
+        if control_type.has_a_final_node:
             npt.assert_almost_equal(time[-1, 0], 4.0)
         else:
             npt.assert_almost_equal(time[-1, 0], 3.8)
@@ -522,12 +539,12 @@ def test_get_time_aligned_with_controls_multi_phases(
     )
     assert time.shape[0] == controls["tau"].shape[1]
     if continuous:
-        if control_type in (ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS):
+        if control_type.has_a_final_node:
             assert time[-1] == 11
         else:
             assert time[-1] == 10.8
     else:
-        if control_type in (ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS):
+        if control_type.has_a_final_node:
             npt.assert_almost_equal(time[-1, 0], 4.0)
         else:
             npt.assert_almost_equal(time[-1, 0], 3.8)
@@ -540,12 +557,12 @@ def test_get_time_aligned_with_controls_multi_phases(
     )
     assert time.shape[0] == controls.shape[1]
     if continuous:
-        if control_type in (ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS):
+        if control_type.has_a_final_node:
             assert time[-1] == 11
         else:
             assert time[-1] == 10.8
     else:
-        if control_type in (ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS):
+        if control_type.has_a_final_node:
             npt.assert_almost_equal(time[-1, 0], 4.0)
         else:
             npt.assert_almost_equal(time[-1, 0], 3.8)

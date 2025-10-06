@@ -59,16 +59,12 @@ class NonLinearProgram:
         The dynamic function used during the current phase dxdt = f(x,u,p)
     extra_dynamics_func: Callable
         The extra dynamic function used during the current phase dxdt = f(x,u,p)
-    implicit_dynamics_func: Callable
-        The implicit dynamic function used during the current phase f(x,u,p,xdot) = 0
     dynamics_type: DynamicsOptions
         The dynamic option declared by the user for the current phase
     g: list[list[Constraint]]
         All the constraints at each of the node of the phase
     g_internal: list[list[Constraint]]
         All the constraints internally defined by the OCP at each of the node of the phase
-    g_implicit: list[list[Constraint]]
-        All the implicit constraints defined by the OCP at each of the node of the phase
     J: list[list[Objective]]
         All the objectives at each of the node of the phase
     J_internal: list[list[Objective]]
@@ -155,14 +151,12 @@ class NonLinearProgram:
         self.extra_dynamics_func: AnyList = []
         self.dynamics_defects_func: Callable = None
         self.extra_dynamics_defects_func: AnyList = []
-        self.implicit_dynamics_func: Callable | None = None
         self.dynamics_type: "DynamicsFcn" | None = None
         self.extra_dynamics_defects = []
         self.dynamics_defects_func = None
         self.extra_dynamics_defects_func: list = []
         self.g: AnyList = []
         self.g_internal: AnyList = []
-        self.g_implicit: AnyList = []
         self.J: AnyList = []
         self.J_internal: AnyList = []
         self.model: BioModel | StochasticBioModel | HolonomicBioModel | VariationalBioModel | None = None
@@ -447,7 +441,8 @@ class NonLinearProgram:
         -------
         The number of states
         """
-        if node_idx >= self.ns:
+        is_the_final_node = node_idx >= self.ns
+        if is_the_final_node:
             return 1
         return self.dynamics[node_idx].shape_xf[1] + (
             1 if self.dynamics_type.ode_solver.duplicate_starting_point else 0
@@ -480,29 +475,8 @@ class NonLinearProgram:
         -------
         The number of controls
         """
-        mod = 1 if self.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE) else 0
+        mod = 1 if self.control_type.has_a_final_node else 0
         return self.ns + mod
-
-    def n_controls_steps(self, node_idx: Int) -> Int:
-        """
-        Parameters
-        ----------
-        node_idx: int
-            The index of the node
-
-        Returns
-        -------
-        The number of states
-        """
-
-        if self.control_type == ControlType.CONSTANT:
-            return 1
-        elif self.control_type == ControlType.CONSTANT_WITH_LAST_NODE:
-            return 1
-        elif self.control_type == ControlType.LINEAR_CONTINUOUS:
-            return 2
-        else:
-            raise RuntimeError("Not implemented yet")
 
     @property
     def n_algebraic_states_nodes(self) -> Int:

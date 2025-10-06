@@ -11,7 +11,9 @@ from ..utils import TestUtils
 
 @pytest.mark.parametrize("use_sx", [False, True])
 def test_arm_reaching_torque_driven_collocations(use_sx: bool):
-    from bioptim.examples.stochastic_optimal_control import arm_reaching_torque_driven_collocations as ocp_module
+    from bioptim.examples.toy_examples.stochastic_optimal_control import (
+        arm_reaching_torque_driven_collocations as ocp_module,
+    )
 
     final_time = 0.4
     n_shooting = 4
@@ -26,10 +28,10 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     wPqdot_magnitude = DM(np.array([wPqdot_std**2 / dt, wPqdot_std**2 / dt]))
     sensory_noise_magnitude = vertcat(wPq_magnitude, wPqdot_magnitude)
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_socp(
-        biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/LeuvenArmModel.bioMod",
         final_time=final_time,
         n_shooting=n_shooting,
         polynomial_degree=3,
@@ -46,9 +48,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     sol = ocp.solve(solver)
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 433.119929307444)
+    TestUtils.assert_objective_value(sol=sol, expected_value=433.119929307444)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -96,7 +96,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
 
     # Test the automatic initialization of the stochastic variables
     socp = ocp_module.prepare_socp(
-        biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/LeuvenArmModel.bioMod",
         final_time=final_time,
         n_shooting=n_shooting,
         polynomial_degree=3,
@@ -393,7 +393,9 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
 
 @pytest.mark.parametrize("use_sx", [False, True])
 def test_obstacle_avoidance_direct_collocation(use_sx: bool):
-    from bioptim.examples.stochastic_optimal_control import obstacle_avoidance_direct_collocation as ocp_module
+    from bioptim.examples.toy_examples.stochastic_optimal_control import (
+        obstacle_avoidance_direct_collocation as ocp_module,
+    )
 
     polynomial_degree = 3
     n_shooting = 10
@@ -437,9 +439,7 @@ def test_obstacle_avoidance_direct_collocation(use_sx: bool):
     sol = ocp.solve(solver)
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 4.6220107868123605)
+    TestUtils.assert_objective_value(sol=sol, expected_value=5.831644440290965)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -455,13 +455,13 @@ def test_obstacle_avoidance_direct_collocation(use_sx: bool):
     m, cov = algebraic_states["m"], controls["cov"]
 
     # initial and final position
-    npt.assert_almost_equal(q[:, 0], np.array([-1.07999204e-27, 2.94926475e00]))
-    npt.assert_almost_equal(q[:, -1], np.array([-3.76592146e-26, 2.94926475e00]))
-    npt.assert_almost_equal(qdot[:, 0], np.array([3.59388215, 0.49607651]))
-    npt.assert_almost_equal(qdot[:, -1], np.array([3.59388215, 0.49607651]))
+    npt.assert_almost_equal(q[:, 0], np.array([9.33415918e-22, 2.98741686e00]))
+    npt.assert_almost_equal(q[:, -1], np.array([9.34900539e-22, 2.98741686e00]))
+    npt.assert_almost_equal(qdot[:, 0], np.array([2.1919426, 0.48013017]))
+    npt.assert_almost_equal(qdot[:, -1], np.array([2.1919426, 0.48013017]))
 
-    npt.assert_almost_equal(u[:, 0], np.array([2.2568354, 1.69720657]))
-    npt.assert_almost_equal(u[:, -2], np.array([0.82746288, 2.89042815]))
+    npt.assert_almost_equal(u[:, 0], np.array([1.78167973, 1.93951131]))
+    npt.assert_almost_equal(u[:, -2], np.array([-0.04051134, 2.84841392]))
     npt.assert_almost_equal(u[:, -1], np.array([0.0, 0.0]))
 
     m_vector = StochasticBioModel.reshape_to_vector(m[:, [1, 2, 3, 4]])
@@ -470,69 +470,69 @@ def test_obstacle_avoidance_direct_collocation(use_sx: bool):
         np.array(
             [
                 1.00000000e00,
-                -5.05457090e-25,
-                -3.45225516e-23,
-                4.63567667e-24,
-                -2.07762174e-24,
+                -4.49572966e-22,
+                -2.29111163e-18,
+                -5.69115647e-19,
+                -1.37463144e-18,
                 1.00000000e00,
-                5.85505404e-24,
-                2.11044910e-24,
-                5.35541145e-25,
-                -7.33375346e-25,
+                2.71740231e-20,
+                1.88094678e-18,
+                2.15236673e-17,
+                9.12657816e-22,
                 1.00000000e00,
-                3.31004423e-24,
-                6.69132819e-25,
-                -1.55199996e-25,
-                1.61445742e-24,
+                1.28596672e-18,
+                2.59650412e-18,
+                -1.98702849e-22,
+                1.16174719e-20,
                 1.00000000e00,
-                1.90797247e-01,
-                -1.19090552e-02,
-                -3.23045118e-01,
-                -8.36867760e-02,
-                -1.29812817e-02,
-                1.69927215e-01,
-                -9.02323302e-02,
-                -4.15440327e-01,
-                2.91358598e-02,
-                4.62429927e-03,
-                -4.04540496e-02,
-                2.59478026e-03,
-                5.65168256e-03,
-                4.62998816e-02,
-                5.73943076e-03,
-                -3.07383562e-02,
-                3.91343262e-01,
-                -6.89506402e-03,
-                -4.87839314e-01,
-                -8.10220212e-02,
-                -7.02994760e-03,
-                3.85606978e-01,
-                -8.33694095e-02,
-                -5.61696657e-01,
-                4.84320277e-02,
-                7.51042245e-03,
-                4.20836460e-02,
-                4.20298027e-02,
-                7.79698790e-03,
-                5.92538743e-02,
-                4.52842640e-02,
-                9.08680212e-02,
-                2.76261710e-01,
-                9.59731386e-05,
-                -1.11028293e-01,
-                -7.03012679e-03,
-                6.11634134e-05,
-                2.76243341e-01,
-                -6.74241321e-03,
-                -1.14566661e-01,
-                1.09070369e-02,
-                7.09878476e-04,
-                1.98625775e-01,
-                1.83359034e-02,
-                7.31642248e-04,
-                1.11477554e-02,
-                1.81224176e-02,
-                2.12172685e-01,
+                8.97683613e-02,
+                -9.16539400e-03,
+                -1.93148619e-01,
+                -4.27328970e-02,
+                -9.47788674e-03,
+                7.40548692e-02,
+                -4.32328089e-02,
+                -2.40016559e-01,
+                2.23761124e-02,
+                2.18125527e-03,
+                -1.21607303e-02,
+                -2.13744866e-03,
+                2.48984982e-03,
+                2.80212107e-02,
+                -1.78112311e-03,
+                -1.51957449e-02,
+                2.01865677e-01,
+                -6.20640335e-03,
+                -2.89187247e-01,
+                -5.29601676e-02,
+                -6.06943355e-03,
+                1.94137289e-01,
+                -5.19802435e-02,
+                -3.46986013e-01,
+                3.21298014e-02,
+                3.85369918e-03,
+                4.01442349e-02,
+                1.71540495e-02,
+                3.88746216e-03,
+                3.69482073e-02,
+                1.76978741e-02,
+                5.61188146e-02,
+                1.49788124e-01,
+                -3.05585700e-05,
+                -6.99765523e-02,
+                -6.16591796e-03,
+                -1.50835457e-05,
+                1.49690852e-01,
+                -5.61298940e-03,
+                -7.60514239e-02,
+                7.56174614e-03,
+                4.32208391e-04,
+                1.11030048e-01,
+                9.28078562e-03,
+                4.01508193e-04,
+                7.98866164e-03,
+                8.79013240e-03,
+                1.19253753e-01,
             ]
         ),
         decimal=6,
@@ -542,22 +542,22 @@ def test_obstacle_avoidance_direct_collocation(use_sx: bool):
         cov[:, -1],
         np.array(
             [
-                0.00266764,
-                -0.0005587,
-                0.00241239,
-                -0.00088205,
-                -0.0005587,
-                0.00134316,
-                -0.00048081,
-                0.00673894,
-                0.00241239,
-                -0.00048081,
-                -0.00324733,
-                -0.00175754,
-                -0.00088205,
-                0.00673894,
-                -0.00175754,
-                0.02038775,
+                0.00147778,
+                -0.00102866,
+                0.00716552,
+                -0.00024668,
+                -0.00102866,
+                0.00210025,
+                -0.00015164,
+                0.00911479,
+                0.00716552,
+                -0.00015164,
+                -0.0070975,
+                -0.01337138,
+                -0.00024668,
+                0.00911479,
+                -0.01337138,
+                0.01419299,
             ]
         ),
         decimal=6,
@@ -567,8 +567,8 @@ def test_obstacle_avoidance_direct_collocation(use_sx: bool):
     integrated_states = sol.noisy_integrate(integrator=SolutionIntegrator.SCIPY_RK45, to_merge=SolutionMerge.NODES)
     integrated_stated_covariance = np.cov(integrated_states["q"][:, -1, :])
     npt.assert_almost_equal(
-        integrated_stated_covariance, np.array([[0.00404452, -0.00100082], [-0.00100082, 0.00382313]]), decimal=6
+        integrated_stated_covariance, np.array([[0.00521863, -0.00169537], [-0.00169537, 0.00616143]]), decimal=6
     )
     npt.assert_almost_equal(
-        cov[:, -1].reshape(4, 4)[:2, :2], np.array([[0.00266764, -0.0005587], [-0.0005587, 0.00134316]]), decimal=6
+        cov[:, -1].reshape(4, 4)[:2, :2], np.array([[0.00147778, -0.00102866], [-0.00102866, 0.00210025]]), decimal=6
     )

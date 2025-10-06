@@ -1,9 +1,10 @@
-import numpy as np
-from casadi import vertcat, DM, Function
 from copy import deepcopy
-from matplotlib import pyplot as plt
-from scipy import interpolate as sci_interp
 from typing import Any
+
+from casadi import vertcat, DM, Function
+from matplotlib import pyplot as plt
+import numpy as np
+from scipy import interpolate as sci_interp
 
 from .solution_data import SolutionData, SolutionMerge, TimeAlignment, TimeResolution
 from ..optimization_vector import OptimizationVectorHelper
@@ -182,7 +183,9 @@ class Solution:
             self.phases_dt = OptimizationVectorHelper.extract_phase_dt(ocp, vector)
             self._stepwise_times = OptimizationVectorHelper.extract_step_times(ocp, vector)
 
-            x, u, p, a = OptimizationVectorHelper.to_dictionaries(ocp, vector)
+            x, u, p, a = self.ocp.vector_layout.unstack_to_dicts(vector)
+            u = OptimizationVectorHelper.control_duplication(u, ocp.nlp)
+
             self._decision_states = SolutionData.from_scaled(ocp, x, "x")
             self._stepwise_controls = SolutionData.from_scaled(ocp, u, "u")
             self._parameters = SolutionData.from_scaled(ocp, p, "p")
@@ -204,18 +207,18 @@ class Solution:
         if not isinstance(sol, dict):
             raise ValueError("The _sol entry should be a dictionary")
 
-        is_ipopt = sol["solver"] == SolverType.IPOPT.value
+        is_ipopt_like = sol["solver"] in (SolverType.IPOPT.value, SolverType.FATROP.value)
 
         return cls(
             ocp=ocp,
             vector=sol["x"],
-            cost=sol["f"] if is_ipopt else None,
-            constraints=sol["g"] if is_ipopt else None,
-            lam_g=sol["lam_g"] if is_ipopt else None,
-            lam_p=sol["lam_p"] if is_ipopt else None,
-            lam_x=sol["lam_x"] if is_ipopt else None,
-            inf_pr=sol["inf_pr"] if is_ipopt else None,
-            inf_du=sol["inf_du"] if is_ipopt else None,
+            cost=sol["f"] if is_ipopt_like else None,
+            constraints=sol["g"] if is_ipopt_like else None,
+            lam_g=sol["lam_g"] if is_ipopt_like else None,
+            lam_p=sol["lam_p"] if is_ipopt_like else None,
+            lam_x=sol["lam_x"] if is_ipopt_like else None,
+            inf_pr=sol["inf_pr"] if is_ipopt_like else None,
+            inf_du=sol["inf_du"] if is_ipopt_like else None,
             solver_time_to_optimize=sol["solver_time_to_optimize"],
             real_time_to_optimize=sol["real_time_to_optimize"],
             iterations=sol["iter"],
@@ -303,12 +306,7 @@ class Solution:
         # For controls
         for p, ss in enumerate(sol_controls):
             control_type = ocp.nlp[p].control_type
-            if control_type == ControlType.CONSTANT:
-                off = 0
-            elif control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
-                off = 1
-            else:
-                raise NotImplementedError(f"control_type {control_type} is not implemented in Solution")
+            off = 1 if control_type.has_a_final_node else 0
 
             for key in ss.keys():
                 ss[key].init.check_and_adjust_dimensions(len(ocp.nlp[p].controls[key]), all_ns[p] - 1 + off, "controls")
@@ -1322,11 +1320,8 @@ class Solution:
         else:
             return np.ndarray((0, 1))
 
-    def _get_penalty_cost(self, nlp: "NonLinearProgram", penalty: PenaltyOption) -> FloatTuple:
+    def _get_penalty_cost(self, penalty: PenaltyOption) -> FloatTuple:
         from ...interfaces.interface_utils import get_numerical_timeseries
-
-        if nlp is None:
-            raise NotImplementedError("penalty cost over the full ocp is not implemented yet")
 
         val = []
         val_weighted = []
@@ -1340,7 +1335,7 @@ class Solution:
         merged_u = self._stepwise_controls.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)
         merged_a = self._decision_algebraic_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)
         for idx in range(len(penalty.node_idx)):
-            t0 = PenaltyHelpers.t0(penalty, idx, lambda p, n: self._stepwise_times[p][n][0])
+            t0 = PenaltyHelpers.t0(penalty, idx, lambda p_idx, n_idx: self._stepwise_times[p_idx][n_idx][0])
             x = PenaltyHelpers.states(
                 penalty,
                 idx,
@@ -1363,12 +1358,14 @@ class Solution:
             )
             d = np.array([]) if d_tp.shape == (0, 0) else np.array(d_tp)
 
-            weight = PenaltyHelpers.weight(penalty)
+            weight = PenaltyHelpers.weight(penalty, idx)
             target = PenaltyHelpers.target(penalty, idx)
 
             node_idx = penalty.node_idx[idx]
-            val.append(penalty.function[node_idx](t0, phases_dt, x, u, params, a, d))
-            val_weighted.append(penalty.weighted_function[node_idx](t0, phases_dt, x, u, params, a, d, weight, target))
+            val.append(penalty.function_non_threaded[node_idx](t0, phases_dt, x, u, params, a, d))
+            val_weighted.append(
+                penalty.weighted_function_non_threaded[node_idx](t0, phases_dt, x, u, params, a, d, weight, target)
+            )
 
         if self.ocp.n_threads > 1:
             val = [v[:, 0] for v in val]
@@ -1396,12 +1393,12 @@ class Solution:
         if self._cost is None:
             self._cost = 0
             for J in self.ocp.J:
-                _, val_weighted = self._get_penalty_cost(None, J)
+                _, val_weighted = self._get_penalty_cost(J)
                 self._cost += val_weighted
 
             for idx_phase, nlp in enumerate(self.ocp.nlp):
                 for J in nlp.J:
-                    _, val_weighted = self._get_penalty_cost(nlp, J)
+                    _, val_weighted = self._get_penalty_cost(J)
                     self._cost += val_weighted
             self._cost = DM(self._cost)
         return self._cost
@@ -1419,21 +1416,18 @@ class Solution:
         Parameters
         ----------
         """
-        if self.ocp.n_threads > 1:
-            raise NotImplementedError("Computing detailed cost with n_threads > 1 is not implemented yet")
-
         self._detailed_cost = []
 
         for nlp in self.ocp.nlp:
             for penalty in nlp.J_internal + nlp.J:
                 if not penalty:
                     continue
-                val, val_weighted = self._get_penalty_cost(nlp, penalty)
+                val, val_weighted = self._get_penalty_cost(penalty)
                 self._detailed_cost += [
                     {"name": penalty.type.__str__(), "cost_value_weighted": val_weighted, "cost_value": val}
                 ]
         for penalty in self.ocp.J:
-            val, val_weighted = self._get_penalty_cost(self.ocp.nlp[0], penalty)
+            val, val_weighted = self._get_penalty_cost(penalty)
             self._detailed_cost += [
                 {"name": penalty.type.__str__(), "cost_value_weighted": val_weighted, "cost_value": val}
             ]
@@ -1449,14 +1443,14 @@ class Solution:
             The type of cost to console print
         """
 
-        def print_penalty_list(nlp, penalties, print_only_weighted):
+        def print_penalty_list(penalties, print_only_weighted):
             running_total = 0
 
             for penalty in penalties:
                 if not penalty:
                     continue
 
-                val, val_weighted = self._get_penalty_cost(nlp, penalty)
+                val, val_weighted = self._get_penalty_cost(penalty)
                 running_total += val_weighted
 
                 if penalty.node in [Node.MULTINODES, Node.TRANSITION]:
@@ -1493,15 +1487,15 @@ class Solution:
             Print the values of each objective function to the console
             """
             print(f"\n---- COST FUNCTION VALUES ----")
-            running_total = print_penalty_list(None, ocp.J_internal, False)
-            running_total += print_penalty_list(None, ocp.J, False)
+            running_total = print_penalty_list(ocp.J_internal, False)
+            running_total += print_penalty_list(ocp.J, False)
             if running_total:
                 print("")
 
             for nlp in ocp.nlp:
                 print(f"PHASE {nlp.phase_idx}")
-                running_total += print_penalty_list(nlp, nlp.J_internal, False)
-                running_total += print_penalty_list(nlp, nlp.J, False)
+                running_total += print_penalty_list(nlp.J_internal, False)
+                running_total += print_penalty_list(nlp.J, False)
                 print("")
 
             print(f"Sum cost functions: {running_total}")
@@ -1517,18 +1511,13 @@ class Solution:
 
             # Todo, min/mean/max
             print(f"\n--------- CONSTRAINTS ---------")
-            if (
-                print_penalty_list(None, ocp.g_internal, True)
-                + print_penalty_list(None, ocp.g_implicit, True)
-                + print_penalty_list(None, ocp.g, True)
-            ):
+            if print_penalty_list(ocp.g_internal, True) + print_penalty_list(ocp.g, True):
                 print("")
 
             for idx_phase, nlp in enumerate(ocp.nlp):
                 print(f"PHASE {idx_phase}")
-                print_penalty_list(nlp, nlp.g_internal, True)
-                print_penalty_list(nlp, nlp.g_implicit, True)
-                print_penalty_list(nlp, nlp.g, True)
+                print_penalty_list(nlp.g_internal, True)
+                print_penalty_list(nlp.g, True)
                 print("")
             print(f"------------------------------")
 

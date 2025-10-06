@@ -25,6 +25,7 @@ from bioptim import (
     MusclesBiorbdModel,
     TorqueActivationBiorbdModel,
     DynamicsOptions,
+    ObjectiveWeight,
 )
 from bioptim.limits.penalty import PenaltyOption
 from bioptim.limits.penalty_controller import PenaltyController
@@ -115,16 +116,14 @@ def prepare_test_ocp(
     if with_muscles and with_contact or with_muscles and with_actuator or with_contact and with_actuator:
         raise RuntimeError("With muscles and with contact and with_actuator together is not defined")
     elif with_muscles:
-        bio_model = MusclesBiorbdModel(
-            bioptim_folder + "/examples/muscle_driven_ocp/models/arm26.bioMod", with_residual_torque=True
-        )
+        bio_model = MusclesBiorbdModel(bioptim_folder + "/examples/models/arm26.bioMod", with_residual_torque=True)
         dynamics = DynamicsOptionsList()
         dynamics.add(expand_dynamics=True, phase_dynamics=phase_dynamics)
     elif with_contact:
         dynamics = DynamicsOptionsList()
         if with_external_forces:
             bio_model = TorqueBiorbdModel(
-                bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod",
+                bioptim_folder + "/examples/models/2segments_4dof_2contacts_1muscle.bioMod",
                 contact_types=[ContactType.RIGID_EXPLICIT],
                 external_force_set=external_forces,
             )
@@ -137,7 +136,7 @@ def prepare_test_ocp(
             )
         else:
             bio_model = TorqueBiorbdModel(
-                bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod",
+                bioptim_folder + "/examples/models/2segments_4dof_2contacts_1muscle.bioMod",
                 contact_types=[ContactType.RIGID_EXPLICIT],
             )
             dynamics.add(
@@ -147,10 +146,10 @@ def prepare_test_ocp(
                 )
             )
     elif with_actuator:
-        bio_model = TorqueActivationBiorbdModel(bioptim_folder + "/examples/torque_driven_ocp/models/cube.bioMod")
+        bio_model = TorqueActivationBiorbdModel(bioptim_folder + "/examples/models/cube_with_actuators.bioMod")
         dynamics = DynamicsOptions(expand_dynamics=True, phase_dynamics=phase_dynamics)
     else:
-        bio_model = TorqueBiorbdModel(bioptim_folder + "/examples/track/models/cube_and_line.bioMod")
+        bio_model = TorqueBiorbdModel(bioptim_folder + "/examples/models/cube_and_line.bioMod")
         dynamics = DynamicsOptions(expand_dynamics=True, phase_dynamics=phase_dynamics)
 
     objective_functions = Objective(ObjectiveFcn.Mayer.MINIMIZE_TIME)
@@ -1346,13 +1345,11 @@ def test_penalty_custom(penalty_origin, value, phase_dynamics):
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom_fail(penalty_origin, value, phase_dynamics):
-    def custom_no_mult(ocp, nlp, t, x, u, p):
-        my_values = DM.zeros((12, 1)) + x[0]
-        return my_values
+    def custom_no_mult(controller: PenaltyController):
+        return DM.zeros((12, 1)) + controller.x[0]
 
-    def custom_with_mult(ocp, nlp, t, x, u, p, mult):
-        my_values = DM.zeros((12, 1)) + x[0] * mult
-        return my_values
+    def custom_with_mult(controller: PenaltyController, mult):
+        return DM.zeros((12, 1)) + controller.x[0] * mult
 
     ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
     x = [DM.ones((12, 1)) * value]
@@ -1363,38 +1360,47 @@ def test_penalty_custom_fail(penalty_origin, value, phase_dynamics):
     else:
         penalty = Constraint(penalty_type)
 
+    controller = PenaltyController(ocp, ocp.nlp[0], [], x, [], [], [], [], [], [], [], 0)
     with pytest.raises(TypeError):
         penalty.custom_function = custom_no_mult
-        penalty_type(penalty, ocp, ocp.nlp[0], [], x, [], [], mult=2)
+        penalty_type(penalty)
 
     with pytest.raises(TypeError):
         penalty.custom_function = custom_with_mult
-        penalty_type(penalty, ocp, ocp.nlp[0], [], x, [], [])
+        penalty_type(penalty, controller)
 
-    with pytest.raises(TypeError):
-        keywords = [
-            "phase",
-            "list_index",
-            "name",
-            "type",
-            "params",
-            "node",
-            "quadratic",
-            "index",
-            "target",
-            "min_bound",
-            "max_bound",
-            "custom_function",
-            "weight",
-        ]
-        for keyword in keywords:
-            exec(
-                f"""def custom_with_keyword(ocp, nlp, t, x, u, p, {keyword}):
-                            my_values = DM.zeros((12, 1)) + x[index]
-                            return my_values"""
-            )
-            exec("""penalty.custom_function = custom_with_keyword""")
-            exec(f"""penalty_type(penalty, ocp, ocp.nlp[0], [], x, [], [], {keyword}=0)""")
+    keywords = [
+        "phase",
+        "list_index",
+        "name",
+        "type",
+        "params",
+        "extra_parameters",
+        "node",
+        "quadratic",
+        "index",
+        "target",
+        "min_bound",
+        "max_bound",
+        "function",
+        "weighted_function",
+        "custom_function",
+        "weight",
+        "expand",
+        "is_stochastic",
+    ]
+
+    def create_function_with_keyword(keyword):
+        code = f"""def custom_with_keyword(ocp, controller, {keyword}):
+            assert False  # This should never be hit"""
+        ns = {}
+        exec(code, {"DM": DM, "np": np}, ns)
+        return ns["custom_with_keyword"]
+
+    for keyword in keywords:
+        penalty.custom_function = create_function_with_keyword(keyword)
+        with pytest.raises(TypeError):
+            penalty_type(penalty, controller, **{keyword: 0})
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -1487,7 +1493,7 @@ def test_PenaltyFunctionAbstract_get_node(node, ns, phase_dynamics):
     nlp.parameters = tp["param"]
 
     pn = []
-    penalty = PenaltyOption(pn)
+    penalty = PenaltyOption(pn, weight=ObjectiveWeight(1))
     penalty.node = node
 
     if node == Node.MID and ns % 2 != 0:
@@ -1578,7 +1584,7 @@ def test_bad_shape_output_penalty():
     def prepare_test_ocp_error():
         bioptim_folder = TestUtils.bioptim_folder()
 
-        bio_model = TorqueBiorbdModel(bioptim_folder + "/examples/track/models/cube_and_line.bioMod")
+        bio_model = TorqueBiorbdModel(bioptim_folder + "/examples/models/cube_and_line.bioMod")
         dynamics = DynamicsOptions()
 
         constraints = ConstraintList()

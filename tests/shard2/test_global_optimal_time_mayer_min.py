@@ -16,9 +16,9 @@ from ..utils import TestUtils
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 def test_pendulum_min_time_mayer(ode_solver, phase_dynamics):
     # Load pendulum_min_time_Mayer
-    from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
+    from bioptim.examples.toy_examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     if ode_solver == OdeSolver.IRK:
         ft = 2
@@ -33,7 +33,7 @@ def test_pendulum_min_time_mayer(ode_solver, phase_dynamics):
         raise ValueError("Test not implemented")
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
         final_time=ft,
         n_shooting=ns,
         ode_solver=ode_solver(),
@@ -70,7 +70,7 @@ def test_pendulum_min_time_mayer(ode_solver, phase_dynamics):
     npt.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
     if ode_solver == OdeSolver.IRK:
-        npt.assert_almost_equal(f[0, 0], 0.2855606738489079)
+        TestUtils.assert_objective_value(sol=sol, expected_value=0.2855606738489079)
 
         # initial and final controls
         npt.assert_almost_equal(tau[:, 0], np.array((87.13363409, 0)), decimal=6)
@@ -83,7 +83,7 @@ def test_pendulum_min_time_mayer(ode_solver, phase_dynamics):
         pass
 
     elif ode_solver == OdeSolver.RK4:
-        npt.assert_almost_equal(f[0, 0], 0.2862324498580764)
+        TestUtils.assert_objective_value(sol=sol, expected_value=0.2862324498580764)
 
         # initial and final controls
         npt.assert_almost_equal(tau[:, 0], np.array((70.46224716, 0)), decimal=6)
@@ -102,15 +102,15 @@ def test_pendulum_min_time_mayer(ode_solver, phase_dynamics):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 def test_pendulum_min_time_mayer_constrained(ode_solver, phase_dynamics):
     # Load pendulum_min_time_Mayer
-    from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
+    from bioptim.examples.toy_examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     tf = 1
     ns = 30
     min_tf = 0.5
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
         final_time=tf,
         n_shooting=ns,
         ode_solver=ode_solver(),
@@ -127,7 +127,7 @@ def test_pendulum_min_time_mayer_constrained(ode_solver, phase_dynamics):
             expected = [87.49523141142917, 11.236203565420874, -0.005115857843225768]
         case OdeSolver.COLLOCATION:
             v_len = 665
-            expected = [329.58704584455836, 11.236203565420874, 32.40020240692716]
+            expected = [329.58704584455836, 11.236203565420874, 76.30823619468703]
         case OdeSolver.IRK:
             v_len = 185
             expected = [87.49523141142917, 11.236203565420874, 4027.416142481593]
@@ -168,9 +168,7 @@ def test_pendulum_min_time_mayer_constrained(ode_solver, phase_dynamics):
     npt.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], min_tf, decimal=4)
+    TestUtils.assert_objective_value(sol=sol, expected_value=min_tf, decimal=4)
 
     # optimized time
     npt.assert_almost_equal(tf, min_tf, decimal=4)

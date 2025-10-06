@@ -30,6 +30,7 @@ from bioptim import (
     PenaltyController,
     PhaseDynamics,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def custom_phase_transition(
@@ -66,7 +67,7 @@ def custom_phase_transition(
 
 
 def prepare_ocp(
-    biorbd_model_path: str = "models/cube.bioMod",
+    biorbd_model_path,
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
@@ -205,7 +206,8 @@ def prepare_ocp(
 
 
 def main():
-    ocp = prepare_ocp()
+    biorbd_model_path = ExampleUtils.folder + "/models/cube.bioMod"
+    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path)
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))

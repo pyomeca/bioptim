@@ -111,8 +111,39 @@ c_generated_code
 # Bioptim files
 bioptim/sandbox/
 *.pkl
+*.mtx
+*.casadi
+*.pt
+*.png
+_l4c_generated/
 
 # Mac dev
 *.DS_store
 
 *.png
+
+sandbox/
+
+# Ignore all npy files in tests folder except those in tests/shard6
+/tests/*.npy
+!/tests/shard6/v_bounds_max.npy
+!/tests/shard6/v_bounds_min.npy
+!/tests/shard6/v_init.npy
+!/tests/shard6/v_bounds_max_collocation.npy
+!/tests/shard6/v_bounds_min_collocation.npy
+!/tests/shard6/v_init_collocation.npy
+!/tests/shard6/v_bounds_max_collocation_starting_point.npy
+!/tests/shard6/v_bounds_min_collocation_starting_point.npy
+!/tests/shard6/v_init_collocation_starting_point.npy
+!/tests/shard6/v_bounds_max_parameters.npy
+!/tests/shard6/v_bounds_min_parameters.npy
+!/tests/shard6/v_init_parameters.npy
+!/tests/shard6/v_bounds_max_multiple_phases.npy
+!/tests/shard6/v_bounds_min_multiple_phases.npy
+!/tests/shard6/v_init_multiple_phases.npy
+!/tests/shard6/v_bounds_max_algebraic_states.npy
+!/tests/shard6/v_bounds_min_algebraic_states.npy
+!/tests/shard6/v_init_algebraic_states.npy
+!/tests/shard6/sol_controls.npy
+!/tests/shard6/sol_states.npy
+!/tests/shard6/sol_states_dot.npy

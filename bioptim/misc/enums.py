@@ -24,6 +24,7 @@ class SolverType(Enum):
     """
 
     IPOPT = "Ipopt"
+    FATROP = "Fatrop"
     ACADOS = "ACADOS"
     SQP = "SqpMethod"
     NONE = None
@@ -135,6 +136,41 @@ class ControlType(Enum):
     LINEAR_CONTINUOUS = 2  # Linear interpolation between integration steps (=2 columns)
     CONSTANT_WITH_LAST_NODE = 3  # Constant over the integration step, the last node exists (=1 columns)
 
+    @property
+    def has_a_final_node(self):
+        """
+        Check if the control type has a final node
+        """
+        return self in (ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS)
+
+    def nb_interpolation_points(self, has_no_successor_phase: bool, is_last_node: bool) -> int:
+        """
+        The number of interpolation points for the control type
+
+        1 if CONSTANT or CONSTANT_WITH_LAST_NODE
+        1 if LINEAR_CONTINUOUS and there is no successor phase and it is the end node
+        2 if LINEAR_CONTINUOUS otherwise
+
+        Notes
+        -----
+        For `LINEAR_CONTINUOUS` control, two points (`u_k`, `u_k+1`) are generally needed
+        to define the linear interpolation `u(t) = u_k + (t - t_k) / (t_k+1 - t_k) * (u_k+1 - u_k)`
+        over an interval `[t_k, t_k+1]`. An exception is made for the very last node
+        of the final phase, where only `u_k` is required as there's no subsequent
+        interval to define `u_k+1`.
+
+        `CONSTANT` and `CONSTANT_WITH_LAST_NODE` controls require a single point (`u_k`)
+        to define their value.
+        """
+        if self == ControlType.CONSTANT:
+            return 1
+        elif self == ControlType.LINEAR_CONTINUOUS:
+            return 1 if (has_no_successor_phase and is_last_node) else 2
+        elif self == ControlType.CONSTANT_WITH_LAST_NODE:
+            return 1
+        else:
+            raise ValueError(f"Control type {self} not recognized")
+
 
 class VariableType(Enum):
     """
@@ -167,14 +203,6 @@ class PenaltyType(Enum):  # it's more of a "Category" than "Type"
 
     USER = "user"
     INTERNAL = "internal"
-
-
-class ConstraintType(Enum):
-    """
-    Selection of constraint types
-    """
-
-    IMPLICIT = "implicit"
 
 
 class QuadratureRule(Enum):

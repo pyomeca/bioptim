@@ -3,6 +3,8 @@ import platform
 from pathlib import Path
 from types import ModuleType
 from typing import Any
+import io
+import sys
 
 import numpy as np
 import numpy.testing as npt
@@ -49,7 +51,7 @@ class TestUtils:
     @staticmethod
     def _capitalize_folder_drive(folder: str) -> str:
         if platform.system() == "Windows" and folder[1] == ":":
-            # Capitilize the drive letter if it is windows
+            # Capitalize the drive letter if it is windows
             folder = folder[0].upper() + folder[1:]
         return folder
 
@@ -230,3 +232,50 @@ class TestUtils:
                         ),
                     )
         return numerical_timeseries
+
+    @staticmethod
+    def sum_cost_function_output(sol):
+        """
+        Sum the cost function output from sol.print_cost()
+        """
+        captured_output = io.StringIO()  # Create StringIO object
+        sys.stdout = captured_output  # and redirect stdout.
+        sol.print_cost()  # Call function.
+        sys.stdout = sys.__stdout__  # Reset redirect.
+        idx = captured_output.getvalue().find("Sum cost functions")
+        output = captured_output.getvalue()[idx:].split("\n")[0]
+        idx = len("Sum cost functions: ")
+        return float(output[idx:])
+
+    @staticmethod
+    def assert_objective_value(sol: Solution, expected_value: float, decimal: int = 6):
+        """
+        Check that the objective value is correct:
+            1) Check that the actual value is close to the expected value
+            2) Check that the sum of the detailed cost is close to the total cost
+            3) Test that the detailed cost printed is close to the detailed cost
+
+        Parameters
+        ----------
+        sol: Solution
+            The solution to test
+        expected_value: float
+            The expected value of the total cost
+        decimal: int
+            The number of decimal to use in the comparison
+        """
+        # 1)
+        f = np.array(sol.cost)
+        npt.assert_equal(f.shape, (1, 1))
+        npt.assert_almost_equal(f[0, 0], expected_value, decimal=decimal)
+
+        # 2)
+        # Loop over objectives
+        detailed_cost_sum = 0
+        for obj in sol.detailed_cost:
+            detailed_cost_sum += obj["cost_value_weighted"]
+        npt.assert_almost_equal(detailed_cost_sum, f[0, 0], decimal=decimal)
+
+        # 3)
+        detailed_cost_printed = TestUtils.sum_cost_function_output(sol)
+        npt.assert_almost_equal(detailed_cost_sum, detailed_cost_printed, decimal=decimal)

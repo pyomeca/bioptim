@@ -87,7 +87,7 @@ def launch_rerun(
     solution: "SolutionData",
     show_now: Bool = True,
     tracked_markers: list[NpArray] = None,
-    models: BiorbdModel | list[BiorbdModel] = None,
+    models: BiorbdModel | list[BiorbdModel] | list[MultiBiorbdModel] = None,
     **kwargs: Any,
 ):
     if not isinstance(solution, (list, tuple)):
@@ -97,7 +97,7 @@ def launch_rerun(
         tracked_markers = [None] * len(solution)
     prerun = pyorerun.MultiPhaseRerun()
 
-    for idx_phase, (data, model, tm) in enumerate(zip(solution, models, tracked_markers)):
+    for idx_phase, data in enumerate(solution):
 
         if "q_roots" in data and "q_joints" in data:
             try:
@@ -109,22 +109,26 @@ def launch_rerun(
 
         prerun.add_phase(t_span=data["time"], phase=idx_phase)
 
-        if not isinstance(model, biorbd.Model):
-            raise NotImplementedError(
-                f"Animation is only implemented for biorbd models. Got {model.__class__.__name__}"
-            )
+        for model, tm in zip(models, tracked_markers):
+            if isinstance(model, biorbd.Model):
+                biorbd_model = pyorerun.BiorbdModel.from_biorbd_object(model)
+            elif isinstance(model, BiorbdModel):
+                biorbd_model = pyorerun.BiorbdModel.from_biorbd_object(model.model)
+            else:
+                raise NotImplementedError(
+                    f"Animation is only implemented for biorbd models. Got {model.__class__.__name__}"
+                )
 
-        biorbd_model = pyorerun.BiorbdModel.from_biorbd_object(model)
-        tm = (
-            pyorerun.PyoMarkers(tm, channels=[n.to_string() for n in biorbd_model.model.markerNames()])
-            if tm is not None
-            else None
-        )
-        prerun.add_animated_model(
-            biorbd_model,
-            data["q"],
-            tracked_markers=tm,
-            phase=idx_phase,
-        )
+            tm = (
+                pyorerun.PyoMarkers(tm, channels=[n.to_string() for n in biorbd_model.model.markerNames()])
+                if tm is not None
+                else None
+            )
+            prerun.add_animated_model(
+                biorbd_model,
+                data["q"],
+                tracked_markers=tm,
+                phase=idx_phase,
+            )
 
     prerun.rerun(notebook=not show_now)

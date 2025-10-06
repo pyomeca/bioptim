@@ -2,6 +2,7 @@ from typing import Callable, Any
 
 from .penalty import PenaltyFunctionAbstract, PenaltyOption
 from .penalty_controller import PenaltyController
+from .weight import ObjectiveWeight
 from ..misc.enums import Node, QuadratureRule, PenaltyType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
@@ -10,6 +11,7 @@ from ..misc.options import OptionList
 from ..misc.parameters_types import (
     Bool,
     Int,
+    Float,
     Str,
     FloatOptional,
     NpArrayorFloatOptional,
@@ -27,6 +29,7 @@ class Objective(PenaltyOption):
         custom_type: Any = None,
         phase: Int = -1,
         is_stochastic: Bool = False,
+        weight: Int | Float | ObjectiveWeight = None,
         **extra_parameters: Any,
     ):
         """
@@ -38,9 +41,15 @@ class Objective(PenaltyOption):
             When objective is a custom defined function, one must specify if the custom_type is Mayer or Lagrange
         phase: int
             At which phase this objective function must be applied
+        is_stochastic: bool
+            If the objective function should be robustified
+        weight: ObjectiveWeight | float
+            The weight to apply to the objective function
         extra_parameters: dict
             Generic parameters for options
         """
+        if weight is None:
+            weight = ObjectiveWeight()
 
         custom_function = None
         if not isinstance(objective, ObjectiveFcn.Lagrange) and not isinstance(objective, ObjectiveFcn.Mayer):
@@ -93,11 +102,18 @@ class Objective(PenaltyOption):
         elif isinstance(objective, ObjectiveFcn.Parameter):
             pass
 
+        if not isinstance(weight, ObjectiveWeight):
+            if isinstance(weight, (int, float)):
+                weight = ObjectiveWeight(weight)
+            else:
+                raise ValueError(f"The weight must be a ObjectiveWeight, int or float, not {type(weight)}")
+
         super(Objective, self).__init__(
             penalty=objective,
             phase=phase,
             custom_function=custom_function,
             is_stochastic=is_stochastic,
+            weight=weight,
             **extra_parameters,
         )
 
@@ -177,7 +193,12 @@ class ObjectiveList(OptionList):
         Print the ObjectiveList to the console
     """
 
-    def add(self, objective: Callable | Objective | Any, **extra_arguments: Any):
+    def add(
+        self,
+        objective: Callable | Objective | Any,
+        weight: Int | Float | ObjectiveWeight = None,
+        **extra_arguments: Any,
+    ):
         """
         Add a new objective function to the list
 
@@ -185,14 +206,26 @@ class ObjectiveList(OptionList):
         ----------
         objective: Callable | Objective | ObjectiveFcn.Lagrange | ObjectiveFcn.Mayer
             The chosen objective function
+        weight: ObjectiveWeight | float
+            The weight to apply to the objective function
         extra_arguments: dict
             Any parameters to pass to ObjectiveFcn
         """
+        if weight is None:
+            weight = ObjectiveWeight()
 
         if isinstance(objective, Objective):
             self.copy(objective)
         else:
-            super(ObjectiveList, self)._add(option_type=Objective, objective=objective, **extra_arguments)
+            if not isinstance(weight, ObjectiveWeight):
+                if isinstance(weight, (int, float)):
+                    weight = ObjectiveWeight(weight)
+                else:
+                    raise ValueError(f"The weight must be a ObjectiveWeight, int or float, not {type(weight)}")
+
+            super(ObjectiveList, self)._add(
+                option_type=Objective, objective=objective, weight=weight, **extra_arguments
+            )
 
     def print(self):
         raise NotImplementedError("Printing of ObjectiveList is not ready yet")
@@ -492,7 +525,13 @@ class ParameterObjective(PenaltyOption):
     A placeholder for an objective function
     """
 
-    def __init__(self, parameter_objective: Any, custom_type: Any = None, **extra_parameters: Any):
+    def __init__(
+        self,
+        parameter_objective: Any,
+        custom_type: Any = None,
+        weight: Int | Float | ObjectiveWeight = None,
+        **extra_parameters: Any,
+    ):
         """
         Parameters
         ----------
@@ -500,9 +539,14 @@ class ParameterObjective(PenaltyOption):
             The chosen objective function
         custom_type: ObjectiveFcn.Parameter | Callable
             The custom parameter objective function
-        params: dict
+        weight: ObjectiveWeight | float
+            The weight to apply to the objective function
+        extra_parameters: dict
             Generic parameters for options
         """
+        if weight is None:
+            weight = ObjectiveWeight()
+
         custom_function = None
         if not isinstance(parameter_objective, ObjectiveFcn.Parameter):
             custom_function = parameter_objective
@@ -521,8 +565,14 @@ class ParameterObjective(PenaltyOption):
                     "It should either be ObjectiveFcn.Parameter"
                 )
 
+        if not isinstance(weight, ObjectiveWeight):
+            if isinstance(weight, (int, float)):
+                weight = ObjectiveWeight(weight)
+            else:
+                raise ValueError(f"The weight must be a ObjectiveWeight, int or float, not {type(weight)}")
+
         super(ParameterObjective, self).__init__(
-            penalty=parameter_objective, custom_function=custom_function, **extra_parameters
+            penalty=parameter_objective, custom_function=custom_function, weight=weight, **extra_parameters
         )
 
     def _add_penalty_to_pool(self, controller: list[PenaltyController]):
@@ -590,7 +640,12 @@ class ParameterObjectiveList(OptionList):
         Print the ParameterObjectiveList to the console
     """
 
-    def add(self, parameter_objective: Callable | ParameterObjective | Any, **extra_arguments: Any):
+    def add(
+        self,
+        parameter_objective: Callable | ParameterObjective | Any,
+        weight: Int | Float | ObjectiveWeight = None,
+        **extra_arguments: Any,
+    ):
         """
         Add a new parameter objective function to the list
 
@@ -598,16 +653,27 @@ class ParameterObjectiveList(OptionList):
         ----------
         parameter_objective: Callable | ParameterObjective
             The chosen parameter objective function
+        weight: ObjectiveWeight | float
+            The weight to apply to the objective function
         extra_arguments: dict
             Any parameters to pass to ParameterObjectiveFcn
         """
+        if weight is None:
+            weight = ObjectiveWeight()
 
         if isinstance(parameter_objective, ParameterObjective):
             self.copy(parameter_objective)
         else:
+            if not isinstance(weight, ObjectiveWeight):
+                if isinstance(weight, (int, float)):
+                    weight = ObjectiveWeight(weight)
+                else:
+                    raise ValueError(f"The weight must be a ObjectiveWeight, int or float, not {type(weight)}")
+
             super(ParameterObjectiveList, self)._add(
                 option_type=ParameterObjective,
                 parameter_objective=parameter_objective,
+                weight=weight,
                 node=Node.START,
                 **extra_arguments,
             )
