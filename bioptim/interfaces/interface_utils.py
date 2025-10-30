@@ -1,7 +1,6 @@
 from time import perf_counter
 
-from casadi import Importer, Function
-from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, DM, reshape
+from casadi import Importer, Function, horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, DM, reshape, jacobian
 import numpy as np
 
 from .solver_interface import SolverInterface
@@ -64,6 +63,26 @@ def _vectors_are_equal(
     # We test the equality at three points (min, max, init) hoping any differences will be caught
     func = Function("equality", [v], [vector1 - vector2])
     return np.sum(func(v_init)) == 0.0 and np.sum(func(v_min)) == 0.0 and np.sum(func(v_max)) == 0.0
+
+
+def generic_show_constraints_jacobian_sparsity(interface: SolverInterface):
+    """
+    Show the sparsity of the constraints jacobian
+
+    Parameters
+    ----------
+    interface: SolverInterface
+        A reference to the current interface
+    """
+    import matplotlib.pyplot as plt
+
+    v = interface.ocp.variables_vector
+    v_bounds = interface.ocp.bounds_vectors
+    g = _shake_penalties_tree(interface.ocp, interface.dispatch_bounds()[0], v, v_bounds, False)
+
+    plt.spy(jacobian(g, v).sparsity())
+    plt.title("Constraint Jacobian Sparsity")
+    plt.show()
 
 
 def generic_solve(interface: SolverInterface, expand_during_shake_tree: Bool = False) -> AnyDict:
@@ -265,31 +284,27 @@ def generic_dispatch_bounds(interface, include_g: Bool, include_g_internal: Bool
             all_g_dict[-1] = vertcat(all_g_dict[-1], node_penalty)
             all_g_bounds_dict[-1].concatenate(node_bounds)
 
-    phase_node_counts = 0
+    base_idx = 0
     for nlp in interface.ocp.nlp:
         for i in range(nlp.ns + 1):
-            all_g_dict[phase_node_counts + i] = interface.ocp.cx()
-            all_g_bounds_dict[phase_node_counts + i] = Bounds(
+            all_g_dict[base_idx + i] = interface.ocp.cx()
+            all_g_bounds_dict[base_idx + i] = Bounds(
                 f"g_phase{len(all_g_dict)}", interpolation=InterpolationType.CONSTANT
             )
 
         if include_g_internal:
             penalties, bounds = interface.get_all_penalties(nlp, nlp.g_internal, get_bounds=True)
             for (node_idx, node_penalty), node_bounds in zip(penalties.items(), bounds.values()):
-                all_g_dict[node_idx + phase_node_counts] = vertcat(
-                    all_g_dict[node_idx + phase_node_counts], node_penalty
-                )
-                all_g_bounds_dict[node_idx + phase_node_counts].concatenate(node_bounds)
+                all_g_dict[base_idx + node_idx] = vertcat(all_g_dict[base_idx + node_idx], node_penalty)
+                all_g_bounds_dict[base_idx + node_idx].concatenate(node_bounds)
 
         if include_g:
             penalties, bounds = interface.get_all_penalties(nlp, nlp.g, get_bounds=True)
             for (node_idx, node_penalty), node_bounds in zip(penalties.items(), bounds.values()):
-                all_g_dict[node_idx + phase_node_counts] = vertcat(
-                    all_g_dict[node_idx + phase_node_counts], node_penalty
-                )
-                all_g_bounds_dict[node_idx + phase_node_counts].concatenate(node_bounds)
+                all_g_dict[base_idx + node_idx] = vertcat(all_g_dict[base_idx + node_idx], node_penalty)
+                all_g_bounds_dict[base_idx + node_idx].concatenate(node_bounds)
 
-        phase_node_counts += nlp.ns + 1
+        base_idx += nlp.ns + 1
 
     all_g = interface.ocp.cx()
     all_g_bounds = Bounds("all_g", interpolation=InterpolationType.CONSTANT)

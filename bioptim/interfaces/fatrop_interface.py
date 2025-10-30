@@ -1,5 +1,5 @@
 from .interface_utils import (
-    generic_online_optim,
+    generic_show_constraints_jacobian_sparsity,
     generic_solve,
     generic_dispatch_bounds,
     generic_dispatch_obj_func,
@@ -82,6 +82,12 @@ class FatropInterface(SolverInterface):
         """
 
         raise NotImplementedError("Fatrop does not support online optimization yet.")
+
+    def show_constraints_jacobian_sparsity(self):
+        """
+        Show the sparsity of the constraints jacobian
+        """
+        generic_show_constraints_jacobian_sparsity(self)
 
     def solve(self, expand_during_shake_tree: Bool) -> AnyDict:
         """
