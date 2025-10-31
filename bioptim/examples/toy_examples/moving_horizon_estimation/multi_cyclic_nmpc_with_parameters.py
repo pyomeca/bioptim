@@ -35,8 +35,8 @@ from bioptim import (
     OnlineOptim,
 )
 from bioptim.examples.utils import ExampleUtils
-import numpy as np
 from casadi import MX, SX, vertcat
+import numpy as np
 
 
 class MyCyclicNMPC(MultiCyclicNonlinearModelPredictiveControl):
@@ -210,7 +210,7 @@ def prepare_nmpc(
 
 
 def main():
-    model_path = ExampleUtils.folder + "/models/arm2.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/arm2.bioMod"
     torque_max = 50
 
     cycle_duration = 1
@@ -220,7 +220,7 @@ def main():
     n_cycles = 4
 
     nmpc = prepare_nmpc(
-        model_path,
+        biorbd_model_path,
         cycle_len=cycle_len,
         cycle_duration=cycle_duration,
         n_cycles_to_advance=n_cycles_to_advance,

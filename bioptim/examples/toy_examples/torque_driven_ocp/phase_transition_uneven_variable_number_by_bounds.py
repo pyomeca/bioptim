@@ -19,15 +19,15 @@ from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(
-    biorbd_model_path_with_translations: str = ExampleUtils.folder + "/models/double_pendulum_with_translations.bioMod",
+    biorbd_model_path: str,
     n_shooting: tuple = (40, 40),
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
 
     bio_model = (
-        TorqueBiorbdModel(biorbd_model_path_with_translations),
-        TorqueBiorbdModel(biorbd_model_path_with_translations),
+        TorqueBiorbdModel(biorbd_model_path),
+        TorqueBiorbdModel(biorbd_model_path),
     )
 
     # Problem parameters
@@ -118,7 +118,8 @@ def prepare_ocp(
 
 def main():
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp()
+    biorbd_model_path = ExampleUtils.folder + "/models/double_pendulum_with_translations.bioMod"
+    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path)
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False, show_options=dict(show_bounds=True)))

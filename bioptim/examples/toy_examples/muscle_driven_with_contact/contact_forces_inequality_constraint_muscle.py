@@ -129,7 +129,7 @@ def main():
     sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
 
     nlp = ocp.nlp[0]
-    nlp.model = BiorbdModel(biorbd_model_path)
+    nlp.model = MusclesBiorbdModel(biorbd_model_path)
 
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)

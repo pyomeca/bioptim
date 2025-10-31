@@ -173,6 +173,7 @@ def main():
     """
 
     nodes_to_test = [Node.START, Node.INTERMEDIATES, Node.ALL_SHOOTING]
+    biorbd_model_path = ExampleUtils.folder + "/models/cube.bioMod"
 
     for interpolation_type in InterpolationType:
         for node in nodes_to_test:
@@ -184,7 +185,7 @@ def main():
 
             print(f"Solving problem using {interpolation_type} weight applied at {node} nodes.")
             ocp = prepare_ocp(
-                ExampleUtils.folder + "/models/cube.bioMod",
+                biorbd_model_path=biorbd_model_path,
                 n_shooting=30,
                 final_time=2,
                 interpolation_type=interpolation_type,

@@ -166,7 +166,7 @@ class CustomModel(BiorbdModel, TorqueDynamics):
 
 
 def prepare_ocp(
-    biorbd_model_path: str = ExampleUtils.folder + "/models/mass_point.bioMod",
+    biorbd_model_path: str,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
     phase_time: float = 0.5,
@@ -237,11 +237,15 @@ def prepare_ocp(
 def main():
     phase_time = 0.5
     n_shooting = 30
+    biorbd_model_path = ExampleUtils.folder + "/models/mass_point.bioMod"
+
     fig, axs = plt.subplots(1, 3)
 
     for scenario in range(8):  # in [1]: #
         print(scenarios[scenario]["label"])
-        ocp = prepare_ocp(phase_time=phase_time, n_shooting=n_shooting, scenario=scenario)
+        ocp = prepare_ocp(
+            biorbd_model_path=biorbd_model_path, phase_time=phase_time, n_shooting=n_shooting, scenario=scenario
+        )
 
         ocp.print(to_console=True, to_graph=False)
 

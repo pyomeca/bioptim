@@ -24,6 +24,7 @@ from bioptim import (
 from bioptim.examples.utils import ExampleUtils
 import numpy as np
 
+
 # Load track_segment_on_rt
 spec = importlib.util.spec_from_file_location(
     "data_to_track", str(Path(__file__).parent) + "/contact_forces_inequality_constraint_muscle.py"
@@ -99,13 +100,13 @@ def prepare_ocp(
 
 def main():
     # Define the problem
-    model_path = ExampleUtils.folder + "/models/2segments_4dof_2contacts_1muscle.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/2segments_4dof_2contacts_1muscle.bioMod"
     final_time = 0.7
     ns = 20
 
     # Generate data using another optimization that will be feedback in as tracking data
     ocp_to_track = data_to_track.prepare_ocp(
-        biorbd_model_path=model_path,
+        biorbd_model_path=biorbd_model_path,
         phase_time=final_time,
         n_shooting=ns,
         min_bound=50,
@@ -128,7 +129,7 @@ def main():
 
     # Track these data
     ocp = prepare_ocp(
-        biorbd_model_path=model_path,
+        biorbd_model_path=biorbd_model_path,
         phase_time=final_time,
         n_shooting=ns,
         muscle_activations_ref=muscle_activations_ref,

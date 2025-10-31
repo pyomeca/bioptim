@@ -47,7 +47,7 @@ from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(
-    biorbd_model_path: str = ExampleUtils.folder + "/models/cubeSym.bioMod",
+    biorbd_model_path,
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
@@ -151,7 +151,8 @@ def main():
     Solves an ocp where the symmetry must be respected, and animates it
     """
 
-    ocp = prepare_ocp()
+    biorbd_model_path = ExampleUtils.folder + "/models/cubeSym.bioMod"
+    ocp = prepare_ocp(biorbd_model_path)
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))

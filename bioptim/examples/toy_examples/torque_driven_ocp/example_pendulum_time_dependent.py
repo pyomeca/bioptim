@@ -171,8 +171,10 @@ def main():
     If pendulum is run as a script, it will perform the optimization and animates it
     """
 
+    biorbd_model_path = ExampleUtils.folder + "/models/pendulum.bioMod"
+
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(biorbd_model_path=ExampleUtils.folder + "/models/pendulum.bioMod", final_time=1, n_shooting=30)
+    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, final_time=1, n_shooting=30)
 
     # Custom plots
     ocp.add_plot_penalty(CostType.ALL)

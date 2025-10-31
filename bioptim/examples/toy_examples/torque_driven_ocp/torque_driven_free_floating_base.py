@@ -163,7 +163,6 @@ def prepare_ocp(biorbd_model_path: str):
         bio_model=bio_model,
         n_shooting=n_shooting,
         phase_time=phase_time,
-        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         x_init=x_initial_guesses,
@@ -175,7 +174,8 @@ def prepare_ocp(biorbd_model_path: str):
 
 if __name__ == "__main__":
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(biorbd_model_path=ExampleUtils.folder + "/models/trunk_and_2arm.bioMod")
+    biorbd_model_path = ExampleUtils.folder + "/models/trunk_and_2arm.bioMod"
+    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path)
 
     # --- Solve the ocp --- #
     solver = Solver.IPOPT(online_optim=OnlineOptim.DEFAULT)

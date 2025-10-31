@@ -112,9 +112,9 @@ def main():
     """
     Prepares and solves an ocp with torque actuators, the animates it
     """
-
+    biorbd_model_path = ExampleUtils.folder + "/models/2segments_2dof_2contacts.bioMod"
     ocp = prepare_ocp(
-        biorbd_model_path=ExampleUtils.folder + "/models/2segments_2dof_2contacts.bioMod",
+        biorbd_model_path=biorbd_model_path,
         n_shooting=30,
         final_time=2,
     )

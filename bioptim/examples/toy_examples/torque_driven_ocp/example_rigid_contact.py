@@ -25,10 +25,10 @@ from bioptim import (
     ContactType,
     PenaltyController,
 )
+from bioptim.examples.utils import ExampleUtils
 from casadi import MX
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.odr import quadratic
 
 
 def custom_com_over_contact(controller: PenaltyController) -> MX:
@@ -142,7 +142,7 @@ def main():
     """
     Defines a multiphase ocp and animate the results
     """
-    biorbd_model_path = "../torque_driven_ocp/models/3segments_4dof_1contact.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/3segments_4dof_1contact.bioMod"
     n_shooting = 30
     final_time = 1
     defects_type = DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS

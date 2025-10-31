@@ -25,8 +25,8 @@ from bioptim import (
     OnlineOptim,
 )
 from bioptim.examples.utils import ExampleUtils
-import numpy as np
 from casadi import DM
+import numpy as np
 
 from .custom_dynamics import (
     ModifiedHolonomicTorqueBiorbdModel,
@@ -232,8 +232,8 @@ def main():
     Runs the optimization and animates it
     """
 
-    model_path = ExampleUtils.folder + "/models/two_pendulums.bioMod"
-    ocp, bio_model = prepare_ocp(biorbd_model_path=model_path)
+    biorbd_model_path = ExampleUtils.folder + "/models/two_pendulums.bioMod"
+    ocp, bio_model = prepare_ocp(biorbd_model_path=biorbd_model_path)
     ocp.add_plot_penalty(CostType.ALL)
 
     # --- Solve the program --- #
@@ -248,14 +248,14 @@ def main():
     if viewer == "bioviz":
         import bioviz
 
-        viz = bioviz.Viz(model_path)
+        viz = bioviz.Viz(biorbd_model_path)
         viz.load_movement(q)
         viz.exec()
 
     if viewer == "pyorerun":
         from pyorerun import BiorbdModel as PyorerunBiorbdModel, PhaseRerun
 
-        pyomodel = PyorerunBiorbdModel(model_path)
+        pyomodel = PyorerunBiorbdModel(biorbd_model_path)
         viz = PhaseRerun(t_span=np.concatenate(sol.decision_time()).squeeze())
         viz.add_animated_model(pyomodel, q=q)
 

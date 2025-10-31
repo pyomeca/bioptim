@@ -14,6 +14,7 @@ from bioptim import (
     TorqueBiorbdModel,
     PhaseDynamics,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(
@@ -99,8 +100,8 @@ def prepare_ocp(
 
 
 def main():
-    model_path = "./models/mass_point_with_ligament.bioMod"
-    ocp = prepare_ocp(biorbd_model_path=model_path)
+    biorbd_model_path = ExampleUtils.folder + "/models/mass_point_with_ligament.bioMod"
+    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path)
 
     # --- Solve the program --- #
     sol = ocp.solve()

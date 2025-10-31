@@ -18,8 +18,8 @@ import numpy as np
 
 
 def prepare_ocp(
-    biorbd_model_path: str = ExampleUtils.folder + "/models/triple_pendulum.bioMod",
-    biorbd_model_path_modified_inertia: str = ExampleUtils.folder + "/models/triple_pendulum_modified_inertia.bioMod",
+    biorbd_model_path,
+    biorbd_model_path_modified_inertia,
     n_shooting: int = 40,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
@@ -75,8 +75,14 @@ def prepare_ocp(
 
 
 def main():
+    example_folder = ExampleUtils.folder
+    biorbd_model_path = example_folder + "/models/triple_pendulum.bioMod"
+    biorbd_model_path_modified_inertia = example_folder + "/models/triple_pendulum_modified_inertia.bioMod"
+
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp()
+    ocp = prepare_ocp(
+        biorbd_model_path=biorbd_model_path, biorbd_model_path_modified_inertia=biorbd_model_path_modified_inertia
+    )
     ocp.add_plot_penalty()
 
     # --- Solve the program --- #
