@@ -26,6 +26,7 @@ from bioptim import (
     Solver,
     PhaseDynamics,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(
@@ -129,8 +130,9 @@ def main():
     """
     Prepares and solves an ocp with torque actuators, the animates it
     """
+    biorbd_model_path = ExampleUtils.folder + "/models/cube_with_actuators.bioMod"
 
-    ocp = prepare_ocp("models/cube.bioMod", n_shooting=30, final_time=2, actuator_type=2)
+    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, n_shooting=30, final_time=2, actuator_type=2)
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))

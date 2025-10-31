@@ -22,6 +22,7 @@ from bioptim import (
     Solution,
     PhaseDynamics,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 class MyCyclicNMPC(CyclicNonlinearModelPredictiveControl):
@@ -76,14 +77,14 @@ def prepare_nmpc(
 
 
 def main():
-    model_path = "models/arm2.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/arm2.bioMod"
     torque_max = 50
 
     cycle_duration = 1
     cycle_len = 20
     n_cycles = 3
 
-    nmpc = prepare_nmpc(model_path, cycle_len=cycle_len, cycle_duration=cycle_duration, max_torque=torque_max)
+    nmpc = prepare_nmpc(biorbd_model_path, cycle_len=cycle_len, cycle_duration=cycle_duration, max_torque=torque_max)
 
     def update_functions(_nmpc: CyclicNonlinearModelPredictiveControl, cycle_idx: int, _sol: Solution):
         return cycle_idx < n_cycles  # True if there are still some cycle to perform

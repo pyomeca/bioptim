@@ -29,6 +29,7 @@ from bioptim import (
     PenaltyController,
     ParameterObjectiveList,
 )
+from bioptim.examples.utils import ExampleUtils
 from matplotlib import pyplot as plt
 
 
@@ -51,10 +52,10 @@ def my_parameter_function(bio_model: BioModel, value: MX):
 
 
 def prepare_ocp(
+    biorbd_model_path: str,
     parameter_option: int = 0,
-    bio_model_path: str = "models/double_pendulum.bioMod",
 ) -> OptimalControlProgram:
-    bio_model = (TorqueBiorbdModel(bio_model_path), TorqueBiorbdModel(bio_model_path))
+    bio_model = (TorqueBiorbdModel(biorbd_model_path), TorqueBiorbdModel(biorbd_model_path))
 
     # Problem parameters
     n_shooting = (30, 30)
@@ -69,7 +70,7 @@ def prepare_ocp(
     constraints = ConstraintList()
 
     # Define the parameter to optimize
-    parameters = ParameterList()
+    parameters = ParameterList(use_sx=False)
     parameter_init = InitialGuessList()
     parameter_bounds = BoundsList()
     parameter_objectives = ParameterObjectiveList()
@@ -184,6 +185,8 @@ def prepare_ocp(
 
 def main():
     # --- Prepare the ocp --- #
+    biorbd_model_path = ExampleUtils.folder + "/models/double_pendulum.bioMod"
+
     fig, axs = plt.subplots(1, 3)
     axs[0].set_title("Joint coordinates")
     axs[0].set_ylabel("q [°]")
@@ -199,7 +202,7 @@ def main():
         axs[ax].grid(True)
 
     for i, linestyle in enumerate(linestyles):
-        ocp = prepare_ocp(parameter_option=i)
+        ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, parameter_option=i)
 
         # --- Solve the ocp --- #
         sol = ocp.solve()

@@ -44,6 +44,7 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
 
 A GUI is available to run all the current examples. To run it you can use the following command, from the root folder of the project:
 ```bash
+conda install -c conda-forge pyqt pyqtgraph
 python -m bioptim.examples
 ```
 Please refer to section [Examples](#examples) for more information on how to run the examples.
