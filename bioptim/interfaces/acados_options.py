@@ -109,6 +109,12 @@ class ACADOS(GenericSolver):
         This function is unsafe because we did not check if the option exist in the solver option list.
         If it's not it just will be ignored. Please make sure that the option you're asking for exist.
         """
+        if not hasattr(self, "__annotations__"):
+            if hasattr(self, "__annotations_cache__"):
+                self.__annotations__ = self.__annotations_cache__
+            else:
+                raise AttributeError("No annotations found for the class.")
+
         if f"_{name}" not in self.__annotations__.keys():
             self.__annotations__[f"_{name}"] = val
             self.__setattr__(f"_{name}", val)
@@ -264,6 +270,11 @@ class ACADOS(GenericSolver):
         }
 
         # Select the set of relevant keys before entering the loop
+        if not hasattr(self, "__annotations__"):
+            if hasattr(self, "__annotations_cache__"):
+                self.__annotations__ = self.__annotations_cache__
+            else:
+                raise AttributeError("No annotations found for the class.")
         relevant_keys = set(self.__annotations__.keys()) - keys_to_skip
 
         # Iterate only over relevant keys
