@@ -5,7 +5,6 @@ The arm must reach a marker while minimizing the muscles activity and the states
 ACADOS and Ipotpt.
 """
 
-import numpy as np
 from bioptim import (
     TorqueBiorbdModel,
     OptimalControlProgram,
@@ -17,6 +16,7 @@ from bioptim import (
     Solver,
 )
 from bioptim.examples.utils import ExampleUtils
+import numpy as np
 
 
 def prepare_ocp(biorbd_model_path, n_shooting, tf, ode_solver=OdeSolver.RK4(), use_sx=True, expand_dynamics=True):
