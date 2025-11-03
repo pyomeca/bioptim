@@ -12,9 +12,6 @@ WARNING: These examples are not maintained anymore, please use SocpType.COLLOCAT
 import pickle
 from enum import Enum
 
-import casadi as cas
-import numpy as np
-
 from bioptim import (
     StochasticOptimalControlProgram,
     ObjectiveFcn,
@@ -22,7 +19,6 @@ from bioptim import (
     StochasticTorqueBiorbdModel,
     ObjectiveList,
     NonLinearProgram,
-    DynamicsOptionsList,
     DynamicsOptions,
     BoundsList,
     InterpolationType,
@@ -37,6 +33,8 @@ from bioptim import (
     VariableScalingList,
 )
 from bioptim.examples.utils import ExampleUtils
+import casadi as cas
+import numpy as np
 
 
 class ExampleType(Enum):

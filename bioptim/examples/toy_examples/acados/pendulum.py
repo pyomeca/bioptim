@@ -7,7 +7,6 @@ This simple example is a good place to start investigating bioptim using ACADOS 
 dynamics out there (the joint torque driven), it defines an objective function and some boundaries and initial guesses
 """
 
-import numpy as np
 from bioptim import (
     TorqueBiorbdModel,
     OptimalControlProgram,
@@ -18,6 +17,7 @@ from bioptim import (
     Solver,
 )
 from bioptim.examples.utils import ExampleUtils
+import numpy as np
 
 
 def prepare_ocp(

@@ -3,8 +3,6 @@ This script doesn't use biorbd
 This an example of how to use bioptim to solve a simple pendulum problem
 """
 
-import numpy as np
-
 from bioptim import (
     OptimalControlProgram,
     BoundsList,
@@ -22,6 +20,7 @@ from bioptim import (
 
 # import the custom model
 from bioptim.examples.toy_examples.custom_model.custom_package import MyModel
+import numpy as np
 
 
 def prepare_ocp(

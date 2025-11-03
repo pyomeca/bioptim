@@ -4,8 +4,6 @@ The third segments must stay aligned with the vertical.
 Note that there are other ways to do this, here it is used to examplify how to use the function MINIMIZE_JCS.
 """
 
-import numpy as np
-
 from bioptim import (
     TorqueBiorbdModel,
     OptimalControlProgram,
@@ -16,6 +14,7 @@ from bioptim import (
     PhaseDynamics,
 )
 from bioptim.examples.utils import ExampleUtils
+import numpy as np
 
 
 def prepare_ocp(

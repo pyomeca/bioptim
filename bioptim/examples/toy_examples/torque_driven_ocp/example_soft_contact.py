@@ -5,7 +5,6 @@ The soft contact sphere are hard to make converge and sensitive to parameters.
 One could use ContactType.SOFT_IMPLICIT to ease the convergence.
 """
 
-import numpy as np
 from bioptim import (
     TorqueBiorbdModel,
     OptimalControlProgram,
@@ -28,6 +27,7 @@ from bioptim import (
     ContactType,
 )
 from bioptim.examples.utils import ExampleUtils
+import numpy as np
 
 
 def prepare_single_shooting(

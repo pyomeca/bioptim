@@ -16,6 +16,7 @@ from ..gui.graph import OcpToConsole, OcpToGraph
 from ..gui.ipopt_output_plot import SaveIterationsInfo
 from ..gui.plot import CustomPlot, PlotOcp
 from ..interfaces import Solver
+from ..interfaces.solver_interface import SolverInterface
 from ..interfaces.abstract_options import GenericSolver
 from ..limits.constraints import (
     ConstraintFunction,
@@ -554,7 +555,7 @@ class OptimalControlProgram:
                 raise RuntimeError("Number of shooting points must be at least 1")
 
         NLP.add(self, "n_threads", self.n_threads, True)
-        self.ocp_solver = None
+        self.ocp_solver: SolverInterface = None
 
         plot_mappings = plot_mappings if plot_mappings is not None else {}
         reshaped_plot_mappings = []
@@ -1408,29 +1409,7 @@ class OptimalControlProgram:
 
         if solver is None:
             solver = Solver.IPOPT()
-
-        if self.ocp_solver is None:
-            if solver.type == SolverType.IPOPT:
-                from ..interfaces.ipopt_interface import IpoptInterface
-
-                self.ocp_solver = IpoptInterface(self)
-            elif solver.type == SolverType.FATROP:
-                from ..interfaces.fatrop_interface import FatropInterface
-
-                self.ocp_solver = FatropInterface(self)
-
-            elif solver.type == SolverType.SQP:
-                from ..interfaces.sqp_interface import SQPInterface
-
-                self.ocp_solver = SQPInterface(self)
-
-            elif solver.type == SolverType.ACADOS:
-                from ..interfaces.acados_interface import AcadosInterface
-
-                self.ocp_solver = AcadosInterface(self, solver)
-
-            elif solver.type == SolverType.NONE:
-                raise RuntimeError("Invalid solver")
+        self.set_ocp_solver(solver)
 
         if warm_start is not None:
             self.set_warm_start(sol=warm_start)
@@ -1445,6 +1424,56 @@ class OptimalControlProgram:
         self._is_warm_starting = False
 
         return Solution.from_dict(self, self.ocp_solver.get_optimized_value())
+
+    def show_constraints_jacobian_sparsity(self, solver: Solver) -> None:
+        """
+        Show the sparsity of the constraints jacobian
+        """
+        self.set_ocp_solver(solver)
+        self.ocp_solver.show_constraints_jacobian_sparsity()
+
+    def set_ocp_solver(self, solver: Solver) -> None:
+        """
+        Set the solver to be used to solve the ocp
+
+        Parameters
+        ----------
+        solver: Solver
+            The solver to use
+        """
+
+        if solver.type == SolverType.IPOPT:
+            from ..interfaces.ipopt_interface import IpoptInterface
+
+            ocp_solver = IpoptInterface(self)
+        elif solver.type == SolverType.FATROP:
+            from ..interfaces.fatrop_interface import FatropInterface
+
+            ocp_solver = FatropInterface(self)
+
+        elif solver.type == SolverType.SQP:
+            from ..interfaces.sqp_interface import SQPInterface
+
+            ocp_solver = SQPInterface(self)
+
+        elif solver.type == SolverType.ACADOS:
+            from ..interfaces.acados_interface import AcadosInterface
+
+            ocp_solver = AcadosInterface(self, solver)
+
+        elif solver.type == SolverType.NONE:
+            raise RuntimeError("Invalid solver")
+
+        else:
+            raise RuntimeError(f"Solver {solver.type} not implemented yet")
+
+        if self.ocp_solver is None:
+            self.ocp_solver = ocp_solver
+        else:
+            if type(self.ocp_solver) != type(ocp_solver):
+                raise RuntimeError(
+                    "You cannot change the solver once it has been set. Please create a new OptimalControlProgram."
+                )
 
     def set_warm_start(self, sol: Solution) -> None:
         """

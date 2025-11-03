@@ -17,7 +17,6 @@ InterpolationType.SPLINE: The values are interpolated from the first to last nod
 InterpolationType.CUSTOM: Provide a user-defined interpolation function
 """
 
-import numpy as np
 from bioptim import (
     TorqueBiorbdModel,
     Node,
@@ -33,6 +32,7 @@ from bioptim import (
     ConstraintWeight,
 )
 from bioptim.examples.utils import ExampleUtils
+import numpy as np
 
 
 def custom_weight(node: int, n_nodes: int) -> float:

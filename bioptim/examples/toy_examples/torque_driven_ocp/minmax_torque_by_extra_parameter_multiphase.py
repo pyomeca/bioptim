@@ -10,8 +10,6 @@ minimized using 3 approches:
 All graphical results are presented using pyplot
 """
 
-import numpy as np
-from casadi import MX
 from bioptim import (
     OptimalControlProgram,
     BioModel,
@@ -30,7 +28,9 @@ from bioptim import (
     ParameterObjectiveList,
 )
 from bioptim.examples.utils import ExampleUtils
+from casadi import MX
 from matplotlib import pyplot as plt
+import numpy as np
 
 
 def custom_constraint_max_tau(controller: PenaltyController) -> MX:

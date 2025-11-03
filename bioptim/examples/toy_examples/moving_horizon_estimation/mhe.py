@@ -15,10 +15,6 @@ estimated data can be compared to real data.
 
 from copy import copy
 
-import matplotlib.pyplot as plt
-import numpy as np
-from scipy.integrate import solve_ivp
-
 from bioptim import (
     BioModel,
     TorqueBiorbdModel,
@@ -35,6 +31,9 @@ from bioptim import (
     SolutionMerge,
 )
 from bioptim.examples.utils import ExampleUtils
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.integrate import solve_ivp
 
 
 def states_to_markers(bio_model, states):

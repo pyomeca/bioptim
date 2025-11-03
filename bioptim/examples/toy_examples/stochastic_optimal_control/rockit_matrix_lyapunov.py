@@ -3,10 +3,6 @@ This example aims to replicate the example provided in Rockit: matrix_lyapunov.p
 It uses the Lyapunov differential equation to approximate state covariance along the trajectory.
 """
 
-import matplotlib.pyplot as plt
-import casadi as cas
-import numpy as np
-
 from bioptim import (
     StochasticOptimalControlProgram,
     ObjectiveFcn,
@@ -37,6 +33,9 @@ from bioptim.examples.toy_examples.stochastic_optimal_control.common import (
     test_eigen_values,
     reshape_to_matrix,
 )
+import casadi as cas
+import matplotlib.pyplot as plt
+import numpy as np
 from scipy.integrate import solve_ivp
 
 

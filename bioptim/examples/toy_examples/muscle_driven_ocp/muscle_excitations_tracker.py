@@ -8,20 +8,12 @@ data acquisition devices
 The difference between muscle activation and excitation is that the latter is the derivative of the former
 """
 
-import platform
-
-import numpy as np
-from casadi import MX, SX, vertcat, horzcat, Function
-from matplotlib import pyplot as plt
-from scipy.integrate import solve_ivp
-
 from bioptim import (
     MusclesWithExcitationsBiorbdModel,
     OptimalControlProgram,
     NonLinearProgram,
     BiMapping,
     DynamicsOptionsList,
-    DynamicsFunctions,
     ObjectiveList,
     ObjectiveFcn,
     BoundsList,
@@ -32,9 +24,14 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
     DynamicsOptions,
+    OnlineOptim,
 )
-from bioptim.optimization.optimization_variable import OptimizationVariableContainer
 from bioptim.examples.utils import ExampleUtils
+from bioptim.optimization.optimization_variable import OptimizationVariableContainer
+from casadi import MX, SX, vertcat, horzcat, Function
+from matplotlib import pyplot as plt
+import numpy as np
+from scipy.integrate import solve_ivp
 
 
 def generate_data(
@@ -358,7 +355,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
 
     # --- Show the results --- #
     states = sol.decision_states(to_merge=SolutionMerge.NODES)

@@ -4,10 +4,6 @@ All the examples in muscle_driven_with_contact are merely to show some dynamics 
 It is not really relevant and will be removed when unitary tests for the dynamics will be implemented
 """
 
-import platform
-
-from matplotlib import pyplot as plt
-import numpy as np
 from bioptim import (
     MusclesBiorbdModel,
     Node,
@@ -25,8 +21,11 @@ from bioptim import (
     SolutionMerge,
     ContactType,
     MusclesWithExcitationsBiorbdModel,
+    OnlineOptim,
 )
 from bioptim.examples.utils import ExampleUtils
+from matplotlib import pyplot as plt
+import numpy as np
 
 
 def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver=OdeSolver.RK4(), expand_dynamics=True):
@@ -125,7 +124,7 @@ def main():
     ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, phase_time=t, n_shooting=ns, min_bound=50)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
 
     nlp = ocp.nlp[0]
     nlp.model = MusclesBiorbdModel(biorbd_model_path)

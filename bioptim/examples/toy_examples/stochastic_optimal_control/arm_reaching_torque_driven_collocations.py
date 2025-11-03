@@ -6,8 +6,6 @@ commits less integration errors than using a trapezoidal scheme and is closer to
 """
 
 import pickle
-import casadi as cas
-import numpy as np
 
 from bioptim import (
     StochasticOptimalControlProgram,
@@ -28,9 +26,10 @@ from bioptim import (
     SolutionMerge,
     DynamicsOptions,
 )
-from bioptim.examples.utils import ExampleUtils
-
 from bioptim.examples.toy_examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
+from bioptim.examples.utils import ExampleUtils
+import casadi as cas
+import numpy as np
 
 
 def sensory_reference(

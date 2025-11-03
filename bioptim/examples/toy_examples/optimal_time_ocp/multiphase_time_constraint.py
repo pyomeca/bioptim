@@ -4,8 +4,6 @@ phase with one of its corner. The time is free for each phase
 It is designed to show how one can define a multi-phase ocp problem with free time.
 """
 
-import platform
-
 from bioptim import (
     TorqueBiorbdModel,
     Solver,
@@ -23,6 +21,7 @@ from bioptim import (
     BiMapping,
     PhaseDynamics,
     SolutionMerge,
+    OnlineOptim,
 )
 from bioptim.examples.utils import ExampleUtils
 
@@ -210,7 +209,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.FATROP(online_optim=OnlineOptim.DEFAULT))
 
     # --- Show results --- #
     times = [float(t[-1, 0]) for t in sol.decision_time(to_merge=SolutionMerge.NODES)]

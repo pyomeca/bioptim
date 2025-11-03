@@ -4,10 +4,6 @@ The simulation is two single pendulum that are forced to be coherent with a holo
 pendulum simulation.
 """
 
-import platform
-import numpy as np
-from casadi import DM
-
 from bioptim import (
     BiMappingList,
     BoundsList,
@@ -26,6 +22,8 @@ from bioptim import (
     OdeSolver,
 )
 from bioptim.examples.utils import ExampleUtils
+from casadi import DM
+import numpy as np
 
 
 def compute_all_states(sol, bio_model: HolonomicTorqueBiorbdModel):
@@ -90,7 +88,7 @@ def prepare_ocp(
     n_shooting: int = 30,
     final_time: float = 1,
     expand_dynamics: bool = False,
-) -> (HolonomicTorqueBiorbdModel, OptimalControlProgram):
+) -> tuple[HolonomicTorqueBiorbdModel, OptimalControlProgram]:
     """
     Prepare the program
 

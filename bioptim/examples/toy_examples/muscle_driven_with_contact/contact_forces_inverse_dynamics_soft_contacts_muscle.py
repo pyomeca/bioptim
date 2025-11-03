@@ -3,9 +3,6 @@ This example shows how to impose the dynamics through an inverse dynamics defect
 It also shows how to impose the soft contact forces as an implicit constraint.
 """
 
-from matplotlib import pyplot as plt
-import numpy as np
-from casadi import MX, SX, vertcat
 from bioptim import (
     MusclesBiorbdModel,
     OptimalControlProgram,
@@ -27,6 +24,9 @@ from bioptim import (
     DefectType,
 )
 from bioptim.examples.utils import ExampleUtils
+from casadi import MX
+from matplotlib import pyplot as plt
+import numpy as np
 
 
 def prepare_ocp(biorbd_model_path, phase_time, n_shooting, expand_dynamics=True):

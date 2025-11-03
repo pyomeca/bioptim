@@ -9,9 +9,6 @@ WARNING: These examples are not maintained anymore, please use SocpType.COLLOCAT
 import pickle
 from typing import Any
 
-import casadi as cas
-import numpy as np
-
 from bioptim import (
     OptimalControlProgram,
     StochasticOptimalControlProgram,
@@ -43,9 +40,9 @@ from bioptim import (
 )
 from bioptim.examples.utils import ExampleUtils
 from bioptim.examples.toy_examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
-from bioptim.examples.toy_examples.stochastic_optimal_control.common import (
-    dynamics_torque_driven_with_feedbacks,
-)
+from bioptim.examples.toy_examples.stochastic_optimal_control.common import dynamics_torque_driven_with_feedbacks
+import casadi as cas
+import numpy as np
 
 
 def stochastic_forward_dynamics(

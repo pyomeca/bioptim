@@ -4,8 +4,6 @@ this time there is a passive torque which is applied on Seg1 in the model "pendu
 The expression of the tau is therefore not the same here.
 """
 
-import platform
-
 from bioptim import (
     OptimalControlProgram,
     DynamicsOptions,
@@ -18,6 +16,7 @@ from bioptim import (
     TorqueBiorbdModel,
     BoundsList,
     PhaseDynamics,
+    OnlineOptim,
 )
 from bioptim.examples.utils import ExampleUtils
 
@@ -116,7 +115,7 @@ def main():
     ocp.print(to_console=False, to_graph=False)
 
     # --- Solve the ocp --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
     # sol.graphs()
 
     # --- Show the results in a bioviz animation --- #

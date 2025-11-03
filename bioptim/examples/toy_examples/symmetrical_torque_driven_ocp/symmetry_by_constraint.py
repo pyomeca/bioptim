@@ -13,8 +13,6 @@ Please note that even though removing a degree of freedom seems a good idea, it 
 solving with IPOPT.
 """
 
-import platform
-
 from bioptim import (
     TorqueBiorbdModel,
     Node,
@@ -29,6 +27,7 @@ from bioptim import (
     OdeSolverBase,
     Solver,
     PhaseDynamics,
+    OnlineOptim,
 )
 from bioptim.examples.utils import ExampleUtils
 
@@ -122,7 +121,7 @@ def main():
     ocp.add_plot_penalty()
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=OnlineOptim))
 
     # --- Show results --- #
     sol.animate()

@@ -4,8 +4,6 @@ It also shows how to impose the contact forces as an implicit constraint.
 Please note that this formulation does not reach convergence.
 """
 
-import platform
-
 from matplotlib import pyplot as plt
 import numpy as np
 from casadi import vertcat

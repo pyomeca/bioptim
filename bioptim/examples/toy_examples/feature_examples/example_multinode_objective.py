@@ -3,9 +3,6 @@ This example shows how to use multinode_objectives.
 It replicates the results from getting_started/pendulum.py
 """
 
-import platform
-from casadi import MX, sum1
-
 from bioptim import (
     OptimalControlProgram,
     DynamicsOptions,
@@ -18,8 +15,10 @@ from bioptim import (
     PenaltyController,
     MultinodeObjectiveList,
     CostType,
+    OnlineOptim,
 )
 from bioptim.examples.utils import ExampleUtils
+from casadi import sum1
 
 
 def multinode_min_controls(controllers: list[PenaltyController]):
@@ -131,7 +130,7 @@ def main():
     ocp.add_plot_penalty(CostType.ALL)
 
     # --- Solve the ocp --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
 
     # --- Show the results in a bioviz animation --- #
     sol.animate(n_frames=100)

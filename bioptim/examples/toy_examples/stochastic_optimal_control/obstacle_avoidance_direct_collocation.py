@@ -6,13 +6,6 @@ The controls are coordinates of a quide-point (the mass is attached to this guid
 
 import pickle
 
-import casadi as cas
-import matplotlib.cm as cm
-import matplotlib.pyplot as plt
-import numpy as np
-from matplotlib.patches import Ellipse
-from scipy.integrate import solve_ivp
-
 from bioptim import (
     StochasticOptimalControlProgram,
     ObjectiveFcn,
@@ -47,6 +40,11 @@ from bioptim.examples.toy_examples.stochastic_optimal_control.models.mass_point_
     MassPointDynamicsModel,
     StochasticMassPointDynamicsModel,
 )
+import casadi as cas
+import matplotlib.cm as cm
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.integrate import solve_ivp
 
 
 def plot_results(

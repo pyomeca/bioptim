@@ -4,10 +4,7 @@ It is not really relevant and will be removed when unitary tests for the dynamic
 """
 
 import importlib.util
-import platform
 from pathlib import Path
-
-import numpy as np
 
 from bioptim import (
     MusclesBiorbdModel,
@@ -22,8 +19,10 @@ from bioptim import (
     SolutionMerge,
     Node,
     ContactType,
+    OnlineOptim,
 )
 from bioptim.examples.utils import ExampleUtils
+import numpy as np
 
 
 # Load track_segment_on_rt
@@ -138,7 +137,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
 
     # --- Show results --- #
     sol.animate()
