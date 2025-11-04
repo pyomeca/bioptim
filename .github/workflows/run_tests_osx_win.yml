@@ -33,6 +33,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Checkout submodules
+        if: matrix.shard == 1
+        run: git submodule update --init --recursive
+
       - name: Setup environment
         uses: conda-incubator/setup-miniconda@v3
         with:
