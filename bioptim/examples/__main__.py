@@ -40,6 +40,7 @@ examples_ = OrderedDict(
             "getting_started",
             OrderedDict(
                 [
+                    ("Basic OCP", "basic_ocp.py"),
                     ("Custom objectives", "custom_objectives.py"),
                     ("Custom parameters", "custom_parameters.py"),
                     ("Custom phase transitions", "custom_phase_transitions.py"),
@@ -49,7 +50,6 @@ examples_ = OrderedDict(
                     ("Example multiphase", "example_multiphase.py"),
                     ("Example simulation", "example_simulation.py"),
                     ("Example cyclic movement", "example_cyclic_movement.py"),
-                    ("Basic OCP", "basic_ocp.py"),
                     ("Example constraint weight", "custom_constraint_weights.py"),
                     ("How to plot", "how_to_plot.py"),
                 ]
