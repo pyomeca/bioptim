@@ -763,8 +763,8 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         )
 
         if self.parameters.shape != 0 and get_all_iterations:
-            final_solution_parameters_dict = [{key: None} for key in solution[0].parameters.keys()][0]
-            for key in solution[0].parameters.keys():
+            final_solution_parameters_dict = [{key: None} for key in solution[1][0].parameters.keys()][0]
+            for key in solution[1][0].parameters.keys():
                 key_val = []
                 for sol in solution[1]:
                     key_val.append(sol.parameters[key])
