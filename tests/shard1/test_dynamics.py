@@ -27,6 +27,7 @@ from bioptim import (
     States,
     Controls,
     StateDynamics,
+    StateDynamicsWithContacts,
     MusclesWithExcitationsBiorbdModel,
 )
 
@@ -1085,7 +1086,7 @@ def test_joints_acceleration_driven(cx, phase_dynamics):
 @pytest.mark.parametrize("contact_types", [(), [ContactType.RIGID_EXPLICIT]])
 def test_custom_dynamics(contact_types, phase_dynamics):
 
-    class CustomModel(BiorbdModel, StateDynamics):
+    class CustomModel(BiorbdModel, StateDynamicsWithContacts):
         def __init__(self, model_path, contact_types):
             BiorbdModel.__init__(
                 self,

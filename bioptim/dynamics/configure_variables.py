@@ -1,4 +1,6 @@
+from enum import Enum
 from typing import Callable, Any
+
 import numpy as np
 from casadi import DM, vertcat, Function
 
@@ -21,10 +23,10 @@ class ConfigureVariables:
     def configure_new_variable(
         name: str,
         name_elements: list,
-        ocp,
-        nlp,
-        as_states: bool,
-        as_controls: bool,
+        ocp=None,
+        nlp=None,
+        as_states: bool = False,
+        as_controls: bool = False,
         as_algebraic_states: bool = False,
         combine_name: str = None,
         combine_state_control_plot: bool = False,
@@ -59,6 +61,12 @@ class ConfigureVariables:
         axes_idx: BiMapping
             The axes index to use for the plot
         """
+        if ocp is None or nlp is None:
+            raise RuntimeError("ocp and nlp cannot be None.")
+
+        if not as_states and not as_controls and not as_algebraic_states:
+            raise RuntimeError("At least one of as_states, as_controls or as_algebraic_states must be True.")
+
         NewVariableConfiguration(
             name,
             name_elements,
@@ -131,7 +139,7 @@ class ConfigureVariables:
             )
 
     @staticmethod
-    def configure_q(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
+    def configure_q(ocp, nlp, as_states: bool = False, as_controls: bool = False, as_algebraic_states: bool = False):
         """
         Configure the generalized coordinates
 
@@ -147,7 +155,7 @@ class ConfigureVariables:
             If the generalized coordinates should be an algebraic state
         """
         name = "q"
-        name_q = nlp.model.name_dof
+        name_q = nlp.model.name_dofs
         axes_idx = ConfigureVariables._apply_phase_mapping(ocp, nlp, name)
         ConfigureVariables.configure_new_variable(
             name,
@@ -161,7 +169,9 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_q_roots(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
+    def configure_q_roots(
+        ocp, nlp, as_states: bool = False, as_controls: bool = False, as_algebraic_states: bool = False
+    ):
         """
         Configure the generalized coordinates for the root segment
 
@@ -177,7 +187,7 @@ class ConfigureVariables:
             If the generalized coordinates should be an algebraic state
         """
         name = "q_roots"
-        name_q_roots = [nlp.model.name_dof[i] for i in range(nlp.model.nb_root)]
+        name_q_roots = [nlp.model.name_dofs[i] for i in range(nlp.model.nb_root)]
         if name in nlp.variable_mappings.keys() and nlp.variable_mappings[name].actually_does_a_mapping:
             raise RuntimeError("q_roots is not ready for variable mapping yet.")
 
@@ -193,7 +203,9 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_q_joints(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
+    def configure_q_joints(
+        ocp, nlp, as_states: bool = False, as_controls: bool = False, as_algebraic_states: bool = False
+    ):
         """
         Configure the generalized coordinates for the segments other than the root segment
 
@@ -209,7 +221,7 @@ class ConfigureVariables:
             If the generalized coordinates should be an algebraic state
         """
         name = "q_joints"
-        name_q_joints = [nlp.model.name_dof[i] for i in range(nlp.model.nb_root, nlp.model.nb_q)]
+        name_q_joints = [nlp.model.name_dofs[i] for i in range(nlp.model.nb_root, nlp.model.nb_q)]
         if name in nlp.variable_mappings.keys() and nlp.variable_mappings[name].actually_does_a_mapping:
             raise RuntimeError("q_joints is not ready for variable mapping yet.")
 
@@ -228,7 +240,7 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_q_u(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
+    def configure_q_u(ocp, nlp, as_states: bool = False, as_controls: bool = False, as_algebraic_states: bool = False):
         """
         Configure the generalized coordinates for the independent dofs in the case of holonomic dynamics
 
@@ -247,7 +259,7 @@ class ConfigureVariables:
             raise RuntimeError("configure_q_u is intended to be used as a state.")
 
         name = "q_u"
-        names_u = [nlp.model.name_dof[i] for i in nlp.model.independent_joint_index]
+        names_u = [nlp.model.name_dofs[i] for i in nlp.model.independent_joint_index]
         ConfigureVariables.configure_new_variable(
             name,
             names_u,
@@ -262,7 +274,9 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_qdot_u(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
+    def configure_qdot_u(
+        ocp, nlp, as_states: bool = False, as_controls: bool = False, as_algebraic_states: bool = False
+    ):
         """
         Configure the generalized coordinates for the independent velocities in the case of holonomic dynamics
 
@@ -297,7 +311,7 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_qdot(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
+    def configure_qdot(ocp, nlp, as_states: bool = False, as_controls: bool = False, as_algebraic_states: bool = False):
         """
         Configure the generalized velocities
 
@@ -328,7 +342,9 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_qdot_roots(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
+    def configure_qdot_roots(
+        ocp, nlp, as_states: bool = False, as_controls: bool = False, as_algebraic_states: bool = False
+    ):
         """
         Configure the generalized velocities for the root segment
 
@@ -361,7 +377,9 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_qdot_joints(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
+    def configure_qdot_joints(
+        ocp, nlp, as_states: bool = False, as_controls: bool = False, as_algebraic_states: bool = False
+    ):
         """
         Configure the generalized velocities for the segments other than the root segment
 
@@ -429,7 +447,9 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_qddot_joints(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
+    def configure_qddot_joints(
+        ocp, nlp, as_states: bool = False, as_controls: bool = False, as_algebraic_states: bool = False
+    ):
         """
         Configure the generalized acceleration for the segments other than the root segment
 
@@ -499,9 +519,6 @@ class ConfigureVariables:
     def configure_stochastic_k(
         ocp,
         nlp,
-        as_states: bool,
-        as_controls: bool,
-        as_algebraic_states: bool,
         n_noised_controls: int,
         n_references: int,
     ):
@@ -512,9 +529,6 @@ class ConfigureVariables:
         nlp: NonLinearProgram
             A reference to the phase
         """
-        if as_states != False or as_controls != True or as_algebraic_states != False:
-            raise RuntimeError("configure_stochastic_k is intended to be used as a control.")
-
         name = "k"
 
         if name in nlp.variable_mappings:
@@ -540,9 +554,7 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_stochastic_c(
-        ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool, n_noised_states: int, n_noise: int
-    ):
+    def configure_stochastic_c(ocp, nlp, n_noised_states: int, n_noise: int):
         """
         Configure the stochastic variable matrix C representing the injection of motor noise (df/dw).
         Parameters
@@ -550,10 +562,6 @@ class ConfigureVariables:
         nlp: NonLinearProgram
             A reference to the phase
         """
-
-        if as_states != False or as_controls != True or as_algebraic_states != False:
-            raise RuntimeError("configure_stochastic_c is intended to be used as a control.")
-
         name = "c"
 
         if name in nlp.variable_mappings:
@@ -579,9 +587,7 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_stochastic_a(
-        ocp, nlp, as_states: Bool, as_controls: Bool, as_algebraic_states: Bool, n_noised_states: Int
-    ):
+    def configure_stochastic_a(ocp, nlp, n_noised_states: Int):
         """
         Configure the stochastic variable matrix A representing the propagation of motor noise (df/dx).
         Parameters
@@ -589,10 +595,6 @@ class ConfigureVariables:
         nlp: NonLinearProgram
             A reference to the phase
         """
-
-        if as_states != False or as_controls != True or as_algebraic_states != False:
-            raise RuntimeError("configure_stochastic_a is intended to be used as a control.")
-
         name = "a"
 
         if name in nlp.variable_mappings:
@@ -616,9 +618,7 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_stochastic_cov_implicit(
-        ocp, nlp, as_states: Bool, as_controls: Bool, as_algebraic_states: Bool, n_noised_states: Int
-    ):
+    def configure_stochastic_cov_implicit(ocp, nlp, n_noised_states: Int):
         """
         Configure the covariance matrix P representing the motor noise.
         Parameters
@@ -626,9 +626,6 @@ class ConfigureVariables:
         nlp: NonLinearProgram
             A reference to the phase
         """
-
-        if as_states != False or as_controls != True or as_algebraic_states != False:
-            raise RuntimeError("configure_stochastic_cov_implicit is intended to be used as a control.")
 
         name = "cov"
 
@@ -651,9 +648,7 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_stochastic_cholesky_cov(
-        ocp, nlp, as_states: Bool, as_controls: Bool, as_algebraic_states: Bool, n_noised_states: Int
-    ):
+    def configure_stochastic_cholesky_cov(ocp, nlp, n_noised_states: Int):
         """
         Configure the diagonal matrix needed to reconstruct the covariance matrix using L @ L.T.
         This formulation allows insuring that the covariance matrix is always positive semi-definite.
@@ -662,10 +657,6 @@ class ConfigureVariables:
         nlp: NonLinearProgram
             A reference to the phase
         """
-
-        if as_states != False or as_controls != True or as_algebraic_states != False:
-            raise RuntimeError("configure_stochastic_cholesky_cov is intended to be used as a control.")
-
         name = "cholesky_cov"
 
         if name in nlp.variable_mappings:
@@ -687,9 +678,7 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_stochastic_ref(
-        ocp, nlp, as_states: Bool, as_controls: Bool, as_algebraic_states: Bool, n_references: Int
-    ):
+    def configure_stochastic_ref(ocp, nlp, n_references: Int):
         """
         Configure the reference kinematics.
 
@@ -698,10 +687,6 @@ class ConfigureVariables:
         nlp: NonLinearProgram
             A reference to the phase
         """
-
-        if as_states != False or as_controls != True or as_algebraic_states != False:
-            raise RuntimeError("configure_stochastic_ref is intended to be used as a control.")
-
         name = "ref"
 
         if name in nlp.variable_mappings:
@@ -720,9 +705,7 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_stochastic_m(
-        ocp, nlp, as_states: Bool, as_controls: Bool, as_algebraic_states: Bool, n_noised_states: Int
-    ):
+    def configure_stochastic_m(ocp, nlp, n_noised_states: Int):
         """
         Configure the helper matrix M (from Gillis 2013 : https://doi.org/10.1109/CDC.2013.6761121).
 
@@ -731,10 +714,6 @@ class ConfigureVariables:
         nlp: NonLinearProgram
             A reference to the phase
         """
-
-        if as_states != False or as_controls != False or as_algebraic_states != True:
-            raise RuntimeError("configure_stochastic_m is intended to be used as an algebraic state.")
-
         name = "m"
 
         if "m" in nlp.variable_mappings and nlp.variable_mappings["m"].actually_does_a_mapping:
@@ -762,9 +741,9 @@ class ConfigureVariables:
     def configure_tau(
         ocp,
         nlp,
-        as_states: bool,
-        as_controls: bool,
-        as_algebraic_states: bool,
+        as_states: bool = False,
+        as_controls: bool = False,
+        as_algebraic_states: bool = False,
     ):
         """
         Configure the generalized forces
@@ -796,7 +775,9 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_tau_joints(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
+    def configure_tau_joints(
+        ocp, nlp, as_states: bool = False, as_controls: bool = False, as_algebraic_states: bool = False
+    ):
         """
         Configure the generalized forces for the segments other than the root segment
 
@@ -832,7 +813,9 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_residual_tau(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
+    def configure_residual_tau(
+        ocp, nlp, as_states: bool = False, as_controls: bool = False, as_algebraic_states: bool = False
+    ):
         """
         Configure the residual forces
 
@@ -863,7 +846,9 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_taudot(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
+    def configure_taudot(
+        ocp, nlp, as_states: bool = False, as_controls: bool = False, as_algebraic_states: bool = False
+    ):
         """
         Configure the generalized forces derivative
 
@@ -930,7 +915,9 @@ class ConfigureVariables:
         )
 
     @staticmethod
-    def configure_rigid_contact_forces(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
+    def configure_rigid_contact_forces(
+        ocp, nlp, as_states: bool = False, as_controls: bool = False, as_algebraic_states: bool = False
+    ):
         """
         Configure the generalized forces derivative
 
@@ -959,7 +946,7 @@ class ConfigureVariables:
 
     @staticmethod
     def configure_lagrange_multipliers_variable(
-        ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool
+        ocp, nlp, as_states: bool = False, as_controls: bool = False, as_algebraic_states: bool = False
     ) -> None:
         """
         Configure the lambdas for the holonomic constraints as algebraic states
@@ -994,7 +981,9 @@ class ConfigureVariables:
             )
 
     @staticmethod
-    def configure_soft_contact_forces(ocp, nlp, as_states: bool, as_controls: bool, as_algebraic_states: bool):
+    def configure_soft_contact_forces(
+        ocp, nlp, as_states: bool = False, as_controls: bool = False, as_algebraic_states: bool = False
+    ):
         """
         Configure the generalized forces derivative
 
@@ -1026,9 +1015,9 @@ class ConfigureVariables:
     def configure_muscles(
         ocp,
         nlp,
-        as_states: bool,
-        as_controls: bool,
-        as_algebraic_states: bool,
+        as_states: bool = False,
+        as_controls: bool = False,
+        as_algebraic_states: bool = False,
     ):
         """
         Configure the muscles
@@ -1071,6 +1060,11 @@ class ConfigureVariables:
         contact_func: Callable[time, states, controls, param, algebraic_states, numerical_timeseries]
             The function to get the values of contact forces from the dynamics
         """
+        if hasattr(nlp.model, "get_rigid_contact_forces") is False:
+            raise AttributeError(
+                "The dynamic model class must declare the 'get_rigid_contact_forces' method to compute rigid contact forces. "
+                "See the 'StateDynamicsWithRigidContactsForces' class for signature reference."
+            )
 
         time_span_sym = vertcat(nlp.time_cx, nlp.dt)
         nlp.rigid_contact_forces_func = Function(
@@ -1233,12 +1227,12 @@ class ConfigureVariables:
         all_multipliers_names = []
         for nlp_i in ocp.nlp:
             if hasattr(nlp_i.model, "has_holonomic_constraints"):  # making sure we have a HolonomicBiorbdModel
-                nlp_i_multipliers_names = [nlp_i.model.name_dof[i] for i in nlp_i.model.dependent_joint_index]
+                nlp_i_multipliers_names = [nlp_i.model.name_dofs[i] for i in nlp_i.model.dependent_joint_index]
                 all_multipliers_names.extend(
                     [name for name in nlp_i_multipliers_names if name not in all_multipliers_names]
                 )
 
-        all_multipliers_names_in_phase = [nlp.model.name_dof[i] for i in nlp.model.dependent_joint_index]
+        all_multipliers_names_in_phase = [nlp.model.name_dofs[i] for i in nlp.model.dependent_joint_index]
         axes_idx = BiMapping(
             to_first=[i for i, c in enumerate(all_multipliers_names) if c in all_multipliers_names_in_phase],
             to_second=[i for i, c in enumerate(all_multipliers_names) if c in all_multipliers_names_in_phase],
@@ -1291,12 +1285,12 @@ class ConfigureVariables:
         all_multipliers_names = []
         for nlp_i in ocp.nlp:
             if hasattr(nlp_i.model, "has_holonomic_constraints"):  # making sure we have a HolonomicBiorbdModel
-                nlp_i_multipliers_names = [nlp_i.model.name_dof[i] for i in nlp_i.model.dependent_joint_index]
+                nlp_i_multipliers_names = [nlp_i.model.name_dofs[i] for i in nlp_i.model.dependent_joint_index]
                 all_multipliers_names.extend(
                     [name for name in nlp_i_multipliers_names if name not in all_multipliers_names]
                 )
 
-        all_multipliers_names_in_phase = [nlp.model.name_dof[i] for i in nlp.model.dependent_joint_index]
+        all_multipliers_names_in_phase = [nlp.model.name_dofs[i] for i in nlp.model.dependent_joint_index]
         axes_idx = BiMapping(
             to_first=[i for i, c in enumerate(all_multipliers_names) if c in all_multipliers_names_in_phase],
             to_second=[i for i, c in enumerate(all_multipliers_names) if c in all_multipliers_names_in_phase],
@@ -1350,14 +1344,14 @@ class ConfigureVariables:
         all_multipliers_names = []
         for nlp_i in ocp.nlp:
             if hasattr(nlp_i.model, "has_holonomic_constraints"):  # making sure we have a HolonomicBiorbdModel
-                nlp_i_multipliers_names = [nlp_i.model.name_dof[i] for i in nlp_i.model.dependent_joint_index]
+                nlp_i_multipliers_names = [nlp_i.model.name_dofs[i] for i in nlp_i.model.dependent_joint_index]
                 all_multipliers_names.extend(
                     [name for name in nlp_i_multipliers_names if name not in all_multipliers_names]
                 )
 
         all_multipliers_names = [f"lagrange_multiplier_{name}" for name in all_multipliers_names]
         all_multipliers_names_in_phase = [
-            f"lagrange_multiplier_{nlp.model.name_dof[i]}" for i in nlp.model.dependent_joint_index
+            f"lagrange_multiplier_{nlp.model.name_dofs[i]}" for i in nlp.model.dependent_joint_index
         ]
 
         axes_idx = BiMapping(
@@ -1491,26 +1485,25 @@ class ConfigureVariables:
         new_name: list[str]
             The list of str to display on figures
         """
-
         idx = nlp.phase_mapping.to_first.map_idx if nlp.phase_mapping else range(nlp.model.nb_q)
 
         if nlp.model.nb_quaternions == 0:
-            new_names = [nlp.model.name_dof[i] for i in idx]
+            new_names = [nlp.model.name_dofs[i] for i in idx]
         else:
             new_names = []
             for i in nlp.phase_mapping.to_first.map_idx:
-                if nlp.model.name_dof[i][-4:-1] == "Rot" or nlp.model.name_dof[i][-6:-1] == "Trans":
-                    new_names += [nlp.model.name_dof[i]]
+                if nlp.model.name_dofs[i][-4:-1] == "Rot" or nlp.model.name_dofs[i][-6:-1] == "Trans":
+                    new_names += [nlp.model.name_dofs[i]]
                 else:
-                    if nlp.model.name_dof[i][-5:] != "QuatW":
+                    if nlp.model.name_dofs[i][-5:] != "QuatW":
                         if var_type == "qdot":
-                            new_names += [nlp.model.name_dof[i][:-5] + "omega" + nlp.model.name_dof[i][-1]]
+                            new_names += [nlp.model.name_dofs[i][:-5] + "omega" + nlp.model.name_dofs[i][-1]]
                         elif var_type == "qddot":
-                            new_names += [nlp.model.name_dof[i][:-5] + "omegadot" + nlp.model.name_dof[i][-1]]
+                            new_names += [nlp.model.name_dofs[i][:-5] + "omegadot" + nlp.model.name_dofs[i][-1]]
                         elif var_type == "qdddot":
-                            new_names += [nlp.model.name_dof[i][:-5] + "omegaddot" + nlp.model.name_dof[i][-1]]
+                            new_names += [nlp.model.name_dofs[i][:-5] + "omegaddot" + nlp.model.name_dofs[i][-1]]
                         elif var_type == "tau" or var_type == "taudot":
-                            new_names += [nlp.model.name_dof[i]]
+                            new_names += [nlp.model.name_dofs[i]]
 
         return new_names
 
@@ -1554,39 +1547,43 @@ class ConfigureVariables:
         return axes_idx
 
 
-class States(FcnEnum):
-    Q = (ConfigureVariables.configure_q,)
-    Q_ROOTS = (ConfigureVariables.configure_q_roots,)
-    Q_JOINTS = (ConfigureVariables.configure_q_joints,)
-    QDOT = (ConfigureVariables.configure_qdot,)
-    QDOT_ROOTS = (ConfigureVariables.configure_qdot_roots,)
-    QDOT_JOINTS = (ConfigureVariables.configure_qdot_joints,)
-    Q_U = (ConfigureVariables.configure_q_u,)
-    QDOT_U = (ConfigureVariables.configure_qdot_u,)
-    TAU = (ConfigureVariables.configure_tau,)
-    MUSCLE_ACTIVATION = (ConfigureVariables.configure_muscles,)
+class States(Enum):
+    Q = lambda **kwargs: ConfigureVariables.configure_q(as_states=True, **kwargs)
+    Q_ROOTS = lambda **kwargs: ConfigureVariables.configure_q_roots(as_states=True, **kwargs)
+    Q_JOINTS = lambda **kwargs: ConfigureVariables.configure_q_joints(as_states=True, **kwargs)
+    QDOT = lambda **kwargs: ConfigureVariables.configure_qdot(as_states=True, **kwargs)
+    QDOT_ROOTS = lambda **kwargs: ConfigureVariables.configure_qdot_roots(as_states=True, **kwargs)
+    QDOT_JOINTS = lambda **kwargs: ConfigureVariables.configure_qdot_joints(as_states=True, **kwargs)
+    Q_U = lambda **kwargs: ConfigureVariables.configure_q_u(as_states=True, **kwargs)
+    QDOT_U = lambda **kwargs: ConfigureVariables.configure_qdot_u(as_states=True, **kwargs)
+    TAU = lambda **kwargs: ConfigureVariables.configure_tau(as_states=True, **kwargs)
+    MUSCLE_ACTIVATION = lambda **kwargs: ConfigureVariables.configure_muscles(as_states=True, **kwargs)
 
 
-class Controls(FcnEnum):
-    QDDOT_JOINTS = (ConfigureVariables.configure_qddot_joints,)
-    TAU = (ConfigureVariables.configure_tau,)
-    RESIDUAL_TAU = (ConfigureVariables.configure_residual_tau,)
-    TAU_JOINTS = (ConfigureVariables.configure_tau_joints,)
-    TAUDOT = (ConfigureVariables.configure_taudot,)
-    MUSCLE_EXCITATION = (ConfigureVariables.configure_muscles,)
-    K = (ConfigureVariables.configure_stochastic_k,)
-    C = (ConfigureVariables.configure_stochastic_c,)
-    A = (ConfigureVariables.configure_stochastic_a,)
-    COV = (ConfigureVariables.configure_stochastic_cov_implicit,)
-    CHOLESKY_COV = (ConfigureVariables.configure_stochastic_cholesky_cov,)
-    REF = (ConfigureVariables.configure_stochastic_ref,)
-    LAMBDA = (ConfigureVariables.configure_lagrange_multipliers_variable,)
+class Controls(Enum):
+    QDDOT_JOINTS = lambda **kwargs: ConfigureVariables.configure_qddot_joints(as_controls=True, **kwargs)
+    TAU = lambda **kwargs: ConfigureVariables.configure_tau(as_controls=True, **kwargs)
+    RESIDUAL_TAU = lambda **kwargs: ConfigureVariables.configure_residual_tau(as_controls=True, **kwargs)
+    TAU_JOINTS = lambda **kwargs: ConfigureVariables.configure_tau_joints(as_controls=True, **kwargs)
+    TAUDOT = lambda **kwargs: ConfigureVariables.configure_taudot(as_controls=True, **kwargs)
+    MUSCLE_EXCITATION = lambda **kwargs: ConfigureVariables.configure_muscles(as_controls=True, **kwargs)
+    K = ConfigureVariables.configure_stochastic_k
+    C = ConfigureVariables.configure_stochastic_c
+    A = ConfigureVariables.configure_stochastic_a
+    COV = ConfigureVariables.configure_stochastic_cov_implicit
+    CHOLESKY_COV = ConfigureVariables.configure_stochastic_cholesky_cov
+    REF = ConfigureVariables.configure_stochastic_ref
+    LAMBDA = lambda **kwargs: ConfigureVariables.configure_lagrange_multipliers_variable(as_controls=True, **kwargs)
 
 
-class AlgebraicStates(FcnEnum):
-    M = (ConfigureVariables.configure_stochastic_m,)
-    RIGID_CONTACT_FORCES = (ConfigureVariables.configure_rigid_contact_forces,)
-    SOFT_CONTACT_FORCES = (ConfigureVariables.configure_soft_contact_forces,)
+class AlgebraicStates(Enum):
+    M = ConfigureVariables.configure_stochastic_m
+    RIGID_CONTACT_FORCES = lambda **kwargs: ConfigureVariables.configure_rigid_contact_forces(
+        as_algebraic_states=True, **kwargs
+    )
+    SOFT_CONTACT_FORCES = lambda **kwargs: ConfigureVariables.configure_soft_contact_forces(
+        as_algebraic_states=True, **kwargs
+    )
 
 
 class AutoConfigure:
@@ -1635,23 +1632,19 @@ class AutoConfigure:
         if ContactType.SOFT_EXPLICIT in nlp.model.contact_types:
             ConfigureVariables.configure_soft_contact_function(ocp, nlp)
 
-    def initialize(
-        self,
-        ocp,
-        nlp,
-    ):
-
+    def initialize(self, ocp, nlp):
         for state in self.states:
-            state(ocp, nlp, as_states=True, as_controls=False, as_algebraic_states=False)
+            state(ocp=ocp, nlp=nlp)
 
         for control in self.controls:
-            control(ocp, nlp, as_states=False, as_controls=True, as_algebraic_states=False)
+            control(ocp=ocp, nlp=nlp)
 
         # Contacts must be defined after states and controls, but before algebraic states
-        self.configure_contacts(ocp, nlp)
+        if (hasattr(nlp.model, "contact_types")) and (nlp.model.contact_types is not None):
+            self.configure_contacts(ocp=ocp, nlp=nlp)
 
         for algebraic_state in self.algebraic_states:
-            algebraic_state(ocp, nlp, as_states=False, as_controls=False, as_algebraic_states=True)
+            algebraic_state(ocp=ocp, nlp=nlp, as_states=False, as_controls=False, as_algebraic_states=True)
 
         for function in self.functions:
-            function(ocp, nlp)
+            function(ocp=ocp, nlp=nlp)

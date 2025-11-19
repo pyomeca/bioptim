@@ -950,7 +950,7 @@ class CustomModeling:
     def __init__(self, *args, **kwargs):
         ...
 
-    def name_dof(self):
+    def name_dofs(self):
         return ["dof1", "dof2", "dof3"]
 
     def marker_names(self):
@@ -993,7 +993,7 @@ class CustomDynamics(StateDynamics):
         raise NotImplementedError
 ```
 
-If you do not want to start from scratch, you can instead inherit from already defined classes like `BirbdModel` and `TorqueDynamics`, and then, override or add the methods that you need.
+If you do not want to start from scratch, you can instead inherit from already defined classes like `BiorbdModel` and `TorqueDynamics`, and then, override or add the methods that you need.
 To help you, here are some of the currently available variable configuration:
 - States:
   - `States.Q`: the generalized coordinates (q)

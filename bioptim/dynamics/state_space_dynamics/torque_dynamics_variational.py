@@ -36,9 +36,6 @@ class VariationalTorqueDynamics(StateDynamics):
             defects=nlp.cx(0),
         )
 
-    def get_rigid_contact_forces(self, time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp):
-        return
-
     @property
     def extra_dynamics(self):
         return None

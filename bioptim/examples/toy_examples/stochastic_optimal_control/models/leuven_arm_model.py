@@ -163,7 +163,7 @@ class LeuvenArmModel:
         return 2
 
     @property
-    def name_dof(self):
+    def name_dofs(self):
         return ["shoulder", "elbow"]
 
     @property

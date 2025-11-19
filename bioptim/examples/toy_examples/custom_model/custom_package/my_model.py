@@ -3,78 +3,48 @@ This script implements a custom model to work with bioptim. Bioptim has a deep c
 but it is possible to use bioptim without biorbd. This is an example of how to use bioptim with a custom model.
 """
 
-from typing import Callable
-
-import numpy as np
+from bioptim import NonLinearProgram, DynamicsEvaluation, StateDynamics, States, ConfigureVariables, Controls
 from casadi import sin, MX, Function, vertcat
-from typing import Callable
-from bioptim import NonLinearProgram, DynamicsEvaluation, TorqueDynamics
 
 
-class MyModel(TorqueDynamics):
+class MyModel(StateDynamics):
     """
-    This is a custom model that inherits from bioptim.CustomModel
+    This is a custom model that inherits from bioptim.StateDynamics which is the base class for all dynamic models in bioptim.
     As CustomModel is an abstract class, some methods must be implemented.
     """
 
     def __init__(self):
         super().__init__()
+        # The next two lines tells bioptim what are the states and controls of the model.
+        # One could use [States.Q, States.QDOT], but for sake of showcasing how to define custom variables,
+        # we define "State.Q" manually (but it could obviously be any kind of variable).
+        #   From that point on, "nlp.states" will have the variable (here "q"), and "len(name_elements)"
+        #   (here "name_elements=self.name_dofs") will determine the length of that variable.
+        self.state_configuration = [
+            lambda **kwargs: ConfigureVariables.configure_new_variable("q", self.name_dofs, as_states=True, **kwargs),
+            States.QDOT,
+        ]
+        self.control_configuration = [Controls.TAU]
+
         # custom values for the example
-        self.com = MX(np.array([-0.0005, 0.0688, -0.9542]))
-        self.inertia = MX(0.0391)
+        self.com = [-0.0005, 0.0688, -0.9542]
+        self.inertia = 0.0391
+        self.mass = 1.0
+
+        # CasADi symbols for the custom forward dynamics, these are not strictly necessary but helps prevent cases of
+        # free variables in the CasADi functions
         self.q = MX.sym("q", 1)
         self.qdot = MX.sym("qdot", 1)
         self.tau = MX.sym("tau", 1)
-        self.contact_types = ()
-        self.fatigue = None
 
-    # ---- Absolutely needed methods ---- #
-    def serialize(self) -> tuple[Callable, dict]:
-        # This is where you can serialize your model
-        # This is useful if you want to save your model and load it later
-        return MyModel, dict(com=self.com, inertia=self.inertia)
-
-    # ---- Needed for the example ---- #
-
+    # ---- Mandatory methods ---- #
     @property
-    def name(self) -> str:
+    def name(self):
         return "MyModel"
 
     @property
-    def nb_tau(self):
-        return 1
-
-    @property
-    def nb_q(self):
-        return 1
-
-    @property
-    def nb_qdot(self):
-        return 1
-
-    @property
-    def nb_qddot(self):
-        return 1
-
-    @property
-    def mass(self):
-        return 1
-
-    @property
-    def name_dof(self):
+    def name_dofs(self):
         return ["rotx"]
-
-    def forward_dynamics(self, with_contact=False) -> Function:
-        # This is where you can implement your own forward dynamics
-        # with casadi it your are dealing with mechanical systems
-        d = 0  # damping
-        L = self.com[2]
-        I = self.inertia
-        m = self.mass
-        g = 9.81
-        casadi_return = 1 / (I + m * L**2) * (-self.qdot * d - g * m * L * sin(self.q) + self.tau)
-        casadi_fun = Function("forward_dynamics", [self.q, self.qdot, self.tau, MX()], [casadi_return])
-        return casadi_fun
 
     def dynamics(
         self,
@@ -103,6 +73,18 @@ class MyModel(TorqueDynamics):
         """
 
         return DynamicsEvaluation(
-            dxdt=vertcat(states[1], self.forward_dynamics(with_contact=False)(states[0], states[1], controls[0], [])),
+            dxdt=vertcat(states[1], self.forward_dynamics()(states[0], states[1], controls[0], [])),
             defects=None,
         )
+
+    def forward_dynamics(self) -> Function:
+        # This is where you can implement your own forward dynamics
+        # with casadi it your are dealing with mechanical systems
+        d = 0  # damping
+        L = self.com[2]
+        I = self.inertia
+        m = self.mass
+        g = 9.81
+        casadi_return = 1 / (I + m * L**2) * (-self.qdot * d - g * m * L * sin(self.q) + self.tau)
+        casadi_fun = Function("forward_dynamics", [self.q, self.qdot, self.tau, MX()], [casadi_return])
+        return casadi_fun

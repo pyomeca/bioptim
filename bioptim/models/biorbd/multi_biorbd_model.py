@@ -531,8 +531,8 @@ class MultiBiorbdModel:
         return casadi_fun
 
     @property
-    def name_dof(self) -> StrTuple:
-        return tuple([dof for model in self.models for dof in model.name_dof])
+    def name_dofs(self) -> StrTuple:
+        return tuple([dof for model in self.models for dof in model.name_dofs])
 
     @property
     def rigid_contact_names(self) -> StrTuple:

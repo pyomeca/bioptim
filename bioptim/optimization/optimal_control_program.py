@@ -804,7 +804,7 @@ class OptimalControlProgram:
         dof_names = []  # [[] for _ in range(len(self.nlp))]
         for i, nlp in enumerate(self.nlp):
             current_dof_mapping = []
-            for legend in nlp.model.name_dof:
+            for legend in nlp.model.name_dofs:
                 if legend in dof_names_all_phases:
                     current_dof_mapping += [dof_names_all_phases.index(legend)]
                 else:

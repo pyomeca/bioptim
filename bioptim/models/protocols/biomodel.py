@@ -161,7 +161,7 @@ class BioModel(Protocol):
         """
 
     @property
-    def name_dof(self) -> StrTuple:
+    def name_dofs(self) -> StrTuple:
         """Get the name of the degrees of freedom"""
         return ()
 

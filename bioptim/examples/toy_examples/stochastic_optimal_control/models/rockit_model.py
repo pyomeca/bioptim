@@ -60,7 +60,7 @@ class RockitModel:
         return 0
 
     @property
-    def name_dof(self):
+    def name_dofs(self):
         return ["x"]
 
     @property

@@ -53,7 +53,7 @@ class NonControlledMethod:
         return NonControlledMethod, dict()
 
     @property
-    def name_dof(self) -> list[str]:
+    def name_dofs(self) -> list[str]:
         return ["a", "b", "c"]
 
     @property

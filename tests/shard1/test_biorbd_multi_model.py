@@ -60,7 +60,7 @@ def test_biorbd_model():
     assert models.nb_models == 2
     assert models.nb_extra_models == 3
 
-    assert models.name_dof == ("Seg1_RotX", "Seg2_RotX", "Seg3_RotX", "Seg1_RotX", "Seg2_RotX", "Seg3_RotX")
+    assert models.name_dofs == ("Seg1_RotX", "Seg2_RotX", "Seg3_RotX", "Seg1_RotX", "Seg2_RotX", "Seg3_RotX")
     assert models.rigid_contact_names == ()
     assert models.soft_contact_names == ()
     assert models.marker_names == (

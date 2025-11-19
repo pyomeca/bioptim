@@ -71,7 +71,7 @@ def constraint_holonomic(
 
 def configure_qv(ocp, nlp, as_states, as_controls, as_algebraic_states):
     name = "q_v"
-    names_v = [nlp.model.name_dof[i] for i in nlp.model.dependent_joint_index]
+    names_v = [nlp.model.name_dofs[i] for i in nlp.model.dependent_joint_index]
     ConfigureVariables.configure_new_variable(
         name,
         names_v,

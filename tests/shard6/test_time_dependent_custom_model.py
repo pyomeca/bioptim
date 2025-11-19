@@ -74,7 +74,6 @@ class Model(StateDynamics):
                     as_controls=False,
                 )
             ]
-        self.contact_types = []
 
     def serialize(self) -> tuple[Callable, dict]:
         return (
@@ -89,7 +88,7 @@ class Model(StateDynamics):
         )
 
     @property
-    def name_dof(self) -> list[str]:
+    def name_dofs(self) -> list[str]:
         return ["Cn", "F", "time"] if self.time_as_states else ["Cn", "F"]
 
     @property

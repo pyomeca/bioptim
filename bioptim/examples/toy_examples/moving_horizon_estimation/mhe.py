@@ -70,8 +70,8 @@ def generate_data(bio_model, tf, x0, t_max, n_shoot, noise_std, show_plots=False
     if show_plots:
         q_plot = plt.plot(states[:nq, :].T)
         dq_plot = plt.plot(states[nq:, :].T, "--")
-        name_dof = bio_model.name_dof
-        plt.legend(q_plot + dq_plot, name_dof + ["d" + name for name in name_dof])
+        name_dofs = bio_model.name_dofs
+        plt.legend(q_plot + dq_plot, name_dofs + ["d" + name for name in name_dofs])
         plt.title("Real position and velocity trajectories")
 
         plt.figure()

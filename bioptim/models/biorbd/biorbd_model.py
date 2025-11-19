@@ -461,7 +461,7 @@ class BiorbdModel:
         return casadi_fun
 
     @property
-    def name_dof(self) -> tuple[str, ...]:
+    def name_dofs(self) -> tuple[str, ...]:
         return tuple(s.to_string() for s in self.model.nameDof())
 
     @property

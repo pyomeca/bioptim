@@ -56,9 +56,6 @@ class HolonomicTorqueDynamics(StateDynamics):
 
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
-    def get_rigid_contact_forces(self, time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp):
-        return
-
     @property
     def extra_dynamics(self):
         return None

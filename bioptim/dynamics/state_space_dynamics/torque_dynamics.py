@@ -1,3 +1,5 @@
+from abc import abstractmethod
+
 from casadi import vertcat
 
 from ..configure_variables import States, Controls
@@ -6,10 +8,10 @@ from ..dynamics_evaluation import DynamicsEvaluation
 from ..fatigue.fatigue_dynamics import FatigueList
 from ..ode_solvers import OdeSolver
 from ...misc.enums import DefectType
-from .abstract_dynamics import StateDynamics
+from .abstract_dynamics import StateDynamicsWithContacts
 
 
-class TorqueDynamics(StateDynamics):
+class TorqueDynamics(StateDynamicsWithContacts):
     """
     This class is used to create a model actuated through joint torques.
 

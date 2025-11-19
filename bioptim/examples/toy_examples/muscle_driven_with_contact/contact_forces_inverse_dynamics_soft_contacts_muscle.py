@@ -323,7 +323,7 @@ def main():
         axs[i_dof].plot(
             time[0::4], qdot_integrated[i_dof, :], ".", linestyle="none", color="tab:blue", label="Reintegration - qdot"
         )
-        axs[i_dof].set_title(f"{ocp.nlp[0].model.name_dof[i_dof]}")
+        axs[i_dof].set_title(f"{ocp.nlp[0].model.name_dofs[i_dof]}")
     axs[0].legend(bbox_to_anchor=(1.05, 1), loc="upper left")
     plt.tight_layout()
     plt.savefig("reintegration.png")

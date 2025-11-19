@@ -33,7 +33,6 @@ class MassPointModel(StateDynamics):
         self.sensory_noise_magnitude = np.ndarray((0, 1))
 
         self.sensory_reference = None
-        self.contact_types = ()
 
         n_noised_states = 4
         self.polynomial_degree = polynomial_degree
@@ -75,7 +74,7 @@ class MassPointModel(StateDynamics):
         return 0
 
     @property
-    def name_dof(self):
+    def name_dofs(self):
         return ["Px", "Py"]
 
     @property

@@ -101,9 +101,7 @@ def test_configures(cx):
     npt.assert_equal(nlp.states_dot.shape, n_states)
     npt.assert_equal(nlp.states_dot.keys(), keys_states)
 
-    ConfigureVariables.configure_stochastic_k(
-        ocp, nlp, n_noised_controls=4, n_references=8, as_states=False, as_controls=True, as_algebraic_states=False
-    )
+    ConfigureVariables.configure_stochastic_k(ocp, nlp, n_noised_controls=4, n_references=8)
     n_controls += 32
     keys_controls += ["k"]
     npt.assert_equal(nlp.controls.shape, n_controls)
