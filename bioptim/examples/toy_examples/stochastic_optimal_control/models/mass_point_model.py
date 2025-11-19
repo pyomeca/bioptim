@@ -58,6 +58,10 @@ class MassPointModel(StateDynamics):
         )
 
     @property
+    def name(self):
+        return "MassPointModel"
+
+    @property
     def nb_q(self):
         return 2
 
