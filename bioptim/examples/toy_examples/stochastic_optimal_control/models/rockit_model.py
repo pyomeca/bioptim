@@ -88,7 +88,7 @@ class RockitDynamicsOCP(RockitModel):
             motor_noise_magnitude=motor_noise_magnitude,
             polynomial_degree=polynomial_degree,
             socp_type=socp_type,
-            **kwargs
+            **kwargs,
         )
 
     @property
@@ -139,7 +139,7 @@ class RockitDynamicsSOCP(RockitDynamicsOCP):
             motor_noise_magnitude=motor_noise_magnitude,
             polynomial_degree=polynomial_degree,
             socp_type=socp_type,
-            **kwargs
+            **kwargs,
         )
         self.n_noised_states = 2
 

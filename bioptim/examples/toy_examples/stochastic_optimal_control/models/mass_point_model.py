@@ -100,13 +100,13 @@ class MassPointDynamicsModel(MassPointModel):
         problem_type: SocpType,
         motor_noise_magnitude: np.ndarray | DM = None,
         polynomial_degree: int = 1,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
             problem_type=problem_type,
             motor_noise_magnitude=motor_noise_magnitude,
             polynomial_degree=polynomial_degree,
-            **kwargs
+            **kwargs,
         )
 
     @property
@@ -168,13 +168,13 @@ class StochasticMassPointDynamicsModel(MassPointModel):
         problem_type: SocpType,
         motor_noise_magnitude: np.ndarray | DM = None,
         polynomial_degree: int = 1,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(
             problem_type=problem_type,
             motor_noise_magnitude=motor_noise_magnitude,
             polynomial_degree=polynomial_degree,
-            **kwargs
+            **kwargs,
         )
 
     @property

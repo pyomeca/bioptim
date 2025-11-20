@@ -16,7 +16,7 @@ class WithResidualExternalForces(MusclesBiorbdModel):
         biorbd_model_path: str,
         external_force_set: ExternalForceSetTimeSeries = None,
         with_residual_torque=True,
-        **kwargs
+        **kwargs,
     ):
         """
         Custom muscle-driven model to handle the residual external forces.
@@ -25,7 +25,7 @@ class WithResidualExternalForces(MusclesBiorbdModel):
             biorbd_model_path,
             external_force_set=external_force_set,
             with_residual_torque=with_residual_torque,
-            **kwargs
+            **kwargs,
         )
         # TODO: add mesh_file_folder to all BiorbdModel ?
 

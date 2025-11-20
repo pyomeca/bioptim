@@ -136,7 +136,7 @@ class MultiFatigueModel(OptionGeneric):
         state_only: Bool,
         split_controls: Bool = True,
         apply_to_joint_dynamics: Bool = False,
-        **extra_parameters
+        **extra_parameters,
     ):
         """
         model: FatigueModel
