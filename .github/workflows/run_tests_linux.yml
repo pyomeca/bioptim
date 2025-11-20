@@ -37,7 +37,7 @@ jobs:
 
       - name: Install extra dependencies
         run: |
-          conda install pytest-cov black pytest pytest-cov codecov packaging pytest-mpl -cconda-forge
+          conda install pip pytest-cov black pytest pytest-cov codecov packaging pytest-mpl -cconda-forge
           sudo apt install -y librhash-dev
 
       - name: Install ACADOS on Linux
@@ -50,7 +50,7 @@ jobs:
 
       - name: Test installed version of bioptim
         run: |
-          python setup.py install
+          pip install .
           cd
           python -c "import bioptim"
         if: matrix.shard == 1

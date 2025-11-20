@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bioptim"
+description = "An optimization framework for Optimal Control Programming in biomechanics"
+dynamic = ["version"]
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Pariterre", email = "pariterre@hotmail.com" }
+]
+keywords = ["biorbd", "Ipopt", "CasADi", "Optimal control", "biomechanics"]
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+]
+
+dependencies = []
+
+[project.optional-dependencies]
+conda_only = [
+    "biorbd >=1.12.0",
+    "pyqt",
+    "pyqtgraph",
+    "python-graphviz",
+]
+
+[project.urls]
+Homepage = "https://github.com/bioptim/bioptim"
+
+# ------------------------------
+# Packaging configuration
+# ------------------------------
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.dynamic]
+version = { attr = "bioptim.misc.__version__.__version__" }
+
+# Auto-discover all packages inside the repo root
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["bioptim*"]
+
+# ------------------------------
+# Data files (for *.bioMod files)
+# ------------------------------
+[tool.setuptools.package-data]
+bioptim = ["examples/**/*.bioMod"]
