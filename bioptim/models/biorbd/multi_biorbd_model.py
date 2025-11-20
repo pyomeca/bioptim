@@ -47,10 +47,13 @@ class MultiBiorbdModel:
         self,
         bio_model: tuple[str | biorbd.Model | BiorbdModel, ...],
         extra_bio_models: tuple[str | biorbd.Model | BiorbdModel, ...] = (),
+        **kwargs,
     ):
         """
         MultiBiorbdModel does not handle external_forces and parameters yet.
         """
+        super().__init__(**kwargs)  # For multiple inheritance compatibility
+
         self.models = []
         if not isinstance(bio_model, tuple):
             raise ValueError("The models must be a 'str', 'biorbd.Model', 'bioptim.BiorbdModel'" " or a tuple of those")
@@ -95,7 +98,6 @@ class MultiBiorbdModel:
         self.parameters = MX.sym("parameters_to_be_implemented", 0, 1)
 
         self.check_contacts()
-        self.contact_types = ()
         self._cached_functions = {}
 
     def __getitem__(self, index: Int):
@@ -105,8 +107,16 @@ class MultiBiorbdModel:
         raise NotImplementedError("Deep copy is not implemented yet for MultiBiorbdModel class")
 
     @property
+    def name(self) -> str:
+        return "_".join([model.name for model in self.models])
+
+    @property
     def path(self) -> tuple[StrList, StrList]:
         return [model.path for model in self.models], [model.path for model in self.extra_models]
+
+    @property
+    def contact_types(self):
+        return ()
 
     def copy(self):
         all_paths = self.path

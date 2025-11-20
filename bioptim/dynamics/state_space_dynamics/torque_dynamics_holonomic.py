@@ -13,10 +13,22 @@ class HolonomicTorqueDynamics(StateDynamics):
 
     def __init__(self):
         super().__init__()
-        self.state_configuration = [States.Q_U, States.QDOT_U]
-        self.control_configuration = [Controls.TAU]
-        self.algebraic_configuration = []
-        self.functions = [
+
+    @property
+    def state_configuration_functions(self):
+        return [States.Q_U, States.QDOT_U]
+
+    @property
+    def control_configuration_functions(self):
+        return [Controls.TAU]
+
+    @property
+    def algebraic_configuration_functions(self):
+        return []
+
+    @property
+    def extra_configuration_functions(self):
+        return [
             ConfigureVariables.configure_qv,
             ConfigureVariables.configure_qdotv,
             ConfigureVariables.configure_lagrange_multipliers_function,

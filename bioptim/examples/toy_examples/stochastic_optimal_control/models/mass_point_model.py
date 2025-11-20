@@ -24,7 +24,10 @@ class MassPointModel(StateDynamics):
     This allows to generate the same model as in the paper.
     """
 
-    def __init__(self, motor_noise_magnitude: np.ndarray | DM = None, polynomial_degree: int = 1, problem_type=None):
+    def __init__(
+        self, motor_noise_magnitude: np.ndarray | DM = None, polynomial_degree: int = 1, problem_type=None, **kwargs
+    ):
+        super().__init__(**kwargs)
         self.problem_type = problem_type
 
         self.motor_noise_magnitude = motor_noise_magnitude
@@ -85,7 +88,7 @@ class MassPointModel(StateDynamics):
     def name_u(self):
         return ["Ux", "Uy"]
 
-    def configure_u(self, ocp, nlp, as_states, as_controls, as_algebraic_states):
+    def configure_u(self, ocp, nlp):
         return ConfigureVariables.configure_new_variable(
             "u", self.name_u, ocp, nlp, as_states=False, as_controls=True, as_algebraic_states=False
         )
@@ -93,16 +96,34 @@ class MassPointModel(StateDynamics):
 
 class MassPointDynamicsModel(MassPointModel):
     def __init__(
-        self, problem_type: SocpType, motor_noise_magnitude: np.ndarray | DM = None, polynomial_degree: int = 1
+        self,
+        problem_type: SocpType,
+        motor_noise_magnitude: np.ndarray | DM = None,
+        polynomial_degree: int = 1,
+        **kwargs
     ):
         super().__init__(
-            problem_type=problem_type, motor_noise_magnitude=motor_noise_magnitude, polynomial_degree=polynomial_degree
+            problem_type=problem_type,
+            motor_noise_magnitude=motor_noise_magnitude,
+            polynomial_degree=polynomial_degree,
+            **kwargs
         )
-        self.fatigue = None
-        self.state_configuration = [States.Q, States.QDOT]
-        self.control_configuration = [self.configure_u]
-        self.algebraic_configuration = []
-        self.functions = []
+
+    @property
+    def state_configuration_functions(self):
+        return [States.Q, States.QDOT]
+
+    @property
+    def control_configuration_functions(self):
+        return [lambda ocp, nlp: self.configure_u(ocp, nlp)]
+
+    @property
+    def algebraic_configuration_functions(self):
+        return []
+
+    @property
+    def extra_configuration_functions(self):
+        return []
 
     def dynamics(self, time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp):
         """
@@ -143,25 +164,37 @@ class MassPointDynamicsModel(MassPointModel):
 
 class StochasticMassPointDynamicsModel(MassPointModel):
     def __init__(
-        self, problem_type: SocpType, motor_noise_magnitude: np.ndarray | DM = None, polynomial_degree: int = 1
+        self,
+        problem_type: SocpType,
+        motor_noise_magnitude: np.ndarray | DM = None,
+        polynomial_degree: int = 1,
+        **kwargs
     ):
         super().__init__(
-            problem_type=problem_type, motor_noise_magnitude=motor_noise_magnitude, polynomial_degree=polynomial_degree
+            problem_type=problem_type,
+            motor_noise_magnitude=motor_noise_magnitude,
+            polynomial_degree=polynomial_degree,
+            **kwargs
         )
-        self.state_configuration = [States.Q, States.QDOT]
-        self.control_configuration = [
-            self.configure_u,
-            lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.COV(
-                ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_states=4
-            ),
+
+    @property
+    def state_configuration_functions(self):
+        return [States.Q, States.QDOT]
+
+    @property
+    def control_configuration_functions(self):
+        return [
+            lambda ocp, nlp: self.configure_u(ocp, nlp),
+            lambda ocp, nlp: Controls.COV(ocp, nlp, n_noised_states=4),
         ]
-        self.algebraic_configuration = [
-            lambda ocp, nlp, as_states, as_controls, as_algebraic_states: AlgebraicStates.M(
-                ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_states=4
-            )
-        ]
-        self.functions = []
-        self.fatigue = None
+
+    @property
+    def algebraic_configuration_functions(self):
+        return [lambda ocp, nlp: AlgebraicStates.M(ocp, nlp, n_noised_states=4)]
+
+    @property
+    def extra_configuration_functions(self):
+        return []
 
     def dynamics(self, time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp):
         """

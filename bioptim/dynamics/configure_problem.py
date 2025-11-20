@@ -34,10 +34,10 @@ class ConfigureProblem:
             A reference to the phase
         """
         AutoConfigure(
-            states=nlp.model.state_configuration,
-            controls=nlp.model.control_configuration,
-            algebraic_states=nlp.model.algebraic_configuration,
-            functions=nlp.model.functions,
+            states=nlp.model.state_configuration_functions,
+            controls=nlp.model.control_configuration_functions,
+            algebraic_states=nlp.model.algebraic_configuration_functions,
+            functions=nlp.model.extra_configuration_functions,
         ).initialize(ocp, nlp)
 
         ConfigureProblem.configure_dynamics_function(ocp, nlp, nlp.model.dynamics, **nlp.dynamics_type.extra_parameters)

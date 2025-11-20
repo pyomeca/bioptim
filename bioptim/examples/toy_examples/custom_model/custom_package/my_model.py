@@ -13,19 +13,8 @@ class MyModel(StateDynamics):
     As CustomModel is an abstract class, some methods must be implemented.
     """
 
-    def __init__(self):
-        super().__init__()
-        # The next two lines tells bioptim what are the states and controls of the model.
-        # One could use [States.Q, States.QDOT], but for sake of showcasing how to define custom variables,
-        # we define "State.Q" manually (but it could obviously be any kind of variable).
-        #   From that point on, "nlp.states" will have the variable (here "q"), and "len(name_elements)"
-        #   (here "name_elements=self.name_dofs") will determine the length of that variable.
-        self.state_configuration = [
-            lambda **kwargs: ConfigureVariables.configure_new_variable("q", self.name_dofs, as_states=True, **kwargs),
-            States.QDOT,
-        ]
-        self.control_configuration = [Controls.TAU]
-
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         # custom values for the example
         self.com = [-0.0005, 0.0688, -0.9542]
         self.inertia = 0.0391
@@ -45,6 +34,29 @@ class MyModel(StateDynamics):
     @property
     def name_dofs(self):
         return ["rotx"]
+
+    @property
+    def state_configuration_functions(self):
+        # One could use [States.Q, States.QDOT], but for sake of showcasing how to define custom variables,
+        # we define "State.Q" manually (but it could obviously be any kind of variable).
+        #   From that point on, "nlp.states" will have the variable (here "q"), and "len(name_elements)"
+        #   (here "name_elements=self.name_dofs") will determine the length of that variable.
+        return [
+            lambda ocp, nlp: ConfigureVariables.configure_new_variable("q", self.name_dofs, ocp, nlp, as_states=True),
+            States.QDOT,
+        ]
+
+    @property
+    def control_configuration_functions(self):
+        return [Controls.TAU]
+
+    @property
+    def algebraic_configuration_functions(self):
+        return []
+
+    @property
+    def extra_configuration_functions(self):
+        return []
 
     def dynamics(
         self,

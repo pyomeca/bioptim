@@ -24,6 +24,7 @@ class VariationalBiorbdModel(HolonomicBiorbdModel):
         control_type: ControlType = ControlType.CONSTANT,
         control_discrete_approximation: QuadratureRule = QuadratureRule.MIDPOINT,
         parameters: ParameterList = None,
+        **kwargs,
     ):
         """
         Initialize the VariationalBiorbdModel.
@@ -41,7 +42,7 @@ class VariationalBiorbdModel(HolonomicBiorbdModel):
         parameters : ParameterList, optional
             A list of parameters for the model (default is None).
         """
-        super().__init__(bio_model, parameters=parameters)
+        super().__init__(bio_model=bio_model, parameters=parameters, **kwargs)
         self.discrete_approximation = discrete_approximation
         self.control_type = control_type
         self.control_discrete_approximation = control_discrete_approximation

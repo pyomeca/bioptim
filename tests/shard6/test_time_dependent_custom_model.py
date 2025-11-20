@@ -44,36 +44,29 @@ class Model(StateDynamics):
         self.time_as_states = time_as_states
         self.pulse_apparition_time = None
 
-        self.state_configuration = [
-            lambda ocp, nlp, as_states, as_controls, as_algebraic_states: ConfigureVariables.configure_new_variable(
-                "Cn",
-                ["Cn"],
-                ocp,
-                nlp,
-                as_states=True,
-                as_controls=False,
-            ),
-            lambda ocp, nlp, as_states, as_controls, as_algebraic_states: ConfigureVariables.configure_new_variable(
-                "F",
-                ["F"],
-                ocp,
-                nlp,
-                as_states=True,
-                as_controls=False,
-            ),
+    @property
+    def state_configuration_functions(self):
+        val = [
+            lambda ocp, nlp: ConfigureVariables.configure_new_variable("Cn", ["Cn"], ocp, nlp, as_states=True),
+            lambda ocp, nlp: ConfigureVariables.configure_new_variable("F", ["F"], ocp, nlp, as_states=True),
         ]
-
         if self.time_as_states:
-            self.state_configuration += [
-                lambda ocp, nlp, as_states, as_controls, as_algebraic_states: ConfigureVariables.configure_new_variable(
-                    "time",
-                    ["time"],
-                    ocp,
-                    nlp,
-                    as_states=True,
-                    as_controls=False,
-                )
+            val += [
+                lambda ocp, nlp: ConfigureVariables.configure_new_variable("time", ["time"], ocp, nlp, as_states=True)
             ]
+        return val
+
+    @property
+    def control_configuration_functions(self):
+        return []
+
+    @property
+    def algebraic_configuration_functions(self):
+        return []
+
+    @property
+    def extra_configuration_functions(self):
+        return []
 
     def serialize(self) -> tuple[Callable, dict]:
         return (

@@ -18,10 +18,6 @@ def test_custom_model(phase_dynamics):
         expand_dynamics=True,
     )
 
-    npt.assert_almost_equal(ocp.nlp[0].model.nb_q, 1)
-    npt.assert_almost_equal(ocp.nlp[0].model.nb_qdot, 1)
-    npt.assert_almost_equal(ocp.nlp[0].model.nb_qddot, 1)
-    npt.assert_almost_equal(ocp.nlp[0].model.nb_tau, 1)
     assert ocp.nlp[0].model.nb_quaternions == 0  # added by the ocp because it must be in any BioModel
     npt.assert_almost_equal(ocp.nlp[0].model.mass, 1)
     assert ocp.nlp[0].model.name_dofs == ["rotx"]

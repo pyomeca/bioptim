@@ -1644,7 +1644,7 @@ class AutoConfigure:
             self.configure_contacts(ocp=ocp, nlp=nlp)
 
         for algebraic_state in self.algebraic_states:
-            algebraic_state(ocp=ocp, nlp=nlp, as_states=False, as_controls=False, as_algebraic_states=True)
+            algebraic_state(ocp=ocp, nlp=nlp)
 
         for function in self.functions:
             function(ocp=ocp, nlp=nlp)

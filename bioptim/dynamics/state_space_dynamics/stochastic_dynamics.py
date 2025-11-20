@@ -16,60 +16,42 @@ class StochasticTorqueDynamics(TorqueDynamics):
     a = [stochastic_variables]
     """
 
-    def __init__(self, problem_type, with_cholesky, n_noised_tau, n_noise, n_noised_states, n_references):
-        super().__init__(fatigue=None)
-        self.control_configuration += [
-            lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.K(
-                ocp,
-                nlp,
-                as_states,
-                as_controls,
-                as_algebraic_states,
-                n_noised_controls=n_noised_tau,
-                n_references=n_references,
-            ),
-            lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.REF(
-                ocp, nlp, as_states, as_controls, as_algebraic_states, n_references=n_references
-            ),
-        ]
-        self.algebraic_configuration = [
-            lambda ocp, nlp, as_states, as_controls, as_algebraic_states: AlgebraicStates.M(
-                ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_states=n_noised_states
-            ),
-        ]
-
+    def __init__(self, problem_type, with_cholesky, n_noised_tau, n_noise, n_noised_states, n_references, **kwargs):
         if isinstance(problem_type, SocpType.TRAPEZOIDAL_EXPLICIT):
             raise RuntimeError(
                 "The problem type TRAPEZOIDAL_EXPLICIT is not included in bioptim anymore, please use a custom configure."
             )
-        if with_cholesky:
-            self.control_configuration += [
-                lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.CHOLESKY_COV(
-                    ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_states=n_noised_states
-                )
-            ]
-        else:
-            self.control_configuration += [
-                lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.COV(
-                    ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_states=n_noised_states
-                )
-            ]
 
-        if isinstance(problem_type, SocpType.TRAPEZOIDAL_IMPLICIT):
-            self.control_configuration += [
-                lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.A(
-                    ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_states=n_noised_states
-                ),
-                lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.C(
-                    ocp,
-                    nlp,
-                    as_states,
-                    as_controls,
-                    as_algebraic_states,
-                    n_noised_states=n_noised_states,
-                    n_noise=n_noise,
-                ),
+        super().__init__(fatigue=None, **kwargs)
+        self.problem_type = problem_type
+        self.with_cholesky = with_cholesky
+        self.n_noised_states = n_noised_states
+        self.n_noised_tau = n_noised_tau
+        self.n_noise = n_noise
+        self.n_references = n_references
+
+    @property
+    def control_configuration_functions(self):
+        val = super().control_configuration_functions + [
+            lambda ocp, nlp: Controls.K(ocp, nlp, n_noised_controls=self.n_noised_tau, n_references=self.n_references),
+            lambda ocp, nlp: Controls.REF(ocp, nlp, n_references=self.n_references),
+        ]
+
+        cov_func = Controls.CHOLESKY_COV if self.with_cholesky else Controls.COV
+        val += [lambda ocp, nlp: cov_func(ocp, nlp, n_noised_states=self.n_noised_states)]
+
+        if isinstance(self.problem_type, SocpType.TRAPEZOIDAL_IMPLICIT):
+            val += [
+                lambda ocp, nlp: Controls.A(ocp, nlp, n_noised_states=self.n_noised_states),
+                lambda ocp, nlp: Controls.C(ocp, nlp, n_noised_states=self.n_noised_states, n_noise=self.n_noise),
             ]
+        return val
+
+    @property
+    def algebraic_configuration_functions(self):
+        return super().algebraic_configuration_functions + [
+            lambda ocp, nlp: AlgebraicStates.M(ocp, nlp, n_noised_states=self.n_noised_states)
+        ]
 
     def extra_dynamics(
         self,
