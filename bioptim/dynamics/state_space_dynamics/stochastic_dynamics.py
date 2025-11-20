@@ -1,3 +1,5 @@
+from abc import abstractmethod
+
 from ..configure_variables import Controls, AlgebraicStates
 from ..dynamics_functions import DynamicsFunctions
 from ..dynamics_evaluation import DynamicsEvaluation
@@ -16,7 +18,7 @@ class StochasticTorqueDynamics(TorqueDynamics):
     a = [stochastic_variables]
     """
 
-    def __init__(self, problem_type, with_cholesky, n_noised_tau, n_noise, n_noised_states, n_references, **kwargs):
+    def __init__(self, problem_type, with_cholesky, n_noised_tau, n_noise, **kwargs):
         if isinstance(problem_type, SocpType.TRAPEZOIDAL_EXPLICIT):
             raise RuntimeError(
                 "The problem type TRAPEZOIDAL_EXPLICIT is not included in bioptim anymore, please use a custom configure."
@@ -25,10 +27,22 @@ class StochasticTorqueDynamics(TorqueDynamics):
         super().__init__(fatigue=None, **kwargs)
         self.problem_type = problem_type
         self.with_cholesky = with_cholesky
-        self.n_noised_states = n_noised_states
         self.n_noised_tau = n_noised_tau
         self.n_noise = n_noise
-        self.n_references = n_references
+
+    @property
+    @abstractmethod
+    def n_references(self):
+        """
+        The number of references for the feedback control.
+        """
+
+    @property
+    @abstractmethod
+    def n_noised_states(self):
+        """
+        The number of noised states.
+        """
 
     @property
     def control_configuration_functions(self):
