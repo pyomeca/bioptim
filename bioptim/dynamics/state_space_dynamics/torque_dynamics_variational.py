@@ -14,7 +14,7 @@ class VariationalTorqueDynamics(StateDynamics):
 
     @property
     def state_configuration_functions(self):
-        return [States.Q, Controls.LAMBDA]
+        return [States.Q, States.LAMBDA]
 
     @property
     def control_configuration_functions(self):

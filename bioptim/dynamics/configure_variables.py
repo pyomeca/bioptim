@@ -1558,6 +1558,7 @@ class States(Enum):
     QDOT_U = lambda **kwargs: ConfigureVariables.configure_qdot_u(as_states=True, **kwargs)
     TAU = lambda **kwargs: ConfigureVariables.configure_tau(as_states=True, **kwargs)
     MUSCLE_ACTIVATION = lambda **kwargs: ConfigureVariables.configure_muscles(as_states=True, **kwargs)
+    LAMBDA = lambda **kwargs: ConfigureVariables.configure_lagrange_multipliers_variable(as_states=True, **kwargs)
 
 
 class Controls(Enum):
@@ -1573,7 +1574,6 @@ class Controls(Enum):
     COV = ConfigureVariables.configure_stochastic_cov_implicit
     CHOLESKY_COV = ConfigureVariables.configure_stochastic_cholesky_cov
     REF = ConfigureVariables.configure_stochastic_ref
-    LAMBDA = lambda **kwargs: ConfigureVariables.configure_lagrange_multipliers_variable(as_controls=True, **kwargs)
 
 
 class AlgebraicStates(Enum):

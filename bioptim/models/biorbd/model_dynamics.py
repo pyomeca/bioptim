@@ -161,18 +161,18 @@ class VariationalTorqueBiorbdModel(VariationalBiorbdModel, VariationalTorqueDyna
         parameters: ParameterList = None,
         holonomic_constraints: HolonomicConstraintsList | None = None,
     ):
-        super().__init__(bio_model, discrete_approximation, control_type, control_discrete_approximation, parameters)
-        # self.holonomic_constraints = holonomic_constraints
+        VariationalBiorbdModel.__init__(
+            self,
+            bio_model=bio_model,
+            discrete_approximation=discrete_approximation,
+            control_type=control_type,
+            control_discrete_approximation=control_discrete_approximation,
+            parameters=parameters,
+        )
         if holonomic_constraints is not None:
             # TODO: @ipuch -> add partitioning one day
             self.set_holonomic_configuration(holonomic_constraints)
-
-    # @property
-    # def extra_configuration_functions(self):
-    #     val = super().extra_configuration_functions
-    #     if self.holonomic_constraints is not None:
-    #         val += [lambda ocp, nlp: self.set_holonomic_configuration(self.holonomic_constraints)]
-    #     return val
+        VariationalTorqueDynamics.__init__(self)
 
     def serialize(self) -> tuple[Callable, dict]:
         return VariationalTorqueBiorbdModel, dict(bio_model=self.path, friction_coefficients=self.friction_coefficients)
