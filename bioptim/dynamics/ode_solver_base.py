@@ -187,7 +187,7 @@ class OdeSolverBase:
         node_index: Int,
         is_extra_dynamics: Bool = False,
         is_extra_deffects: Bool = False,
-        **extra_opt
+        **extra_opt,
     ) -> Callable:
         """
         Initialize the integrator

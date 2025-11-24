@@ -10,10 +10,16 @@ from .torque_dynamics import TorqueDynamics
 
 
 class TorqueDerivativeDynamics(TorqueDynamics):
-    def __init__(self, fatigue: FatigueList):
-        super().__init__(fatigue=fatigue)
-        self.state_configuration += [States.TAU]
-        self.control_configuration = [Controls.TAUDOT]
+    def __init__(self, fatigue: FatigueList = None, **kwargs):
+        super().__init__(fatigue=fatigue, **kwargs)
+
+    @property
+    def state_configuration_functions(self):
+        return super().state_configuration_functions + [States.TAU]
+
+    @property
+    def control_configuration_functions(self):
+        return [Controls.TAUDOT]
 
     def get_basic_variables(self, nlp, states, controls, parameters, algebraic_states, numerical_timeseries):
 

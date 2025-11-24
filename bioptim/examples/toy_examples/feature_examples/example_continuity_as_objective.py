@@ -96,7 +96,7 @@ def prepare_ocp_first_pass(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = TorqueBiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(bio_model=biorbd_model_path)
 
     # Add objective functions
     objective_functions = ObjectiveList()

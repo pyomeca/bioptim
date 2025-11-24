@@ -233,7 +233,7 @@ from .dynamics.state_space_dynamics import (
     MusclesDynamicsWithExcitations,
     JointAccelerationDynamics,
 )
-from .dynamics.state_space_dynamics import StateDynamics
+from .dynamics.state_space_dynamics import StateDynamics, StateDynamicsWithContacts
 from .optimization.multi_start import MultiStart
 from .optimization.non_linear_program import NonLinearProgram
 from .optimization.optimal_control_program import OptimalControlProgram

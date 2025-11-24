@@ -7,8 +7,8 @@ from ...misc.parameters_types import IntOptional, NpArray
 
 
 def _prepare_tracked_markers_for_animation(
-    nlps: list["NonLinearProgram", ...], n_shooting: IntOptional = None
-) -> list[NpArray, ...]:
+    nlps: list["NonLinearProgram"], n_shooting: IntOptional = None
+) -> list[NpArray]:
     """
     Prepare the markers which are tracked to the animation
 
@@ -53,7 +53,7 @@ def _prepare_tracked_markers_for_animation(
     return all_tracked_markers
 
 
-def _check_models_comes_from_same_super_class(all_nlp: list["NonLinearProgram", ...]):
+def _check_models_comes_from_same_super_class(all_nlp: list["NonLinearProgram"]):
     """Check that all the models comes from the same super class"""
     for i, nlp in enumerate(all_nlp):
         model_super_classes = nlp.model.__class__.mro()[:-1]  # remove object class
