@@ -51,4 +51,4 @@ include = ["bioptim*"]
 # Data files (for *.bioMod files)
 # ------------------------------
 [tool.setuptools.package-data]
-bioptim = ["examples/**/*.bioMod"]
+bioptim = ["examples/**/*.bioMod", "examples/**/*.vtp", "examples/**/*.STL"]
