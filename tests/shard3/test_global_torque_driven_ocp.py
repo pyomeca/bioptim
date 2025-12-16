@@ -14,7 +14,7 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
 )
-from bioptim.models.biorbd.viewer_utils import _prepare_tracked_markers_for_animation
+from bioptim.models.viewer_utils import _prepare_tracked_markers_for_animation
 import numpy.testing as npt
 import numpy as np
 import pytest
