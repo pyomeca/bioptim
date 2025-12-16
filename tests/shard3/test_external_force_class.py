@@ -12,10 +12,12 @@ from ..utils import TestUtils
 def external_forces_timeseries():
     return ExternalForceSetTimeSeries(nb_frames=10)
 
+
 # Fixture for creating a standard ExternalForceSetVariable instance
 @pytest.fixture
 def external_forces_variables():
     return ExternalForceSetVariables()
+
 
 # Fixture for creating a numpy array of forces
 @pytest.fixture
@@ -35,6 +37,7 @@ def test_initialization_timeseries(external_forces_timeseries):
     assert external_forces_timeseries._can_be_modified is True
     assert external_forces_timeseries.nb_external_forces_components == 0
 
+
 def test_initialization_variables(external_forces_variables):
     """Test the basic initialization of ExternalForceSetTimeSeries."""
     assert external_forces_variables._can_be_modified is True
@@ -47,6 +50,7 @@ def test_add_global_force_timeseries(external_forces_timeseries, force_array):
     segment_name = "segment1"
     external_forces_timeseries.add(force_name, segment_name, force_array)
     assert np.array_equal(external_forces_timeseries.in_global[force_name]["values"], force_array)
+
 
 def test_add_global_force_variables(external_forces_variables):
     """Test adding global forces to a segment."""
@@ -83,6 +87,7 @@ def test_add_torque_timeseries(external_forces_timeseries, torque_array):
     external_forces_timeseries.add_torque(force_name, segment_name, torque_array)
     assert np.array_equal(external_forces_timeseries.torque_in_global[force_name]["values"], torque_array)
 
+
 def test_add_torque_variables(external_forces_variables):
     """Test adding global torques to a segment."""
     segment_name = "segment1"
@@ -111,6 +116,7 @@ def test_point_of_application_timeseries(external_forces_timeseries, force_array
     added_force = external_forces_timeseries.in_global[force_name]
     assert np.array_equal(added_force["point_of_application"], point_of_application)
 
+
 def test_point_of_application_variables(external_forces_variables):
     """Test adding forces with custom point of application."""
     force_name = "force0"
@@ -128,6 +134,7 @@ def test_bind_prevents_modification_timeseries(external_forces_timeseries, force
 
     with pytest.raises(RuntimeError, match="External forces have been binded"):
         external_forces_timeseries.add(force_name, segment_name, force_array)
+
 
 def test_bind_prevents_modification_variables(external_forces_variables, force_array):
     """Test that binding prevents further modifications."""
@@ -151,6 +158,7 @@ def test_external_forces_timeseries_components_calculation_timeseries(external_f
 
     # The actual calculation depends on implementation details
     assert external_forces_timeseries.nb_external_forces_components == 9 + 3 + 6
+
 
 def test_external_forces_timeseries_components_calculation_variables(external_forces_variables):
     """Test the calculation of external forces components."""
@@ -188,6 +196,7 @@ def test_multiple_force_types_timeseries(external_forces_timeseries):
     external_forces_timeseries.add_torque_in_segment_frame("force4", segment_name, np.random.rand(3, 10))
 
     assert external_forces_timeseries.nb_external_forces_components == 30
+
 
 def test_multiple_force_types_variables(external_forces_variables):
     """Test adding multiple types of forces to the same segment."""
@@ -233,6 +242,7 @@ def test_fail_within_biomod_timeseries(external_forces_timeseries):
             external_force_set=external_forces_timeseries,
         )
 
+
 def test_fail_within_biomod_variables(external_forces_variables):
     """Test inserting the external forces in a model."""
     from bioptim.examples.getting_started import example_external_forces as ocp_module
@@ -249,12 +259,12 @@ def test_fail_within_biomod_variables(external_forces_variables):
 
     # Check that the ValueError is raised with the correct message
     with pytest.raises(
-            ValueError,
-            match=re.escape(
-                f"Segments ['{invalid_segment_name}', '{invalid_segment_name}'] "
-                f"specified in the external forces are not in the model."
-                f" Available segments are {valid_segment_names}."
-            ),
+        ValueError,
+        match=re.escape(
+            f"Segments ['{invalid_segment_name}', '{invalid_segment_name}'] "
+            f"specified in the external forces are not in the model."
+            f" Available segments are {valid_segment_names}."
+        ),
     ):
         BiorbdModel(
             f"{bioptim_folder}/examples/models/cube_with_forces.bioMod",
@@ -285,6 +295,7 @@ def test_success_within_biomod_timeseries(external_forces_timeseries):
 
     with pytest.raises(RuntimeError, match="External forces have been binded and cannot be modified anymore."):
         external_forces_timeseries.add("force2", "Seg1", force_array, point_of_application)
+
 
 def test_success_within_biomod_variables(external_forces_variables):
     """Test inserting the external forces in a model."""

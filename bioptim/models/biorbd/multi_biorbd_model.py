@@ -1053,6 +1053,22 @@ class MultiBiorbdModel:
     def partitioned_forward_dynamics(self, q_u, qdot_u, q_v_init, tau):
         raise NotImplementedError("partitioned_forward_dynamics is not implemented yet for MultiBiorbdModel")
 
+    def to_pyorerun_model(self):
+        """
+        Create pyorerun models for each sub-model in the MultiBiorbdModel.
+        Note: For multi-models, the viewer handles each sub-model separately.
+        """
+        # Return the first model's pyorerun representation
+        # The viewer will iterate through self.models for multi-model cases
+        import pyorerun
+
+        return pyorerun.BiorbdModel.from_biorbd_object(self.models[0].model)
+
+    @property
+    def pyorerun_marker_names(self) -> list[str]:
+        """Get marker names formatted for pyorerun visualization."""
+        return [name for model in self.models for name in model.pyorerun_marker_names]
+
     @staticmethod
     def animate(
         ocp,
@@ -1064,7 +1080,7 @@ class MultiBiorbdModel:
         **kwargs,
     ):
         from .viewer_bioviz import animate_with_bioviz_for_loop
-        from .viewer_pyorerun import animate_with_pyorerun
+        from ..viewer_pyorerun import animate_with_pyorerun
 
         if viewer == "bioviz":
             return animate_with_bioviz_for_loop(ocp, solution, show_now, show_tracked_markers, n_frames, **kwargs)

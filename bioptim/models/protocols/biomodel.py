@@ -468,3 +468,28 @@ class BioModel(Protocol):
         -------
         The animator object or None if show_now
         """
+
+    def to_pyorerun_model(self) -> Any:
+        """
+        Create a pyorerun-compatible model for visualization.
+
+        Each BioModel implementation should return the appropriate pyorerun model type
+        (e.g., pyorerun.BiorbdModel for biorbd, pyorerun.PinocchioModel for pinocchio).
+
+        Returns
+        -------
+        Any
+            A pyorerun model suitable for animation
+        """
+
+    @property
+    def pyorerun_marker_names(self) -> list[str]:
+        """
+        Get marker names formatted for pyorerun visualization.
+
+        Returns
+        -------
+        list[str]
+            List of marker names as strings
+        """
+        return []
