@@ -1,7 +1,7 @@
 from sys import platform
 
 from bioptim import Shooting, OdeSolver, SolutionIntegrator, Solver, PhaseDynamics, SolutionMerge, ControlType
-from bioptim.models.biorbd.viewer_utils import _check_models_comes_from_same_super_class
+from bioptim.models.viewer_utils import _check_models_comes_from_same_super_class
 import numpy as np
 import numpy.testing as npt
 import os

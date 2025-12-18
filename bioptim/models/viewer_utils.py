@@ -1,9 +1,9 @@
 import numpy as np
 from scipy.interpolate import interp1d
 
-from ...limits.objective_functions import ObjectiveFcn
-from ...misc.enums import Node
-from ...misc.parameters_types import IntOptional, NpArray
+from ..limits.objective_functions import ObjectiveFcn
+from ..misc.enums import Node
+from ..misc.parameters_types import IntOptional, NpArray
 
 
 def _prepare_tracked_markers_for_animation(

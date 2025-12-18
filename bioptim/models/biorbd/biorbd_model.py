@@ -1334,6 +1334,17 @@ class BiorbdModel:
     def partitioned_forward_dynamics(self):
         raise NotImplementedError("partitioned_forward_dynamics is not implemented for BiorbdModel")
 
+    def to_pyorerun_model(self):
+        """Create a pyorerun BiorbdModel for visualization."""
+        import pyorerun
+
+        return pyorerun.BiorbdModel.from_biorbd_object(self.model)
+
+    @property
+    def pyorerun_marker_names(self) -> list[str]:
+        """Get marker names formatted for pyorerun visualization."""
+        return [n.to_string() for n in self.model.markerNames()]
+
     @staticmethod
     def animate(
         ocp,
@@ -1349,6 +1360,6 @@ class BiorbdModel:
 
             return animate_with_bioviz_for_loop(ocp, solution, show_now, show_tracked_markers, n_frames, **kwargs)
         if viewer == "pyorerun":
-            from .viewer_pyorerun import animate_with_pyorerun
+            from ..viewer_pyorerun import animate_with_pyorerun
 
             return animate_with_pyorerun(ocp, solution, show_now, show_tracked_markers, **kwargs)

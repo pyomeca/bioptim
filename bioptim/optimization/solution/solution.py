@@ -1295,7 +1295,7 @@ class Solution:
             A list of bioviz structures (one for each phase). So one can call exec() by hand
         """
 
-        from ...models.biorbd.viewer_utils import _check_models_comes_from_same_super_class
+        from ...models.viewer_utils import _check_models_comes_from_same_super_class
 
         if shooting_type:
             self.integrate(shooting_type=shooting_type)
