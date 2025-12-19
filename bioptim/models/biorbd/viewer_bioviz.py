@@ -2,7 +2,7 @@ import numpy as np
 from typing import Any
 
 from .biorbd_model import BiorbdModel
-from .viewer_utils import _prepare_tracked_markers_for_animation
+from ..viewer_utils import _prepare_tracked_markers_for_animation
 from ...limits.objective_functions import ObjectiveFcn
 from ...misc.enums import Node
 from ...misc.utils import check_version
