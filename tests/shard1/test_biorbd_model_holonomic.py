@@ -384,14 +384,14 @@ def test_example_two_pendulums_algebraic():
 
 
 def test_example_three_bar():
-    """Test the holonomic_constraints/two_pendulums example"""
+    """Test the holonomic_constraints/three_bar example"""
     from bioptim.examples.toy_examples.holonomic_constraints import three_bar
 
     bioptim_folder = TestUtils.bioptim_folder()
 
     # --- Prepare the ocp --- #
     ocp, model = three_bar.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/models/two_pendulums.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/3bar.bioMod",
         n_shooting=10,
         final_time=1,
         expand_dynamics=False,
@@ -423,14 +423,14 @@ def test_example_three_bar():
 
 
 def test_example_four_bar():
-    """Test the holonomic_constraints/two_pendulums example"""
+    """Test the holonomic_constraints/four_bar example"""
     from bioptim.examples.toy_examples.holonomic_constraints import four_bar
 
     bioptim_folder = TestUtils.bioptim_folder()
 
     # --- Prepare the ocp --- #
     ocp, model = four_bar.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/models/two_pendulums.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/4bar.bioMod",
         n_shooting=30,
         final_time=1,
         expand_dynamics=False,
@@ -561,7 +561,7 @@ def test_example_two_pendulums_2constraint():
 
     # --- Prepare the ocp --- #
     ocp, model = two_pendulums_2constraint.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/models/two_pendulums.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/two_pendulums_2.bioMod",
         n_shooting=10,
         final_time=1,
         expand_dynamics=False,
@@ -600,7 +600,7 @@ def test_example_two_pendulums_rotule():
 
     # --- Prepare the ocp --- #
     ocp, model = two_pendulums_rotule.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/examples/models/two_pendulums.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/two_pendulums_rotule.bioMod",
         n_shooting=10,
         final_time=1,
         expand_dynamics=False,

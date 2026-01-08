@@ -44,7 +44,7 @@ def prepare_ocp(
     final_time: float = 1,
     expand_dynamics: bool = False,
     ode_solver: OdeSolver = OdeSolver.COLLOCATION(polynomial_degree=2),
-) -> tuple[HolonomicBiorbdModel, OptimalControlProgram]:
+) -> tuple[ModifiedHolonomicTorqueBiorbdModel, OptimalControlProgram]:
     """
     Prepare the program
 
