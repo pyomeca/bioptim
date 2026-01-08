@@ -4,11 +4,6 @@ The simulation is two single pendulum that are forced to be coherent with a holo
 pendulum simulation. But this time, the dynamics are computed with the algebraic states, namely q_v the dependent joints
 """
 
-import platform
-
-import numpy as np
-from casadi import DM
-
 from bioptim import (
     BiMappingList,
     BoundsList,
@@ -27,7 +22,12 @@ from bioptim import (
     Node,
     CostType,
     OdeSolver,
+    OnlineOptim,
 )
+from bioptim.examples.utils import ExampleUtils
+from casadi import DM
+import numpy as np
+
 from .custom_dynamics import (
     ModifiedHolonomicTorqueBiorbdModel,
     constraint_holonomic,
@@ -95,7 +95,7 @@ def prepare_ocp(
     final_time: float = 1,
     expand_dynamics: bool = False,
     ode_solver: OdeSolver = OdeSolver.COLLOCATION(polynomial_degree=2),
-) -> (HolonomicBiorbdModel, OptimalControlProgram):
+) -> tuple[HolonomicBiorbdModel, OptimalControlProgram]:
     """
     Prepare the program
 
@@ -232,12 +232,12 @@ def main():
     Runs the optimization and animates it
     """
 
-    model_path = "models/two_pendulums.bioMod"
-    ocp, bio_model = prepare_ocp(biorbd_model_path=model_path)
+    biorbd_model_path = ExampleUtils.folder + "/models/two_pendulums.bioMod"
+    ocp, bio_model = prepare_ocp(biorbd_model_path=biorbd_model_path)
     ocp.add_plot_penalty(CostType.ALL)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.IPOPT(OnlineOptim.DEFAULT))
     print(sol.real_time_to_optimize)
 
     stepwise_q_u = sol.stepwise_states(to_merge=SolutionMerge.NODES)["q_u"]
@@ -248,14 +248,14 @@ def main():
     if viewer == "bioviz":
         import bioviz
 
-        viz = bioviz.Viz(model_path)
+        viz = bioviz.Viz(biorbd_model_path)
         viz.load_movement(q)
         viz.exec()
 
     if viewer == "pyorerun":
         from pyorerun import BiorbdModel as PyorerunBiorbdModel, PhaseRerun
 
-        pyomodel = PyorerunBiorbdModel(model_path)
+        pyomodel = PyorerunBiorbdModel(biorbd_model_path)
         viz = PhaseRerun(t_span=np.concatenate(sol.decision_time()).squeeze())
         viz.add_animated_model(pyomodel, q=q)
 

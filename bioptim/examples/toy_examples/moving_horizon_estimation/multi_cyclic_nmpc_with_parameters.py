@@ -5,11 +5,7 @@ cycle at a time while optimizing three cycles at a time (main difference between
 the latter has more cycle at a time giving the knowledge to the solver that 'something' is coming after)
 """
 
-import platform
 from typing import Callable
-
-import numpy as np
-from casadi import MX, SX, vertcat
 
 from bioptim import (
     Axis,
@@ -29,7 +25,6 @@ from bioptim import (
     NonLinearProgram,
     ObjectiveList,
     ObjectiveFcn,
-    OptimalControlProgram,
     ParameterList,
     PenaltyController,
     PhaseDynamics,
@@ -37,8 +32,11 @@ from bioptim import (
     SolutionMerge,
     Solver,
     VariableScaling,
-    ContactType,
+    OnlineOptim,
 )
+from bioptim.examples.utils import ExampleUtils
+from casadi import MX, SX, vertcat
+import numpy as np
 
 
 class MyCyclicNMPC(MultiCyclicNonlinearModelPredictiveControl):
@@ -212,7 +210,7 @@ def prepare_nmpc(
 
 
 def main():
-    model_path = "models/arm2.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/arm2.bioMod"
     torque_max = 50
 
     cycle_duration = 1
@@ -222,7 +220,7 @@ def main():
     n_cycles = 4
 
     nmpc = prepare_nmpc(
-        model_path,
+        biorbd_model_path,
         cycle_len=cycle_len,
         cycle_duration=cycle_duration,
         n_cycles_to_advance=n_cycles_to_advance,
@@ -236,7 +234,7 @@ def main():
     # Solve the program
     sol = nmpc.solve(
         update_functions,
-        solver=Solver.IPOPT(show_online_optim=platform.system() == "Linux"),
+        solver=Solver.IPOPT(online_optim=OnlineOptim.DEFAULT),
         n_cycles_simultaneous=n_cycles_simultaneous,
         get_all_iterations=True,
         cycle_solutions=MultiCyclicCycleSolutions.ALL_CYCLES,

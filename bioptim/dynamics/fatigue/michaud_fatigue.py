@@ -35,7 +35,7 @@ class MichaudFatigue(MuscleFatigue):
         effort_threshold: Float,
         effort_factor: Float,
         stabilization_factor: Float = 1,
-        **kwargs
+        **kwargs,
     ):
         """
         Parameters
@@ -138,7 +138,7 @@ class MichaudTauFatigue(TauFatigue):
         plus: MichaudFatigue,
         state_only: Bool = False,
         apply_to_joint_dynamics: Bool = False,
-        **kwargs
+        **kwargs,
     ):
         """
         Parameters

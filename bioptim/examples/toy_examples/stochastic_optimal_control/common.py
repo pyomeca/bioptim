@@ -2,12 +2,12 @@
 This file contains the functions that are common for multiple stochastic examples.
 """
 
-import casadi as cas
-import numpy as np
 from bioptim import StochasticBioModel, DynamicsFunctions, SocpType
+import casadi as cas
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 import matplotlib.transforms as transforms
+import numpy as np
 
 
 def dynamics_torque_driven_with_feedbacks(

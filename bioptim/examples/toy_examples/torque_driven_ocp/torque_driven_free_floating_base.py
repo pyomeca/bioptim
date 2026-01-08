@@ -4,10 +4,6 @@ The advantage of this formulation is that yo do not need to specify a mapping to
 This specific problem generates one somersault in straight position with 1 twist.
 """
 
-import platform
-
-import numpy as np
-
 from bioptim import (
     TorqueFreeFloatingBaseBiorbdModel,
     OptimalControlProgram,
@@ -18,7 +14,10 @@ from bioptim import (
     InterpolationType,
     Solver,
     Node,
+    OnlineOptim,
 )
+from bioptim.examples.utils import ExampleUtils
+import numpy as np
 
 
 def prepare_ocp(biorbd_model_path: str):
@@ -164,7 +163,6 @@ def prepare_ocp(biorbd_model_path: str):
         bio_model=bio_model,
         n_shooting=n_shooting,
         phase_time=phase_time,
-        dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         x_init=x_initial_guesses,
@@ -176,10 +174,11 @@ def prepare_ocp(biorbd_model_path: str):
 
 if __name__ == "__main__":
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(biorbd_model_path="models/trunk_and_2arm.bioMod")
+    biorbd_model_path = ExampleUtils.folder + "/models/trunk_and_2arm.bioMod"
+    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path)
 
     # --- Solve the ocp --- #
-    solver = Solver.IPOPT(show_online_optim=platform.system() == "Linux")
+    solver = Solver.IPOPT(online_optim=OnlineOptim.DEFAULT)
     sol = ocp.solve(solver=solver)
 
     # --- Show results --- #

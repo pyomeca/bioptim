@@ -47,10 +47,13 @@ class MultiBiorbdModel:
         self,
         bio_model: tuple[str | biorbd.Model | BiorbdModel, ...],
         extra_bio_models: tuple[str | biorbd.Model | BiorbdModel, ...] = (),
+        **kwargs,
     ):
         """
         MultiBiorbdModel does not handle external_forces and parameters yet.
         """
+        super().__init__(**kwargs)  # For multiple inheritance compatibility
+
         self.models = []
         if not isinstance(bio_model, tuple):
             raise ValueError("The models must be a 'str', 'biorbd.Model', 'bioptim.BiorbdModel'" " or a tuple of those")
@@ -95,7 +98,6 @@ class MultiBiorbdModel:
         self.parameters = MX.sym("parameters_to_be_implemented", 0, 1)
 
         self.check_contacts()
-        self.contact_types = ()
         self._cached_functions = {}
 
     def __getitem__(self, index: Int):
@@ -105,8 +107,16 @@ class MultiBiorbdModel:
         raise NotImplementedError("Deep copy is not implemented yet for MultiBiorbdModel class")
 
     @property
+    def name(self) -> str:
+        return "_".join([model.name for model in self.models])
+
+    @property
     def path(self) -> tuple[StrList, StrList]:
         return [model.path for model in self.models], [model.path for model in self.extra_models]
+
+    @property
+    def contact_types(self):
+        return ()
 
     def copy(self):
         all_paths = self.path
@@ -531,8 +541,8 @@ class MultiBiorbdModel:
         return casadi_fun
 
     @property
-    def name_dof(self) -> StrTuple:
-        return tuple([dof for model in self.models for dof in model.name_dof])
+    def name_dofs(self) -> StrTuple:
+        return tuple([dof for model in self.models for dof in model.name_dofs])
 
     @property
     def rigid_contact_names(self) -> StrTuple:
@@ -1043,6 +1053,22 @@ class MultiBiorbdModel:
     def partitioned_forward_dynamics(self, q_u, qdot_u, q_v_init, tau):
         raise NotImplementedError("partitioned_forward_dynamics is not implemented yet for MultiBiorbdModel")
 
+    def to_pyorerun_model(self):
+        """
+        Create pyorerun models for each sub-model in the MultiBiorbdModel.
+        Note: For multi-models, the viewer handles each sub-model separately.
+        """
+        # Return the first model's pyorerun representation
+        # The viewer will iterate through self.models for multi-model cases
+        import pyorerun
+
+        return pyorerun.BiorbdModel.from_biorbd_object(self.models[0].model)
+
+    @property
+    def pyorerun_marker_names(self) -> list[str]:
+        """Get marker names formatted for pyorerun visualization."""
+        return [name for model in self.models for name in model.pyorerun_marker_names]
+
     @staticmethod
     def animate(
         ocp,
@@ -1054,7 +1080,7 @@ class MultiBiorbdModel:
         **kwargs,
     ):
         from .viewer_bioviz import animate_with_bioviz_for_loop
-        from .viewer_pyorerun import animate_with_pyorerun
+        from ..viewer_pyorerun import animate_with_pyorerun
 
         if viewer == "bioviz":
             return animate_with_bioviz_for_loop(ocp, solution, show_now, show_tracked_markers, n_frames, **kwargs)

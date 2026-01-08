@@ -7,9 +7,6 @@ It is designed to show how one can define its own parameter objective functions 
 sufficient.
 """
 
-import numpy as np
-from casadi import MX
-
 from bioptim import (
     TorqueBiorbdModel,
     OptimalControlProgram,
@@ -30,6 +27,8 @@ from bioptim import (
     SolutionMerge,
 )
 from bioptim.examples.utils import ExampleUtils
+import numpy as np
+from casadi import MX
 
 
 def generate_dat_to_track(

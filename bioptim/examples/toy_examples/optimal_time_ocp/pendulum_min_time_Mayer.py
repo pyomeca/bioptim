@@ -7,8 +7,6 @@ The difference between Mayer and Lagrange minimization time is that the former c
 the values, while the latter is the most common way to define optimal time
 """
 
-import platform
-
 import numpy as np
 from bioptim import (
     TorqueBiorbdModel,
@@ -24,6 +22,7 @@ from bioptim import (
     ControlType,
     PhaseDynamics,
     SolutionMerge,
+    OnlineOptim,
 )
 from bioptim.examples.utils import ExampleUtils
 
@@ -125,7 +124,7 @@ def main():
     ocp.add_plot_penalty(CostType.OBJECTIVES)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
 
     # --- Show results --- #
     times = float(sol.decision_time(to_merge=SolutionMerge.NODES)[-1, 0])

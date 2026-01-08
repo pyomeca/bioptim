@@ -13,7 +13,6 @@ Please note that InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT is ava
 this context.
 """
 
-import numpy as np
 from bioptim import (
     TorqueBiorbdModel,
     Node,
@@ -29,6 +28,7 @@ from bioptim import (
     ObjectiveWeight,
 )
 from bioptim.examples.utils import ExampleUtils
+import numpy as np
 
 
 def custom_weight(node: int, n_nodes: int) -> float:

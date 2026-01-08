@@ -1,13 +1,9 @@
-import biorbd_casadi as biorbd
 import numpy as np
-import pyorerun
 from typing import Any
 
 from .viewer_utils import _prepare_tracked_markers_for_animation
-from .biorbd_model import BiorbdModel
-from .multi_biorbd_model import MultiBiorbdModel
-from ...optimization.solution.solution_data import SolutionMerge
-from ...misc.parameters_types import Bool, AnyList, NpArray, Int
+from ..optimization.solution.solution_data import SolutionMerge
+from ..misc.parameters_types import Bool, AnyList, NpArray, Int
 
 
 def animate_with_pyorerun(
@@ -20,7 +16,7 @@ def animate_with_pyorerun(
     try:
         import pyorerun
     except ModuleNotFoundError:
-        raise RuntimeError("pyorerun must be install to animate the model")
+        raise RuntimeError("pyorerun must be installed to animate the model")
 
     data_to_animate, models, tracked_markers = prepare_pyorerun_animation(ocp, solution, show_now, show_tracked_markers)
     launch_rerun(data_to_animate, show_now, tracked_markers, models, **kwargs)
@@ -30,6 +26,8 @@ def prepare_pyorerun_animation(
     ocp, solution, show_now: Bool = True, show_tracked_markers: Bool = True
 ) -> tuple[AnyList, AnyList, None]:
     """Extract data from the solution to isolate the data for each phase and each model"""
+    from .biorbd.multi_biorbd_model import MultiBiorbdModel
+
     n_phases = ocp.n_phases
     data_to_animate = solution.decision_states(to_merge=SolutionMerge.NODES)
     if n_phases == 1:
@@ -42,7 +40,8 @@ def prepare_pyorerun_animation(
         if isinstance(nlp.model, MultiBiorbdModel):
             data_to_animate, models = set_data_for_multibiorbd_model(nlp, data_to_animate, models, i)
         else:
-            models += [nlp.model.model]
+            # Pass the wrapper model, not the raw .model
+            models += [nlp.model]
 
     if show_tracked_markers:
         tracked_markers = _prepare_tracked_markers_for_animation(ocp.nlp, n_shooting=None)
@@ -68,6 +67,7 @@ def set_time(solution, n_phases, data_to_animate):
 
 def set_data_for_multibiorbd_model(nlp, data_to_animate: AnyList, models: AnyList, i: Int):
     """Duplicate the data for each model in the MultiBiorbdModel and models"""
+    # For multi models, pass the individual wrapper models
     models += [model for model in nlp.model.models]
     temp_data_animate = [data_to_animate[i].copy() for _ in range(nlp.model.nb_models)]
     for j, model in enumerate(nlp.model.models):
@@ -87,9 +87,28 @@ def launch_rerun(
     solution: "SolutionData",
     show_now: Bool = True,
     tracked_markers: list[NpArray] = None,
-    models: BiorbdModel | list[BiorbdModel] | list[MultiBiorbdModel] = None,
+    models: list = None,
     **kwargs: Any,
 ):
+    """
+    Launch the pyorerun visualization.
+
+    Parameters
+    ----------
+    solution : SolutionData
+        The solution data containing q values for each phase
+    show_now : Bool
+        Whether to show the animation immediately
+    tracked_markers : list[NpArray]
+        Optional tracked markers to display
+    models : list
+        List of BioModel instances (BiorbdModel, or other custom models).
+        Each model must implement to_pyorerun_model() and pyorerun_marker_names
+    **kwargs : Any
+        Additional arguments passed to pyorerun
+    """
+    import pyorerun
+
     if not isinstance(solution, (list, tuple)):
         solution = [solution]
 
@@ -110,22 +129,14 @@ def launch_rerun(
         prerun.add_phase(t_span=data["time"], phase=idx_phase)
 
         for model, tm in zip(models, tracked_markers):
-            if isinstance(model, biorbd.Model):
-                biorbd_model = pyorerun.BiorbdModel.from_biorbd_object(model)
-            elif isinstance(model, BiorbdModel):
-                biorbd_model = pyorerun.BiorbdModel.from_biorbd_object(model.model)
-            else:
-                raise NotImplementedError(
-                    f"Animation is only implemented for biorbd models. Got {model.__class__.__name__}"
-                )
 
-            tm = (
-                pyorerun.PyoMarkers(tm, channels=[n.to_string() for n in biorbd_model.model.markerNames()])
-                if tm is not None
-                else None
-            )
+            pyorerun_model = model.to_pyorerun_model()
+            if tm is not None:
+                marker_names = model.pyorerun_marker_names
+                tm = pyorerun.PyoMarkers(tm, channels=marker_names)
+
             prerun.add_animated_model(
-                biorbd_model,
+                pyorerun_model,
                 data["q"],
                 tracked_markers=tm,
                 phase=idx_phase,

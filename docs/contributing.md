@@ -76,7 +76,7 @@ I won't get into details here, if you haven't yet, you should read them :)
 
 All variable names that could be plural should be written as such.
 
-Black is used to enforce the code spacing. 
+Black version 25.11 is used to enforce the code linting. 
 `Bioptim` is linted with the 120-character max per line's option. 
 This means that your pull-request tests on GitHub will appear to fail if black fails. 
 The easiest way to make sure black is happy is to locally run this command:

@@ -2,8 +2,6 @@
 This is an example of the use of torque actuator using a model of 2segments and 2 degrees of freedom
 """
 
-import platform
-
 from bioptim import (
     TorqueActivationBiorbdModel,
     OptimalControlProgram,
@@ -16,7 +14,9 @@ from bioptim import (
     OdeSolverBase,
     Solver,
     PhaseDynamics,
+    OnlineOptim,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(
@@ -112,15 +112,15 @@ def main():
     """
     Prepares and solves an ocp with torque actuators, the animates it
     """
-
+    biorbd_model_path = ExampleUtils.folder + "/models/2segments_2dof_2contacts.bioMod"
     ocp = prepare_ocp(
-        biorbd_model_path="models/2segments_2dof_2contacts.bioMod",
+        biorbd_model_path=biorbd_model_path,
         n_shooting=30,
         final_time=2,
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
 
     # --- Show results --- #
     sol.animate()

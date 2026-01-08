@@ -13,11 +13,6 @@ the model using the optimal solution.
 User might want to start reading the script by the `main` function to get a better feel.
 """
 
-import platform
-
-import numpy as np
-from casadi import sqrt
-
 from bioptim import (
     TorqueBiorbdModel,
     OptimalControlProgram,
@@ -38,8 +33,11 @@ from bioptim import (
     PenaltyController,
     PhaseDynamics,
     SolutionMerge,
+    OnlineOptim,
 )
 from bioptim.examples.utils import ExampleUtils
+import numpy as np
+from casadi import sqrt
 
 
 def out_of_sphere(controller: PenaltyController, y, z):
@@ -98,7 +96,7 @@ def prepare_ocp_first_pass(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = TorqueBiorbdModel(biorbd_model_path)
+    bio_model = TorqueBiorbdModel(bio_model=biorbd_model_path)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -141,7 +139,6 @@ def prepare_ocp_first_pass(
     u_init.add_noise(bounds=u_bounds, magnitude=0.01, n_shooting=n_shooting)
 
     constraints = ConstraintList()
-    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="marker_2", second_marker="target_2")
     constraints.add(out_of_sphere, y=-0.45, z=0, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     constraints.add(out_of_sphere, y=0.05, z=0, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     # for another good example, comment out this line below here and in second pass (see HERE)
@@ -149,6 +146,7 @@ def prepare_ocp_first_pass(
     constraints.add(out_of_sphere, y=0.75, z=0.2, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     constraints.add(out_of_sphere, y=1.4, z=0.5, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     constraints.add(out_of_sphere, y=2, z=1.2, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="marker_2", second_marker="target_2")
 
     return OptimalControlProgram(
         bio_model,
@@ -291,7 +289,7 @@ def main():
     # ocp_first.print(to_console=True)
 
     solver_first = Solver.IPOPT(
-        show_online_optim=platform.system() == "Linux",
+        online_optim=OnlineOptim.DEFAULT,
         show_options=dict(show_bounds=True),
     )
     # change maximum iterations to affect the initial solution
@@ -308,7 +306,7 @@ def main():
     # # --- Second pass ---#
     # # --- Prepare the ocp --- #
     solver_second = Solver.IPOPT(
-        show_online_optim=platform.system() == "Linux",
+        online_optim=OnlineOptim.DEFAULT,
         show_options=dict(show_bounds=True),
     )
     solver_second.set_maximum_iterations(10000)

@@ -5,7 +5,6 @@ The soft contact sphere are hard to make converge and sensitive to parameters.
 One could use ContactType.SOFT_IMPLICIT to ease the convergence.
 """
 
-import numpy as np
 from bioptim import (
     TorqueBiorbdModel,
     OptimalControlProgram,
@@ -27,6 +26,8 @@ from bioptim import (
     SolutionMerge,
     ContactType,
 )
+from bioptim.examples.utils import ExampleUtils
+import numpy as np
 
 
 def prepare_single_shooting(
@@ -194,7 +195,7 @@ def main():
     """
     Defines a multiphase ocp and animate the results
     """
-    biorbd_model_path = "../torque_driven_ocp/models/soft_contact_sphere.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/soft_contact_sphere.bioMod"
     ode_solver = OdeSolver.RK8()
 
     # Prepare OCP to reach the second marker

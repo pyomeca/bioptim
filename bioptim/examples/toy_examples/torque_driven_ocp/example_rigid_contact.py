@@ -2,13 +2,6 @@
 A very simple optimal control program where a 2D leg want to jump as high as possible by pushing on the ground.
 """
 
-from operator import index
-
-import matplotlib.pyplot as plt
-import numpy as np
-from casadi import MX
-from scipy.odr import quadratic
-
 from bioptim import (
     TorqueBiorbdModel,
     OptimalControlProgram,
@@ -24,7 +17,6 @@ from bioptim import (
     Node,
     Solver,
     Shooting,
-    Solution,
     SolutionIntegrator,
     PhaseDynamics,
     SolutionMerge,
@@ -32,8 +24,11 @@ from bioptim import (
     Axis,
     ContactType,
     PenaltyController,
-    ExternalForceSetVariables,
 )
+from bioptim.examples.utils import ExampleUtils
+from casadi import MX
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 def custom_com_over_contact(controller: PenaltyController) -> MX:
@@ -147,7 +142,7 @@ def main():
     """
     Defines a multiphase ocp and animate the results
     """
-    biorbd_model_path = "../torque_driven_ocp/models/3segments_4dof_1contact.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/3segments_4dof_1contact.bioMod"
     n_shooting = 30
     final_time = 1
     defects_type = DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS
@@ -208,7 +203,7 @@ def main():
             color="tab:blue",
             label="Reintegration - qdot",
         )
-        axs[i_dof].set_title(f"{ocp.nlp[0].model.name_dof[i_dof]}")
+        axs[i_dof].set_title(f"{ocp.nlp[0].model.name_dofs[i_dof]}")
     axs[0].legend(bbox_to_anchor=(1.05, 1), loc="upper left")
     plt.tight_layout()
     plt.savefig(f"reintegration_{defects_type.value}_{contact_types}.png")

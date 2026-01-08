@@ -2,7 +2,7 @@ import numpy as np
 from typing import Any
 
 from .biorbd_model import BiorbdModel
-from .viewer_utils import _prepare_tracked_markers_for_animation
+from ..viewer_utils import _prepare_tracked_markers_for_animation
 from ...limits.objective_functions import ObjectiveFcn
 from ...misc.enums import Node
 from ...misc.utils import check_version
@@ -66,7 +66,7 @@ def animate_with_bioviz(
     except ModuleNotFoundError:
         raise RuntimeError("bioviz must be install to animate the model")
 
-    check_version(bioviz, "2.4.0", "2.5.0")
+    check_version(bioviz, "2.5.0", "2.6.0")
 
     if "q_roots" in solution and "q_joints" in solution:
         states = np.vstack((solution["q_roots"], solution["q_joints"]))

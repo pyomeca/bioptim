@@ -224,12 +224,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
     Methods
     -------
-    inner_phase_continuity(ocp)
-        Add continuity constraints between each nodes of a phase.
-    inter_phase_continuity(ocp)
-        Add phase transition constraints between two phases.
-    inter_node_continuity(ocp)
-        Add phase multi node constraints between specified nodes and phases.
     ensure_penalty_sanity(ocp: OptimalControlProgram, nlp: NonLinearProgram, penalty: Constraint)
         Resets a penalty. A negative penalty index creates a new empty penalty.
     penalty_nature() -> str

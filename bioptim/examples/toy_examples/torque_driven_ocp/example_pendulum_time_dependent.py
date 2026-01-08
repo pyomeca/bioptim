@@ -9,12 +9,6 @@ During the optimization process, the graphs are updated real-time (even though i
 appreciate it). Finally, once it finished optimizing, it animates the model using the optimal solution
 """
 
-import platform
-
-import numpy as np
-
-from casadi import MX, SX, sin, vertcat
-
 from bioptim import (
     TorqueBiorbdModel,
     BoundsList,
@@ -32,7 +26,10 @@ from bioptim import (
     NonLinearProgram,
     Solver,
     PhaseDynamics,
+    OnlineOptim,
 )
+from bioptim.examples.utils import ExampleUtils
+from casadi import MX, SX, sin, vertcat
 
 
 class TimeDependentModel(TorqueBiorbdModel):
@@ -174,8 +171,10 @@ def main():
     If pendulum is run as a script, it will perform the optimization and animates it
     """
 
+    biorbd_model_path = ExampleUtils.folder + "/models/pendulum.bioMod"
+
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=30)
+    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, final_time=1, n_shooting=30)
 
     # Custom plots
     ocp.add_plot_penalty(CostType.ALL)
@@ -187,7 +186,7 @@ def main():
     ocp.print(to_console=False, to_graph=False)
 
     # --- Solve the ocp --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
     sol.graphs(show_bounds=True)
 
     # --- Show the results in a bioviz animation --- #

@@ -1,5 +1,5 @@
 from .interface_utils import (
-    generic_online_optim,
+    generic_show_constraints_jacobian_sparsity,
     generic_solve,
     generic_dispatch_bounds,
     generic_dispatch_obj_func,
@@ -83,6 +83,12 @@ class FatropInterface(SolverInterface):
 
         raise NotImplementedError("Fatrop does not support online optimization yet.")
 
+    def show_constraints_jacobian_sparsity(self):
+        """
+        Show the sparsity of the constraints jacobian
+        """
+        generic_show_constraints_jacobian_sparsity(self)
+
     def solve(self, expand_during_shake_tree: Bool) -> AnyDict:
         """
         Solve the prepared ocp
@@ -121,7 +127,7 @@ class FatropInterface(SolverInterface):
         """
         return generic_dispatch_obj_func(self)
 
-    def get_all_penalties(self, nlp: NonLinearProgram, penalties):
+    def get_all_penalties(self, nlp: NonLinearProgram, penalties, get_bounds: bool = False):
         """
         Parse the penalties of the full ocp to a Ipopt-friendly one
 
@@ -131,8 +137,11 @@ class FatropInterface(SolverInterface):
             The nonlinear program to parse the penalties from
         penalties:
             The penalties to parse
+        get_bounds: bool
+            If the bounds should also be returned. This can only be used if the penalties are constraints
+
         Returns
         -------
 
         """
-        return generic_get_all_penalties(self, nlp, penalties, scaled=True)
+        return generic_get_all_penalties(self, nlp, penalties, scaled=True, get_bounds=get_bounds)

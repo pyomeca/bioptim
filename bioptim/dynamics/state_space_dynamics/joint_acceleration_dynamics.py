@@ -14,10 +14,24 @@ class JointAccelerationDynamics(StateDynamics):
     u = [qddot_joints]
     """
 
-    def __init__(self):
-        super().__init__()
-        self.state_configuration = [States.Q, States.QDOT]
-        self.control_configuration = [Controls.QDDOT_JOINTS]
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    @property
+    def state_configuration_functions(self):
+        return [States.Q, States.QDOT]
+
+    @property
+    def control_configuration_functions(self):
+        return [Controls.QDDOT_JOINTS]
+
+    @property
+    def algebraic_configuration_functions(self):
+        return []
+
+    @property
+    def extra_configuration_functions(self):
+        return []
 
     @staticmethod
     def get_q_qdot_indices(nlp):
@@ -85,6 +99,3 @@ class JointAccelerationDynamics(StateDynamics):
                 )
 
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
-
-    def get_rigid_contact_forces(self, time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp):
-        raise RuntimeError("Joints acceleration driven dynamics cannot be used with contacts by definition.")

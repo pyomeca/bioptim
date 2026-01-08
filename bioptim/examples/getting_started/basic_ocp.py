@@ -159,6 +159,10 @@ def main():
     # Default is OnlineOptim.MULTIPROCESS on Linux, OnlineOptim.MULTIPROCESS_SERVER on Windows and None on MacOS
     # To see the graphs on MacOS, one must run the server manually (see resources/plotting_server.py)
     solver = Solver.IPOPT(online_optim=OnlineOptim.DEFAULT)
+
+    # # Show the constraints Jacobian sparsity
+    # # If one wants to see the constraints Jacobian sparsity pattern, they can uncomment the following line
+    # ocp.show_constraints_jacobian_sparsity(solver)
     sol = ocp.solve(solver)
 
     # # --- Warm restart --- #

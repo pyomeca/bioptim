@@ -5,7 +5,6 @@ The arm must reach a marker while minimizing the muscles activity and the states
 ACADOS and Ipopt.
 """
 
-import numpy as np
 from bioptim import (
     MusclesBiorbdModel,
     OptimalControlProgram,
@@ -18,6 +17,7 @@ from bioptim import (
     InterpolationType,
 )
 from bioptim.examples.utils import ExampleUtils
+import numpy as np
 
 
 def prepare_ocp(

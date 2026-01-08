@@ -60,7 +60,7 @@ class RockitModel:
         return 0
 
     @property
-    def name_dof(self):
+    def name_dofs(self):
         return ["x"]
 
     @property
@@ -81,18 +81,33 @@ class RockitModel:
 
 
 class RockitDynamicsOCP(RockitModel):
-    def __init__(self, motor_noise_magnitude: np.ndarray | DM = None, polynomial_degree: int = 1, socp_type=None):
+    def __init__(
+        self, motor_noise_magnitude: np.ndarray | DM = None, polynomial_degree: int = 1, socp_type=None, **kwargs
+    ):
+        super().__init__(
+            motor_noise_magnitude=motor_noise_magnitude,
+            polynomial_degree=polynomial_degree,
+            socp_type=socp_type,
+            **kwargs,
+        )
 
-        super().__init__(self, motor_noise_magnitude, polynomial_degree, socp_type)
+    @property
+    def state_configuration_functions(self):
+        return [States.Q, States.QDOT]
 
-        # Variables to configure
-        self.state_configuration = [States.Q, States.QDOT]
-        self.control_configuration = [
-            lambda ocp, nlp, as_states, as_controls, as_algebraic_states: ConfigureVariables.configure_new_variable(
-                "u", nlp.model.name_u, ocp, nlp, as_states=False, as_controls=True
-            )
+    @property
+    def control_configuration_functions(self):
+        return [
+            lambda **kwargs: ConfigureVariables.configure_new_variable("u", self.name_u, as_controls=True, **kwargs)
         ]
-        self.functions = []
+
+    @property
+    def algebraic_configuration_functions(self):
+        return []
+
+    @property
+    def extra_configuration_functions(self):
+        return []
 
     def dynamics(
         self,
@@ -117,28 +132,26 @@ class RockitDynamicsOCP(RockitModel):
 
 
 class RockitDynamicsSOCP(RockitDynamicsOCP):
-    def __init__(self, motor_noise_magnitude: np.ndarray | DM = None, polynomial_degree: int = 1, socp_type=None):
-        super().__init__(self, motor_noise_magnitude, polynomial_degree, socp_type)
+    def __init__(
+        self, motor_noise_magnitude: np.ndarray | DM = None, polynomial_degree: int = 1, socp_type=None, **kwargs
+    ):
+        super().__init__(
+            motor_noise_magnitude=motor_noise_magnitude,
+            polynomial_degree=polynomial_degree,
+            socp_type=socp_type,
+            **kwargs,
+        )
+        self.n_noised_states = 2
 
-        n_noised_states = 2
-
-        # Variables to configure
-        self.state_configuration = [States.Q, States.QDOT]
-        self.control_configuration = [
-            lambda ocp, nlp, as_states, as_controls, as_algebraic_states: ConfigureVariables.configure_new_variable(
-                "u", nlp.model.name_u, ocp, nlp, as_states=False, as_controls=True
-            ),
-            lambda ocp, nlp, as_states, as_controls, as_algebraic_states: Controls.COV(
-                ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_states
-            ),
+    @property
+    def control_configuration_functions(self):
+        return super().control_configuration_functions + [
+            lambda ocp, nlp: Controls.COV(ocp, nlp, n_noised_states=self.n_noised_states)
         ]
 
-        self.algebraic_configuration = [
-            lambda ocp, nlp, as_states, as_controls, as_algebraic_states: AlgebraicStates.M(
-                ocp, nlp, as_states, as_controls, as_algebraic_states, n_noised_states
-            )
-        ]
-        self.functions = []
+    @property
+    def algebraic_configuration_functions(self):
+        return [lambda ocp, nlp: AlgebraicStates.M(ocp, nlp, n_noised_states=self.n_noised_states)]
 
     def extra_dynamics(
         self,

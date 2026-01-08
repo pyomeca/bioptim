@@ -28,9 +28,7 @@ from bioptim import (
     ObjectiveList,
     PhaseDynamics,
     VariableScaling,
-    VariableScalingList,
 )
-
 from bioptim.examples.utils import ExampleUtils
 
 

@@ -24,8 +24,6 @@ Please note that while BiMapping is used in that context for reducing dof, it is
 applications one can do with the Mappings
 """
 
-import platform
-
 from bioptim import (
     TorqueBiorbdModel,
     Node,
@@ -43,11 +41,13 @@ from bioptim import (
     OdeSolverBase,
     Solver,
     PhaseDynamics,
+    OnlineOptim,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(
-    biorbd_model_path: str = "models/cubeSym.bioMod",
+    biorbd_model_path,
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
@@ -151,10 +151,11 @@ def main():
     Solves an ocp where the symmetry must be respected, and animates it
     """
 
-    ocp = prepare_ocp()
+    biorbd_model_path = ExampleUtils.folder + "/models/cubeSym.bioMod"
+    ocp = prepare_ocp(biorbd_model_path)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
 
     # --- Show results --- #
     sol.animate()
