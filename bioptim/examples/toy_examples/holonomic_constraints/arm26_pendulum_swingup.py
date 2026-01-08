@@ -26,6 +26,8 @@ from bioptim import (
     OdeSolver,
 )
 
+from bioptim.examples.utils import ExampleUtils
+
 
 def compute_all_states(sol, bio_model: HolonomicTorqueBiorbdModel):
     """
@@ -168,7 +170,7 @@ def main():
     Runs the optimization and animates it
     """
 
-    model_path = "models/arm26_w_pendulum.bioMod"
+    model_path = ExampleUtils.folder + "/models/arm26_w_pendulum.bioMod"
     ocp, bio_model = prepare_ocp(biorbd_model_path=model_path)
 
     # --- Solve the program --- #

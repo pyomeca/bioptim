@@ -1,8 +1,22 @@
+import os
+
+print(os.getenv("PYTHONPATH"))
+
+from typing import Callable
+
+import numpy as np
+from casadi import vertcat, DM
+
+import biorbd
 from bioptim import (
     ConfigureVariables,
     Controls,
     DynamicsEvaluation,
     DynamicsFunctions,
+    HolonomicBiorbdModel,
+    HolonomicConstraintsList,
+    HolonomicTorqueBiorbdModel,
+    HolonomicTorqueDynamics,
     OdeSolver,
     ParameterList,
     PenaltyController,
@@ -11,8 +25,6 @@ from bioptim import (
     TorqueDynamics,
     MusclesDynamics,
 )
-from bioptim.examples.utils import ExampleUtils
-from casadi import vertcat
 
 
 def constraint_holonomic_end(
@@ -166,6 +178,10 @@ class HolonomicMusclesDynamics(HolonomicTorqueDynamics):
         ]
         self.with_residual_torque = True
 
+    @property
+    def control_configuration_functions(self):
+        return [Controls.TAU, Controls.MUSCLE_EXCITATION]
+
     def get_basic_variables(
         self,
         nlp,
@@ -273,7 +289,10 @@ class AlgebraicHolonomicMusclesBiorbdModel(HolonomicMusclesBiorbdModel):
             independent_joint_index=independent_joint_index,
             dependent_joint_index=dependent_joint_index,
         )
-        self.algebraic_configuration += [configure_qv]
+
+    @property
+    def algebraic_configuration_functions(self):
+        return super().algebraic_configuration_functions + [configure_qv]
 
     def get_basic_variables(
         self,
@@ -307,3 +326,30 @@ class AlgebraicHolonomicMusclesBiorbdModel(HolonomicMusclesBiorbdModel):
             "external_forces", states, controls, algebraic_states, numerical_timeseries
         )
         return q_u, qdot_u, muscles_tau, external_forces, mus_activations
+
+    def dynamics(
+        self,
+        time,
+        states,
+        controls,
+        parameters,
+        algebraic_states,
+        numerical_timeseries,
+        nlp,
+    ):
+
+        q_u, qdot_u, tau, _, _ = self.get_basic_variables(
+            nlp, states, controls, parameters, algebraic_states, numerical_timeseries
+        )
+        q_v = DynamicsFunctions.get(nlp.algebraic_states["q_v"], algebraic_states)
+
+        qddot_u = nlp.model.partitioned_forward_dynamics()(q_u, qdot_u, q_v, tau)
+        dxdt = vertcat(qdot_u, qddot_u)
+
+        defects = None
+        if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.COLLOCATION):
+            slope_q_u = DynamicsFunctions.get(nlp.states_dot["q_u"], nlp.states_dot.scaled.cx)
+            slope_qdot_u = DynamicsFunctions.get(nlp.states_dot["qdot_u"], nlp.states_dot.scaled.cx)
+            defects = vertcat(slope_q_u, slope_qdot_u) - dxdt
+
+        return DynamicsEvaluation(dxdt=dxdt, defects=defects)

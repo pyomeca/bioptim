@@ -27,13 +27,15 @@ from bioptim import (
     Solver,
 )
 
+from bioptim.examples.utils import ExampleUtils
+
 
 def prepare_ocp(
     biorbd_model_path: str,
     n_shooting: int = 30,
     final_time: float = 1,
     expand_dynamics: bool = False,
-    control_type: ControlType = ControlType.LINEAR_CONTINUOUS,
+    control_type: ControlType = ControlType.CONSTANT,
 ) -> (AlgebraicHolonomicMusclesBiorbdModel, OptimalControlProgram):
     """
     Prepare the program
@@ -152,7 +154,7 @@ def prepare_ocp(
             variable_mappings=tau_variable_bimapping,
             constraints=constraints,
             control_type=control_type,
-            # n_threads=24,
+            n_threads=24,
         ),
         bio_model,
     )
@@ -163,11 +165,11 @@ def main():
     Runs the optimization and animates it
     """
 
-    model_path = "models/arm26_w_pendulum.bioMod"
+    model_path = ExampleUtils.folder + "/models/arm26_w_pendulum.bioMod"
     ocp, bio_model = prepare_ocp(biorbd_model_path=model_path)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
     print(sol.real_time_to_optimize)
 
     # --- Show results --- #
