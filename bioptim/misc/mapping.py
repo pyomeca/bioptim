@@ -137,7 +137,7 @@ class BiMapping(OptionGeneric):
         to_first: MappingOrIterable,
         oppose_to_second: MappingOrIterable = None,
         oppose_to_first: MappingOrIterable = None,
-        **extra_parameters
+        **extra_parameters,
     ):
         """
         Parameters
@@ -341,7 +341,7 @@ class SelectionMapping(BiMapping):
         nb_elements: Int = None,
         independent_indices: IntTuple = None,
         dependencies: DependencyTuple = None,
-        **extra_parameters
+        **extra_parameters,
     ):
         """
         Initializes the class SelectionMapping

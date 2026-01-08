@@ -51,20 +51,16 @@ def test_example_external_forces(
 ):
     from bioptim.examples.getting_started import example_external_forces as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube_with_forces.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cube_with_forces.bioMod",
         phase_dynamics=phase_dynamics,
         external_force_method=method,
         use_sx=use_sx,
         use_point_of_applications=method == "translational_force",  # Only to preserve the tested values
     )
     sol = ocp.solve()
-
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], f[0, 0])
 
     g = np.array(sol.constraints)
     npt.assert_equal(g.shape, (246, 1))
@@ -83,7 +79,7 @@ def test_example_external_forces(
         npt.assert_almost_equal(qdot[:, 0], np.array([0.0, 0.0, 0.0, 0.0]), decimal=5)
         npt.assert_almost_equal(qdot[:, -1], np.array([0.0, 0.0, 0.0, 0.0]), decimal=5)
 
-        npt.assert_almost_equal(f[0, 0], 19847.887805189126)
+        TestUtils.assert_objective_value(sol=sol, expected_value=19847.887805189126)
 
         # initial and final controls
         npt.assert_almost_equal(tau[:, 0], np.array([2.03776708e-09, 1.27132259e01, 2.32230666e-27, 0.0]))
@@ -97,7 +93,7 @@ def test_example_external_forces(
 
     if method in ["translational_force", "in_global", "in_segment"]:
 
-        npt.assert_almost_equal(f[0, 0], 7067.851604540217)
+        TestUtils.assert_objective_value(sol=sol, expected_value=7067.851604540217)
 
         # initial and final controls
         npt.assert_almost_equal(tau[:, 0], np.array([2.03776698e-09, 6.98419368e00, -8.87085933e-09, 0.0]))
@@ -126,7 +122,7 @@ def test_example_external_forces(
 
 
 def prepare_ocp(
-    biorbd_model_path: str = "models/cube_with_forces.bioMod",
+    biorbd_model_path: str,
     together: bool = False,
 ) -> OptimalControlProgram:
 
@@ -171,16 +167,28 @@ def prepare_ocp(
     else:
         external_forces = ExternalForceSetTimeSeries(nb_frames=n_shooting)
         external_forces.add(
-            "force2", "Seg1", np.vstack((Seg1_torque, np.zeros((3, n_shooting)))), point_of_application=Seg1_point_of_application
+            "force2",
+            "Seg1",
+            np.vstack((Seg1_torque, np.zeros((3, n_shooting)))),
+            point_of_application=Seg1_point_of_application,
         )
         external_forces.add(
-            "force3", "Seg1", np.vstack((np.zeros((3, n_shooting)), Seg1_force)), point_of_application=Seg1_point_of_application
+            "force3",
+            "Seg1",
+            np.vstack((np.zeros((3, n_shooting)), Seg1_force)),
+            point_of_application=Seg1_point_of_application,
         )
         external_forces.add(
-            "force4", "Test", np.vstack((Test_torque, np.zeros((3, n_shooting)))), point_of_application=Test_point_of_application
+            "force4",
+            "Test",
+            np.vstack((Test_torque, np.zeros((3, n_shooting)))),
+            point_of_application=Test_point_of_application,
         )
         external_forces.add(
-            "force5", "Test", np.vstack((np.zeros((3, n_shooting)), Test_force)), point_of_application=Test_point_of_application
+            "force5",
+            "Test",
+            np.vstack((np.zeros((3, n_shooting)), Test_force)),
+            point_of_application=Test_point_of_application,
         )
 
     bio_model = TorqueBiorbdModel(biorbd_model_path, external_force_set=external_forces)
@@ -236,19 +244,16 @@ def test_example_external_forces_all_at_once(together: bool):
 
     from bioptim.examples.getting_started import example_external_forces as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube_with_forces.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cube_with_forces.bioMod",
         together=together,
     )
 
     sol = ocp.solve()
-    # # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 5507.938264053537)
-    npt.assert_almost_equal(f[0, 0], sol.detailed_cost[0]["cost_value_weighted"])
+    # Check objective function value
+    TestUtils.assert_objective_value(sol=sol, expected_value=5507.938264053537)
 
     # Check constraints
     g = np.array(sol.constraints)

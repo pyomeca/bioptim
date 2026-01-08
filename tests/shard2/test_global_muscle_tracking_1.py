@@ -16,18 +16,18 @@ from ..utils import TestUtils
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver, phase_dynamics):
     # Load muscle_activations_tracker
-    from bioptim.examples.muscle_driven_ocp import muscle_activations_tracker as ocp_module
+    from bioptim.examples.toy_examples.muscle_driven_ocp import muscle_activations_tracker as ocp_module
 
     # For reducing time phase_dynamics=False is skipped for redundant tests
     # and because test fails on CI
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver in (OdeSolver.RK4, OdeSolver.COLLOCATION):
         pytest.skip("Redundant test")
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     # Define the problem
     use_residual_torque = False
-    model_path = bioptim_folder + "/models/arm26.bioMod"
+    model_path = bioptim_folder + "/examples/models/arm26.bioMod"
     bio_model = MusclesBiorbdModel(model_path, with_residual_torque=use_residual_torque)
     final_time = 0.1
     n_shooting = 5
@@ -102,7 +102,8 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver, p
     q, qdot, mus = states["q"], states["qdot"], controls["muscles"]
 
     if ode_solver == OdeSolver.IRK:
-        npt.assert_almost_equal(f[0, 0], 4.162211328576168e-09)
+        TestUtils.assert_objective_value(sol=sol, expected_value=4.162211328576168e-09)
+
         # initial and final position
         npt.assert_almost_equal(q[:, 0], np.array([-4.35868770e-06, 3.99285825e-06]))
         npt.assert_almost_equal(q[:, -1], np.array([0.20478893, -0.9507116]))
@@ -119,7 +120,8 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver, p
             np.array([0.44190476, 0.43398509, 0.61774548, 0.51315871, 0.650407, 0.60099513]),
         )
     elif ode_solver == OdeSolver.COLLOCATION:
-        npt.assert_almost_equal(f[0, 0], 4.145731569100745e-09)
+        TestUtils.assert_objective_value(sol=sol, expected_value=4.145731569100745e-09)
+
         # initial and final position
         npt.assert_almost_equal(q[:, 0], np.array([-3.74337403e-06, 4.00697373e-06]))
         npt.assert_almost_equal(q[:, -1], np.array([0.20480488, -0.95076061]))
@@ -137,7 +139,8 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver, p
         )
 
     elif ode_solver == OdeSolver.RK4:
-        npt.assert_almost_equal(f[0, 0], 4.148276544152576e-09)
+        TestUtils.assert_objective_value(sol=sol, expected_value=4.148276544152576e-09)
+
         # initial and final position
         npt.assert_almost_equal(q[:, 0], np.array([-4.41978433e-06, 4.05234428e-06]))
         npt.assert_almost_equal(q[:, -1], np.array([0.20478889, -0.95071163]))

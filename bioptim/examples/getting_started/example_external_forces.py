@@ -6,10 +6,6 @@ It is designed to show how to use external forces. An example of external forces
 example a spring) can be found at 'examples/torque_driven_ocp/spring_load.py'
 """
 
-import platform
-
-import numpy as np
-
 from bioptim import (
     TorqueBiorbdModel,
     Node,
@@ -25,11 +21,14 @@ from bioptim import (
     Solver,
     PhaseDynamics,
     ExternalForceSetTimeSeries,
+    OnlineOptim,
 )
+from bioptim.examples.utils import ExampleUtils
+import numpy as np
 
 
 def prepare_ocp(
-    biorbd_model_path: str = "models/cube_with_forces.bioMod",
+    biorbd_model_path,
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     expand_dynamics: bool = True,
     phase_dynamics: PhaseDynamics = PhaseDynamics.ONE_PER_NODE,
@@ -193,11 +192,11 @@ def main():
     """
     Solve an ocp with external forces and animates the solution
     """
-
-    ocp = prepare_ocp()
+    biorbd_model_path = ExampleUtils.folder + "/models/cube_with_forces.bioMod"
+    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
 
     # --- Show results --- #
     sol.graphs()

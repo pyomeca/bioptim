@@ -28,8 +28,8 @@ from bioptim import (
     ObjectiveList,
     PhaseDynamics,
     VariableScaling,
-    VariableScalingList,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def my_parameter_function(bio_model: TorqueBiorbdModel, value: MX, extra_value: Any):
@@ -257,8 +257,9 @@ def main():
     """
     optim_gravity = True
     optim_mass = True
+    biorbd_model_path = ExampleUtils.folder + "/models/pendulum.bioMod"
     ocp = prepare_ocp(
-        biorbd_model_path="models/pendulum.bioMod",
+        biorbd_model_path=biorbd_model_path,
         final_time=3,
         n_shooting=100,
         optim_gravity=optim_gravity,

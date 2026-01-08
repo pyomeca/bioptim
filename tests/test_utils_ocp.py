@@ -29,14 +29,25 @@ from bioptim import (
 
 
 class CustomBiorbdModel(BiorbdModel, StateDynamics):
-    def __init__(self, biorbd_model_path: str, **kwargs):
-        BiorbdModel.__init__(self, biorbd_model_path)
-        StateDynamics.__init__(self)
+    def __init__(self, biorbd_model_path: str, my_additional_factor: int, **kwargs):
+        super().__init__(bio_model=biorbd_model_path, **kwargs)
+        self.my_additional_factor = my_additional_factor
 
-        # Define the variables to configure here
-        self.state_configuration = [States.Q, States.QDOT]
-        self.control_configuration = [Controls.TAU]
-        self.extra_parameters = kwargs
+    @property
+    def state_configuration_functions(self):
+        return [States.Q, States.QDOT]
+
+    @property
+    def control_configuration_functions(self):
+        return [Controls.TAU]
+
+    @property
+    def algebraic_configuration_functions(self):
+        return []
+
+    @property
+    def extra_configuration_functions(self):
+        return []
 
     def dynamics(
         self,
@@ -72,14 +83,12 @@ class CustomBiorbdModel(BiorbdModel, StateDynamics):
         -------
         The derivative of the states in the tuple[MX | SX] format
         """
-        my_additional_factor = self.extra_parameters["my_additional_factor"]
-
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
         tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
         # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
-        dq = DynamicsFunctions.compute_qdot(nlp, q, qdot) * my_additional_factor
+        dq = DynamicsFunctions.compute_qdot(nlp, q, qdot) * self.my_additional_factor
         ddq = nlp.model.forward_dynamics()(q, qdot, tau, [], nlp.parameters.cx)
         dxdt = vertcat(dq, ddq)
 

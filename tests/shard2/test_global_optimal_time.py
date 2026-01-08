@@ -32,12 +32,12 @@ from ..utils import TestUtils
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK, OdeSolver.TRAPEZOIDAL])
 def test_pendulum_max_time_mayer_constrained(ode_solver, phase_dynamics):
     # Load pendulum_min_time_Mayer
-    from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
+    from bioptim.examples.toy_examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
     if platform.system() == "Windows" and ode_solver == OdeSolver.COLLOCATION:
         pytest.skip("These tests do not pass on Windows.")
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ns = 30
     tf = 1
@@ -45,7 +45,7 @@ def test_pendulum_max_time_mayer_constrained(ode_solver, phase_dynamics):
     control_type = ControlType.CONSTANT_WITH_LAST_NODE if ode_solver == OdeSolver.TRAPEZOIDAL else ControlType.CONSTANT
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
         final_time=tf,
         n_shooting=ns,
         ode_solver=ode_solver(),
@@ -81,9 +81,7 @@ def test_pendulum_max_time_mayer_constrained(ode_solver, phase_dynamics):
     npt.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], -max_tf, decimal=5)
+    TestUtils.assert_objective_value(sol=sol, expected_value=-max_tf, decimal=5)
 
     npt.assert_almost_equal(tau[1, 0], np.array(0))
     npt.assert_almost_equal(tau[1, -1], np.array(0))
@@ -103,9 +101,9 @@ def test_time_constraint(ode_solver, phase_dynamics):
         pytest.skip("These tests are sensitive on Windows.")
 
     # Load time_constraint
-    from bioptim.examples.optimal_time_ocp import time_constraint as ocp_module
+    from bioptim.examples.toy_examples.optimal_time_ocp import time_constraint as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     if ode_solver == OdeSolver.IRK:
         ft = 2
@@ -120,7 +118,7 @@ def test_time_constraint(ode_solver, phase_dynamics):
         raise ValueError("Test not implemented")
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
         final_time=ft,
         n_shooting=ns,
         time_min=0.2,
@@ -159,9 +157,7 @@ def test_time_constraint(ode_solver, phase_dynamics):
 
     if ode_solver == OdeSolver.IRK:
         # Check objective function value
-        f = np.array(sol.cost)
-        npt.assert_equal(f.shape, (1, 1))
-        npt.assert_almost_equal(f[0, 0], 57.84641870505798)
+        TestUtils.assert_objective_value(sol=sol, expected_value=57.84641870505798)
 
         # initial and final controls
         npt.assert_almost_equal(tau[:, 0], np.array((5.33802896, 0)))
@@ -169,9 +165,7 @@ def test_time_constraint(ode_solver, phase_dynamics):
 
     elif ode_solver == OdeSolver.COLLOCATION:
         # Check objective function value
-        f = np.array(sol.cost)
-        npt.assert_equal(f.shape, (1, 1))
-        npt.assert_almost_equal(f[0, 0], 94.3161259540302)
+        TestUtils.assert_objective_value(sol=sol, expected_value=94.3161259540302)
 
         # initial and final controls
         npt.assert_almost_equal(tau[:, 0], np.array((10.47494692, 0)))
@@ -179,9 +173,7 @@ def test_time_constraint(ode_solver, phase_dynamics):
 
     elif ode_solver == OdeSolver.RK4:
         # Check objective function value
-        f = np.array(sol.cost)
-        npt.assert_equal(f.shape, (1, 1))
-        npt.assert_almost_equal(f[0, 0], 39.593354247030085)
+        TestUtils.assert_objective_value(sol=sol, expected_value=39.593354247030085)
 
         # initial and final controls
         npt.assert_almost_equal(tau[:, 0], np.array((6.28713595, 0)))
@@ -197,16 +189,16 @@ def test_time_constraint(ode_solver, phase_dynamics):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 def test_monophase_time_constraint(ode_solver, phase_dynamics):
     # Load time_constraint
-    from bioptim.examples.optimal_time_ocp import multiphase_time_constraint as ocp_module
+    from bioptim.examples.toy_examples.optimal_time_ocp import multiphase_time_constraint as ocp_module
 
     # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.RK8:
         return
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
         final_time=(2, 5, 4),
         time_min=(1, 3, 0.1),
         time_max=(2, 4, 0.8),
@@ -218,9 +210,7 @@ def test_monophase_time_constraint(ode_solver, phase_dynamics):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 10826.616, decimal=3)
+    TestUtils.assert_objective_value(sol=sol, expected_value=10826.616, decimal=3)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -262,16 +252,16 @@ def test_monophase_time_constraint(ode_solver, phase_dynamics):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 def test_multiphase_time_constraint(ode_solver, phase_dynamics):
     # Load time_constraint
-    from bioptim.examples.optimal_time_ocp import multiphase_time_constraint as ocp_module
+    from bioptim.examples.toy_examples.optimal_time_ocp import multiphase_time_constraint as ocp_module
 
     # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
         return
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
         final_time=(2, 5, 4),
         time_min=(1, 3, 0.1),
         time_max=(2, 4, 0.8),
@@ -283,9 +273,7 @@ def test_multiphase_time_constraint(ode_solver, phase_dynamics):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 53441.6, decimal=1)
+    TestUtils.assert_objective_value(sol=sol, expected_value=53441.6, decimal=1)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -333,16 +321,16 @@ def test_multiphase_time_constraint(ode_solver, phase_dynamics):
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 def test_multiphase_time_constraint_with_phase_time_equality(ode_solver, phase_dynamics):
     # Load time_constraint
-    from bioptim.examples.optimal_time_ocp import multiphase_time_constraint as ocp_module
+    from bioptim.examples.toy_examples.optimal_time_ocp import multiphase_time_constraint as ocp_module
 
     # For reducing time phase_dynamics == PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
         return
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
         final_time=(2, 5, 4),
         time_min=(0.7, 3, 0.1),
         time_max=(2, 4, 1),
@@ -361,7 +349,7 @@ def test_multiphase_time_constraint_with_phase_time_equality(ode_solver, phase_d
     # Check constraints
     g = np.array(sol.constraints)
     if ode_solver == OdeSolver.COLLOCATION:
-        npt.assert_almost_equal(f[0, 0], 53463.26239909639)
+        TestUtils.assert_objective_value(sol=sol, expected_value=53463.26239909639)
         npt.assert_equal(g.shape, (421 * 5 + 22, 1))
         npt.assert_almost_equal(
             g,
@@ -371,7 +359,7 @@ def test_multiphase_time_constraint_with_phase_time_equality(ode_solver, phase_d
             decimal=6,
         )
     else:
-        npt.assert_almost_equal(f[0, 0], 53463.26240909248, decimal=1)
+        TestUtils.assert_objective_value(sol=sol, expected_value=53463.26240909248, decimal=1)
         npt.assert_equal(g.shape, (447, 1))
         npt.assert_almost_equal(
             g,
@@ -410,7 +398,7 @@ def partial_ocp_parameters(n_phases, phase_dynamics):
     if n_phases != 1 and n_phases != 3:
         raise RuntimeError("n_phases should be 1 or 3")
 
-    biorbd_model_path = TestUtils.bioptim_folder() + "/examples/optimal_time_ocp/models/cube.bioMod"
+    biorbd_model_path = TestUtils.bioptim_folder() + "/examples/models/cube.bioMod"
     bio_model = (
         TorqueBiorbdModel(biorbd_model_path),
         TorqueBiorbdModel(biorbd_model_path),

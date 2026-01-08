@@ -9,10 +9,9 @@ from ..utils import TestUtils
 
 
 def test_model_holonomic():
-    from bioptim.examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
-    biorbd_model_path = bioptim_folder + "/models/triple_pendulum.bioMod"
+    bioptim_folder = TestUtils.bioptim_folder()
+    biorbd_model_path = bioptim_folder + "/examples/models/triple_pendulum.bioMod"
     model = HolonomicBiorbdModel(biorbd_model_path)
 
     holonomic_constrains = HolonomicConstraintsList()
@@ -196,13 +195,13 @@ def test_model_holonomic():
 
 def test_example_two_pendulums():
     """Test the holonomic_constraints/two_pendulums example"""
-    from bioptim.examples.holonomic_constraints import two_pendulums
+    from bioptim.examples.toy_examples.holonomic_constraints import two_pendulums
 
-    bioptim_folder = TestUtils.module_folder(two_pendulums)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     # --- Prepare the ocp --- #
     ocp, model = two_pendulums.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/two_pendulums.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/two_pendulums.bioMod",
         n_shooting=10,
         final_time=1,
         expand_dynamics=False,
@@ -224,16 +223,16 @@ def test_example_two_pendulums():
 
 def test_example_two_pendulums_algebraic():
     """Test the holonomic_constraints/two_pendulums_algebraic example"""
-    from bioptim.examples.holonomic_constraints import two_pendulums_algebraic
+    from bioptim.examples.toy_examples.holonomic_constraints import two_pendulums_algebraic
 
     if platform.system() == "Windows":
         pytest.skip("This test is skipped on Windows because too sensitive.")
 
-    bioptim_folder = TestUtils.module_folder(two_pendulums_algebraic)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     # --- Prepare the ocp --- #
     ocp, model = two_pendulums_algebraic.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/two_pendulums.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/two_pendulums.bioMod",
         n_shooting=5,
         final_time=1,
         expand_dynamics=False,
@@ -380,5 +379,253 @@ def test_example_two_pendulums_algebraic():
                 ],
             ]
         ),
+        decimal=6,
+    )
+
+
+def test_example_three_bar():
+    """Test the holonomic_constraints/three_bar example"""
+    from bioptim.examples.toy_examples.holonomic_constraints import three_bar
+
+    bioptim_folder = TestUtils.bioptim_folder()
+
+    # --- Prepare the ocp --- #
+    ocp, model = three_bar.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/examples/models/3bar.bioMod",
+        n_shooting=10,
+        final_time=1,
+        expand_dynamics=False,
+    )
+
+    # --- Solve the ocp --- #
+    sol = ocp.solve(Solver.IPOPT())
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+
+    npt.assert_almost_equal(
+        states["q_u"],
+        [
+            [
+                1.3,
+                1.28112296,
+                1.22535242,
+                1.13876849,
+                1.02751913,
+                0.89519494,
+                0.74384486,
+                0.57524378,
+                0.39190694,
+                0.19799513,
+                0.0,
+            ]
+        ],
+        decimal=6,
+    )
+
+
+def test_example_four_bar():
+    """Test the holonomic_constraints/four_bar example"""
+    from bioptim.examples.toy_examples.holonomic_constraints import four_bar
+
+    bioptim_folder = TestUtils.bioptim_folder()
+
+    # --- Prepare the ocp --- #
+    ocp, model = four_bar.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/examples/models/4bar.bioMod",
+        n_shooting=30,
+        final_time=1,
+        expand_dynamics=False,
+    )
+
+    # --- Solve the ocp --- #
+    sol = ocp.solve(Solver.IPOPT())
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+
+    npt.assert_almost_equal(
+        states["q_u"],
+        [
+            [
+                0.77,
+                0.76754753,
+                0.76031326,
+                0.74858082,
+                0.73266023,
+                0.71288935,
+                0.6896361,
+                0.66330062,
+                0.63432063,
+                0.60319444,
+                0.5705717,
+                0.53750942,
+                0.50529314,
+                0.47306849,
+                0.4387326,
+                0.39365688,
+                0.33550945,
+                0.2727274,
+                0.20440837,
+                0.13396314,
+                0.06433518,
+                -0.00455076,
+                -0.07445804,
+                -0.1471207,
+                -0.22344713,
+                -0.30363321,
+                -0.38765837,
+                -0.47567902,
+                -0.56818751,
+                -0.66598663,
+                -0.77,
+            ],
+            [
+                0.0,
+                -0.0020824,
+                -0.00821695,
+                -0.01830149,
+                -0.03236938,
+                -0.05048038,
+                -0.0726346,
+                -0.09875238,
+                -0.1287542,
+                -0.16275482,
+                -0.20132215,
+                -0.24535886,
+                -0.29370214,
+                -0.33909243,
+                -0.37268925,
+                -0.39294823,
+                -0.40355002,
+                -0.39595389,
+                -0.37802695,
+                -0.35578337,
+                -0.32816605,
+                -0.29365283,
+                -0.25313732,
+                -0.20969424,
+                -0.16682135,
+                -0.12698646,
+                -0.09139836,
+                -0.0605062,
+                -0.03456109,
+                -0.01404837,
+                0.0,
+            ],
+        ],
+        decimal=6,
+    )
+
+
+def test_example_two_pendulums_2constraint_4DOF():
+    """Test the holonomic_constraints/two_pendulums example"""
+    from bioptim.examples.toy_examples.holonomic_constraints import two_pendulums_2constraint_4DOF
+
+    bioptim_folder = TestUtils.bioptim_folder()
+
+    # --- Prepare the ocp --- #
+    ocp, model = two_pendulums_2constraint_4DOF.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/examples/models/two_pendulums.bioMod",
+        n_shooting=10,
+        final_time=1,
+        expand_dynamics=False,
+    )
+
+    # --- Solve the ocp --- #
+    sol = ocp.solve(Solver.IPOPT())
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+
+    npt.assert_almost_equal(
+        states["q_u"],
+        [
+            [
+                -0.5,
+                -0.47400031,
+                -0.40886377,
+                -0.31068409,
+                -0.18888455,
+                -0.05543956,
+                0.07635419,
+                0.19339095,
+                0.28422433,
+                0.34019268,
+                0.35608811,
+            ]
+        ],
+        decimal=6,
+    )
+
+
+def test_example_two_pendulums_2constraint():
+    """Test the holonomic_constraints/two_pendulums example"""
+    from bioptim.examples.toy_examples.holonomic_constraints import two_pendulums_2constraint
+
+    bioptim_folder = TestUtils.bioptim_folder()
+
+    # --- Prepare the ocp --- #
+    ocp, model = two_pendulums_2constraint.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/examples/models/two_pendulums_2.bioMod",
+        n_shooting=10,
+        final_time=1,
+        expand_dynamics=False,
+    )
+
+    # --- Solve the ocp --- #
+    sol = ocp.solve(Solver.IPOPT())
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+
+    npt.assert_almost_equal(
+        states["q_u"],
+        [
+            [
+                -0.5,
+                -0.47400672,
+                -0.39832961,
+                -0.28240044,
+                -0.14064867,
+                0.01147023,
+                0.15989866,
+                0.29301816,
+                0.40093225,
+                0.47362475,
+                0.5,
+            ]
+        ],
+        decimal=6,
+    )
+
+
+def test_example_two_pendulums_rotule():
+    """Test the holonomic_constraints/two_pendulums example"""
+    from bioptim.examples.toy_examples.holonomic_constraints import two_pendulums_rotule
+
+    bioptim_folder = TestUtils.bioptim_folder()
+
+    # --- Prepare the ocp --- #
+    ocp, model = two_pendulums_rotule.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/examples/models/two_pendulums_rotule.bioMod",
+        n_shooting=10,
+        final_time=1,
+        expand_dynamics=False,
+    )
+
+    # --- Solve the ocp --- #
+    sol = ocp.solve(Solver.IPOPT())
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+
+    npt.assert_almost_equal(
+        states["q_u"],
+        [
+            [
+                0.52359878,
+                0.49719372,
+                0.41660698,
+                0.28429009,
+                0.10904561,
+                -0.09605531,
+                -0.31061947,
+                -0.50569474,
+                -0.65398428,
+                -0.74758078,
+                -0.78539816,
+            ]
+        ],
         decimal=6,
     )

@@ -15,12 +15,12 @@ from tests.utils import TestUtils
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_track_segment_on_rt(ode_solver, phase_dynamics):
-    from bioptim.examples.track import track_segment_on_rt as ocp_module
+    from bioptim.examples.toy_examples.tracking import track_segment_on_rt as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube_and_line.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cube_and_line.bioMod",
         final_time=0.5,
         n_shooting=8,
         ode_solver=ode_solver(),
@@ -30,9 +30,7 @@ def test_track_segment_on_rt(ode_solver, phase_dynamics):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 197120.95524154368)
+    TestUtils.assert_objective_value(sol=sol, expected_value=197120.95524154368)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -61,12 +59,12 @@ def test_track_segment_on_rt(ode_solver, phase_dynamics):
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_track_marker_on_segment(ode_solver, phase_dynamics):
-    from bioptim.examples.track import track_marker_on_segment as ocp_module
+    from bioptim.examples.toy_examples.tracking import track_marker_on_segment as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube_and_line.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/cube_and_line.bioMod",
         final_time=0.5,
         n_shooting=8,
         initialize_near_solution=True,
@@ -88,9 +86,7 @@ def test_track_marker_on_segment(ode_solver, phase_dynamics):
     sol = ocp.solve()
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 42127.04677760122)
+    TestUtils.assert_objective_value(sol=sol, expected_value=42127.04677760122)
 
     # Check constraints
     g = np.array(sol.constraints)

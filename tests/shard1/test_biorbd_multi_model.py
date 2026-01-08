@@ -1,5 +1,3 @@
-import os
-
 from bioptim import MultiBiorbdModel, BiMappingList, BoundsList
 import biorbd_casadi as biorbd
 import numpy as np
@@ -11,11 +9,10 @@ from ..utils import TestUtils
 
 
 def test_biorbd_model_import():
-    from bioptim.examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
-    biorbd_model_path = "/models/triple_pendulum.bioMod"
-    biorbd_model_path_modified_inertia = "/models/triple_pendulum_modified_inertia.bioMod"
+    bioptim_folder = TestUtils.bioptim_folder()
+    biorbd_model_path = "/examples/models/triple_pendulum.bioMod"
+    biorbd_model_path_modified_inertia = "/examples/models/triple_pendulum_modified_inertia.bioMod"
     MultiBiorbdModel((bioptim_folder + biorbd_model_path, bioptim_folder + biorbd_model_path_modified_inertia))
 
     MultiBiorbdModel(
@@ -33,11 +30,11 @@ def test_biorbd_model_import():
 
 # TODO: test all cases with models containing at least on element (muscles, contacts, ...)
 def test_biorbd_model():
-    from bioptim.examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
+    from bioptim.examples.toy_examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
-    biorbd_model_path = "/models/triple_pendulum.bioMod"
-    biorbd_model_path_modified_inertia = "/models/triple_pendulum_modified_inertia.bioMod"
+    bioptim_folder = TestUtils.bioptim_folder()
+    biorbd_model_path = "/examples/models/triple_pendulum.bioMod"
+    biorbd_model_path_modified_inertia = "/examples/models/triple_pendulum_modified_inertia.bioMod"
     models = MultiBiorbdModel(
         bio_model=(bioptim_folder + biorbd_model_path, bioptim_folder + biorbd_model_path_modified_inertia),
         extra_bio_models=(
@@ -63,7 +60,7 @@ def test_biorbd_model():
     assert models.nb_models == 2
     assert models.nb_extra_models == 3
 
-    assert models.name_dof == ("Seg1_RotX", "Seg2_RotX", "Seg3_RotX", "Seg1_RotX", "Seg2_RotX", "Seg3_RotX")
+    assert models.name_dofs == ("Seg1_RotX", "Seg2_RotX", "Seg3_RotX", "Seg1_RotX", "Seg2_RotX", "Seg3_RotX")
     assert models.rigid_contact_names == ()
     assert models.soft_contact_names == ()
     assert models.marker_names == (

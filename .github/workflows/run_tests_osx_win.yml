@@ -33,6 +33,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Checkout submodules
+        if: matrix.shard == 1
+        run: git submodule update --init --recursive
+
       - name: Setup environment
         uses: conda-incubator/setup-miniconda@v3
         with:
@@ -46,7 +50,7 @@ jobs:
           conda list
 
       - name: Install extra dependencies
-        run: conda install pytest-cov black pytest pytest-cov codecov packaging -cconda-forge
+        run: conda install pip pytest-cov black pytest pytest-cov codecov packaging -cconda-forge
 
       - name: Install ACADOS on Mac
         run: |
@@ -58,7 +62,7 @@ jobs:
 
       - name: Test installed version of bioptim
         run: |
-          python setup.py install
+          pip install .
           cd
           python -c "import bioptim"
         if: matrix.shard == 1

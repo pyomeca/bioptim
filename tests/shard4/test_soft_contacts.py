@@ -8,14 +8,14 @@ from ..utils import TestUtils
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_soft_contact(phase_dynamics):
-    from bioptim.examples.torque_driven_ocp import example_soft_contact as ocp_module
+    from bioptim.examples.toy_examples.torque_driven_ocp import example_soft_contact as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ode_solver = OdeSolver.RK8()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/soft_contact_sphere.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/soft_contact_sphere.bioMod",
         final_time=0.37,
         n_shooting=37,
         n_threads=8 if phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else 1,
@@ -34,9 +34,9 @@ def test_soft_contact(phase_dynamics):
     f = np.array(sol.cost)
     npt.assert_equal(f.shape, (1, 1))
     if isinstance(ode_solver, OdeSolver.RK8):
-        npt.assert_almost_equal(f[0, 0], 23.679065887950486)
+        TestUtils.assert_objective_value(sol=sol, expected_value=23.679065887950486)
     else:
-        npt.assert_almost_equal(f[0, 0], 41.58259426)
+        TestUtils.assert_objective_value(sol=sol, expected_value=41.58259426)
 
     # Check constraints
     g = np.array(sol.constraints)

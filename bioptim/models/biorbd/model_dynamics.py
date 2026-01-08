@@ -48,9 +48,17 @@ class TorqueBiorbdModel(BiorbdModel, TorqueDynamics):
         external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None,
         contact_types: list[ContactType] | tuple[ContactType] = (),
         fatigue: FatigueList = None,
+        **kwargs,
     ):
-        BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set, contact_types)
-        TorqueDynamics.__init__(self, fatigue)
+        super().__init__(
+            bio_model=bio_model,
+            friction_coefficients=friction_coefficients,
+            parameters=parameters,
+            external_force_set=external_force_set,
+            contact_types=contact_types,
+            fatigue=fatigue,
+            **kwargs,
+        )
 
     def serialize(self) -> tuple[Callable, dict]:
         return TorqueBiorbdModel, dict(
@@ -79,35 +87,46 @@ class StochasticTorqueBiorbdModel(StochasticBiorbdModel, StochasticTorqueDynamic
         use_sx: Bool = False,
         parameters: ParameterList = None,
         friction_coefficients: NpArray = None,
+        **kwargs,
     ):
-        StochasticBiorbdModel.__init__(
-            self,
-            bio_model,
-            problem_type,
-            n_references,
-            n_feedbacks,
-            n_noised_states,
-            n_noised_controls,
-            sensory_noise_magnitude,
-            motor_noise_magnitude,
-            sensory_reference,
-            compute_torques_from_noise_and_feedback,
-            motor_noise_mapping,
-            use_sx,
-            parameters,
-            friction_coefficients,
-        )
+        if isinstance(bio_model, str):
+            bio_model = biorbd.Model(bio_model)
 
-        if "tau" in self.motor_noise_mapping:
-            n_noised_tau = len(self.motor_noise_mapping["tau"].to_first.map_idx)
-        else:
-            n_noised_tau = self.nb_tau
-        n_noise = self.motor_noise_magnitude.shape[0] + self.sensory_noise_magnitude.shape[0]
-        n_noised_states = 2 * n_noised_tau
-
-        StochasticTorqueDynamics.__init__(
-            self, problem_type, with_cholesky, n_noised_tau, n_noise, n_noised_states, n_references
+        n_noised_tau = (
+            len(motor_noise_mapping["tau"].to_first.map_idx)
+            if "tau" in motor_noise_mapping
+            else bio_model.nbGeneralizedTorque()
         )
+        n_noise = motor_noise_magnitude.shape[0] + sensory_noise_magnitude.shape[0]
+        self._is_initialized = False
+
+        super().__init__(
+            bio_model=bio_model,
+            problem_type=problem_type,
+            n_references=n_references,
+            n_feedbacks=n_feedbacks,
+            n_noised_states=n_noised_states,
+            n_noised_controls=n_noised_controls,
+            sensory_noise_magnitude=sensory_noise_magnitude,
+            motor_noise_magnitude=motor_noise_magnitude,
+            sensory_reference=sensory_reference,
+            compute_torques_from_noise_and_feedback=compute_torques_from_noise_and_feedback,
+            motor_noise_mapping=motor_noise_mapping,
+            use_sx=use_sx,
+            parameters=parameters,
+            friction_coefficients=friction_coefficients,
+            with_cholesky=with_cholesky,
+            n_noised_tau=n_noised_tau,
+            n_noise=n_noise,
+            **kwargs,
+        )
+        self._is_initialized = True
+
+    @property
+    def n_noised_states(self):
+        # StochasticBiorbdModel needs the initial value when declaring the StochaticBiorbdModel to declare the evolution matrices,
+        # but it needs the 2*n_noised_tau for StochasticTorqueDynamics after initialization. So we override them after the super() call.
+        return 2 * self.n_noised_tau if self._is_initialized else super().n_noised_states
 
     def serialize(self) -> tuple[Callable, dict]:
         return StochasticTorqueBiorbdModel, dict(bio_model=self.path, friction_coefficients=self.friction_coefficients)
@@ -143,7 +162,12 @@ class VariationalTorqueBiorbdModel(VariationalBiorbdModel, VariationalTorqueDyna
         holonomic_constraints: HolonomicConstraintsList | None = None,
     ):
         VariationalBiorbdModel.__init__(
-            self, bio_model, discrete_approximation, control_type, control_discrete_approximation, parameters
+            self,
+            bio_model=bio_model,
+            discrete_approximation=discrete_approximation,
+            control_type=control_type,
+            control_discrete_approximation=control_discrete_approximation,
+            parameters=parameters,
         )
         if holonomic_constraints is not None:
             # TODO: @ipuch -> add partitioning one day
@@ -162,9 +186,16 @@ class TorqueFreeFloatingBaseBiorbdModel(BiorbdModel, TorqueFreeFloatingBaseDynam
         parameters: ParameterList = None,
         external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None,
         contact_types: list[ContactType] | tuple[ContactType] = (),
+        **kwargs,
     ):
-        BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set, contact_types)
-        TorqueFreeFloatingBaseDynamics.__init__(self)
+        super().__init__(
+            bio_model=bio_model,
+            friction_coefficients=friction_coefficients,
+            parameters=parameters,
+            external_force_set=external_force_set,
+            contact_types=contact_types,
+            **kwargs,
+        )
 
     def serialize(self) -> tuple[Callable, dict]:
         return TorqueFreeFloatingBaseBiorbdModel, dict(
@@ -239,9 +270,18 @@ class TorqueActivationBiorbdModel(BiorbdModel, TorqueActivationDynamics):
         external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None,
         contact_types: list[ContactType] | tuple[ContactType] = (),
         fatigue: FatigueList = None,
+        **kwargs,
     ):
-        BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set, contact_types)
-        TorqueActivationDynamics.__init__(self, with_residual_torque, fatigue)
+        super().__init__(
+            bio_model=bio_model,
+            friction_coefficients=friction_coefficients,
+            parameters=parameters,
+            external_force_set=external_force_set,
+            contact_types=contact_types,
+            with_residual_torque=with_residual_torque,
+            fatigue=fatigue,
+            **kwargs,
+        )
 
     def serialize(self) -> tuple[Callable, dict]:
         return TorqueActivationBiorbdModel, dict(
@@ -261,9 +301,17 @@ class TorqueDerivativeBiorbdModel(BiorbdModel, TorqueDerivativeDynamics):
         external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None,
         contact_types: list[ContactType] | tuple[ContactType] = (),
         fatigue: FatigueList = None,
+        **kwargs,
     ):
-        BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set, contact_types)
-        TorqueDerivativeDynamics.__init__(self, fatigue)
+        super().__init__(
+            bio_model=bio_model,
+            friction_coefficients=friction_coefficients,
+            parameters=parameters,
+            external_force_set=external_force_set,
+            contact_types=contact_types,
+            fatigue=fatigue,
+            **kwargs,
+        )
 
     def serialize(self) -> tuple[Callable, dict]:
         return TorqueDerivativeBiorbdModel, dict(
@@ -284,9 +332,18 @@ class MusclesBiorbdModel(BiorbdModel, MusclesDynamics):
         external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None,
         contact_types: list[ContactType] | tuple[ContactType] = (),
         fatigue: FatigueList = None,
+        **kwargs,
     ):
-        BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set, contact_types)
-        MusclesDynamics.__init__(self, with_residual_torque, fatigue)
+        super().__init__(
+            bio_model=bio_model,
+            friction_coefficients=friction_coefficients,
+            parameters=parameters,
+            external_force_set=external_force_set,
+            contact_types=contact_types,
+            with_residual_torque=with_residual_torque,
+            fatigue=fatigue,
+            **kwargs,
+        )
 
     def serialize(self) -> tuple[Callable, dict]:
         return MusclesBiorbdModel, dict(
@@ -307,9 +364,18 @@ class MusclesWithExcitationsBiorbdModel(BiorbdModel, MusclesDynamicsWithExcitati
         external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None,
         contact_types: list[ContactType] | tuple[ContactType] = (),
         fatigue: FatigueList = None,
+        **kwargs,
     ):
-        BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set, contact_types)
-        MusclesDynamicsWithExcitations.__init__(self, with_residual_torque, fatigue)
+        super().__init__(
+            bio_model=bio_model,
+            friction_coefficients=friction_coefficients,
+            parameters=parameters,
+            external_force_set=external_force_set,
+            contact_types=contact_types,
+            with_residual_torque=with_residual_torque,
+            fatigue=fatigue,
+            **kwargs,
+        )
 
     def serialize(self) -> tuple[Callable, dict]:
         return MusclesWithExcitationsBiorbdModel, dict(
@@ -328,9 +394,16 @@ class JointAccelerationBiorbdModel(BiorbdModel, JointAccelerationDynamics):
         parameters: ParameterList = None,
         external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None,
         contact_types: list[ContactType] | tuple[ContactType] = (),
+        **kwargs,
     ):
-        BiorbdModel.__init__(self, bio_model, friction_coefficients, parameters, external_force_set, contact_types)
-        JointAccelerationDynamics.__init__(self)
+        super().__init__(
+            bio_model=bio_model,
+            friction_coefficients=friction_coefficients,
+            parameters=parameters,
+            external_force_set=external_force_set,
+            contact_types=contact_types,
+            **kwargs,
+        )
 
     def serialize(self) -> tuple[Callable, dict]:
         return JointAccelerationBiorbdModel, dict(
@@ -346,9 +419,9 @@ class MultiTorqueBiorbdModel(MultiBiorbdModel, TorqueDynamics):
         self,
         bio_model: Str | biorbd.Model,
         extra_bio_models: tuple[str | biorbd.Model | BiorbdModel, ...] = (),
+        **kwargs,
     ):
-        MultiBiorbdModel.__init__(self, bio_model, extra_bio_models)
-        TorqueDynamics.__init__(self)
+        super().__init__(bio_model=bio_model, extra_bio_models=extra_bio_models, **kwargs)
 
     def serialize(self) -> tuple[Callable, dict]:
         return MultiTorqueBiorbdModel, dict(bio_model=self.path)

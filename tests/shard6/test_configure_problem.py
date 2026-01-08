@@ -54,7 +54,7 @@ def test_configures(cx):
     ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
 
     nlp.model = TorqueBiorbdModel(
-        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod",
+        TestUtils.bioptim_folder() + "/examples/models/2segments_4dof_2contacts.bioMod",
     )
 
     # We start with empty OptimizationVariableContainers (states, controls, algebraic states) and then fill them with the appropriate variables
@@ -101,9 +101,7 @@ def test_configures(cx):
     npt.assert_equal(nlp.states_dot.shape, n_states)
     npt.assert_equal(nlp.states_dot.keys(), keys_states)
 
-    ConfigureVariables.configure_stochastic_k(
-        ocp, nlp, n_noised_controls=4, n_references=8, as_states=False, as_controls=True, as_algebraic_states=False
-    )
+    ConfigureVariables.configure_stochastic_k(ocp, nlp, n_noised_controls=4, n_references=8)
     n_controls += 32
     keys_controls += ["k"]
     npt.assert_equal(nlp.controls.shape, n_controls)
@@ -170,7 +168,7 @@ def test_configure_soft_contacts(cx):
     ocp = OptimalControlProgram(nlp, use_sx=(cx == SX))
 
     nlp.model = TorqueBiorbdModel(
-        TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/soft_contact_sphere.bioMod",
+        TestUtils.bioptim_folder() + "/examples/models/soft_contact_sphere.bioMod",
     )
 
     ConfigureVariables.configure_soft_contact_forces(
@@ -195,7 +193,7 @@ def test_configure_muscles(cx):
     fatigue.add(XiaFatigue(LD=10, LR=10, F=0.01, R=0.002), state_only=False)
 
     nlp.model = MusclesBiorbdModel(
-        TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26.bioMod",
+        TestUtils.bioptim_folder() + "/examples/models/arm26.bioMod",
         fatigue=fatigue,
     )
 

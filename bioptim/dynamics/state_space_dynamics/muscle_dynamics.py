@@ -18,18 +18,15 @@ class MusclesDynamics(TorqueDynamics):
     u = [muscles, tau (if with_residual_torque)]
     """
 
-    def __init__(self, with_residual_torque: Bool, fatigue: FatigueList = None):
-        super().__init__(fatigue)
-
-        self.state_configuration = [States.Q, States.QDOT]
-
-        self.control_configuration = [Controls.MUSCLE_EXCITATION]
-        if with_residual_torque:
-            self.control_configuration = [Controls.TAU, Controls.MUSCLE_EXCITATION]
-
-        self.algebraic_configuration = []
-        self.functions = []
+    def __init__(self, with_residual_torque: Bool, fatigue: FatigueList = None, **kwargs):
+        super().__init__(fatigue=fatigue, **kwargs)
         self.with_residual_torque = with_residual_torque
+
+    @property
+    def control_configuration_functions(self):
+        if self.with_residual_torque:
+            return super().control_configuration_functions + [Controls.MUSCLE_EXCITATION]
+        return [Controls.MUSCLE_EXCITATION]
 
     def get_basic_variables(
         self,

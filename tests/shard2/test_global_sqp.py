@@ -12,12 +12,12 @@ from ..utils import TestUtils
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_pendulum(phase_dynamics):
-    from bioptim.examples.sqp_method import pendulum as ocp_module
+    from bioptim.examples.toy_examples.sqp_method import pendulum as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
+    bioptim_folder = TestUtils.bioptim_folder()
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        biorbd_model_path=bioptim_folder + "/examples/models/pendulum.bioMod",
         final_time=1,
         n_shooting=5,
         phase_dynamics=phase_dynamics,
@@ -32,12 +32,7 @@ def test_pendulum(phase_dynamics):
     sol = ocp.solve(solver)
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-
-    npt.assert_almost_equal(f[0, 0], 124.90212482956895)
-    # detailed cost values
-    npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 124.90212482956895)
+    TestUtils.assert_objective_value(sol=sol, expected_value=124.90212482956895)
 
     # Check some of the results
     states = sol.decision_states(to_merge=SolutionMerge.NODES)

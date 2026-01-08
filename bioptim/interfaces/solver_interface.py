@@ -1,8 +1,4 @@
-from ..misc.parameters_types import (
-    Bool,
-    AnyDict,
-    AnyListorDict,
-)
+from ..misc.parameters_types import Bool, AnyDict, AnyListorDict
 
 
 class SolverInterface:
@@ -46,6 +42,13 @@ class SolverInterface:
         self.solver = None
         self.out = {}
 
+        # This is to perform long preparation only once (if not changed)
+        self.pre_shake_tree_objectives = None
+        self.shaked_objectives = None
+        self.pre_shake_tree_constraints = None
+        self.shaked_constraints = None
+        self.shaked_ocp_solver = None
+
     def configure(self, **options):
         """
         Set some options
@@ -54,6 +57,13 @@ class SolverInterface:
         ----------
         options: dict
             The dictionary of options
+        """
+
+        raise RuntimeError("SolverInterface is an abstract class")
+
+    def show_constraints_jacobian_sparsity(self):
+        """
+        Show the sparsity of the constraints jacobian
         """
 
         raise RuntimeError("SolverInterface is an abstract class")

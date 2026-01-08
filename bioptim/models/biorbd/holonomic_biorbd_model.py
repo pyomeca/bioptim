@@ -32,8 +32,11 @@ class HolonomicBiorbdModel(BiorbdModel):
         bio_model: Str | biorbd.Model,
         friction_coefficients: NpArray = None,
         parameters: ParameterList = None,
+        **kwargs,
     ):
-        super().__init__(bio_model, friction_coefficients, parameters)
+        super().__init__(
+            bio_model=bio_model, friction_coefficients=friction_coefficients, parameters=parameters, **kwargs
+        )
         self._newton_tol = 1e-10
         self._holonomic_constraints = []
         self._holonomic_constraints_jacobians = []

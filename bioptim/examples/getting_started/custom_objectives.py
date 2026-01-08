@@ -7,8 +7,6 @@ sufficient.
 More specifically this example reproduces the behavior of the Mayer.SUPERIMPOSE_MARKERS objective function.
 """
 
-import platform
-
 from casadi import MX
 from bioptim import (
     TorqueBiorbdModel,
@@ -23,7 +21,9 @@ from bioptim import (
     PenaltyController,
     Solver,
     PhaseDynamics,
+    OnlineOptim,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def custom_func_track_markers(controller: PenaltyController, first_marker: str, second_marker: str) -> MX:
@@ -151,14 +151,14 @@ def main():
     Solve and animate the solution
     """
 
-    model_path = "models/cube.bioMod"
+    model_path = ExampleUtils.folder + "/models/cube.bioMod"
     ocp = prepare_ocp(biorbd_model_path=model_path)
 
     # Custom plots
     ocp.add_plot_penalty()
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
 
     # --- Show results --- #
     sol.animate()

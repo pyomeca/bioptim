@@ -26,34 +26,29 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
     ConfigureVariables,
+    StateDynamics,
 )
 
 
-class NonControlledMethod:
+class NonControlledMethod(StateDynamics):
     """
     This is a custom model that inherits from bioptim.CustomModel
     As CustomModel is an abstract class, some methods must be implemented.
     """
 
-    def __init__(self, name: str = None):
+    def __init__(self, name: str = None, **kwargs):
+        super().__init__(**kwargs)
         self.a = 0
         self.b = 0
         self.c = 0
         self._name = name
 
-        self.state_configuration = []
-        self.control_configuration = []
-        self.algebraic_configuration = []
-        self.extra_dynamic = None
-        self.functions = [self.declare_variables]
-
-    def serialize(self) -> tuple[Callable, dict]:
-        # This is where you can serialize your model
-        # This is useful if you want to save your model and load it later
-        return NonControlledMethod, dict()
+    @property
+    def name(self):
+        return self._name
 
     @property
-    def name_dof(self) -> list[str]:
+    def name_dofs(self) -> list[str]:
         return ["a", "b", "c"]
 
     @property
@@ -61,8 +56,20 @@ class NonControlledMethod:
         return 3
 
     @property
-    def name(self):
-        return self._name
+    def state_configuration_functions(self) -> list[Callable]:
+        return []
+
+    @property
+    def control_configuration_functions(self) -> list[Callable]:
+        return []
+
+    @property
+    def algebraic_configuration_functions(self) -> list[Callable]:
+        return []
+
+    @property
+    def extra_configuration_functions(self) -> list[Callable]:
+        return [lambda ocp, nlp: self.declare_variables(ocp, nlp)]
 
     def system_dynamics(
         self,
@@ -257,9 +264,7 @@ def test_main_control_type_none(use_sx, phase_dynamics):
     sol = ocp.solve(Solver.IPOPT())
 
     # Check objective function value
-    f = np.array(sol.cost)
-    npt.assert_equal(f.shape, (1, 1))
-    npt.assert_almost_equal(f[0, 0], 0.2919065990591678)
+    TestUtils.assert_objective_value(sol=sol, expected_value=0.2919065990591678)
 
     # Check finishing time
     times = [float(t[-1, 0]) for t in sol.decision_time(to_merge=SolutionMerge.NODES)]

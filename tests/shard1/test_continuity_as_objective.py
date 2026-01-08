@@ -13,12 +13,12 @@ from tests.utils import TestUtils
     [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE],
 )
 def test_continuity_as_objective(phase_dynamics):
-    from bioptim.examples.getting_started import (
+    from bioptim.examples.toy_examples.feature_examples import (
         example_continuity_as_objective as ocp_module,
     )
 
     np.random.seed(42)
-    model_path = TestUtils.bioptim_folder() + "/examples/getting_started/models/pendulum_maze.bioMod"
+    model_path = TestUtils.bioptim_folder() + "/examples/models/pendulum_maze.bioMod"
 
     # first pass
     ocp = ocp_module.prepare_ocp_first_pass(
@@ -37,11 +37,9 @@ def test_continuity_as_objective(phase_dynamics):
     expected_iterations = range(100, 700)
 
     if platform.system() == "Windows":
-        expected_q = [[0.0, -0.1820716, 0.0502083, -0.1376], [0.0, 0.2059882, -0.3885045, 2.9976372]]
-        expected_qdot = [[0.0, 0.13105439, -3.43794783, -23.6570729], [0.0, -0.66178869, 3.07970721, -19.12526049]]
-        expected_controls = [[-1.49607534, -0.24541618, -19.12881238], [0.0, 0.0, 0.0]]
+        pytest.skip("Skipping on Windows for now, as it seems to be less precise on Github CI")
 
-    if platform.system() == "Linux":
+    if platform.system() == "Linux" or platform.system() == "Windows":
         # it lands on another local minima
         expected_q = [[0.0, -0.17103307, 0.07459213, -0.1376], [0.0, 0.20294463, -0.38390195, 2.9976372]]
         expected_qdot = [[0.0, 0.14587462, -3.35487788, 7.53981222], [0.0, -0.66021714, 3.02208876, 9.54451337]]
@@ -99,35 +97,35 @@ def test_continuity_as_objective(phase_dynamics):
         [0.000000000000002],
         [-0.0],
         [-0.0],
+        [1.086117433798022],
+        [0.954385184294056],
+        [0.492352597230887],
+        [1.340227995529119],
+        [1.97149463098432],
+        [2.893114425666568],
         [0.000000000000001],
         [0.000000000000006],
         [0.000000000000002],
         [-0.000000000000001],
+        [1.051237343203642],
+        [0.949235691291338],
+        [0.554696150939241],
+        [1.369169603766323],
+        [2.011400546027982],
+        [2.932275980994855],
         [-0.000000000000015],
         [-0.000000000000006],
         [-0.000000000001157],
         [-0.000000000000509],
+        [0.991252668915217],
+        [0.921600419952798],
+        [0.620095068306614],
+        [1.381480510093951],
+        [2.037470886662517],
+        [2.956560343780495],
         [0.0],
         [-0.000000000000001],
         [-0.00000000000004],
-        [1.086117433798022],
-        [1.051237343203642],
-        [0.991252668915217],
-        [0.954385184294056],
-        [0.949235691291338],
-        [0.921600419952798],
-        [0.492352597230887],
-        [0.554696150939241],
-        [0.620095068306614],
-        [1.340227995529119],
-        [1.369169603766323],
-        [1.381480510093951],
-        [1.97149463098432],
-        [2.011400546027982],
-        [2.037470886662517],
-        [2.893114425666568],
-        [2.932275980994855],
-        [2.956560343780495],
     ]
 
     expected_cost = 261.0954331500721

@@ -13,10 +13,10 @@ from ..utils import TestUtils
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_double_pendulum_torque_driven_IOCP(phase_dynamics):
     # Load double pendulum ocp
-    from bioptim.examples.inverse_optimal_control import double_pendulum_torque_driven_IOCP as ocp_module
+    from bioptim.examples.toy_examples.inverse_optimal_control import double_pendulum_torque_driven_IOCP as ocp_module
 
-    bioptim_folder = TestUtils.module_folder(ocp_module)
-    biorbd_model_path = bioptim_folder + "/models/double_pendulum.bioMod"
+    bioptim_folder = TestUtils.bioptim_folder()
+    biorbd_model_path = bioptim_folder + "/examples/models/double_pendulum.bioMod"
 
     ocp = ocp_module.prepare_ocp(
         weights=[0.4, 0.3, 0.3],
@@ -41,6 +41,8 @@ def test_double_pendulum_torque_driven_IOCP(phase_dynamics):
     npt.assert_almost_equal(g, np.zeros((120, 1)))
 
     # Check objective function value
+    # TODO: restore assert_objective_value by fixing bug in Solution._get_penalty_cost on derivative=True objectives
+    # TestUtils.assert_objective_value(sol=sol, expected_value=12.0765913088802)
     f = np.array(sol.cost)
     npt.assert_equal(f.shape, (1, 1))
     npt.assert_almost_equal(f[0, 0], 12.0765913088802)
