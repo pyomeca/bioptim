@@ -1,7 +1,6 @@
 from time import perf_counter
 
-from casadi import Importer, Function
-from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, DM, reshape
+from casadi import Importer, Function, horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, DM, reshape, jacobian
 import numpy as np
 
 from .solver_interface import SolverInterface
@@ -64,6 +63,26 @@ def _vectors_are_equal(
     # We test the equality at three points (min, max, init) hoping any differences will be caught
     func = Function("equality", [v], [vector1 - vector2])
     return np.sum(func(v_init)) == 0.0 and np.sum(func(v_min)) == 0.0 and np.sum(func(v_max)) == 0.0
+
+
+def generic_show_constraints_jacobian_sparsity(interface: SolverInterface):
+    """
+    Show the sparsity of the constraints jacobian
+
+    Parameters
+    ----------
+    interface: SolverInterface
+        A reference to the current interface
+    """
+    import matplotlib.pyplot as plt
+
+    v = interface.ocp.variables_vector
+    v_bounds = interface.ocp.bounds_vectors
+    g = _shake_penalties_tree(interface.ocp, interface.dispatch_bounds()[0], v, v_bounds, False)
+
+    plt.spy(jacobian(g, v).sparsity())
+    plt.title("Constraint Jacobian Sparsity")
+    plt.show()
 
 
 def generic_solve(interface: SolverInterface, expand_during_shake_tree: Bool = False) -> AnyDict:
@@ -247,35 +266,53 @@ def generic_dispatch_bounds(interface, include_g: Bool, include_g_internal: Bool
         If the g_internal bounds should be included
     """
 
-    all_g = interface.ocp.cx()
-    all_g_bounds = Bounds("all_g", interpolation=InterpolationType.CONSTANT)
+    all_g_dict = {}
+    all_g_bounds_dict = {}
+
+    all_g_dict[-1] = interface.ocp.cx()
+    all_g_bounds_dict[-1] = Bounds("all_g", interpolation=InterpolationType.CONSTANT)
 
     if include_g_internal:
-        all_g = vertcat(all_g, interface.get_all_penalties(interface.ocp, interface.ocp.g_internal))
-        for g in interface.ocp.g_internal:
-            if g != []:
-                all_g_bounds.concatenate(g.bounds)
+        penalties, bounds = interface.get_all_penalties(interface.ocp, interface.ocp.g_internal, get_bounds=True)
+        for (_, node_penalty), node_bounds in zip(penalties.items(), bounds.values()):
+            all_g_dict[-1] = vertcat(all_g_dict[-1], node_penalty)
+            all_g_bounds_dict[-1].concatenate(node_bounds)
 
     if include_g:
-        all_g = vertcat(all_g, interface.get_all_penalties(interface.ocp, interface.ocp.g))
-        for g in interface.ocp.g:
-            if g != []:
-                all_g_bounds.concatenate(g.bounds)
+        penalties, bounds = interface.get_all_penalties(interface.ocp, interface.ocp.g, get_bounds=True)
+        for (_, node_penalty), node_bounds in zip(penalties.items(), bounds.values()):
+            all_g_dict[-1] = vertcat(all_g_dict[-1], node_penalty)
+            all_g_bounds_dict[-1].concatenate(node_bounds)
 
+    base_idx = 0
     for nlp in interface.ocp.nlp:
+        for i in range(nlp.ns + 1):
+            all_g_dict[base_idx + i] = interface.ocp.cx()
+            all_g_bounds_dict[base_idx + i] = Bounds(
+                f"g_phase{len(all_g_dict)}", interpolation=InterpolationType.CONSTANT
+            )
+
         if include_g_internal:
-            all_g = vertcat(all_g, interface.get_all_penalties(nlp, nlp.g_internal))
-            for g in nlp.g_internal:
-                if g != []:
-                    for _ in g.node_idx:
-                        all_g_bounds.concatenate(g.bounds)
+            penalties, bounds = interface.get_all_penalties(nlp, nlp.g_internal, get_bounds=True)
+            for (node_idx, node_penalty), node_bounds in zip(penalties.items(), bounds.values()):
+                all_g_dict[base_idx + node_idx] = vertcat(all_g_dict[base_idx + node_idx], node_penalty)
+                all_g_bounds_dict[base_idx + node_idx].concatenate(node_bounds)
 
         if include_g:
-            all_g = vertcat(all_g, interface.get_all_penalties(nlp, nlp.g))
-            for g in nlp.g:
-                if g != []:
-                    for _ in g.node_idx:
-                        all_g_bounds.concatenate(g.bounds)
+            penalties, bounds = interface.get_all_penalties(nlp, nlp.g, get_bounds=True)
+            for (node_idx, node_penalty), node_bounds in zip(penalties.items(), bounds.values()):
+                all_g_dict[base_idx + node_idx] = vertcat(all_g_dict[base_idx + node_idx], node_penalty)
+                all_g_bounds_dict[base_idx + node_idx].concatenate(node_bounds)
+
+        base_idx += nlp.ns + 1
+
+    all_g = interface.ocp.cx()
+    all_g_bounds = Bounds("all_g", interpolation=InterpolationType.CONSTANT)
+    keys = list(all_g_dict.keys())
+    keys.sort()
+    for key in keys:
+        all_g = vertcat(all_g, all_g_dict[key])
+        all_g_bounds.concatenate(all_g_bounds_dict[key])
 
     if isinstance(all_g_bounds.min, (SX, MX)) or isinstance(all_g_bounds.max, (SX, MX)):
         raise RuntimeError(f"{interface.solver_name} doesn't support SX/MX types in constraints bounds")
@@ -291,19 +328,37 @@ def generic_dispatch_obj_func(interface) -> CX:
     SX | MX
         The objective function
     """
+    all_J_dict = {}
 
-    all_objectives = interface.ocp.cx()
-    all_objectives = vertcat(all_objectives, interface.get_all_penalties(interface.ocp, interface.ocp.J_internal))
-    all_objectives = vertcat(all_objectives, interface.get_all_penalties([], interface.ocp.J))
+    all_J_dict[-1] = interface.ocp.cx()
+    for _, node_penalty in interface.get_all_penalties(interface.ocp, interface.ocp.J_internal).items():
+        all_J_dict[-1] = vertcat(all_J_dict[-1], node_penalty)
+    for _, node_penalty in interface.get_all_penalties([], interface.ocp.J).items():
+        all_J_dict[-1] = vertcat(all_J_dict[-1], node_penalty)
 
+    phase_node_counts = 0
     for nlp in interface.ocp.nlp:
-        all_objectives = vertcat(all_objectives, interface.get_all_penalties(nlp, nlp.J_internal))
-        all_objectives = vertcat(all_objectives, interface.get_all_penalties(nlp, nlp.J))
+        for i in range(nlp.ns + 1):
+            all_J_dict[phase_node_counts + i] = interface.ocp.cx()
 
-    return all_objectives
+        for node_idx, node_penalty in interface.get_all_penalties(nlp, nlp.J_internal).items():
+            all_J_dict[node_idx + phase_node_counts] = vertcat(all_J_dict[node_idx + phase_node_counts], node_penalty)
+        for node_idx, node_penalty in interface.get_all_penalties(nlp, nlp.J).items():
+            all_J_dict[node_idx + phase_node_counts] = vertcat(all_J_dict[node_idx + phase_node_counts], node_penalty)
+
+        phase_node_counts += nlp.ns + 1
+
+    all_J = interface.ocp.cx()
+    keys = list(all_J_dict.keys())
+    keys.sort()
+    for key in keys:
+        all_J = vertcat(all_J, all_J_dict[key])
+    return all_J
 
 
-def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scaled: Bool = True):
+def generic_get_all_penalties(
+    interface, nlp: NonLinearProgram, penalties, scaled: Bool = True, get_bounds: Bool = False
+):
     """
     Parse the penalties of the full ocp to a SQP-friendly one
 
@@ -317,15 +372,27 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scale
         The penalties to parse
     scaled: bool
         If the penalty should be the scaled [True] or unscaled [False]
+    get_bounds: bool
+        If the bounds of the penalty should be returned instead of the penalty itself. This will fail if .bounds does not
+        exists (namely for objectives)
+
     Returns
     -------
     out: CX
         A vector of all penalty values
     """
 
-    ocp = interface.ocp
+    highest_index = 0
+    for penalty in penalties:
+        if penalty and penalty.node_idx:
+            highest_index = max(highest_index, *penalty.node_idx)
+    out = {i: interface.ocp.cx() for i in range(highest_index + 1)}
+    if get_bounds:
+        out_bounds = {
+            i: Bounds(f"penalty_{i}", interpolation=InterpolationType.CONSTANT) for i in range(highest_index + 1)
+        }
 
-    out = interface.ocp.cx()
+    ocp = interface.ocp
     for penalty in penalties:
         if not penalty:
             continue
@@ -343,6 +410,8 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scale
             d = None
             weight = DM()
             target = DM()
+            if get_bounds:
+                bound_tp = Bounds(f"penalty_multi_thread_{penalty.name}", interpolation=InterpolationType.CONSTANT)
             for idx in range(len(penalty.node_idx)):
                 t0_tp, x_tp, u_tp, p, a_tp, d_tp, weight_tp, target_tp = _get_weighted_function_inputs(
                     penalty, idx, ocp, nlp, scaled
@@ -367,11 +436,20 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scale
                 d = horzcat(d, d_tp) if d is not None else d_tp
                 weight = horzcat(weight, weight_tp)
                 target = horzcat(target, target_tp)
+                if get_bounds:
+                    if penalty.bounds is None:
+                        raise RuntimeError("Cannot get bounds if penalty.bounds is None")
+                    bound_tp.concatenate(penalty.bounds)
 
             # We can call penalty.weighted_function[0] since multi-thread declares all the node at [0]
-            tp = reshape(penalty.weighted_function[0](t0, phases_dt, x, u, p, a, d, weight, target), -1, 1)
+            out[0] = vertcat(
+                out[0], sum2(reshape(penalty.weighted_function[0](t0, phases_dt, x, u, p, a, d, weight, target), -1, 1))
+            )
+            if get_bounds:
+                if penalty.bounds is None:
+                    raise RuntimeError("Cannot get bounds if penalty.bounds is None")
+                out_bounds[0].concatenate(bound_tp)
         else:
-            tp = interface.ocp.cx()
             for idx in range(len(penalty.node_idx)):
                 if nlp:
                     nlp.states.node_index = penalty.node_idx[idx]
@@ -380,9 +458,17 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scale
                 t0, x, u, p, a, d, weight, target = _get_weighted_function_inputs(penalty, idx, ocp, nlp, scaled)
 
                 node_idx = penalty.node_idx[idx]
-                tp = vertcat(tp, penalty.weighted_function[node_idx](t0, phases_dt, x, u, p, a, d, weight, target))
+                out[node_idx] = vertcat(
+                    out[node_idx],
+                    sum2(penalty.weighted_function[node_idx](t0, phases_dt, x, u, p, a, d, weight, target)),
+                )
+                if get_bounds:
+                    if penalty.bounds is None:
+                        raise RuntimeError("Cannot get bounds if penalty.bounds is None")
+                    out_bounds[node_idx].concatenate(penalty.bounds)
 
-        out = vertcat(out, sum2(tp))
+    if get_bounds:
+        out = (out, out_bounds)
     return out
 
 

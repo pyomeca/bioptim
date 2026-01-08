@@ -13,12 +13,16 @@ class TorqueFreeFloatingBaseDynamics(TorqueDynamics):
     u = [tau_joints]
     """
 
-    def __init__(self):
-        super().__init__(fatigue=None)
-        self.state_configuration = [States.Q_ROOTS, States.Q_JOINTS, States.QDOT_ROOTS, States.QDOT_JOINTS]
-        self.control_configuration = [Controls.TAU_JOINTS]
-        self.algebraic_configuration = []
-        self.functions = []
+    def __init__(self, **kwargs):
+        super().__init__(fatigue=None, **kwargs)
+
+    @property
+    def state_configuration_functions(self):
+        return [States.Q_ROOTS, States.Q_JOINTS, States.QDOT_ROOTS, States.QDOT_JOINTS]
+
+    @property
+    def control_configuration_functions(self):
+        return [Controls.TAU_JOINTS]
 
     @staticmethod
     def get_q_qdot_indices(nlp):

@@ -15,10 +15,6 @@ WARNING: These examples are not maintained anymore, please use SocpType.COLLOCAT
 
 import pickle
 
-import casadi as cas
-import matplotlib.pyplot as plt
-import numpy as np
-
 from bioptim import (
     OptimalControlProgram,
     StochasticOptimalControlProgram,
@@ -47,8 +43,12 @@ from bioptim import (
     ContactType,
     BiMapping,
 )
-from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
-from bioptim.examples.stochastic_optimal_control.models.leuven_arm_model import LeuvenArmModel
+from bioptim.examples.toy_examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
+from bioptim.examples.toy_examples.stochastic_optimal_control.models.leuven_arm_model import LeuvenArmModel
+from bioptim.examples.utils import ExampleUtils
+import casadi as cas
+import matplotlib.pyplot as plt
+import numpy as np
 
 
 def sensory_reference(
@@ -638,7 +638,7 @@ def main():
     plot_sol_flag = False
     vizualise_sol_flag = False
 
-    biorbd_model_path = "models/LeuvenArmModel.bioMod"
+    biorbd_model_path = ExampleUtils.folder + "/models/LeuvenArmModel.bioMod"
 
     hand_initial_position = np.array([0.0, 0.2742])  # Directly from Tom's version
     hand_final_position = np.array([9.359873986980460e-12, 0.527332023564034])  # Directly from Tom's version

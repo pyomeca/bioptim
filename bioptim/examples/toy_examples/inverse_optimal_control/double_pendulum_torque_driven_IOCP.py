@@ -6,9 +6,6 @@ Please note that this example is dependent on the external library Pygmo which c
 conda install -c conda-forge pygmo
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
-
 from bioptim import (
     OptimalControlProgram,
     DynamicsOptions,
@@ -23,12 +20,15 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
 )
+from bioptim.examples.utils import ExampleUtils
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 def prepare_ocp(
     weights,
     coefficients,
-    biorbd_model_path="models/double_pendulum.bioMod",
+    biorbd_model_path,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     n_threads: int = 4,
     expand_dynamics: bool = True,
@@ -119,7 +119,8 @@ class prepare_iocp:
         """
         global i_inverse
         i_inverse += 1
-        ocp = prepare_ocp(weights, self.coefficients)
+        biorbd_model_path = ExampleUtils.folder + "/models/double_pendulums.bioMod"
+        ocp = prepare_ocp(weights, self.coefficients, biorbd_model_path=biorbd_model_path)
         sol = ocp.solve(self.solver)
         print(
             f"+++++++++++++++++++++++++++ Optimized the {i_inverse}th ocp in the inverse algo +++++++++++++++++++++++++++"
@@ -148,7 +149,8 @@ def main():
 
     # Generate data using OCP
     weights_to_track = [0.4, 0.3, 0.3]
-    ocp_to_track = prepare_ocp(weights=weights_to_track, coefficients=[1, 1, 1])
+    biorbd_model_path = ExampleUtils.folder + "/models/double_pendulums.bioMod"
+    ocp_to_track = prepare_ocp(weights=weights_to_track, coefficients=[1, 1, 1], biorbd_model_path=biorbd_model_path)
     ocp_to_track.add_plot_penalty(CostType.ALL)
     solver = Solver.IPOPT()
     # solver.set_linear_solver("ma57")  # Much faster, but necessite libhsl installed
@@ -163,7 +165,7 @@ def main():
     for i in range(len(weights_to_track)):
         weights_pareto = [0, 0, 0]
         weights_pareto[i] = 1
-        ocp_pareto = prepare_ocp(weights=weights_pareto, coefficients=[1, 1, 1])
+        ocp_pareto = prepare_ocp(weights=weights_pareto, coefficients=[1, 1, 1], biorbd_model_path=biorbd_model_path)
         sol_pareto = ocp_pareto.solve(solver)
         # sol_pareto.animate()
         coefficients.append(sol_pareto.cost)
@@ -215,13 +217,13 @@ def main():
     # Compare the kinematics
     import biorbd
 
-    ocp_final = prepare_ocp(weights=pop_weights, coefficients=coefficients)
+    ocp_final = prepare_ocp(weights=pop_weights, coefficients=coefficients, biorbd_model_path=biorbd_model_path)
     sol_final = ocp_final.solve(solver)
     states = sol_final.decision_states(to_merge=SolutionMerge.NODES)
     controls = sol_final.decision_controls(to_merge=SolutionMerge.NODES)
     q_final, qdot_final, tau_final = states["q"], states["qdot"], controls["tau"]
 
-    m = biorbd.Model("models/double_pendulum.bioMod")
+    m = biorbd.Model(ExampleUtils.folder + "/models/double_pendulum.bioMod")
     markers_to_track = np.zeros((2, np.shape(q_to_track)[1], 3))
     markers_final = np.zeros((2, np.shape(q_to_track)[1], 3))
     for i in range(np.shape(q_to_track)[1]):

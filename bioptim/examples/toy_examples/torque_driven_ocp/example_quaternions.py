@@ -5,12 +5,6 @@ The goal of the OCP is to elevate the position of the trunk in a environment wit
 It is designed to show how to use a model that has quaternions in their degrees of freedom.
 """
 
-import platform
-
-import biorbd_casadi as biorbd
-import numpy as np
-from casadi import MX, Function
-
 from bioptim import (
     TorqueFreeFloatingBaseBiorbdModel,
     OptimalControlProgram,
@@ -28,8 +22,12 @@ from bioptim import (
     PhaseDynamics,
     ConstraintList,
     ConstraintFcn,
+    OnlineOptim,
 )
 from bioptim.examples.utils import ExampleUtils
+from casadi import MX, Function
+import biorbd_casadi as biorbd
+import numpy as np
 
 
 def eul2quat(eul: np.ndarray) -> np.ndarray:
@@ -267,7 +265,7 @@ def main():
     n_shooting = 6
     biorbd_model_path = ExampleUtils.folder + "/models/trunk_and_2arm_quaternion.bioMod"
     ocp = prepare_ocp(biorbd_model_path=biorbd_model_path, n_shooting=n_shooting, final_time=0.25)
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
 
     # --- Show results --- #
     # sol.graphs()

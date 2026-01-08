@@ -3,8 +3,6 @@ This example is a trivial slider that goes from 0 to 1 and back to 0. The slider
 slider. The slider is constrained to move only on the x axis. This example is multi-phase optimal control problem.
 """
 
-import platform
-
 from bioptim import (
     TorqueBiorbdModel,
     OptimalControlProgram,
@@ -20,6 +18,7 @@ from bioptim import (
     CostType,
     ControlType,
     PhaseDynamics,
+    OnlineOptim,
 )
 from bioptim.examples.utils import ExampleUtils
 
@@ -135,7 +134,7 @@ def main():
     ocp.add_plot_penalty(CostType.ALL)
 
     # --- Solve the program --- #
-    solver = Solver.IPOPT(show_online_optim=platform.system() == "Linux")
+    solver = Solver.IPOPT(online_optim=OnlineOptim.DEFAULT)
     sol = ocp.solve(solver)
     sol.graphs()
     sol.animate()

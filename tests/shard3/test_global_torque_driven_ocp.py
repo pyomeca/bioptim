@@ -14,7 +14,7 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
 )
-from bioptim.models.biorbd.viewer_utils import _prepare_tracked_markers_for_animation
+from bioptim.models.viewer_utils import _prepare_tracked_markers_for_animation
 import numpy.testing as npt
 import numpy as np
 import pytest
@@ -53,9 +53,14 @@ def test_track_markers(ode_solver, actuator_type, phase_dynamics):
     g = np.array(sol.constraints)
     if not actuator_type:
         npt.assert_equal(g.shape, (186, 1))
+        npt.assert_almost_equal(g[:186], np.zeros((186, 1)))
     else:
         npt.assert_equal(g.shape, (366, 1))
-    npt.assert_almost_equal(g[:186], np.zeros((186, 1)))
+        for i in range(30):
+            if i == 0:
+                npt.assert_almost_equal(g[: 2 * 2 + 2 + 3], 0)
+            else:
+                npt.assert_almost_equal(g[3 + ((2 * 2 + 2) * 2) * i : 3 + (((2 * 2 + 2) * 2) * i + (2 * 2 + 2))], 0)
 
     # Check some of the results
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
@@ -461,7 +466,7 @@ def test_phase_transition_uneven_variable_number_by_bounds(phase_dynamics):
     biorbd_model_path_with_translations = bioptim_folder + "/examples/models/double_pendulum_with_translations.bioMod"
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path_with_translations=biorbd_model_path_with_translations,
+        biorbd_model_path=biorbd_model_path_with_translations,
         n_shooting=(10, 10),
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,

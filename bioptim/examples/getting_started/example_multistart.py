@@ -23,6 +23,7 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
 )
+from bioptim.examples.utils import ExampleUtils
 
 
 def prepare_ocp(
@@ -196,7 +197,8 @@ def prepare_multi_start(
 def main():
     # --- Prepare the multi-start and run it --- #
 
-    bio_model_path = ["models/pendulum.bioMod"]
+    example_path = ExampleUtils.folder
+    bio_model_path = [example_path + "/models/pendulum.bioMod"]
     final_time = [1]
     n_shooting = [30, 40, 50]
     seed = [0, 1, 2, 3]
@@ -208,7 +210,7 @@ def main():
         "seed": seed,
     }
 
-    save_folder = "./temporary_results"
+    save_folder = example_path + "/./temporary_results"
     multi_start = prepare_multi_start(
         combinatorial_parameters=combinatorial_parameters,
         save_folder=save_folder,

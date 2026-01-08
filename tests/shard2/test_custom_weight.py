@@ -57,7 +57,7 @@ def get_weight(interpolation_type, n_nodes, final_time, weight_type="objective")
     elif interpolation_type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
         weight = [0, 1, 2]
         if weight_type == "objective":
-            raise NotImplementedError("Not implemented yet")
+            weight = ObjectiveWeight(weight, interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT)
         else:
             weight = ConstraintWeight(weight, interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT)
     elif interpolation_type == InterpolationType.LINEAR:
@@ -297,6 +297,7 @@ def constraint_prepare_ocp(
     "interpolation_type",
     [
         InterpolationType.CONSTANT,
+        InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
         InterpolationType.LINEAR,
         InterpolationType.EACH_FRAME,
         InterpolationType.SPLINE,
@@ -346,7 +347,6 @@ def test_pendulum_objective(control_type, interpolation_type, node, objective, p
     solver = Solver.IPOPT()
     solver.set_maximum_iterations(5)
     sol = ocp.solve(solver)
-    j_printed = TestUtils.sum_cost_function_output(sol)
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
     tau = controls["tau"]
     ntau = tau.shape[0]
@@ -518,6 +518,87 @@ def test_pendulum_objective(control_type, interpolation_type, node, objective, p
                     TestUtils.assert_objective_value(sol=sol, expected_value=-14746.563287583314)
             # else raise error above
 
+    elif interpolation_type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
+        if node == Node.START:
+            if objective == "mayer":
+                TestUtils.assert_objective_value(sol=sol, expected_value=0)
+            # else raise error above
+        elif node == Node.INTERMEDIATES:
+            if objective == "mayer":
+                if control_type == ControlType.CONSTANT:
+                    value = tau[:, 1:-1] ** 2
+                    value[:, 0] *= 0  # First node has weight 0
+                    value[:, -1] *= 2  # First node has weight 2
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value))
+                elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
+                    value = tau[:, 1:-2] ** 2
+                    value[:, 0] *= 0  # First node has weight 0
+                    value[:, -1] *= 2  # First node has weight 2
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value))
+                else:
+                    value = tau[:, 1:-4:2] ** 2
+                    value[:, 0] *= 0  # First node has weight 0
+                    value[:, -1] *= 2  # First node has weight 2
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value))
+            # else raise error above
+        elif node == Node.ALL_SHOOTING:
+            if objective == "mayer":
+                if control_type == ControlType.CONSTANT:
+                    value = tau**2
+                    value[:, 0] *= 0  # First node has weight 0
+                    value[:, -1] *= 2  # First node has weight 2
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value))
+                elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
+                    value = tau**2
+                    value[:, 0] *= 0  # First node has weight 0
+                    # TODO: the last control (-1) should be weighted 2 in the line bellow. This is a problem originating
+                    #  from a combination of ConstraintWeight and penalty_option.py
+                    value[:, -2] *= 2  # First node has weight 2
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value))
+                elif control_type == ControlType.LINEAR_CONTINUOUS:
+                    value = tau[:, 0:-1:2] ** 2
+                    value[:, 0] *= 0  # First node has weight 0
+                    value[:, -1] *= 2  # First node has weight 2
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value))
+            else:
+                if control_type == ControlType.CONSTANT:
+                    value = tau**2 * dt
+                    value[:, 0] *= 0  # First node has weight 0
+                    value[:, -1] *= 2  # First node has weight 2
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value))
+                elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
+                    value = tau**2 * dt
+                    value[:, 0] *= 0  # First node has weight 0
+                    # TODO: the last control (-1) should be weighted 2 in the line bellow. This is a problem originating
+                    #  from a combination of ConstraintWeight and penalty_option.py
+                    value[:, -2] *= 2  # First node has weight 2
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value))
+                elif control_type == ControlType.LINEAR_CONTINUOUS:
+                    value = tau[:, 0:-1:2] ** 2 * dt
+                    value[:, 0] *= 0  # First node has weight 0
+                    value[:, -1] *= 2  # First node has weight 2
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value))
+        else:
+            if objective == "mayer":
+                if control_type == ControlType.CONSTANT:
+                    value = tau[:, node] ** 2
+                    value[:, 0] *= 0  # First node has weight 0
+                    value[:, -1] *= 2  # First node has weight 2
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value))
+                elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
+                    value = tau[:, node] ** 2
+                    value[:, 0] *= 0  # First node has weight 0
+                    value[:, -1] *= 2  # First node has weight 2
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value))
+                elif control_type == ControlType.LINEAR_CONTINUOUS:
+                    value = tau[:, np.array(node) * 2] ** 2
+                    value[:, 0] *= 0  # First node has weight 0
+                    value[:, -1] *= 2  # First node has weight 2
+                    TestUtils.assert_objective_value(sol=sol, expected_value=np.sum(value))
+            # else raise error above
+    else:
+        raise RuntimeError("Should not happen")
+
 
 @pytest.mark.parametrize(
     "phase_dynamics",
@@ -574,9 +655,32 @@ def test_pendulum_constraint(control_type, interpolation_type, node, phase_dynam
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
     tau = controls["tau"]
     ntau = tau.shape[0]
-    g_computed = np.array(sol.constraints[2 * ntau * n_shooting :]).reshape(
-        -1,
-    )  # Keep only the user constraint (not the continuity)
+
+    # Keep only the user constraint (not the continuity)
+    if node == Node.START:
+        nodes = [0]
+    elif node == Node.INTERMEDIATES:
+        nodes = list(range(1, n_shooting - 1))
+    elif node == Node.ALL_SHOOTING:
+        nodes = list(range(0, n_shooting))
+    elif node == [0, 4, 6, 7]:
+        nodes = node
+    else:
+        raise ValueError("Wrong node")
+    g_computed = np.ndarray((0, 1))
+    starting_node = 0
+    for i in range(0, n_shooting):
+        increment = 2 * ntau
+        if i in nodes:
+            g_computed = np.concatenate(
+                (
+                    g_computed,
+                    sol.constraints[starting_node + 2 * ntau : starting_node + 2 * ntau + 2],
+                )
+            )
+            increment += 2
+        starting_node += increment
+    g_computed = g_computed.reshape(-1)
 
     # Check constraint function value
     if interpolation_type == InterpolationType.CONSTANT:
@@ -590,9 +694,11 @@ def test_pendulum_constraint(control_type, interpolation_type, node, phase_dynam
             elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
                 value = tau[:, 1:-2] - np.ones((ntau, n_shooting - 2))
                 npt.assert_almost_equal(g_computed, value.flatten(order="F"))
-            else:
+            elif control_type == ControlType.LINEAR_CONTINUOUS:
                 value = tau[:, 1:-4:2] - np.ones((ntau, n_shooting - 2))
                 npt.assert_almost_equal(g_computed, value.flatten(order="F"))
+            else:
+                raise NotImplementedError("Not implemented yet")
         elif node == Node.ALL_SHOOTING:
             if control_type == ControlType.CONSTANT:
                 value = tau - np.ones((ntau, n_shooting))
@@ -600,10 +706,11 @@ def test_pendulum_constraint(control_type, interpolation_type, node, phase_dynam
             elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
                 value = tau[:, :-1] - np.ones((ntau, n_shooting))
                 npt.assert_almost_equal(g_computed, value.flatten(order="F"))
-                # TODO: @pariterre -> the last node seems to be missing from the constraint
             elif control_type == ControlType.LINEAR_CONTINUOUS:
                 value = tau[:, 0:-1:2] - np.ones((ntau, n_shooting))
                 npt.assert_almost_equal(g_computed, value.flatten(order="F"))
+            else:
+                raise NotImplementedError("Not implemented yet")
         else:
             if control_type == ControlType.CONSTANT:
                 value = tau[:, node] - np.ones((ntau, len(node)))
@@ -614,6 +721,66 @@ def test_pendulum_constraint(control_type, interpolation_type, node, phase_dynam
             elif control_type == ControlType.LINEAR_CONTINUOUS:
                 value = tau[:, np.array(node) * 2] - np.ones((ntau, len(node)))
                 npt.assert_almost_equal(g_computed, value.flatten(order="F"))
+            else:
+                raise NotImplementedError("Not implemented yet")
+    elif interpolation_type == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
+        if node == Node.START:
+            value = np.zeros((ntau,))
+            npt.assert_almost_equal(g_computed, value)
+        elif node == Node.INTERMEDIATES:
+            if control_type == ControlType.CONSTANT:
+                value = tau[:, 1:-1] - np.ones((ntau, n_shooting - 2))
+                value[:, 0] *= 0  # First node has weight 0
+                value[:, -1] *= 2  # Last node has weight 2
+                npt.assert_almost_equal(g_computed, value.flatten(order="F"))
+            elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
+                value = tau[:, 1:-2] - np.ones((ntau, n_shooting - 2))
+                value[:, 0] *= 0  # First intermediate node has weight 0
+                value[:, -1] *= 2  # Last node has weight 2
+                npt.assert_almost_equal(g_computed, value.flatten(order="F"))
+            elif control_type == ControlType.LINEAR_CONTINUOUS:
+                value = tau[:, 1:-4:2] - np.ones((ntau, n_shooting - 2))
+                value[:, 0] *= 0  # First intermediate node has weight 0
+                value[:, -1] *= 2  # Last node has weight 2
+                npt.assert_almost_equal(g_computed, value.flatten(order="F"))
+            else:
+                raise NotImplementedError("Not implemented yet")
+        elif node == Node.ALL_SHOOTING:
+            if control_type == ControlType.CONSTANT:
+                value = tau - np.ones((ntau, n_shooting))
+                value[:, 0] *= 0  # First intermediate node has weight 0
+                value[:, -1] *= 2  # Last node has weight 2
+                npt.assert_almost_equal(g_computed, value.flatten(order="F"))
+            elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
+                value = tau[:, :-1] - np.ones((ntau, n_shooting))
+                value[:, 0] *= 0  # First intermediate node has weight 0
+                value[:, -1] *= 2  # Last node has weight 2
+                npt.assert_almost_equal(g_computed, value.flatten(order="F"))
+            elif control_type == ControlType.LINEAR_CONTINUOUS:
+                value = tau[:, 0:-1:2] - np.ones((ntau, n_shooting))
+                value[:, 0] *= 0  # First intermediate node has weight 0
+                value[:, -1] *= 2  # Last node has weight 2
+                npt.assert_almost_equal(g_computed, value.flatten(order="F"))
+            else:
+                raise NotImplementedError("Not implemented yet")
+        else:
+            if control_type == ControlType.CONSTANT:
+                value = tau[:, node] - np.ones((ntau, len(node)))
+                value[:, 0] *= 0  # First intermediate node has weight 0
+                value[:, -1] *= 2  # Last node has weight 2
+                npt.assert_almost_equal(g_computed, value.flatten(order="F"))
+            elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
+                value = tau[:, node] - np.ones((ntau, len(node)))
+                value[:, 0] *= 0  # First intermediate node has weight 0
+                value[:, -1] *= 2  # Last node has weight 2
+                npt.assert_almost_equal(g_computed, value.flatten(order="F"))
+            elif control_type == ControlType.LINEAR_CONTINUOUS:
+                value = tau[:, np.array(node) * 2] - np.ones((ntau, len(node)))
+                value[:, 0] *= 0  # First intermediate node has weight 0
+                value[:, -1] *= 2  # Last node has weight 2
+                npt.assert_almost_equal(g_computed, value.flatten(order="F"))
+            else:
+                raise NotImplementedError("Not implemented yet")
     elif (
         interpolation_type == InterpolationType.LINEAR
         or interpolation_type == InterpolationType.CUSTOM
@@ -637,6 +804,8 @@ def test_pendulum_constraint(control_type, interpolation_type, node, phase_dynam
                 for i in range(ntau):
                     value[i, :] = (tau[i, 1:-4:2] - np.ones((n_shooting - 2,))) * np.linspace(0, 1, n_shooting - 2)
                 npt.assert_almost_equal(g_computed, value.flatten(order="F"))
+            else:
+                raise NotImplementedError("Not implemented yet")
         elif node == Node.ALL_SHOOTING:
             if control_type == ControlType.CONSTANT:
                 value = np.zeros((ntau, n_shooting))
@@ -653,6 +822,8 @@ def test_pendulum_constraint(control_type, interpolation_type, node, phase_dynam
                 for i in range(ntau):
                     value[i, :] = (tau[i, 0:-2:2] - np.ones((n_shooting,))) * np.linspace(0, 1, n_shooting)
                 npt.assert_almost_equal(g_computed, value.flatten(order="F"))
+            else:
+                raise NotImplementedError("Not implemented yet")
         else:
             if control_type == ControlType.CONSTANT:
                 value = np.zeros((ntau, len(node)))
@@ -669,6 +840,8 @@ def test_pendulum_constraint(control_type, interpolation_type, node, phase_dynam
                 for i in range(ntau):
                     value[i, :] = (tau[i, np.array(node) * 2] - np.ones((len(node),))) * np.linspace(0, 1, len(node))
                 npt.assert_almost_equal(g_computed, value.flatten(order="F"))
+            else:
+                raise NotImplementedError("Not implemented yet")
     elif interpolation_type == InterpolationType.SPLINE:
         # Testing values because too complicated for my small brain
         if node == Node.START:
@@ -676,8 +849,10 @@ def test_pendulum_constraint(control_type, interpolation_type, node, phase_dynam
                 npt.assert_almost_equal(g_computed, np.array([-3.42388421e-09, 1.09865848e01]))
             elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
                 npt.assert_almost_equal(g_computed, np.array([-3.42388421e-09, 1.09865848e01]))
-            else:
+            elif control_type == ControlType.LINEAR_CONTINUOUS:
                 npt.assert_almost_equal(g_computed, np.array([2.20904876e-09, 1.09865848e01]))
+            else:
+                raise NotImplementedError("Not implemented yet")
         elif node == Node.INTERMEDIATES:
             if control_type == ControlType.CONSTANT:
                 npt.assert_almost_equal(
@@ -692,6 +867,8 @@ def test_pendulum_constraint(control_type, interpolation_type, node, phase_dynam
                     g_computed[[2, 7, 11, 16]],
                     np.array([-4.40919652e-03, 9.72034673e00, 8.87618798e00, 6.50661698e-01]),
                 )
+            else:
+                raise NotImplementedError("Not implemented yet")
         elif node == Node.ALL_SHOOTING:
             if control_type == ControlType.CONSTANT:
                 npt.assert_almost_equal(
@@ -705,6 +882,8 @@ def test_pendulum_constraint(control_type, interpolation_type, node, phase_dynam
                 npt.assert_almost_equal(
                     g_computed[[5, 10, 14, 19]], np.array([10.19870335, 0.28270337, 0.43049137, 7.44111811])
                 )
+            else:
+                raise NotImplementedError("Not implemented yet")
         else:
             if control_type == ControlType.CONSTANT:
                 npt.assert_almost_equal(
@@ -734,6 +913,11 @@ def test_pendulum_constraint(control_type, interpolation_type, node, phase_dynam
                         ]
                     ),
                 )
+            else:
+                raise NotImplementedError("Not implemented yet")
+
+    else:
+        raise RuntimeError("interpolation not handled yet")
 
 
 @pytest.mark.parametrize(

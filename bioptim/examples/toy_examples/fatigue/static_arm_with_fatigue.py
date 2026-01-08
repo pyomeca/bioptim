@@ -6,8 +6,6 @@ Please note that using show_meshes=True in the animator may be long due to the c
 mesh points.
 """
 
-import platform
-
 from bioptim import (
     MusclesBiorbdModel,
     OptimalControlProgram,
@@ -35,6 +33,7 @@ from bioptim import (
     VariableType,
     Solver,
     PhaseDynamics,
+    OnlineOptim,
 )
 from bioptim.examples.utils import ExampleUtils
 
@@ -227,7 +226,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    solver = Solver.IPOPT(show_online_optim=platform.system() == "Linux")
+    solver = Solver.IPOPT(online_optim=OnlineOptim.DEFAULT)
     solver.set_hessian_approximation("exact")
     sol = ocp.solve(solver)
     sol.print_cost()

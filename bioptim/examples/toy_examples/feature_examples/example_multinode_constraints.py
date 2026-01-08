@@ -5,7 +5,6 @@ Extra constraints are defined between specific nodes of phases.
 It is designed to show how one can define a multinode constraints and objectives in a multiphase optimal control program
 """
 
-from casadi import MX
 from bioptim import (
     TorqueBiorbdModel,
     OptimalControlProgram,
@@ -29,6 +28,7 @@ from bioptim import (
     PhaseDynamics,
 )
 from bioptim.examples.utils import ExampleUtils
+from casadi import MX
 
 
 def custom_multinode_constraint(

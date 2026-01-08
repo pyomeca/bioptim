@@ -3,8 +3,6 @@ This script doesn't use biorbd
 This an example of how to use bioptim to solve a simple pendulum problem
 """
 
-import numpy as np
-
 from bioptim import (
     OptimalControlProgram,
     BoundsList,
@@ -22,6 +20,7 @@ from bioptim import (
 
 # import the custom model
 from bioptim.examples.toy_examples.custom_model.custom_package import MyModel
+import numpy as np
 
 
 def prepare_ocp(
@@ -87,20 +86,18 @@ def prepare_ocp(
     x_bounds["qdot"] = np.array([[0, -20, 0]]), np.array([[0, 20, 0]])
 
     # Initial guess
-    n_q = model.nb_q
-    n_qdot = model.nb_qdot
+    n_dofs = len(model.name_dofs)
     x_init = InitialGuessList()
-    x_init["q"] = [20] * n_q
-    x_init["qdot"] = [20] * n_qdot
+    x_init["q"] = [20] * n_dofs
+    x_init["qdot"] = [20] * n_dofs
 
     # Define control path constraint
-    n_tau = model.nb_tau
     tau_min, tau_max, tau_init = -20, 20, 10
     u_bounds = BoundsList()
-    u_bounds["tau"] = [tau_min] * n_tau, [tau_max] * n_tau
+    u_bounds["tau"] = [tau_min] * n_dofs, [tau_max] * n_dofs
 
     u_init = InitialGuessList()
-    u_init["tau"] = [tau_init] * n_tau
+    u_init["tau"] = [tau_init] * n_dofs
 
     return OptimalControlProgram(
         model,
@@ -123,11 +120,7 @@ def main():
     """
 
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(
-        model=MyModel(),
-        final_time=1,
-        n_shooting=30,
-    )
+    ocp = prepare_ocp(model=MyModel(), final_time=1, n_shooting=30)
 
     # Custom plots
     ocp.add_plot_penalty(CostType.ALL)

@@ -4,8 +4,6 @@ the time to perform the task is now free for the solver to change. This example 
 control program
 """
 
-import platform
-
 from bioptim import (
     TorqueBiorbdModel,
     OptimalControlProgram,
@@ -21,6 +19,7 @@ from bioptim import (
     Solver,
     PhaseDynamics,
     SolutionMerge,
+    OnlineOptim,
 )
 from bioptim.examples.utils import ExampleUtils
 
@@ -123,7 +122,7 @@ def main():
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
 
     # --- Show results --- #
     time = float(sol.decision_time(to_merge=SolutionMerge.NODES)[-1, 0])

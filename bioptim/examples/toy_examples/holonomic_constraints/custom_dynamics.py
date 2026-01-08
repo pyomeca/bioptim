@@ -1,17 +1,14 @@
-from casadi import vertcat
-
 from bioptim import (
     PenaltyController,
     DynamicsEvaluation,
     DynamicsFunctions,
-    NonLinearProgram,
-    OptimalControlProgram,
-    ConfigureProblem,
     OdeSolver,
     HolonomicTorqueBiorbdModel,
     ConfigureVariables,
     HolonomicConstraintsList,
 )
+from bioptim.examples.utils import ExampleUtils
+from casadi import vertcat
 
 
 def constraint_holonomic_end(
@@ -72,17 +69,11 @@ def constraint_holonomic(
     return holonomic_constraints
 
 
-def configure_qv(ocp, nlp, as_states, as_controls, as_algebraic_states):
+def configure_qv(ocp, nlp):
     name = "q_v"
-    names_v = [nlp.model.name_dof[i] for i in nlp.model.dependent_joint_index]
+    names_v = [nlp.model.name_dofs[i] for i in nlp.model.dependent_joint_index]
     ConfigureVariables.configure_new_variable(
-        name,
-        names_v,
-        ocp,
-        nlp,
-        as_states=False,
-        as_controls=False,
-        as_algebraic_states=True,
+        name, names_v, ocp, nlp, as_states=False, as_controls=False, as_algebraic_states=True
     )
 
 
@@ -100,7 +91,10 @@ class ModifiedHolonomicTorqueBiorbdModel(HolonomicTorqueBiorbdModel):
             independent_joint_index=independent_joint_index,
             dependent_joint_index=dependent_joint_index,
         )
-        self.algebraic_configuration += [configure_qv]
+
+    @property
+    def algebraic_configuration_functions(self):
+        return super().algebraic_configuration_functions + [configure_qv]
 
     @staticmethod
     def dynamics(

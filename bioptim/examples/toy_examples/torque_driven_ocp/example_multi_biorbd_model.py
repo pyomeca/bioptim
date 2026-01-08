@@ -3,7 +3,6 @@ This example executes on full rotation of two triple pendulums with different in
 The first DoF of each model is not actuated, the second DoF is actuated with the same torque for each model and the last DoF are independently actuated for the two models.
 """
 
-import numpy as np
 from bioptim import (
     MultiTorqueBiorbdModel,
     OptimalControlProgram,
@@ -13,13 +12,14 @@ from bioptim import (
     ObjectiveFcn,
     BiMappingList,
     PhaseDynamics,
-    SolutionMerge,
 )
+from bioptim.examples.utils import ExampleUtils
+import numpy as np
 
 
 def prepare_ocp(
-    biorbd_model_path: str = "models/triple_pendulum.bioMod",
-    biorbd_model_path_modified_inertia: str = "models/triple_pendulum_modified_inertia.bioMod",
+    biorbd_model_path,
+    biorbd_model_path_modified_inertia,
     n_shooting: int = 40,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
@@ -75,8 +75,14 @@ def prepare_ocp(
 
 
 def main():
+    example_folder = ExampleUtils.folder
+    biorbd_model_path = example_folder + "/models/triple_pendulum.bioMod"
+    biorbd_model_path_modified_inertia = example_folder + "/models/triple_pendulum_modified_inertia.bioMod"
+
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp()
+    ocp = prepare_ocp(
+        biorbd_model_path=biorbd_model_path, biorbd_model_path_modified_inertia=biorbd_model_path_modified_inertia
+    )
     ocp.add_plot_penalty()
 
     # --- Solve the program --- #
@@ -91,7 +97,7 @@ def main():
     #     q = states["q"]
     #     import bioviz
     #
-    #     b = bioviz.Viz("models/triple_pendulum_both_inertia.bioMod")
+    #     b = bioviz.Viz(ExampleUtils.folder + "/models/triple_pendulum_both_inertia.bioMod")
     #     b.load_movement(q)
     #     b.exec()
 

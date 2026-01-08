@@ -29,6 +29,13 @@ check_version(biorbd, "1.11.1", "1.13.0")
 class BiorbdModel:
     """
     This class wraps the biorbd model and allows the user to call the biorbd functions from the biomodel protocol
+    It can be used as a mixin with StateDynamics to create custom dynamics models.
+    For example:
+    ```python
+    class MyTorqueDynamicsBiorbdModel(BiorbdModel, TorqueDynamics):
+        ...
+    ```
+    More specifically, it declares with the required `name`, `name_dofs` and `contact_types` properties
     """
 
     def __init__(
@@ -38,6 +45,7 @@ class BiorbdModel:
         parameters: ParameterList = None,
         external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None,
         contact_types: list[ContactType] | tuple[ContactType] = (),
+        **kwargs,
     ):
         """
         Parameters
@@ -54,6 +62,7 @@ class BiorbdModel:
         contact_types: list[ContactType] | tuple[ContactType]
             The type of contacts tu use in the model's dynamics
         """
+        super().__init__(**kwargs)  # For multiple inheritance compatibility
 
         if not isinstance(bio_model, str) and not isinstance(bio_model, biorbd.Model):
             raise ValueError("The model should be of type 'str' or 'biorbd.Model'")
@@ -61,7 +70,7 @@ class BiorbdModel:
         self.model = biorbd.Model(bio_model) if isinstance(bio_model, str) else bio_model
 
         check_contacts(contact_types, self)
-        self.contact_types = contact_types
+        self._contact_types = contact_types
 
         if parameters is not None:
             for param_key in parameters:
@@ -76,6 +85,10 @@ class BiorbdModel:
         self.parameters = parameters.mx if parameters else MX()
 
         self._cached_functions = {}
+
+    @property
+    def contact_types(self):
+        return self._contact_types
 
     def _symbolic_variables(self):
         """Declaration of MX variables of the right shape for the creation of CasADi Functions"""
@@ -461,7 +474,7 @@ class BiorbdModel:
         return casadi_fun
 
     @property
-    def name_dof(self) -> tuple[str, ...]:
+    def name_dofs(self) -> tuple[str, ...]:
         return tuple(s.to_string() for s in self.model.nameDof())
 
     @property
@@ -1321,6 +1334,17 @@ class BiorbdModel:
     def partitioned_forward_dynamics(self):
         raise NotImplementedError("partitioned_forward_dynamics is not implemented for BiorbdModel")
 
+    def to_pyorerun_model(self):
+        """Create a pyorerun BiorbdModel for visualization."""
+        import pyorerun
+
+        return pyorerun.BiorbdModel.from_biorbd_object(self.model)
+
+    @property
+    def pyorerun_marker_names(self) -> list[str]:
+        """Get marker names formatted for pyorerun visualization."""
+        return [n.to_string() for n in self.model.markerNames()]
+
     @staticmethod
     def animate(
         ocp,
@@ -1336,6 +1360,6 @@ class BiorbdModel:
 
             return animate_with_bioviz_for_loop(ocp, solution, show_now, show_tracked_markers, n_frames, **kwargs)
         if viewer == "pyorerun":
-            from .viewer_pyorerun import animate_with_pyorerun
+            from ..viewer_pyorerun import animate_with_pyorerun
 
             return animate_with_pyorerun(ocp, solution, show_now, show_tracked_markers, **kwargs)
