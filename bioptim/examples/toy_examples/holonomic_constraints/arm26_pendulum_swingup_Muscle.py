@@ -5,9 +5,6 @@ pendulum simulation.
 """
 
 import numpy as np
-from arm26_pendulum_swingup import compute_all_states
-from casadi import DM
-from custom_dynamics import HolonomicMusclesBiorbdModel
 
 import pyorerun
 from bioptim import (
@@ -27,8 +24,10 @@ from bioptim import (
     SolutionMerge,
     Solver,
 )
-
 from bioptim.examples.utils import ExampleUtils
+
+from .arm26_pendulum_swingup import compute_all_states
+from .custom_dynamics import HolonomicMusclesBiorbdModel
 
 
 def prepare_ocp(
@@ -152,8 +151,10 @@ def main():
     ocp, bio_model = prepare_ocp(biorbd_model_path=model_path)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
     print(sol.real_time_to_optimize)
+
+    print(sol.decision_states(to_merge=SolutionMerge.NODES)["q_u"])
 
     # --- Show results --- #
     q = compute_all_states(sol, bio_model)

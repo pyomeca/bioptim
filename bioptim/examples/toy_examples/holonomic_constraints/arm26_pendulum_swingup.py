@@ -174,8 +174,10 @@ def main():
     ocp, bio_model = prepare_ocp(biorbd_model_path=model_path)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
     print(sol.real_time_to_optimize)
+
+    print(sol.decision_states(to_merge=SolutionMerge.NODES)["q_u"])
 
     # --- Show results --- #
     q = compute_all_states(sol, bio_model)
