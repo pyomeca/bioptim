@@ -116,7 +116,7 @@ def _solve_ivp_scipy_interface(
     t_eval: NpArray,
     method: SolutionIntegrator = SolutionIntegrator.SCIPY_RK45,
 ):
-    result: Any = solve_ivp(dynamics, y0=x0, t_span=np.array(t_span).squeeze(), t_eval=t_eval, method=method)
+    result: Any = solve_ivp(dynamics, y0=x0, t_span=np.array(t_span).reshape(2, ), t_eval=t_eval, method=method)
     return result.y
 
 
