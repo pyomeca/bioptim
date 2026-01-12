@@ -120,7 +120,7 @@ def _solve_ivp_scipy_interface(
         dynamics,
         y0=x0,
         t_span=np.array(t_span).reshape(
-            2,
+            -1,
         ),
         t_eval=t_eval,
         method=method,
