@@ -22,9 +22,18 @@ class LagrangeInterpolation:
     @cached_property
     def len_time_grid(self) -> Int:
         """
-        This len_time_grid property should return the Lagrange polynomial order + 1
+        This len_time_grid property returns the Lagrange polynomial order + 1
+        E.g., If you have a polynomial of degree 3, you have a time grid with four points.
+        Thus, len_time_grid = 4.
         """
         return len(self.time_grid)
+
+    @cached_property
+    def polynomial_order(self) -> Int:
+        """
+        This property is not used, but we should keep it as a doc.
+        """
+        return len(self.time_grid) - 1
 
     def lagrange_polynomial(self, j: Int, time_control_interval: CX) -> CX:
         """
