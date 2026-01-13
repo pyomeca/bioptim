@@ -21,6 +21,9 @@ class LagrangeInterpolation:
 
     @cached_property
     def len_time_grid(self) -> Int:
+        """
+        This len_time_grid property should return the Lagrange polynomial order + 1
+        """
         return len(self.time_grid)
 
     def lagrange_polynomial(self, j: Int, time_control_interval: CX) -> CX:
