@@ -20,12 +20,8 @@ class LagrangeInterpolation:
         self.time_grid = time_grid
 
     @cached_property
-    def polynomial_degree(self) -> Int:
+    def len_time_grid(self) -> Int:
         return len(self.time_grid)
-
-    @classmethod
-    def from_grid_type(cls, polynomial_degree: Int, collocation_type: Str = "radau"):
-        return cls(collocation_points(polynomial_degree, collocation_type))
 
     def lagrange_polynomial(self, j: Int, time_control_interval: CX) -> CX:
         """
@@ -75,7 +71,7 @@ class LagrangeInterpolation:
         further manipulation or evaluation (e.g., computing derivatives).
         """
         _l = 1
-        for r in range(self.polynomial_degree):
+        for r in range(self.len_time_grid):
             if r != j:
                 _l *= (time_control_interval - self.time_grid[r]) / (self.time_grid[j] - self.time_grid[r])
         return _l
@@ -83,7 +79,7 @@ class LagrangeInterpolation:
     def partial_lagrange_polynomial(self, j: Int, time_control_interval: CX, i: Int) -> CX:
         """Compute the partial product of the j-th Lagrange polynomial without the i-th term."""
         _l = 1
-        for r in range(self.polynomial_degree):
+        for r in range(self.len_time_grid):
             if r != j and r != i:
                 _l *= (time_control_interval - self.time_grid[r]) / (self.time_grid[j] - self.time_grid[r])
         return _l
@@ -129,7 +125,7 @@ class LagrangeInterpolation:
         which, when factored appropriately, yields the compact form above.
         """
         sum_term = 0
-        for k in range(self.polynomial_degree):
+        for k in range(self.len_time_grid):
             if k == j:
                 continue
 
@@ -158,7 +154,7 @@ class LagrangeInterpolation:
         """
         self._check_y_values(y_values)
         interpolated_value = 0
-        for j in range(self.polynomial_degree):
+        for j in range(self.len_time_grid):
             interpolated_value += y_values[j] * self.lagrange_polynomial(j, time_control_interval)
         return interpolated_value
 
@@ -182,14 +178,14 @@ class LagrangeInterpolation:
         """
         self._check_y_values(y_values)
         interpolated_value = 0
-        for j in range(self.polynomial_degree):
+        for j in range(self.len_time_grid):
             interpolated_value += y_values[j] * self.lagrange_polynomial_derivative(j, time_control_interval)
         return interpolated_value
 
     def _check_y_values(self, y_values) -> None:
-        if len(y_values) != self.polynomial_degree:
+        if len(y_values) != self.len_time_grid:
             raise ValueError(
-                f"Length of y_values ({len(y_values)}) must match the polynomial order ({self.polynomial_degree})"
+                f"Length of y_values ({len(y_values)}) must match the polynomial order ({self.len_time_grid})"
             )
 
 
