@@ -894,12 +894,12 @@ def test_example_arm26_pendulum_swingup():
 
 def test_example_arm26_pendulum_swingup_muscle():
     """Test the holonomic_constraints/two_pendulums example"""
-    from bioptim.examples.toy_examples.holonomic_constraints import arm26_pendulum_swingup_Muscle
+    from bioptim.examples.toy_examples.holonomic_constraints import arm26_pendulum_swingup_muscle
 
     bioptim_folder = TestUtils.bioptim_folder()
 
     # --- Prepare the ocp --- #
-    ocp, model = arm26_pendulum_swingup_Muscle.prepare_ocp(
+    ocp, model = arm26_pendulum_swingup_muscle.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/arm26_w_pendulum.bioMod",
         n_shooting=30,
         final_time=1,
@@ -1379,12 +1379,12 @@ def test_example_arm26_pendulum_swingup_muscle():
 
 def test_example_arm26_pendulum_swingup_muscle_algebraic():
     """Test the holonomic_constraints/two_pendulums example"""
-    from bioptim.examples.toy_examples.holonomic_constraints import arm26_pendulum_swingup_Muscle_algebraic
+    from bioptim.examples.toy_examples.holonomic_constraints import arm26_pendulum_swingup_muscle_algebraic
 
     bioptim_folder = TestUtils.bioptim_folder()
 
     # --- Prepare the ocp --- #
-    ocp, model = arm26_pendulum_swingup_Muscle_algebraic.prepare_ocp(
+    ocp, model = arm26_pendulum_swingup_muscle_algebraic.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/arm26_w_pendulum.bioMod",
         n_shooting=30,
         final_time=1,

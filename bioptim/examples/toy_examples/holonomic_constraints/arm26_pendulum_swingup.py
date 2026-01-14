@@ -6,7 +6,6 @@ pendulum simulation.
 
 import numpy as np
 from casadi import DM
-import pyorerun
 
 from bioptim import (
     BiMappingList,
@@ -170,6 +169,8 @@ def main():
     Runs the optimization and animates it
     """
 
+    import pyorerun
+
     model_path = ExampleUtils.folder + "/models/arm26_w_pendulum.bioMod"
     ocp, bio_model = prepare_ocp(biorbd_model_path=model_path)
 
@@ -191,4 +192,5 @@ def main():
 
 
 if __name__ == "__main__":
+
     main()
