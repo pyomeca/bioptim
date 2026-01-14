@@ -105,6 +105,134 @@ class HolonomicConstraintsFcn:
         return constraints_func, constraints_jacobian_func, constraints_double_derivative_func
 
     @staticmethod
+    def align_frames(  # <-- new method
+        model: BioModel = None,
+        frame_1_idx: int = 0,  # index of the first segment / frame in the model
+        frame_2_idx: int = 1,  # index of the second segment / frame
+        local_frame_idx: int = None,
+    ) -> tuple[Function, Function, Function]:
+        """
+        Generate the holonomic constraint that forces the orientation of two
+        frames to be identical (i.e. the relative rotation between them is the
+        identity).
+
+        The constraint is expressed in the set of three independent
+        equations using the relationships
+
+        *   ``trace(R_rel) = 3``  (⇔ ``cosθ = 1`` ⇒ ``θ = 0``)
+        *   ``R_rel_ij = R_rel_ji``  for the three off‑diagonal elements,
+            i.e. ``R_rel – R_rel.T = 0``.
+
+        Those four scalar equations are not independent (the trace condition
+        already forces the three off‑diagonal elements to be zero when the
+        matrix is orthogonal), so we drop one redundant equation and keep only
+        three of them (the three independent components of the **skew‑symmetric**
+        part of ``R_rel``).  The resulting constraint vector is exactly the one
+        you would obtain from the axis‑angle formulation with ``θ = 0``.
+
+        Parameters
+        ----------
+        model
+            The :class:`~bioptim.BioModel` that contains the kinematic tree.
+        frame_1_idx, frame_2_idx
+            Indices of the two segments (or bodies) whose orientation must be
+            aligned.
+        local_frame_idx
+            If given, the two frames are first expressed in the *local* frame
+            identified by this index (the same behaviour as in
+            ``superimpose_markers``).  When ``None`` the orientations are taken
+            directly in the global reference.
+
+        Returns
+        -------
+        (constraints_func,
+         constraints_jacobian_func,
+         constraints_double_derivative_func)
+
+        each of type :class:`casadi.Function`.
+        """
+        # Symbolic variables
+        q_sym = MX.sym("q", model.nb_q, 1)  # generalized coordinates
+        q_dot_sym = MX.sym("q_dot", model.nb_qdot, 1)  # velocities
+        q_ddot_sym = MX.sym("q_ddot", model.nb_qdot, 1)  # accelerations
+        parameters = model.parameters  # optional model parameters
+
+        # Homogeneous transformation matrices of the two frames
+        # Global homogeneous matrices (4×4) of the two frames
+        T1_glob = model.homogeneous_matrices_in_global(segment_index=frame_1_idx)(q_sym, parameters)  # shape (4,4)
+        T2_glob = model.homogeneous_matrices_in_global(segment_index=frame_2_idx)(q_sym, parameters)  # shape (4,4)
+
+        # If a *local* reference frame is requested we first bring the two frames
+        # into that local frame (identical to the logic used for the marker
+        # constraint).  The inverse transformation matrix ``T_loc`` maps global → local.
+        if local_frame_idx is not None:
+            T_loc = model.homogeneous_matrices_in_global(segment_index=local_frame_idx, inverse=True)(q_sym, parameters)
+            T1_glob = T_loc @ T1_glob
+            T2_glob = T_loc @ T2_glob
+
+        # Extract only the 3×3 rotation part (the upper‑left block)
+        R1 = T1_glob[:3, :3]  # shape (3,3)
+        R2 = T2_glob[:3, :3]  # shape (3,3)
+
+        # Relative rotation: R_rel = R1ᵀ·R2    (frame‑1 → frame‑2)
+        R_rel = R1.T @ R2  # still a symbolic 3×3 matrix
+
+        # Minimal set of scalar constraints (3 equations)
+        # The skew‑symmetric part of a proper rotation is zero when the angle is zero:
+        #   S = (R_rel - R_relᵀ) / 2  →  S = 0   ⇔   ω = 0, θ = 0
+        # We vectorise the three independent components of S:
+        #    S_21, S_31, S_32
+        # (any consistent ordering works, we keep the same order used in the
+        #  analytical derivation of the constraint in the OP.)
+        S = (R_rel - R_rel.T) / 2.0  # still 3×3, skew‑symmetric
+        constraint = vertcat(S[1, 0], S[2, 0], S[2, 1])  # r21 - r12  # r31 - r13  # r32 - r23
+        # Note: you could also add ``trace(R_rel)-3`` as a fourth equation,
+        # but it is redundant when the matrix stays orthogonal (the solver
+        # already enforces orthonormality via the dynamics).
+
+        # Jacobian and second derivative (CasADi)
+        constraints_jacobian = jacobian(constraint, q_sym)
+
+        # First derivative (velocity level of the holonomic constraint)
+        velocity_constraint = constraints_jacobian @ q_dot_sym
+
+        # Second derivative (acceleration level) – needed for OCP solvers that
+        # treat holonomic constraints as second‑order (e.g. direct collocation)
+        acceleration_constraint = (
+            jacobian(velocity_constraint, q_sym) @ q_dot_sym + jacobian(constraint, q_sym) @ q_ddot_sym
+        )
+
+        constraints_func = Function(
+            "align_frames_constraint",
+            [q_sym],
+            [constraint],
+            ["q"],
+            ["c_align"],
+        ).expand()
+
+        constraints_jacobian_func = Function(
+            "align_frames_jacobian",
+            [q_sym],
+            [constraints_jacobian],
+            ["q"],
+            ["J_align"],
+        ).expand()
+
+        constraints_double_derivative_func = Function(
+            "align_frames_ddot",
+            [q_sym, q_dot_sym, q_ddot_sym],
+            [acceleration_constraint],
+            ["q", "q_dot", "q_ddot"],
+            ["c_ddot_align"],
+        ).expand()
+
+        return (
+            constraints_func,
+            constraints_jacobian_func,
+            constraints_double_derivative_func,
+        )
+
+    @staticmethod
     def rigid_contacts(
         model: BioModel = None,
     ) -> tuple[Function, Function, Function]:

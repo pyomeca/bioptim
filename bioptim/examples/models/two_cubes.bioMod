@@ -1,0 +1,59 @@
+version 1.0
+
+gravity 0 0 -9.81
+
+segment cube0
+    //RT 0 0 0 xyz 0 0 0
+    mass 1.0
+    com 0 0 0
+    inertia   1 0 0
+	            0 1 0
+	            0 0 1
+    mesh 0 -1 -1
+    mesh 0 0 -1
+    mesh 0 0 0
+    mesh 0 -1 0
+    mesh 0 -1 -1
+    mesh 1 -1 -1
+    mesh 1 0 -1
+    mesh 0 0 -1
+    mesh 1 0 -1
+    mesh 1 0 0
+    mesh 0 0 0
+    mesh 1 0 0
+    mesh 1 -1 0
+    mesh 0 -1 0
+    mesh 1 -1 0
+    mesh 1 -1 -1
+    
+    translations	xyz
+    rotations	xyz
+endsegment
+
+segment cube1
+    //RT 0 0 0 xyz 0 0 0
+    mass 2.0
+    com 0 0 0
+    inertia   1 0 0
+	            0 1 0
+	            0 0 1
+    mesh 0 -1 -1
+    mesh 0 0 -1
+    mesh 0 0 0
+    mesh 0 -1 0
+    mesh 0 -1 -1
+    mesh 1 -1 -1
+    mesh 1 0 -1
+    mesh 0 0 -1
+    mesh 1 0 -1
+    mesh 1 0 0
+    mesh 0 0 0
+    mesh 1 0 0
+    mesh 1 -1 0
+    mesh 0 -1 0
+    mesh 1 -1 0
+    mesh 1 -1 -1
+    
+    translations	xyz
+    rotations	xyz
+endsegment
