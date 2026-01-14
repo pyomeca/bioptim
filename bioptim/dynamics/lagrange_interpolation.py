@@ -203,16 +203,16 @@ class LagrangeInterpolation:
 
 def main():
     # Choose polynomial_order and get collocation points
-    polynomial_order = 5
-    time_grid = collocation_points(polynomial_order, "legendre")
+    polynomial_order = 3
+    time_grid = [0] + collocation_points(polynomial_order, "legendre")
 
     # Some example y-values
     y_dict = {
-        1: [2],
-        2: [0.3, 2],
-        3: [0.15, -0.45, 2],
-        4: [0.1, -0.2, 0.7, 2],
-        5: [0.075, 0.15, -0.4, 0.95, 2],
+        1: [0, 2],
+        2: [0, 0.3, 2],
+        3: [0, 0.15, -0.45, 2],
+        4: [0, 0.1, -0.2, 0.7, 2],
+        5: [0, 0.075, 0.15, -0.4, 0.95, 2],
     }
     y_values = y_dict[polynomial_order]
 
@@ -235,21 +235,21 @@ def main():
     ax[0].legend()
     ax[0].grid(True)
 
-    for i in range(polynomial_order):
+    for i in range(polynomial_order + 1):
         ax[0].plot(
             continuous_time,
             [lagrange_interp.lagrange_polynomial(i, t) * y_values[i] for t in continuous_time],
-            label=f"L_{i}(tau)",
+            label=f"L{i}(tau)",
             alpha=0.3,
         )
 
     ax[1].plot(continuous_time, interpolated_velocity, label="Interpolated Velocity")
 
-    for i in range(polynomial_order):
+    for i in range(polynomial_order + 1):
         ax[1].plot(
             continuous_time,
             [lagrange_interp.lagrange_polynomial_derivative(i, t) * y_values[i] for t in continuous_time],
-            label=f"dL_{i}/dtau",
+            label=f"dL{i}/dtau",
             alpha=0.3,
         )
 
