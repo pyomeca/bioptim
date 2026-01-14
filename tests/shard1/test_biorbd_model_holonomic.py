@@ -4,7 +4,14 @@ import numpy.testing as npt
 import pytest
 from casadi import DM, MX
 
-from bioptim import HolonomicBiorbdModel, HolonomicConstraintsFcn, HolonomicConstraintsList, Solver, SolutionMerge
+from bioptim import (
+    HolonomicBiorbdModel,
+    HolonomicConstraintsFcn,
+    HolonomicConstraintsList,
+    Solver,
+    SolutionMerge,
+    OdeSolver,
+)
 from ..utils import TestUtils
 
 
@@ -193,7 +200,8 @@ def test_model_holonomic():
     )
 
 
-def test_example_two_pendulums():
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4(), OdeSolver.COLLOCATION()])
+def test_example_two_pendulums(ode_solver):
     """Test the holonomic_constraints/two_pendulums example"""
     from bioptim.examples.toy_examples.holonomic_constraints import two_pendulums
 
@@ -205,20 +213,148 @@ def test_example_two_pendulums():
         n_shooting=10,
         final_time=1,
         expand_dynamics=False,
+        ode_solver=ode_solver,
     )
 
     # --- Solve the ocp --- #
     sol = ocp.solve(Solver.IPOPT())
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
 
-    npt.assert_almost_equal(
-        states["q_u"],
-        [
-            [1.54, 1.433706, 1.185046, 0.891157, 0.561607, 0.191792, -0.206511, -0.614976, -1.018383, -1.356253, -1.54],
-            [1.54, 1.669722, 1.924726, 2.127746, 2.226937, 2.184007, 1.972105, 1.593534, 1.06751, 0.507334, 0.0],
-        ],
-        decimal=6,
-    )
+    if isinstance(ode_solver, OdeSolver.RK4):
+        npt.assert_almost_equal(
+            states["q_u"],
+            [
+                [
+                    1.54,
+                    1.433706,
+                    1.185046,
+                    0.891157,
+                    0.561607,
+                    0.191792,
+                    -0.206511,
+                    -0.614976,
+                    -1.018383,
+                    -1.356253,
+                    -1.54,
+                ],
+                [1.54, 1.669722, 1.924726, 2.127746, 2.226937, 2.184007, 1.972105, 1.593534, 1.06751, 0.507334, 0.0],
+            ],
+            decimal=6,
+        )
+
+    elif isinstance(ode_solver, OdeSolver.COLLOCATION):
+        npt.assert_almost_equal(
+            states["q_u"],
+            [
+                [
+                    1.54,
+                    1.53947255,
+                    1.52829032,
+                    1.4918706,
+                    1.44772412,
+                    1.43369574,
+                    1.41898275,
+                    1.35974706,
+                    1.27447461,
+                    1.20430304,
+                    1.18502396,
+                    1.16556562,
+                    1.09140745,
+                    0.99166684,
+                    0.91261473,
+                    0.8911305,
+                    0.86947629,
+                    0.78671683,
+                    0.67482281,
+                    0.585796,
+                    0.56157817,
+                    0.53715892,
+                    0.44378604,
+                    0.31793766,
+                    0.21860716,
+                    0.19175812,
+                    0.1647666,
+                    0.0623588,
+                    -0.07337049,
+                    -0.1784637,
+                    -0.20655284,
+                    -0.23470758,
+                    -0.34109507,
+                    -0.48052131,
+                    -0.58686908,
+                    -0.6150277,
+                    -0.64319721,
+                    -0.74951225,
+                    -0.88766222,
+                    -0.99132882,
+                    -1.01844059,
+                    -1.0452361,
+                    -1.14223391,
+                    -1.25827372,
+                    -1.33704454,
+                    -1.35629421,
+                    -1.3747351,
+                    -1.43601269,
+                    -1.49800372,
+                    -1.53258632,
+                    -1.54,
+                ],
+                [
+                    1.54,
+                    1.54064515,
+                    1.55431106,
+                    1.59922772,
+                    1.65296364,
+                    1.66973502,
+                    1.68705873,
+                    1.75370598,
+                    1.84171006,
+                    1.90763103,
+                    1.92475754,
+                    1.94158775,
+                    2.00129161,
+                    2.07058481,
+                    2.11662288,
+                    2.12778938,
+                    2.13845817,
+                    2.17380886,
+                    2.20803169,
+                    2.2242531,
+                    2.22699357,
+                    2.22904554,
+                    2.2304308,
+                    2.21629085,
+                    2.19241948,
+                    2.18407247,
+                    2.17489014,
+                    2.1330352,
+                    2.06082354,
+                    1.99228721,
+                    1.97216828,
+                    1.95123087,
+                    1.86495558,
+                    1.73527252,
+                    1.62449462,
+                    1.59357668,
+                    1.56195524,
+                    1.43562583,
+                    1.25495762,
+                    1.10760291,
+                    1.06752078,
+                    1.0272699,
+                    0.8761086,
+                    0.68415659,
+                    0.54376452,
+                    0.50733629,
+                    0.47128493,
+                    0.3387245,
+                    0.16767637,
+                    0.03546255,
+                    0.0,
+                ],
+            ],
+            decimal=6,
+        )
 
 
 def test_example_two_pendulums_algebraic():

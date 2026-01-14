@@ -88,6 +88,7 @@ def prepare_ocp(
     n_shooting: int = 30,
     final_time: float = 1,
     expand_dynamics: bool = False,
+    ode_solver=OdeSolver.RK4(),
 ) -> tuple[HolonomicTorqueBiorbdModel, OptimalControlProgram]:
     """
     Prepare the program
@@ -136,7 +137,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsOptionsList()
-    dynamics.add(DynamicsOptions(ode_solver=OdeSolver.RK4(), expand_dynamics=expand_dynamics))
+    dynamics.add(DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics))
 
     # Path Constraints
     constraints = ConstraintList()
