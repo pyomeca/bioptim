@@ -21,7 +21,6 @@ from bioptim import (
     HolonomicConstraintsFcn,
     HolonomicConstraintsList,
     HolonomicTorqueBiorbdModel,
-    InitialGuessList,
     ObjectiveFcn,
     ObjectiveList,
     OdeSolver,
@@ -101,9 +100,12 @@ def prepare_ocp(
     holonomic_constraints.add(
         "align_cubes",
         HolonomicConstraintsFcn.align_frames,
-        frame_1_idx=0,  # segment index of the first cube
-        frame_2_idx=1,  # segment index of the second cube
+        frame_1_idx=1,  # segment index of the first cube
+        frame_2_idx=2,  # segment index of the second cube
+        local_frame_idx=0,
     )
+
+    ## @todo Also test example with xyz constraint on top
 
     bio_model = HolonomicTorqueBiorbdModel(
         biorbd_model_path,
@@ -113,7 +115,8 @@ def prepare_ocp(
     )
 
     objectives = ObjectiveList()
-    objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1e-2)
+    objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1)
+    objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="qdot", weight=1e-2)
 
     dynamics = DynamicsOptionsList()
     dynamics.add(DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics))
@@ -132,9 +135,9 @@ def prepare_ocp(
     x_bounds["qdot_u"] = bio_model.bounds_from_ranges("qdot", mapping=variable_bimapping)
 
     x_bounds["q_u"][:, 0] = [-3, 0, 0, -np.pi / 3, np.pi / 6, 0, 0, 0, 0]
-    x_bounds["qdot_u"][:, 0] = 0  # no initial velocity
+    # x_bounds["qdot_u"][:, 0] = 0  # no initial velocity
     x_bounds["qdot_u"][3, 0] = 1  # add initial rotation velocity on one axis
-    x_bounds["qdot_u"][4, 0] = 0.5  # add initial rotation velocity on one axis
+    # x_bounds["qdot_u"][4, 0] = 0.5  # add initial rotation velocity on one axis
 
     variable_bimapping.add(
         "tau", to_second=[0, 1, 2, 3, 4, 5, 6, 7, 8, None, None, None], to_first=[0, 1, 2, 3, 4, 5, 6, 7, 8]

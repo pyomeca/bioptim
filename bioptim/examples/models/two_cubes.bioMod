@@ -2,10 +2,20 @@ version 1.0
 
 gravity 0 0 -9.81
 
+segment root
+    
+    marker root_origin
+        parent root
+        position 0 0 0
+    endmarker
+
+endsegment
+
 segment cube0
+    parent root
     //RT 0 0 0 xyz 0 0 0
     mass 1.0
-    com 0 0 0
+    com 2 0 0
     inertia   1 0 0
 	            0 1 0
 	            0 0 1
@@ -28,12 +38,20 @@ segment cube0
     
     translations	xyz
     rotations	xyz
+
+    // Marker on cube0
+    marker m0
+        parent cube0
+        position 0 0 0
+    endmarker
+
 endsegment
 
 segment cube1
+    parent root
     //RT 0 0 0 xyz 0 0 0
     mass 2.0
-    com 0 0 0
+    com 0 -1 -1
     inertia   1 0 0
 	            0 1 0
 	            0 0 1
@@ -56,4 +74,11 @@ segment cube1
     
     translations	xyz
     rotations	xyz
+
+    // Marker on cube1
+    marker m1
+        parent cube1
+        position 0 0 0
+    endmarker
+
 endsegment

@@ -4,10 +4,69 @@ This class contains different holonomic constraint function.
 
 from typing import Any, Callable
 
-from casadi import MX, Function, jacobian, vertcat
+from casadi import (
+    MX,
+    Function,
+    acos,
+    dot,
+    fabs,
+    fmax,
+    fmin,
+    horzcat,
+    if_else,
+    jacobian,
+    lt,
+    norm_2,
+    sin,
+    trace,
+    vertcat,
+)
 
-from .biomodel import BioModel
 from ...misc.options import OptionDict
+from .biomodel import BioModel
+
+
+def skew_casadi(v):
+    """CasADi version of the skew-symmetric matrix."""
+    x, y, z = v[0], v[1], v[2]
+    return vertcat(
+        horzcat(0, -z, y),
+        horzcat(z, 0, -x),
+        horzcat(-y, x, 0),
+    )
+
+
+def axis_angle_from_R_casadi(R):
+    """CasADi version of axis-angle extraction."""
+    tr = R[0, 0] + R[1, 1] + R[2, 2]
+    c = (tr - 1) / 2  # cos(theta)
+    c = fmax(fmin(c, 1), -1)  # clip for numerical safety
+    theta = acos(c)
+
+    # Handle small theta (avoid division by zero)
+    eps = 1e-12
+    sin_theta = sin(theta)
+    small_theta = if_else(
+        lt(fabs(sin_theta), eps),
+        MX.ones(1),
+        MX.zeros(1),
+    )
+
+    # Compute omega (axis)
+    omega_x = (R[2, 1] - R[1, 2]) / (2 * sin_theta + eps)
+    omega_y = (R[0, 2] - R[2, 0]) / (2 * sin_theta + eps)
+    omega_z = (R[1, 0] - R[0, 1]) / (2 * sin_theta + eps)
+    omega = vertcat(omega_x, omega_y, omega_z)
+
+    # Normalize omega (avoid division by zero)
+    omega_norm = norm_2(omega)
+    omega = if_else(
+        lt(omega_norm, eps),
+        vertcat(1, 0, 0),  # default axis if omega_norm is small
+        omega / omega_norm,
+    )
+
+    return theta, omega
 
 
 class HolonomicConstraintsFcn:
@@ -231,6 +290,78 @@ class HolonomicConstraintsFcn:
             constraints_jacobian_func,
             constraints_double_derivative_func,
         )
+
+    @staticmethod
+    def align_frames_minimize_omega_cross_theta(
+        model,
+        frame_1_idx: int = 0,
+        frame_2_idx: int = 1,
+        local_frame_idx: int = None,
+    ):
+        # Symbolic variables
+        q_sym = MX.sym("q", model.nb_q, 1)
+        q_dot_sym = MX.sym("q_dot", model.nb_qdot, 1)
+        q_ddot_sym = MX.sym("q_ddot", model.nb_qdot, 1)
+        parameters = model.parameters
+
+        # Get homogeneous matrices
+        T1_glob = model.homogeneous_matrices_in_global(segment_index=frame_1_idx)(q_sym, parameters)
+        T2_glob = model.homogeneous_matrices_in_global(segment_index=frame_2_idx)(q_sym, parameters)
+
+        # Express in local frame if needed
+        if local_frame_idx is not None:
+            T_loc = model.homogeneous_matrices_in_global(segment_index=local_frame_idx, inverse=True)(q_sym, parameters)
+            T1_glob = T_loc @ T1_glob
+            T2_glob = T_loc @ T2_glob
+
+        # Extract rotation matrices
+        R1 = T1_glob[:3, :3]
+        R2 = T2_glob[:3, :3]
+        R_rel = R1.T @ R2
+
+        # Extract theta and omega
+        theta, omega = axis_angle_from_R_casadi(R_rel)
+
+        # Objective: minimize ||omega x theta||^2
+        # omega_cross_theta = skew_casadi(omega) @ vertcat(0, 0, theta)
+        # constraint = dot(omega_cross_theta, omega_cross_theta)
+        constraint = dot(theta, theta)
+
+        # Create constraint function
+        constraints_func = Function(
+            "align_frames_cost",
+            [q_sym],
+            [constraint],
+            ["q"],
+            ["cost"],
+        ).expand()
+
+        # Jacobian of the constraint
+        constraints_jacobian = jacobian(constraint, q_sym)
+
+        constraints_jacobian_func = Function(
+            "holonomic_constraints_jacobian",
+            [q_sym],
+            [constraints_jacobian],
+            ["q"],
+            ["holonomic_constraints_jacobian"],
+        ).expand()
+
+        # Hessian of the constraint
+        constraints_hessian = jacobian(constraints_jacobian, q_sym)
+
+        # Double derivative of the constraint
+        constraints_double_derivative = constraints_hessian @ q_dot_sym + constraints_jacobian @ q_ddot_sym
+
+        constraints_double_derivative_func = Function(
+            "holonomic_constraints_double_derivative",
+            [q_sym, q_dot_sym, q_ddot_sym],
+            [constraints_double_derivative],
+            ["q", "q_dot", "q_ddot"],
+            ["holonomic_constraints_double_derivative"],
+        ).expand()
+
+        return constraints_func, constraints_jacobian_func, constraints_double_derivative_func
 
     @staticmethod
     def rigid_contacts(
