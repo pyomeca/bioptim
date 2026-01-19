@@ -123,9 +123,9 @@ def prepare_ocp(
     dynamics.add(DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics))
 
     # Mapping
-    variable_bimapping = BiMappingList()
-    variable_bimapping.add("q", to_second=[0, 1, 2, 3, 4, None, None, None], to_first=[0, 1, 2, 3, 4])
-    variable_bimapping.add("qdot", to_second=[0, 1, 2, 3, 4, None, None, None], to_first=[0, 1, 2, 3, 4])
+    # variable_bimapping = BiMappingList()
+    # variable_bimapping.add("q", to_second=[0, 1, 2, 3, 4, None, None, None], to_first=[0, 1, 2, 3, 4])
+    # variable_bimapping.add("qdot", to_second=[0, 1, 2, 3, 4, None, None, None], to_first=[0, 1, 2, 3, 4])
 
     x_bounds = BoundsList()
     x_bounds.add(
@@ -142,16 +142,16 @@ def prepare_ocp(
     )
 
     # x_bounds["q"][:-3, 0] = [-3, -np.pi / 3, np.pi / 6, 0, 1]
-    x_bounds["q_u"][:, 0] = [-3, -np.pi / 3, np.pi / 6, 0, 1]
+    x_bounds["q_u"][:, 0] = [0, -np.pi / 3, np.pi / 6, 0, 1]
     x_bounds["qdot_u"][:, 0] = 0  # no initial velocity
     x_bounds["qdot_u"][1, 0] = 1  # add initial rotation velocity on one axis
     x_bounds["qdot_u"][2, 0] = 0.5  # add initial rotation velocity on one axis
-    x_bounds["qdot_u"][3, 0] = 0.5
+    x_bounds["qdot_u"][3, 0] = -0.5
 
-    variable_bimapping.add("tau", to_second=[0, 1, 2, 3, 4, None, None, None], to_first=[0, 1, 2, 3, 4])
+    # variable_bimapping.add("tau", to_second=[0, 1, 2, 3, 4, None, None, None], to_first=[0, 1, 2, 3, 4])
 
     u_bounds = BoundsList()
-    u_bounds["tau"] = [0] * 5, [0] * 5
+    u_bounds["tau"] = [0] * 8, [0] * 8
     # u_bounds["tau"] = [0, 0, 0, 0, 0, -100, -100, -100], [0, 0, 0, 0, 0, 100, 100, 100]
 
     constraints = ConstraintList()
@@ -164,7 +164,7 @@ def prepare_ocp(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objectives,
-        variable_mappings=variable_bimapping,
+        # variable_mappings=variable_bimapping,
         constraints=constraints,
         n_threads=24,
     )

@@ -26,6 +26,7 @@ from bioptim import (
     SolutionMerge,
     Solver,
     TorqueBiorbdModel,
+    Node,
 )
 from bioptim.examples.utils import ExampleUtils
 
@@ -74,9 +75,16 @@ def prepare_ocp(
 
     objectives = ObjectiveList()
     objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1e-2)
+    # objectives.add(
+    #     custom_obj_align_frames,
+    #     custom_type=ObjectiveFcn.Lagrange,
+    #     quadratic=True,
+    #     weight=100,
+    # )
     objectives.add(
         custom_obj_align_frames,
-        custom_type=ObjectiveFcn.Lagrange,
+        custom_type=ObjectiveFcn.Mayer,
+        node=Node.END,
         quadratic=True,
         weight=100,
     )
@@ -99,12 +107,12 @@ def prepare_ocp(
     )
 
     # x_bounds["q"][:-3, 0] = [-3, -np.pi / 3, np.pi / 6, 0, 1]
-    x_bounds["q"][:, 0] = [-3, -np.pi / 3, np.pi / 6, 0, 1, 0, 0, 0]
+    x_bounds["q"][:, 0] = [1, -np.pi / 3, np.pi / 6, 0, 1, 0, 0, 0]
     x_bounds["qdot"][:, 0] = 0  # no initial velocity
     # x_bounds["qdot"][:-3, 0] = 0  # no initial velocity
     x_bounds["qdot"][1, 0] = 1  # add initial rotation velocity on one axis
     x_bounds["qdot"][2, 0] = 0.5  # add initial rotation velocity on one axis
-    x_bounds["qdot"][3, 0] = 0.5
+    x_bounds["qdot"][3, 0] = -0.5
 
     u_bounds = BoundsList()
     # u_bounds["tau"] = [0] * 8, [0] * 8
@@ -132,6 +140,7 @@ def main():
 
     ocp, bio_model = prepare_ocp(biorbd_model_path=model_path, n_shooting=100, final_time=1.0)
 
+    ocp.add_plot_penalty()
     solver = Solver.IPOPT()
     solver.set_linear_solver("ma57")
     sol = ocp.solve(solver)
