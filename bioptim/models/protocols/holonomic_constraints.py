@@ -18,6 +18,7 @@ from casadi import (
     lt,
     norm_2,
     sin,
+    sqrt,
     trace,
     vertcat,
 )
@@ -243,7 +244,12 @@ class HolonomicConstraintsFcn:
         #    S_21, S_31, S_32
         # (any consistent ordering works, we keep the same order used in the
         #  analytical derivation of the constraint in the OP.)
-        S = (R_rel - R_rel.T) / 2.0  # still 3×3, skew‑symmetric
+        cos_theta = (trace(R_rel) - 1) / 2
+        theta = sqrt(2 * (1 - cos_theta) + 1e-12)  # using the first-order expansion of arccos
+        theta_over_sintheta = (
+            1 + theta**2 / 6 + 7 * theta**4 / 360 + 31 * theta**6 / 15120
+        )  # using the Taylor expansion
+        S = theta_over_sintheta * (R_rel - R_rel.T) / 2.0  # still 3×3, skew‑symmetric
         constraint = vertcat(S[1, 0], S[2, 0], S[2, 1])  # r21 - r12  # r31 - r13  # r32 - r23
         # Note: you could also add ``trace(R_rel)-3`` as a fourth equation,
         # but it is redundant when the matrix stays orthogonal (the solver
