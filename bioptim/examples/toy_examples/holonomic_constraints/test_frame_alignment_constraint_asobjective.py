@@ -18,14 +18,14 @@ from bioptim import (
     ConstraintList,
     DynamicsOptions,
     DynamicsOptionsList,
-    TorqueBiorbdModel,
+    InterpolationType,
     ObjectiveFcn,
     ObjectiveList,
     OdeSolver,
     OptimalControlProgram,
     SolutionMerge,
     Solver,
-    InterpolationType,
+    TorqueBiorbdModel,
 )
 from bioptim.examples.utils import ExampleUtils
 
@@ -102,9 +102,9 @@ def prepare_ocp(
     x_bounds["q"][:, 0] = [-3, -np.pi / 3, np.pi / 6, 0, 1, 0, 0, 0]
     x_bounds["qdot"][:, 0] = 0  # no initial velocity
     # x_bounds["qdot"][:-3, 0] = 0  # no initial velocity
-    x_bounds["qdot"][3, 0] = 1  # add initial rotation velocity on one axis
-    x_bounds["qdot"][4, 0] = 0.5  # add initial rotation velocity on one axis
-    x_bounds["qdot"][5, 0] = 0.5
+    x_bounds["qdot"][1, 0] = 1  # add initial rotation velocity on one axis
+    x_bounds["qdot"][2, 0] = 0.5  # add initial rotation velocity on one axis
+    x_bounds["qdot"][3, 0] = 0.5
 
     u_bounds = BoundsList()
     # u_bounds["tau"] = [0] * 8, [0] * 8

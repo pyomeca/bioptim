@@ -27,6 +27,7 @@ from bioptim import (
     OptimalControlProgram,
     SolutionMerge,
     Solver,
+    InterpolationType,
 )
 from bioptim.examples.utils import ExampleUtils
 
@@ -110,38 +111,48 @@ def prepare_ocp(
     bio_model = HolonomicTorqueBiorbdModel(
         biorbd_model_path,
         holonomic_constraints=holonomic_constraints,
-        independent_joint_index=[0, 1, 2, 3, 4, 5, 6, 7, 8],
-        dependent_joint_index=[9, 10, 11],  # rotations of cube 1
+        independent_joint_index=[0, 1, 2, 3, 4],
+        dependent_joint_index=[5, 6, 7],  # rotations of cube 1
     )
 
     objectives = ObjectiveList()
     objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1)
-    objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="qdot", weight=1e-2)
+    # objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="qdot", weight=1e-2)
 
     dynamics = DynamicsOptionsList()
     dynamics.add(DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics))
 
     # Mapping
     variable_bimapping = BiMappingList()
-    variable_bimapping.add(
-        "q", to_second=[0, 1, 2, 3, 4, 5, 6, 7, 8, None, None, None], to_first=[0, 1, 2, 3, 4, 5, 6, 7, 8]
-    )
-    variable_bimapping.add(
-        "qdot", to_second=[0, 1, 2, 3, 4, 5, 6, 7, 8, None, None, None], to_first=[0, 1, 2, 3, 4, 5, 6, 7, 8]
-    )
+    variable_bimapping.add("q", to_second=[0, 1, 2, 3, 4, None, None, None], to_first=[0, 1, 2, 3, 4])
+    variable_bimapping.add("qdot", to_second=[0, 1, 2, 3, 4, None, None, None], to_first=[0, 1, 2, 3, 4])
 
     x_bounds = BoundsList()
-    x_bounds["q_u"] = bio_model.bounds_from_ranges("q", mapping=variable_bimapping)
-    x_bounds["qdot_u"] = bio_model.bounds_from_ranges("qdot", mapping=variable_bimapping)
-
-    x_bounds["q_u"][:, 0] = [-3, 0, 0, -np.pi / 3, np.pi / 6, 0, 0, 0, 0]
-    # x_bounds["qdot_u"][:, 0] = 0  # no initial velocity
-    x_bounds["qdot_u"][3, 0] = 1  # add initial rotation velocity on one axis
-    # x_bounds["qdot_u"][4, 0] = 0.5  # add initial rotation velocity on one axis
-
-    variable_bimapping.add(
-        "tau", to_second=[0, 1, 2, 3, 4, 5, 6, 7, 8, None, None, None], to_first=[0, 1, 2, 3, 4, 5, 6, 7, 8]
+    x_bounds.add(
+        "q_u",
+        min_bound=np.array([[-100] * 5, [-100] * 5, [-100] * 5]).T,
+        max_bound=np.array([[100] * 5, [100] * 5, [100] * 5]).T,
+        interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
     )
+    x_bounds.add(
+        "qdot_u",
+        min_bound=np.array([[-100] * 5, [-100] * 5, [-100] * 5]).T,
+        max_bound=np.array([[100] * 5, [100] * 5, [100] * 5]).T,
+        interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
+    )
+
+    # x_bounds["q"][:-3, 0] = [-3, -np.pi / 3, np.pi / 6, 0, 1]
+    x_bounds["q_u"][:, 0] = [-3, -np.pi / 3, np.pi / 6, 0, 1]
+    x_bounds["qdot_u"][:, 0] = 0  # no initial velocity
+    x_bounds["qdot_u"][1, 0] = 1  # add initial rotation velocity on one axis
+    x_bounds["qdot_u"][2, 0] = 0.5  # add initial rotation velocity on one axis
+    x_bounds["qdot_u"][3, 0] = 0.5
+
+    variable_bimapping.add("tau", to_second=[0, 1, 2, 3, 4, None, None, None], to_first=[0, 1, 2, 3, 4])
+
+    u_bounds = BoundsList()
+    u_bounds["tau"] = [0] * 5, [0] * 5
+    # u_bounds["tau"] = [0, 0, 0, 0, 0, -100, -100, -100], [0, 0, 0, 0, 0, 100, 100, 100]
 
     constraints = ConstraintList()
 
@@ -151,6 +162,7 @@ def prepare_ocp(
         final_time,
         dynamics=dynamics,
         x_bounds=x_bounds,
+        u_bounds=u_bounds,
         objective_functions=objectives,
         variable_mappings=variable_bimapping,
         constraints=constraints,
