@@ -36,7 +36,7 @@ segment cube0
     mesh 1 -1 0
     mesh 1 -1 -1
     
-    translations	xyz
+    translations	z
     rotations	xyz
 
     // Marker on cube0
@@ -72,7 +72,7 @@ segment cube1
     mesh 1 -1 0
     mesh 1 -1 -1
     
-    translations	xyz
+    translations	z
     rotations	xyz
 
     // Marker on cube1

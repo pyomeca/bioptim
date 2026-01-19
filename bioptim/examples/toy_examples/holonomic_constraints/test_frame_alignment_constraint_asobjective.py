@@ -25,6 +25,7 @@ from bioptim import (
     OptimalControlProgram,
     SolutionMerge,
     Solver,
+    InterpolationType,
 )
 from bioptim.examples.utils import ExampleUtils
 
@@ -63,7 +64,7 @@ def custom_obj_align_frames(controller, frame_1_idx=1, frame_2_idx=2, local_fram
 
 def prepare_ocp(
     biorbd_model_path: str,
-    n_shooting: int = 30,
+    n_shooting: int = 100,
     final_time: float = 1.0,
     expand_dynamics: bool = False,
     ode_solver=OdeSolver.RK4(),
@@ -77,22 +78,37 @@ def prepare_ocp(
         custom_obj_align_frames,
         custom_type=ObjectiveFcn.Lagrange,
         quadratic=True,
-        weight=1000,
+        weight=100,
     )
 
     dynamics = DynamicsOptionsList()
     dynamics.add(DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics))
 
     x_bounds = BoundsList()
-    x_bounds["q"] = bio_model.bounds_from_ranges("q")
-    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+    x_bounds.add(
+        "q",
+        min_bound=np.array([[-100] * 8, [-100] * 8, [-100] * 8]).T,
+        max_bound=np.array([[100] * 8, [100] * 8, [100] * 8]).T,
+        interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
+    )
+    x_bounds.add(
+        "qdot",
+        min_bound=np.array([[-100] * 8, [-100] * 8, [-100] * 8]).T,
+        max_bound=np.array([[100] * 8, [100] * 8, [100] * 8]).T,
+        interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
+    )
 
-    x_bounds["q"][:-3, 0] = [-3, 0, 0, -np.pi / 3, np.pi / 6, 1, 0, 0, 0]
-    # x_bounds["qdot"][:, 0] = 0  # no initial velocity
+    # x_bounds["q"][:-3, 0] = [-3, -np.pi / 3, np.pi / 6, 0, 1]
+    x_bounds["q"][:, 0] = [-3, -np.pi / 3, np.pi / 6, 0, 1, 0, 0, 0]
+    x_bounds["qdot"][:, 0] = 0  # no initial velocity
     # x_bounds["qdot"][:-3, 0] = 0  # no initial velocity
-    # x_bounds["qdot"][3, 0] = 1  # add initial rotation velocity on one axis
-    # x_bounds["qdot"][4, 0] = 0.5  # add initial rotation velocity on one axis
-    # x_bounds["qdot"][5, 0] = 0.5
+    x_bounds["qdot"][3, 0] = 1  # add initial rotation velocity on one axis
+    x_bounds["qdot"][4, 0] = 0.5  # add initial rotation velocity on one axis
+    x_bounds["qdot"][5, 0] = 0.5
+
+    u_bounds = BoundsList()
+    # u_bounds["tau"] = [0] * 8, [0] * 8
+    u_bounds["tau"] = [0, 0, 0, 0, 0, -100, -100, -100], [0, 0, 0, 0, 0, 100, 100, 100]
 
     constraints = ConstraintList()
 
@@ -102,6 +118,7 @@ def prepare_ocp(
         final_time,
         dynamics=dynamics,
         x_bounds=x_bounds,
+        u_bounds=u_bounds,
         objective_functions=objectives,
         constraints=constraints,
         n_threads=24,
@@ -113,7 +130,7 @@ def main():
     model_folder = os.path.join(ExampleUtils.folder, "models")
     model_path = os.path.join(model_folder, "two_cubes.bioMod")
 
-    ocp, bio_model = prepare_ocp(biorbd_model_path=model_path, n_shooting=50, final_time=0.5)
+    ocp, bio_model = prepare_ocp(biorbd_model_path=model_path, n_shooting=100, final_time=1.0)
 
     solver = Solver.IPOPT()
     solver.set_linear_solver("ma57")
@@ -124,7 +141,7 @@ def main():
     # --- Show results --- #
     q = sol.decision_states(to_merge=SolutionMerge.NODES)["q"]
 
-    viewer = "pyorerun"
+    viewer = "bioviz"
     if viewer == "bioviz":
         import bioviz
 
