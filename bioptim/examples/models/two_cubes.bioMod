@@ -39,13 +39,15 @@ segment cube0
     translations	z
     rotations	xyz
 
+
+
+endsegment
+
     // Marker on cube0
     marker m0
         parent cube0
         position 0 0 0
     endmarker
-
-endsegment
 
 segment cube1
     parent root
@@ -75,10 +77,12 @@ segment cube1
     translations	z
     rotations	xyz
 
+
+
+endsegment
+
     // Marker on cube1
     marker m1
         parent cube1
         position 0 0 0
     endmarker
-
-endsegment
