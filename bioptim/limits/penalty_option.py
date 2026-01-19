@@ -340,7 +340,11 @@ class PenaltyOption(OptionGeneric):
             n_nodes = len(controller.t)
         self.weight.check_and_adjust_dimensions(n_nodes, f"{self.name} weight")
 
-        if not isinstance(self.weight, ConstraintWeight) and len(self.weight.shape) != 1:
+        if (
+                not isinstance(self.weight, ConstraintWeight) and
+                not isinstance(self.weight, ObjectiveWeight) and
+                len(self.weight.shape) != 1
+        ):
             raise RuntimeError(
                 "Something went wrong, the weight should be a vector at this point. "
                 "Please note that independent weighting of components is not available yet."
