@@ -104,7 +104,7 @@ def prepare_ocp(
         marker_1="m0",
         marker_2="m1",
         index=slice(0, 1),
-        local_frame_index=0,
+        local_frame_index=2,
     )
 
     bio_model = HolonomicTorqueBiorbdModel(
@@ -138,7 +138,7 @@ def prepare_ocp(
     x_bounds["qdot_u"][:, 0] = 0  # no initial velocity
 
     u_bounds = BoundsList()
-    u_bounds["tau"] = [1, 0], [1, 0]
+    u_bounds["tau"] = [10, 0], [10, 0]
 
     constraints = ConstraintList()
 

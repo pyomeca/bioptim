@@ -50,7 +50,7 @@ endsegment
 segment cube1
     parent root
     RTinMatrix    0
-    RT 0 0 0 xyz 0 0 0
+    RT 0 0 0 xyz 0 2 0
     mass 1.0
     com 0.5 0.5 0.5
     inertia   1 0 0

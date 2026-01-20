@@ -103,7 +103,7 @@ def prepare_ocp(
         HolonomicConstraintsFcn.align_frames,
         frame_1_idx=1,  # segment index of the first cube
         frame_2_idx=2,  # segment index of the second cube
-        local_frame_idx=0,
+        local_frame_idx=None,
     )
 
     bio_model = HolonomicTorqueBiorbdModel(
@@ -138,7 +138,7 @@ def prepare_ocp(
     x_bounds["qdot_u"][:, 0] = 0  # no initial velocity
 
     u_bounds = BoundsList()
-    u_bounds["tau"] = [-1, 0, 0, 0], [-1, 0, 0, 0]
+    u_bounds["tau"] = [0.1, 0, 0, 0], [0.1, 0, 0, 0]
 
     constraints = ConstraintList()
 
@@ -158,14 +158,14 @@ def prepare_ocp(
 
 
 def main():
-    out_of_plane = True
+    out_of_plane = False
     model_folder = os.path.join(ExampleUtils.folder, "models")
     if out_of_plane:
         model_path = os.path.join(model_folder, "two_cubes_laplace2D_outofplane.bioMod")
     else:
         model_path = os.path.join(model_folder, "two_cubes_laplace2D.bioMod")
 
-    ocp, bio_model = prepare_ocp(biorbd_model_path=model_path, n_shooting=200, final_time=2.0)
+    ocp, bio_model = prepare_ocp(biorbd_model_path=model_path, n_shooting=200, final_time=5.0)
 
     solver = Solver.IPOPT()
     solver.set_linear_solver("ma57")
