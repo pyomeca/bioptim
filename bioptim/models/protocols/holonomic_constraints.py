@@ -181,15 +181,22 @@ class HolonomicConstraintsFcn:
 
         # If a *local* reference frame is requested we first bring the two frames
         # into that local frame (identical to the logic used for the marker
-        # constraint).  The inverse transformation matrix ``T_loc`` maps global → local.
+        # constraint).
         if local_frame_idx is not None:
-            T_loc = model.homogeneous_matrices_in_global(segment_index=local_frame_idx, inverse=True)(q_sym, parameters)
-            T1_glob = T_loc @ T1_glob
-            T2_glob = T_loc @ T2_glob
+            # Get the rotation matrix of the local frame in the global frame
+            R_loc_glob = model.homogeneous_matrices_in_global(segment_index=local_frame_idx)(q_sym, parameters)[:3, :3]
 
-        # Extract only the 3×3 rotation part (the upper‑left block)
-        R1 = T1_glob[:3, :3]  # shape (3,3)
-        R2 = T2_glob[:3, :3]  # shape (3,3)
+            # Get the rotation matrices of the two frames in the global frame
+            R1_glob = model.homogeneous_matrices_in_global(segment_index=frame_1_idx)(q_sym, parameters)[:3, :3]
+            R2_glob = model.homogeneous_matrices_in_global(segment_index=frame_2_idx)(q_sym, parameters)[:3, :3]
+
+            # Transform the rotation matrices into the local frame
+            R1 = R_loc_glob.T @ R1_glob
+            R2 = R_loc_glob.T @ R2_glob
+        else:
+            # If no local frame is specified, use the global frame
+            R1 = model.homogeneous_matrices_in_global(segment_index=frame_1_idx)(q_sym, parameters)[:3, :3]
+            R2 = model.homogeneous_matrices_in_global(segment_index=frame_2_idx)(q_sym, parameters)[:3, :3]
 
         # Relative rotation: R_rel = R1ᵀ·R2    (frame‑1 → frame‑2)
         R_rel = R1.T @ R2  # still a symbolic 3×3 matrix
