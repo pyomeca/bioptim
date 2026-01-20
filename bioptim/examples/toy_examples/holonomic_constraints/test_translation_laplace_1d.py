@@ -104,7 +104,7 @@ def prepare_ocp(
         marker_1="m0",
         marker_2="m1",
         index=slice(0, 1),
-        local_frame_index=2,
+        local_frame_index=0,
     )
 
     bio_model = HolonomicTorqueBiorbdModel(
@@ -121,24 +121,24 @@ def prepare_ocp(
     dynamics.add(DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics))
 
     x_bounds = BoundsList()
-    # x_bounds.add(
-    #     "q_u",
-    #     min_bound=np.array([[-100], [-100], [-100]]).T,
-    #     max_bound=np.array([[100], [100], [100]]).T,
-    #     interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
-    # )
-    # x_bounds.add(
-    #     "qdot_u",
-    #     min_bound=np.array([[-100], [-100], [-100]]).T,
-    #     max_bound=np.array([[100], [100], [100]]).T,
-    #     interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
-    # )
+    x_bounds.add(
+        "q_u",
+        min_bound=np.array([[-100], [-100], [-100]]).T,
+        max_bound=np.array([[100], [100], [100]]).T,
+        interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
+    )
+    x_bounds.add(
+        "qdot_u",
+        min_bound=np.array([[-100], [-100], [-100]]).T,
+        max_bound=np.array([[100], [100], [100]]).T,
+        interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
+    )
 
-    # x_bounds["q_u"][:, 0] = [0]
-    # x_bounds["qdot_u"][:, 0] = 0  # no initial velocity
+    x_bounds["q_u"][:, 0] = [0]
+    x_bounds["qdot_u"][:, 0] = 0  # no initial velocity
 
     u_bounds = BoundsList()
-    # u_bounds["tau"] = [0, 0], [0, 0]
+    u_bounds["tau"] = [1, 0], [1, 0]
 
     constraints = ConstraintList()
 
@@ -161,7 +161,7 @@ def main():
     model_folder = os.path.join(ExampleUtils.folder, "models")
     model_path = os.path.join(model_folder, "two_cubes_laplace1D.bioMod")
 
-    ocp, bio_model = prepare_ocp(biorbd_model_path=model_path, n_shooting=50, final_time=0.5)
+    ocp, bio_model = prepare_ocp(biorbd_model_path=model_path, n_shooting=300, final_time=3.0)
 
     solver = Solver.IPOPT()
     solver.set_linear_solver("ma57")
@@ -172,7 +172,7 @@ def main():
     # --- Show results --- #
     q, _, _, _ = compute_all_states(sol, bio_model)
 
-    viewer = "pyorerun"
+    viewer = "bioviz"
     if viewer == "bioviz":
         import bioviz
 

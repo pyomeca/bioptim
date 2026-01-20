@@ -1,6 +1,6 @@
 version 1.0
 
-gravity 0 0 0
+gravity 0 0 -9.81
 
 segment root
     
@@ -15,7 +15,7 @@ segment cube0
     parent root
     RTinMatrix    0
     RT 0 0 0 xyz 0 0 0
-    mass 0.0
+    mass 1.0
     com 0.5 0.5 0.5
     inertia   1 0 0
 	            0 1 0
@@ -51,7 +51,7 @@ segment cube1
     parent root
     RTinMatrix    0
     RT 0 0 0 xyz 0 0 0
-    mass 0.0
+    mass 1.0
     com 0.5 0.5 0.5
     inertia   1 0 0
 	            0 1 0
