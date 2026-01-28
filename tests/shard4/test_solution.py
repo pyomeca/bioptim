@@ -312,7 +312,17 @@ def test_generate_decision_time(ode_solver, merge_phase, phase_dynamics, continu
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("merge_phase", [True, False])
 @pytest.mark.parametrize("shooting_type", [Shooting.SINGLE, Shooting.SINGLE_DISCONTINUOUS_PHASE, Shooting.MULTIPLE])
-@pytest.mark.parametrize("integrator", [SolutionIntegrator.OCP, SolutionIntegrator.SCIPY_RK45])
+@pytest.mark.parametrize(
+    "integrator",
+    [
+        SolutionIntegrator.OCP,
+        SolutionIntegrator.SCIPY_RK23,
+        SolutionIntegrator.SCIPY_RK45,
+        SolutionIntegrator.SCIPY_DOP853,
+        SolutionIntegrator.SCIPY_BDF,
+        SolutionIntegrator.SCIPY_LSODA,
+    ],
+)
 @pytest.mark.parametrize("control_type", [ControlType.CONSTANT, ControlType.LINEAR_CONTINUOUS])
 def test_generate_integrate(ode_solver, merge_phase, shooting_type, integrator, phase_dynamics, control_type):
     # Load slider
