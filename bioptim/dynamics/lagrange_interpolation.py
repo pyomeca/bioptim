@@ -20,12 +20,20 @@ class LagrangeInterpolation:
         self.time_grid = time_grid
 
     @cached_property
-    def polynomial_degree(self) -> Int:
+    def len_time_grid(self) -> Int:
+        """
+        This len_time_grid property returns the Lagrange polynomial order + 1
+        E.g., If you have a polynomial of degree 3, you have a time grid with four points.
+        Thus, len_time_grid = 4.
+        """
         return len(self.time_grid)
 
-    @classmethod
-    def from_grid_type(cls, polynomial_degree: Int, collocation_type: Str = "radau"):
-        return cls(collocation_points(polynomial_degree, collocation_type))
+    @cached_property
+    def polynomial_order(self) -> Int:
+        """
+        This property is not used, but we should keep it as a doc.
+        """
+        return len(self.time_grid) - 1
 
     def lagrange_polynomial(self, j: Int, time_control_interval: CX) -> CX:
         """
@@ -75,7 +83,7 @@ class LagrangeInterpolation:
         further manipulation or evaluation (e.g., computing derivatives).
         """
         _l = 1
-        for r in range(self.polynomial_degree):
+        for r in range(self.len_time_grid):
             if r != j:
                 _l *= (time_control_interval - self.time_grid[r]) / (self.time_grid[j] - self.time_grid[r])
         return _l
@@ -83,7 +91,7 @@ class LagrangeInterpolation:
     def partial_lagrange_polynomial(self, j: Int, time_control_interval: CX, i: Int) -> CX:
         """Compute the partial product of the j-th Lagrange polynomial without the i-th term."""
         _l = 1
-        for r in range(self.polynomial_degree):
+        for r in range(self.len_time_grid):
             if r != j and r != i:
                 _l *= (time_control_interval - self.time_grid[r]) / (self.time_grid[j] - self.time_grid[r])
         return _l
@@ -129,7 +137,7 @@ class LagrangeInterpolation:
         which, when factored appropriately, yields the compact form above.
         """
         sum_term = 0
-        for k in range(self.polynomial_degree):
+        for k in range(self.len_time_grid):
             if k == j:
                 continue
 
@@ -158,7 +166,7 @@ class LagrangeInterpolation:
         """
         self._check_y_values(y_values)
         interpolated_value = 0
-        for j in range(self.polynomial_degree):
+        for j in range(self.len_time_grid):
             interpolated_value += y_values[j] * self.lagrange_polynomial(j, time_control_interval)
         return interpolated_value
 
@@ -182,29 +190,29 @@ class LagrangeInterpolation:
         """
         self._check_y_values(y_values)
         interpolated_value = 0
-        for j in range(self.polynomial_degree):
+        for j in range(self.len_time_grid):
             interpolated_value += y_values[j] * self.lagrange_polynomial_derivative(j, time_control_interval)
         return interpolated_value
 
     def _check_y_values(self, y_values) -> None:
-        if len(y_values) != self.polynomial_degree:
+        if len(y_values) != self.len_time_grid:
             raise ValueError(
-                f"Length of y_values ({len(y_values)}) must match the polynomial order ({self.polynomial_degree})"
+                f"Length of y_values ({len(y_values)}) must match the polynomial order ({self.len_time_grid})"
             )
 
 
 def main():
     # Choose polynomial_order and get collocation points
-    polynomial_order = 5
-    time_grid = collocation_points(polynomial_order, "legendre")
+    polynomial_order = 3
+    time_grid = [0] + collocation_points(polynomial_order, "legendre")
 
     # Some example y-values
     y_dict = {
-        1: [2],
-        2: [0.3, 2],
-        3: [0.15, -0.45, 2],
-        4: [0.1, -0.2, 0.7, 2],
-        5: [0.075, 0.15, -0.4, 0.95, 2],
+        1: [0, 2],
+        2: [0, 0.3, 2],
+        3: [0, 0.15, -0.45, 2],
+        4: [0, 0.1, -0.2, 0.7, 2],
+        5: [0, 0.075, 0.15, -0.4, 0.95, 2],
     }
     y_values = y_dict[polynomial_order]
 
@@ -227,21 +235,21 @@ def main():
     ax[0].legend()
     ax[0].grid(True)
 
-    for i in range(polynomial_order):
+    for i in range(polynomial_order + 1):
         ax[0].plot(
             continuous_time,
             [lagrange_interp.lagrange_polynomial(i, t) * y_values[i] for t in continuous_time],
-            label=f"L_{i}(tau)",
+            label=f"L{i}(tau)",
             alpha=0.3,
         )
 
     ax[1].plot(continuous_time, interpolated_velocity, label="Interpolated Velocity")
 
-    for i in range(polynomial_order):
+    for i in range(polynomial_order + 1):
         ax[1].plot(
             continuous_time,
             [lagrange_interp.lagrange_polynomial_derivative(i, t) * y_values[i] for t in continuous_time],
-            label=f"dL_{i}/dtau",
+            label=f"dL{i}/dtau",
             alpha=0.3,
         )
 
