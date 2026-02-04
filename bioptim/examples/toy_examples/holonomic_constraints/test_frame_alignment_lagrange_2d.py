@@ -28,7 +28,6 @@ from bioptim import (
     SolutionMerge,
     Solver,
     InterpolationType,
-    InitialGuessList,
 )
 from bioptim.examples.utils import ExampleUtils
 
@@ -61,10 +60,10 @@ def compute_all_states(sol, bio_model: HolonomicTorqueBiorbdModel):
     lambdas = np.zeros((bio_model.nb_dependent_joints, n))
     tau = np.zeros((bio_model.nb_tau, n_tau + 1))
 
-    for i, independent_joint_index in enumerate(bio_model.independent_joint_index):
-        tau[independent_joint_index, :-1] = controls["tau"][i, :]
-    for i, dependent_joint_index in enumerate(bio_model.dependent_joint_index):
-        tau[dependent_joint_index, :-1] = controls["tau"][i, :]
+    for independent_joint_index in bio_model.independent_joint_index:
+        tau[independent_joint_index, :-1] = controls["tau"][independent_joint_index, :]
+    for dependent_joint_index in bio_model.dependent_joint_index:
+        tau[dependent_joint_index, :-1] = controls["tau"][dependent_joint_index, :]
 
     q_v_init = DM.zeros(bio_model.nb_dependent_joints, n)
     for i in range(n):
@@ -90,38 +89,6 @@ def compute_all_states(sol, bio_model: HolonomicTorqueBiorbdModel):
     return q, qdot, qddot, lambdas
 
 
-import numpy as np
-from casadi import DM
-
-
-# dummy model that returns the identity rotation for every segment
-class DummyModel:
-    nb_q = 6
-    nb_qdot = 6
-    parameters = DM([])
-
-    def homogeneous_matrices_in_global(self, segment_index):
-        # returns a function that ignores q and parameters and always gives I4
-        return lambda q, p: DM.eye(4)
-
-
-model = DummyModel()
-
-# Desired relative rotation = 180° about the x‑axis
-R_des = DM([[1, 0, 0], [0, -1, 0], [0, 0, -1]])
-
-c_f, c_j, c_dd = HolonomicConstraintsFcn.align_frames3(
-    model,
-    frame_1_idx=1,
-    frame_2_idx=2,
-    relative_rotation=R_des,
-)
-
-# evaluate the constraint at the (only) configuration
-print(c_f(q=DM.zeros(6)))  # → should be [π, 0, 0]ᵀ (non‑zero, i.e. error)
-print(c_j(q=DM.zeros(6)))  # Jacobian (3×6 matrix) – just to check it builds
-
-
 def prepare_ocp(
     biorbd_model_path: str,
     n_shooting: int = 30,
@@ -130,84 +97,48 @@ def prepare_ocp(
     ode_solver=OdeSolver.RK4(),
 ):
 
-    # Define the desired relative rotation (e.g., a rotation of pi/4 around Z)
-    desired_angle = np.pi / 4  # Example: pi/4 radians around Z
-    # R_desired = np.array(
-    #     [
-    #         [np.cos(desired_angle), -np.sin(desired_angle), 0],
-    #         [np.sin(desired_angle), np.cos(desired_angle), 0],
-    #         [0, 0, 1],
-    #     ]
-    # )
-    R_desired = np.array(
-        [
-            [1, 0, 0],
-            [0, -1, 0],
-            [0, 0, -1],
-        ]
-    )
-
     holonomic_constraints = HolonomicConstraintsList()
     holonomic_constraints.add(
         "align_cubes",
-        HolonomicConstraintsFcn.align_frames3,
+        HolonomicConstraintsFcn.align_frames,
         frame_1_idx=1,  # segment index of the first cube
         frame_2_idx=2,  # segment index of the second cube
-        relative_rotation=R_desired,
         # local_frame_idx=0,
     )
-
-    ## @todo Also test example with xyz constraint on top
 
     bio_model = HolonomicTorqueBiorbdModel(
         biorbd_model_path,
         holonomic_constraints=holonomic_constraints,
-        independent_joint_index=[0, 1, 2, 3, 4],
-        dependent_joint_index=[5, 6, 7],  # rotations of cube 1
+        independent_joint_index=[0],
+        dependent_joint_index=[1, 2, 3],  # rotation of cube 1
     )
 
     objectives = ObjectiveList()
     objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1)
-    # objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="qdot", weight=1e-2)
 
     dynamics = DynamicsOptionsList()
     dynamics.add(DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics))
 
-    # Mapping
-    # variable_bimapping = BiMappingList()
-    # variable_bimapping.add("q", to_second=[0, 1, 2, 3, 4, None, None, None], to_first=[0, 1, 2, 3, 4])
-    # variable_bimapping.add("qdot", to_second=[0, 1, 2, 3, 4, None, None, None], to_first=[0, 1, 2, 3, 4])
-
     x_bounds = BoundsList()
     x_bounds.add(
         "q_u",
-        min_bound=np.array([[-100] * 5, [-100] * 5, [-100] * 5]).T,
-        max_bound=np.array([[100] * 5, [100] * 5, [100] * 5]).T,
+        min_bound=np.array([[-100], [-100], [-100]]).T,
+        max_bound=np.array([[100], [100], [100]]).T,
         interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
     )
     x_bounds.add(
         "qdot_u",
-        min_bound=np.array([[-100] * 5, [-100] * 5, [-100] * 5]).T,
-        max_bound=np.array([[100] * 5, [100] * 5, [100] * 5]).T,
+        min_bound=np.array([[-100], [-100], [-100]]).T,
+        max_bound=np.array([[100], [100], [100]]).T,
         interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
     )
 
     # x_bounds["q"][:-3, 0] = [-3, -np.pi / 3, np.pi / 6, 0, 1]
-    x_bounds["q_u"][:, 0] = [0, -np.pi / 3, np.pi / 6, 0, 1]
+    x_bounds["q_u"][:, 0] = [0]
     x_bounds["qdot_u"][:, 0] = 0  # no initial velocity
-    x_bounds["qdot_u"][1, 0] = 1  # add initial rotation velocity on one axis
-    x_bounds["qdot_u"][2, 0] = 0.5  # add initial rotation velocity on one axis
-    x_bounds["qdot_u"][3, 0] = -0.5
-
-    # Initial guess
-    x_init = InitialGuessList()
-    x_init["q_u"] = [0, 1.0, 0, 0, 0]
-
-    # variable_bimapping.add("tau", to_second=[0, 1, 2, 3, 4, None, None, None], to_first=[0, 1, 2, 3, 4])
 
     u_bounds = BoundsList()
-    u_bounds["tau"] = [0] * 8, [0] * 8
-    # u_bounds["tau"] = [0, 0, 0, 0, 0, -100, -100, -100], [0, 0, 0, 0, 0, 100, 100, 100]
+    u_bounds["tau"] = [1, 0, 0, 0], [1, 0, 0, 0]
 
     constraints = ConstraintList()
 
@@ -218,7 +149,6 @@ def prepare_ocp(
         dynamics=dynamics,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
-        x_init=x_init,
         objective_functions=objectives,
         # variable_mappings=variable_bimapping,
         constraints=constraints,
@@ -228,31 +158,97 @@ def prepare_ocp(
 
 
 def main():
+    import matplotlib.pyplot as plt
+
+    out_of_plane = True
     model_folder = os.path.join(ExampleUtils.folder, "models")
-    model_path = os.path.join(model_folder, "two_cubes.bioMod")
+    if out_of_plane:
+        model_path = os.path.join(model_folder, "two_cubes_laplace2D_outofplane.bioMod")
+    else:
+        model_path = os.path.join(model_folder, "two_cubes_laplace2D.bioMod")
 
-    ocp, bio_model = prepare_ocp(biorbd_model_path=model_path, n_shooting=100, final_time=1.0)
+    ocp, bio_model = prepare_ocp(biorbd_model_path=model_path, n_shooting=10, final_time=2.0)
 
-    q0 = np.zeros((bio_model.nb_q, 1))
-    q0 = np.array([0, 1.0, 0, 0, 0, 0, 0, 0])
-    print("c(q0) = ", bio_model.holonomic_constraints(q0))
-    R1 = bio_model.homogeneous_matrices_in_global(segment_index=1)(q0, DM([]))[:3, :3]
-    print("R1·R1ᵀ =", (R1 @ R1.T).full())
-
-    solver = Solver.IPOPT(show_online_optim=True)
+    solver = Solver.IPOPT()
     solver.set_linear_solver("ma57")
     sol = ocp.solve(solver)
 
     print(f"Optimization finished in {sol.real_time_to_optimize:.2f} s")
 
-    # --- Show results --- #
-    q, _, _, _ = compute_all_states(sol, bio_model)
+    print(bio_model.holonomic_constraints([0, np.pi / 6, 0, 0]))
 
-    viewer = "bioviz"
+    # --- Extract Lagrange multipliers ---
+    q, qdot, _, lambdas = compute_all_states(sol, bio_model)
+
+    # --- Transform lambdas to the original frame ---
+    # Rotation matrix for pi/4 around Z
+    theta = -np.pi / 6
+
+    def R_x(theta):
+        return np.array([[1, 0, 0], [0, np.cos(theta), -np.sin(theta)], [0, np.sin(theta), np.cos(theta)]])
+
+    def R_y(theta):
+        return np.array([[np.cos(theta), 0, np.sin(theta)], [0, 1, 0], [-np.sin(theta), 0, np.cos(theta)]])
+
+    def R_z(theta):
+        return np.array([[np.cos(theta), -np.sin(theta), 0], [np.sin(theta), np.cos(theta), 0], [0, 0, 1]])
+
+    R1 = bio_model.homogeneous_matrices_in_global(segment_index=1)(q[:, 0], [])[:3, :3]
+    R2 = bio_model.homogeneous_matrices_in_global(segment_index=2)(q[:, 0], [])[:3, :3]
+
+    Rg_1 = bio_model.homogeneous_matrices_in_child(segment_id=1)([])[:3, :3]
+    Rg_2 = bio_model.homogeneous_matrices_in_child(segment_id=2)([])[:3, :3]
+    print(Rg_1)
+    print(np.linalg.inv(Rg_1))
+
+    R2_t = []
+    Xcube1_0 = []
+    for q_t in q.T:
+        R2_tmp = bio_model.homogeneous_matrices_in_global(segment_index=2)(q_t, [])[:3, :3]
+        R2_t.append(R2_tmp.toarray())
+        Xcube1_0.append((Rg_1.T @ R2_tmp @ q_t[1:]).toarray().squeeze())
+
+    Xcube1_0 = np.array(Xcube1_0)
+
+    print(bio_model.holonomic_constraints_jacobian(q[:, 0]))
+
+    # Transform each lambda vector
+    lambdas_original = np.zeros_like(lambdas.T)
+    for i in range(lambdas.T.shape[0]):
+        lambdas_original[i, :] = (Rg_1.T @ lambdas.T[i, :]).toarray().squeeze()
+
+    # --- Plot the transformed lambdas ---
+    time = np.concatenate(sol.decision_time()).squeeze()
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(time, q.T[:, 0], label="q X ", linestyle="dashed")
+    plt.plot(time, Xcube1_0.T[0], label="q X1 ", linestyle="dashed")
+    plt.plot(time, Xcube1_0.T[1], label="q Y1 ", linestyle="dashed")
+    plt.plot(time, Xcube1_0.T[2], label="q Z1 ", linestyle="dashed")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(time, lambdas.T[:, 0], label="Lambda X ", linestyle="dashed")
+    plt.plot(time, lambdas.T[:, 1], label="Lambda Y ", linestyle="dashed")
+    plt.plot(time, lambdas.T[:, 2], label="Lambda Z ", linestyle="dashed")
+    plt.plot(time, lambdas_original[:, 0], label="Lambda X (Original Frame)")
+    plt.plot(time, lambdas_original[:, 1], label="Lambda Y (Original Frame)")
+    plt.plot(time, lambdas_original[:, 2], label="Lambda Z (Original Frame)")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Lagrange Multipliers (Nm)")
+    plt.title("Transformed Lagrange Multipliers (Original Frame)")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+    viewer = "pyorerun"
     if viewer == "bioviz":
         import bioviz
 
         viz = bioviz.Viz(model_path)
+        viz.show_global_ref_frame = True
         viz.load_movement(q)
         viz.exec()
 

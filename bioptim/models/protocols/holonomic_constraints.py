@@ -6,6 +6,7 @@ from typing import Any, Callable
 
 from casadi import (
     MX,
+    DM,
     Function,
     acos,
     dot,
@@ -21,7 +22,9 @@ from casadi import (
     sqrt,
     trace,
     vertcat,
+    pi,
 )
+import casadi as ca
 
 from ...misc.options import OptionDict
 from .biomodel import BioModel
@@ -127,6 +130,7 @@ class HolonomicConstraintsFcn:
         frame_1_idx: int = 0,  # index of the first segment / frame in the model
         frame_2_idx: int = 1,  # index of the second segment / frame
         local_frame_idx: int = None,
+        relative_rotation=DM.eye(3),
     ) -> tuple[Function, Function, Function]:
         """
         Generate the holonomic constraint that forces the orientation of two
@@ -176,8 +180,8 @@ class HolonomicConstraintsFcn:
 
         # Homogeneous transformation matrices of the two frames
         # Global homogeneous matrices (4×4) of the two frames
-        T1_glob = model.homogeneous_matrices_in_global(segment_index=frame_1_idx)(q_sym, parameters)  # shape (4,4)
-        T2_glob = model.homogeneous_matrices_in_global(segment_index=frame_2_idx)(q_sym, parameters)  # shape (4,4)
+        # T1_glob = model.homogeneous_matrices_in_global(segment_index=frame_1_idx)(q_sym, parameters)  # shape (4,4)
+        # T2_glob = model.homogeneous_matrices_in_global(segment_index=frame_2_idx)(q_sym, parameters)  # shape (4,4)
 
         # If a *local* reference frame is requested we first bring the two frames
         # into that local frame (identical to the logic used for the marker
@@ -201,6 +205,10 @@ class HolonomicConstraintsFcn:
         # Relative rotation: R_rel = R1ᵀ·R2    (frame‑1 → frame‑2)
         R_rel = R1.T @ R2  # still a symbolic 3×3 matrix
 
+        # Error in relative rotation: R_rel - R_desired
+        # R_error = R_rel @ relative_rotation.T
+        R_error = relative_rotation.T @ R_rel
+
         # Minimal set of scalar constraints (3 equations)
         # The skew‑symmetric part of a proper rotation is zero when the angle is zero:
         #   S = (R_rel - R_relᵀ) / 2  →  S = 0   ⇔   ω = 0, θ = 0
@@ -208,16 +216,302 @@ class HolonomicConstraintsFcn:
         #    S_21, S_31, S_32
         # (any consistent ordering works, we keep the same order used in the
         #  analytical derivation of the constraint in the OP.)
-        cos_theta = (trace(R_rel) - 1) / 2
+        cos_theta = (trace(R_error) - 1) / 2
         theta = sqrt(2 * (1 - cos_theta) + 1e-12)  # using the first-order expansion of arccos
         theta_over_sintheta = (
             1 + theta**2 / 6 + 7 * theta**4 / 360 + 31 * theta**6 / 15120
         )  # using the Taylor expansion
-        S = theta_over_sintheta * (R_rel - R_rel.T) / 2.0  # still 3×3, skew‑symmetric
-        constraint = vertcat(S[1, 0], S[2, 0], S[2, 1])  # r21 - r12  # r31 - r13  # r32 - r23
-        # Note: you could also add ``trace(R_rel)-3`` as a fourth equation,
-        # but it is redundant when the matrix stays orthogonal (the solver
-        # already enforces orthonormality via the dynamics).
+        S = theta_over_sintheta * (R_error - R_error.T) / 2.0  # still 3×3, skew‑symmetric
+
+        constraint = vertcat(S[2, 1], -S[2, 0], S[1, 0])  # r32 - r23  # r13 - r31  # r21 - r12
+
+        # Jacobian and second derivative (CasADi)
+        constraints_jacobian = jacobian(constraint, q_sym)
+
+        # First derivative (velocity level of the holonomic constraint)
+        velocity_constraint = constraints_jacobian @ q_dot_sym
+
+        # Second derivative (acceleration level) – needed for OCP solvers that
+        # treat holonomic constraints as second‑order (e.g. direct collocation)
+        acceleration_constraint = (
+            jacobian(velocity_constraint, q_sym) @ q_dot_sym + jacobian(constraint, q_sym) @ q_ddot_sym
+        )
+
+        constraints_func = Function(
+            "align_frames_constraint",
+            [q_sym],
+            [constraint],
+            ["q"],
+            ["c_align"],
+        ).expand()
+
+        constraints_jacobian_func = Function(
+            "align_frames_jacobian",
+            [q_sym],
+            [constraints_jacobian],
+            ["q"],
+            ["J_align"],
+        ).expand()
+
+        constraints_double_derivative_func = Function(
+            "align_frames_ddot",
+            [q_sym, q_dot_sym, q_ddot_sym],
+            [acceleration_constraint],
+            ["q", "q_dot", "q_ddot"],
+            ["c_ddot_align"],
+        ).expand()
+
+        return (
+            constraints_func,
+            constraints_jacobian_func,
+            constraints_double_derivative_func,
+        )
+
+    @staticmethod
+    def align_frames2(
+        model,
+        frame_1_idx: int = 0,
+        frame_2_idx: int = 1,
+        local_frame_idx: int | None = None,
+        relative_rotation: DM = DM.eye(3),
+    ) -> tuple[Function, Function, Function]:
+        # Symbolic variables
+        q_sym = MX.sym("q", model.nb_q, 1)  # generalized coordinates
+        q_dot_sym = MX.sym("q_dot", model.nb_qdot, 1)  # velocities
+        q_ddot_sym = MX.sym("q_ddot", model.nb_qdot, 1)  # accelerations
+        parameters = model.parameters  # optional model parameters
+
+        # Homogeneous transformation matrices of the two frames
+        # Global homogeneous matrices (4×4) of the two frames
+        # T1_glob = model.homogeneous_matrices_in_global(segment_index=frame_1_idx)(q_sym, parameters)  # shape (4,4)
+        # T2_glob = model.homogeneous_matrices_in_global(segment_index=frame_2_idx)(q_sym, parameters)  # shape (4,4)
+
+        # If a *local* reference frame is requested we first bring the two frames
+        # into that local frame (identical to the logic used for the marker
+        # constraint).
+        if local_frame_idx is not None:
+            # Get the rotation matrix of the local frame in the global frame
+            R_loc_glob = model.homogeneous_matrices_in_global(segment_index=local_frame_idx)(q_sym, parameters)[:3, :3]
+
+            # Get the rotation matrices of the two frames in the global frame
+            R1_glob = model.homogeneous_matrices_in_global(segment_index=frame_1_idx)(q_sym, parameters)[:3, :3]
+            R2_glob = model.homogeneous_matrices_in_global(segment_index=frame_2_idx)(q_sym, parameters)[:3, :3]
+
+            # Transform the rotation matrices into the local frame
+            R1 = R_loc_glob.T @ R1_glob
+            R2 = R_loc_glob.T @ R2_glob
+        else:
+            # If no local frame is specified, use the global frame
+            R1 = model.homogeneous_matrices_in_global(segment_index=frame_1_idx)(q_sym, parameters)[:3, :3]
+            R2 = model.homogeneous_matrices_in_global(segment_index=frame_2_idx)(q_sym, parameters)[:3, :3]
+
+        # Relative rotation: R_rel = R1ᵀ·R2    (frame‑1 → frame‑2)
+        R_rel = R1.T @ R2  # still a symbolic 3×3 matrix
+
+        # Error in relative rotation: R_rel - R_desired
+        # R_error = R_rel @ relative_rotation.T
+        R_err = relative_rotation.T @ R_rel
+
+        # Minimal set of scalar constraints (3 equations)
+        # The skew‑symmetric part of a proper rotation is zero when the angle is zero:
+        #   S = (R_rel - R_relᵀ) / 2  →  S = 0   ⇔   ω = 0, θ = 0
+        # We vectorise the three independent components of S:
+        #    S_21, S_31, S_32
+        # (any consistent ordering works, we keep the same order used in the
+        #  analytical derivation of the constraint in the OP.)
+        cos_theta = (trace(R_err) - 1) / 2
+
+        # Clip to the admissible interval to avoid acos‑NaN caused by rounding
+        cos_theta = ca.fmax(ca.fmin(cos_theta, 1.0), -1.0)
+        theta = acos(cos_theta)  # 0 ≤ θ ≤ π
+
+        # Scaling factor = θ / (2·sinθ) – robust for θ≈0 and θ≈π
+        eps = 1  # tolerance for singular limits
+        eps_pi = 1e-3  # tolerance for singular limits
+        sin_theta = sin(theta)
+
+        factor_regular = theta / (2.0 * sin_theta)  # normal case
+        factor_small = MX(0.5)  # limit θ→0   (θ/(2·sinθ) → ½)
+
+        is_small = ca.fabs(theta) < eps
+        is_near_pi = ca.fabs(theta - ca.pi) < eps_pi
+
+        factor = if_else(is_small, factor_small, factor_regular)
+
+        S = factor * (R_err - R_err.T) / 2.0  # 3×3 MX (or dummy for π)
+
+        # 180° fallback – extract the axis from (R_err + I)
+        def normalize(v):
+            """Normalise a vector (works for MX, SX, DM)."""
+            n = norm_2(v)
+            return if_else(ca.fabs(n) < 1e-12, v, v / n)
+
+        RpI = R_err + DM.eye(3)  # rank‑1 matrix, columns ∝ axis
+        # norms of the three columns
+        col_norms = vertcat(norm_2(RpI[:, 0]), norm_2(RpI[:, 1]), norm_2(RpI[:, 2]))
+
+        # choose the column with the largest norm (most numerically stable)
+        axis = if_else(
+            col_norms[0] >= col_norms[1],
+            if_else(col_norms[0] >= col_norms[2], RpI[:, 0], RpI[:, 2]),
+            if_else(col_norms[1] >= col_norms[2], RpI[:, 1], RpI[:, 2]),
+        )
+
+        regular_constraint = vertcat(S[1, 0], S[2, 0], S[2, 1])
+        near_pi_constraint = ca.pi * normalize(axis)
+
+        constraint = if_else(
+            is_near_pi,
+            near_pi_constraint,  # exact 180° case
+            regular_constraint,  # regular case – three independent entries
+        )
+
+        # Jacobian and second derivative (CasADi)
+        constraints_jacobian = jacobian(constraint, q_sym)
+
+        # First derivative (velocity level of the holonomic constraint)
+        velocity_constraint = constraints_jacobian @ q_dot_sym
+
+        # Second derivative (acceleration level) – needed for OCP solvers that
+        # treat holonomic constraints as second‑order (e.g. direct collocation)
+        acceleration_constraint = (
+            jacobian(velocity_constraint, q_sym) @ q_dot_sym + jacobian(constraint, q_sym) @ q_ddot_sym
+        )
+
+        constraints_func = Function(
+            "align_frames_constraint",
+            [q_sym],
+            [constraint],
+            ["q"],
+            ["c_align"],
+        ).expand()
+
+        constraints_jacobian_func = Function(
+            "align_frames_jacobian",
+            [q_sym],
+            [constraints_jacobian],
+            ["q"],
+            ["J_align"],
+        ).expand()
+
+        constraints_double_derivative_func = Function(
+            "align_frames_ddot",
+            [q_sym, q_dot_sym, q_ddot_sym],
+            [acceleration_constraint],
+            ["q", "q_dot", "q_ddot"],
+            ["c_ddot_align"],
+        ).expand()
+
+        return (
+            constraints_func,
+            constraints_jacobian_func,
+            constraints_double_derivative_func,
+        )
+
+    @staticmethod
+    def align_frames3(
+        model,
+        frame_1_idx: int = 0,
+        frame_2_idx: int = 1,
+        local_frame_idx: int | None = None,
+        relative_rotation: DM = DM.eye(3),
+    ) -> tuple[Function, Function, Function]:
+        # Symbolic variables
+        q_sym = MX.sym("q", model.nb_q, 1)  # generalized coordinates
+        q_dot_sym = MX.sym("q_dot", model.nb_qdot, 1)  # velocities
+        q_ddot_sym = MX.sym("q_ddot", model.nb_qdot, 1)  # accelerations
+        parameters = model.parameters  # optional model parameters
+
+        # Homogeneous transformation matrices of the two frames
+        # Global homogeneous matrices (4×4) of the two frames
+        # T1_glob = model.homogeneous_matrices_in_global(segment_index=frame_1_idx)(q_sym, parameters)  # shape (4,4)
+        # T2_glob = model.homogeneous_matrices_in_global(segment_index=frame_2_idx)(q_sym, parameters)  # shape (4,4)
+
+        # If a *local* reference frame is requested we first bring the two frames
+        # into that local frame (identical to the logic used for the marker
+        # constraint).
+        if local_frame_idx is not None:
+            # Get the rotation matrix of the local frame in the global frame
+            R_loc_glob = model.homogeneous_matrices_in_global(segment_index=local_frame_idx)(q_sym, parameters)[:3, :3]
+
+            # Get the rotation matrices of the two frames in the global frame
+            R1_glob = model.homogeneous_matrices_in_global(segment_index=frame_1_idx)(q_sym, parameters)[:3, :3]
+            R2_glob = model.homogeneous_matrices_in_global(segment_index=frame_2_idx)(q_sym, parameters)[:3, :3]
+
+            # Transform the rotation matrices into the local frame
+            R1 = R_loc_glob.T @ R1_glob
+            R2 = R_loc_glob.T @ R2_glob
+        else:
+            # If no local frame is specified, use the global frame
+            R1 = model.homogeneous_matrices_in_global(segment_index=frame_1_idx)(q_sym, parameters)[:3, :3]
+            R2 = model.homogeneous_matrices_in_global(segment_index=frame_2_idx)(q_sym, parameters)[:3, :3]
+
+        # Relative rotation: R_rel = R1ᵀ·R2    (frame‑1 → frame‑2)
+        R_rel = R1.T @ R2  # still a symbolic 3×3 matrix
+
+        # Error in relative rotation: R_rel - R_desired
+        # R_error = R_rel @ relative_rotation.T
+        R_err = relative_rotation.T @ R_rel
+
+        # Minimal set of scalar constraints (3 equations)
+        # The skew‑symmetric part of a proper rotation is zero when the angle is zero:
+        #   S = (R_rel - R_relᵀ) / 2  →  S = 0   ⇔   ω = 0, θ = 0
+        # We vectorise the three independent components of S:
+        #    S_21, S_31, S_32
+        # (any consistent ordering works, we keep the same order used in the
+        #  analytical derivation of the constraint in the OP.)
+        cos_theta = (trace(R_err) - 1) / 2
+
+        # Clip to the admissible interval to avoid acos‑NaN caused by rounding
+        cos_theta_clip = ca.fmax(ca.fmin(cos_theta, 1.0), -1.0)
+        theta = acos(cos_theta_clip)  # 0 ≤ θ ≤ π
+
+        # Scaling factor = θ / (2·sinθ) – robust for θ≈0 and θ≈π
+        eps = 1  # tolerance for singular limits
+        eps_pi = 1e-3  # tolerance for singular limits
+        is_small = ca.fabs(theta) < eps
+        is_near_pi = ca.fabs(theta - ca.pi) < eps_pi
+
+        # regular case
+        sin_theta = sin(theta)
+        factor_regular = theta / (2.0 * sin_theta)  # normal case
+        # factor_small = MX(0.5)  # limit θ→0   (θ/(2·sinθ) → ½)
+
+        # small theta case
+        theta_small = sqrt(2 * (1 - cos_theta) + 1e-12)  # using the first-order expansion of arccos
+        theta_over_sintheta_taylor = (
+            1 + theta_small**2 / 6 + 7 * theta_small**4 / 360 + 31 * theta_small**6 / 15120
+        )  # using the Taylor expansion
+
+        factor = if_else(is_small, theta_over_sintheta_taylor, factor_regular)
+
+        S = factor * (R_err - R_err.T) / 2.0  # 3×3 MX (or dummy for π)
+
+        # 180° fallback – extract the axis from (R_err + I)
+        def normalize(v):
+            """Normalise a vector (works for MX, SX, DM)."""
+            n = norm_2(v)
+            return if_else(ca.fabs(n) < 1e-12, v, v / n)
+
+        RpI = R_err + DM.eye(3)  # rank‑1 matrix, columns ∝ axis
+        # norms of the three columns
+        col_norms = vertcat(norm_2(RpI[:, 0]), norm_2(RpI[:, 1]), norm_2(RpI[:, 2]))
+
+        # choose the column with the largest norm (most numerically stable)
+        axis = if_else(
+            col_norms[0] >= col_norms[1],
+            if_else(col_norms[0] >= col_norms[2], RpI[:, 0], RpI[:, 2]),
+            if_else(col_norms[1] >= col_norms[2], RpI[:, 1], RpI[:, 2]),
+        )
+
+        regular_constraint = vertcat(S[1, 0], S[2, 0], S[2, 1])
+        near_pi_constraint = ca.pi * normalize(axis)
+
+        constraint = if_else(
+            is_near_pi,
+            near_pi_constraint,  # exact 180° case
+            regular_constraint,  # regular case – three independent entries
+        )
 
         # Jacobian and second derivative (CasADi)
         constraints_jacobian = jacobian(constraint, q_sym)

@@ -60,10 +60,10 @@ def compute_all_states(sol, bio_model: HolonomicTorqueBiorbdModel):
     lambdas = np.zeros((bio_model.nb_dependent_joints, n))
     tau = np.zeros((bio_model.nb_tau, n_tau + 1))
 
-    for i, independent_joint_index in enumerate(bio_model.independent_joint_index):
-        tau[independent_joint_index, :-1] = controls["tau"][i, :]
-    for i, dependent_joint_index in enumerate(bio_model.dependent_joint_index):
-        tau[dependent_joint_index, :-1] = controls["tau"][i, :]
+    for independent_joint_index in bio_model.independent_joint_index:
+        tau[independent_joint_index, :-1] = controls["tau"][independent_joint_index, :]
+    for dependent_joint_index in bio_model.dependent_joint_index:
+        tau[dependent_joint_index, :-1] = controls["tau"][dependent_joint_index, :]
 
     q_v_init = DM.zeros(bio_model.nb_dependent_joints, n)
     for i in range(n):
@@ -103,7 +103,7 @@ def prepare_ocp(
         HolonomicConstraintsFcn.align_frames,
         frame_1_idx=1,  # segment index of the first cube
         frame_2_idx=2,  # segment index of the second cube
-        local_frame_idx=None,
+        # local_frame_idx=0,
     )
 
     bio_model = HolonomicTorqueBiorbdModel(
@@ -135,10 +135,12 @@ def prepare_ocp(
 
     # x_bounds["q"][:-3, 0] = [-3, -np.pi / 3, np.pi / 6, 0, 1]
     x_bounds["q_u"][:, 0] = [0]
-    x_bounds["qdot_u"][:, 0] = 0  # no initial velocity
+    x_bounds["q_u"][:, -1] = [1]
+    x_bounds["qdot_u"][:, 0] = 1
+    x_bounds["qdot_u"][:, -1] = 0  # no initial and final velocity
 
     u_bounds = BoundsList()
-    u_bounds["tau"] = [0.1, 0, 0, 0], [0.1, 0, 0, 0]
+    u_bounds["tau"] = [-200, 0, 0, 0], [200, 0, 0, 0]
 
     constraints = ConstraintList()
 
@@ -158,14 +160,16 @@ def prepare_ocp(
 
 
 def main():
-    out_of_plane = False
+    import matplotlib.pyplot as plt
+
+    out_of_plane = True
     model_folder = os.path.join(ExampleUtils.folder, "models")
     if out_of_plane:
         model_path = os.path.join(model_folder, "two_cubes_laplace2D_outofplane.bioMod")
     else:
         model_path = os.path.join(model_folder, "two_cubes_laplace2D.bioMod")
 
-    ocp, bio_model = prepare_ocp(biorbd_model_path=model_path, n_shooting=200, final_time=5.0)
+    ocp, bio_model = prepare_ocp(biorbd_model_path=model_path, n_shooting=10, final_time=2.0)
 
     solver = Solver.IPOPT()
     solver.set_linear_solver("ma57")
@@ -173,14 +177,80 @@ def main():
 
     print(f"Optimization finished in {sol.real_time_to_optimize:.2f} s")
 
-    # --- Show results --- #
-    q, _, _, _ = compute_all_states(sol, bio_model)
+    print(bio_model.holonomic_constraints([0, np.pi / 6, 0, 0]))
+
+    # --- Extract Lagrange multipliers ---
+    q, qdot, _, lambdas = compute_all_states(sol, bio_model)
+
+    # --- Transform lambdas to the original frame ---
+    # Rotation matrix for pi/4 around Z
+    theta = -np.pi / 6
+
+    def R_x(theta):
+        return np.array([[1, 0, 0], [0, np.cos(theta), -np.sin(theta)], [0, np.sin(theta), np.cos(theta)]])
+
+    def R_y(theta):
+        return np.array([[np.cos(theta), 0, np.sin(theta)], [0, 1, 0], [-np.sin(theta), 0, np.cos(theta)]])
+
+    def R_z(theta):
+        return np.array([[np.cos(theta), -np.sin(theta), 0], [np.sin(theta), np.cos(theta), 0], [0, 0, 1]])
+
+    R1 = bio_model.homogeneous_matrices_in_global(segment_index=1)(q[:, 0], [])[:3, :3]
+    R2 = bio_model.homogeneous_matrices_in_global(segment_index=2)(q[:, 0], [])[:3, :3]
+
+    Rg_1 = bio_model.homogeneous_matrices_in_child(segment_id=1)([])[:3, :3]
+    Rg_2 = bio_model.homogeneous_matrices_in_child(segment_id=2)([])[:3, :3]
+    print(Rg_1)
+    print(np.linalg.inv(Rg_1))
+
+    R2_t = []
+    Xcube1_0 = []
+    for q_t in q.T:
+        R2_tmp = bio_model.homogeneous_matrices_in_global(segment_index=2)(q_t, [])[:3, :3]
+        R2_t.append(R2_tmp.toarray())
+        Xcube1_0.append((Rg_1.T @ R2_tmp @ q_t[1:]).toarray().squeeze())
+
+    Xcube1_0 = np.array(Xcube1_0)
+
+    print(bio_model.holonomic_constraints_jacobian(q[:, 0]))
+
+    # Transform each lambda vector
+    lambdas_original = np.zeros_like(lambdas.T)
+    for i in range(lambdas.T.shape[0]):
+        lambdas_original[i, :] = (Rg_1.T @ lambdas.T[i, :]).toarray().squeeze()
+
+    # --- Plot the transformed lambdas ---
+    time = np.concatenate(sol.decision_time()).squeeze()
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(time, q.T[:, 0], label="q X ", linestyle="dashed")
+    plt.plot(time, Xcube1_0.T[0], label="q X1 ", linestyle="dashed")
+    plt.plot(time, Xcube1_0.T[1], label="q Y1 ", linestyle="dashed")
+    plt.plot(time, Xcube1_0.T[2], label="q Z1 ", linestyle="dashed")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(time, lambdas.T[:, 0], label="Lambda X ", linestyle="dashed")
+    plt.plot(time, lambdas.T[:, 1], label="Lambda Y ", linestyle="dashed")
+    plt.plot(time, lambdas.T[:, 2], label="Lambda Z ", linestyle="dashed")
+    plt.plot(time, lambdas_original[:, 0], label="Lambda X (Original Frame)")
+    plt.plot(time, lambdas_original[:, 1], label="Lambda Y (Original Frame)")
+    plt.plot(time, lambdas_original[:, 2], label="Lambda Z (Original Frame)")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Lagrange Multipliers (Nm)")
+    plt.title("Transformed Lagrange Multipliers (Original Frame)")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
 
     viewer = "pyorerun"
     if viewer == "bioviz":
         import bioviz
 
         viz = bioviz.Viz(model_path)
+        viz.show_global_ref_frame = True
         viz.load_movement(q)
         viz.exec()
 

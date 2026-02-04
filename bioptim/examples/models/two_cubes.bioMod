@@ -77,8 +77,6 @@ segment cube1
     translations	z
     rotations	xyz
 
-
-
 endsegment
 
     // Marker on cube1
