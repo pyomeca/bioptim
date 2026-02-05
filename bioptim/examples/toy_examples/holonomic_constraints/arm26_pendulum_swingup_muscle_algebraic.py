@@ -26,8 +26,8 @@ from bioptim import (
     CostType,
 )
 from bioptim.examples.utils import ExampleUtils
+import numpy as np
 
-from common import compute_all_q
 from custom_dynamics import AlgebraicHolonomicMusclesBiorbdModel, constraint_holonomic, constraint_holonomic_end
 
 
@@ -178,7 +178,9 @@ def main():
     print(sol.decision_states(to_merge=SolutionMerge.NODES)["q_u"])
 
     # --- Show results --- #
-    q = compute_all_q(sol, bio_model)
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    algebraic_states = sol.decision_algebraic_states(to_merge=SolutionMerge.NODES)
+    q = bio_model.compute_q_from_u_iterative(states["q_u"], q_v_init=algebraic_states["q_v"])
 
     viz = pyorerun.PhaseRerun(t_span=np.concatenate(sol.decision_time()).squeeze())
     viz.add_animated_model(pyorerun.BiorbdModel(model_path), q=q)

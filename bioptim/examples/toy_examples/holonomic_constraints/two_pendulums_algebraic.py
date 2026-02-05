@@ -35,7 +35,7 @@ def prepare_ocp(
     final_time: float = 1,
     expand_dynamics: bool = False,
     ode_solver: OdeSolver = OdeSolver.COLLOCATION(polynomial_degree=2),
-) -> tuple[ModifiedHolonomicTorqueBiorbdModel, OptimalControlProgram]:
+) -> OptimalControlProgram:
     """
     Prepare the program
 
@@ -147,23 +147,20 @@ def prepare_ocp(
         # penalty_type=PenaltyType.INTERNAL,
     )
 
-    return (
-        OptimalControlProgram(
-            bio_model,
-            n_shooting,
-            final_time,
-            dynamics=dynamics,
-            x_bounds=x_bounds,
-            u_bounds=u_bounds,
-            a_bounds=a_bounds,
-            x_init=x_init,
-            u_init=u_init,
-            a_init=a_init,
-            objective_functions=objective_functions,
-            variable_mappings=tau_variable_bimapping,
-            constraints=constraints,
-        ),
+    return OptimalControlProgram(
         bio_model,
+        n_shooting,
+        final_time,
+        dynamics=dynamics,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        a_bounds=a_bounds,
+        x_init=x_init,
+        u_init=u_init,
+        a_init=a_init,
+        objective_functions=objective_functions,
+        variable_mappings=tau_variable_bimapping,
+        constraints=constraints,
     )
 
 
@@ -173,7 +170,7 @@ def main():
     """
 
     biorbd_model_path = ExampleUtils.folder + "/models/two_pendulums.bioMod"
-    ocp, bio_model = prepare_ocp(biorbd_model_path=biorbd_model_path)
+    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path)
     ocp.add_plot_penalty(CostType.ALL)
 
     # --- Solve the program --- #
