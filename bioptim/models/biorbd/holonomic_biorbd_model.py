@@ -6,7 +6,7 @@ import scipy.linalg as la
 from biorbd_casadi import (
     GeneralizedCoordinates,
 )
-from casadi import MX, DM, vertcat, horzcat, Function, solve, rootfinder, inv, nlpsol
+from casadi import MX, DM, vertcat, horzcat, Function, solve, rootfinder, inv, nlpsol, jacobian
 
 from .biorbd_model import BiorbdModel
 from ...models.protocols.holonomic_constraints import HolonomicConstraintsList
@@ -491,7 +491,79 @@ class HolonomicBiorbdModel(BiorbdModel):
         partitioned_constraints_jacobian_v = partitioned_constraints_jacobian[:, self.nb_independent_joints :]
         partitioned_constraints_jacobian_v_inv = inv(partitioned_constraints_jacobian_v)
 
-        return -partitioned_constraints_jacobian_v_inv @ self.holonomic_constraints_jacobian(qdot) @ qdot
+        # return -partitioned_constraints_jacobian_v_inv @ self.holonomic_constraints_jacobian(qdot) @ qdot
+        # return -partitioned_constraints_jacobian_v_inv @ self._holonomic_constraints_jacobian_time_derivative_finite_difference(q, qdot) @ qdot
+        # return -partitioned_constraints_jacobian_v_inv @ self._holonomic_constraints_jacobian_time_derivative(q, qdot) @ qdot
+        return -partitioned_constraints_jacobian_v_inv @ self.holonomic_constraints_double_derivative(q, qdot, MX())
+
+
+    def _holonomic_constraints_jacobian_time_derivative_finite_difference(
+            self, q: MX, qdot: MX, epsilon: float = 1e-8
+    ) -> MX:
+        """
+        Compute Jdot = dJ/dt = (∂J/∂q) * qdot using finite differences.
+
+        Args:
+            q: Configuration vector (n,)
+            qdot: Velocity vector (n,)
+            epsilon: Finite difference step size
+
+        Returns:
+            Jdot: Time derivative of Jacobian (m, n) where m = number of constraints
+        """
+        n = q.shape[0]
+        J0 = self.holonomic_constraints_jacobian(q)
+        m = J0.shape[0]
+
+        Jdot = MX.zeros(m, n)
+
+        for i in range(n):
+            # Perturb only q_i
+            q_plus = MX(q)
+            q_plus[i] += epsilon
+            J_plus = self.holonomic_constraints_jacobian(q_plus)
+
+            q_minus = MX(q)
+            q_minus[i] -= epsilon
+            J_minus = self.holonomic_constraints_jacobian(q_minus)
+
+            # approximated by finite difference
+            dJ_dqi = (J_plus - J_minus) / (2 * epsilon)
+
+            # Contract: Jdot += (∂J/∂q_i) * qdot_i
+            Jdot += dJ_dqi * qdot[i]
+
+        return Jdot
+
+    def _holonomic_constraints_jacobian_time_derivative(
+            self, q: MX, qdot: MX,
+    ) -> MX:
+        """
+        Compute Jdot = dJ/dt = (∂J/∂q) * qdot using finite differences.
+
+        Args:
+            q: Configuration vector (n,)
+            qdot: Velocity vector (n,)
+
+        Returns:
+            Jdot: Time derivative of Jacobian (m, n) where m = number of constraints
+
+        Note:
+            $$\dot{J} = \frac{dJ}{dt} = \frac{\partial J}{\partial q} \dot{q} = \sum_{k=1}^{n} \frac{\partial J}{\partial q_k} \dot{q}_k$$
+        """
+        n = q.shape[0]
+        J0 = self.holonomic_constraints_jacobian(q)
+        m = J0.shape[0]
+
+        Jdot = MX.zeros(m, n)
+        for k in range(n):
+            # Compute the partial derivative of J with respect to q_k
+            dJ_dqk = (J0, q[k])  # Shape (m, n)
+
+            # Contract: Jdot += (∂J/∂q_k) * qdot_k
+            Jdot += dJ_dqk @ qdot[k]
+
+        return Jdot
 
     def state_from_partition(self, state_u: MX, state_v: MX) -> MX:
         """
