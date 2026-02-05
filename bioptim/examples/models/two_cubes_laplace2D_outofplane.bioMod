@@ -14,7 +14,7 @@ endsegment
 segment cube0
     parent root
     RTinMatrix    0
-    RT 0 0 pi/6 xyz 0 0 0
+    RT 0 0 0 xyz 0 0 0
     mass 1.0
     com 0 0 0
     inertia   1 0 0
@@ -38,13 +38,14 @@ segment cube0
     mesh 1 -1 -1
 
     rotations	x
-
+    rangesQ
+	    -4*pi 4*pi
 endsegment
 
 segment cube1
     parent root
     RTinMatrix    0
-    RT 0 0 0 xyz 0 2 0
+    RT pi/7 pi/8 pi/3 xyz 0 2 0
     mass 1.0
     com 0 0 0
     inertia   1 0 0
@@ -68,6 +69,9 @@ segment cube1
     mesh 1 -1 -1
     
     rotations	xyz
-
+    rangesQ
+	    -4*pi 4*pi
+	    -4*pi 4*pi
+	    -4*pi 4*pi
 endsegment
 
