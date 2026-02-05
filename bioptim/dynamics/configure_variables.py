@@ -1334,6 +1334,9 @@ class ConfigureVariables:
             A reference to the phase
         """
 
+        if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+            new_control = nlp.cx.sym("new_control", nlp.controls.scaled.cx.shape[0], 2)
+
         time_span_sym = vertcat(nlp.time_cx, nlp.dt)
 
         if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
@@ -1409,6 +1412,37 @@ class ConfigureVariables:
         axes_idx = BiMapping(
             to_first=[i for i, c in enumerate(all_multipliers_names) if c in all_multipliers_names_in_phase],
             to_second=[i for i, c in enumerate(all_multipliers_names) if c in all_multipliers_names_in_phase],
+        )
+
+
+        plot_function = Function(
+            "lagrange_multipliers_function",
+            [
+                time_span_sym,
+                nlp.states.scaled.cx,
+                new_control,
+                nlp.parameters.scaled.cx,
+                nlp.algebraic_states.scaled.cx,
+                nlp.numerical_timeseries.cx,
+            ],
+            [
+                # horzcat(
+                #     nlp.model.compute_the_lagrangian_multipliers()(
+                #         nlp.states.scaled["q_u"].cx,
+                #         nlp.states.scaled["qdot_u"].cx,
+                #         DM.zeros(nlp.model.nb_dependent_joints, 1),
+                #         DynamicsFunctions.get(nlp.controls["tau"], new_control[:, 0]),
+                #     ),
+                nlp.model.compute_the_lagrangian_multipliers()(
+                    nlp.states.scaled["q_u"].cx,
+                    nlp.states.scaled["qdot_u"].cx,
+                    DM.zeros(nlp.model.nb_dependent_joints, 1),
+                    DynamicsFunctions.get(nlp.controls["tau"], new_control[:, 1]),
+                # ),
+                )
+            ],
+            ["t_span", "x", "u", "p", "a", "d"],
+            ["lagrange_multipliers"],
         )
 
         nlp.plot["lagrange_multipliers"] = CustomPlot(
