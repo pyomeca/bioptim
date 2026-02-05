@@ -281,11 +281,11 @@ class HolonomicConstraintsFcn:
         biais_vector = compute_biais_vector(constraints_jacobian, q_sym, q_dot_sym)
 
         biais_func = Function(
-            "superimpose_markers_bias",
+            "rigid_contacts_bias",
             [q_sym, q_dot_sym],
             [biais_vector],
             ["q", "q_dot"],
-            ["superimpose_markers_bias"],
+            ["rigid_contacts_bias"],
         ).expand()
 
         return constraints_func, constraints_jacobian_func, biais_func
