@@ -4,7 +4,7 @@ This class contains different holonomic constraint function.
 
 from typing import Any, Callable
 
-from casadi import MX, Function, jacobian, vertcat
+from casadi import MX, Function, jacobian, vertcat, trace, sqrt, DM
 
 from .biomodel import BioModel
 from ...misc.options import OptionDict
@@ -89,31 +89,17 @@ class HolonomicConstraintsFcn:
             ["holonomic_constraints_jacobian"],
         ).expand()
 
+        biais_vector = compute_biais_vector(constraints_jacobian, q_sym, q_dot_sym)
 
-        # hessian = jacobian(constraints_jacobian, q_sym)
-        # Jdot_rows = []
-        # for i in range(constraint.shape[0]):
-        #     first_slice = slice(i * model.nb_q, (i + 1) * model.nb_q)
-        #     Jdot_row = hessian[first_slice, :] @ q_dot_sym  # (5,)
-        #     Jdot_rows.append(Jdot_row.T)  # Transposer pour obtenir (1, 5)
-        #
-        # Jdot = vertcat(*Jdot_rows)  # (2, 5)
-
-        Jdot_qdot = []
-        for i in range(constraint.shape[0]):
-            hessian = jacobian(constraints_jacobian[i, :], q_sym)
-            Jdot_qdot.append(q_dot_sym.T @ hessian @ q_dot_sym)
-        Jdot_qdot = vertcat(*Jdot_qdot)
-
-        constraints_double_derivative_func = Function(
-            "holonomic_constraints_double_derivative",
-            [q_sym, q_dot_sym, q_ddot_sym],
-            [Jdot_qdot],
-            ["q", "q_dot", "q_ddot"],
-            ["holonomic_constraints_double_derivative"],
+        biais_func = Function(
+            "superimpose_markers_bias",
+            [q_sym, q_dot_sym],
+            [biais_vector],
+            ["q", "q_dot"],
+            ["superimpose_markers_bias"],
         ).expand()
 
-        return constraints_func, constraints_jacobian_func, constraints_double_derivative_func
+        return constraints_func, constraints_jacobian_func, biais_func
 
     @staticmethod
     def align_frames(  # <-- new method
@@ -157,11 +143,7 @@ class HolonomicConstraintsFcn:
 
         Returns
         -------
-        (constraints_func,
-         constraints_jacobian_func,
-         constraints_double_derivative_func)
-
-        each of type :class:`casadi.Function`.
+        The constraint function, its jacobian and the bias vector.
         """
         # Symbolic variables
         q_sym = MX.sym("q", model.nb_q, 1)  # generalized coordinates
@@ -219,15 +201,6 @@ class HolonomicConstraintsFcn:
         # Jacobian and second derivative (CasADi)
         constraints_jacobian = jacobian(constraint, q_sym)
 
-        # First derivative (velocity level of the holonomic constraint)
-        velocity_constraint = constraints_jacobian @ q_dot_sym
-
-        # Second derivative (acceleration level) – needed for OCP solvers that
-        # treat holonomic constraints as second‑order (e.g. direct collocation)
-        acceleration_constraint = (
-            jacobian(velocity_constraint, q_sym) @ q_dot_sym + jacobian(constraint, q_sym) @ q_ddot_sym
-        )
-
         constraints_func = Function(
             "align_frames_constraint",
             [q_sym],
@@ -244,25 +217,18 @@ class HolonomicConstraintsFcn:
             ["J_align"],
         ).expand()
 
-        Jdot_qdot = []
-        for i in range(constraint.shape[0]):
-            hessian = jacobian(constraints_jacobian[i, :], q_sym)
-            Jdot_qdot.append(q_dot_sym.T @ hessian @ q_dot_sym)
-        Jdot_qdot = vertcat(*Jdot_qdot)
+        biais_vector = compute_biais_vector(constraints_jacobian, q_sym, q_dot_sym)
 
-        constraints_double_derivative_func = Function(
-            "align_frames_ddot",
-            [q_sym, q_dot_sym, q_ddot_sym],
-            [Jdot_qdot],
-            ["q", "q_dot", "q_ddot"],
-            ["Jdot_qdot"],
+        biais_func = Function(
+            "bias_align_frames",
+            [q_sym, q_dot_sym],
+            [biais_vector],
+            ["q", "q_dot"],
+            ["bias_align_frames"],
         ).expand()
 
-        return (
-            constraints_func,
-            constraints_jacobian_func,
-            constraints_double_derivative_func,
-        )
+        return constraints_func, constraints_jacobian_func, biais_func
+
     def rigid_contacts(
         model: BioModel = None,
     ) -> tuple[Function, Function, Function]:
@@ -282,7 +248,6 @@ class HolonomicConstraintsFcn:
         # symbolic variables to create the functions
         q_sym = MX.sym("q", model.nb_q, 1)
         q_dot_sym = MX.sym("q_dot", model.nb_qdot, 1)
-        q_ddot_sym = MX.sym("q_ddot", model.nb_qdot, 1)
         parameters = model.parameters
 
         contact_position = MX()
@@ -296,14 +261,6 @@ class HolonomicConstraintsFcn:
 
         # the jacobian of the constraint
         constraints_jacobian = jacobian(constraint, q_sym)
-
-        # First derivative (velocity)
-        velocity_constraint = jacobian(constraint, q_sym) @ q_dot_sym
-
-        # Second derivative (acceleration)
-        acceleration_constraint = (
-            jacobian(velocity_constraint, q_sym) @ q_dot_sym + jacobian(constraint, q_sym) @ q_ddot_sym
-        )
 
         constraints_func = Function(
             "holonomic_constraints",
@@ -321,15 +278,17 @@ class HolonomicConstraintsFcn:
             ["holonomic_constraints_jacobian"],
         ).expand()
 
-        constraints_double_derivative_func = Function(
-            "holonomic_constraints_double_derivative",
-            [q_sym, q_dot_sym, q_ddot_sym, parameters],
-            [acceleration_constraint],
-            ["q", "q_dot", "q_ddot", "parameters"],
-            ["holonomic_constraints_double_derivative"],
+        biais_vector = compute_biais_vector(constraints_jacobian, q_sym, q_dot_sym)
+
+        biais_func = Function(
+            "superimpose_markers_bias",
+            [q_sym, q_dot_sym],
+            [biais_vector],
+            ["q", "q_dot"],
+            ["superimpose_markers_bias"],
         ).expand()
 
-        return constraints_func, constraints_jacobian_func, constraints_double_derivative_func
+        return constraints_func, constraints_jacobian_func, biais_func
 
 
 class HolonomicConstraintsList(OptionDict):
@@ -361,3 +320,33 @@ class HolonomicConstraintsList(OptionDict):
             constraints_fcn=constraints_fcn,
             extra_arguments=extra_arguments,
         )
+
+def compute_biais_vector(constraints_jacobian: MX, q_sym: MX, q_dot_sym: MX) -> MX:
+    """
+    This function computes the biais vector of the second derivative of the holonomic constraint, i.e. Jdot*qdot.
+    through the hessian of the constraint jacobian.
+                  [ qdot^T H_1 qdot ]
+    Jdot @ qdot = [      ...        ]
+                  [ qdot^T H_m qdot ]
+
+    Parameters
+    ----------
+    constraints_jacobian : MX
+        The jacobian of the constraint, i.e. J = d(constraint)/dq
+    q_sym : MX
+        The symbolic variable of the generalized coordinates, used to compute the hessian of the constraint jacobian.
+    q_dot_sym : MX
+        The symbolic variable of the generalized velocities, used to compute the biais vector.
+
+    Returns
+    -------
+
+    The biais vector of the second derivative of the holonomic constraint, i.e. Jdot*qdot.
+
+    """
+    Jdot_qdot = []
+    for i in range(constraints_jacobian.shape[0]):
+        hessian = jacobian(constraints_jacobian[i, :], q_sym)
+        Jdot_qdot.append(q_dot_sym.T @ hessian @ q_dot_sym)
+    Jdot_qdot = vertcat(*Jdot_qdot)
+    return Jdot_qdot
