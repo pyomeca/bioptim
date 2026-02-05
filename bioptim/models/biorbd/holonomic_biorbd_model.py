@@ -40,8 +40,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         self._newton_tol = 1e-10
         self._holonomic_constraints = []
         self._holonomic_constraints_jacobians = []
-        self._holonomic_constraints_derivatives = []
-        self._holonomic_constraints_double_derivatives = []
+        self._holonomic_constraints_biais = []
         self.stabilization = False
         self.alpha = 0.01
         self.beta = 0.01
@@ -114,13 +113,13 @@ class HolonomicBiorbdModel(BiorbdModel):
         for constraints_name in constraints_list.keys():
             constraint_fcn = constraints_list[constraints_name]["constraints_fcn"]
             extra_arguments = constraints_list[constraints_name]["extra_arguments"]
-            constraint, constraint_jacobian, constraint_double_derivative = constraint_fcn(
+            constraint, constraint_jacobian, constraint_biais = constraint_fcn(
                 model=self, **extra_arguments
             )
             self._add_holonomic_constraint(
                 constraint,
                 constraint_jacobian,
-                constraint_double_derivative,
+                constraint_biais,
             )
 
         if dependent_joint_index and independent_joint_index:
@@ -244,11 +243,11 @@ class HolonomicBiorbdModel(BiorbdModel):
         self,
         constraints: Function | Callable[[GeneralizedCoordinates], MX],
         constraints_jacobian: Function | Callable[[GeneralizedCoordinates], MX],
-        constraints_double_derivative: Function | Callable[[GeneralizedCoordinates], MX],
+        constraints_biais: Function | Callable[[GeneralizedCoordinates], MX],
     ):
         self._holonomic_constraints.append(constraints)
         self._holonomic_constraints_jacobians.append(constraints_jacobian)
-        self._holonomic_constraints_double_derivatives.append(constraints_double_derivative)
+        self._holonomic_constraints_biais.append(constraints_biais)
 
     @property
     def nb_holonomic_constraints(self):
@@ -267,8 +266,11 @@ class HolonomicBiorbdModel(BiorbdModel):
     def holonomic_constraints_derivative(self, q: MX, qdot: MX) -> MX:
         return self.holonomic_constraints_jacobian(q) @ qdot
 
+    def holonomic_constraints_biais(self, q: MX, qdot: MX) -> MX:
+        return vertcat(*[b(q, qdot) for b in self._holonomic_constraints_biais])
+
     def holonomic_constraints_double_derivative(self, q: MX, qdot: MX, qddot: MX) -> MX:
-        return vertcat(*[c(q, qdot, qddot) for c in self._holonomic_constraints_double_derivatives])
+        return vertcat(*[J(q) @ qddot + Jdot_qdot(q, qdot) for J, Jdot_qdot in zip(self._holonomic_constraints_jacobians, self._holonomic_constraints_biais)])
 
     @cache_function
     def constrained_forward_dynamics(self) -> Function:
@@ -290,7 +292,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         # compute b vector
         tau_augmented = self.tau - self.non_linear_effects()(self.q, self.qdot, self.parameters)
 
-        biais = -self.holonomic_constraints_jacobian(self.qdot) @ self.qdot
+        biais = -self.holonomic_constraints_biais(self.q, self.qdot)
         if self.stabilization:
             biais -= self.alpha * self.holonomic_constraints(
                 self.q
@@ -364,7 +366,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         Sources
         -------
         Docquier, N., Poncelet, A., and Fisette, P.:
-        ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
+        ROBOTRAN: a powerful symbolic generator of multibody models, Mech. Sci., 4, 199–219,
         https://doi.org/10.5194/ms-4-199-2013, 2013.
         """
         q = self.compute_q()(self.q_u, self.q_v_init)
@@ -482,7 +484,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         Sources
         -------
         Docquier, N., Poncelet, A., and Fisette, P.:
-        ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
+        ROBOTRAN: a powerful symbolic generator of multibody models, Mech. Sci., 4, 199–219,
         https://doi.org/10.5194/ms-4-199-2013, 2013.
 
         The right term of the equation (15) in the paper.
@@ -491,86 +493,14 @@ class HolonomicBiorbdModel(BiorbdModel):
         partitioned_constraints_jacobian_v = partitioned_constraints_jacobian[:, self.nb_independent_joints :]
         partitioned_constraints_jacobian_v_inv = inv(partitioned_constraints_jacobian_v)
 
-        # return -partitioned_constraints_jacobian_v_inv @ self.holonomic_constraints_jacobian(qdot) @ qdot
-        # return -partitioned_constraints_jacobian_v_inv @ self._holonomic_constraints_jacobian_time_derivative_finite_difference(q, qdot) @ qdot
-        # return -partitioned_constraints_jacobian_v_inv @ self._holonomic_constraints_jacobian_time_derivative(q, qdot) @ qdot
-        return -partitioned_constraints_jacobian_v_inv @ self.holonomic_constraints_double_derivative(q, qdot, MX())
-
-
-    def _holonomic_constraints_jacobian_time_derivative_finite_difference(
-            self, q: MX, qdot: MX, epsilon: float = 1e-8
-    ) -> MX:
-        """
-        Compute Jdot = dJ/dt = (∂J/∂q) * qdot using finite differences.
-
-        Args:
-            q: Configuration vector (n,)
-            qdot: Velocity vector (n,)
-            epsilon: Finite difference step size
-
-        Returns:
-            Jdot: Time derivative of Jacobian (m, n) where m = number of constraints
-        """
-        n = q.shape[0]
-        J0 = self.holonomic_constraints_jacobian(q)
-        m = J0.shape[0]
-
-        Jdot = MX.zeros(m, n)
-
-        for i in range(n):
-            # Perturb only q_i
-            q_plus = MX(q)
-            q_plus[i] += epsilon
-            J_plus = self.holonomic_constraints_jacobian(q_plus)
-
-            q_minus = MX(q)
-            q_minus[i] -= epsilon
-            J_minus = self.holonomic_constraints_jacobian(q_minus)
-
-            # approximated by finite difference
-            dJ_dqi = (J_plus - J_minus) / (2 * epsilon)
-
-            # Contract: Jdot += (∂J/∂q_i) * qdot_i
-            Jdot += dJ_dqi * qdot[i]
-
-        return Jdot
-
-    def _holonomic_constraints_jacobian_time_derivative(
-            self, q: MX, qdot: MX,
-    ) -> MX:
-        """
-        Compute Jdot = dJ/dt = (∂J/∂q) * qdot using finite differences.
-
-        Args:
-            q: Configuration vector (n,)
-            qdot: Velocity vector (n,)
-
-        Returns:
-            Jdot: Time derivative of Jacobian (m, n) where m = number of constraints
-
-        Note:
-            $$\dot{J} = \frac{dJ}{dt} = \frac{\partial J}{\partial q} \dot{q} = \sum_{k=1}^{n} \frac{\partial J}{\partial q_k} \dot{q}_k$$
-        """
-        n = q.shape[0]
-        J0 = self.holonomic_constraints_jacobian(q)
-        m = J0.shape[0]
-
-        Jdot = MX.zeros(m, n)
-        for k in range(n):
-            # Compute the partial derivative of J with respect to q_k
-            dJ_dqk = (J0, q[k])  # Shape (m, n)
-
-            # Contract: Jdot += (∂J/∂q_k) * qdot_k
-            Jdot += dJ_dqk @ qdot[k]
-
-        return Jdot
+        return -partitioned_constraints_jacobian_v_inv @ self.holonomic_constraints_biais(q, qdot)
 
     def state_from_partition(self, state_u: MX, state_v: MX) -> MX:
         """
         Sources
         -------
         Docquier, N., Poncelet, A., and Fisette, P.:
-        ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
+        ROBOTRAN: a powerful symbolic generator of multibody models, Mech. Sci., 4, 199–219,
         https://doi.org/10.5194/ms-4-199-2013, 2013.
         """
         self.check_state_u_size(state_u)
