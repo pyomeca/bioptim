@@ -14,7 +14,6 @@ from bioptim import (
     DynamicsOptionsList,
     HolonomicConstraintsFcn,
     HolonomicConstraintsList,
-    HolonomicTorqueBiorbdModel,
     InitialGuessList,
     ObjectiveFcn,
     ObjectiveList,
@@ -26,7 +25,7 @@ from bioptim import (
 from bioptim.examples.utils import ExampleUtils
 
 from common import compute_all_q
-from .custom_dynamics import HolonomicMusclesBiorbdModel
+from custom_dynamics import HolonomicMusclesBiorbdModel
 
 
 def prepare_ocp(

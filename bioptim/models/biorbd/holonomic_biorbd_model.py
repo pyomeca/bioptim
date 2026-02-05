@@ -1050,6 +1050,273 @@ class HolonomicBiorbdModel(BiorbdModel):
         casadi_fun = Function("compute_q", [self.q_u, self.q_v_init], [biorbd_return], ["q_u", "q_v_init"], ["q"])
         return casadi_fun
 
+    def compute_q_from_u_iterative(self, q_u_array: np.ndarray, q_v_init: np.ndarray = None) -> np.ndarray:
+        """
+        Reconstruct full coordinate trajectories from independent coordinate trajectories.
+
+        This method is useful for post-processing optimal control solutions that only contain
+        independent coordinates (q_u), reconstructing the complete state trajectory including
+        dependent coordinates (q_v).
+
+        The function iterates through each time point, solving for q_v at each step and using
+        the previous solution as a warm start for the next, which improves convergence and
+        computational efficiency.
+
+        Parameters
+        ----------
+        q_u_array : np.ndarray
+            Independent coordinate trajectory, shape (n_u × n_nodes) where:
+                - n_u is the number of independent coordinates
+                - n_nodes is the number of time points
+        q_v_init : np.ndarray, optional
+            Initial guess for dependent coordinates at the first node, shape (n_v,) or (n_v × 1).
+            If None, uses zeros. For subsequent nodes, the solution from the previous node
+            is used as the initial guess.
+
+        Returns
+        -------
+        np.ndarray
+            Full coordinate trajectory, shape (n × n_nodes) where n = n_u + n_v.
+            Coordinates are arranged in the original model ordering.
+
+        Examples
+        --------
+        Reconstruct full trajectory from optimal control solution:
+
+        >>> from bioptim import SolutionMerge
+        >>> # Assuming 'sol' is the solution from ocp.solve()
+        >>> states = sol.decision_states(to_merge=SolutionMerge.NODES)
+        >>> q_u_traj = states["q_u"]  # shape (n_u, n_nodes)
+        >>> 
+        >>> # Reconstruct full coordinates
+        >>> q_full = model.compute_q_from_u_iterative(q_u_traj)
+        >>> # q_full has shape (model.nb_q, n_nodes)
+
+        Notes
+        -----
+        - The method uses warm-starting: q_v from node i initializes the solve at node i+1
+        - This significantly improves convergence compared to using zeros at each node
+        - For the first node, either provide q_v_init or zeros will be used
+        - Convergence tolerance is controlled by the model's Newton tolerance (set_newton_tol)
+
+        See Also
+        --------
+        compute_q : Single-point version (CasADi Function)
+        compute_q_v : Computes only dependent coordinates
+        set_newton_tol : Adjust convergence tolerance for constraint solving
+
+        Raises
+        ------
+        ValueError
+            If q_u_array has incorrect first dimension (not matching nb_independent_joints)
+        """
+        # Validate input shape
+        if q_u_array.shape[0] != self.nb_independent_joints:
+            raise ValueError(
+                f"First dimension of q_u_array must match number of independent joints. "
+                f"Expected {self.nb_independent_joints}, got {q_u_array.shape[0]}"
+            )
+
+        n_nodes = q_u_array.shape[1] if q_u_array.ndim > 1 else 1
+        
+        # Handle 1D input
+        if q_u_array.ndim == 1:
+            q_u_array = q_u_array[:, np.newaxis]
+
+        # Initialize output and warm-start vector
+        q_full = np.zeros((self.nb_q, n_nodes))
+        
+        if q_v_init is None:
+            q_v_init = DM.zeros(self.nb_dependent_joints)
+        else:
+            q_v_init = DM(q_v_init.flatten())
+
+        # Iterate through time nodes
+        for i in range(n_nodes):
+            q_u_i = q_u_array[:, i]
+            
+            # Solve for dependent coordinates using previous solution as warm start
+            q_v_i = self.compute_q_v()(q_u_i, q_v_init).toarray().flatten()
+            
+            # Reconstruct full coordinate vector
+            q_full[:, i] = self.state_from_partition(
+                q_u_i[:, np.newaxis], 
+                q_v_i[:, np.newaxis]
+            ).toarray().flatten()
+            
+            # Warm-start next iteration with current solution
+            q_v_init = DM(q_v_i)
+
+        return q_full
+
+    def compute_all_states_from_u_iterative(
+        self,
+        q_u_array: np.ndarray,
+        qdot_u_array: np.ndarray,
+        tau_array: np.ndarray,
+        q_v_init: np.ndarray = None
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Reconstruct all state trajectories from independent coordinates and controls.
+
+        This method computes the complete state trajectory (positions, velocities, accelerations,
+        and Lagrange multipliers) from the independent coordinate trajectories and control inputs.
+        It is designed for post-processing optimal control solutions.
+
+        The method iterates through each time point, solving for dependent coordinates and computing
+        all derived quantities using the partitioned dynamics formulation. Warm-starting is used to
+        improve convergence.
+
+        Parameters
+        ----------
+        q_u_array : np.ndarray
+            Independent coordinate trajectory, shape (n_u × n_nodes).
+        qdot_u_array : np.ndarray
+            Independent velocity trajectory, shape (n_u × n_nodes).
+        tau_array : np.ndarray
+            Control torque trajectory for all joints, shape (nb_tau × n_controls).
+            Typically n_controls = n_nodes - 1 for piecewise constant controls.
+        q_v_init : np.ndarray, optional
+            Initial guess for dependent coordinates at the first node, shape (n_v,).
+            If None, uses zeros. Subsequent nodes use warm-starting from previous solutions.
+
+        Returns
+        -------
+        q : np.ndarray
+            Full coordinate trajectory, shape (nb_q × n_nodes).
+        qdot : np.ndarray
+            Full velocity trajectory, shape (nb_q × n_nodes).
+        qddot : np.ndarray
+            Full acceleration trajectory, shape (nb_q × n_nodes).
+        lambdas : np.ndarray
+            Lagrange multiplier trajectory, shape (n_v × n_nodes).
+            Represents constraint forces in the dependent directions.
+
+        Examples
+        --------
+        Compute all states from optimal control solution:
+
+        >>> from bioptim import SolutionMerge
+        >>> states = sol.decision_states(to_merge=SolutionMerge.NODES)
+        >>> controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+        >>> 
+        >>> # Prepare tau array (pad with zeros for final node if needed)
+        >>> n_nodes = states["q_u"].shape[1]
+        >>> tau = np.zeros((model.nb_tau, n_nodes))
+        >>> tau[:, :-1] = controls["tau"]
+        >>> 
+        >>> # Compute all states
+        >>> q, qdot, qddot, lambdas = model.compute_all_states_from_u_iterative(
+        ...     states["q_u"],
+        ...     states["qdot_u"],
+        ...     tau
+        ... )
+
+        Notes
+        -----
+        - Uses warm-starting: each node initializes from the previous solution
+        - Lagrange multipliers represent constraint forces maintaining the holonomic constraints
+        - The tau_array should contain torques for all joints (both independent and dependent)
+        - If tau has fewer columns than state nodes, the last column is assumed to be zero
+
+        See Also
+        --------
+        compute_q_from_u_iterative : Compute only positions
+        compute_the_lagrangian_multipliers : Single-point Lagrange multiplier computation
+        partitioned_forward_dynamics : Forward dynamics in reduced coordinates
+
+        Raises
+        ------
+        ValueError
+            If array shapes are incompatible with the model dimensions.
+        """
+        # Validate input shapes
+        if q_u_array.shape[0] != self.nb_independent_joints:
+            raise ValueError(
+                f"First dimension of q_u_array must match number of independent joints. "
+                f"Expected {self.nb_independent_joints}, got {q_u_array.shape[0]}"
+            )
+        if qdot_u_array.shape[0] != self.nb_independent_joints:
+            raise ValueError(
+                f"First dimension of qdot_u_array must match number of independent joints. "
+                f"Expected {self.nb_independent_joints}, got {qdot_u_array.shape[0]}"
+            )
+        if tau_array.shape[0] != self.nb_tau:
+            raise ValueError(
+                f"First dimension of tau_array must match number of torques. "
+                f"Expected {self.nb_tau}, got {tau_array.shape[0]}"
+            )
+
+        n_nodes = q_u_array.shape[1] if q_u_array.ndim > 1 else 1
+        n_controls = tau_array.shape[1] if tau_array.ndim > 1 else 1
+
+        # Handle 1D inputs
+        if q_u_array.ndim == 1:
+            q_u_array = q_u_array[:, np.newaxis]
+        if qdot_u_array.ndim == 1:
+            qdot_u_array = qdot_u_array[:, np.newaxis]
+        if tau_array.ndim == 1:
+            tau_array = tau_array[:, np.newaxis]
+
+        # Pad tau with zeros if needed (for final node in piecewise constant control)
+        if n_controls < n_nodes:
+            tau_padded = np.zeros((self.nb_tau, n_nodes))
+            tau_padded[:, :n_controls] = tau_array
+            tau_array = tau_padded
+
+        # Initialize outputs
+        q = np.zeros((self.nb_q, n_nodes))
+        qdot = np.zeros((self.nb_q, n_nodes))
+        qddot = np.zeros((self.nb_q, n_nodes))
+        lambdas = np.zeros((self.nb_dependent_joints, n_nodes))
+
+        # Initialize warm-start
+        if q_v_init is None:
+            q_v_init = DM.zeros(self.nb_dependent_joints)
+        else:
+            q_v_init = DM(q_v_init.flatten())
+
+        # Iterate through time nodes
+        for i in range(n_nodes):
+            q_u_i = q_u_array[:, i]
+            qdot_u_i = qdot_u_array[:, i]
+            tau_i = tau_array[:, i]
+
+            # Solve for dependent coordinates
+            q_v_i = self.compute_q_v()(q_u_i, q_v_init).toarray().flatten()
+
+            # Reconstruct full state
+            q[:, i] = self.state_from_partition(
+                q_u_i[:, np.newaxis],
+                q_v_i[:, np.newaxis]
+            ).toarray().flatten()
+
+            # Compute full velocity
+            qdot[:, i] = self.compute_qdot()(q[:, i], qdot_u_i).toarray().flatten()
+
+            # Compute independent accelerations from forward dynamics
+            qddot_u_i = self.partitioned_forward_dynamics()(
+                q_u_i, qdot_u_i, q_v_init, tau_i
+            ).toarray().flatten()
+
+            # Compute full acceleration
+            qddot[:, i] = self.compute_qddot()(
+                q[:, i], qdot[:, i], qddot_u_i
+            ).toarray().flatten()
+
+            # Compute Lagrange multipliers (constraint forces)
+            lambdas[:, i] = self.compute_the_lagrangian_multipliers()(
+                q_u_i[:, np.newaxis],
+                qdot_u_i,
+                q_v_init,
+                tau_i
+            ).toarray().flatten()
+
+            # Warm-start next iteration
+            q_v_init = DM(q_v_i)
+
+        return q, qdot, qddot, lambdas
+
     @cache_function
     def compute_qdot_v(self) -> Function:
         """

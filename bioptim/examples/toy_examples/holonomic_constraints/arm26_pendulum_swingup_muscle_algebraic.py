@@ -23,11 +23,12 @@ from bioptim import (
     OptimalControlProgram,
     SolutionMerge,
     Solver,
+    CostType,
 )
 from bioptim.examples.utils import ExampleUtils
 
 from common import compute_all_q
-from .custom_dynamics import AlgebraicHolonomicMusclesBiorbdModel, constraint_holonomic, constraint_holonomic_end
+from custom_dynamics import AlgebraicHolonomicMusclesBiorbdModel, constraint_holonomic, constraint_holonomic_end
 
 
 def prepare_ocp(
@@ -79,6 +80,7 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE, key="tau", weight=200, multi_thread=False)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=1, multi_thread=False)
 
     # Dynamics
@@ -121,11 +123,10 @@ def prepare_ocp(
     tau_variable_bimapping.add("tau", to_second=[0, 1, None, None, 2], to_first=[0, 1, 4])
     u_bounds = BoundsList()
     u_bounds.add("tau", min_bound=[tau_min] * 3, max_bound=[tau_max] * 3)
-    u_bounds.add("muscles", min_bound=[0] * 6, max_bound=[1] * 6)
-    u_bounds["tau"][:, :] = 0
     u_bounds["tau"][-1, :] = 0
+
+    u_bounds.add("muscles", min_bound=[0] * 6, max_bound=[1] * 6)
     u_init = InitialGuessList()
-    # u_init.add("tau", [tau_init] * 2)
 
     # Path Constraints
     constraints = ConstraintList()
@@ -170,7 +171,8 @@ def main():
     ocp, bio_model = prepare_ocp(biorbd_model_path=model_path)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
+    ocp.add_plot_penalty(CostType.ALL)
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
     print(sol.real_time_to_optimize)
 
     print(sol.decision_states(to_merge=SolutionMerge.NODES)["q_u"])
