@@ -25,7 +25,10 @@ from bioptim import (
 from bioptim.examples.utils import ExampleUtils
 import numpy as np
 
-from custom_dynamics import HolonomicMusclesBiorbdModel
+try:
+    from .custom_dynamics import HolonomicMusclesBiorbdModel
+except ImportError:
+    from custom_dynamics import HolonomicMusclesBiorbdModel
 
 
 def prepare_ocp(
