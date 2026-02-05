@@ -170,7 +170,6 @@ def main():
     ocp, bio_model = prepare_ocp(biorbd_model_path=model_path, n_shooting=10, final_time=2.0)
 
     solver = Solver.IPOPT()
-    solver.set_linear_solver("ma57")
     sol = ocp.solve(solver)
 
     print(f"Optimization finished in {sol.real_time_to_optimize:.2f} s")
