@@ -423,6 +423,7 @@ class HolonomicConstraintsList(OptionDict):
             extra_arguments=extra_arguments,
         )
 
+
 def compute_biais_vector(constraints_jacobian: MX, q_sym: MX, q_dot_sym: MX) -> MX:
     """
     Compute the bias vector of the holonomic constraint acceleration equation using the Hessian method.
