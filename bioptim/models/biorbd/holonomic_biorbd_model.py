@@ -24,7 +24,152 @@ from ..utils import cache_function
 
 class HolonomicBiorbdModel(BiorbdModel):
     """
-    This class allows to define a biorbd model with custom holonomic constraints.
+    A biomechanical model with holonomic constraints for constrained multibody dynamics.
+
+    This class extends BiorbdModel to support custom holonomic constraints, enabling the
+    simulation and optimization of mechanical systems with geometric restrictions (e.g.,
+    closed kinematic chains, contact constraints, or enforced alignments).
+
+    The class provides two formulations for constrained dynamics:
+    
+    1. **Full-coordinate formulation** (via Lagrange multipliers):
+       Solves: M(q)q̈ + h(q,q̇) = τ + Jᵀλ subject to Φ(q) = 0
+    
+    2. **Reduced-coordinate formulation** (partitioned dynamics):
+       Eliminates dependent coordinates by partitioning q = [q_u; q_v] where q_v
+       is determined by q_u through the constraints, resulting in a smaller system.
+
+    Attributes
+    ----------
+    _newton_tol : float, default=1e-10
+        Convergence tolerance for Newton's method when solving constraint equations.
+        Used in compute_q_v() to find dependent coordinates from independent ones.
+        
+    _holonomic_constraints : list[Function]
+        List of CasADi Functions representing the constraint equations Φ(q) = 0.
+        Each function maps q → constraint_residual.
+        
+    _holonomic_constraints_jacobians : list[Function]
+        List of CasADi Functions for constraint Jacobians J(q) = ∂Φ/∂q.
+        Each function maps q → Jacobian_matrix.
+        
+    _holonomic_constraints_biais : list[Function]
+        List of CasADi Functions for constraint bias terms J̇q̇.
+        Each function maps (q, q̇) → bias_vector, representing velocity-dependent
+        accelerations computed via the Hessian method.
+        
+    stabilization : bool, default=False
+        Whether to enable Baumgarte constraint stabilization in forward dynamics.
+        When True, adds feedback terms to reduce constraint drift:
+            Φ̈ = Jq̈ + J̇q̇ + αΦ + βJ̇ = 0
+        
+    alpha : float, default=0.01
+        Baumgarte stabilization gain for position-level constraint errors.
+        Higher values increase stiffness but may cause numerical issues.
+        Only active when stabilization=True.
+        
+    beta : float, default=0.01
+        Baumgarte stabilization gain for velocity-level constraint errors.
+        Acts as damping on constraint violations.
+        Only active when stabilization=True.
+        
+    _dependent_joint_index : list[int]
+        Indices of dependent (constrained) generalized coordinates q_v.
+        These coordinates are determined from independent coordinates via constraints.
+        Must be sorted in ascending order.
+        
+    _independent_joint_index : list[int]
+        Indices of independent (unconstrained) generalized coordinates q_u.
+        These are the minimal coordinates needed to describe the system state.
+        Must be sorted in ascending order.
+        Default: all coordinates [0, 1, ..., nb_q-1] if not partitioned.
+        
+    _cached_functions : dict
+        Internal cache for compiled CasADi Functions to avoid recomputation.
+        Populated by the @cache_function decorator.
+
+    Parameters
+    ----------
+    bio_model : str | biorbd.Model
+        Path to the bioMod file or a biorbd.Model instance.
+    friction_coefficients : np.ndarray, optional
+        Friction coefficients for contact dynamics (inherited from BiorbdModel).
+    parameters : ParameterList, optional
+        Model parameters (currently not supported with holonomic constraints).
+    **kwargs
+        Additional arguments passed to BiorbdModel.__init__().
+
+    Notes
+    -----
+    - Constraints must be set via set_holonomic_configuration() before use
+    - The partitioning q = [q_u; q_v] is optional but required for reduced dynamics
+    - For reduced dynamics, J_v (dependent Jacobian block) must be invertible
+    - The class automatically verifies invertibility via check_dependant_jacobian()
+    
+    Mathematical Background
+    -----------------------
+    Holonomic constraints are geometric restrictions of the form Φ(q) = 0.
+    Taking time derivatives:
+        - Velocity level: Φ̇ = J(q)q̇ = 0
+        - Acceleration level: Φ̈ = J(q)q̈ + J̇(q)q̇ = 0
+    
+    The bias term J̇q̇ is computed using the Hessian method:
+        (J̇q̇)ᵢ = Σⱼ Σₖ (∂Jᵢⱼ/∂qₖ) q̇ₖ q̇ⱼ = q̇ᵀ Hᵢ q̇
+    
+    For partitioned dynamics, the coupling relationships are:
+        q̇_v = B_vu q̇_u  where  B_vu = -J_v⁻¹ J_u
+        q̈_v = B_vu q̈_u + b_v  where  b_v = -J_v⁻¹(J̇q̇)
+
+    Examples
+    --------
+    Basic setup with marker superimposition constraint:
+    
+    >>> from bioptim import HolonomicBiorbdModel, HolonomicConstraintsList, HolonomicConstraintsFcn
+    >>> 
+    >>> model = HolonomicBiorbdModel("my_model.bioMod")
+    >>> 
+    >>> # Define constraints
+    >>> constraints = HolonomicConstraintsList()
+    >>> constraints.add(
+    ...     "marker_constraint",
+    ...     constraints_fcn=HolonomicConstraintsFcn.superimpose_markers,
+    ...     marker_1="hand",
+    ...     marker_2="target"
+    ... )
+    >>> 
+    >>> # Configure with partitioning
+    >>> model.set_holonomic_configuration(
+    ...     constraints_list=constraints,
+    ...     independent_joint_index=[0, 1, 2],
+    ...     dependent_joint_index=[3, 4, 5]
+    ... )
+    
+    Using reduced-coordinate forward dynamics:
+    
+    >>> # Only need independent coordinates
+    >>> q_u = np.array([0.1, 0.2, 0.3])
+    >>> qdot_u = np.array([0.01, 0.02, 0.03])
+    >>> tau = np.zeros(model.nb_q)
+    >>> 
+    >>> # Compute full state from independent coordinates
+    >>> q = model.compute_q()(q_u, np.zeros(3))  # q_v_init = zeros
+    >>> 
+    >>> # Compute accelerations (reduced system)
+    >>> qddot_u = model.partitioned_forward_dynamics()(q_u, qdot_u, np.zeros(3), tau)
+
+    See Also
+    --------
+    BiorbdModel : Parent class for unconstrained biomechanical models
+    HolonomicConstraintsList : Container for defining multiple constraints
+    HolonomicConstraintsFcn : Library of predefined constraint types
+
+    References
+    ----------
+    .. [1] Docquier, N., Poncelet, A., and Fisette, P. (2013).
+           ROBOTRAN: a powerful symbolic generator of multibody models.
+           Mech. Sci., 4, 199–219. https://doi.org/10.5194/ms-4-199-2013
+    .. [2] Baumgarte, J. (1972). Stabilization of constraints and integrals of motion
+           in dynamical systems. Computer Methods in Applied Mechanics and Engineering.
     """
 
     def __init__(
