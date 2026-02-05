@@ -24,7 +24,7 @@ from bioptim import (
 
 from bioptim.examples.utils import ExampleUtils
 
-from .common import compute_all_q
+from common import compute_all_q
 
 
 def prepare_ocp(

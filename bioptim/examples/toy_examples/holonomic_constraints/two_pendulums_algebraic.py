@@ -8,34 +8,25 @@ from bioptim import (
     BiMappingList,
     BoundsList,
     ConstraintList,
-    CostType,
     DynamicsOptions,
     DynamicsOptionsList,
     HolonomicConstraintsFcn,
     HolonomicConstraintsList,
     InitialGuessList,
-    Node,
     ObjectiveFcn,
     ObjectiveList,
-    OdeSolver,
     OptimalControlProgram,
     SolutionMerge,
     Node,
     CostType,
     OdeSolver,
     OnlineOptim,
+    Solver,
 )
 from bioptim.examples.utils import ExampleUtils
-from casadi import DM
 import numpy as np
 
-from .custom_dynamics import (
-    ModifiedHolonomicTorqueBiorbdModel,
-    constraint_holonomic,
-    constraint_holonomic_end,
-)
-
-from .custom_dynamics import ModifiedHolonomicTorqueBiorbdModel, constraint_holonomic, constraint_holonomic_end
+from custom_dynamics import ModifiedHolonomicTorqueBiorbdModel, constraint_holonomic, constraint_holonomic_end
 
 
 def prepare_ocp(
@@ -186,7 +177,7 @@ def main():
     ocp.add_plot_penalty(CostType.ALL)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(OnlineOptim.DEFAULT))
+    sol = ocp.solve(Solver.IPOPT())
     print(sol.real_time_to_optimize)
 
     stepwise_q_u = sol.stepwise_states(to_merge=SolutionMerge.NODES)["q_u"]

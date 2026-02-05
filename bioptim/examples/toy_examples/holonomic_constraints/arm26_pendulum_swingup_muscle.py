@@ -25,7 +25,7 @@ from bioptim import (
 )
 from bioptim.examples.utils import ExampleUtils
 
-from .arm26_pendulum_swingup import compute_all_states
+from common import compute_all_q
 from .custom_dynamics import HolonomicMusclesBiorbdModel
 
 
@@ -157,7 +157,7 @@ def main():
     print(sol.decision_states(to_merge=SolutionMerge.NODES)["q_u"])
 
     # --- Show results --- #
-    q = compute_all_states(sol, bio_model)
+    q = compute_all_q(sol, bio_model)
 
     viz = pyorerun.PhaseRerun(t_span=np.concatenate(sol.decision_time()).squeeze())
     viz.add_animated_model(pyorerun.BiorbdModel(model_path), q=q)
