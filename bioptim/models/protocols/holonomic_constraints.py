@@ -24,26 +24,66 @@ class HolonomicConstraintsFcn:
         model: BioModel = None,
     ) -> tuple[Function, Function, Function]:
         """
-        Generate the constraint functions to superimpose two markers.
+        Generate holonomic constraint functions to superimpose two markers or fix a marker to the origin.
+
+        This constraint enforces that two markers occupy the same position in space (or a marker
+        is fixed to the origin), creating a holonomic constraint of the form:
+            Φ(q) = marker_1(q) - marker_2(q) = 0
+
+        The constraint can be expressed in either the global frame or a local reference frame,
+        and can be applied to specific spatial dimensions via the index parameter.
 
         Parameters
         ----------
-        model: BioModel
-            The model.
-        marker_1: str
-            The name of the first marker.
-        marker_2: str
-            The name of the second marker. If None, the constraint will be to superimpose the first marker to the
-            origin.
-        index: slice
-            The index of the markers to superimpose.
-        local_frame_index: int
-            The index of the frame in which the markers are expressed. If None, the markers are expressed in the global.
-
+        model : BioModel
+            The biomechanical model containing the marker definitions.
+        marker_1 : str
+            Name of the first marker in the model.
+        marker_2 : str, optional
+            Name of the second marker. If None, marker_1 is constrained to the origin [0, 0, 0].
+        index : slice, default=slice(0, 3)
+            Slice object specifying which spatial dimensions to constrain.
+            Examples:
+                - slice(0, 3): all three dimensions (x, y, z)
+                - slice(0, 2): only x and y dimensions
+                - slice(2, 3): only z dimension
+        local_frame_index : int, optional
+            Index of the segment/frame in which to express the constraint.
+            If None, markers are expressed in the global (world) frame.
+            If specified, both markers are transformed into this local frame before computing the constraint.
 
         Returns
         -------
-        The constraint function, its jacobian and its double derivative.
+        tuple[Function, Function, Function]
+            A tuple containing three CasADi Functions:
+                - constraints_func: Φ(q) → constraint values (m × 1)
+                - constraints_jacobian_func: ∂Φ/∂q → constraint Jacobian (m × n)
+                - biais_func: (q, q̇) → J̇q̇ → bias/acceleration term (m × 1)
+
+            where m is the number of constrained dimensions (determined by index),
+            and n is the number of generalized coordinates.
+
+        Examples
+        --------
+        Superimpose two markers in all three dimensions:
+        >>> constraint = HolonomicConstraintsFcn.superimpose_markers(
+        ...     model=my_model,
+        ...     marker_1="hand",
+        ...     marker_2="target"
+        ... )
+
+        Fix a marker to the origin in x-y plane only:
+        >>> constraint = HolonomicConstraintsFcn.superimpose_markers(
+        ...     model=my_model,
+        ...     marker_1="foot",
+        ...     marker_2=None,
+        ...     index=slice(0, 2)
+        ... )
+
+        See Also
+        --------
+        align_frames : Constraint to align orientations of two reference frames
+        compute_biais_vector : Computes the bias term J̇q̇
         """
 
         # symbolic variables to create the functions
@@ -102,48 +142,110 @@ class HolonomicConstraintsFcn:
         return constraints_func, constraints_jacobian_func, biais_func
 
     @staticmethod
-    def align_frames(  # <-- new method
+    def align_frames(
         model: BioModel = None,
-        frame_1_idx: int = 0,  # index of the first segment / frame in the model
-        frame_2_idx: int = 1,  # index of the second segment / frame
+        frame_1_idx: int = 0,
+        frame_2_idx: int = 1,
         local_frame_idx: int = None,
         relative_rotation=DM.eye(3),
     ) -> tuple[Function, Function, Function]:
         """
-        Generate the holonomic constraint that forces the orientation of two
-        frames to be identical (i.e. the relative rotation between them is the
-        identity).
+        Generate holonomic constraint functions to align the orientation of two reference frames.
 
-        The constraint is expressed in the set of three independent
-        equations using the relationships
+        This constraint enforces that two body-fixed frames maintain a specified relative orientation,
+        creating a 3-DOF holonomic constraint on the system's configuration.
 
-        *   ``trace(R_rel) = 3``  (⇔ ``cosθ = 1`` ⇒ ``θ = 0``)
-        *   ``R_rel_ij = R_rel_ji``  for the three off‑diagonal elements,
-            i.e. ``R_rel – R_rel.T = 0``.
+        Mathematical Formulation
+        ------------------------
+        The constraint enforces:
+            R₁ᵀ R₂ = R_desired
 
-        Those four scalar equations are not independent (the trace condition
-        already forces the three off‑diagonal elements to be zero when the
-        matrix is orthogonal), so we drop one redundant equation and keep only
-        three of them (the three independent components of the **skew‑symmetric**
-        part of ``R_rel``).  The resulting constraint vector is exactly the one
-        you would obtain from the axis‑angle formulation with ``θ = 0``.
+        where R₁ and R₂ are the rotation matrices of frames 1 and 2, and R_desired is the
+        desired relative rotation (identity by default).
+
+        The constraint is formulated using the axis-angle representation of the rotation error.
+        For a relative rotation R_rel = R_desired^T (R₁ᵀ R₂), we extract the three independent
+        components of the skew-symmetric part:
+
+            S = (R_rel - R_rel^T) / 2
+
+        When the frames are aligned (θ = 0), S = 0. The constraint vector consists of the
+        three independent components of S:
+
+            Φ(q) = [S₃₂, -S₃₁, S₂₁]^T = 0
+
+        This formulation:
+            - Uses exactly 3 scalar equations (minimal representation)
+            - Avoids singularities at θ = 0 through Taylor expansion
+            - Is equivalent to the axis-angle formulation: Φ = (θ/sin(θ)) · ω̂
 
         Parameters
         ----------
-        model
-            The :class:`~bioptim.BioModel` that contains the kinematic tree.
-        frame_1_idx, frame_2_idx
-            Indices of the two segments (or bodies) whose orientation must be
-            aligned.
-        local_frame_idx
-            If given, the two frames are first expressed in the *local* frame
-            identified by this index (the same behaviour as in
-            ``superimpose_markers``).  When ``None`` the orientations are taken
-            directly in the global reference.
+        model : BioModel
+            The biomechanical model containing the kinematic tree.
+        frame_1_idx : int, default=0
+            Index of the first segment/frame in the model.
+        frame_2_idx : int, default=1
+            Index of the second segment/frame whose orientation will be aligned with frame_1.
+        local_frame_idx : int, optional
+            If specified, both frames are first transformed into this local reference frame
+            before computing the relative rotation. When None, the global (world) frame is used.
+            This is useful for expressing alignment constraints relative to a moving reference.
+        relative_rotation : DM, default=DM.eye(3)
+            The desired 3×3 relative rotation matrix between the frames.
+            Default is identity, meaning frames should be perfectly aligned.
+            For non-identity values, the constraint enforces R₁ᵀ R₂ = relative_rotation.
 
         Returns
         -------
-        The constraint function, its jacobian and the bias vector.
+        tuple[Function, Function, Function]
+            A tuple containing three CasADi Functions:
+                - constraints_func: Φ(q) → constraint values (3 × 1)
+                - constraints_jacobian_func: ∂Φ/∂q → constraint Jacobian (3 × n)
+                - biais_func: (q, q̇) → J̇q̇ → bias/acceleration term (3 × 1)
+
+            where n is the number of generalized coordinates.
+
+        Examples
+        --------
+        Align two segments in the global frame:
+        >>> constraint = HolonomicConstraintsFcn.align_frames(
+        ...     model=my_model,
+        ...     frame_1_idx=2,  # pelvis
+        ...     frame_2_idx=5   # torso
+        ... )
+
+        Align with a 90-degree rotation about z-axis:
+        >>> import numpy as np
+        >>> R_z_90 = DM([
+        ...     [0, -1, 0],
+        ...     [1,  0, 0],
+        ...     [0,  0, 1]
+        ... ])
+        >>> constraint = HolonomicConstraintsFcn.align_frames(
+        ...     model=my_model,
+        ...     frame_1_idx=2,
+        ...     frame_2_idx=5,
+        ...     relative_rotation=R_z_90
+        ... )
+
+        Notes
+        -----
+        The Taylor expansion used for θ/sin(θ) provides numerical stability near θ = 0:
+            θ/sin(θ) ≈ 1 + θ²/6 + 7θ⁴/360 + 31θ⁶/15120
+
+        This ensures the constraint remains well-conditioned even when the frames are
+        nearly aligned.
+
+        See Also
+        --------
+        superimpose_markers : Constraint to superimpose marker positions
+        compute_biais_vector : Computes the bias term J̇q̇
+
+        References
+        ----------
+        .. [1] Murray, R. M., Li, Z., & Sastry, S. S. (1994). A Mathematical Introduction
+               to Robotic Manipulation. CRC Press.
         """
         # Symbolic variables
         q_sym = MX.sym("q", model.nb_q, 1)  # generalized coordinates
@@ -323,26 +425,62 @@ class HolonomicConstraintsList(OptionDict):
 
 def compute_biais_vector(constraints_jacobian: MX, q_sym: MX, q_dot_sym: MX) -> MX:
     """
-    This function computes the biais vector of the second derivative of the holonomic constraint, i.e. Jdot*qdot.
-    through the hessian of the constraint jacobian.
-                  [ qdot^T H_1 qdot ]
-    Jdot @ qdot = [      ...        ]
-                  [ qdot^T H_m qdot ]
+    Compute the bias vector of the holonomic constraint acceleration equation using the Hessian method.
+
+    For holonomic constraints Φ(q) = 0, the acceleration-level constraint is:
+        Φ̈ = J(q)q̈ + J̇(q)q̇ = 0
+
+    This function computes the bias term J̇(q)q̇ through the Hessian tensor of the constraint.
+
+    Mathematical Background
+    -----------------------
+    The time derivative of the constraint Jacobian can be computed using the chain rule:
+        J̇ = ∂J/∂q · q̇ = Σₖ (∂J/∂qₖ) q̇ₖ
+
+    where ∂J/∂q is a 3rd-order tensor (Hessian) with dimensions (m × n × n):
+        - m: number of constraints
+        - n: number of generalized coordinates
+
+    For each constraint i, the bias term is computed as a quadratic form:
+        (J̇q̇)ᵢ = Σⱼ Σₖ (∂Jᵢⱼ/∂qₖ) q̇ₖ q̇ⱼ = q̇ᵀ Hᵢ q̇
+
+    where Hᵢ is the Hessian matrix of the i-th constraint Jacobian row.
+
+    Implementation Note
+    -------------------
+    This method has O(n²) complexity per constraint. For systems where efficiency is critical,
+    spatial algebra methods (O(n)) could be considered, though the Hessian approach is more
+    straightforward for arbitrary holonomic constraints.
 
     Parameters
     ----------
     constraints_jacobian : MX
-        The jacobian of the constraint, i.e. J = d(constraint)/dq
+        The Jacobian matrix of the constraints, shape (m × n), where:
+            J = ∂Φ/∂q
     q_sym : MX
-        The symbolic variable of the generalized coordinates, used to compute the hessian of the constraint jacobian.
+        Symbolic variable for generalized coordinates, shape (n × 1).
+        Required to compute the Hessian ∂J/∂q through symbolic differentiation.
     q_dot_sym : MX
-        The symbolic variable of the generalized velocities, used to compute the biais vector.
+        Symbolic variable for generalized velocities, shape (n × 1).
+        Used in the quadratic form q̇ᵀ H q̇.
 
     Returns
     -------
+    MX
+        The bias vector J̇q̇, shape (m × 1), representing the velocity-dependent
+        acceleration terms in the constraint equation.
 
-    The biais vector of the second derivative of the holonomic constraint, i.e. Jdot*qdot.
+    See Also
+    --------
+    HolonomicBiorbdModel.holonomic_constraints_biais : Uses this function to compute bias terms
+    HolonomicConstraintsFcn.superimpose_markers : Example constraint that generates bias functions
+    HolonomicConstraintsFcn.align_frames : Example constraint that generates bias functions
 
+    References
+    ----------
+    .. [1] Featherstone, R. (2008). Rigid Body Dynamics Algorithms. Springer.
+    .. [2] Docquier, N., Poncelet, A., and Fisette, P. (2013). ROBOTRAN: a powerful symbolic
+           generator of multibody models. Mech. Sci., 4, 199–219.
     """
     Jdot_qdot = []
     for i in range(constraints_jacobian.shape[0]):
