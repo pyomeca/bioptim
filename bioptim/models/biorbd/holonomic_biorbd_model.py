@@ -264,16 +264,153 @@ class HolonomicBiorbdModel(BiorbdModel):
         return vertcat(*[c(q) for c in self._holonomic_constraints_jacobians])
 
     def holonomic_constraints_derivative(self, q: MX, qdot: MX) -> MX:
+        """
+        Compute the time derivative of the holonomic constraints at the velocity level.
+
+        For holonomic constraints Φ(q) = 0, this computes:
+            Φ̇ = J(q)q̇
+
+        where J(q) = ∂Φ/∂q is the constraint Jacobian.
+
+        Parameters
+        ----------
+        q : MX
+            Generalized coordinates, shape (n × 1).
+        qdot : MX
+            Generalized velocities, shape (n × 1).
+
+        Returns
+        -------
+        MX
+            Time derivative of constraints Φ̇, shape (m × 1) where m is the number of constraints.
+        """
         return self.holonomic_constraints_jacobian(q) @ qdot
 
     def holonomic_constraints_biais(self, q: MX, qdot: MX) -> MX:
+        """
+        Compute the bias vector J̇q̇ for the holonomic constraint acceleration equation.
+
+        This method evaluates the velocity-dependent acceleration term that appears in the
+        second time derivative of the holonomic constraints:
+            Φ̈ = J(q)q̈ + J̇(q)q̇ = 0
+
+        The bias term J̇q̇ is computed using the Hessian method for each constraint.
+
+        Mathematical Background
+        -----------------------
+        For constraints Φ(q) = 0, the acceleration-level equation is:
+            d²Φ/dt² = (∂Φ/∂q)q̈ + d/dt(∂Φ/∂q)q̇ = Jq̈ + J̇q̇ = 0
+
+        The bias vector represents the quadratic velocity terms:
+            (J̇q̇)ᵢ = Σⱼ Σₖ (∂Jᵢⱼ/∂qₖ) q̇ₖ q̇ⱼ = q̇ᵀ Hᵢ q̇
+
+        where Hᵢ is the Hessian of the i-th constraint.
+
+        Parameters
+        ----------
+        q : MX
+            Generalized coordinates, shape (n × 1).
+        qdot : MX
+            Generalized velocities, shape (n × 1).
+
+        Returns
+        -------
+        MX
+            Bias vector J̇q̇, shape (m × 1) where m is the total number of holonomic constraints.
+
+        See Also
+        --------
+        holonomic_constraints_double_derivative : Full acceleration-level constraint equation
+        constrained_forward_dynamics : Uses this bias term in the constrained dynamics
+        biais_vector : Partitioned version used in reduced-coordinate formulation
+        """
         return vertcat(*[b(q, qdot) for b in self._holonomic_constraints_biais])
 
     def holonomic_constraints_double_derivative(self, q: MX, qdot: MX, qddot: MX) -> MX:
+        """
+        Compute the second time derivative of the holonomic constraints (acceleration level).
+
+        For holonomic constraints Φ(q) = 0, this computes:
+            Φ̈ = J(q)q̈ + J̇(q)q̇
+
+        where:
+            - J(q) = ∂Φ/∂q is the constraint Jacobian
+            - J̇q̇ is the bias vector (velocity-dependent acceleration term)
+
+        This equation must equal zero for the constraints to be satisfied at the acceleration level,
+        which is enforced in constrained dynamics formulations.
+
+        Parameters
+        ----------
+        q : MX
+            Generalized coordinates, shape (n × 1).
+        qdot : MX
+            Generalized velocities, shape (n × 1).
+        qddot : MX
+            Generalized accelerations, shape (n × 1).
+
+        Returns
+        -------
+        MX
+            Second time derivative Φ̈ = Jq̈ + J̇q̇, shape (m × 1) where m is the number of constraints.
+
+        See Also
+        --------
+        holonomic_constraints_biais : Computes the J̇q̇ term
+        constrained_forward_dynamics : Enforces Φ̈ = 0 to solve for q̈ and constraint forces
+        """
         return vertcat(*[J(q) @ qddot + Jdot_qdot(q, qdot) for J, Jdot_qdot in zip(self._holonomic_constraints_jacobians, self._holonomic_constraints_biais)])
 
     @cache_function
     def constrained_forward_dynamics(self) -> Function:
+        """
+        Compute forward dynamics for a system with holonomic constraints using Lagrange multipliers.
+
+        This method solves the constrained equations of motion:
+            M(q)q̈ + h(q,q̇) = τ + Jᵀλ
+            J(q)q̈ + J̇(q)q̇ = 0
+
+        where:
+            - M(q) is the mass/inertia matrix
+            - h(q,q̇) are the nonlinear effects (Coriolis, centrifugal, gravity)
+            - τ are the applied generalized forces
+            - J(q) is the constraint Jacobian
+            - λ are the Lagrange multipliers (constraint forces)
+
+        Mathematical Formulation
+        ------------------------
+        The augmented system is solved as a linear system:
+            [M   Jᵀ] [q̈]   [τ - h      ]
+            [J   0 ] [λ] = [-J̇q̇       ]
+
+        Optional Baumgarte stabilization can be enabled to reduce constraint drift:
+            [-J̇q̇ - αΦ - βJ̇]
+
+        where α and β are stabilization gains.
+
+        Returns
+        -------
+        Function
+            CasADi Function with signature:
+                Inputs: q, qdot, tau, parameters
+                Output: qddot (generalized accelerations satisfying constraints)
+
+        Notes
+        -----
+        - The method uses symbolic QR decomposition for numerical stability
+        - Lagrange multipliers are not returned but can be computed separately
+        - For reduced-coordinate formulations, use partitioned_forward_dynamics instead
+
+        See Also
+        --------
+        partitioned_forward_dynamics : Reduced-coordinate formulation (more efficient)
+        holonomic_constraints_biais : Computes the J̇q̇ bias term
+        
+        References
+        ----------
+        .. [1] Baumgarte, J. (1972). Stabilization of constraints and integrals of motion
+               in dynamical systems. Computer Methods in Applied Mechanics and Engineering.
+        """
 
         mass_matrix = self.mass_matrix()(self.q, self.parameters)
         constraints_jacobian = self.holonomic_constraints_jacobian(self.q)
@@ -406,11 +543,68 @@ class HolonomicBiorbdModel(BiorbdModel):
     @cache_function
     def partitioned_forward_dynamics_full(self) -> Function:
         """
-        Sources
+        Compute forward dynamics in reduced (partitioned) coordinates with explicit dependency handling.
+
+        This method eliminates the dependent coordinates q_v by expressing the dynamics entirely
+        in terms of the independent coordinates q_u. The result is a reduced-order system that
+        automatically satisfies the holonomic constraints.
+
+        Mathematical Formulation
+        ------------------------
+        Starting from the full constrained dynamics:
+            M(q)q̈ + h(q,q̇) = τ + Jᵀλ
+            Φ̈ = J(q)q̈ + J̇q̇ = 0
+
+        Partition coordinates as q = [q_u; q_v] and the mass matrix:
+            M = [M_uu  M_uv]
+                [M_vu  M_vv]
+
+        Using the constraint relationships:
+            q̇_v = B_vu q̇_u
+            q̈_v = B_vu q̈_u + b_v
+
+        The reduced dynamics becomes:
+            M̄ q̈_u = τ̄ - h̄
+
+        where the modified (reduced) mass matrix is:
+            M̄ = M_uu + M_uv B_vu + B_vu^T M_vu + B_vu^T M_vv B_vu
+
+        and the modified forces account for the dependent coordinates:
+            τ̄ = τ_u + B_vu^T τ_v
+            h̄ = h_u + B_vu^T h_v + (M_uv + B_vu^T M_vv) b_v
+
+        Advantages
+        ----------
+        - Smaller system to solve (n_u DOF instead of n)
+        - No constraint drift (constraints satisfied by construction)
+        - More efficient than full augmented formulation
+        - O(n_u³) instead of O(n³) complexity
+
+        Returns
         -------
-        Docquier, N., Poncelet, A., and Fisette, P.:
-        ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
-        https://doi.org/10.5194/ms-4-199-2013, 2013.
+        Function
+            CasADi Function with signature:
+                Inputs: q, qdot_u, tau
+                Output: qddot_u (independent coordinate accelerations)
+
+        Notes
+        -----
+        - Requires q (full coordinates) and qdot_u (independent velocities only)
+        - Dependent velocities are computed internally using coupling_matrix
+        - The method assumes J_v is invertible (verified during setup)
+
+        See Also
+        --------
+        partitioned_forward_dynamics : Wrapper that also computes q from q_u
+        coupling_matrix : Computes B_vu = -J_v⁻¹ J_u
+        biais_vector : Computes b_v = -J_v⁻¹(J̇q̇)
+        constrained_forward_dynamics : Full-coordinate formulation with Lagrange multipliers
+
+        References
+        ----------
+        .. [1] Docquier, N., Poncelet, A., and Fisette, P. (2013).
+               ROBOTRAN: a powerful symbolic generator of multibody models.
+               Mech. Sci., 4, 199–219. https://doi.org/10.5194/ms-4-199-2013
         """
 
         # compute q and qdot
@@ -463,13 +657,54 @@ class HolonomicBiorbdModel(BiorbdModel):
 
     def coupling_matrix(self, q: MX) -> MX:
         """
-        Also denoted as Bvu in the literature.
+        Compute the coupling matrix B_vu relating independent and dependent velocity coordinates.
 
-        Sources
+        The coupling matrix (also denoted as B_vu in the literature) relates the velocities of
+        dependent coordinates q̇_v to independent coordinates q̇_u through the constraint equation:
+            q̇_v = B_vu · q̇_u
+
+        Mathematical Derivation
+        -----------------------
+        From the velocity-level constraint equation:
+            Φ̇ = J(q)q̇ = 0
+
+        Partitioning the Jacobian J = [J_u | J_v] and coordinates q̇ = [q̇_u; q̇_v]:
+            J_u q̇_u + J_v q̇_v = 0
+
+        Solving for q̇_v (assuming J_v is invertible):
+            q̇_v = -J_v⁻¹ J_u q̇_u = B_vu q̇_u
+
+        where B_vu = -J_v⁻¹ J_u.
+
+        Parameters
+        ----------
+        q : MX
+            Generalized coordinates, shape (n × 1).
+
+        Returns
         -------
-        Docquier, N., Poncelet, A., and Fisette, P.:
-        ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
-        https://doi.org/10.5194/ms-4-199-2013, 2013.
+        MX
+            Coupling matrix B_vu, shape (n_v × n_u) where:
+                - n_v is the number of dependent coordinates
+                - n_u is the number of independent coordinates
+
+        Notes
+        -----
+        - The matrix J_v must be invertible for the coupling matrix to be well-defined
+        - This is verified during setup by check_dependant_jacobian()
+        - The coupling matrix is used extensively in the partitioned formulation
+
+        See Also
+        --------
+        compute_qdot_v : Uses this matrix to compute dependent velocities
+        biais_vector : Acceleration-level equivalent
+        partitioned_forward_dynamics_full : Uses coupling matrix in reduced dynamics
+
+        References
+        ----------
+        .. [1] Docquier, N., Poncelet, A., and Fisette, P. (2013).
+               ROBOTRAN: a powerful symbolic generator of multibody models.
+               Mech. Sci., 4, 199–219. https://doi.org/10.5194/ms-4-199-2013
         """
         partitioned_constraints_jacobian = self.partitioned_constraints_jacobian(q)
         partitioned_constraints_jacobian_v = partitioned_constraints_jacobian[:, self.nb_independent_joints :]
@@ -481,13 +716,57 @@ class HolonomicBiorbdModel(BiorbdModel):
 
     def biais_vector(self, q: MX, qdot: MX) -> MX:
         """
-        Sources
-        -------
-        Docquier, N., Poncelet, A., and Fisette, P.:
-        ROBOTRAN: a powerful symbolic generator of multibody models, Mech. Sci., 4, 199–219,
-        https://doi.org/10.5194/ms-4-199-2013, 2013.
+        Compute the partitioned bias vector for dependent coordinate accelerations.
 
-        The right term of the equation (15) in the paper.
+        This method computes the velocity-dependent acceleration term that appears in the
+        relationship between dependent and independent accelerations:
+            q̈_v = B_vu · q̈_u + b_v
+
+        where b_v is the bias vector computed by this method.
+
+        Mathematical Derivation
+        -----------------------
+        Taking the time derivative of the velocity constraint:
+            d/dt(J_u q̇_u + J_v q̇_v) = 0
+            J_u q̈_u + J̇_u q̇_u + J_v q̈_v + J̇_v q̇_v = 0
+
+        Rearranging:
+            q̈_v = -J_v⁻¹(J_u q̈_u + J̇_u q̇_u + J̇_v q̇_v)
+                = B_vu q̈_u - J_v⁻¹(J̇_u q̇_u + J̇_v q̇_v)
+
+        The bias vector is:
+            b_v = -J_v⁻¹ · (J̇q̇)
+
+        where J̇q̇ is computed using the Hessian method.
+
+        Parameters
+        ----------
+        q : MX
+            Generalized coordinates, shape (n × 1).
+        qdot : MX
+            Generalized velocities, shape (n × 1).
+
+        Returns
+        -------
+        MX
+            Bias vector b_v, shape (n_v × 1) where n_v is the number of dependent coordinates.
+
+        Notes
+        -----
+        This corresponds to equation (15) in the ROBOTRAN paper. The bias vector represents
+        the quadratic velocity terms in the acceleration-level constraint equation.
+
+        See Also
+        --------
+        coupling_matrix : Velocity-level coupling matrix B_vu
+        compute_qddot_v : Uses this bias vector to compute dependent accelerations
+        holonomic_constraints_biais : Full-coordinate version of the bias term
+
+        References
+        ----------
+        .. [1] Docquier, N., Poncelet, A., and Fisette, P. (2013).
+               ROBOTRAN: a powerful symbolic generator of multibody models.
+               Mech. Sci., 4, 199–219. https://doi.org/10.5194/ms-4-199-2013
         """
         partitioned_constraints_jacobian = self.partitioned_constraints_jacobian(q)
         partitioned_constraints_jacobian_v = partitioned_constraints_jacobian[:, self.nb_independent_joints :]
@@ -528,7 +807,44 @@ class HolonomicBiorbdModel(BiorbdModel):
     @cache_function
     def compute_q_v(self) -> Function:
         """
-        Compute the dependent joint positions (q_v) from the independent joint positions (q_u).
+        Compute dependent coordinate positions from independent coordinate positions.
+
+        This function solves the nonlinear holonomic constraint equation:
+            Φ(q_u, q_v) = 0
+
+        for the dependent coordinates q_v, given the independent coordinates q_u.
+
+        Solution Method
+        ---------------
+        Uses Newton's method (via CasADi's rootfinder) to solve the implicit equation.
+        The algorithm iteratively refines q_v starting from an initial guess q_v_init until
+        the constraint residual ||Φ|| < tolerance.
+
+        Parameters (via CasADi Function)
+        ---------------------------------
+        q_u : MX
+            Independent coordinate positions, shape (n_u × 1).
+        q_v_init : MX
+            Initial guess for dependent coordinates, shape (n_v × 1).
+            Use zeros if no better guess is available.
+
+        Returns (via CasADi Function)
+        ------------------------------
+        q_v : MX
+            Dependent coordinate positions satisfying Φ(q_u, q_v) = 0, shape (n_v × 1).
+
+        Notes
+        -----
+        - Convergence depends on the quality of q_v_init
+        - For time-stepping simulations, use the previous time step's q_v as initial guess
+        - Tolerance is controlled by set_newton_tol() (default: 1e-10)
+        - This is a nonlinear solve, unlike the linear relationships for velocities/accelerations
+
+        See Also
+        --------
+        compute_q : Wrapper that reconstructs full coordinates q from q_u
+        compute_qdot_v : Velocity-level equivalent (linear)
+        set_newton_tol : Adjust convergence tolerance
         """
         q_v_sym = MX.sym("q_v_sym", self.nb_dependent_joints)
         q_u_sym = MX.sym("q_u_sym", self.q_u.shape[0], self.q_u.shape[1])
@@ -553,7 +869,36 @@ class HolonomicBiorbdModel(BiorbdModel):
     @cache_function
     def compute_q(self) -> Function:
         """
-        If you don't know what to put as a q_v_init, use zeros.
+        Reconstruct full generalized coordinates from independent coordinates.
+
+        This function computes the complete set of generalized coordinates q by:
+        1. Solving for dependent coordinates: q_v = solve(Φ(q_u, q_v) = 0)
+        2. Reassembling: q = [q_u; q_v] in the original coordinate ordering
+
+        Parameters (via CasADi Function)
+        ---------------------------------
+        q_u : MX
+            Independent coordinate positions, shape (n_u × 1).
+        q_v_init : MX
+            Initial guess for dependent coordinates, shape (n_v × 1).
+            Use zeros if no better initial guess is available.
+
+        Returns (via CasADi Function)
+        ------------------------------
+        q : MX
+            Full generalized coordinates satisfying Φ(q) = 0, shape (n × 1).
+
+        Notes
+        -----
+        - The output q respects the original joint ordering in the model
+        - Internally uses compute_q_v() to solve for dependent coordinates
+        - For better convergence in simulations, warm-start q_v_init with previous values
+
+        See Also
+        --------
+        compute_q_v : Solves for dependent coordinates only
+        compute_qdot : Velocity-level equivalent
+        state_from_partition : Low-level function for reassembling coordinates
         """
         q_v = self.compute_q_v()(self.q_u, self.q_v_init)
         biorbd_return = self.state_from_partition(self.q_u, q_v)
@@ -562,6 +907,41 @@ class HolonomicBiorbdModel(BiorbdModel):
 
     @cache_function
     def compute_qdot_v(self) -> Function:
+        """
+        Compute dependent coordinate velocities from independent coordinate velocities.
+
+        This function computes the velocities of dependent coordinates q̇_v given the
+        velocities of independent coordinates q̇_u, using the constraint relationship:
+            q̇_v = B_vu · q̇_u
+
+        where B_vu = -J_v⁻¹ J_u is the coupling matrix.
+
+        This relationship is derived from the velocity-level constraint:
+            Φ̇ = J_u q̇_u + J_v q̇_v = 0
+
+        Parameters (via CasADi Function)
+        ---------------------------------
+        q : MX
+            Full generalized coordinates, shape (n × 1).
+        qdot_u : MX
+            Independent coordinate velocities, shape (n_u × 1).
+
+        Returns (via CasADi Function)
+        ------------------------------
+        qdot_v : MX
+            Dependent coordinate velocities, shape (n_v × 1).
+
+        Notes
+        -----
+        This is the fundamental velocity relationship in partitioned coordinate formulations.
+        It ensures that the velocity-level constraint Φ̇ = 0 is satisfied.
+
+        See Also
+        --------
+        coupling_matrix : Computes the B_vu matrix used in this relationship
+        compute_qddot_v : Acceleration-level equivalent
+        compute_qdot : Reconstructs full velocity vector from q̇_u and q̇_v
+        """
         coupling_matrix_vu = self.coupling_matrix(self.q)
         biorbd_return = coupling_matrix_vu @ self.qdot_u
         casadi_fun = Function("compute_qdot_v", [self.q, self.qdot_u], [biorbd_return], ["q", "qdot_u"], ["qdot_v"])
@@ -590,12 +970,49 @@ class HolonomicBiorbdModel(BiorbdModel):
     @cache_function
     def compute_qddot_v(self) -> Function:
         """
-        Sources
-        -------
-        Docquier, N., Poncelet, A., and Fisette, P.:
-        ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
-        https://doi.org/10.5194/ms-4-199-2013, 2013.
-        Equation (17) in the paper.
+        Compute dependent coordinate accelerations from independent coordinate accelerations.
+
+        This function computes the accelerations of dependent coordinates q̈_v given the
+        accelerations of independent coordinates q̈_u, using the constraint relationship:
+            q̈_v = B_vu · q̈_u + b_v
+
+        where:
+            - B_vu = -J_v⁻¹ J_u is the coupling matrix
+            - b_v = -J_v⁻¹(J̇q̇) is the bias vector
+
+        This relationship ensures the acceleration-level constraint Φ̈ = 0 is satisfied.
+
+        Parameters (via CasADi Function)
+        ---------------------------------
+        q : MX
+            Full generalized coordinates, shape (n × 1).
+        qdot : MX
+            Full generalized velocities, shape (n × 1).
+        qddot_u : MX
+            Independent coordinate accelerations, shape (n_u × 1).
+
+        Returns (via CasADi Function)
+        ------------------------------
+        qddot_v : MX
+            Dependent coordinate accelerations, shape (n_v × 1).
+
+        Notes
+        -----
+        Corresponds to equation (17) in the ROBOTRAN paper. This is the acceleration-level
+        equivalent of the velocity relationship q̇_v = B_vu q̇_u.
+
+        See Also
+        --------
+        coupling_matrix : Computes the B_vu matrix
+        biais_vector : Computes the b_v bias term
+        compute_qdot_v : Velocity-level equivalent
+        compute_qddot : Reconstructs full acceleration vector from q̈_u and q̈_v
+
+        References
+        ----------
+        .. [1] Docquier, N., Poncelet, A., and Fisette, P. (2013).
+               ROBOTRAN: a powerful symbolic generator of multibody models.
+               Mech. Sci., 4, 199–219. https://doi.org/10.5194/ms-4-199-2013
         """
         coupling_matrix_vu = self.coupling_matrix(self.q)
         biorbd_return = coupling_matrix_vu @ self.qddot_u + self.biais_vector(self.q, self.qdot)
