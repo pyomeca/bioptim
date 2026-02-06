@@ -30,7 +30,7 @@ The current status of `bioptim` on conda-forge is
 You can join us on Discord 
 [![Discord](https://img.shields.io/discord/1340640457327247460.svg?label=chat&logo=discord&color=7289DA)](https://discord.gg/Ux7BkdjQFW)
 or open an Issue on GitHub.
-We would be trilled to discuss with you about `bioptim` and biomechanics/optimal control in general!
+We would be thrilled to discuss with you about `bioptim` and biomechanics/optimal control in general!
 
 
 # Try bioptim
@@ -264,7 +264,7 @@ conda install -c conda-forge bioptim
 ```
 This will download and install all the dependencies and install `bioptim`. 
 And that is it! 
-You can already enjoy bioptiming!
+You can already enjoy using bioptim!
 
 ## Installing from the sources (For Linux, Mac, and Windows)
 Installing from the sources is as easy as installing from Anaconda, with the difference that you will be required to download and install the dependencies by hand (see the section below). 
