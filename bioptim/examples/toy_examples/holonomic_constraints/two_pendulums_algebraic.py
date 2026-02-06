@@ -1,7 +1,8 @@
 """
-This example presents how to implement a holonomic constraint in bioptim.
-The simulation is two single pendulum that are forced to be coherent with a holonomic constraint. It is then a double
-pendulum simulation. But this time, the dynamics are computed with the algebraic states, namely q_v the dependent joints
+This example presents how to implement a holonomic constraint in bioptim with algebraic states.
+The simulation consists of two single pendulums that are forced to be coherent with a holonomic constraint,
+creating a double pendulum simulation. The dynamics are computed with algebraic states (q_v) representing
+the dependent joints.
 """
 
 from bioptim import (

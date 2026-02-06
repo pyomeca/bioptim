@@ -1,7 +1,6 @@
 """
-This example presents how to implement a holonomic constraint in bioptim.
-The simulation is two single pendulum that are forced to be coherent with a holonomic constraint. It is then a double
-pendulum simulation.
+This example presents how to implement a holonomic constraint in bioptim with a spherical joint (rotule).
+The simulation consists of two single pendulums connected through a spherical joint constraint.
 """
 
 import numpy as np
@@ -22,7 +21,6 @@ from bioptim import (
     Solver,
 )
 from bioptim.examples.utils import ExampleUtils
-import numpy as np
 
 
 def prepare_ocp(
@@ -70,12 +68,10 @@ def prepare_ocp(
         independent_joint_index=[1],
         dependent_joint_index=[0, 2, 3],
     )
-    # bio_model = TorqueBiorbdModel(biorbd_model_path)
 
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", multi_thread=False)
-    # objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1, min_bound=0.5, max_bound=0.6)
 
     # Dynamics
     dynamics = DynamicsOptionsList()

@@ -109,7 +109,7 @@ def prepare_ocp(
     variable_bimapping.add("qdot", to_second=[0, 1, None, None, 2], to_first=[0, 1, 4])
 
     x_bounds = BoundsList()
-    # q_u and qdot_u are the states of the independent joints which are decision variaibles of the OCP
+    # q_u and qdot_u are the states of the independent joints which are decision variables of the OCP
     x_bounds["q_u"] = bio_model.bounds_from_ranges("q", mapping=variable_bimapping)
     x_bounds["qdot_u"] = bio_model.bounds_from_ranges("qdot", mapping=variable_bimapping)
 

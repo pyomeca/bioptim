@@ -1,16 +1,16 @@
 """
 This example presents how to implement a holonomic constraint in bioptim with algebraic states.
 The simulation is an arm with a pendulum attached, where the pendulum attachment is enforced through holonomic
-constraints. Unlike the non-algebraic version, this implementation uses algebraic states (q_v) for dependent 
+constraints. Unlike the non-algebraic version, this implementation uses algebraic states (q_v) for dependent
 coordinates, requiring explicit constraint enforcement at each node.
 
 Methods used from HolonomicBiorbdModel:
 ---------------------------------------
-- compute_q_from_u_iterative(q_u_array, q_v_init=None): 
+- compute_q_from_u_iterative(q_u_array, q_v_init=None):
     Reconstructs the full generalized coordinates q from independent coordinates q_u.
-    In the algebraic version, q_v_init is provided from the algebraic states to warm-start 
+    In the algebraic version, q_v_init is provided from the algebraic states to warm-start
     the iterative solver, improving convergence and ensuring consistency with the OCP solution.
-    
+
 Note: The algebraic formulation explicitly includes q_v as algebraic states in the OCP, which are
 constrained through path constraints (constraint_holonomic). This differs from the non-algebraic
 version where q_v is implicitly computed within the dynamics.
@@ -38,7 +38,6 @@ from bioptim import (
     CostType,
 )
 from bioptim.examples.utils import ExampleUtils
-import numpy as np
 
 try:
     from .custom_dynamics import AlgebraicHolonomicMusclesBiorbdModel, constraint_holonomic, constraint_holonomic_end
@@ -156,7 +155,7 @@ def prepare_ocp(
     # Only the rotations are controlled, not the translations, which are constrained by the holonomic constraint
     tau_variable_bimapping = BiMappingList()
     tau_variable_bimapping.add("tau", to_second=[0, 1, None, None, 2], to_first=[0, 1, 4])
-    
+
     return (
         OptimalControlProgram(
             bio_model,
@@ -195,9 +194,9 @@ def main():
     sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
 
     # --- Show results --- #
-    states = sol.decision_states(to_merge=SolutionMerge.NODES)
-    algebraic_states = sol.decision_algebraic_states(to_merge=SolutionMerge.NODES)
-    q = bio_model.compute_q_from_u_iterative(states["q_u"], q_v_init=algebraic_states["q_v"])
+    stepwise_q_u = sol.stepwise_states(to_merge=SolutionMerge.NODES)["q_u"]
+    stepwise_q_v = sol.decision_algebraic_states(to_merge=SolutionMerge.NODES)["q_v"]
+    q = ocp.nlp[0].model.state_from_partition(stepwise_q_u, stepwise_q_v).toarray()
 
     viz = pyorerun.PhaseRerun(t_span=np.concatenate(sol.decision_time()).squeeze())
     viz.add_animated_model(pyorerun.BiorbdModel(model_path), q=q)

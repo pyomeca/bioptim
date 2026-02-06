@@ -1,7 +1,6 @@
 """
-This example presents how to implement a holonomic constraint in bioptim.
-The simulation is two single pendulum that are forced to be coherent with a holonomic constraint. It is then a double
-pendulum simulation.
+This example presents how to implement multiple holonomic constraints in bioptim.
+The simulation consists of two single pendulums with two holonomic constraints enforcing their connection.
 """
 
 import numpy as np
@@ -22,7 +21,6 @@ from bioptim import (
     Solver,
 )
 from bioptim.examples.utils import ExampleUtils
-import numpy as np
 
 
 def prepare_ocp(
@@ -81,7 +79,7 @@ def prepare_ocp(
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, multi_thread=False)
-    # objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1, min_bound=0.5, max_bound=0.6)
+
 
     # Dynamics
     dynamics = DynamicsOptionsList()
