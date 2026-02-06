@@ -4,7 +4,6 @@ from typing import TypeAlias
 from casadi import MX, SX, DM
 from .enums import Node
 
-
 Int: TypeAlias = int
 Range: TypeAlias = range
 Str: TypeAlias = str

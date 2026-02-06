@@ -31,7 +31,6 @@ import pytest
 
 from ..utils import TestUtils
 
-
 # Store results for all tests
 global test_memory
 test_memory = {}

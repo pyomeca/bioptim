@@ -29,7 +29,6 @@ from ..misc.parameters_types import (
     IntIterableOptional,
 )
 
-
 _DEFAULT_HOST = "localhost"
 _DEFAULT_PORT = 3050
 _HEADER_GENERIC_LEN = 1024
