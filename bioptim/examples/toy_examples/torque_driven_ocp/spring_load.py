@@ -25,7 +25,6 @@ from casadi import MX, vertcat, sign
 from matplotlib import pyplot as plt
 import numpy as np
 
-
 # scenarios are based on a Mayer term (at Tf)
 # 0: maximize upward speed - expected kinematics: negative torque to get as low as possible and release
 # 1: maximize downward speed - expected kinematics: positive torque to get as high as possible and release
