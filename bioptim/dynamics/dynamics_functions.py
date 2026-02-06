@@ -250,8 +250,8 @@ class DynamicsFunctions:
         contact_defects = nlp.cx()
         # We append the defects with the algebraic states implicit constraints
         if ContactType.RIGID_IMPLICIT in nlp.model.contact_types:
-            _, _, acceleration_constraint_func = HolonomicConstraintsFcn.rigid_contacts(nlp.model)
-            contact_acceleration_defect = acceleration_constraint_func(q, qdot, slope_qdot, nlp.parameters.cx)
+            _, jacobian, bias = HolonomicConstraintsFcn.rigid_contacts(nlp.model)
+            contact_acceleration_defect = jacobian(q, nlp.parameters.cx) @ slope_qdot + bias(q, qdot, nlp.parameters.cx)
             contact_defects = vertcat(contact_defects, contact_acceleration_defect)
 
         if ContactType.SOFT_IMPLICIT in nlp.model.contact_types:

@@ -1,7 +1,6 @@
 """
 This example presents how to implement a holonomic constraint in bioptim.
-The simulation is two single pendulum that are forced to be coherent with a holonomic constraint. It is then a double
-pendulum simulation.
+The simulation consists of a four-bar linkage mechanism constrained by holonomic constraints.
 """
 
 import numpy as np
@@ -23,8 +22,6 @@ from bioptim import (
 )
 
 from bioptim.examples.utils import ExampleUtils
-
-from .common import compute_all_q
 
 
 def prepare_ocp(
@@ -167,7 +164,8 @@ def main():
     print(sol.real_time_to_optimize)
 
     # --- Show results --- #
-    q = compute_all_q(sol, bio_model)
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    q = bio_model.compute_q_from_u_iterative(states["q_u"])
 
     viewer = "pyorerun"
     if viewer == "bioviz":

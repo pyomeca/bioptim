@@ -296,9 +296,9 @@ class HolonomicBioModel(BioModel, Protocol):
         https://doi.org/10.5194/ms-4-199-2013, 2013.
         """
 
-    def biais_vector(self, q: MX, qdot: MX) -> MX:
+    def bias_vector(self, q: MX, qdot: MX) -> MX:
         """
-        Compute the biais vector, denoted b in the paper :
+        Compute the bias vector, denoted b in the paper :
 
         Sources
         -------
