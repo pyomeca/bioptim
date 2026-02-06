@@ -31,10 +31,10 @@ class HolonomicBiorbdModel(BiorbdModel):
     closed kinematic chains, contact constraints, or enforced alignments).
 
     The class provides two formulations for constrained dynamics:
-    
+
     1. **Full-coordinate formulation** (via Lagrange multipliers):
        Solves: M(q)q̈ + h(q,q̇) = τ + Jᵀλ subject to Φ(q) = 0
-    
+
     2. **Reduced-coordinate formulation** (partitioned dynamics):
        Eliminates dependent coordinates by partitioning q = [q_u; q_v] where q_v
        is determined by q_u through the constraints, resulting in a smaller system.
@@ -44,46 +44,46 @@ class HolonomicBiorbdModel(BiorbdModel):
     _newton_tol : float, default=1e-10
         Convergence tolerance for Newton's method when solving constraint equations.
         Used in compute_q_v() to find dependent coordinates from independent ones.
-        
+
     _holonomic_constraints : list[Function]
         List of CasADi Functions representing the constraint equations Φ(q) = 0.
         Each function maps q → constraint_residual.
-        
+
     _holonomic_constraints_jacobians : list[Function]
         List of CasADi Functions for constraint Jacobians J(q) = ∂Φ/∂q.
         Each function maps q → Jacobian_matrix.
-        
-    _holonomic_constraints_biais : list[Function]
+
+    _holonomic_constraints_bias : list[Function]
         List of CasADi Functions for constraint bias terms J̇q̇.
         Each function maps (q, q̇) → bias_vector, representing velocity-dependent
         accelerations computed via the Hessian method.
-        
+
     stabilization : bool, default=False
         Whether to enable Baumgarte constraint stabilization in forward dynamics.
         When True, adds feedback terms to reduce constraint drift:
             Φ̈ = Jq̈ + J̇q̇ + αΦ + βJ̇ = 0
-        
+
     alpha : float, default=0.01
         Baumgarte stabilization gain for position-level constraint errors.
         Higher values increase stiffness but may cause numerical issues.
         Only active when stabilization=True.
-        
+
     beta : float, default=0.01
         Baumgarte stabilization gain for velocity-level constraint errors.
         Acts as damping on constraint violations.
         Only active when stabilization=True.
-        
+
     _dependent_joint_index : list[int]
         Indices of dependent (constrained) generalized coordinates q_v.
         These coordinates are determined from independent coordinates via constraints.
         Must be sorted in ascending order.
-        
+
     _independent_joint_index : list[int]
         Indices of independent (unconstrained) generalized coordinates q_u.
         These are the minimal coordinates needed to describe the system state.
         Must be sorted in ascending order.
         Default: all coordinates [0, 1, ..., nb_q-1] if not partitioned.
-        
+
     _cached_functions : dict
         Internal cache for compiled CasADi Functions to avoid recomputation.
         Populated by the @cache_function decorator.
@@ -105,17 +105,17 @@ class HolonomicBiorbdModel(BiorbdModel):
     - The partitioning q = [q_u; q_v] is optional but required for reduced dynamics
     - For reduced dynamics, J_v (dependent Jacobian block) must be invertible
     - The class automatically verifies invertibility via check_dependant_jacobian()
-    
+
     Mathematical Background
     -----------------------
     Holonomic constraints are geometric restrictions of the form Φ(q) = 0.
     Taking time derivatives:
         - Velocity level: Φ̇ = J(q)q̇ = 0
         - Acceleration level: Φ̈ = J(q)q̈ + J̇(q)q̇ = 0
-    
+
     The bias term J̇q̇ is computed using the Hessian method:
         (J̇q̇)ᵢ = Σⱼ Σₖ (∂Jᵢⱼ/∂qₖ) q̇ₖ q̇ⱼ = q̇ᵀ Hᵢ q̇
-    
+
     For partitioned dynamics, the coupling relationships are:
         q̇_v = B_vu q̇_u  where  B_vu = -J_v⁻¹ J_u
         q̈_v = B_vu q̈_u + b_v  where  b_v = -J_v⁻¹(J̇q̇)
@@ -123,11 +123,11 @@ class HolonomicBiorbdModel(BiorbdModel):
     Examples
     --------
     Basic setup with marker superimposition constraint:
-    
+
     >>> from bioptim import HolonomicBiorbdModel, HolonomicConstraintsList, HolonomicConstraintsFcn
-    >>> 
+    >>>
     >>> model = HolonomicBiorbdModel("my_model.bioMod")
-    >>> 
+    >>>
     >>> # Define constraints
     >>> constraints = HolonomicConstraintsList()
     >>> constraints.add(
@@ -136,24 +136,24 @@ class HolonomicBiorbdModel(BiorbdModel):
     ...     marker_1="hand",
     ...     marker_2="target"
     ... )
-    >>> 
+    >>>
     >>> # Configure with partitioning
     >>> model.set_holonomic_configuration(
     ...     constraints_list=constraints,
     ...     independent_joint_index=[0, 1, 2],
     ...     dependent_joint_index=[3, 4, 5]
     ... )
-    
+
     Using reduced-coordinate forward dynamics:
-    
+
     >>> # Only need independent coordinates
     >>> q_u = np.array([0.1, 0.2, 0.3])
     >>> qdot_u = np.array([0.01, 0.02, 0.03])
     >>> tau = np.zeros(model.nb_q)
-    >>> 
+    >>>
     >>> # Compute full state from independent coordinates
     >>> q = model.compute_q()(q_u, np.zeros(3))  # q_v_init = zeros
-    >>> 
+    >>>
     >>> # Compute accelerations (reduced system)
     >>> qddot_u = model.partitioned_forward_dynamics()(q_u, qdot_u, np.zeros(3), tau)
 
@@ -185,7 +185,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         self._newton_tol = 1e-10
         self._holonomic_constraints = []
         self._holonomic_constraints_jacobians = []
-        self._holonomic_constraints_biais = []
+        self._holonomic_constraints_bias = []
         self.stabilization = False
         self.alpha = 0.01
         self.beta = 0.01
@@ -258,13 +258,11 @@ class HolonomicBiorbdModel(BiorbdModel):
         for constraints_name in constraints_list.keys():
             constraint_fcn = constraints_list[constraints_name]["constraints_fcn"]
             extra_arguments = constraints_list[constraints_name]["extra_arguments"]
-            constraint, constraint_jacobian, constraint_biais = constraint_fcn(
-                model=self, **extra_arguments
-            )
+            constraint, constraint_jacobian, constraint_bias = constraint_fcn(model=self, **extra_arguments)
             self._add_holonomic_constraint(
                 constraint,
                 constraint_jacobian,
-                constraint_biais,
+                constraint_bias,
             )
 
         if dependent_joint_index and independent_joint_index:
@@ -388,11 +386,11 @@ class HolonomicBiorbdModel(BiorbdModel):
         self,
         constraints: Function | Callable[[GeneralizedCoordinates], MX],
         constraints_jacobian: Function | Callable[[GeneralizedCoordinates], MX],
-        constraints_biais: Function | Callable[[GeneralizedCoordinates], MX],
+        constraints_bias: Function | Callable[[GeneralizedCoordinates], MX],
     ):
         self._holonomic_constraints.append(constraints)
         self._holonomic_constraints_jacobians.append(constraints_jacobian)
-        self._holonomic_constraints_biais.append(constraints_biais)
+        self._holonomic_constraints_bias.append(constraints_bias)
 
     @property
     def nb_holonomic_constraints(self):
@@ -431,7 +429,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         """
         return self.holonomic_constraints_jacobian(q) @ qdot
 
-    def holonomic_constraints_biais(self, q: MX, qdot: MX) -> MX:
+    def holonomic_constraints_bias(self, q: MX, qdot: MX, parameters: MX = None) -> MX:
         """
         Compute the bias vector J̇q̇ for the holonomic constraint acceleration equation.
 
@@ -467,11 +465,14 @@ class HolonomicBiorbdModel(BiorbdModel):
         --------
         holonomic_constraints_double_derivative : Full acceleration-level constraint equation
         constrained_forward_dynamics : Uses this bias term in the constrained dynamics
-        biais_vector : Partitioned version used in reduced-coordinate formulation
+        bias_vector : Partitioned version used in reduced-coordinate formulation
         """
-        return vertcat(*[b(q, qdot) for b in self._holonomic_constraints_biais])
+        if parameters:
+            return vertcat(*[b(q, qdot, parameters) for b in self._holonomic_constraints_bias])
+        else:
+            return vertcat(*[b(q, qdot) for b in self._holonomic_constraints_bias])
 
-    def holonomic_constraints_double_derivative(self, q: MX, qdot: MX, qddot: MX) -> MX:
+    def holonomic_constraints_double_derivative(self, q: MX, qdot: MX, qddot: MX, parameters: MX = None) -> MX:
         """
         Compute the second time derivative of the holonomic constraints (acceleration level).
 
@@ -501,10 +502,23 @@ class HolonomicBiorbdModel(BiorbdModel):
 
         See Also
         --------
-        holonomic_constraints_biais : Computes the J̇q̇ term
+        holonomic_constraints_bias : Computes the J̇q̇ term
         constrained_forward_dynamics : Enforces Φ̈ = 0 to solve for q̈ and constraint forces
         """
-        return vertcat(*[J(q) @ qddot + Jdot_qdot(q, qdot) for J, Jdot_qdot in zip(self._holonomic_constraints_jacobians, self._holonomic_constraints_biais)])
+        if parameters:
+            return vertcat(
+                *[
+                    J(q, parameters) @ qddot + b(q, qdot, parameters)
+                    for J, b in zip(self._holonomic_constraints_jacobians, self._holonomic_constraints_bias)
+                ]
+            )
+        else:
+            return vertcat(
+                *[
+                    J(q) @ qddot + Jdot_qdot(q, qdot)
+                    for J, Jdot_qdot in zip(self._holonomic_constraints_jacobians, self._holonomic_constraints_bias)
+                ]
+            )
 
     @cache_function
     def constrained_forward_dynamics(self) -> Function:
@@ -549,8 +563,8 @@ class HolonomicBiorbdModel(BiorbdModel):
         See Also
         --------
         partitioned_forward_dynamics : Reduced-coordinate formulation (more efficient)
-        holonomic_constraints_biais : Computes the J̇q̇ bias term
-        
+        holonomic_constraints_bias : Computes the J̇q̇ bias term
+
         References
         ----------
         .. [1] Baumgarte, J. (1972). Stabilization of constraints and integrals of motion
@@ -574,13 +588,13 @@ class HolonomicBiorbdModel(BiorbdModel):
         # compute b vector
         tau_augmented = self.tau - self.non_linear_effects()(self.q, self.qdot, self.parameters)
 
-        biais = -self.holonomic_constraints_biais(self.q, self.qdot)
+        bias = -self.holonomic_constraints_bias(self.q, self.qdot)
         if self.stabilization:
-            biais -= self.alpha * self.holonomic_constraints(
+            bias -= self.alpha * self.holonomic_constraints(
                 self.q
             ) + self.beta * self.holonomic_constraints_derivative(self.q, self.qdot)
 
-        tau_augmented = vertcat(tau_augmented, biais)
+        tau_augmented = vertcat(tau_augmented, bias)
 
         # solve with casadi Ax = b
         x = solve(mass_matrix_augmented, tau_augmented, "symbolicqr")
@@ -742,7 +756,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         --------
         partitioned_forward_dynamics : Wrapper that also computes q from q_u
         coupling_matrix : Computes B_vu = -J_v⁻¹ J_u
-        biais_vector : Computes b_v = -J_v⁻¹(J̇q̇)
+        bias_vector : Computes b_v = -J_v⁻¹(J̇q̇)
         constrained_forward_dynamics : Full-coordinate formulation with Lagrange multipliers
 
         References
@@ -787,7 +801,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         modified_generalized_forces = tau_u + coupling_matrix_vu.T @ tau_v
 
         qddot_u = inv(modified_mass_matrix) @ (
-            modified_generalized_forces - second_term @ self.biais_vector(q, qdot) - modified_non_linear_effect
+            modified_generalized_forces - second_term @ self.bias_vector(q, qdot) - modified_non_linear_effect
         )
 
         casadi_fun = Function(
@@ -842,7 +856,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         See Also
         --------
         compute_qdot_v : Uses this matrix to compute dependent velocities
-        biais_vector : Acceleration-level equivalent
+        bias_vector : Acceleration-level equivalent
         partitioned_forward_dynamics_full : Uses coupling matrix in reduced dynamics
 
         References
@@ -859,7 +873,7 @@ class HolonomicBiorbdModel(BiorbdModel):
 
         return -partitioned_constraints_jacobian_v_inv @ partitioned_constraints_jacobian_u
 
-    def biais_vector(self, q: MX, qdot: MX) -> MX:
+    def bias_vector(self, q: MX, qdot: MX) -> MX:
         """
         Compute the partitioned bias vector for dependent coordinate accelerations.
 
@@ -905,7 +919,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         --------
         coupling_matrix : Velocity-level coupling matrix B_vu
         compute_qddot_v : Uses this bias vector to compute dependent accelerations
-        holonomic_constraints_biais : Full-coordinate version of the bias term
+        holonomic_constraints_bias : Full-coordinate version of the bias term
 
         References
         ----------
@@ -917,7 +931,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         partitioned_constraints_jacobian_v = partitioned_constraints_jacobian[:, self.nb_independent_joints :]
         partitioned_constraints_jacobian_v_inv = inv(partitioned_constraints_jacobian_v)
 
-        return -partitioned_constraints_jacobian_v_inv @ self.holonomic_constraints_biais(q, qdot)
+        return -partitioned_constraints_jacobian_v_inv @ self.holonomic_constraints_bias(q, qdot)
 
     def state_from_partition(self, state_u: MX, state_v: MX) -> MX:
         """
@@ -1087,7 +1101,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         >>> # Assuming 'sol' is the solution from ocp.solve()
         >>> states = sol.decision_states(to_merge=SolutionMerge.NODES)
         >>> q_u_traj = states["q_u"]  # shape (n_u, n_nodes)
-        >>> 
+        >>>
         >>> # Reconstruct full coordinates
         >>> q_full = model.compute_q_from_u_iterative(q_u_traj)
         >>> # q_full has shape (model.nb_q, n_nodes)
@@ -1118,14 +1132,14 @@ class HolonomicBiorbdModel(BiorbdModel):
             )
 
         n_nodes = q_u_array.shape[1] if q_u_array.ndim > 1 else 1
-        
+
         # Handle 1D input
         if q_u_array.ndim == 1:
             q_u_array = q_u_array[:, np.newaxis]
 
         # Initialize output and warm-start vector
         q_full = np.zeros((self.nb_q, n_nodes))
-        
+
         if q_v_init is None:
             q_v_init = DM.zeros(self.nb_dependent_joints)
         else:
@@ -1134,27 +1148,20 @@ class HolonomicBiorbdModel(BiorbdModel):
         # Iterate through time nodes
         for i in range(n_nodes):
             q_u_i = q_u_array[:, i]
-            
+
             # Solve for dependent coordinates using previous solution as warm start
             q_v_i = self.compute_q_v()(q_u_i, q_v_init).toarray().flatten()
-            
+
             # Reconstruct full coordinate vector
-            q_full[:, i] = self.state_from_partition(
-                q_u_i[:, np.newaxis], 
-                q_v_i[:, np.newaxis]
-            ).toarray().flatten()
-            
+            q_full[:, i] = self.state_from_partition(q_u_i[:, np.newaxis], q_v_i[:, np.newaxis]).toarray().flatten()
+
             # Warm-start next iteration with current solution
             q_v_init = DM(q_v_i)
 
         return q_full
 
     def compute_all_states_from_u_iterative(
-        self,
-        q_u_array: np.ndarray,
-        qdot_u_array: np.ndarray,
-        tau_array: np.ndarray,
-        q_v_init: np.ndarray = None
+        self, q_u_array: np.ndarray, qdot_u_array: np.ndarray, tau_array: np.ndarray, q_v_init: np.ndarray = None
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
         Reconstruct all state trajectories from independent coordinates and controls.
@@ -1199,12 +1206,12 @@ class HolonomicBiorbdModel(BiorbdModel):
         >>> from bioptim import SolutionMerge
         >>> states = sol.decision_states(to_merge=SolutionMerge.NODES)
         >>> controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
-        >>> 
+        >>>
         >>> # Prepare tau array (pad with zeros for final node if needed)
         >>> n_nodes = states["q_u"].shape[1]
         >>> tau = np.zeros((model.nb_tau, n_nodes))
         >>> tau[:, :-1] = controls["tau"]
-        >>> 
+        >>>
         >>> # Compute all states
         >>> q, qdot, qddot, lambdas = model.compute_all_states_from_u_iterative(
         ...     states["q_u"],
@@ -1286,31 +1293,23 @@ class HolonomicBiorbdModel(BiorbdModel):
             q_v_i = self.compute_q_v()(q_u_i, q_v_init).toarray().flatten()
 
             # Reconstruct full state
-            q[:, i] = self.state_from_partition(
-                q_u_i[:, np.newaxis],
-                q_v_i[:, np.newaxis]
-            ).toarray().flatten()
+            q[:, i] = self.state_from_partition(q_u_i[:, np.newaxis], q_v_i[:, np.newaxis]).toarray().flatten()
 
             # Compute full velocity
             qdot[:, i] = self.compute_qdot()(q[:, i], qdot_u_i).toarray().flatten()
 
             # Compute independent accelerations from forward dynamics
-            qddot_u_i = self.partitioned_forward_dynamics()(
-                q_u_i, qdot_u_i, q_v_init, tau_i
-            ).toarray().flatten()
+            qddot_u_i = self.partitioned_forward_dynamics()(q_u_i, qdot_u_i, q_v_init, tau_i).toarray().flatten()
 
             # Compute full acceleration
-            qddot[:, i] = self.compute_qddot()(
-                q[:, i], qdot[:, i], qddot_u_i
-            ).toarray().flatten()
+            qddot[:, i] = self.compute_qddot()(q[:, i], qdot[:, i], qddot_u_i).toarray().flatten()
 
             # Compute Lagrange multipliers (constraint forces)
-            lambdas[:, i] = self.compute_the_lagrangian_multipliers()(
-                q_u_i[:, np.newaxis],
-                qdot_u_i,
-                q_v_init,
-                tau_i
-            ).toarray().flatten()
+            lambdas[:, i] = (
+                self.compute_the_lagrangian_multipliers()(q_u_i[:, np.newaxis], qdot_u_i, q_v_init, tau_i)
+                .toarray()
+                .flatten()
+            )
 
             # Warm-start next iteration
             q_v_init = DM(q_v_i)
@@ -1416,7 +1415,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         See Also
         --------
         coupling_matrix : Computes the B_vu matrix
-        biais_vector : Computes the b_v bias term
+        bias_vector : Computes the b_v bias term
         compute_qdot_v : Velocity-level equivalent
         compute_qddot : Reconstructs full acceleration vector from q̈_u and q̈_v
 
@@ -1427,7 +1426,7 @@ class HolonomicBiorbdModel(BiorbdModel):
                Mech. Sci., 4, 199–219. https://doi.org/10.5194/ms-4-199-2013
         """
         coupling_matrix_vu = self.coupling_matrix(self.q)
-        biorbd_return = coupling_matrix_vu @ self.qddot_u + self.biais_vector(self.q, self.qdot)
+        biorbd_return = coupling_matrix_vu @ self.qddot_u + self.bias_vector(self.q, self.qdot)
         casadi_fun = Function(
             "compute_qddot_v", [self.q, self.qdot, self.qddot_u], [biorbd_return], ["q", "qdot", "qddot_u"], ["qddot_v"]
         )

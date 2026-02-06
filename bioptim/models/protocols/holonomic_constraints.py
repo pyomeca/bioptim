@@ -1,5 +1,5 @@
 """
-This class contains different holonomic constraint function.
+This module contains holonomic constraint functions for biomechanical models.
 """
 
 from typing import Any, Callable
@@ -12,7 +12,24 @@ from ...misc.options import OptionDict
 
 class HolonomicConstraintsFcn:
     """
-    This class contains different holonomic constraint.
+    Factory class providing static methods to generate holonomic constraint functions.
+
+    This class contains various holonomic constraint formulations that can be applied to
+    biomechanical models. Each method returns a tuple of CasADi Functions representing:
+        - The constraint equation Φ(q) = 0
+        - The constraint Jacobian ∂Φ/∂q
+        - The bias term J̇q̇ for acceleration-level constraints
+
+    Available Constraints
+    ---------------------
+    - superimpose_markers: Enforce two markers to occupy the same position
+    - align_frames: Enforce two reference frames to maintain a specified relative orientation
+    - rigid_contacts: Enforce rigid contact constraints to prevent penetration
+
+    See Also
+    --------
+    HolonomicConstraintsList : Container for managing multiple holonomic constraints
+    HolonomicBiorbdModel : Model class that uses these constraints
     """
 
     @staticmethod
@@ -58,7 +75,7 @@ class HolonomicConstraintsFcn:
             A tuple containing three CasADi Functions:
                 - constraints_func: Φ(q) → constraint values (m × 1)
                 - constraints_jacobian_func: ∂Φ/∂q → constraint Jacobian (m × n)
-                - biais_func: (q, q̇) → J̇q̇ → bias/acceleration term (m × 1)
+                - bias_func: (q, q̇) → J̇q̇ → bias/acceleration term (m × 1)
 
             where m is the number of constrained dimensions (determined by index),
             and n is the number of generalized coordinates.
@@ -83,7 +100,7 @@ class HolonomicConstraintsFcn:
         See Also
         --------
         align_frames : Constraint to align orientations of two reference frames
-        compute_biais_vector : Computes the bias term J̇q̇
+        compute_bias_vector : Computes the bias term J̇q̇
         """
 
         # symbolic variables to create the functions
@@ -129,17 +146,17 @@ class HolonomicConstraintsFcn:
             ["holonomic_constraints_jacobian"],
         ).expand()
 
-        biais_vector = compute_biais_vector(constraints_jacobian, q_sym, q_dot_sym)
+        bias_vector = compute_bias_vector(constraints_jacobian, q_sym, q_dot_sym)
 
-        biais_func = Function(
+        bias_func = Function(
             "superimpose_markers_bias",
             [q_sym, q_dot_sym],
-            [biais_vector],
+            [bias_vector],
             ["q", "q_dot"],
             ["superimpose_markers_bias"],
         ).expand()
 
-        return constraints_func, constraints_jacobian_func, biais_func
+        return constraints_func, constraints_jacobian_func, bias_func
 
     @staticmethod
     def align_frames(
@@ -202,7 +219,7 @@ class HolonomicConstraintsFcn:
             A tuple containing three CasADi Functions:
                 - constraints_func: Φ(q) → constraint values (3 × 1)
                 - constraints_jacobian_func: ∂Φ/∂q → constraint Jacobian (3 × n)
-                - biais_func: (q, q̇) → J̇q̇ → bias/acceleration term (3 × 1)
+                - bias_func: (q, q̇) → J̇q̇ → bias/acceleration term (3 × 1)
 
             where n is the number of generalized coordinates.
 
@@ -240,7 +257,7 @@ class HolonomicConstraintsFcn:
         See Also
         --------
         superimpose_markers : Constraint to superimpose marker positions
-        compute_biais_vector : Computes the bias term J̇q̇
+        compute_bias_vector : Computes the bias term J̇q̇
 
         References
         ----------
@@ -319,17 +336,17 @@ class HolonomicConstraintsFcn:
             ["J_align"],
         ).expand()
 
-        biais_vector = compute_biais_vector(constraints_jacobian, q_sym, q_dot_sym)
+        bias_vector = compute_bias_vector(constraints_jacobian, q_sym, q_dot_sym)
 
-        biais_func = Function(
+        bias_func = Function(
             "bias_align_frames",
             [q_sym, q_dot_sym],
-            [biais_vector],
+            [bias_vector],
             ["q", "q_dot"],
             ["bias_align_frames"],
         ).expand()
 
-        return constraints_func, constraints_jacobian_func, biais_func
+        return constraints_func, constraints_jacobian_func, bias_func
 
     def rigid_contacts(
         model: BioModel = None,
@@ -380,27 +397,46 @@ class HolonomicConstraintsFcn:
             ["holonomic_constraints_jacobian"],
         ).expand()
 
-        biais_vector = compute_biais_vector(constraints_jacobian, q_sym, q_dot_sym)
+        bias_vector = compute_bias_vector(constraints_jacobian, q_sym, q_dot_sym)
 
-        biais_func = Function(
+        bias_func = Function(
             "rigid_contacts_bias",
-            [q_sym, q_dot_sym],
-            [biais_vector],
-            ["q", "q_dot"],
+            [q_sym, q_dot_sym, parameters],
+            [bias_vector],
+            ["q", "q_dot", "parameters"],
             ["rigid_contacts_bias"],
         ).expand()
 
-        return constraints_func, constraints_jacobian_func, biais_func
+        return constraints_func, constraints_jacobian_func, bias_func
 
 
 class HolonomicConstraintsList(OptionDict):
     """
-    A list of holonomic constraints to be sent to HolonomicBiorbdModel.set_holonomic_configuration()
+    Container for managing multiple holonomic constraints.
+
+    This class stores a collection of holonomic constraints that can be applied to a
+    HolonomicBiorbdModel. Each constraint is identified by a unique key and includes
+    the constraint function along with any additional parameters.
 
     Methods
     -------
-    add(self, key: str, constraints: Function, constraints_jacobian: Function, constraints_double_derivative: Function)
-        Add a new holonomic constraint to the dict
+    add(key, constraints_fcn, **extra_arguments)
+        Add a new holonomic constraint to the collection.
+
+    Examples
+    --------
+    >>> constraints = HolonomicConstraintsList()
+    >>> constraints.add(
+    ...     "marker_constraint",
+    ...     HolonomicConstraintsFcn.superimpose_markers,
+    ...     marker_1="hand",
+    ...     marker_2="target"
+    ... )
+
+    See Also
+    --------
+    HolonomicConstraintsFcn : Factory class for creating constraint functions
+    HolonomicBiorbdModel.set_holonomic_configuration : Method that uses this list
     """
 
     def __init__(self):
@@ -424,7 +460,7 @@ class HolonomicConstraintsList(OptionDict):
         )
 
 
-def compute_biais_vector(constraints_jacobian: MX, q_sym: MX, q_dot_sym: MX) -> MX:
+def compute_bias_vector(constraints_jacobian: MX, q_sym: MX, q_dot_sym: MX) -> MX:
     """
     Compute the bias vector of the holonomic constraint acceleration equation using the Hessian method.
 
@@ -473,7 +509,7 @@ def compute_biais_vector(constraints_jacobian: MX, q_sym: MX, q_dot_sym: MX) -> 
 
     See Also
     --------
-    HolonomicBiorbdModel.holonomic_constraints_biais : Uses this function to compute bias terms
+    HolonomicBiorbdModel.holonomic_constraints_bias : Uses this function to compute bias terms
     HolonomicConstraintsFcn.superimpose_markers : Example constraint that generates bias functions
     HolonomicConstraintsFcn.align_frames : Example constraint that generates bias functions
 
