@@ -1,0 +1,73 @@
+version 1.0
+
+gravity 0 0 0.01
+
+segment root
+    
+    marker root_origin
+        parent root
+        position 0 0 0
+    endmarker
+
+endsegment
+
+segment cube0
+    parent root
+    RTinMatrix    0
+    //RT 0 0 0 xyz 0 0 0
+    mass 0.0
+    com 0.5 0.5 0.5
+    inertia   1 0 0
+	            0 1 0
+	            0 0 1
+    mesh 0 -1 -1
+    mesh 0 0 -1
+    mesh 0 0 0
+    mesh 0 -1 0
+    mesh 0 -1 -1
+    mesh 1 -1 -1
+    mesh 1 0 -1
+    mesh 0 0 -1
+    mesh 1 0 -1
+    mesh 1 0 0
+    mesh 0 0 0
+    mesh 1 0 0
+    mesh 1 -1 0
+    mesh 0 -1 0
+    mesh 1 -1 0
+    mesh 1 -1 -1
+
+    rotations	x
+
+endsegment
+
+segment cube1
+    parent root
+    RTinMatrix    0
+    RT 0 0 0 xyz 0 2 0
+    mass 0.0
+    com 0.5 0.5 0.5
+    inertia   1 0 0
+	            0 1 0
+	            0 0 1
+    mesh 0 -1 -1
+    mesh 0 0 -1
+    mesh 0 0 0
+    mesh 0 -1 0
+    mesh 0 -1 -1
+    mesh 1 -1 -1
+    mesh 1 0 -1
+    mesh 0 0 -1
+    mesh 1 0 -1
+    mesh 1 0 0
+    mesh 0 0 0
+    mesh 1 0 0
+    mesh 1 -1 0
+    mesh 0 -1 0
+    mesh 1 -1 0
+    mesh 1 -1 -1
+    
+    rotations	xyz
+
+endsegment
+

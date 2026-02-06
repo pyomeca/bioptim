@@ -1,0 +1,77 @@
+version 1.0
+
+gravity 0 0 0.0001
+
+segment root
+    
+    marker root_origin
+        parent root
+        position 0 0 0
+    endmarker
+
+endsegment
+
+segment cube0
+    parent root
+    RTinMatrix    0
+    RT 0 0 0 xyz 0 0 0
+    mass 1.0
+    com 0 0 0
+    inertia   1 0 0
+	            0 1 0
+	            0 0 1
+    mesh 0 -1 -1
+    mesh 0 0 -1
+    mesh 0 0 0
+    mesh 0 -1 0
+    mesh 0 -1 -1
+    mesh 1 -1 -1
+    mesh 1 0 -1
+    mesh 0 0 -1
+    mesh 1 0 -1
+    mesh 1 0 0
+    mesh 0 0 0
+    mesh 1 0 0
+    mesh 1 -1 0
+    mesh 0 -1 0
+    mesh 1 -1 0
+    mesh 1 -1 -1
+
+    rotations	x
+    rangesQ
+	    -4*pi 4*pi
+endsegment
+
+segment cube1
+    parent root
+    RTinMatrix    0
+    RT pi/7 pi/8 pi/3 xyz 0 2 0
+    mass 1.0
+    com 0 0 0
+    inertia   1 0 0
+	            0 1 0
+	            0 0 1
+    mesh 0 -1 -1
+    mesh 0 0 -1
+    mesh 0 0 0
+    mesh 0 -1 0
+    mesh 0 -1 -1
+    mesh 1 -1 -1
+    mesh 1 0 -1
+    mesh 0 0 -1
+    mesh 1 0 -1
+    mesh 1 0 0
+    mesh 0 0 0
+    mesh 1 0 0
+    mesh 1 -1 0
+    mesh 0 -1 0
+    mesh 1 -1 0
+    mesh 1 -1 -1
+    
+    rotations	xyz
+    rangesQ
+	    -4*pi 4*pi
+	    -4*pi 4*pi
+	    -4*pi 4*pi
+endsegment
+
