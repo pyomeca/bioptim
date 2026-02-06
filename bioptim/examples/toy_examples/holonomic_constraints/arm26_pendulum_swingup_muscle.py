@@ -11,7 +11,7 @@ Methods used from HolonomicBiorbdModel:
     Uses a Newton solver to iteratively compute the dependent coordinates q_v that satisfy
     the holonomic constraints Φ(q_u, q_v) = 0. Optional warm-starting with q_v_init improves
     convergence for subsequent time steps.
-    
+
 Note: In this non-algebraic formulation, q_v is computed implicitly within the dynamics and is not
 part of the state vector. See arm26_pendulum_swingup_muscle_algebraic.py for the algebraic variant
 where q_v is included as algebraic states.

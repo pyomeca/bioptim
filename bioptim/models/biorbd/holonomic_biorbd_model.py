@@ -590,9 +590,9 @@ class HolonomicBiorbdModel(BiorbdModel):
 
         bias = -self.holonomic_constraints_bias(self.q, self.qdot)
         if self.stabilization:
-            bias -= self.alpha * self.holonomic_constraints(
-                self.q
-            ) + self.beta * self.holonomic_constraints_derivative(self.q, self.qdot)
+            bias -= self.alpha * self.holonomic_constraints(self.q) + self.beta * self.holonomic_constraints_derivative(
+                self.q, self.qdot
+            )
 
         tau_augmented = vertcat(tau_augmented, bias)
 

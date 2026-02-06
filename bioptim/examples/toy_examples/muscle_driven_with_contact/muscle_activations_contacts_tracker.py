@@ -24,7 +24,6 @@ from bioptim import (
 from bioptim.examples.utils import ExampleUtils
 import numpy as np
 
-
 # Load track_segment_on_rt
 spec = importlib.util.spec_from_file_location(
     "data_to_track", str(Path(__file__).parent) + "/contact_forces_inequality_constraint_muscle.py"

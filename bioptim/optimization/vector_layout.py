@@ -2,7 +2,6 @@ from enum import Enum
 import numpy as np
 from typing import Callable, Iterator, Tuple, Any
 
-
 Key = Tuple[Any, ...]  # (phase, var_type, node) or ("global", "time"/"parameters")
 KeySize = Tuple[Key, int]
 GeneratorType = Callable[

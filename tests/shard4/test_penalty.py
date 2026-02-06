@@ -34,7 +34,6 @@ from bioptim.optimization.non_linear_program import NonLinearProgram as NLP
 from bioptim.optimization.optimization_variable import OptimizationVariableList
 from tests.utils import TestUtils
 
-
 N_SHOOTING = 10
 EXTERNAL_FORCE_ARRAY = np.zeros((9, N_SHOOTING))
 EXTERNAL_FORCE_ARRAY[:, 0] = [

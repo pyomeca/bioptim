@@ -149,18 +149,14 @@ def main():
     # --- Show results --- #
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
-    
+
     # Prepare tau array for all joints
     n_nodes = states["q_u"].shape[1]
     tau = np.zeros((bio_model.nb_tau, n_nodes))
     tau[:, :-1] = controls["tau"]
-    
+
     # Compute all states using the model method
-    q, qdot, qddot, lambdas = bio_model.compute_all_states_from_u_iterative(
-        states["q_u"],
-        states["qdot_u"],
-        tau
-    )
+    q, qdot, qddot, lambdas = bio_model.compute_all_states_from_u_iterative(states["q_u"], states["qdot_u"], tau)
 
     viewer = "pyorerun"
     if viewer == "bioviz":
