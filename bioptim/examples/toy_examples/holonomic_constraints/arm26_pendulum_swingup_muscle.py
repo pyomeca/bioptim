@@ -1,7 +1,20 @@
 """
-This example presents how to implement a holonomic constraint in bioptim.
-The simulation is two single pendulum that are forced to be coherent with a holonomic constraint. It is then a double
-pendulum simulation.
+This example presents how to implement a holonomic constraint in bioptim with muscle-driven dynamics.
+The simulation is an arm with a pendulum attached, where the pendulum attachment is enforced through holonomic
+constraints. The dynamics are partitioned into independent (q_u) and dependent (q_v) coordinates, with q_v
+computed implicitly within the dynamics.
+
+Methods used from HolonomicBiorbdModel:
+---------------------------------------
+- compute_q_from_u_iterative(q_u_array, q_v_init=None):
+    Reconstructs the full generalized coordinates q from independent coordinates q_u.
+    Uses a Newton solver to iteratively compute the dependent coordinates q_v that satisfy
+    the holonomic constraints Φ(q_u, q_v) = 0. Optional warm-starting with q_v_init improves
+    convergence for subsequent time steps.
+    
+Note: In this non-algebraic formulation, q_v is computed implicitly within the dynamics and is not
+part of the state vector. See arm26_pendulum_swingup_muscle_algebraic.py for the algebraic variant
+where q_v is included as algebraic states.
 """
 
 from bioptim import (
