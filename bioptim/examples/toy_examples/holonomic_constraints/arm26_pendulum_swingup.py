@@ -153,7 +153,7 @@ def main():
 
     # --- Show results --- #
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
-    q = bio_model.compute_q_from_u_iterative(states["q_u"], q)
+    q = bio_model.compute_q_from_u_iterative(states["q_u"])
 
     viz = pyorerun.PhaseRerun(t_span=np.concatenate(sol.decision_time()).squeeze())
     viz.add_animated_model(pyorerun.BiorbdModel(model_path), q=q)
