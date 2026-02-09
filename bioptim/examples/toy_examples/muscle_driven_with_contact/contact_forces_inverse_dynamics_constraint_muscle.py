@@ -70,6 +70,7 @@ def prepare_ocp(
     defects_type: DefectType,
     contact_types: list[ContactType],
     expand_dynamics=True,
+    control_type=ControlType.CONSTANT,
 ):
 
     # BioModel
@@ -179,7 +180,7 @@ def prepare_ocp(
         x_init=x_init,
         u_init=u_init,
         a_init=a_init,
-        control_type=ControlType.CONSTANT,
+        control_type=control_type,
         objective_functions=objective_functions,
         constraints=constraints,
         multinode_constraints=multinode_constraints,
