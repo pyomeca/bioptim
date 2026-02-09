@@ -21,9 +21,6 @@ from bioptim import (
     ParameterList,
     PenaltyController,
     States,
-    DefectType,
-    TorqueDynamics,
-    MusclesDynamics,
 )
 
 
@@ -193,8 +190,6 @@ class HolonomicMusclesDynamics(HolonomicTorqueDynamics):
     ):
 
         # Get variables from the right place
-        # q = DynamicsFunctions.get(nlp.states["q"], states)
-        # qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
         q_u = DynamicsFunctions.get(nlp.states["q_u"], states)
         qdot_u = DynamicsFunctions.get(nlp.states["qdot_u"], states)
         q_v_init = DM.zeros(nlp.model.nb_dependent_joints)
@@ -229,9 +224,6 @@ class HolonomicMusclesDynamics(HolonomicTorqueDynamics):
         nlp,
     ):
 
-        # q_u = DynamicsFunctions.get(nlp.states["q_u"], states)
-        # qdot_u = DynamicsFunctions.get(nlp.states["qdot_u"], states)
-        # tau = DynamicsFunctions.get(nlp.controls["tau"], controls) # Get torques from muscles + residual torques
         q_u, qdot_u, tau, _, _ = self.get_basic_variables(
             nlp, states, controls, parameters, algebraic_states, numerical_timeseries
         )

@@ -1,10 +1,21 @@
 """
-This example presents how to implement a holonomic constraint in bioptim.
-The simulation is two single pendulum that are forced to be coherent with a holonomic constraint. It is then a double
-pendulum simulation.
-"""
+This example presents how to implement a holonomic constraint in bioptim with muscle-driven dynamics.
+The simulation is an arm with a pendulum attached, where the pendulum attachment is enforced through holonomic
+constraints. The dynamics are partitioned into independent (q_u) and dependent (q_v) coordinates, with q_v
+computed implicitly within the dynamics.
 
-import numpy as np
+Methods used from HolonomicBiorbdModel:
+---------------------------------------
+- compute_q_from_u_iterative(q_u_array, q_v_init=None):
+    Reconstructs the full generalized coordinates q from independent coordinates q_u.
+    Uses a Newton solver to iteratively compute the dependent coordinates q_v that satisfy
+    the holonomic constraints Φ(q_u, q_v) = 0. Optional warm-starting with q_v_init improves
+    convergence for subsequent time steps.
+
+Note: In this non-algebraic formulation, q_v is computed implicitly within the dynamics and is not
+part of the state vector. See arm26_pendulum_swingup_muscle_algebraic.py for the algebraic variant
+where q_v is included as algebraic states.
+"""
 
 from bioptim import (
     BiMappingList,
@@ -14,7 +25,6 @@ from bioptim import (
     DynamicsOptionsList,
     HolonomicConstraintsFcn,
     HolonomicConstraintsList,
-    HolonomicTorqueBiorbdModel,
     InitialGuessList,
     ObjectiveFcn,
     ObjectiveList,
@@ -24,9 +34,12 @@ from bioptim import (
     Solver,
 )
 from bioptim.examples.utils import ExampleUtils
+import numpy as np
 
-from .arm26_pendulum_swingup import compute_all_states
-from .custom_dynamics import HolonomicMusclesBiorbdModel
+try:
+    from .custom_dynamics import HolonomicMusclesBiorbdModel
+except ImportError:
+    from custom_dynamics import HolonomicMusclesBiorbdModel
 
 
 def prepare_ocp(
@@ -78,6 +91,7 @@ def prepare_ocp(
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=1, multi_thread=False)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=200, multi_thread=False)
 
     # Dynamics
     dynamics = DynamicsOptionsList()
@@ -93,8 +107,9 @@ def prepare_ocp(
     # The dynamics of the dependent joints will be computed from the holonomic constraint
     variable_bimapping.add("q", to_second=[0, 1, None, None, 2], to_first=[0, 1, 4])
     variable_bimapping.add("qdot", to_second=[0, 1, None, None, 2], to_first=[0, 1, 4])
+
     x_bounds = BoundsList()
-    # q_u and qdot_u are the states of the independent joints
+    # q_u and qdot_u are the states of the independent joints which are decision variables of the OCP
     x_bounds["q_u"] = bio_model.bounds_from_ranges("q", mapping=variable_bimapping)
     x_bounds["qdot_u"] = bio_model.bounds_from_ranges("qdot", mapping=variable_bimapping)
 
@@ -102,26 +117,24 @@ def prepare_ocp(
     x_bounds["q_u"][1, 0] = np.pi / 2
     x_bounds["q_u"][2, 0] = 0
     x_bounds["q_u"][2, -1] = -np.pi
-    x_bounds["qdot_u"][:, [0, -1]] = 0  # Start and end without any velocity
+    x_bounds["qdot_u"][:, 0] = 0  # Start and end without any velocity
 
     # Initial guess
     x_init = InitialGuessList()
     x_init["q_u"] = [0.2] * 3
 
     # Define control path constraint
-    tau_min, tau_max, tau_init = -100, 100, 0
-    # Only the rotations are controlled
-    variable_bimapping.add("tau", to_second=[0, 1, None, None, 2], to_first=[0, 1, 4])
+
     u_bounds = BoundsList()
-    u_bounds.add("tau", min_bound=[tau_min] * 3, max_bound=[tau_max] * 3)
     u_bounds.add("muscles", min_bound=[0] * 6, max_bound=[1] * 6)
-    u_bounds["tau"][:, :] = 0
-    u_bounds["tau"][-1, :] = 0
+
+    tau_min, tau_max, tau_init = -3, 3, 0  # Residual torques
+    u_bounds.add("tau", min_bound=[tau_min] * 3, max_bound=[tau_max] * 3)
+
     u_init = InitialGuessList()
-    # u_init.add("tau", [tau_init] * 2)
 
-    # ------------- #
-
+    # Only the rotations are controlled, not the translations, which are constrained by the holonomic constraint
+    variable_bimapping.add("tau", to_second=[0, 1, None, None, 2], to_first=[0, 1, 4])
     return (
         OptimalControlProgram(
             bio_model,
@@ -148,21 +161,22 @@ def main():
     import pyorerun
 
     model_path = ExampleUtils.folder + "/models/arm26_w_pendulum.bioMod"
-    ocp, bio_model = prepare_ocp(biorbd_model_path=model_path)
+    ocp, bio_model = prepare_ocp(
+        biorbd_model_path=model_path,
+        final_time=0.5,
+        n_shooting=10,
+    )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
-    print(sol.real_time_to_optimize)
-
-    print(sol.decision_states(to_merge=SolutionMerge.NODES)["q_u"])
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
 
     # --- Show results --- #
-    q = compute_all_states(sol, bio_model)
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    q = bio_model.compute_q_from_u_iterative(states["q_u"])
 
     viz = pyorerun.PhaseRerun(t_span=np.concatenate(sol.decision_time()).squeeze())
     viz.add_animated_model(pyorerun.BiorbdModel(model_path), q=q)
-
-    viz.rerun("double_pendulum")
+    viz.rerun()
 
     sol.graphs()
 

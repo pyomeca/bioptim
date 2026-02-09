@@ -554,7 +554,7 @@ def test_vector_layout_algebraic_states():
     bioptim_folder = TestUtils.bioptim_folder()
 
     # --- Prepare the ocp --- #
-    ocp, model = two_pendulums_algebraic.prepare_ocp(
+    ocp = two_pendulums_algebraic.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/examples/models/two_pendulums.bioMod",
         n_shooting=5,
         final_time=1,

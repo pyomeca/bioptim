@@ -1,41 +1,36 @@
 """
-This example presents how to implement a holonomic constraint in bioptim.
-The simulation is two single pendulum that are forced to be coherent with a holonomic constraint. It is then a double
-pendulum simulation. But this time, the dynamics are computed with the algebraic states, namely q_v the dependent joints
+This example presents how to implement a holonomic constraint in bioptim with algebraic states.
+The simulation consists of two single pendulums that are forced to be coherent with a holonomic constraint,
+creating a double pendulum simulation. The dynamics are computed with algebraic states (q_v) representing
+the dependent joints.
 """
 
 from bioptim import (
     BiMappingList,
     BoundsList,
     ConstraintList,
-    CostType,
     DynamicsOptions,
     DynamicsOptionsList,
     HolonomicConstraintsFcn,
     HolonomicConstraintsList,
     InitialGuessList,
-    Node,
     ObjectiveFcn,
     ObjectiveList,
-    OdeSolver,
     OptimalControlProgram,
     SolutionMerge,
     Node,
     CostType,
     OdeSolver,
     OnlineOptim,
+    Solver,
 )
 from bioptim.examples.utils import ExampleUtils
-from casadi import DM
 import numpy as np
 
-from .custom_dynamics import (
-    ModifiedHolonomicTorqueBiorbdModel,
-    constraint_holonomic,
-    constraint_holonomic_end,
-)
-
-from .custom_dynamics import ModifiedHolonomicTorqueBiorbdModel, constraint_holonomic, constraint_holonomic_end
+try:
+    from .custom_dynamics import ModifiedHolonomicTorqueBiorbdModel, constraint_holonomic, constraint_holonomic_end
+except ImportError:
+    from custom_dynamics import ModifiedHolonomicTorqueBiorbdModel, constraint_holonomic, constraint_holonomic_end
 
 
 def prepare_ocp(
@@ -44,7 +39,7 @@ def prepare_ocp(
     final_time: float = 1,
     expand_dynamics: bool = False,
     ode_solver: OdeSolver = OdeSolver.COLLOCATION(polynomial_degree=2),
-) -> tuple[ModifiedHolonomicTorqueBiorbdModel, OptimalControlProgram]:
+) -> OptimalControlProgram:
     """
     Prepare the program
 
@@ -156,23 +151,20 @@ def prepare_ocp(
         # penalty_type=PenaltyType.INTERNAL,
     )
 
-    return (
-        OptimalControlProgram(
-            bio_model,
-            n_shooting,
-            final_time,
-            dynamics=dynamics,
-            x_bounds=x_bounds,
-            u_bounds=u_bounds,
-            a_bounds=a_bounds,
-            x_init=x_init,
-            u_init=u_init,
-            a_init=a_init,
-            objective_functions=objective_functions,
-            variable_mappings=tau_variable_bimapping,
-            constraints=constraints,
-        ),
+    return OptimalControlProgram(
         bio_model,
+        n_shooting,
+        final_time,
+        dynamics=dynamics,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        a_bounds=a_bounds,
+        x_init=x_init,
+        u_init=u_init,
+        a_init=a_init,
+        objective_functions=objective_functions,
+        variable_mappings=tau_variable_bimapping,
+        constraints=constraints,
     )
 
 
@@ -182,11 +174,11 @@ def main():
     """
 
     biorbd_model_path = ExampleUtils.folder + "/models/two_pendulums.bioMod"
-    ocp, bio_model = prepare_ocp(biorbd_model_path=biorbd_model_path)
+    ocp = prepare_ocp(biorbd_model_path=biorbd_model_path)
     ocp.add_plot_penalty(CostType.ALL)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(OnlineOptim.DEFAULT))
+    sol = ocp.solve(Solver.IPOPT())
     print(sol.real_time_to_optimize)
 
     stepwise_q_u = sol.stepwise_states(to_merge=SolutionMerge.NODES)["q_u"]
