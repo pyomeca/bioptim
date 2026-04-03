@@ -4,7 +4,24 @@ This module contains holonomic constraint functions for biomechanical models.
 
 from typing import Any, Callable
 
-from casadi import MX, Function, jacobian, vertcat, trace, sqrt, DM
+from casadi import (
+    MX,
+    DM,
+    Function,
+    acos,
+    fabs,
+    fmax,
+    fmin,
+    if_else,
+    jacobian,
+    norm_2,
+    sin,
+    sqrt,
+    trace,
+    vertcat,
+    pi,
+    atan2,
+)
 
 from .biomodel import BioModel
 from ...misc.options import OptionDict
@@ -164,7 +181,6 @@ class HolonomicConstraintsFcn:
         frame_1_idx: int = 0,
         frame_2_idx: int = 1,
         local_frame_idx: int = None,
-        relative_rotation=DM.eye(3),
     ) -> tuple[Function, Function, Function]:
         """
         Generate holonomic constraint functions to align the orientation of two reference frames.
@@ -267,6 +283,94 @@ class HolonomicConstraintsFcn:
         # Symbolic variables
         q_sym = MX.sym("q", model.nb_q, 1)  # generalized coordinates
         q_dot_sym = MX.sym("q_dot", model.nb_qdot, 1)  # velocities
+        parameters = model.parameters  # optional model parameters
+
+        # Homogeneous transformation matrices of the two frames
+        # Global homogeneous matrices (4×4) of the two frames
+        # T1_glob = model.homogeneous_matrices_in_global(segment_index=frame_1_idx)(q_sym, parameters)  # shape (4,4)
+        # T2_glob = model.homogeneous_matrices_in_global(segment_index=frame_2_idx)(q_sym, parameters)  # shape (4,4)
+
+        # If a *local* reference frame is requested we first bring the two frames
+        # into that local frame (identical to the logic used for the marker
+        # constraint).
+        if local_frame_idx is not None:
+            # Get the rotation matrix of the local frame in the global frame
+            R_loc_glob = model.homogeneous_matrices_in_global(segment_index=local_frame_idx)(q_sym, parameters)[:3, :3]
+
+            # Get the rotation matrices of the two frames in the global frame
+            R1_glob = model.homogeneous_matrices_in_global(segment_index=frame_1_idx)(q_sym, parameters)[:3, :3]
+            R2_glob = model.homogeneous_matrices_in_global(segment_index=frame_2_idx)(q_sym, parameters)[:3, :3]
+
+            # Transform the rotation matrices into the local frame
+            R1 = R_loc_glob.T @ R1_glob
+            R2 = R_loc_glob.T @ R2_glob
+        else:
+            # If no local frame is specified, use the global frame
+            R1 = model.homogeneous_matrices_in_global(segment_index=frame_1_idx)(q_sym, parameters)[:3, :3]
+            R2 = model.homogeneous_matrices_in_global(segment_index=frame_2_idx)(q_sym, parameters)[:3, :3]
+
+        # Relative rotation: R_rel = R1ᵀ·R2    (frame‑1 → frame‑2)
+        R_rel = R2.T @ R1  # still a symbolic 3×3 matrix
+
+        # Minimal set of scalar constraints (3 equations)
+        # The skew‑symmetric part of a proper rotation is zero when the angle is zero:
+        #   S = (R_rel - R_relᵀ) / 2  →  S = 0   ⇔   ω = 0, θ = 0
+        # We vectorise the three independent components of S:
+        #    S_21, S_31, S_32
+        # (any consistent ordering works, we keep the same order used in the
+        #  analytical derivation of the constraint in the OP.)
+        # cos_theta = (trace(R_rel) - 1) / 2
+        # theta = sqrt(2 * (1 - cos_theta) + 1e-15)  # using the first-order expansion of arccos
+        theta = sqrt(fmax(3 - trace(R_rel), 0) + 1e-12)  # using the first-order expansion of arccos
+        theta_over_sintheta = (
+            1 + theta**2 / 6 + 7 * theta**4 / 360 + 31 * theta**6 / 15120
+        )  # using the Taylor expansion
+        S = theta_over_sintheta * (R_rel - R_rel.T) / 2.0  # still 3×3, skew‑symmetric
+
+        constraint = vertcat(S[2, 1], -S[2, 0], S[1, 0])  # r32 - r23  # r13 - r31  # r21 - r12
+
+        # Jacobian and second derivative (CasADi)
+        constraints_jacobian = jacobian(constraint, q_sym)
+
+        constraints_func = Function(
+            "align_frames_constraint",
+            [q_sym],
+            [constraint],
+            ["q"],
+            ["c_align"],
+        ).expand()
+
+        constraints_jacobian_func = Function(
+            "align_frames_jacobian",
+            [q_sym],
+            [constraints_jacobian],
+            ["q"],
+            ["J_align"],
+        ).expand()
+
+        bias_vector = compute_bias_vector(constraints_jacobian, q_sym, q_dot_sym)
+
+        bias_func = Function(
+            "bias_align_frames",
+            [q_sym, q_dot_sym],
+            [bias_vector],
+            ["q", "q_dot"],
+            ["bias_align_frames"],
+        ).expand()
+
+        return constraints_func, constraints_jacobian_func, bias_func
+
+    @staticmethod
+    def align_frames2(
+        model,
+        frame_1_idx: int = 0,
+        frame_2_idx: int = 1,
+        local_frame_idx: int | None = None,
+        relative_rotation: DM = DM.eye(3),
+    ) -> tuple[Function, Function, Function]:
+        # Symbolic variables
+        q_sym = MX.sym("q", model.nb_q, 1)  # generalized coordinates
+        q_dot_sym = MX.sym("q_dot", model.nb_qdot, 1)  # velocities
         q_ddot_sym = MX.sym("q_ddot", model.nb_qdot, 1)  # accelerations
         parameters = model.parameters  # optional model parameters
 
@@ -299,7 +403,7 @@ class HolonomicConstraintsFcn:
 
         # Error in relative rotation: R_rel - R_desired
         # R_error = R_rel @ relative_rotation.T
-        R_error = relative_rotation.T @ R_rel
+        R_err = relative_rotation.T @ R_rel
 
         # Minimal set of scalar constraints (3 equations)
         # The skew‑symmetric part of a proper rotation is zero when the angle is zero:
@@ -308,14 +412,279 @@ class HolonomicConstraintsFcn:
         #    S_21, S_31, S_32
         # (any consistent ordering works, we keep the same order used in the
         #  analytical derivation of the constraint in the OP.)
-        cos_theta = (trace(R_error) - 1) / 2
-        theta = sqrt(2 * (1 - cos_theta) + 1e-12)  # using the first-order expansion of arccos
-        theta_over_sintheta = (
-            1 + theta**2 / 6 + 7 * theta**4 / 360 + 31 * theta**6 / 15120
+        cos_theta = (trace(R_err) - 1) / 2
+
+        # Clip to the admissible interval to avoid acos‑NaN caused by rounding
+        cos_theta_clip = fmax(fmin(cos_theta, 1.0), -1.0)
+        theta = acos(cos_theta_clip)  # 0 ≤ θ ≤ π
+
+        # Scaling factor = θ / (2·sinθ) – robust for θ≈0 and θ≈π
+        smooth_transition = 1e-1  # tolerance for singular limits
+        transition_epsilon = 2e-2
+        hard_switch = (smooth_transition - transition_epsilon) / 2
+        is_small = theta < hard_switch
+
+        # regular case
+        sin_theta = sin(theta)
+        factor_regular = theta / sin_theta  # normal case
+        # factor_small = MX(0.5)  # limit θ→0   (θ/(2·sinθ) → ½)
+
+        # small theta case
+        theta_small = sqrt(fmax(3 - trace(R_rel), 0) + 1e-12)  # using the first-order expansion of arccos
+        theta_over_sintheta_taylor = (
+            1 + theta_small**2 / 6 + 7 * theta_small**4 / 360 + 31 * theta_small**6 / 15120
         )  # using the Taylor expansion
-        S = theta_over_sintheta * (R_error - R_error.T) / 2.0  # still 3×3, skew‑symmetric
+
+        # factor = if_else(is_small, theta_over_sintheta_taylor, factor_regular)
+        # t = fmin(fmax(0, (theta - epsilon / 2) / (epsilon / 2)), 1)
+        # s = t * t * (3 - 2 * t)  # Smoothstep
+        # factor = s * theta_over_sintheta_taylor + (1 - s) * factor_regular
+        t = fmin(
+            fmax(0, (theta - (smooth_transition - transition_epsilon / 2)) / transition_epsilon), 1
+        )  # Shift and scale
+        s = t * t * (3 - 2 * t)  # Smoothstep
+        factor_smooth = (1 - s) * theta_over_sintheta_taylor + s * factor_regular
+
+        factor = if_else(is_small, theta_over_sintheta_taylor, factor_smooth)
+
+        S = factor * (R_err - R_err.T) / 2.0  # 3×3 MX (or dummy for π)
 
         constraint = vertcat(S[2, 1], -S[2, 0], S[1, 0])  # r32 - r23  # r13 - r31  # r21 - r12
+
+        # Jacobian and second derivative (CasADi)
+        constraints_jacobian = jacobian(constraint, q_sym)
+
+        constraints_func = Function(
+            "align_frames_constraint",
+            [q_sym],
+            [constraint],
+            ["q"],
+            ["c_align"],
+        ).expand()
+
+        constraints_jacobian_func = Function(
+            "align_frames_jacobian",
+            [q_sym],
+            [constraints_jacobian],
+            ["q"],
+            ["J_align"],
+        ).expand()
+
+        bias_vector = compute_bias_vector(constraints_jacobian, q_sym, q_dot_sym)
+
+        bias_func = Function(
+            "bias_align_frames",
+            [q_sym, q_dot_sym],
+            [bias_vector],
+            ["q", "q_dot"],
+            ["bias_align_frames"],
+        ).expand()
+
+        return constraints_func, constraints_jacobian_func, bias_func
+
+    @staticmethod
+    def align_frames3(
+        model,
+        frame_1_idx: int = 0,
+        frame_2_idx: int = 1,
+        local_frame_idx: int | None = None,
+        relative_rotation: DM = DM.eye(3),
+    ) -> tuple[Function, Function, Function]:
+        # Symbolic variables
+        q_sym = MX.sym("q", model.nb_q, 1)  # generalized coordinates
+        q_dot_sym = MX.sym("q_dot", model.nb_qdot, 1)  # velocities
+        q_ddot_sym = MX.sym("q_ddot", model.nb_qdot, 1)  # accelerations
+        parameters = model.parameters  # optional model parameters
+
+        # Homogeneous transformation matrices of the two frames
+        # Global homogeneous matrices (4×4) of the two frames
+        # T1_glob = model.homogeneous_matrices_in_global(segment_index=frame_1_idx)(q_sym, parameters)  # shape (4,4)
+        # T2_glob = model.homogeneous_matrices_in_global(segment_index=frame_2_idx)(q_sym, parameters)  # shape (4,4)
+
+        # If a *local* reference frame is requested we first bring the two frames
+        # into that local frame (identical to the logic used for the marker
+        # constraint).
+        if local_frame_idx is not None:
+            # Get the rotation matrix of the local frame in the global frame
+            R_loc_glob = model.homogeneous_matrices_in_global(segment_index=local_frame_idx)(q_sym, parameters)[:3, :3]
+
+            # Get the rotation matrices of the two frames in the global frame
+            R1_glob = model.homogeneous_matrices_in_global(segment_index=frame_1_idx)(q_sym, parameters)[:3, :3]
+            R2_glob = model.homogeneous_matrices_in_global(segment_index=frame_2_idx)(q_sym, parameters)[:3, :3]
+
+            # Transform the rotation matrices into the local frame
+            R1 = R_loc_glob.T @ R1_glob
+            R2 = R_loc_glob.T @ R2_glob
+        else:
+            # If no local frame is specified, use the global frame
+            R1 = model.homogeneous_matrices_in_global(segment_index=frame_1_idx)(q_sym, parameters)[:3, :3]
+            R2 = model.homogeneous_matrices_in_global(segment_index=frame_2_idx)(q_sym, parameters)[:3, :3]
+
+        # Relative rotation: R_rel = R1ᵀ·R2    (frame‑1 → frame‑2)
+        R_rel = R1.T @ R2  # still a symbolic 3×3 matrix
+
+        # Error in relative rotation: R_rel - R_desired
+        # R_error = R_rel @ relative_rotation.T
+        R_err = relative_rotation.T @ R_rel
+
+        # Minimal set of scalar constraints (3 equations)
+        # The skew‑symmetric part of a proper rotation is zero when the angle is zero:
+        #   S = (R_rel - R_relᵀ) / 2  →  S = 0   ⇔   ω = 0, θ = 0
+        # We vectorise the three independent components of S:
+        #    S_21, S_31, S_32
+        # (any consistent ordering works, we keep the same order used in the
+        #  analytical derivation of the constraint in the OP.)
+        cos_theta = (trace(R_err) - 1) / 2
+
+        # Clip to the admissible interval to avoid acos‑NaN caused by rounding
+        cos_theta_clip = fmax(fmin(cos_theta, 1.0), -1.0)
+        theta = acos(cos_theta_clip)  # 0 ≤ θ ≤ π
+
+        # Scaling factor = θ / (2·sinθ) – robust for θ≈0 and θ≈π
+        smooth_transition = 1e-1  # tolerance for singular limits
+        transition_epsilon = 2e-2
+        hard_switch = (smooth_transition - transition_epsilon) / 2
+        is_small = theta < hard_switch
+
+        smooth_transition_pi = pi - 1e-3
+        transition_epsilon_pi = 2e-4
+        near_pi_low_transition = 2e-3
+        below_pi_lower_trans = fabs(theta - pi) > near_pi_low_transition
+        hard_switch_pi = 1e-4
+        is_near_pi = fabs(theta - pi) < hard_switch_pi
+
+        # regular case
+        sin_theta = sin(fmax(theta, 1e-6))
+        factor_regular = theta / sin_theta  # normal case
+        # factor_small = MX(0.5)  # limit θ→0   (θ/(2·sinθ) → ½)
+
+        # small theta case
+        theta_small = sqrt(3 - trace(R_err) + 1e-15)  # using the first-order expansion of arccos
+        theta_over_sintheta_taylor = (
+            1 + theta_small**2 / 6 + 7 * theta_small**4 / 360 + 31 * theta_small**6 / 15120
+        )  # using the Taylor expansion
+
+        # factor = if_else(is_small, theta_over_sintheta_taylor, factor_regular)
+        # t = fmin(fmax(0, (theta - epsilon / 2) / (epsilon / 2)), 1)
+        # s = t * t * (3 - 2 * t)  # Smoothstep
+        # factor = s * theta_over_sintheta_taylor + (1 - s) * factor_regular
+        t = fmin(
+            fmax(0, (theta - (smooth_transition - transition_epsilon / 2)) / transition_epsilon), 1
+        )  # Shift and scale
+        s = t * t * (3 - 2 * t)  # Smoothstep
+        factor_smooth = (1 - s) * theta_over_sintheta_taylor + s * factor_regular
+
+        factor = if_else(is_small, theta_over_sintheta_taylor, factor_smooth)
+
+        S = factor * (R_err - R_err.T) / 2.0  # 3×3 MX (or dummy for π)
+
+        # 180° fallback – extract the axis from (R_err + I)
+        def normalize(v):
+            """Normalise a vector (works for MX, SX, DM)."""
+            n = norm_2(v)
+            return if_else(fabs(n) < 1e-12, v, v / n)
+
+        # Compute the val_singular values
+        val_singular = vertcat(
+            2 * R_err[0, 0] - trace(R_err) + 1, 2 * R_err[1, 1] - trace(R_err) + 1, 2 * R_err[2, 2] - trace(R_err) + 1
+        )
+
+        # Choose the column with the largest val_singular value (most numerically stable)
+        axis_idx = if_else(
+            val_singular[0] >= val_singular[1],
+            if_else(val_singular[0] >= val_singular[2], 0, 2),
+            if_else(val_singular[1] >= val_singular[2], 1, 2),
+        )
+        # Compute the i-th component of the axis
+        omega_i = if_else(
+            axis_idx == 0,
+            sqrt((R_err[0, 0] + 1) / 2 + 1e-8),
+            if_else(
+                axis_idx == 1,
+                sqrt((R_err[1, 1] + 1) / 2 + 1e-8),
+                sqrt((R_err[2, 2] + 1) / 2 + 1e-8),
+            ),
+        )
+
+        # Compute the sign of the i-th component
+        sign = if_else(
+            axis_idx == 0,
+            if_else(R_err[2, 1] - R_err[1, 2] > 0, 1, -1),
+            if_else(
+                axis_idx == 1,
+                if_else(R_err[0, 2] - R_err[2, 0] > 0, 1, -1),
+                if_else(R_err[1, 0] - R_err[0, 1] > 0, 1, -1),
+            ),
+        )
+
+        # Compute the i-th component with the correct sign
+        omega_i = sign * omega_i
+
+        # Compute the other components of the axis
+        omega_j = if_else(
+            axis_idx == 0,
+            vertcat((R_err[0, 1] + R_err[1, 0]) / (4 * omega_i), (R_err[0, 2] + R_err[2, 0]) / (4 * omega_i)),
+            if_else(
+                axis_idx == 1,
+                vertcat((R_err[1, 0] + R_err[0, 1]) / (4 * omega_i), (R_err[1, 2] + R_err[2, 1]) / (4 * omega_i)),
+                vertcat((R_err[2, 0] + R_err[0, 2]) / (4 * omega_i), (R_err[2, 1] + R_err[1, 2]) / (4 * omega_i)),
+            ),
+        )
+
+        # Assemble the axis vector
+        axis = if_else(
+            axis_idx == 0,
+            vertcat(omega_i, omega_j[0], omega_j[1]),
+            if_else(
+                axis_idx == 1,
+                vertcat(omega_j[0], omega_i, omega_j[1]),
+                vertcat(omega_j[0], omega_j[1], omega_i),
+            ),
+        )
+
+        # Normalize the axis vector
+        axis = normalize(axis)
+
+        # Compute the angle
+        # theta = 2 * atan2(
+        #     norm_2(axis),
+        #     (R_err[2, 1] - R_err[1, 2]) / (4 * axis[0]),
+        # )
+
+        theta = 2 * atan2(
+            norm_2(axis),
+            if_else(
+                axis_idx == 0,
+                (R_err[2, 1] - R_err[1, 2]) / (4 * axis[0]),
+                if_else(
+                    axis_idx == 1,
+                    (R_err[0, 2] - R_err[2, 0]) / (4 * axis[1]),
+                    (R_err[1, 0] - R_err[0, 1]) / (4 * axis[2]),
+                ),
+            ),
+        )
+
+        t_pi = fmin(fmax(0, (theta - (smooth_transition_pi - transition_epsilon_pi / 2)) / transition_epsilon_pi), 1)
+        s_pi = t_pi * t_pi * (3 - 2 * t_pi)  # Smoothstep
+
+        # Constraints
+        regular_constraint = vertcat(S[2, 1], -S[2, 0], S[1, 0])
+        # near_pi_constraint = pi * normalize(axis)
+        near_pi_constraint = theta * axis
+
+        constraint_smooth_pi = vertcat(
+            (1 - s_pi) * S[2, 1] + s_pi * near_pi_constraint[0],
+            -(1 - s_pi) * S[2, 0] - s_pi * near_pi_constraint[1],
+            (1 - s_pi) * S[1, 0] + s_pi * near_pi_constraint[2],
+        )
+
+        # constraint = if_else(
+        #     is_near_pi, near_pi_constraint, if_else(below_pi_lower_trans, regular_constraint, constraint_smooth_pi)
+        # )
+        constraint = if_else(
+            below_pi_lower_trans, regular_constraint, if_else(is_near_pi, near_pi_constraint, constraint_smooth_pi)
+        )
+        # constraint = if_else(is_near_pi, near_pi_constraint, regular_constraint)
 
         # Jacobian and second derivative (CasADi)
         constraints_jacobian = jacobian(constraint, q_sym)
