@@ -485,7 +485,8 @@ class OnlineCallbackServer(OnlineCallbackAbstract):
 
         self._host: Str = host if host else _DEFAULT_HOST
         self._port: Int = port if port else _DEFAULT_PORT
-        self._socket: socket.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._socket: socket.socket | None = None
+        self._reset_client_socket()
 
         self._should_wait_ok_to_client_on_new_data: Bool = platform.system() == "Darwin"
 
@@ -501,6 +502,14 @@ class OnlineCallbackServer(OnlineCallbackAbstract):
             )
 
         self._initialize_connexion(**show_options)
+
+    def _reset_client_socket(self) -> None:
+        if self._socket is not None:
+            try:
+                self._socket.close()
+            except OSError:
+                pass
+        self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     def _initialize_connexion(self, retries: Int = 0, **show_options) -> None:
         """
@@ -522,10 +531,11 @@ class OnlineCallbackServer(OnlineCallbackAbstract):
             if retries > 5:
                 raise RuntimeError(
                     "Could not connect to the plotter server, make sure it is running by calling 'PlottingServer()' on "
-                    "another python instance or allowing for automatic start (Linux or Windows) of the server setting "
+                    "another python instance or allowing for automatic start (Linux, Windows or macOS) of the server setting "
                     "the online_option to 'OnlineOptim.MULTIPROCESS_SERVER' when instantiating your solver."
                 )
             else:
+                self._reset_client_socket()
                 time.sleep(1)
                 return self._initialize_connexion(retries + 1, **show_options)
 

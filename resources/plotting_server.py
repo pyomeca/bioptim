@@ -7,8 +7,8 @@ If set to OnlineOptim.SERVER, then the plotting server is mandatory.
 Since the server runs usings sockets, it is possible to run the server on a different machine than the one running the
 optimization. This is useful when the optimization is run on a cluster and the plotting server is run on a local machine.
 
-On Macos, this server is necessary as it won't connect using multiprocess. One can simply run the current script on
-another terminal to access the online graphs
+On Macos, this script is still useful if one wants to force OnlineOptim.SERVER explicitly or run the plotting server
+on a different machine.
 """
 
 from bioptim import PlottingServer

@@ -788,8 +788,9 @@ One can refer to their respective solver's documentation to know which options e
 The `show_online_optim` parameter can be set to `True` so the graphs nicely update during the optimization with the default values.
 One can also directly declare `online_optim` as an `OnlineOptim` parameter to customize the behavior of the plotter. 
 Note that `show_online_optim` and `online_optim` are mutually exclusive.
-Please also note that `OnlineOptim.MULTIPROCESS` is not available on Windows and only none of them are available on Macos. 
-To see how to run the server on Windows, please refer to the `getting_started/pendulum.py` example.
+Please also note that `OnlineOptim.MULTIPROCESS` is not available on Windows or Macos.
+On Macos, the default backend is `OnlineOptim.MULTIPROCESS_SERVER`, while `OnlineOptim.SERVER` remains available if one wants to start `resources/plotting_server.py` manually.
+To see how to run the server explicitly, please refer to the `resources/plotting_server.py` example.
 It is expected to slow down the optimization a bit. 
 `show_options` can be also passed as a dict to the plotter to customize the plotter's behavior.
 If `online_optim` is set to `SERVER`, then a server must be started manually by instantiating an `PlottingServer` class (see `ressources/plotting_server.py`).
@@ -1720,7 +1721,7 @@ The type of online plotter to use.
 
 The accepted values are:
 NONE: No online plotter.
-DEFAULT: Use the default online plotter depending on the OS (MULTIPROCESS on Linux, MULTIPROCESS_SERVER on Windows and NONE on MacOS).
+DEFAULT: Use the default online plotter depending on the OS (MULTIPROCESS on Linux, MULTIPROCESS_SERVER on Windows and macOS).
 MULTIPROCESS: The online plotter is in a separate process.
 SERVER: The online plotter is in a separate server.
 MULTIPROCESS_SERVER: The online plotter using the server automatically setup on a separate process.
