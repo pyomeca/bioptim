@@ -1185,8 +1185,13 @@ class PlotOcp:
                         y_min = np.inf
                         for p in ax.get_children():
                             if isinstance(p, lines.Line2D):
-                                y_min = min(y_min, np.nanmin(p.get_ydata()))
-                                y_max = max(y_max, np.nanmax(p.get_ydata()))
+                                y_data = np.asarray(p.get_ydata())
+                                if y_data.size == 0 or np.isnan(y_data).all():
+                                    continue
+                                y_min = min(y_min, np.nanmin(y_data))
+                                y_max = max(y_max, np.nanmax(y_data))
+                        if not np.isfinite(y_min) or not np.isfinite(y_max):
+                            continue
                         ax.set_ylim(self._compute_ylim(y_min, y_max, 1.25))
 
         for p in self.plots_vertical_lines:
