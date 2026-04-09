@@ -25,6 +25,8 @@ from bioptim import (
     Axis,
     SolutionMerge,
     DynamicsOptions,
+    Parameter,
+    ParameterList,
 )
 from bioptim.examples.toy_examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
 from bioptim.examples.utils import ExampleUtils
@@ -52,6 +54,10 @@ def sensory_reference(
     return hand_pos_velo
 
 
+def set_friction_coefficients(bio_model, parameter: Parameter):
+    bio_model.set_friction_coefficients(parameter)
+
+
 def prepare_socp(
     biorbd_model_path: str,
     final_time: float,
@@ -64,6 +70,7 @@ def prepare_socp(
     q_opt: np.ndarray = None,
     qdot_opt: np.ndarray = None,
     tau_opt: np.ndarray = None,
+    optimize_friction_coefficients: bool = False,
     use_sx=False,
 ) -> StochasticOptimalControlProgram:
     """
@@ -86,6 +93,8 @@ def prepare_socp(
         The magnitude of the sensory noise
     example_type
         The type of problem to solve (CIRCLE or BAR)
+    optimize_friction_coefficients: bool
+        If the friction coefficients should be optimized or not
     use_sx: bool
         If SX should be used instead of MX
 
@@ -103,6 +112,12 @@ def prepare_socp(
         initial_cov=initial_cov,
     )
 
+    if optimize_friction_coefficients:
+        parameters = ParameterList(use_sx=use_sx)
+        parameters.add("friction_coefficients", set_friction_coefficients, size=4)
+    else:
+        parameters = None
+
     bio_model = StochasticTorqueBiorbdModel(
         biorbd_model_path,
         problem_type=problem_type,
@@ -114,9 +129,12 @@ def prepare_socp(
         sensory_reference=sensory_reference,
         n_references=4,  # This number must be in agreement with what is declared in sensory_reference
         n_feedbacks=4,
+        parameters=parameters,
         use_sx=use_sx,
-        friction_coefficients=np.array([[0.05, 0.025], [0.025, 0.05]]),
     )
+
+    if not optimize_friction_coefficients:
+        bio_model.set_friction_coefficients(np.array([[0.05, 0.025], [0.025, 0.05]]))
 
     n_tau = bio_model.nb_tau
     n_q = bio_model.nb_q
@@ -255,6 +273,7 @@ def prepare_socp(
         x_init=x_init,
         u_init=u_init,
         a_init=a_init,
+        parameters=parameters,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         a_bounds=a_bounds,

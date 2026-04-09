@@ -31,6 +31,8 @@ from bioptim import (
     PhaseDynamics,
     ControlType,
     VariableScalingList,
+    ParameterList,
+    Parameter,
 )
 from bioptim.examples.utils import ExampleUtils
 import casadi as cas
@@ -66,6 +68,10 @@ def sensory_reference(
     return hand_pos_velo
 
 
+def set_friction_coefficients(bio_model, parameter: Parameter):
+    bio_model.set_friction_coefficients(parameter)
+
+
 def prepare_socp(
     biorbd_model_path: str,
     final_time: float,
@@ -76,6 +82,7 @@ def prepare_socp(
     example_type=ExampleType.CIRCLE,
     with_cholesky: bool = False,
     with_scaling: bool = False,
+    optimize_friction_coefficients: bool = False,
     use_sx: bool = False,
 ) -> StochasticOptimalControlProgram:
     """
@@ -98,6 +105,10 @@ def prepare_socp(
         The type of problem to solve (CIRCLE or BAR)
     with_cholesky: bool
         If True, whether to use the Cholesky factorization of the covariance matrix or not
+    with_scaling: bool
+        If True, whether to use scaling for the controls or not
+    optimize_friction_coefficients: bool
+        If True, the friction coefficients are added as optimization variables, otherwise they are fixed
 
     Returns
     -------
@@ -117,8 +128,20 @@ def prepare_socp(
         n_feedbacks=4,
         n_noised_states=4,
         n_noised_controls=2,
-        friction_coefficients=np.array([[0.05, 0.025], [0.025, 0.05]]),
     )
+
+    if optimize_friction_coefficients:
+        parameters = ParameterList(use_sx=use_sx)
+        parameters.add(
+            "friction_coefficients",
+            set_friction_coefficients,
+            size=4,
+            initial_guess=np.array([[0.05, 0.025], [0.025, 0.05]]).flatten(),
+            min_bound=np.zeros((4,)),
+            max_bound=np.ones((4,)),
+        )
+    else:
+        bio_model.set_friction_coefficients(np.array([[0.05, 0.025], [0.025, 0.05]]))
 
     n_tau = bio_model.nb_tau
     n_q = bio_model.nb_q

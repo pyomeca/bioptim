@@ -10,7 +10,8 @@ from ..utils import TestUtils
 
 
 @pytest.mark.parametrize("use_sx", [False, True])
-def test_arm_reaching_torque_driven_collocations(use_sx: bool):
+@pytest.mark.parametrize("optimize_friction_coefficients", [False, True])
+def test_arm_reaching_torque_driven_collocations(use_sx: bool, optimize_friction_coefficients: bool):
     from bioptim.examples.toy_examples.stochastic_optimal_control import (
         arm_reaching_torque_driven_collocations as ocp_module,
     )
@@ -39,6 +40,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         motor_noise_magnitude=motor_noise_magnitude,
         sensory_noise_magnitude=sensory_noise_magnitude,
         use_sx=use_sx,
+        optimize_friction_coefficients=optimize_friction_coefficients,
     )
 
     # Solver parameters
@@ -48,7 +50,10 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     sol = ocp.solve(solver)
 
     # Check objective function value
-    TestUtils.assert_objective_value(sol=sol, expected_value=433.119929307444)
+    if optimize_friction_coefficients:
+        TestUtils.assert_objective_value(sol=sol, expected_value=428.2514842338872)
+    else:
+        TestUtils.assert_objective_value(sol=sol, expected_value=433.119929307444)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -69,8 +74,12 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     npt.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
     npt.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
 
-    npt.assert_almost_equal(tau[:, 0], np.array([1.73918356, -1.0035866]))
-    npt.assert_almost_equal(tau[:, -2], np.array([-1.672167, 0.91772376]))
+    if optimize_friction_coefficients:
+        npt.assert_almost_equal(tau[:, 0], np.array([1.731111, -0.9498632]))
+        npt.assert_almost_equal(tau[:, -2], np.array([-1.66062273, 1.00068712]))
+    else:
+        npt.assert_almost_equal(tau[:, 0], np.array([1.73918356, -1.0035866]))
+        npt.assert_almost_equal(tau[:, -2], np.array([-1.672167, 0.91772376]))
 
     npt.assert_almost_equal(ref[:, 0], np.array([2.81907786e-02, 2.84412560e-01, 0, 0]))
 
@@ -91,6 +100,9 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
             ]
         ),
     )
+
+    if optimize_friction_coefficients:
+        sol.parameters
 
     # TODO: cov is still too sensitive to be properly tested, we need to test it otherwise
 

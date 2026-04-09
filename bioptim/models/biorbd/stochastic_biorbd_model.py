@@ -8,7 +8,7 @@ from ...misc.mapping import BiMappingList
 from ...optimization.parameters import ParameterList
 from ...optimization.variable_scaling import VariableScaling
 from ...optimization.problem_type import SocpType
-
+from ...optimization.stochastic_optimal_control_program import StochasticOptimalControlProgram
 
 from ...misc.parameters_types import Int, Bool, NpArray
 
@@ -61,18 +61,14 @@ class StochasticBiorbdModel(BiorbdModel):
 
         if parameters is None:
             parameters = ParameterList(use_sx=use_sx)
-        parameters.add(
-            "motor_noise",
-            lambda model, param: None,
-            size=motor_noise_magnitude.shape[0],
-            scaling=VariableScaling("motor_noise", [1.0] * motor_noise_magnitude.shape[0]),
+
+        StochasticOptimalControlProgram.augment_with_stochastic_variables(
+            bio_model=self,
+            n_motor_noise=motor_noise_magnitude.shape[0],
+            n_sensory_noise=sensory_noise_magnitude.shape[0],
+            parameters=parameters,
         )
-        parameters.add(
-            "sensory_noise",
-            lambda model, param: None,
-            size=sensory_noise_magnitude.shape[0],
-            scaling=VariableScaling("sensory_noise", [1.0] * sensory_noise_magnitude.shape[0]),
-        )
+
         super().__init__(
             bio_model=(
                 bio_model

@@ -5,12 +5,7 @@ from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVectorHelper
 from ..dynamics.configure_problem import DynamicsOptionsList, DynamicsOptions
 from ..dynamics.ode_solvers import OdeSolver
-from ..limits.constraints import (
-    ConstraintFcn,
-    ConstraintList,
-    Constraint,
-    ParameterConstraintList,
-)
+from ..limits.constraints import ConstraintFcn, ConstraintList, Constraint, ParameterConstraintList
 from ..limits.constraints import ConstraintFunction
 from ..limits.multinode_constraint import MultinodeConstraintList, MultinodeConstraintFcn
 from ..limits.multinode_objective import MultinodeObjectiveList
@@ -22,21 +17,13 @@ from ..limits.penalty_controller import PenaltyController
 from ..limits.phase_transition import PhaseTransitionList, PhaseTransitionFcn
 from ..misc.enums import Node, ControlType, PhaseDynamics, InterpolationType
 from ..misc.mapping import BiMappingList, Mapping, BiMapping
+from ..models.protocols.biomodel import BioModel
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
 from ..optimization.optimal_control_program import OptimalControlProgram
 from ..optimization.parameters import ParameterList
 from ..optimization.problem_type import SocpType
 from ..optimization.variable_scaling import VariableScalingList, VariableScaling
-from ..misc.parameters_types import (
-    Int,
-    Bool,
-    List,
-    Str,
-    NpArray,
-    IntorFloat,
-    AnyIterable,
-    Callable,
-)
+from ..misc.parameters_types import Int, Bool, List, Str, NpArray, IntorFloat, AnyIterable, Callable
 
 
 class StochasticOptimalControlProgram(OptimalControlProgram):
@@ -107,46 +94,14 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         for i_phase in range(n_phase):
             dynamics[i_phase].ode_solver = self._set_default_ode_solver()
 
-        if "motor_noise" not in parameters.keys():
-            n_motor_noise = bio_model.motor_noise_magnitude.shape[0]
-            parameters.add(
-                "motor_noise",
-                function=None,
-                size=n_motor_noise,
-                scaling=VariableScaling("motor_noise", np.ones((n_motor_noise,))),
-                mapping=BiMapping(range(n_motor_noise), range(n_motor_noise)),
-            )
-            parameter_bounds.add(
-                "motor_noise",
-                min_bound=bio_model.motor_noise_magnitude,
-                max_bound=bio_model.motor_noise_magnitude,
-                interpolation=InterpolationType.CONSTANT,
-            )
-            parameter_init.add(
-                "motor_noise", initial_guess=bio_model.motor_noise_magnitude, interpolation=InterpolationType.CONSTANT
-            )
-
-        if "sensory_noise" not in parameters.keys():
-            n_sensory_noise = bio_model.sensory_noise_magnitude.shape[0]
-            parameters.add(
-                "sensory_noise",
-                function=None,
-                size=n_sensory_noise,
-                scaling=VariableScaling("sensory_noise", np.ones((n_sensory_noise,))),
-                mapping=BiMapping(range(n_sensory_noise), range(n_sensory_noise)),
-            )
-            parameter_bounds.add(
-                "sensory_noise",
-                min_bound=bio_model.sensory_noise_magnitude,
-                max_bound=bio_model.sensory_noise_magnitude,
-                interpolation=InterpolationType.CONSTANT,
-            )
-            parameter_init.add(
-                "sensory_noise",
-                initial_guess=bio_model.sensory_noise_magnitude,
-                interpolation=InterpolationType.CONSTANT,
-            )
-
+        self.augment_with_stochastic_variables(
+            bio_model=bio_model,
+            n_motor_noise=bio_model.motor_noise_magnitude.shape[0],
+            n_sensory_noise=bio_model.sensory_noise_magnitude.shape[0],
+            parameters=parameters,
+            parameter_bounds=parameter_bounds,
+            parameter_init=parameter_init,
+        )
         super(StochasticOptimalControlProgram, self).__init__(
             bio_model=bio_model,
             dynamics=dynamics,
@@ -179,6 +134,61 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             use_sx=use_sx,
             integrated_value_functions=integrated_value_functions,
         )
+
+    @staticmethod
+    def augment_with_stochastic_variables(
+        bio_model: StochasticBioModel,
+        n_motor_noise: Int,
+        n_sensory_noise: Int,
+        parameters: ParameterList | None = None,
+        parameter_bounds: BoundsList | None = None,
+        parameter_init: InitialGuessList | None = None,
+    ) -> None:
+        if "motor_noise" not in parameters.keys():
+            if parameter_bounds is not None:
+                parameters.add(
+                    "motor_noise",
+                    function=None,
+                    size=n_motor_noise,
+                    scaling=VariableScaling("motor_noise", np.ones((n_motor_noise,))),
+                    mapping=BiMapping(range(n_motor_noise), range(n_motor_noise)),
+                )
+            if parameter_bounds is not None:
+                parameter_bounds.add(
+                    "motor_noise",
+                    min_bound=bio_model.motor_noise_magnitude,
+                    max_bound=bio_model.motor_noise_magnitude,
+                    interpolation=InterpolationType.CONSTANT,
+                )
+            if parameter_init is not None:
+                parameter_init.add(
+                    "motor_noise",
+                    initial_guess=bio_model.motor_noise_magnitude,
+                    interpolation=InterpolationType.CONSTANT,
+                )
+
+        if "sensory_noise" not in parameters.keys():
+            if parameters is not None:
+                parameters.add(
+                    "sensory_noise",
+                    function=None,
+                    size=n_sensory_noise,
+                    scaling=VariableScaling("sensory_noise", np.ones((n_sensory_noise,))),
+                    mapping=BiMapping(range(n_sensory_noise), range(n_sensory_noise)),
+                )
+            if parameter_bounds is not None:
+                parameter_bounds.add(
+                    "sensory_noise",
+                    min_bound=bio_model.sensory_noise_magnitude,
+                    max_bound=bio_model.sensory_noise_magnitude,
+                    interpolation=InterpolationType.CONSTANT,
+                )
+            if parameter_init is not None:
+                parameter_init.add(
+                    "sensory_noise",
+                    initial_guess=bio_model.sensory_noise_magnitude,
+                    interpolation=InterpolationType.CONSTANT,
+                )
 
     def _declare_multi_node_penalties(
         self,

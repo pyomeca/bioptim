@@ -171,7 +171,7 @@ class ParameterList(OptimizationVariableList):
         name: Str,
         function: Callable,
         size: Int,
-        scaling: VariableScaling,
+        scaling: VariableScaling = None,
         mapping: BiMapping = None,
         allow_reserved_name: Bool = False,
         **kwargs: Any,
@@ -202,6 +202,9 @@ class ParameterList(OptimizationVariableList):
                 "Parameters are declared for all phases at once. You must therefore not use "
                 "'phase' but 'list_index' instead."
             )
+
+        if scaling is None:
+            scaling = VariableScaling(name, np.ones((size, 1)))
 
         if not isinstance(scaling, VariableScaling):
             raise ValueError("Scaling must be a VariableScaling, not " + str(type(scaling)))
