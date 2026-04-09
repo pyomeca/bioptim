@@ -26,6 +26,7 @@ from bioptim import (
     TorqueBiorbdModel,
     PenaltyController,
     ParameterObjectiveList,
+    Parameter,
 )
 from bioptim.examples.utils import ExampleUtils
 from casadi import MX
@@ -47,7 +48,7 @@ def custom_constraint_min_max_tau(controller: PenaltyController) -> MX:
     return controller.parameters["min_max_tau"].cx - controller.controls["tau"].cx  # [mini, maxi]
 
 
-def my_parameter_function(bio_model: BioModel, value: MX):
+def my_parameter_function(bio_model: BioModel, parameter: Parameter):
     return
 
 

@@ -22,6 +22,7 @@ from bioptim import (
     SolutionMerge,
     VariableScaling,
     StateDynamics,
+    Parameter,
 )
 from casadi import DM, MX, SX, vertcat, exp
 import numpy as np
@@ -157,16 +158,16 @@ class Model(StateDynamics):
             defects=None,
         )
 
-    def set_pulse_apparition_time(self, value: list[MX]):
+    def set_pulse_apparition_time(self, parameter: Parameter):
         """
         Sets the pulse apparition time for each pulse (phases) according to the ocp parameter "pulse_apparition_time"
 
         Parameters
         ----------
-        value: list[MX]
+        parameter: Parameter
             The pulse apparition time list (s)
         """
-        self.pulse_apparition_time = value
+        self.pulse_apparition_time = parameter
 
 
 def get_stim_prev(nlp: NonLinearProgram, parameters: MX, idx: int) -> list[float]:

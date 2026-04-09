@@ -10,16 +10,13 @@ from biorbd_casadi import (
 )
 from casadi import SX, MX, vertcat, horzcat, norm_fro, Function, DM
 
-from bioptim.models.biorbd.external_forces import (
-    ExternalForceSetTimeSeries,
-    ExternalForceSetVariables,
-)
 from ..utils import _var_mapping, bounds_from_ranges, cache_function, check_contacts
 from ...limits.path_conditions import Bounds
 from ...misc.mapping import BiMapping, BiMappingList
 from ...misc.enums import ContactType
 from ...misc.utils import check_version
-from ...optimization.parameters import ParameterList
+from ...models.biorbd.external_forces import ExternalForceSetTimeSeries, ExternalForceSetVariables
+from ...optimization.parameters import Parameter, ParameterList
 
 from ...misc.parameters_types import Int, IntTuple, CX, CXOptional
 

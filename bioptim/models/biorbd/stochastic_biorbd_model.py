@@ -55,12 +55,9 @@ class StochasticBiorbdModel(BiorbdModel):
         motor_noise_mapping: BiMappingList = BiMappingList(),
         use_sx: Bool = False,
         parameters: ParameterList = None,
-        friction_coefficients: NpArray = None,
         **kwargs,
     ):
-        super().__init__(
-            bio_model=bio_model, friction_coefficients=friction_coefficients, parameters=parameters, **kwargs
-        )
+        super().__init__(bio_model=bio_model, parameters=parameters, **kwargs)
 
         if parameters is None:
             parameters = ParameterList(use_sx=use_sx)
@@ -83,7 +80,6 @@ class StochasticBiorbdModel(BiorbdModel):
                 else (bio_model.model if hasattr(bio_model, "model") else bio_model)
             ),
             parameters=parameters,
-            friction_coefficients=friction_coefficients,
             **kwargs,
         )
 

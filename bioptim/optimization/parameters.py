@@ -1,6 +1,6 @@
 from typing import Any
 
-from casadi import MX, SX, vertcat
+from casadi import MX, SX, vertcat, Function
 import numpy as np
 
 from ..misc.mapping import BiMapping
@@ -79,7 +79,6 @@ class Parameter(OptimizationVariable):
 
     @property
     def mx(self) -> MX:
-        # TODO: this should removed and placed in the BiorbdModel
         return self._mx
 
     @property
@@ -116,8 +115,30 @@ class Parameter(OptimizationVariable):
         """
         if self.function:
             param_scaling = self.scaling.scaling
-            param_reduced = self.mx  # because this function will be used directly in the biorbd model
-            self.function(model, param_reduced * param_scaling, **self.kwargs)
+            param_reduced = self.cx  # because this function will be used directly in the biorbd model
+
+            value_as_cx = param_reduced * param_scaling
+
+            value_as_mx = Function("gravity", [self.cx], [value_as_cx])(self.mx)
+            variable = MinimalParameter(cx=value_as_cx, mx=value_as_mx)
+            self.function(model, variable, **self.kwargs)
+
+
+class MinimalParameter(Parameter):
+    def __init__(self, cx, mx):
+        self._cx = cx
+        self._mx = mx
+
+    @property
+    def cx(self) -> CX:
+        return self._cx
+
+    @property
+    def cx_start(self):
+        raise RuntimeError("cx_start cannot be used in that context, please use 'cx' instead.")
+
+    def apply_parameter(self, model: "BioModel") -> None:
+        raise RuntimeError("apply_parameter cannot be used in that context.")
 
 
 class ParameterList(OptimizationVariableList):
