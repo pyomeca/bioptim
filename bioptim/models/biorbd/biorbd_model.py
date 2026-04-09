@@ -75,6 +75,7 @@ class BiorbdModel:
         if parameters is not None:
             for param_key in parameters:
                 parameters[param_key].apply_parameter(self)
+        # TODO: if friction_coefficients is a parameter it creates free variables
         self._friction_coefficients = friction_coefficients
 
         self.external_force_set = self._set_external_force_set(external_force_set)
