@@ -1,5 +1,10 @@
+import pytest
+
 from bioptim import Solver
-from bioptim.misc.enums import SolverType
+from bioptim.gui.online_callback_server import OnlineCallbackServer, _ResponseHeader
+from bioptim.gui.online_callback_multiprocess_server import OnlineCallbackMultiprocessServer
+from bioptim.interfaces.interface_utils import generic_online_optim
+from bioptim.misc.enums import SolverType, OnlineOptim
 
 
 class FakeSolver:
@@ -8,6 +13,12 @@ class FakeSolver:
         options_common: dict = None,
     ):
         self.options_common = options_common
+
+
+class FakeInterface:
+    def __init__(self, online_optim):
+        self.opts = type("Opts", (), {"online_optim": online_optim})()
+        self.options_common = {}
 
 
 def test_ipopt_solver_options():
@@ -131,3 +142,150 @@ def test_ipopt_solver_options():
 
     solver.set_nlp_scaling_method("gradient-fiesta")
     assert solver.nlp_scaling_method == "gradient-fiesta"
+
+
+def test_generic_online_optim_skips_when_default_is_unavailable(monkeypatch):
+    interface = FakeInterface(OnlineOptim.DEFAULT)
+
+    monkeypatch.setattr(OnlineOptim, "get_default", lambda self: None)
+
+    generic_online_optim(interface, ocp=None)
+
+    assert interface.options_common == {}
+
+
+def test_generic_online_optim_uses_multiprocess_on_linux(monkeypatch):
+    interface = FakeInterface(OnlineOptim.DEFAULT)
+    callback = object()
+
+    monkeypatch.setattr("bioptim.misc.enums.platform.system", lambda: "Linux")
+    monkeypatch.setattr("bioptim.interfaces.interface_utils.OnlineCallbackMultiprocess", lambda *args, **kwargs: callback)
+
+    generic_online_optim(interface, ocp=None)
+
+    assert interface.options_common["iteration_callback"] is callback
+
+
+def test_generic_online_optim_uses_multiprocess_server_on_windows(monkeypatch):
+    interface = FakeInterface(OnlineOptim.DEFAULT)
+    callback = object()
+
+    monkeypatch.setattr("bioptim.misc.enums.platform.system", lambda: "Windows")
+    monkeypatch.setattr(
+        "bioptim.interfaces.interface_utils.OnlineCallbackMultiprocessServer", lambda *args, **kwargs: callback
+    )
+
+    generic_online_optim(interface, ocp=None)
+
+    assert interface.options_common["iteration_callback"] is callback
+
+
+def test_generic_online_optim_uses_multiprocess_server_on_macos(monkeypatch):
+    interface = FakeInterface(OnlineOptim.DEFAULT)
+    callback = object()
+
+    monkeypatch.setattr("bioptim.misc.enums.platform.system", lambda: "Darwin")
+    monkeypatch.setattr(
+        "bioptim.interfaces.interface_utils.OnlineCallbackMultiprocessServer", lambda *args, **kwargs: callback
+    )
+
+    generic_online_optim(interface, ocp=None)
+
+    assert interface.options_common["iteration_callback"] is callback
+
+
+def test_generic_online_optim_rejects_multiprocess_on_macos(monkeypatch):
+    interface = FakeInterface(OnlineOptim.MULTIPROCESS)
+
+    monkeypatch.setattr("bioptim.interfaces.interface_utils.platform.system", lambda: "Darwin")
+
+    with pytest.raises(NotImplementedError, match="MULTIPROCESS is not available on macOS"):
+        generic_online_optim(interface, ocp=None)
+
+
+def test_generic_online_optim_allows_server_on_macos(monkeypatch):
+    interface = FakeInterface(OnlineOptim.SERVER)
+    callback = object()
+
+    monkeypatch.setattr("bioptim.interfaces.interface_utils.platform.system", lambda: "Darwin")
+    monkeypatch.setattr("bioptim.interfaces.interface_utils.OnlineCallbackServer", lambda *args, **kwargs: callback)
+
+    generic_online_optim(interface, ocp=None)
+
+    assert interface.options_common["iteration_callback"] is callback
+
+
+def test_online_callback_server_recreates_socket_between_retries(monkeypatch):
+    class FakeSocket:
+        def __init__(self, should_fail=False):
+            self.should_fail = should_fail
+            self.closed = False
+            self.sent = []
+
+        def connect(self, _):
+            if self.should_fail:
+                raise ConnectionRefusedError("server not ready")
+
+        def close(self):
+            self.closed = True
+
+        def sendall(self, data):
+            self.sent.append(data)
+
+        def recv(self, _):
+            return _ResponseHeader.PLOT_READY.encode()
+
+    sockets = [FakeSocket(should_fail=True), FakeSocket(should_fail=False)]
+
+    monkeypatch.setattr("bioptim.gui.online_callback_server.socket.socket", lambda *args, **kwargs: sockets.pop(0))
+    monkeypatch.setattr("bioptim.gui.online_callback_server.time.sleep", lambda *_: None)
+    monkeypatch.setattr(
+        "bioptim.gui.online_callback_server.OcpSerializable.from_ocp",
+        lambda ocp: type("FakeSerializable", (), {"serialize": lambda self: {}})(),
+    )
+    monkeypatch.setattr(
+        "bioptim.gui.online_callback_server.OptimizationVectorHelper.extract_step_times", lambda ocp, _: []
+    )
+    monkeypatch.setattr("bioptim.gui.online_callback_server.PlotOcp", lambda *args, **kwargs: "plotter")
+
+    callback = OnlineCallbackServer.__new__(OnlineCallbackServer)
+    callback.ocp = object()
+    callback._host = "localhost"
+    callback._port = 3050
+    callback._socket = None
+    callback._should_wait_ok_to_client_on_new_data = False
+    callback._has_received_ok = lambda: True
+
+    callback._reset_client_socket()
+    first_socket = callback._socket
+
+    callback._initialize_connexion()
+
+    assert first_socket.closed is True
+    assert callback._socket.sent
+    assert callback._plotter == "plotter"
+
+
+def test_online_callback_multiprocess_server_uses_free_port_when_missing(monkeypatch):
+    recorded = {}
+
+    class FakeProcess:
+        def __init__(self, target, kwargs):
+            recorded["process_target"] = target
+            recorded["process_kwargs"] = kwargs
+
+        def start(self):
+            recorded["started"] = True
+
+    def fake_super_init(self, *args, **kwargs):
+        recorded["super_kwargs"] = kwargs
+
+    monkeypatch.setattr("bioptim.gui.online_callback_multiprocess_server._find_available_tcp_port", lambda host: 4242)
+    monkeypatch.setattr("bioptim.gui.online_callback_multiprocess_server.Process", FakeProcess)
+    monkeypatch.setattr(OnlineCallbackServer, "__init__", fake_super_init)
+
+    OnlineCallbackMultiprocessServer(ocp=None)
+
+    assert recorded["process_kwargs"]["port"] == 4242
+    assert recorded["super_kwargs"]["port"] == 4242
+    assert recorded["started"] is True
