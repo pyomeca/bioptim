@@ -159,7 +159,7 @@ class NonLinearProgram:
         self.g_internal: AnyList = []
         self.J: AnyList = []
         self.J_internal: AnyList = []
-        self.model: BioModel | StochasticBioModel | HolonomicBioModel | VariationalBioModel | None = None
+        self.model: BioModel | None = None
         self.n_threads: IntOptional = None
         self.ns: IntOptional = None
         self.par_dynamics: casadi.Function = None
