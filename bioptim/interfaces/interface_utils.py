@@ -1,3 +1,4 @@
+import platform
 from time import perf_counter
 
 from casadi import Importer, Function, horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, DM, reshape, jacobian
@@ -37,7 +38,14 @@ def generic_online_optim(interface: SolverInterface, ocp, show_options: AnyDictO
     online_optim = interface.opts.online_optim.get_default()
     if online_optim is None:
         return
-    elif online_optim == OnlineOptim.MULTIPROCESS:
+    if platform.system() == "Darwin" and online_optim == OnlineOptim.MULTIPROCESS:
+        raise NotImplementedError(
+            "online_optim MULTIPROCESS is not available on macOS. "
+            "Use OnlineOptim.MULTIPROCESS_SERVER for automatic plotting or OnlineOptim.SERVER with a manually started "
+            "PlottingServer."
+        )
+
+    if online_optim == OnlineOptim.MULTIPROCESS:
         to_call = OnlineCallbackMultiprocess
     elif online_optim == OnlineOptim.SERVER:
         to_call = OnlineCallbackServer
