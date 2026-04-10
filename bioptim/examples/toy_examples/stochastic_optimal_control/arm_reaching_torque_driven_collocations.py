@@ -27,6 +27,7 @@ from bioptim import (
     DynamicsOptions,
     Parameter,
     ParameterList,
+    ParameterObjectiveList,
 )
 from bioptim.examples.toy_examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
 from bioptim.examples.utils import ExampleUtils
@@ -115,8 +116,23 @@ def prepare_socp(
     if optimize_friction_coefficients:
         parameters = ParameterList(use_sx=use_sx)
         parameters.add("friction_coefficients", set_friction_coefficients, size=4)
+
+        target = np.array(2 * np.array([0.05, 0.025, 0.025, 0.05]))
+        parameter_objectives = ParameterObjectiveList()
+        parameter_objectives.add(
+            ObjectiveFcn.Parameter.MINIMIZE_PARAMETER,
+            key="friction_coefficients",
+            target=target,
+            quadratic=True,
+        )
+
+        parameter_init = InitialGuessList()
+        parameter_init.add("friction_coefficients", initial_guess=target)
+
     else:
         parameters = None
+        parameter_objectives = None
+        parameter_init = None
 
     bio_model = StochasticTorqueBiorbdModel(
         biorbd_model_path,
@@ -130,6 +146,7 @@ def prepare_socp(
         n_references=4,  # This number must be in agreement with what is declared in sensory_reference
         n_feedbacks=4,
         parameters=parameters,
+        parameter_init=parameter_init,
         use_sx=use_sx,
     )
 
@@ -278,6 +295,8 @@ def prepare_socp(
         u_bounds=u_bounds,
         a_bounds=a_bounds,
         objective_functions=objective_functions,
+        parameter_objectives=parameter_objectives,
+        parameter_init=parameter_init,
         constraints=constraints,
         control_type=ControlType.CONSTANT_WITH_LAST_NODE,
         n_threads=1,

@@ -37,8 +37,6 @@ from bioptim import (
     ControlType,
     PhaseDynamics,
     BiMapping,
-    Parameter,
-    ParameterList,
 )
 from bioptim.examples.utils import ExampleUtils
 from bioptim.examples.toy_examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
@@ -353,10 +351,6 @@ def expected_feedback_effort(controllers: list[PenaltyController]) -> cas.MX:
     return f_expected_effort_fb
 
 
-def set_friction_coefficients(bio_model, parameter: Parameter):
-    bio_model.set_friction_coefficients(parameter)
-
-
 def prepare_socp(
     biorbd_model_path: str,
     final_time: float,
@@ -366,7 +360,6 @@ def prepare_socp(
     sensory_noise_magnitude: cas.DM,
     force_field_magnitude: float = 0,
     example_type=ExampleType.CIRCLE,
-    optimize_friction_coefficients: bool = False,
     use_sx: bool = False,
 ) -> StochasticOptimalControlProgram:
     """
@@ -387,8 +380,6 @@ def prepare_socp(
         The magnitude of the sensory noise
     force_field_magnitude: float
         The magnitude of the force field
-    optimize_friction_coefficients: bool
-        If the friction coefficients should be optimized or not
     example_type: ExampleType
         The type of problem to solve (ExampleType.CIRCLE or ExampleType.BAR)
 
@@ -409,18 +400,8 @@ def prepare_socp(
     )
     bio_model.force_field_magnitude = force_field_magnitude
 
-    if optimize_friction_coefficients:
-        parameters = ParameterList(use_sx=use_sx)
-        parameters.add(
-            "friction_coefficients",
-            set_friction_coefficients,
-            size=4,
-            initial_guess=np.array([[0.05, 0.025], [0.025, 0.05]]).flatten(),
-            min_bound=np.zeros((4,)),
-            max_bound=np.ones((4,)),
-        )
-    else:
-        bio_model.set_friction_coefficients(np.array([[0.05, 0.025], [0.025, 0.05]]))
+    # Please refer to the arm_reaching_torque_driven_collocations.py example for an example of optimizing these values
+    bio_model.set_friction_coefficients(np.array([[0.05, 0.025], [0.025, 0.05]]))
 
     n_tau = bio_model.nb_tau
     n_q = bio_model.nb_q

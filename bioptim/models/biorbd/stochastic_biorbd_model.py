@@ -2,8 +2,10 @@ from typing import Callable
 
 from casadi import DM
 
+
 from .biorbd_model import BiorbdModel
 from ...dynamics.dynamics_functions import DynamicsFunctions
+from ...limits.path_conditions import BoundsList, InitialGuessList
 from ...misc.mapping import BiMappingList
 from ...optimization.parameters import ParameterList
 from ...optimization.variable_scaling import VariableScaling
@@ -55,6 +57,8 @@ class StochasticBiorbdModel(BiorbdModel):
         motor_noise_mapping: BiMappingList = BiMappingList(),
         use_sx: Bool = False,
         parameters: ParameterList = None,
+        parameter_init: InitialGuessList = None,
+        paremeter_bounds: BoundsList = None,
         **kwargs,
     ):
         super().__init__(bio_model=bio_model, parameters=parameters, **kwargs)
@@ -63,10 +67,11 @@ class StochasticBiorbdModel(BiorbdModel):
             parameters = ParameterList(use_sx=use_sx)
 
         StochasticOptimalControlProgram.augment_with_stochastic_variables(
-            bio_model=self,
-            n_motor_noise=motor_noise_magnitude.shape[0],
-            n_sensory_noise=sensory_noise_magnitude.shape[0],
+            motor_noise_magnitude=motor_noise_magnitude,
+            sensory_noise_magnitude=sensory_noise_magnitude,
             parameters=parameters,
+            parameter_bounds=paremeter_bounds,
+            parameter_init=parameter_init,
         )
 
         super().__init__(

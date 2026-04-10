@@ -23,7 +23,7 @@ from ..optimization.optimal_control_program import OptimalControlProgram
 from ..optimization.parameters import ParameterList
 from ..optimization.problem_type import SocpType
 from ..optimization.variable_scaling import VariableScalingList, VariableScaling
-from ..misc.parameters_types import Int, Bool, List, Str, NpArray, IntorFloat, AnyIterable, Callable
+from ..misc.parameters_types import Int, Bool, List, Str, NpArray, IntorFloat, AnyIterable, Callable, CXorDMorNpArray
 
 
 class StochasticOptimalControlProgram(OptimalControlProgram):
@@ -95,9 +95,8 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             dynamics[i_phase].ode_solver = self._set_default_ode_solver()
 
         self.augment_with_stochastic_variables(
-            bio_model=bio_model,
-            n_motor_noise=bio_model.motor_noise_magnitude.shape[0],
-            n_sensory_noise=bio_model.sensory_noise_magnitude.shape[0],
+            motor_noise_magnitude=bio_model.motor_noise_magnitude,
+            sensory_noise_magnitude=bio_model.sensory_noise_magnitude,
             parameters=parameters,
             parameter_bounds=parameter_bounds,
             parameter_init=parameter_init,
@@ -137,15 +136,15 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
 
     @staticmethod
     def augment_with_stochastic_variables(
-        bio_model: StochasticBioModel,
-        n_motor_noise: Int,
-        n_sensory_noise: Int,
+        motor_noise_magnitude: CXorDMorNpArray,
+        sensory_noise_magnitude: CXorDMorNpArray,
         parameters: ParameterList | None = None,
         parameter_bounds: BoundsList | None = None,
         parameter_init: InitialGuessList | None = None,
     ) -> None:
+        n_motor_noise = motor_noise_magnitude.shape[0]
         if "motor_noise" not in parameters.keys():
-            if parameter_bounds is not None:
+            if parameters is not None:
                 parameters.add(
                     "motor_noise",
                     function=None,
@@ -156,17 +155,18 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             if parameter_bounds is not None:
                 parameter_bounds.add(
                     "motor_noise",
-                    min_bound=bio_model.motor_noise_magnitude,
-                    max_bound=bio_model.motor_noise_magnitude,
+                    min_bound=motor_noise_magnitude,
+                    max_bound=motor_noise_magnitude,
                     interpolation=InterpolationType.CONSTANT,
                 )
             if parameter_init is not None:
                 parameter_init.add(
                     "motor_noise",
-                    initial_guess=bio_model.motor_noise_magnitude,
+                    initial_guess=motor_noise_magnitude,
                     interpolation=InterpolationType.CONSTANT,
                 )
 
+        n_sensory_noise = sensory_noise_magnitude.shape[0]
         if "sensory_noise" not in parameters.keys():
             if parameters is not None:
                 parameters.add(
@@ -179,14 +179,14 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             if parameter_bounds is not None:
                 parameter_bounds.add(
                     "sensory_noise",
-                    min_bound=bio_model.sensory_noise_magnitude,
-                    max_bound=bio_model.sensory_noise_magnitude,
+                    min_bound=sensory_noise_magnitude,
+                    max_bound=sensory_noise_magnitude,
                     interpolation=InterpolationType.CONSTANT,
                 )
             if parameter_init is not None:
                 parameter_init.add(
                     "sensory_noise",
-                    initial_guess=bio_model.sensory_noise_magnitude,
+                    initial_guess=sensory_noise_magnitude,
                     interpolation=InterpolationType.CONSTANT,
                 )
 
