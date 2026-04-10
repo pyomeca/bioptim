@@ -10,7 +10,8 @@ from ..utils import TestUtils
 
 
 @pytest.mark.parametrize("use_sx", [False, True])
-def test_arm_reaching_torque_driven_collocations(use_sx: bool):
+@pytest.mark.parametrize("optimize_friction_coefficients", [False, True])
+def test_arm_reaching_torque_driven_collocations(use_sx: bool, optimize_friction_coefficients: bool):
     from bioptim.examples.toy_examples.stochastic_optimal_control import (
         arm_reaching_torque_driven_collocations as ocp_module,
     )
@@ -39,6 +40,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         motor_noise_magnitude=motor_noise_magnitude,
         sensory_noise_magnitude=sensory_noise_magnitude,
         use_sx=use_sx,
+        optimize_friction_coefficients=optimize_friction_coefficients,
     )
 
     # Solver parameters
@@ -48,7 +50,10 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     sol = ocp.solve(solver)
 
     # Check objective function value
-    TestUtils.assert_objective_value(sol=sol, expected_value=433.119929307444)
+    if optimize_friction_coefficients:
+        TestUtils.assert_objective_value(sol=sol, expected_value=76.95263139246961)
+    else:
+        TestUtils.assert_objective_value(sol=sol, expected_value=433.119929307444)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -69,8 +74,12 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     npt.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
     npt.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
 
-    npt.assert_almost_equal(tau[:, 0], np.array([1.73918356, -1.0035866]))
-    npt.assert_almost_equal(tau[:, -2], np.array([-1.672167, 0.91772376]))
+    if optimize_friction_coefficients:
+        npt.assert_almost_equal(tau[:, 0], np.array([0.4786172, 0.3242443]))
+        npt.assert_almost_equal(tau[:, -2], np.array([0.0856288, 0.569414]))
+    else:
+        npt.assert_almost_equal(tau[:, 0], np.array([1.73918356, -1.0035866]))
+        npt.assert_almost_equal(tau[:, -2], np.array([-1.672167, 0.91772376]))
 
     npt.assert_almost_equal(ref[:, 0], np.array([2.81907786e-02, 2.84412560e-01, 0, 0]))
 
@@ -92,6 +101,11 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         ),
     )
 
+    if optimize_friction_coefficients:
+        np.testing.assert_almost_equal(
+            sol.parameters["friction_coefficients"], [-4.623138, 3.099736, -2.846888, 1.746213], decimal=6
+        )
+
     # TODO: cov is still too sensitive to be properly tested, we need to test it otherwise
 
     # Test the automatic initialization of the stochastic variables
@@ -106,6 +120,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         q_opt=q,
         qdot_opt=qdot,
         tau_opt=tau,
+        optimize_friction_coefficients=optimize_friction_coefficients,
     )
 
     # Solver parameters
@@ -135,6 +150,8 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     duration = sol_socp.decision_time()[-1]
     dt = duration / n_shooting
     p_sol = vertcat(ocp.nlp[0].model.motor_noise_magnitude, ocp.nlp[0].model.sensory_noise_magnitude)
+    if optimize_friction_coefficients:
+        p_sol = vertcat(2 * np.array([0.05, 0.025, 0.025, 0.05]), p_sol)
     polynomial_degree = socp.nlp[0].dynamics_type.ode_solver.polynomial_degree
 
     # Constraint values
@@ -333,33 +350,35 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         npt.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
     # States continuity --------------------------------------------------------------------
-    penalty = socp.nlp[0].g_internal[0]
-    for i_node in range(socp.n_shooting):
-        x = PenaltyHelpers.states(
-            penalty,
-            i_node,
-            lambda p_idx, n_idx, sn_idx: states_sol[:, sn_idx.index(), n_idx],
-        )
-        u = PenaltyHelpers.controls(
-            penalty,
-            i_node,
-            lambda p_idx, n_idx, sn_idx: controls_sol[:, n_idx],
-        )
-        a = PenaltyHelpers.states(
-            penalty,
-            i_node,
-            lambda p_idx, n_idx, sn_idx: algebraic_sol[:, sn_idx.index(), n_idx],
-        )
-        constraint_value = penalty.function[0](
-            duration,
-            dt,
-            x,
-            u,
-            p_sol,
-            a,
-            [],
-        )
-        npt.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
+    if not optimize_friction_coefficients:
+        # This won't be satisfied when optimizing the friction coefficients
+        penalty = socp.nlp[0].g_internal[0]
+        for i_node in range(socp.n_shooting):
+            x = PenaltyHelpers.states(
+                penalty,
+                i_node,
+                lambda p_idx, n_idx, sn_idx: states_sol[:, sn_idx.index(), n_idx],
+            )
+            u = PenaltyHelpers.controls(
+                penalty,
+                i_node,
+                lambda p_idx, n_idx, sn_idx: controls_sol[:, n_idx],
+            )
+            a = PenaltyHelpers.states(
+                penalty,
+                i_node,
+                lambda p_idx, n_idx, sn_idx: algebraic_sol[:, sn_idx.index(), n_idx],
+            )
+            constraint_value = penalty.function[0](
+                duration,
+                dt,
+                x,
+                u,
+                p_sol,
+                a,
+                [],
+            )
+            npt.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
     # First collocation state is equal to the states at node
     penalty = socp.nlp[0].g_internal[1]

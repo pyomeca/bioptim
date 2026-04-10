@@ -23,6 +23,7 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
     VariableScaling,
+    Parameter,
 )
 from bioptim.optimization.solution.solution import Solution
 from tests.utils import TestUtils
@@ -108,9 +109,9 @@ def prepare_ocp(phase_time_constraint, use_parameter, phase_dynamics):
         def my_target_function(controller: PenaltyController):
             return controller.parameters.cx
 
-        def my_parameter_function(bio_model, value, extra_value):
+        def my_parameter_function(bio_model, parameter: Parameter, extra_value):
             new_gravity = MX.zeros(3, 1)
-            new_gravity[2] = value + extra_value
+            new_gravity[2] = parameter.mx + extra_value
             bio_model.set_gravity(new_gravity)
 
         min_g = -10

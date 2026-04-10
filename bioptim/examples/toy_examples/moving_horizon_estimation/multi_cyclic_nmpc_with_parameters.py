@@ -33,6 +33,7 @@ from bioptim import (
     Solver,
     VariableScaling,
     OnlineOptim,
+    Parameter,
 )
 from bioptim.examples.utils import ExampleUtils
 from casadi import MX, SX, vertcat
@@ -55,7 +56,7 @@ class MyCyclicNMPC(MultiCyclicNonlinearModelPredictiveControl):
         return True
 
 
-def dummy_parameter_function(bio_model, value: MX):
+def dummy_parameter_function(bio_model, parameter: Parameter):
     return
 
 

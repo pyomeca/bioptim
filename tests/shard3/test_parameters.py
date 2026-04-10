@@ -1,9 +1,9 @@
 import pytest
-from bioptim import ParameterList, VariableScaling
+from bioptim import ParameterList, VariableScaling, Parameter
 import numpy as np
 
 
-def my_parameter_function():
+def my_parameter_function(model, parameter: Parameter):
     return 1
 
 

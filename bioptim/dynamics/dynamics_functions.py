@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 from casadi import vertcat, MX, SX
 
 from ..models.protocols.holonomic_constraints import HolonomicConstraintsFcn
@@ -5,6 +7,9 @@ from ..misc.enums import ContactType
 from ..misc.mapping import BiMapping
 from ..optimization.optimization_variable import OptimizationVariable
 from ..misc.parameters_types import AnyListOptional, CX, CXOptional, Str, Tuple
+
+if TYPE_CHECKING:
+    from ..optimization.non_linear_program import NonLinearProgram
 
 
 class DynamicsFunctions:
@@ -26,7 +31,7 @@ class DynamicsFunctions:
     """
 
     @staticmethod
-    def get_fatigable_tau(nlp, states: CX, controls: CX) -> CX:
+    def get_fatigable_tau(nlp: "NonLinearProgram", states: CX, controls: CX) -> CX:
         """
         Apply the forward dynamics including (or not) the torque fatigue
 
@@ -82,7 +87,7 @@ class DynamicsFunctions:
     @staticmethod
     def get_fatigue_states(
         states,
-        nlp,
+        nlp: "NonLinearProgram",
         mus_activations,
     ):
 
@@ -141,7 +146,7 @@ class DynamicsFunctions:
         return var.mapping.to_second.map(cx[var.index, :])
 
     @staticmethod
-    def compute_qdot(nlp, q: CX, qdot: CX):
+    def compute_qdot(nlp: "NonLinearProgram", q: CX, qdot: CX):
         """
         Easy accessor to derivative of q
 
@@ -175,7 +180,7 @@ class DynamicsFunctions:
         return mapping.to_first.map(nlp.model.reshape_qdot()(q, qdot, nlp.parameters.cx))
 
     @staticmethod
-    def compute_qddot(nlp, q: CX, qdot: CX, tau: CX, external_forces: CX):
+    def compute_qddot(nlp: "NonLinearProgram", q: CX, qdot: CX, tau: CX, external_forces: CX):
         """
         Easy accessor to derivative of qdot
 
@@ -202,7 +207,7 @@ class DynamicsFunctions:
 
     @staticmethod
     def collect_tau(
-        nlp,
+        nlp: "NonLinearProgram",
         q: CX,
         qdot: CX,
         parameters: CX,
@@ -231,7 +236,7 @@ class DynamicsFunctions:
         return tau
 
     @staticmethod
-    def get_contact_defects(nlp, q: CX, qdot: CX, slope_qdot: CX):
+    def get_contact_defects(nlp: "NonLinearProgram", q: CX, qdot: CX, slope_qdot: CX):
         """
         Get the defects associated with implicit contacts.
 
@@ -263,7 +268,9 @@ class DynamicsFunctions:
         return contact_defects
 
     @staticmethod
-    def get_fatigue_defects(key: Str, dxdt_defects: CX, slopes: CX, nlp, states: CX, controls: CX) -> Tuple[CX, CX]:
+    def get_fatigue_defects(
+        key: Str, dxdt_defects: CX, slopes: CX, nlp: "NonLinearProgram", states: CX, controls: CX
+    ) -> Tuple[CX, CX]:
         """
         Get the dxdt and slopes associated with fatigue elements.
         These are added to compute the defects in the case where there is fatigue.
@@ -302,7 +309,7 @@ class DynamicsFunctions:
         return dxdt_defects, slopes
 
     @staticmethod
-    def get_external_forces_from_contacts(nlp, q, qdot, contact_types, external_forces: MX | SX):
+    def get_external_forces_from_contacts(nlp: "NonLinearProgram", q, qdot, contact_types, external_forces: MX | SX):
         """
         Get the external forces associated with the contacts defined in the model.
 
@@ -353,7 +360,7 @@ class DynamicsFunctions:
 
     @staticmethod
     def forward_dynamics(
-        nlp,
+        nlp: "NonLinearProgram",
         q: CX,
         qdot: CX,
         tau: CX,
@@ -412,7 +419,7 @@ class DynamicsFunctions:
 
     @staticmethod
     def inverse_dynamics(
-        nlp,
+        nlp: "NonLinearProgram",
         q: CX,
         qdot: CX,
         qddot: CX,
@@ -472,7 +479,7 @@ class DynamicsFunctions:
         return tau_var_mapping.map(tau)
 
     @staticmethod
-    def compute_muscle_dot(nlp, muscle_excitations: CX, muscle_activations: CX):
+    def compute_muscle_dot(nlp: "NonLinearProgram", muscle_excitations: CX, muscle_activations: CX):
         """
         Easy accessor to derivative of muscle activations
 
@@ -494,7 +501,7 @@ class DynamicsFunctions:
 
     @staticmethod
     def compute_tau_from_muscle(
-        nlp,
+        nlp: "NonLinearProgram",
         q: CX,
         qdot: CX,
         muscle_activations: CX,
@@ -530,7 +537,7 @@ class DynamicsFunctions:
         return nlp.model.muscle_joint_torque()(activations, q, qdot, nlp.parameters.cx)
 
     @staticmethod
-    def no_states_mapping(nlp):
+    def no_states_mapping(nlp: "NonLinearProgram"):
         for key in nlp.states.keys():
             if nlp.variable_mappings[key].actually_does_a_mapping():
                 raise NotImplementedError(
