@@ -125,6 +125,11 @@ class Parameter(OptimizationVariable):
 
 
 class MinimalParameter(Parameter):
+    """
+    This class is a mock of the Parameter class so the user can call .mx and .cx on the variable, but also blocking
+    access to internal methods of the Parameter class that are not relevant in the context
+    """
+
     def __init__(self, cx, mx):
         self._cx = cx
         self._mx = mx

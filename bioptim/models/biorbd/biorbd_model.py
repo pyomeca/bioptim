@@ -162,7 +162,11 @@ class BiorbdModel:
 
     @property
     def friction_coefficients(self) -> MX | SX | np.ndarray:
-        return self._friction_coefficients.reshape((self.nb_tau, self.nb_qdot))
+        return (
+            self._friction_coefficients.reshape((self.nb_tau, self.nb_qdot))
+            if self._friction_coefficients is not None
+            else None
+        )
 
     def set_friction_coefficients(self, new_friction_coefficients) -> None:
         if isinstance(new_friction_coefficients, (DM, np.ndarray)) and np.any(new_friction_coefficients < 0):
