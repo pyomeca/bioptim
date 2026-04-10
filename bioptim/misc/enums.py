@@ -102,7 +102,7 @@ class OnlineOptim(Enum):
     Attributes
     ----------
     NONE: No online plotting
-    DEFAULT: Default online plotting (MULTIPROCESS on Linux, MULTIPROCESS_SERVER on Windows and NONE on MacOS)
+    DEFAULT: Default online plotting (MULTIPROCESS on Linux and MULTIPROCESS_SERVER on Windows and macOS)
     MULTIPROCESS: Multiprocess online plotting
     SERVER: Server online plotting
     MULTIPROCESS_SERVER: Multiprocess server online plotting
@@ -119,7 +119,7 @@ class OnlineOptim(Enum):
 
         if platform.system() == "Linux":
             return OnlineOptim.MULTIPROCESS
-        elif platform.system() == "Windows":
+        elif platform.system() in ("Windows", "Darwin"):
             return OnlineOptim.MULTIPROCESS_SERVER
         else:
             return None
