@@ -3,7 +3,7 @@
 
 """
 Example: two cubes actuated by torques in all 3 directions, kept parallel by a holonomic
-constraint on their orientations (the “align_frames” constraint).
+constraint on their orientations (the “align_frames_generalized” constraint).
 
 """
 
@@ -26,7 +26,6 @@ from bioptim import (
     OptimalControlProgram,
     SolutionMerge,
     Solver,
-    InterpolationType,
     Node,
     BiMappingList,
     InitialGuessList,
@@ -130,16 +129,11 @@ def prepare_ocp(
         local_frame_index=1,
     )
 
-    # R_desired = np.array([[1, 0, 0], [0, 0.9848, 0.1736], [0, -0.1736, 0.9848]])
-    # R_desired = np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]])
-    # R_desired = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
-
     holonomic_constraints.add(
         "align_cubes",
-        HolonomicConstraintsFcn.align_frames3,
+        HolonomicConstraintsFcn.align_frames_generalized,
         frame_1_idx=1,
         frame_2_idx=9,
-        # relative_rotation=R_desired,
     )
 
     independant_joints = [0, 1, 2, 3, 4, 5]
@@ -171,8 +165,8 @@ def prepare_ocp(
 
     objectives = ObjectiveList()
     objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1)
-    objectives.add(ObjectiveFcn.Lagrange.TRACK_STATE, key="q_u", index=[0], target=interpolated_points.T, weight=10000)
-    objectives.add(ObjectiveFcn.Lagrange.TRACK_STATE, key="q_u", index=[4], target=interpolated_points.T, weight=1000)
+    objectives.add(ObjectiveFcn.Lagrange.TRACK_STATE, key="q_u", index=[0], target=interpolated_points.T, weight=1e4)
+    objectives.add(ObjectiveFcn.Lagrange.TRACK_STATE, key="q_u", index=[4], target=interpolated_points.T, weight=1e3)
 
     dynamics = DynamicsOptionsList()
     dynamics.add(DynamicsOptions(ode_solver=ode_solver, expand_dynamics=expand_dynamics))
@@ -183,12 +177,7 @@ def prepare_ocp(
     x_bounds["q_u"][:, 0] = 0  # Start and end without any velocity
 
     x_bounds["qdot_u"] = bio_model.bounds_from_ranges("qdot", mapping=u_variable_bimapping)
-    x_bounds["qdot_u"][:, [0, -1]] = 0  # Start and end without any velocity
-
-    # tau_variable_bimapping = BiMappingList()
-    # tau_variable_bimapping.add(
-    #     "tau", to_second=[0, 1, 2, 3, 4, 5, None, None, None, None, None, None], to_first=independant_joints
-    # )
+    # x_bounds["qdot_u"][:, [0, -1]] = 0  # Start and end without any velocity
 
     u_bounds = BoundsList()
     u_bounds["tau"] = [-100, -100, -100, -100, -100, -100, 0, 0, 0, 0, 0, 0], [
