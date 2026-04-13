@@ -17,6 +17,7 @@ from bioptim import (
     MagnitudeType,
     PhaseDynamics,
     VariableScaling,
+    Parameter,
 )
 from tests.utils import TestUtils
 
@@ -175,9 +176,9 @@ def test_double_update_bounds_and_init(phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_update_bounds_and_init_with_param(phase_dynamics):
-    def my_parameter_function(bio_model, value, extra_value):
+    def my_parameter_function(bio_model, parameter: Parameter, extra_value):
         new_gravity = MX.zeros(3, 1)
-        new_gravity[2] = value + extra_value
+        new_gravity[2] = parameter.mx + extra_value
         bio_model.set_gravity(new_gravity)
 
     bio_model = TorqueBiorbdModel(TestUtils.bioptim_folder() + "/examples/models/cube_and_line.bioMod")

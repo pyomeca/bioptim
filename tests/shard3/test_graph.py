@@ -27,6 +27,7 @@ from bioptim import (
     MultinodeObjectiveList,
     PhaseDynamics,
     VariableScaling,
+    Parameter,
 )
 
 from bioptim.gui.graph import OcpToGraph
@@ -186,13 +187,13 @@ def prepare_ocp_phase_transitions(
     )
 
 
-def my_parameter_function(bio_model: TorqueBiorbdModel, value: MX, extra_value: Any):
-    value[2] *= extra_value
+def my_parameter_function(bio_model: TorqueBiorbdModel, value: Parameter, extra_value: Any):
+    value.mx[2] *= extra_value
     bio_model.set_gravity(value)
 
 
-def set_mass(bio_model: TorqueBiorbdModel, value: MX):
-    bio_model.segments[0].characteristics().setMass(value)
+def set_mass(bio_model: TorqueBiorbdModel, value: Parameter):
+    bio_model.segments[0].characteristics().setMass(value.mx)
 
 
 def my_target_function(controller: PenaltyController, key: str) -> MX:

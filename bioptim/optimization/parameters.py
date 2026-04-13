@@ -1,6 +1,6 @@
 from typing import Any
 
-from casadi import MX, SX, vertcat
+from casadi import MX, SX, vertcat, Function
 import numpy as np
 
 from ..misc.mapping import BiMapping
@@ -79,7 +79,6 @@ class Parameter(OptimizationVariable):
 
     @property
     def mx(self) -> MX:
-        # TODO: this should removed and placed in the BiorbdModel
         return self._mx
 
     @property
@@ -116,8 +115,35 @@ class Parameter(OptimizationVariable):
         """
         if self.function:
             param_scaling = self.scaling.scaling
-            param_reduced = self.mx  # because this function will be used directly in the biorbd model
-            self.function(model, param_reduced * param_scaling, **self.kwargs)
+            param_reduced = self.cx  # because this function will be used directly in the biorbd model
+
+            value_as_cx = param_reduced * param_scaling
+
+            value_as_mx = Function("gravity", [self.cx], [value_as_cx])(self.mx)
+            variable = MinimalParameter(cx=value_as_cx, mx=value_as_mx)
+            self.function(model, variable, **self.kwargs)
+
+
+class MinimalParameter(Parameter):
+    """
+    This class is a mock of the Parameter class so the user can call .mx and .cx on the variable, but also blocking
+    access to internal methods of the Parameter class that are not relevant in the context
+    """
+
+    def __init__(self, cx, mx):
+        self._cx = cx
+        self._mx = mx
+
+    @property
+    def cx(self) -> CX:
+        return self._cx
+
+    @property
+    def cx_start(self):
+        raise RuntimeError("cx_start cannot be used in that context, please use 'cx' instead.")
+
+    def apply_parameter(self, model: "BioModel") -> None:
+        raise RuntimeError("apply_parameter cannot be used in that context.")
 
 
 class ParameterList(OptimizationVariableList):
@@ -150,7 +176,7 @@ class ParameterList(OptimizationVariableList):
         name: Str,
         function: Callable,
         size: Int,
-        scaling: VariableScaling,
+        scaling: VariableScaling = None,
         mapping: BiMapping = None,
         allow_reserved_name: Bool = False,
         **kwargs: Any,
@@ -181,6 +207,9 @@ class ParameterList(OptimizationVariableList):
                 "Parameters are declared for all phases at once. You must therefore not use "
                 "'phase' but 'list_index' instead."
             )
+
+        if scaling is None:
+            scaling = VariableScaling(name, np.ones((size, 1)))
 
         if not isinstance(scaling, VariableScaling):
             raise ValueError("Scaling must be a VariableScaling, not " + str(type(scaling)))

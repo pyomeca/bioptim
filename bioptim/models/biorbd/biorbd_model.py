@@ -10,16 +10,13 @@ from biorbd_casadi import (
 )
 from casadi import SX, MX, vertcat, horzcat, norm_fro, Function, DM
 
-from bioptim.models.biorbd.external_forces import (
-    ExternalForceSetTimeSeries,
-    ExternalForceSetVariables,
-)
 from ..utils import _var_mapping, bounds_from_ranges, cache_function, check_contacts
 from ...limits.path_conditions import Bounds
 from ...misc.mapping import BiMapping, BiMappingList
 from ...misc.enums import ContactType
 from ...misc.utils import check_version
-from ...optimization.parameters import ParameterList
+from ...models.biorbd.external_forces import ExternalForceSetTimeSeries, ExternalForceSetVariables
+from ...optimization.parameters import Parameter, ParameterList
 
 from ...misc.parameters_types import Int, IntTuple, CX, CXOptional
 
@@ -41,7 +38,6 @@ class BiorbdModel:
     def __init__(
         self,
         bio_model: str | biorbd.Model,
-        friction_coefficients: np.ndarray = None,
         parameters: ParameterList = None,
         external_force_set: ExternalForceSetTimeSeries | ExternalForceSetVariables = None,
         contact_types: list[ContactType] | tuple[ContactType] = (),
@@ -52,8 +48,6 @@ class BiorbdModel:
         ----------
         bio_model: str | biorbd.Model
             The path to the bioMod file or the biorbd.Model
-        friction_coefficients: np.ndarray
-            The friction coefficients
         parameters: ParameterList
             The parameters to add to the model. The function will call the callback with the unscaled version of the
             parameters. The user can use this callback to modify the model.
@@ -72,17 +66,15 @@ class BiorbdModel:
         check_contacts(contact_types, self)
         self._contact_types = contact_types
 
+        self._friction_coefficients = None
         if parameters is not None:
             for param_key in parameters:
                 parameters[param_key].apply_parameter(self)
-        self._friction_coefficients = friction_coefficients
+        self.parameters = parameters.mx if parameters else MX()
 
         self.external_force_set = self._set_external_force_set(external_force_set)
         self._symbolic_variables()
         self.biorbd_external_forces_set = self._dispatch_forces() if self.external_force_set else None
-
-        # TODO: remove mx (the MX parameters should be created inside the BiorbdModel)
-        self.parameters = parameters.mx if parameters else MX()
 
         self._cached_functions = {}
 
@@ -170,12 +162,19 @@ class BiorbdModel:
 
     @property
     def friction_coefficients(self) -> MX | SX | np.ndarray:
-        return self._friction_coefficients
+        return (
+            self._friction_coefficients.reshape((self.nb_tau, self.nb_qdot))
+            if self._friction_coefficients is not None
+            else None
+        )
 
     def set_friction_coefficients(self, new_friction_coefficients) -> None:
         if isinstance(new_friction_coefficients, (DM, np.ndarray)) and np.any(new_friction_coefficients < 0):
             raise ValueError("Friction coefficients must be positive")
-        self._friction_coefficients = new_friction_coefficients
+        if isinstance(new_friction_coefficients, Parameter):
+            self._friction_coefficients = new_friction_coefficients.cx
+        else:
+            self._friction_coefficients = new_friction_coefficients
 
     @cache_function
     def gravity(self) -> Function:
@@ -194,8 +193,11 @@ class BiorbdModel:
         )
         return casadi_fun
 
-    def set_gravity(self, new_gravity) -> None:
-        self.model.setGravity(new_gravity)
+    def set_gravity(self, new_gravity: Parameter | MX | np.ndarray) -> None:
+        if isinstance(new_gravity, Parameter):
+            self.model.setGravity(new_gravity.mx)
+        else:
+            self.model.setGravity(new_gravity)
         return
 
     @property

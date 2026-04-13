@@ -1,7 +1,6 @@
-import numpy as np
-from typing import Protocol, Callable, Any
+from typing import Protocol, Callable, Any, TYPE_CHECKING
 
-from casadi import MX, SX, Function
+from casadi import MX, Function
 from ...misc.mapping import BiMapping, BiMappingList
 from ...limits.path_conditions import Bounds
 from ..utils import cache_function
@@ -18,6 +17,9 @@ from ...misc.parameters_types import (
     NpArrayListOptional,
     AnyListOptional,
 )
+
+if TYPE_CHECKING:
+    from ...optimization.solution import SolutionData
 
 
 class BioModel(Protocol):

@@ -2,13 +2,15 @@ from typing import Callable
 
 from casadi import DM
 
+
 from .biorbd_model import BiorbdModel
 from ...dynamics.dynamics_functions import DynamicsFunctions
+from ...limits.path_conditions import BoundsList, InitialGuessList
 from ...misc.mapping import BiMappingList
 from ...optimization.parameters import ParameterList
 from ...optimization.variable_scaling import VariableScaling
 from ...optimization.problem_type import SocpType
-
+from ...optimization.stochastic_optimal_control_program import StochasticOptimalControlProgram
 
 from ...misc.parameters_types import Int, Bool, NpArray
 
@@ -55,27 +57,23 @@ class StochasticBiorbdModel(BiorbdModel):
         motor_noise_mapping: BiMappingList = BiMappingList(),
         use_sx: Bool = False,
         parameters: ParameterList = None,
-        friction_coefficients: NpArray = None,
+        parameter_init: InitialGuessList = None,
+        paremeter_bounds: BoundsList = None,
         **kwargs,
     ):
-        super().__init__(
-            bio_model=bio_model, friction_coefficients=friction_coefficients, parameters=parameters, **kwargs
-        )
+        super().__init__(bio_model=bio_model, parameters=parameters, **kwargs)
 
         if parameters is None:
             parameters = ParameterList(use_sx=use_sx)
-        parameters.add(
-            "motor_noise",
-            lambda model, param: None,
-            size=motor_noise_magnitude.shape[0],
-            scaling=VariableScaling("motor_noise", [1.0] * motor_noise_magnitude.shape[0]),
+
+        StochasticOptimalControlProgram.augment_with_stochastic_variables(
+            motor_noise_magnitude=motor_noise_magnitude,
+            sensory_noise_magnitude=sensory_noise_magnitude,
+            parameters=parameters,
+            parameter_bounds=paremeter_bounds,
+            parameter_init=parameter_init,
         )
-        parameters.add(
-            "sensory_noise",
-            lambda model, param: None,
-            size=sensory_noise_magnitude.shape[0],
-            scaling=VariableScaling("sensory_noise", [1.0] * sensory_noise_magnitude.shape[0]),
-        )
+
         super().__init__(
             bio_model=(
                 bio_model
@@ -83,7 +81,6 @@ class StochasticBiorbdModel(BiorbdModel):
                 else (bio_model.model if hasattr(bio_model, "model") else bio_model)
             ),
             parameters=parameters,
-            friction_coefficients=friction_coefficients,
             **kwargs,
         )
 

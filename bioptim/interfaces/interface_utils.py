@@ -35,7 +35,9 @@ def generic_online_optim(interface: SolverInterface, ocp, show_options: AnyDictO
         show_options = {}
 
     online_optim = interface.opts.online_optim.get_default()
-    if online_optim == OnlineOptim.MULTIPROCESS:
+    if online_optim is None:
+        return
+    elif online_optim == OnlineOptim.MULTIPROCESS:
         to_call = OnlineCallbackMultiprocess
     elif online_optim == OnlineOptim.SERVER:
         to_call = OnlineCallbackServer

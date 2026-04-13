@@ -92,8 +92,6 @@ class HolonomicBiorbdModel(BiorbdModel):
     ----------
     bio_model : str | biorbd.Model
         Path to the bioMod file or a biorbd.Model instance.
-    friction_coefficients : np.ndarray, optional
-        Friction coefficients for contact dynamics (inherited from BiorbdModel).
     parameters : ParameterList, optional
         Model parameters (currently not supported with holonomic constraints).
     **kwargs
@@ -175,13 +173,10 @@ class HolonomicBiorbdModel(BiorbdModel):
     def __init__(
         self,
         bio_model: Str | biorbd.Model,
-        friction_coefficients: NpArray = None,
         parameters: ParameterList = None,
         **kwargs,
     ):
-        super().__init__(
-            bio_model=bio_model, friction_coefficients=friction_coefficients, parameters=parameters, **kwargs
-        )
+        super().__init__(bio_model=bio_model, parameters=parameters, **kwargs)
         self._newton_tol = 1e-10
         self._holonomic_constraints = []
         self._holonomic_constraints_jacobians = []

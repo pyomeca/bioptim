@@ -252,19 +252,18 @@ class HolonomicMusclesBiorbdModel(HolonomicBiorbdModel, HolonomicMusclesDynamics
     def __init__(
         self,
         bio_model: str | biorbd.Model,
-        friction_coefficients: np.ndarray = None,
         parameters: ParameterList = None,
         holonomic_constraints: HolonomicConstraintsList | None = None,
         dependent_joint_index: list[int] | tuple[int, ...] = None,
         independent_joint_index: list[int] | tuple[int, ...] = None,
     ):
-        HolonomicBiorbdModel.__init__(self, bio_model, friction_coefficients, parameters)
+        HolonomicBiorbdModel.__init__(self, bio_model, parameters)
         if holonomic_constraints is not None:
             self.set_holonomic_configuration(holonomic_constraints, dependent_joint_index, independent_joint_index)
         HolonomicMusclesDynamics.__init__(self)
 
     def serialize(self) -> tuple[Callable, dict]:
-        return HolonomicMusclesBiorbdModel, dict(bio_model=self.path, friction_coefficients=self.friction_coefficients)
+        return HolonomicMusclesBiorbdModel, dict(bio_model=self.path)
 
 
 class AlgebraicHolonomicMusclesBiorbdModel(HolonomicMusclesBiorbdModel):

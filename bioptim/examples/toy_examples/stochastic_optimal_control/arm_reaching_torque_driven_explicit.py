@@ -396,10 +396,12 @@ def prepare_socp(
         n_noised_controls=2,
         sensory_noise_magnitude=sensory_noise_magnitude,
         motor_noise_magnitude=motor_noise_magnitude,
-        friction_coefficients=np.array([[0.05, 0.025], [0.025, 0.05]]),
         sensory_reference=sensory_reference,
     )
     bio_model.force_field_magnitude = force_field_magnitude
+
+    # Please refer to the arm_reaching_torque_driven_collocations.py example for an example of optimizing these values
+    bio_model.set_friction_coefficients(np.array([[0.05, 0.025], [0.025, 0.05]]))
 
     n_tau = bio_model.nb_tau
     n_q = bio_model.nb_q

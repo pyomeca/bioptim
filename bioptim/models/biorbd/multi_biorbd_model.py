@@ -54,7 +54,7 @@ class MultiBiorbdModel:
         """
         super().__init__(**kwargs)  # For multiple inheritance compatibility
 
-        self.models = []
+        self.models: list[BiorbdModel] = []
         if not isinstance(bio_model, tuple):
             raise ValueError("The models must be a 'str', 'biorbd.Model', 'bioptim.BiorbdModel'" " or a tuple of those")
 
@@ -75,7 +75,7 @@ class MultiBiorbdModel:
         if not isinstance(extra_bio_models, tuple):
             raise ValueError("The models must be a 'str', 'biorbd.Model', 'bioptim.BiorbdModel'" " or a tuple of those")
 
-        self.extra_models = []
+        self.extra_models: list[BiorbdModel] = []
         for model in extra_bio_models:
             if isinstance(model, str):
                 self.extra_models.append(BiorbdModel(model))

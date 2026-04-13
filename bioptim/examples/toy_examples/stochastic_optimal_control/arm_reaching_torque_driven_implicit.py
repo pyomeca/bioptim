@@ -98,6 +98,8 @@ def prepare_socp(
         The type of problem to solve (CIRCLE or BAR)
     with_cholesky: bool
         If True, whether to use the Cholesky factorization of the covariance matrix or not
+    with_scaling: bool
+        If True, whether to use scaling for the controls or not
 
     Returns
     -------
@@ -117,8 +119,10 @@ def prepare_socp(
         n_feedbacks=4,
         n_noised_states=4,
         n_noised_controls=2,
-        friction_coefficients=np.array([[0.05, 0.025], [0.025, 0.05]]),
     )
+
+    # Please refer to the arm_reaching_torque_driven_collocations.py example for an example of optimizing these values
+    bio_model.set_friction_coefficients(np.array([[0.05, 0.025], [0.025, 0.05]]))
 
     n_tau = bio_model.nb_tau
     n_q = bio_model.nb_q

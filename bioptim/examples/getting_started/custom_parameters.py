@@ -28,11 +28,12 @@ from bioptim import (
     ObjectiveList,
     PhaseDynamics,
     VariableScaling,
+    Parameter,
 )
 from bioptim.examples.utils import ExampleUtils
 
 
-def my_parameter_function(bio_model: TorqueBiorbdModel, value: MX, extra_value: Any):
+def my_parameter_function(bio_model: TorqueBiorbdModel, parameter: Parameter, extra_value: Any):
     """
     The pre dynamics function is called right before defining the dynamics of the system. If one wants to
     modify the dynamics (e.g. optimize the gravity in this case), then this function is the proper way to do it.
@@ -41,17 +42,17 @@ def my_parameter_function(bio_model: TorqueBiorbdModel, value: MX, extra_value: 
     ----------
     bio_model: TorqueBiorbdModel
         The model to modify by the parameters
-    value: MX
-        The CasADi variables to modify the model
+    parameter: Parameter
+        The optimization variables to modify the model
     extra_value: Any
         Any parameters required by the user. The name(s) of the extra_value must match those used in parameter.add
     """
 
-    value[2] *= extra_value
-    bio_model.set_gravity(value)
+    parameter.mx[2] *= extra_value
+    bio_model.set_gravity(parameter)
 
 
-def set_mass(bio_model: TorqueBiorbdModel, value: MX):
+def set_mass(bio_model: TorqueBiorbdModel, parameter: Parameter):
     """
     The pre dynamics function is called right before defining the dynamics of the system. If one wants to
     modify the dynamics (e.g. optimize the gravity in this case), then this function is the proper way to do it.
@@ -60,11 +61,11 @@ def set_mass(bio_model: TorqueBiorbdModel, value: MX):
     ----------
     bio_model: TorqueBiorbdModel
         The model to modify by the parameters
-    value: MX
-        The CasADi variables to modify the model
+    parameter: Parameter
+        The optimization variables to modify the model
     """
-
-    bio_model.segments[0].characteristics().setMass(value)
+    # Since Biorbd uses MX internally, we need to use the MX version of the variable, which is accessible through the .mx attribute
+    bio_model.segments[0].characteristics().setMass(parameter.mx)
 
 
 def my_target_function(controller: PenaltyController, key: str) -> MX:
