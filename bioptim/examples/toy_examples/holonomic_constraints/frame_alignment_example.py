@@ -148,7 +148,6 @@ def prepare_ocp(
         u_bounds=u_bounds,
         objective_functions=objectives,
         constraints=constraints,
-        n_threads=2,
     )
     return ocp, bio_model
 

@@ -10,7 +10,6 @@ constraint on their orientations (the “align_frames_generalized” constraint)
 import os
 
 import numpy as np
-from casadi import DM
 
 from bioptim import (
     BoundsList,
@@ -19,7 +18,6 @@ from bioptim import (
     DynamicsOptionsList,
     HolonomicConstraintsFcn,
     HolonomicConstraintsList,
-    HolonomicTorqueBiorbdModel,
     ObjectiveFcn,
     ObjectiveList,
     OdeSolver,
@@ -32,13 +30,13 @@ from bioptim import (
 )
 from bioptim.examples.utils import ExampleUtils
 
-from custom_dynamics import ModifiedHolonomicTorqueBiorbdModel, constraint_holonomic, constraint_holonomic_end
+from .custom_dynamics import ModifiedHolonomicTorqueBiorbdModel, constraint_holonomic, constraint_holonomic_end
 
 n_shooting = 30
 
 # Define the three points (each is a 4D vector)
-point1 = np.array([0]).T  # -0.1 fails
-point2 = np.array([1]).T  # -1.7 fails
+point1 = np.array([0]).T
+point2 = np.array([1]).T
 point3 = np.array([0]).T
 # Generate interpolation points (0 to 2)
 t = np.linspace(0, 2, n_shooting)
@@ -51,63 +49,6 @@ interp2 = point2 + t[: n_shooting // 2, np.newaxis] * (point3 - point2)
 
 # Combine the two interpolations
 interpolated_points = np.vstack((interp1, interp2))
-
-
-def compute_all_states(sol, bio_model: HolonomicTorqueBiorbdModel):
-    """
-    Compute all the states from the solution of the optimal control program
-
-    Parameters
-    ----------
-    bio_model: HolonomicTorqueBiorbdModel
-        The biorbd model
-    sol:
-        The solution of the optimal control program
-
-    Returns
-    -------
-
-    """
-
-    states = sol.decision_states(to_merge=SolutionMerge.NODES)
-    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
-
-    n = states["q_u"].shape[1]
-    n_tau = controls["tau"].shape[1]
-
-    q = np.zeros((bio_model.nb_q, n))
-    qdot = np.zeros((bio_model.nb_q, n))
-    qddot = np.zeros((bio_model.nb_q, n))
-    lambdas = np.zeros((bio_model.nb_dependent_joints, n))
-    tau = np.zeros((bio_model.nb_tau, n_tau + 1))
-
-    for independent_joint_index in bio_model.independent_joint_index:
-        tau[independent_joint_index, :-1] = controls["tau"][independent_joint_index, :]
-    for dependent_joint_index in bio_model.dependent_joint_index:
-        tau[dependent_joint_index, :-1] = controls["tau"][dependent_joint_index, :]
-
-    q_v_init = DM.zeros(bio_model.nb_dependent_joints, n)
-    for i in range(n):
-        q_v_i = bio_model.compute_q_v()(states["q_u"][:, i], q_v_init[:, i]).toarray()
-        q[:, i] = bio_model.state_from_partition(states["q_u"][:, i][:, np.newaxis], q_v_i).toarray().squeeze()
-        qdot[:, i] = bio_model.compute_qdot()(q[:, i], states["qdot_u"][:, i]).toarray().squeeze()
-        qddot_u_i = (
-            bio_model.partitioned_forward_dynamics()(
-                states["q_u"][:, i], states["qdot_u"][:, i], q_v_init[:, i], tau[:, i]
-            )
-            .toarray()
-            .squeeze()
-        )
-        qddot[:, i] = bio_model.compute_qddot()(q[:, i], qdot[:, i], qddot_u_i).toarray().squeeze()
-        lambdas[:, i] = (
-            bio_model.compute_the_lagrangian_multipliers()(
-                states["q_u"][:, i][:, np.newaxis], states["qdot_u"][:, i], q_v_init[:, i], tau[:, i]
-            )
-            .toarray()
-            .squeeze()
-        )
-
-    return q, qdot, qddot, lambdas
 
 
 def prepare_ocp(
@@ -174,10 +115,9 @@ def prepare_ocp(
     # Path bounds
     x_bounds = BoundsList()
     x_bounds["q_u"] = bio_model.bounds_from_ranges("q", mapping=u_variable_bimapping)
-    x_bounds["q_u"][:, 0] = 0  # Start and end without any velocity
+    x_bounds["q_u"][:, 0] = 0  # Start pos
 
     x_bounds["qdot_u"] = bio_model.bounds_from_ranges("qdot", mapping=u_variable_bimapping)
-    # x_bounds["qdot_u"][:, [0, -1]] = 0  # Start and end without any velocity
 
     u_bounds = BoundsList()
     u_bounds["tau"] = [-100, -100, -100, -100, -100, -100, 0, 0, 0, 0, 0, 0], [
@@ -218,7 +158,6 @@ def prepare_ocp(
         a_init=a_init,
         objective_functions=objectives,
         constraints=constraints,
-        n_threads=24,
     )
     return ocp, bio_model
 
@@ -234,8 +173,10 @@ def main():
 
     print(f"Optimization finished in {sol.real_time_to_optimize:.2f} s")
 
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    print(states["q_u"])
+
     # --- Extract Lagrange multipliers ---
-    # q, _, _, _ = compute_all_states(sol, bio_model)
     stepwise_q_u = sol.stepwise_states(to_merge=SolutionMerge.NODES)["q_u"]
     stepwise_q_v = sol.decision_algebraic_states(to_merge=SolutionMerge.NODES)["q_v"]
     q = ocp.nlp[0].model.state_from_partition(stepwise_q_u, stepwise_q_v).toarray()
