@@ -814,9 +814,29 @@ class HolonomicBiorbdModel(BiorbdModel):
         """
         Sources
         -------
-        Docquier, N., Poncelet, A., and Fisette, P.:
-        ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
-        https://doi.org/10.5194/ms-4-199-2013, 2013.
+        Function
+            CasADi Function with signature:
+                Inputs: q, qdot_u, tau
+                Output: qddot_u (independent coordinate accelerations)
+
+        Notes
+        -----
+        - Requires q (full coordinates) and qdot_u (independent velocities only)
+        - Dependent velocities are computed internally using coupling_matrix
+        - The method assumes J_v is invertible (verified during setup)
+
+        See Also
+        --------
+        partitioned_forward_dynamics : Wrapper that also computes q from q_u
+        coupling_matrix : Computes B_vu = -J_v⁻¹ J_u
+        biais_vector : Computes b_v = -J_v⁻¹(J̇q̇)
+        constrained_forward_dynamics : Full-coordinate formulation with Lagrange multipliers
+
+        References
+        ----------
+        .. [1] Docquier, N., Poncelet, A., and Fisette, P. (2013).
+               ROBOTRAN: a powerful symbolic generator of multibody models.
+               Mech. Sci., 4, 199–219. https://doi.org/10.5194/ms-4-199-2013
         """
 
         # compute q and qdot
