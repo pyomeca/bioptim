@@ -857,7 +857,14 @@ def test_penalty_minimize_predicted_com_height(value, phase_dynamics):
     penalty = Objective(penalty_type)
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
-    expected = np.array(0.0501274 if value == 0.1 else -3.72579)
+    q = x[0][: ocp.nlp[0].model.nb_q]
+    qdot = x[0][ocp.nlp[0].model.nb_q :]
+    com = ocp.nlp[0].model.center_of_mass()(q, DM())
+    com_dot = ocp.nlp[0].model.center_of_mass_velocity()(q, qdot, DM())
+    gravity_z = ocp.nlp[0].model.gravity()(DM())[2]
+    positive_vertical_velocity = max(float(com_dot[2]), 0.0)
+    expected = float(com[2]) + positive_vertical_velocity**2 / (2 * -float(gravity_z))
+
     npt.assert_almost_equal(res, expected)
 
 
