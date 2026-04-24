@@ -606,7 +606,7 @@ class PenaltyFunctionAbstract:
         def minimize_predicted_com_height(_: PenaltyOption, controller: PenaltyController):
             """
             Minimize the prediction of the center of mass maximal height from the parabolic equation,
-            assuming vertical axis is Z (2): CoM_dot[2]**2 / (2 * -g) + com[2]
+            assuming vertical axis is Z (2): max(CoM_dot[2], 0)**2 / (2 * -g) + com[2]
             By default this function is not quadratic, meaning that it minimizes towards infinity.
 
             Parameters
@@ -622,7 +622,8 @@ class PenaltyFunctionAbstract:
             com_dot = controller.model.center_of_mass_velocity()(
                 controller.q, controller.qdot, controller.parameters.cx
             )
-            com_height = (com_dot[2] * com_dot[2]) / (2 * -g) + com[2]
+            com_dot_z = if_else(com_dot[2] > 0, com_dot[2], 0)
+            com_height = (com_dot_z * com_dot_z) / (2 * -g) + com[2]
             return com_height
 
         @staticmethod

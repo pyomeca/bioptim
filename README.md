@@ -1340,7 +1340,7 @@ Here a list of objective function with its type (Lagrange and/or Mayer) in alpha
 - **MINIMIZE_MARKERS_VELOCITY or MINIMIZE_MARKERS_ACCELERATION** (Lagrange and Mayer) &mdash; Minimizes the marker velocities or accelerations toward zero (or a target).
 - **MINIMIZE_MARKERS** (Lagrange and Mayer) &mdash; Minimizes the position of the markers toward zero (or a target). The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the markers should be minimized.
 - **MINIMIZE_MUSCLES_CONTROL** (Lagrange) &mdash;  Minimizes the muscles' controls (part of the control variables) toward zero (or a target).
-- **MINIMIZE_PREDICTED_COM_HEIGHT** (Mayer)  &mdash; Minimizes the maximal height of the center of mass, predicted from the parabolic equation, assuming vertical axis is Z (2): CoM_dot[2]**2 / (2 * -g) + CoM[2]. To maximize a jump, one can use this function at the end of the push-off phase and declare a weight of -1.
+- **MINIMIZE_PREDICTED_COM_HEIGHT** (Mayer)  &mdash; Minimizes the maximal height of the center of mass, predicted from the parabolic equation, assuming vertical axis is Z (2): max(CoM_dot[2], 0)**2 / (2 * -g) + CoM[2]. To maximize a jump, one can use this function at the end of the push-off phase and declare a weight of -1.
 - **MINIMIZE_SOFT_CONTACT_FORCES** (Lagrange) &mdash; Minimizes the external forces induced by soft contacts (or a target).
 - **MINIMIZE_STATE_DERIVATIVE** (Lagrange) &mdash; Minimizes the difference between a state at a node and the same state at the next node, i.e., minimizes the generalized state derivative.
 - **MINIMIZE_STATE** (Lagrange and Mayer) &mdash; Minimizes the state variable towards zero (or a target).
