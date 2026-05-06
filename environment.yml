@@ -9,4 +9,4 @@ dependencies:
 - pyqt
 - pyqtgraph
 - python-graphviz
-- numpy <2.4
+- numpy >=2.4,<3
