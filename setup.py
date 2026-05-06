@@ -25,6 +25,7 @@ setup(
         "bioptim/optimization/solution",
         "bioptim/models/",
         "bioptim/models/biorbd",
+        "bioptim/models/pinocchio",
         "bioptim/models/protocols",
         "examples",
     ],
