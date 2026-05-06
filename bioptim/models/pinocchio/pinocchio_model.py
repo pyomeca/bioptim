@@ -43,8 +43,9 @@ class PinocchioModel:
     """
     Pinocchio implementation of the bioptim biomodel protocol.
 
-    The implementation intentionally mirrors the BiorbdModel public surface where Pinocchio exposes equivalent rigid-body
-    algorithms. Muscle, ligament, passive torque, rigid contact and biorbd external-force APIs are not available yet.
+    The implementation intentionally mirrors the BiorbdModel public surface where Pinocchio exposes equivalent
+    rigid-body algorithms. Muscle, ligament, passive torque, rigid contact and biorbd external-force APIs are not
+    available yet.
     """
 
     def __init__(
@@ -109,8 +110,16 @@ class PinocchioModel:
 
     def copy(self):
         if self.path:
-            return PinocchioModel(self.path, friction_coefficients=self.friction_coefficients, marker_names=self.marker_names)
-        return PinocchioModel(self.model, friction_coefficients=self.friction_coefficients, marker_names=self.marker_names)
+            return PinocchioModel(
+                self.path,
+                friction_coefficients=self.friction_coefficients,
+                marker_names=self.marker_names,
+            )
+        return PinocchioModel(
+            self.model,
+            friction_coefficients=self.friction_coefficients,
+            marker_names=self.marker_names,
+        )
 
     def serialize(self) -> tuple[Callable, dict]:
         bio_model = self.path if self.path else self.model
@@ -147,7 +156,7 @@ class PinocchioModel:
     def segment_index(self, name) -> int:
         if name not in self.model.names:
             raise ValueError(f"{name} is not a segment name")
-        return self.model.names.tolist().index(name)
+        return list(self.model.names).index(name)
 
     @property
     def nb_quaternions(self) -> int:
@@ -520,7 +529,9 @@ class PinocchioModel:
 
     @cache_function
     def markers_velocities(self, reference_index=None) -> Function:
-        velocities = horzcat(*[self.marker_velocity(i)(self.q, self.qdot, self.parameters) for i in range(self.nb_markers)])
+        velocities = horzcat(
+            *[self.marker_velocity(i)(self.q, self.qdot, self.parameters) for i in range(self.nb_markers)]
+        )
         return Function(
             "markers_velocities",
             [self.q, self.qdot, self.parameters],
@@ -551,7 +562,10 @@ class PinocchioModel:
     @cache_function
     def markers_accelerations(self, reference_index=None) -> Function:
         accelerations = horzcat(
-            *[self.marker_acceleration(i)(self.q, self.qdot, self.qddot, self.parameters) for i in range(self.nb_markers)]
+            *[
+                self.marker_acceleration(i)(self.q, self.qdot, self.qddot, self.parameters)
+                for i in range(self.nb_markers)
+            ]
         )
         return Function(
             "markers_accelerations",
@@ -599,17 +613,32 @@ class PinocchioModel:
         jacobians = []
         for marker_index in range(self.nb_markers):
             data = self.casadi_model.createData()
-            jacobian = MX.zeros(6, self.nb_qdot)
-            self.cpin.computeFrameJacobian(
-                self.casadi_model,
-                data,
-                self.q,
-                self._marker_frame_index(marker_index),
-                self.cpin.ReferenceFrame.LOCAL_WORLD_ALIGNED,
-                jacobian,
-            )
+            try:
+                jacobian = self.cpin.computeFrameJacobian(
+                    self.casadi_model,
+                    data,
+                    self.q,
+                    self._marker_frame_index(marker_index),
+                    self.cpin.ReferenceFrame.LOCAL_WORLD_ALIGNED,
+                )
+            except TypeError:
+                jacobian = MX.zeros(6, self.nb_qdot)
+                self.cpin.computeFrameJacobian(
+                    self.casadi_model,
+                    data,
+                    self.q,
+                    self._marker_frame_index(marker_index),
+                    self.cpin.ReferenceFrame.LOCAL_WORLD_ALIGNED,
+                    jacobian,
+                )
             jacobians.append(jacobian[:3, :])
-        return Function("markers_jacobian", [self.q, self.parameters], jacobians, ["q", "parameters"], ["markers_jacobian"])
+        return Function(
+            "markers_jacobian",
+            [self.q, self.parameters],
+            jacobians,
+            ["q", "parameters"],
+            ["markers_jacobian"],
+        )
 
     @cache_function
     def soft_contact_forces(self) -> Function:
