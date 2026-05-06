@@ -47,7 +47,7 @@ jobs:
           conda list
 
       - name: Install extra dependencies
-        run: conda install pytest-cov black pytest pytest-cov codecov packaging -cconda-forge
+        run: conda install "numpy>=2.4,<3" pytest-cov black pytest pytest-cov codecov packaging -cconda-forge
 
       - name: Install ACADOS on Mac
         run: |

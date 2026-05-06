@@ -4,6 +4,7 @@ channels:
 - conda-forge
 dependencies:
 - biorbd >=1.11.1
+- numpy >=2.4,<3
 - matplotlib
 - pyqt
 - pyqtgraph
