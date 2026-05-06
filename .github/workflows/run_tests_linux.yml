@@ -36,8 +36,8 @@ jobs:
           conda list
 
       - name: Install extra dependencies
-        run: |
-          conda install pip pytest-cov black pytest pytest-cov codecov packaging pytest-mpl -cconda-forge
+        run: | 
+          conda install "numpy>=2.4,<3" pip pytest-cov black pytest pytest-cov codecov packaging pytest-mpl -cconda-forge
           sudo apt install -y librhash-dev
 
       - name: Install ACADOS on Linux
