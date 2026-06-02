@@ -11,34 +11,18 @@ from bioptim import (
 from ..utils import TestUtils
 
 
-@pytest.mark.parametrize(
-    "phase_dynamics",
-    [
-        PhaseDynamics.SHARED_DURING_THE_PHASE,
-        PhaseDynamics.ONE_PER_NODE,
-    ],
-)
-@pytest.mark.parametrize(
-    "use_sx",
-    [
-        True,
-        False,
-    ],
-)
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+@pytest.mark.parametrize("use_sx", [True, False])
 def test_example_param_obj_and_param_scaling(
     phase_dynamics,
     use_sx,
 ):
-
-    if platform == "darwin" or platform == "win32":
-        pytest.skip("This test is not working on MacOS or Windows")
-
     from bioptim.examples.toy_examples.feature_examples import example_parameter_scaling as ocp_module
 
     bioptim_folder = TestUtils.bioptim_folder()
 
     final_time = 1
-    n_shooting = 10
+    n_shooting = 20
 
     ocp_to_track = ocp_module.generate_dat_to_track(
         biorbd_model_path=bioptim_folder + "/examples/models/pendulum_wrong_gravity.bioMod",
@@ -67,7 +51,7 @@ def test_example_param_obj_and_param_scaling(
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
 
     # Test the objective values
-    TestUtils.assert_objective_value(sol=sol, expected_value=35328792.2512389, decimal=4)
+    TestUtils.assert_objective_value(sol=sol, expected_value=35479.23885709513, decimal=4)
 
     g = np.array(sol.constraints)
     npt.assert_equal(g.shape, (0, 1))
@@ -81,11 +65,11 @@ def test_example_param_obj_and_param_scaling(
     npt.assert_almost_equal(qdot[:, -1], np.array([0.0, 0.0]), decimal=5)
 
     npt.assert_almost_equal(q[:, 0], np.array([0.0, 0.0]), decimal=5)
-    npt.assert_almost_equal(q[:, 5], np.array([-0.26673, 2.53154]), decimal=5)
+    npt.assert_almost_equal(q[:, 5], np.array([-0.27469, 0.24421]), decimal=5)
     npt.assert_almost_equal(q[:, -1], np.array([0.0, 3.14]), decimal=5)
 
     param_not_scaled = sol.decision_parameters(scaled=False)
     param_scaled = sol.decision_parameters(scaled=True)
 
-    npt.assert_almost_equal(param_not_scaled["gravity_xyz"], np.array([0.0, 3.89005766, -14.71310026]), decimal=5)
-    npt.assert_almost_equal(param_scaled["gravity_xyz"], np.array([0.0, 3.89005766, -1.47131003]), decimal=5)
+    npt.assert_almost_equal(param_not_scaled["gravity_xyz"], np.array([0.0, 0.01281, -5]), decimal=5)
+    npt.assert_almost_equal(param_scaled["gravity_xyz"], np.array([0.0, 0.01281, -0.5]), decimal=5)
