@@ -56,10 +56,7 @@ test_memory = {}
     "defects_type",
     [DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS, DefectType.TAU_EQUALS_INVERSE_DYNAMICS],
 )
-@pytest.mark.parametrize(
-    "solver",
-    [Solver.IPOPT, Solver.FATROP],
-)
+@pytest.mark.parametrize("solver", [Solver.IPOPT, Solver.FATROP])
 @pytest.mark.parametrize("ordering_strategy", [OrderingStrategy.TIME_MAJOR, OrderingStrategy.VARIABLE_MAJOR])
 def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type, solver, ordering_strategy):
     from bioptim.examples.getting_started import basic_ocp as ocp_module
@@ -745,12 +742,20 @@ def test_phase_transitions(ode_solver, phase_dynamics):
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.COLLOCATION])  # OdeSolver.IRK
 def test_parameter_optimization(ode_solver, phase_dynamics):
-    return  # TODO: Fix parameter scaling :(
+    from bioptim.examples.getting_started import custom_parameters as ocp_module
+
     # For reducing time phase_dynamics == PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver in (OdeSolver.RK8, OdeSolver.COLLOCATION):
         pytest.skip("PhaseDynamics.ONE_PER_NODE is only tested with RK4 and IRK to reduce time")
 
     bioptim_folder = TestUtils.bioptim_folder()
+
+    gc.collect()  # Force garbage collection
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    tracemalloc.start()  # Start memory tracking
+    mem_before = tracemalloc.take_snapshot()
+
+    tik = time.time()  # Time before starting to build the problem
 
     ode_solver_orig = ode_solver
     ode_solver = ode_solver()
@@ -764,7 +769,7 @@ def test_parameter_optimization(ode_solver, phase_dynamics):
         max_g=np.array([1, 1, -5]),
         min_m=10,
         max_m=30,
-        target_g=np.array([0, 0, -9.81]),
+        target_g=np.array([0, 0, -9.81])[:, np.newaxis],
         target_m=20,
         ode_solver=ode_solver,
         phase_dynamics=phase_dynamics,
@@ -795,14 +800,14 @@ def test_parameter_optimization(ode_solver, phase_dynamics):
         npt.assert_equal(g.shape, (80, 1))
         npt.assert_almost_equal(g, np.zeros((80, 1)), decimal=6)
 
-        TestUtils.assert_objective_value(sol=sol, expected_value=55.29552160879171, decimal=6)
+        TestUtils.assert_objective_value(sol=sol, expected_value=55.29552160879141, decimal=6)
 
         # initial and final controls
         npt.assert_almost_equal(tau[:, 0], np.array((7.08951794, 0.0)))
         npt.assert_almost_equal(tau[:, -1], np.array((-15.21533398, 0.0)))
 
         # gravity parameter
-        npt.assert_almost_equal(gravity, np.array([[0, 4.95762449e-03, -9.93171691e00]]).T)
+        npt.assert_almost_equal(gravity, np.array([0, 4.95762449e-03, -9.93171691e00]))
 
     elif isinstance(ode_solver, OdeSolver.RK8):
         npt.assert_equal(g.shape, (80, 1))
@@ -815,20 +820,20 @@ def test_parameter_optimization(ode_solver, phase_dynamics):
         npt.assert_almost_equal(tau[:, -1], np.array((-13.06649769, 0.0)))
 
         # gravity parameter
-        npt.assert_almost_equal(gravity, np.array([[0, 5.19787253e-03, -9.84722491e00]]).T)
+        npt.assert_almost_equal(gravity, np.array([0, 5.19787253e-03, -9.84722491e00]))
 
     else:
         npt.assert_equal(g.shape, (400, 1))
         npt.assert_almost_equal(g, np.zeros((400, 1)), decimal=6)
 
-        TestUtils.assert_objective_value(sol=sol, expected_value=100.59286910162214, decimal=6)
+        TestUtils.assert_objective_value(sol=sol, expected_value=100.40019797776976, decimal=6)
 
         # initial and final controls
-        npt.assert_almost_equal(tau[:, 0], np.array((-0.23081842, 0.0)))
-        npt.assert_almost_equal(tau[:, -1], np.array((-26.01316438, 0.0)))
+        npt.assert_almost_equal(tau[:, 0], np.array((2.02781611, 0.0)))
+        npt.assert_almost_equal(tau[:, -1], np.array((-24.2402078, 0.0)))
 
         # gravity parameter
-        npt.assert_almost_equal(gravity, np.array([[0, 6.82939855e-03, -1.00000000e01]]).T)
+        npt.assert_almost_equal(gravity, np.array([0, 7.3139564e-03, -1.0000000e01]))
 
     # simulate
     TestUtils.simulate(sol, decimal_value=6)
