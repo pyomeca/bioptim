@@ -159,7 +159,9 @@ def test_generic_online_optim_uses_multiprocess_on_linux(monkeypatch):
     callback = object()
 
     monkeypatch.setattr("bioptim.misc.enums.platform.system", lambda: "Linux")
-    monkeypatch.setattr("bioptim.interfaces.interface_utils.OnlineCallbackMultiprocess", lambda *args, **kwargs: callback)
+    monkeypatch.setattr(
+        "bioptim.interfaces.interface_utils.OnlineCallbackMultiprocess", lambda *args, **kwargs: callback
+    )
 
     generic_online_optim(interface, ocp=None)
 
@@ -216,6 +218,9 @@ def test_generic_online_optim_allows_server_on_macos(monkeypatch):
 
 
 def test_online_callback_server_recreates_socket_between_retries(monkeypatch):
+    class FakeOcp:
+        n_phases = 1
+
     class FakeSocket:
         def __init__(self, should_fail=False):
             self.should_fail = should_fail
@@ -249,7 +254,7 @@ def test_online_callback_server_recreates_socket_between_retries(monkeypatch):
     monkeypatch.setattr("bioptim.gui.online_callback_server.PlotOcp", lambda *args, **kwargs: "plotter")
 
     callback = OnlineCallbackServer.__new__(OnlineCallbackServer)
-    callback.ocp = object()
+    callback.ocp = FakeOcp()
     callback._host = "localhost"
     callback._port = 3050
     callback._socket = None
