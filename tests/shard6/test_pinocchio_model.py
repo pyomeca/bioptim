@@ -16,4 +16,3 @@ def test_pinocchio_missing_dependency_message():
 
     with pytest.raises(ModuleNotFoundError, match="requires the optional dependency 'pinocchio'"):
         PinocchioModel("model.urdf")
-
