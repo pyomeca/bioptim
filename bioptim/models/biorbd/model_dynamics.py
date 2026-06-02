@@ -1,11 +1,7 @@
 from typing import Callable
 import biorbd_casadi as biorbd
-import numpy as np
 
-from .external_forces import (
-    ExternalForceSetTimeSeries,
-    ExternalForceSetVariables,
-)
+from .external_forces import ExternalForceSetTimeSeries, ExternalForceSetVariables
 from ...optimization.parameters import ParameterList
 from .biorbd_model import BiorbdModel
 from .multi_biorbd_model import MultiBiorbdModel
@@ -26,13 +22,7 @@ from ...dynamics.state_space_dynamics import (
     MusclesDynamicsWithExcitations,
 )
 from ..protocols.holonomic_constraints import HolonomicConstraintsList
-from ...misc.parameters_types import (
-    Str,
-    Int,
-    Bool,
-    NpArray,
-    DM,
-)
+from ...misc.parameters_types import Str, Int, Bool, NpArray, DM
 from ...misc.mapping import BiMappingList
 from ...misc.enums import ContactType, QuadratureRule, ControlType
 from ...optimization.problem_type import SocpType
