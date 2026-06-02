@@ -8,13 +8,7 @@ import numpy as np
 from .plot import PlotOcp, OcpSerializable
 from ..optimization.optimization_vector import OptimizationVectorHelper
 from .online_callback_abstract import OnlineCallbackAbstract
-from ..misc.parameters_types import (
-    Bool,
-    Float,
-    AnyIterable,
-    AnyDictOptional,
-    IntListOptional,
-)
+from ..misc.parameters_types import Bool, Float, AnyIterable, AnyDictOptional, IntListOptional
 
 
 class OnlineCallbackMultiprocess(OnlineCallbackAbstract):

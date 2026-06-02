@@ -1,4 +1,6 @@
+from dataclasses import dataclass
 from functools import wraps
+
 from ..limits.path_conditions import Bounds
 from ..misc.mapping import BiMapping, BiMappingList
 from ..misc.enums import ContactType
@@ -43,6 +45,18 @@ def _var_mapping(key, range_for_mapping, mapping: BiMapping = None) -> dict:
     if key not in mapping:
         mapping[key] = BiMapping(range_for_mapping, range_for_mapping)
     return mapping
+
+
+@dataclass(frozen=True)
+class Range:
+    min_bound: float
+    max_bound: float
+
+    def min(self) -> float:
+        return self.min_bound
+
+    def max(self) -> float:
+        return self.max_bound
 
 
 def bounds_from_ranges(model, key: str, mapping: BiMapping | BiMappingList = None) -> Bounds:
