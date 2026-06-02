@@ -20,7 +20,6 @@ from bioptim import (
     OdeSolverBase,
     Solver,
     TorquePinocchioModel,
-    ControlType,
     PhaseDynamics,
     OnlineOptim,
     OrderingStrategy,
@@ -35,11 +34,9 @@ def prepare_ocp(
     final_time: float,
     n_shooting: int,
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
-    use_sx: bool = True,
     n_threads: int = 1,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
-    control_type: ControlType = ControlType.CONSTANT,
     ordering_strategy: OrderingStrategy = OrderingStrategy.VARIABLE_MAJOR,
 ) -> OptimalControlProgram:
     """
@@ -55,8 +52,6 @@ def prepare_ocp(
         The number of shooting points to define int the direct multiple shooting program
     ode_solver: OdeSolverBase = OdeSolver.RK4()
         Which type of OdeSolver to use
-    use_sx: bool
-        If the SX variable should be used instead of MX (can be extensive on RAM)
     n_threads: int
         The number of threads to use in the paralleling (1 = no parallel computing)
     phase_dynamics: PhaseDynamics
@@ -67,8 +62,6 @@ def prepare_ocp(
         If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
         the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
         (for instance IRK is not compatible with expanded dynamics)
-    control_type: ControlType
-        The type of the controls
 
     Returns
     -------
@@ -116,8 +109,7 @@ def prepare_ocp(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
-        control_type=control_type,
-        use_sx=use_sx,
+        use_sx=True,
         n_threads=n_threads,
         ordering_strategy=ordering_strategy,
     )

@@ -1164,6 +1164,93 @@ def test_example_multiphase(ode_solver_type, phase_dynamics):
     test_memory[f"multiphase-{ode_solver}-{phase_dynamics}"] = [building_duration, solving_duration, mem_used]
 
 
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+@pytest.mark.parametrize("n_threads", [1, 2])
+@pytest.mark.parametrize("ordering_strategy", [OrderingStrategy.TIME_MAJOR, OrderingStrategy.VARIABLE_MAJOR])
+def test_example_pinocchio(n_threads, phase_dynamics, ordering_strategy):
+    from bioptim.examples.getting_started import example_pinocchio as ocp_module
+
+    if n_threads > 1 and phase_dynamics == PhaseDynamics.ONE_PER_NODE:
+        pytest.skip("PhaseDynamics.ONE_PER_NODE is not compatible with multi-threading")
+
+    gc.collect()  # Force garbage collection
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    tracemalloc.start()  # Start memory tracking
+    mem_before = tracemalloc.take_snapshot()
+
+    tik = time.time()  # Time before starting to build the problem
+
+    bioptim_folder = TestUtils.bioptim_folder()
+
+    ocp = ocp_module.prepare_ocp(
+        model_path=bioptim_folder + "/examples/models/pendulum.urdf",
+        final_time=1,
+        n_shooting=30,
+        n_threads=n_threads,
+        phase_dynamics=phase_dynamics,
+        ordering_strategy=ordering_strategy,
+    )
+    tak = time.time()  # Time after building, but before solving
+    ocp.print(to_console=True, to_graph=False)
+
+    sol = ocp.solve(Solver.IPOPT())
+    tok = time.time()  # This after solving
+
+    # Check objective function value
+    if ordering_strategy == OrderingStrategy.TIME_MAJOR:
+        TestUtils.assert_objective_value(sol=sol, expected_value=41.58259426)
+        npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [-0.4961208, 0.6764171])
+    else:
+        TestUtils.assert_objective_value(sol=sol, expected_value=41.79185016854698)
+        npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [-0.5284487, 0.7166209])
+
+    # Check constraints
+    g = np.array(sol.constraints)
+    npt.assert_equal(g.shape, (120, 1))
+    npt.assert_almost_equal(g, np.zeros((120, 1)))
+
+    # Check some of the results
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+
+    # initial and final position
+    npt.assert_almost_equal(q[:, 0], np.array((0, 0)))
+    npt.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
+
+    # initial and final velocities
+    npt.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
+    npt.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
+
+    # initial and final controls
+    if ordering_strategy == OrderingStrategy.TIME_MAJOR:
+        npt.assert_almost_equal(tau[:, 0], np.array((6.01549798, 0.0)))
+        npt.assert_almost_equal(tau[:, -1], np.array((-13.68877181, 0.0)))
+    else:
+        npt.assert_almost_equal(tau[:, 0], np.array((6.2402764, 0.0)))
+        npt.assert_almost_equal(tau[:, -1], np.array((-13.0511652, 0.0)))
+
+    # simulate
+    TestUtils.simulate(sol)
+
+    # Execution times
+    building_duration = tak - tik
+    solving_duration = tok - tak
+
+    time.sleep(0.1)  # Avoiding delay in memory (re)allocation
+    mem_after = tracemalloc.take_snapshot()
+    top_stats = mem_after.compare_to(mem_before, "lineno")
+    mem_used = sum(stat.size_diff for stat in top_stats)
+    tracemalloc.stop()
+
+    global test_memory
+    test_memory[f"pendulum-{n_threads}-{phase_dynamics}"] = [
+        building_duration,
+        solving_duration,
+        mem_used,
+    ]
+
+
 @pytest.mark.parametrize("expand_dynamics", [True, False])
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK])

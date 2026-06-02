@@ -319,6 +319,20 @@ def test__getting_started__example_multiphase():
     )
 
 
+def test__getting_started__example_pinocchio():
+    from bioptim.examples.getting_started import example_pinocchio as ocp_module
+
+    bioptim_folder = TestUtils.bioptim_folder()
+
+    ocp_module.prepare_ocp(
+        model_path=bioptim_folder + "/examples/models/pendulum.urdf",
+        final_time=3,
+        n_shooting=100,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
+        expand_dynamics=False,
+    )
+
+
 def test__getting_started__example_multiphase_different_ode_solvers():
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
