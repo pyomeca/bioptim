@@ -8,8 +8,8 @@ from ..misc.parameters_types import FloatIterableorNpArray, StrIterable, Int, St
 
 
 class GraphAbstract:
-    _return_line: ""
-    _squared: ""
+    _return_line = ""
+    _squared = ""
     """
     Methods
     -------
@@ -61,6 +61,10 @@ class GraphAbstract:
         """
         condensed_vector = ""
         for i, var in enumerate(vector):
+            if isinstance(var, np.ndarray):
+                if var.size > 1:
+                    raise ValueError("The vector layout structure needs to be applied on scalar only")
+                var = var[0]
             condensed_vector += f"{round(float(var), decimal):.{decimal}f} "
             if i % 7 == 0 and i != 0:
                 condensed_vector += f"... {self._return_line}... "
