@@ -629,7 +629,7 @@ def test_fatigable_effort_torque_split(phase_dynamics):
     sol = ocp.solve()
 
     # Check objective function value
-    if platform.system() == "Windows":
+    if platform.system() != "Windows":
         TestUtils.assert_objective_value(sol=sol, expected_value=124.09811263203727)
 
         # Check constraints
