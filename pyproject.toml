@@ -24,6 +24,7 @@ dependencies = []
 [project.optional-dependencies]
 conda_only = [
     "biorbd >=1.12.0",
+    "pinocchio",
     "pyqt",
     "pyqtgraph",
     "python-graphviz",
