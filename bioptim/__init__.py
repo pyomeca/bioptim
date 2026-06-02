@@ -217,7 +217,7 @@ from .models.biorbd.model_dynamics import (
     JointAccelerationBiorbdModel,
     MultiTorqueBiorbdModel,
 )
-from .models.pinocchio.pinocchio_model import PinocchioModel
+from .models.pinocchio import PinocchioModel, TorquePinocchioModel
 from .models.protocols.biomodel import BioModel
 from .models.protocols.holonomic_constraints import HolonomicConstraintsFcn, HolonomicConstraintsList
 from .models.protocols.stochastic_biomodel import StochasticBioModel

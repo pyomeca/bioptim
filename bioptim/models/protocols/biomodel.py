@@ -16,6 +16,7 @@ from ...misc.parameters_types import (
     Bool,
     NpArrayListOptional,
     AnyListOptional,
+    CX,
 )
 
 if TYPE_CHECKING:
@@ -201,7 +202,7 @@ class BioModel(Protocol):
         args: q, qdot, qddot_joints
         """
 
-    def reorder_qddot_root_joints(self) -> Function:
+    def reorder_qddot_root_joints(self, qddot_root: CX, qddot_joints: CX) -> CX:
         """
         reorder the qddot, from the root dof and the joints dof
         args: qddot_root, qddot_joints

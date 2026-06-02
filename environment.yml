@@ -10,3 +10,4 @@ dependencies:
 - pyqtgraph
 - python-graphviz
 - numpy >=2.4,<3
+- pinocchio
