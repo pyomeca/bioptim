@@ -117,9 +117,7 @@ class OnlineOptim(Enum):
         if self != OnlineOptim.DEFAULT:
             return self
 
-        if platform.system() == "Linux":
-            return OnlineOptim.MULTIPROCESS
-        elif platform.system() in ("Windows", "Darwin"):
+        if platform.system() in ("Linux", "Windows", "Darwin"):
             return OnlineOptim.MULTIPROCESS_SERVER
         else:
             return None

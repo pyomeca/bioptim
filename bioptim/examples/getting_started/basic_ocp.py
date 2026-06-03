@@ -156,8 +156,7 @@ def main():
     ocp.print(to_console=False, to_graph=False)
 
     # --- Solve the ocp --- #
-    # Default is OnlineOptim.MULTIPROCESS on Linux and OnlineOptim.MULTIPROCESS_SERVER on Windows and MacOS
-    # On MacOS, OnlineOptim.SERVER remains available if you prefer to start resources/plotting_server.py manually
+    # Default is OnlineOptim.MULTIPROCESS_SERVER on all platforms.
     solver = Solver.IPOPT(online_optim=OnlineOptim.DEFAULT)
 
     # # Show the constraints Jacobian sparsity
@@ -180,19 +179,16 @@ def main():
     sol.print_cost()
     # sol.graphs(show_bounds=True, save_name="results.png")
 
-    # --- Animate the solution --- #
-    viewer = "bioviz"
-    # viewer = "pyorerun"
-    try:
-        sol.animate(n_frames=0, viewer=viewer, show_now=True)
-    except RuntimeError as exc:
-        if viewer == "bioviz" and "bioviz must be install" in str(exc):
-            print("Animation skipped because bioviz is not installed.")
-        else:
-            raise
+    # # --- Animate the solution --- #
+    # # To animate the solution, we can use the animate function. Uncomment the current block
+    # # to see the animation.
+    # # 'bioviz' must be installed to use the bioviz viewer.
+    # # Similarly, 'pyorerun' must be installed to use the pyorerun viewer.
+    # viewer = "bioviz"  # "pyorerun"
+    # sol.animate(n_frames=0, viewer=viewer, show_now=True)
 
     # # --- Saving the solver's output after the optimization --- #
-    # Here is an example of how we recommend to save the solution. Please note that sol.ocp is not picklable and that sol will be loaded using the current bioptim version, not the version at the time of the generation of the results.
+    # # Here is an example of how we recommend to save the solution. Please note that sol.ocp is not picklable and that sol will be loaded using the current bioptim version, not the version at the time of the generation of the results.
     # import pickle
     # import git
     # from datetime import date
