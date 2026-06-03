@@ -40,8 +40,10 @@ class PinocchioModel:
     ):
         super().__init__(**kwargs)  # For multiple inheritance compatibility
         self._pinocchio_module, self._casadi_pinocchio_module = _import_pinocchio()
+        self._path = None
 
         if isinstance(bio_model, str):
+            self._path = bio_model
             self._model = self._pinocchio_module.buildModelFromUrdf(bio_model)
         elif isinstance(bio_model, self._pinocchio_module.Model):
             self._model = bio_model
@@ -79,20 +81,18 @@ class PinocchioModel:
     def name(self) -> str:
         return self._model.name
 
+    @property
+    def path(self) -> str | None:
+        return self._path
+
     def copy(self):
         if self.path:
-            return PinocchioModel(
-                self.path,
-                parameters=self.parameters,
-            )
-        return PinocchioModel(
-            self._model,
-            parameters=self.parameters,
-        )
+            return PinocchioModel(self.path)
+        return PinocchioModel(self._model)
 
     def serialize(self) -> tuple[Callable, dict]:
         bio_model = self.path if self.path else self._model
-        return PinocchioModel, dict(bio_model=bio_model, parameters=self.parameters)
+        return PinocchioModel, dict(bio_model=bio_model)
 
     @cache_function
     def gravity(self) -> Function:
