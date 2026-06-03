@@ -198,7 +198,6 @@ class BiorbdModel:
             self.model.setGravity(new_gravity.mx)
         else:
             self.model.setGravity(new_gravity)
-        return
 
     @property
     def nb_tau(self) -> int:
@@ -537,7 +536,7 @@ class BiorbdModel:
         return casadi_fun
 
     @staticmethod
-    def reorder_qddot_root_joints(qddot_root, qddot_joints) -> MX | SX:
+    def reorder_qddot_root_joints(qddot_root: CX, qddot_joints: CX) -> CX:
         return vertcat(qddot_root, qddot_joints)
 
     def _dispatch_forces(self) -> biorbd.ExternalForceSet:

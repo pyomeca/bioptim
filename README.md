@@ -2007,6 +2007,9 @@ available in the `biorbd` documentation.
 ### The [example_optimal_time.py](./bioptim/examples/getting_started/example_optimal_time.py) file
 Examples of time optimization can be found in 'examples/optimal_time_ocp/'.
 
+### The [example_pinocchio.py](./bioptim/examples/getting_started/example_pinocchio.py) file
+This example is the exact same as the pendulum example, but with a model defined using the `Pinocchio` backend (instead of the `biorbd` backend). It is designed to show how to use a model defined in Pinocchio instead of biorbd.
+
 ### The [example_simulation.py](./bioptim/examples/getting_started/example_simulation.py) file
 The first part of this example is a single shooting simulation from initial guesses.
 It is not an optimal control program. It is merely the simulation of values that is applying the dynamics.
