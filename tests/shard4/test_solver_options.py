@@ -160,7 +160,7 @@ def test_generic_online_optim_uses_multiprocess_on_linux(monkeypatch):
 
     monkeypatch.setattr("bioptim.misc.enums.platform.system", lambda: "Linux")
     monkeypatch.setattr(
-        "bioptim.interfaces.interface_utils.OnlineCallbackMultiprocess", lambda *args, **kwargs: callback
+        "bioptim.interfaces.interface_utils.OnlineCallbackMultiprocessServer", lambda *args, **kwargs: callback
     )
 
     generic_online_optim(interface, ocp=None)
