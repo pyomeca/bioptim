@@ -17,6 +17,7 @@ from ..optimization.optimization_vector import OptimizationVectorHelper
 from ..misc.parameters_types import (
     Bool,
     Int,
+    Float,
     Str,
     Bytes,
     StrOptional,

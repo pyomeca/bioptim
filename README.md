@@ -796,7 +796,7 @@ It is expected to slow down the optimization a bit.
 If `online_optim` is set to `SERVER`, then a server must be started manually by instantiating an `PlottingServer` class (see `ressources/plotting_server.py`).
 The following keys are additional options when using `OnlineOptim.SERVER` and `OnlineOptim.MULTIPROCESS_SERVER`:
   - `host`: the host to use (default is `localhost`)
-  - `port`: the port to use (default is `5030`)
+  - `port`: the port to use (default is `5030` for `OnlineOptim.SERVER` and a random available port for `OnlineOptim.MULTIPROCESS_SERVER`)
 
 If you want to see IPOPT's iterations over the course of the resolution of your opc, it is possible using the following:
 ```python    
