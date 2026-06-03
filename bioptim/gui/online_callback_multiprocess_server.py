@@ -1,6 +1,9 @@
 from multiprocessing import Process
+import socket
 
 from .online_callback_server import PlottingServer, OnlineCallbackServer
+
+_DEFAULT_HOST = "localhost"
 
 
 def _start_server_internal(**kwargs):
@@ -15,6 +18,12 @@ def _start_server_internal(**kwargs):
     PlottingServer(**kwargs)
 
 
+def _find_available_tcp_port(host: str) -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind((host, 0))
+        return sock.getsockname()[1]
+
+
 class OnlineCallbackMultiprocessServer(OnlineCallbackServer):
     def __init__(self, *args, **kwargs):
         """
@@ -24,8 +33,12 @@ class OnlineCallbackMultiprocessServer(OnlineCallbackServer):
         ----------
         Same as PlottingServer
         """
-        host = kwargs["host"] if "host" in kwargs else None
-        port = kwargs["port"] if "port" in kwargs else None
+        host = kwargs["host"] if "host" in kwargs else _DEFAULT_HOST
+        port = _find_available_tcp_port(host) if "port" not in kwargs or kwargs["port"] is None else kwargs["port"]
+
+        kwargs["host"] = host
+        kwargs["port"] = port
+
         log_level = None
         if "log_level" in kwargs:
             log_level = kwargs["log_level"]
