@@ -334,19 +334,6 @@ def test_biorbd_rigid_contact_methods_shapes():
         assert acceleration_on_first_axis.shape == (1, 1)
 
 
-def test_biorbd_constrained_contact_dynamics_currently_raises_bad_allocation():
-    bio_model = _build_biorbd_model("/examples/models/2segments_2dof_2contacts.bioMod")
-
-    q = np.zeros((bio_model.nb_q, 1))
-    qdot = np.zeros((bio_model.nb_qdot, 1))
-    tau = np.zeros((bio_model.nb_tau, 1))
-    external_forces = np.zeros((0, 1))
-    parameters = np.zeros((0, 1))
-
-    with pytest.raises(RuntimeError, match="bad allocation"):
-        bio_model.forward_dynamics(with_contact=True)(q, qdot, tau, external_forces, parameters)
-
-
 def test_biorbd_inverse_dynamics_with_contact_not_implemented():
     bio_model = _build_biorbd_model("/examples/models/pendulum.bioMod")
     with pytest.raises(NotImplementedError, match="Inverse dynamics with contact is not implemented yet"):
