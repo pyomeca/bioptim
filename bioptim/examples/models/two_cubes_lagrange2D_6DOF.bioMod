@@ -1,0 +1,160 @@
+version 1.0
+
+gravity 0 0 -9.81
+
+segment root
+    
+    marker root_origin
+        parent root
+        position 0 0 0
+    endmarker
+
+endsegment
+
+segment cube0
+    parent root
+    RTinMatrix    0
+    RT pi/7 -pi/8 -pi/6  xyz 0 0 0
+    mass 1.0
+    com 0 0 0
+    inertia   1 0 0
+	            0 1 0
+	            0 0 1
+    mesh 0 -1 -1
+    mesh 0 0 -1
+    mesh 0 0 0
+    mesh 0 -1 0
+    mesh 0 -1 -1
+    mesh 1 -1 -1
+    mesh 1 0 -1
+    mesh 0 0 -1
+    mesh 1 0 -1
+    mesh 1 0 0
+    mesh 0 0 0
+    mesh 1 0 0
+    mesh 1 -1 0
+    mesh 0 -1 0
+    mesh 1 -1 0
+    mesh 1 -1 -1
+
+    rotations	xyz
+    translations xyz
+    rangesQ
+	    -4*pi 4*pi
+	    -4*pi 4*pi
+	    -4*pi 4*pi
+        -100 100
+        -100 100
+        -100 100
+endsegment
+
+    marker cube0_1
+        parent cube0
+        position 0 0 0
+    endmarker
+
+
+segment cube1
+    parent root
+    RTinMatrix    0
+    RT 0 0 0 xyz 0 2 0
+    mass 1.0
+    com 0.1 0.2 0.3
+    inertia   1 0 0
+	            0 1 0
+	            0 0 1
+    mesh 0 -1 -1
+    mesh 0 0 -1
+    mesh 0 0 0
+    mesh 0 -1 0
+    mesh 0 -1 -1
+    mesh 1 -1 -1
+    mesh 1 0 -1
+    mesh 0 0 -1
+    mesh 1 0 -1
+    mesh 1 0 0
+    mesh 0 0 0
+    mesh 1 0 0
+    mesh 1 -1 0
+    mesh 0 -1 0
+    mesh 1 -1 0
+    mesh 1 -1 -1
+    
+    rotations	xyz
+    translations xyz
+
+    rangesQ
+	    -4*pi 4*pi
+	    -4*pi 4*pi
+	    -4*pi 4*pi
+        -100 100
+        -100 100
+        -100 100
+endsegment
+
+    marker cube1_1
+        parent cube1
+        position 0 0 0
+    endmarker
+
+segment new_frame
+    parent cube1
+    RTinMatrix    0
+    RT 1 0 0 xyz 0 0 0
+endsegment
+
+segment new_frame2
+    parent cube1
+    RTinMatrix    1
+    RT
+		1.000000	0.000000	0.000000	0.000000
+		0.000000	0.000000	-1.000000	0.000000
+		0.000000	1.000000	0.000000	0.000000
+		0.000000	0.000000	0.000000	1.000000
+endsegment
+
+segment new_frame3
+    parent cube1
+    RTinMatrix    1
+    RT
+		0.7500000	-0.4330127	0.5000000	0
+		0.6495190	0.6250000	-0.4330127	0
+		-0.1250000	0.6495190	0.7500000	0
+		0.000000	0.000000	0.000000	1.000000
+endsegment
+
+segment new_frame4
+    parent cube1
+    RTinMatrix    1
+    RT
+		1	0	0	0
+		0	-0.5000000	-0.8660254	0
+		0	0.8660254	-0.5000000	0
+		0.000000	0.000000	0.000000	1.000000
+endsegment
+
+segment new_frame5
+    parent cube1
+    RTinMatrix    1
+    RT
+		-0.000000	-0.070711	-0.997497	0
+		-0.124294	0.989762	-0.070163	0
+		0.992245	0.123983	-0.008789	0
+		0.000000	0.000000	0.000000	1.000000
+endsegment
+
+segment new_frame6
+    parent cube1
+    RTinMatrix    1
+    RT
+		0	1	0	0
+		0	0	1	0
+		1	0	0	0
+		0.000000	0.000000	0.000000	1.000000
+endsegment
+
+segment new_frame7
+    parent cube1
+    RTinMatrix    0
+    RT 0 pi/2 pi/2 xyz 0 0 0
+endsegment

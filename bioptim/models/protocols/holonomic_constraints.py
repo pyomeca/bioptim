@@ -4,7 +4,7 @@ This module contains holonomic constraint functions for biomechanical models.
 
 from typing import Any, Callable
 
-from casadi import MX, Function, jacobian, vertcat, trace, sqrt, DM
+from casadi import MX, Function, acos, fmax, fmin, if_else, jacobian, sin, sqrt, trace, vertcat
 
 from .biomodel import BioModel
 from ...misc.options import OptionDict
@@ -164,7 +164,6 @@ class HolonomicConstraintsFcn:
         frame_1_idx: int = 0,
         frame_2_idx: int = 1,
         local_frame_idx: int = None,
-        relative_rotation=DM.eye(3),
     ) -> tuple[Function, Function, Function]:
         """
         Generate holonomic constraint functions to align the orientation of two reference frames.
@@ -267,13 +266,7 @@ class HolonomicConstraintsFcn:
         # Symbolic variables
         q_sym = MX.sym("q", model.nb_q, 1)  # generalized coordinates
         q_dot_sym = MX.sym("q_dot", model.nb_qdot, 1)  # velocities
-        q_ddot_sym = MX.sym("q_ddot", model.nb_qdot, 1)  # accelerations
         parameters = model.parameters  # optional model parameters
-
-        # Homogeneous transformation matrices of the two frames
-        # Global homogeneous matrices (4×4) of the two frames
-        # T1_glob = model.homogeneous_matrices_in_global(segment_index=frame_1_idx)(q_sym, parameters)  # shape (4,4)
-        # T2_glob = model.homogeneous_matrices_in_global(segment_index=frame_2_idx)(q_sym, parameters)  # shape (4,4)
 
         # If a *local* reference frame is requested we first bring the two frames
         # into that local frame (identical to the logic used for the marker
@@ -295,11 +288,7 @@ class HolonomicConstraintsFcn:
             R2 = model.homogeneous_matrices_in_global(segment_index=frame_2_idx)(q_sym, parameters)[:3, :3]
 
         # Relative rotation: R_rel = R1ᵀ·R2    (frame‑1 → frame‑2)
-        R_rel = R1.T @ R2  # still a symbolic 3×3 matrix
-
-        # Error in relative rotation: R_rel - R_desired
-        # R_error = R_rel @ relative_rotation.T
-        R_error = relative_rotation.T @ R_rel
+        R_rel = R2.T @ R1  # still a symbolic 3×3 matrix
 
         # Minimal set of scalar constraints (3 equations)
         # The skew‑symmetric part of a proper rotation is zero when the angle is zero:
@@ -308,12 +297,12 @@ class HolonomicConstraintsFcn:
         #    S_21, S_31, S_32
         # (any consistent ordering works, we keep the same order used in the
         #  analytical derivation of the constraint in the OP.)
-        cos_theta = (trace(R_error) - 1) / 2
-        theta = sqrt(2 * (1 - cos_theta) + 1e-12)  # using the first-order expansion of arccos
+        # Assume small angle assumption is always valid
+        theta = sqrt(fmax(3 - trace(R_rel), 0) + 1e-12)  # using the first-order expansion of arccos
         theta_over_sintheta = (
             1 + theta**2 / 6 + 7 * theta**4 / 360 + 31 * theta**6 / 15120
         )  # using the Taylor expansion
-        S = theta_over_sintheta * (R_error - R_error.T) / 2.0  # still 3×3, skew‑symmetric
+        S = theta_over_sintheta * (R_rel - R_rel.T) / 2.0  # still 3×3, skew‑symmetric
 
         constraint = vertcat(S[2, 1], -S[2, 0], S[1, 0])  # r32 - r23  # r13 - r31  # r21 - r12
 
@@ -348,6 +337,120 @@ class HolonomicConstraintsFcn:
 
         return constraints_func, constraints_jacobian_func, bias_func
 
+    @staticmethod
+    def align_frames_generalized(
+        model,
+        frame_1_idx: int = 0,
+        frame_2_idx: int = 1,
+        local_frame_idx: int | None = None,
+    ) -> tuple[Function, Function, Function]:
+        """
+        This function creates the same alignment constraint as align_frames
+        but it implements both the regular case and the small angle case
+        it uses a smooth transition and switches to avoid singularities
+
+        In some instances this may be more stable and faster to converge
+        """
+        # Symbolic variables
+        q_sym = MX.sym("q", model.nb_q, 1)  # generalized coordinates
+        q_dot_sym = MX.sym("q_dot", model.nb_qdot, 1)  # velocities
+        parameters = model.parameters  # optional model parameters
+
+        # If a *local* reference frame is requested we first bring the two frames
+        # into that local frame (identical to the logic used for the marker
+        # constraint).
+        if local_frame_idx is not None:
+            # Get the rotation matrix of the local frame in the global frame
+            R_loc_glob = model.homogeneous_matrices_in_global(segment_index=local_frame_idx)(q_sym, parameters)[:3, :3]
+
+            # Get the rotation matrices of the two frames in the global frame
+            R1_glob = model.homogeneous_matrices_in_global(segment_index=frame_1_idx)(q_sym, parameters)[:3, :3]
+            R2_glob = model.homogeneous_matrices_in_global(segment_index=frame_2_idx)(q_sym, parameters)[:3, :3]
+
+            # Transform the rotation matrices into the local frame
+            R1 = R_loc_glob.T @ R1_glob
+            R2 = R_loc_glob.T @ R2_glob
+        else:
+            # If no local frame is specified, use the global frame
+            R1 = model.homogeneous_matrices_in_global(segment_index=frame_1_idx)(q_sym, parameters)[:3, :3]
+            R2 = model.homogeneous_matrices_in_global(segment_index=frame_2_idx)(q_sym, parameters)[:3, :3]
+
+        # Relative rotation: R_rel = R1ᵀ·R2    (frame‑1 → frame‑2)
+        R_rel = R1.T @ R2  # still a symbolic 3×3 matrix
+
+        # Minimal set of scalar constraints (3 equations)
+        # The skew‑symmetric part of a proper rotation is zero when the angle is zero:
+        #   S = (R_rel - R_relᵀ) / 2  →  S = 0   ⇔   ω = 0, θ = 0
+        # We vectorise the three independent components of S:
+        #    S_21, S_31, S_32
+        # (any consistent ordering works, we keep the same order used in the
+        #  analytical derivation of the constraint in the OP.)
+        cos_theta = (trace(R_rel) - 1) / 2
+
+        # Clip to the admissible interval to avoid acos‑NaN caused by rounding
+        cos_theta_clip = fmax(fmin(cos_theta, 1.0), -1.0)
+        theta = acos(cos_theta_clip)  # 0 ≤ θ ≤ π
+
+        # Scaling factor = θ / (2·sinθ) – robust for θ≈0 and θ≈π
+        smooth_transition = 1e-1  # tolerance for singular limits
+        transition_epsilon = 2e-2
+        hard_switch = (smooth_transition - transition_epsilon) / 2
+        is_small = theta < hard_switch
+
+        # regular case
+        sin_theta = sin(theta)
+        factor_regular = theta / sin_theta  # normal case
+
+        # small theta case
+        theta_small = sqrt(fmax(3 - trace(R_rel), 0) + 1e-12)  # using the first-order expansion of arccos
+        theta_over_sintheta_taylor = (
+            1 + theta_small**2 / 6 + 7 * theta_small**4 / 360 + 31 * theta_small**6 / 15120
+        )  # using the Taylor expansion
+
+        t = fmin(
+            fmax(0, (theta - (smooth_transition - transition_epsilon / 2)) / transition_epsilon), 1
+        )  # Shift and scale
+        s = t * t * (3 - 2 * t)  # Smoothstep
+        factor_smooth = (1 - s) * theta_over_sintheta_taylor + s * factor_regular
+
+        factor = if_else(is_small, theta_over_sintheta_taylor, factor_smooth)
+
+        S = factor * (R_rel - R_rel.T) / 2.0  # 3×3 MX (or dummy for π)
+
+        constraint = vertcat(S[2, 1], -S[2, 0], S[1, 0])  # r32 - r23  # r13 - r31  # r21 - r12
+
+        # Jacobian and second derivative (CasADi)
+        constraints_jacobian = jacobian(constraint, q_sym)
+
+        constraints_func = Function(
+            "align_frames_constraint",
+            [q_sym],
+            [constraint],
+            ["q"],
+            ["c_align"],
+        ).expand()
+
+        constraints_jacobian_func = Function(
+            "align_frames_jacobian",
+            [q_sym],
+            [constraints_jacobian],
+            ["q"],
+            ["J_align"],
+        ).expand()
+
+        bias_vector = compute_bias_vector(constraints_jacobian, q_sym, q_dot_sym)
+
+        bias_func = Function(
+            "bias_align_frames",
+            [q_sym, q_dot_sym],
+            [bias_vector],
+            ["q", "q_dot"],
+            ["bias_align_frames"],
+        ).expand()
+
+        return constraints_func, constraints_jacobian_func, bias_func
+
+    @staticmethod
     def rigid_contacts(
         model: BioModel = None,
     ) -> tuple[Function, Function, Function]:

@@ -416,6 +416,7 @@ class ObjectiveFcn:
         TRACK_SEGMENT_WITH_CUSTOM_RT = (PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt,)
         TRACK_SOFT_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_soft_contact_forces,)
         TRACK_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
+        TRACK_ALGEBRAIC_STATES = (PenaltyFunctionAbstract.Functions.minimize_algebraic_states,)
 
         @staticmethod
         def get_type() -> Callable:
@@ -455,6 +456,7 @@ class ObjectiveFcn:
         MINIMIZE_TIME = (ObjectiveFunction.MayerFunction.Functions.minimize_time,)
         PROPORTIONAL_STATE = (PenaltyFunctionAbstract.Functions.proportional_states,)
         MINIMIZE_ALGEBRAIC_STATE = (PenaltyFunctionAbstract.Functions.minimize_algebraic_states,)
+        TRACK_ALGEBRAIC_STATE = (PenaltyFunctionAbstract.Functions.minimize_algebraic_states,)
         SUPERIMPOSE_MARKERS = (PenaltyFunctionAbstract.Functions.superimpose_markers,)
         SUPERIMPOSE_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.superimpose_markers_velocity,)
         TRACK_MARKER_WITH_SEGMENT_AXIS = (PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis,)
