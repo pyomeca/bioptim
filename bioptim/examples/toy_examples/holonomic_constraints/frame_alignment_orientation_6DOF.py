@@ -34,8 +34,6 @@ from bioptim.examples.utils import ExampleUtils
 
 from .custom_dynamics import ModifiedHolonomicTorqueBiorbdModel, constraint_holonomic, constraint_holonomic_end
 
-n_shooting = 30
-
 
 def build_dummy_trajectory_for_the_driving_cube(n_shooting: int):
     # Define the three points (each is a 4D vector)
@@ -62,6 +60,7 @@ def prepare_ocp(
     interpolated_points: np.array = None,
     expand_dynamics: bool = False,
     ode_solver=OdeSolver.COLLOCATION(),
+    n_threads: int = 1,
 ):
 
     # Create a holonomic constraint to create a double pendulum from two single pendulums
@@ -120,9 +119,10 @@ def prepare_ocp(
     # Path bounds
     x_bounds = BoundsList()
     x_bounds["q_u"] = bio_model.bounds_from_ranges("q", mapping=u_variable_bimapping)
-    x_bounds["q_u"][:, 0] = 0  # Start pos
+    x_bounds["q_u"][:, 0] = 0  # Start and end positions
 
     x_bounds["qdot_u"] = bio_model.bounds_from_ranges("qdot", mapping=u_variable_bimapping)
+    # x_bounds["qdot_u"][:, [0, -1]] = 0  # Start and end without any velocity
 
     u_bounds = BoundsList()
     u_bounds["tau"] = [-100, -100, -100, -100, -100, -100, 0, 0, 0, 0, 0, 0], [
@@ -163,6 +163,7 @@ def prepare_ocp(
         a_init=a_init,
         objective_functions=objectives,
         constraints=constraints,
+        n_threads=n_threads,
     )
 
 
@@ -170,10 +171,16 @@ def main():
     model_folder = os.path.join(ExampleUtils.folder, "models")
     model_path = os.path.join(model_folder, "two_cubes_lagrange2D_6DOF.bioMod")
 
+    n_shooting = 10
+
     interpolated_points = build_dummy_trajectory_for_the_driving_cube(n_shooting)
 
     ocp = prepare_ocp(
-        biorbd_model_path=model_path, n_shooting=n_shooting, final_time=1.0, interpolated_points=interpolated_points
+        biorbd_model_path=model_path,
+        n_shooting=n_shooting,
+        final_time=1.0,
+        interpolated_points=interpolated_points,
+        n_threads=25,
     )
 
     solver = Solver.IPOPT()
