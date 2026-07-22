@@ -11,7 +11,7 @@ def create_ipopt_output_plot(ocp, interface):
     """
     This function creates the plots for the ipopt output: f, g, inf_pr, inf_du.
     """
-    ipopt_fig, axs = plt.subplots(3, 1, num="IPOPT output")
+    ipopt_fig, axs = plt.subplots(3, 1, num="IPOPT output", clear=True)
     axs[0].set_ylabel("f", fontweight="bold")
     axs[1].set_ylabel("inf_pr", fontweight="bold")
     axs[2].set_ylabel("inf_du", fontweight="bold")
