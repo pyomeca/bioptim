@@ -487,7 +487,7 @@ def test_phase_transition_uneven_variable_number_by_bounds(phase_dynamics):
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
-def test_phase_transition_uneven_variable_number_by_mapping(phase_dynamics):
+def test_phase_transition_uneven_variable_number_by_mapping(phase_dynamics, capsys):
     # Load phase_transition_uneven_variable_number_by_mapping
     from bioptim.examples.toy_examples.torque_driven_ocp import (
         phase_transition_uneven_variable_number_by_mapping as ocp_module,
@@ -507,6 +507,12 @@ def test_phase_transition_uneven_variable_number_by_mapping(phase_dynamics):
         expand_dynamics=True,
     )
     sol = ocp.solve()
+
+    # Regression test for #712: cost evaluation must use each phase's own state layout.
+    sol.print_cost()
+    printed_cost = capsys.readouterr().out
+    assert "PHASE 0" in printed_cost
+    assert "PHASE 1" in printed_cost
 
     # Check objective function value
     TestUtils.assert_objective_value(sol=sol, expected_value=-12397.11475053)
