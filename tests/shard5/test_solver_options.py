@@ -56,6 +56,12 @@ def test_ipopt_solver_options():
     assert solver.print_level == 5
     assert solver.c_compile is False
     assert solver.check_derivatives_for_naninf == "no"
+    assert solver.derivative_test == "none"
+    assert solver.derivative_test_first_index == -2
+    assert solver.derivative_test_perturbation == 1e-8
+    assert solver.derivative_test_tol == 1e-4
+    assert solver.derivative_test_print_all == "no"
+    assert solver.point_perturbation_radius == 10.0
 
     solver.set_linear_solver("ma57")
     assert solver.linear_solver == "ma57"
@@ -115,6 +121,18 @@ def test_ipopt_solver_options():
     assert solver.c_compile is True
     solver.set_check_derivatives_for_naninf(True)
     assert solver.check_derivatives_for_naninf == "yes"
+    solver.set_derivative_test("first-order")
+    assert solver.derivative_test == "first-order"
+    solver.set_derivative_test_first_index(3)
+    assert solver.derivative_test_first_index == 3
+    solver.set_derivative_test_perturbation(1e-7)
+    assert solver.derivative_test_perturbation == 1e-7
+    solver.set_derivative_test_tol(1e-3)
+    assert solver.derivative_test_tol == 1e-3
+    solver.set_derivative_test_print_all(True)
+    assert solver.derivative_test_print_all == "yes"
+    solver.set_point_perturbation_radius(2.5)
+    assert solver.point_perturbation_radius == 2.5
 
     solver.set_convergence_tolerance(21)
     assert solver.tol == 21

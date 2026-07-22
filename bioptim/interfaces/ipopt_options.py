@@ -116,6 +116,12 @@ class IPOPT(GenericSolver):
     _print_level: Int = 5
     _c_compile: Bool = False
     _check_derivatives_for_naninf: Str = "no"  # "yes"
+    _derivative_test: Str = "none"
+    _derivative_test_first_index: Int = -2
+    _derivative_test_perturbation: Float = 1e-8
+    _derivative_test_tol: Float = 1e-4
+    _derivative_test_print_all: Str = "no"
+    _point_perturbation_radius: Float = 10.0
 
     @property
     def tol(self) -> Float:
@@ -230,8 +236,32 @@ class IPOPT(GenericSolver):
         return self._c_compile
 
     @property
-    def check_derivatives_for_naninf(self) -> Bool:
+    def check_derivatives_for_naninf(self) -> Str:
         return self._check_derivatives_for_naninf
+
+    @property
+    def derivative_test(self) -> Str:
+        return self._derivative_test
+
+    @property
+    def derivative_test_first_index(self) -> Int:
+        return self._derivative_test_first_index
+
+    @property
+    def derivative_test_perturbation(self) -> Float:
+        return self._derivative_test_perturbation
+
+    @property
+    def derivative_test_tol(self) -> Float:
+        return self._derivative_test_tol
+
+    @property
+    def derivative_test_print_all(self) -> Str:
+        return self._derivative_test_print_all
+
+    @property
+    def point_perturbation_radius(self) -> Float:
+        return self._point_perturbation_radius
 
     def set_tol(self, val: Float) -> None:
         self._tol = val
@@ -320,6 +350,24 @@ class IPOPT(GenericSolver):
     def set_check_derivatives_for_naninf(self, val: Bool) -> None:
         string_val = "yes" if val else "no"
         self._check_derivatives_for_naninf = string_val
+
+    def set_derivative_test(self, val: Str) -> None:
+        self._derivative_test = val
+
+    def set_derivative_test_first_index(self, index: Int) -> None:
+        self._derivative_test_first_index = index
+
+    def set_derivative_test_perturbation(self, val: Float) -> None:
+        self._derivative_test_perturbation = val
+
+    def set_derivative_test_tol(self, val: Float) -> None:
+        self._derivative_test_tol = val
+
+    def set_derivative_test_print_all(self, val: Bool) -> None:
+        self._derivative_test_print_all = "yes" if val else "no"
+
+    def set_point_perturbation_radius(self, val: Float) -> None:
+        self._point_perturbation_radius = val
 
     def set_convergence_tolerance(self, val: Float) -> None:
         self._tol = val
