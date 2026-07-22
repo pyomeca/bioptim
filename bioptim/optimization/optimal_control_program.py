@@ -1415,7 +1415,7 @@ class OptimalControlProgram:
             self.set_warm_start(sol=warm_start)
 
         if self._is_warm_starting:
-            if solver.type in (SolverType.IPOPT, SolverType.MADNLP):
+            if solver.type == SolverType.IPOPT:
                 solver.set_warm_start_options(1e-10)
 
         self.ocp_solver.opts = solver

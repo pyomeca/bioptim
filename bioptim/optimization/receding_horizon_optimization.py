@@ -208,6 +208,16 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         if isinstance(failure_policy, str):
             failure_policy = RecedingHorizonFailurePolicy(failure_policy)
 
+        for key in self.nlp[0].x_bounds.keys():
+            if self.nlp[0].x_bounds[key].type not in (
+                InterpolationType.CONSTANT,
+                InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
+            ):
+                raise NotImplementedError(
+                    "The MHE is not implemented yet for x_bounds not being "
+                    "CONSTANT or CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT"
+                )
+
         sol = None
         states = []
         controls = []
@@ -1072,7 +1082,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             x_init.add(
                 key,
                 states[key],
-                interpolation=self.nlp[0].x_init.type,
+                interpolation=InterpolationType.EACH_FRAME,
                 phase=0,
             )
 
