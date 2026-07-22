@@ -6,7 +6,10 @@ import os
 from sys import platform
 
 
-def test_example_paths_are_preserved_when_flattening():
+def test_example_paths_are_preserved_when_flattening(monkeypatch):
+    if platform == "linux":
+        monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
     from bioptim.examples.__main__ import examples_, path, unnestedDict
 
     example_paths = unnestedDict(examples_["toy_examples/acados"], "toy_examples/acados")
