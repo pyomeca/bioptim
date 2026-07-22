@@ -3,7 +3,8 @@
 
 """
 Example: two cubes actuated by torques in all 3 directions, kept parallel by a holonomic
-constraint on their orientations (the “align_frames” constraint).
+constraint on their orientations (the "align_frames_small_angles" constraint).
+This example uses the constraint using only the small angle approximation.
 
 """
 
@@ -99,7 +100,7 @@ def prepare_ocp(
     holonomic_constraints = HolonomicConstraintsList()
     holonomic_constraints.add(
         "align_cubes",
-        HolonomicConstraintsFcn.align_frames,
+        HolonomicConstraintsFcn.align_frames_small_angles,
         frame_1_idx=1,  # segment index of the first cube
         frame_2_idx=2,  # segment index of the second cube
     )

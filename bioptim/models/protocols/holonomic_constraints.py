@@ -159,7 +159,7 @@ class HolonomicConstraintsFcn:
         return constraints_func, constraints_jacobian_func, bias_func
 
     @staticmethod
-    def align_frames(
+    def align_frames_small_angles(
         model: BioModel = None,
         frame_1_idx: int = 0,
         frame_2_idx: int = 1,
@@ -192,7 +192,8 @@ class HolonomicConstraintsFcn:
 
         This formulation:
             - Uses exactly 3 scalar equations (minimal representation)
-            - Avoids singularities at θ = 0 through Taylor expansion
+            - Avoids singularities at θ = 0 through Taylor expansion of order 6 of theta/sin(theta)
+        and theta using the first-order expansion of arccos such that arcos(3- trace(R)) ~ sqrt(3- trace(R)).
             - Is equivalent to the axis-angle formulation: Φ = (θ/sin(θ)) · ω̂
 
         Parameters
@@ -207,10 +208,6 @@ class HolonomicConstraintsFcn:
             If specified, both frames are first transformed into this local reference frame
             before computing the relative rotation. When None, the global (world) frame is used.
             This is useful for expressing alignment constraints relative to a moving reference.
-        relative_rotation : DM, default=DM.eye(3)
-            The desired 3×3 relative rotation matrix between the frames.
-            Default is identity, meaning frames should be perfectly aligned.
-            For non-identity values, the constraint enforces R₁ᵀ R₂ = relative_rotation.
 
         Returns
         -------
@@ -249,9 +246,11 @@ class HolonomicConstraintsFcn:
         -----
         The Taylor expansion used for θ/sin(θ) provides numerical stability near θ = 0:
             θ/sin(θ) ≈ 1 + θ²/6 + 7θ⁴/360 + 31θ⁶/15120
+        The Taylor expansion used for θ = acos(...) provides numerical stability near θ = 0:
+            θ ≈ √ (3 - trace(R_rel))
+            additionnally we guarantee that 3 - trace(R_rel) is positive through fmax and add a small ɛ̝ = 1e-12
 
-        This ensures the constraint remains well-conditioned even when the frames are
-        nearly aligned.
+        This ensures the constraint remains well-conditioned even when the frames are nearly aligned.
 
         See Also
         --------
@@ -261,16 +260,14 @@ class HolonomicConstraintsFcn:
         References
         ----------
         .. [1] Murray, R. M., Li, Z., & Sastry, S. S. (1994). A Mathematical Introduction
-               to Robotic Manipulation. CRC Press.
+                to Robotic Manipulation. CRC Press.
         """
         # Symbolic variables
         q_sym = MX.sym("q", model.nb_q, 1)  # generalized coordinates
         q_dot_sym = MX.sym("q_dot", model.nb_qdot, 1)  # velocities
         parameters = model.parameters  # optional model parameters
 
-        # If a *local* reference frame is requested we first bring the two frames
-        # into that local frame (identical to the logic used for the marker
-        # constraint).
+        # If a local reference frame is requested, first bring the two frames into that local frame
         if local_frame_idx is not None:
             # Get the rotation matrix of the local frame in the global frame
             R_loc_glob = model.homogeneous_matrices_in_global(segment_index=local_frame_idx)(q_sym, parameters)[:3, :3]
@@ -287,26 +284,17 @@ class HolonomicConstraintsFcn:
             R1 = model.homogeneous_matrices_in_global(segment_index=frame_1_idx)(q_sym, parameters)[:3, :3]
             R2 = model.homogeneous_matrices_in_global(segment_index=frame_2_idx)(q_sym, parameters)[:3, :3]
 
-        # Relative rotation: R_rel = R1ᵀ·R2    (frame‑1 → frame‑2)
+        # Relative rotation: R_rel = R2ᵀ·R1    (frame‑1 → frame‑2)
         R_rel = R2.T @ R1  # still a symbolic 3×3 matrix
 
-        # Minimal set of scalar constraints (3 equations)
-        # The skew‑symmetric part of a proper rotation is zero when the angle is zero:
-        #   S = (R_rel - R_relᵀ) / 2  →  S = 0   ⇔   ω = 0, θ = 0
-        # We vectorise the three independent components of S:
-        #    S_21, S_31, S_32
-        # (any consistent ordering works, we keep the same order used in the
-        #  analytical derivation of the constraint in the OP.)
-        # Assume small angle assumption is always valid
         theta = sqrt(fmax(3 - trace(R_rel), 0) + 1e-12)  # using the first-order expansion of arccos
         theta_over_sintheta = (
             1 + theta**2 / 6 + 7 * theta**4 / 360 + 31 * theta**6 / 15120
-        )  # using the Taylor expansion
-        S = theta_over_sintheta * (R_rel - R_rel.T) / 2.0  # still 3×3, skew‑symmetric
+        )  # using the 6th order Taylor expansion
+        S = theta_over_sintheta * (R_rel - R_rel.T) / 2.0
 
         constraint = vertcat(S[2, 1], -S[2, 0], S[1, 0])  # r32 - r23  # r13 - r31  # r21 - r12
 
-        # Jacobian and second derivative (CasADi)
         constraints_jacobian = jacobian(constraint, q_sym)
 
         constraints_func = Function(
@@ -338,27 +326,118 @@ class HolonomicConstraintsFcn:
         return constraints_func, constraints_jacobian_func, bias_func
 
     @staticmethod
-    def align_frames_generalized(
+    def align_frames_orientation(
         model,
         frame_1_idx: int = 0,
         frame_2_idx: int = 1,
         local_frame_idx: int | None = None,
     ) -> tuple[Function, Function, Function]:
         """
-        This function creates the same alignment constraint as align_frames
-        but it implements both the regular case and the small angle case
-        it uses a smooth transition and switches to avoid singularities
+        Generate holonomic constraint functions to align the orientation of two reference frames.
 
-        In some instances this may be more stable and faster to converge
+        This constraint enforces that two body-fixed frames maintain a specified relative orientation,
+        creating a 3-DOF holonomic constraint on the system's configuration.
+
+        Mathematical Formulation
+        ------------------------
+        The constraint enforces:
+            R₁ᵀ R₂ = R_desired
+
+        where R₁ and R₂ are the rotation matrices of frames 1 and 2, and R_desired is the
+        desired relative rotation (identity by default).
+
+        The constraint is formulated using the axis-angle representation of the rotation error.
+        For a relative rotation R_rel = R_desired^T (R₁ᵀ R₂), we extract the three independent
+        components of the skew-symmetric part:
+
+            S = (R_rel - R_rel^T) / 2
+
+        When the frames are aligned (θ = 0), S = 0. The constraint vector consists of the
+        three independent components of S:
+
+            Φ(q) = [S₃₂, -S₃₁, S₂₁]^T = 0
+
+        This formulation:
+            - Uses exactly 3 scalar equations (minimal representation)
+            - Avoids singularities at θ = 0 through Taylor expansion of order 6 of theta/sin(theta)
+        and theta using the first-order expansion of arccos such that arcos(3- trace(R)) ~ sqrt(3- trace(R)).
+            - Is equivalent to the axis-angle formulation: Φ = (θ/sin(θ)) · ω̂
+
+        Parameters
+        ----------
+        model : BioModel
+            The biomechanical model containing the kinematic tree.
+        frame_1_idx : int, default=0
+            Index of the first segment/frame in the model.
+        frame_2_idx : int, default=1
+            Index of the second segment/frame whose orientation will be aligned with frame_1.
+        local_frame_idx : int, optional
+            If specified, both frames are first transformed into this local reference frame
+            before computing the relative rotation. When None, the global (world) frame is used.
+            This is useful for expressing alignment constraints relative to a moving reference.
+
+        Returns
+        -------
+        tuple[Function, Function, Function]
+            A tuple containing three CasADi Functions:
+                - constraints_func: Φ(q) → constraint values (3 × 1)
+                - constraints_jacobian_func: ∂Φ/∂q → constraint Jacobian (3 × n)
+                - bias_func: (q, q̇) → J̇q̇ → bias/acceleration term (3 × 1)
+
+            where n is the number of generalized coordinates.
+
+        Examples
+        --------
+        Align two segments in the global frame:
+        >>> constraint = HolonomicConstraintsFcn.align_frames(
+        ...     model=my_model,
+        ...     frame_1_idx=2,  # pelvis
+        ...     frame_2_idx=5   # torso
+        ... )
+
+        Align with a 90-degree rotation about z-axis:
+        >>> import numpy as np
+        >>> R_z_90 = DM([
+        ...     [0, -1, 0],
+        ...     [1,  0, 0],
+        ...     [0,  0, 1]
+        ... ])
+        >>> constraint = HolonomicConstraintsFcn.align_frames(
+        ...     model=my_model,
+        ...     frame_1_idx=2,
+        ...     frame_2_idx=5,
+        ...     relative_rotation=R_z_90
+        ... )
+
+        Notes
+        -----
+        The Taylor expansion used for θ/sin(θ) provides numerical stability near θ = 0:
+            θ/sin(θ) ≈ 1 + θ²/6 + 7θ⁴/360 + 31θ⁶/15120
+        The Taylor expansion used for θ = acos(...) provides numerical stability near θ = 0:
+            θ ≈ √ (3 - trace(R_rel))
+            additionnally we guarantee that 3 - trace(R_rel) is positive through fmax and add a small ɛ̝ = 1e-12
+
+        This ensures the constraint remains well-conditioned even when the frames are nearly aligned.
+
+        This function implements a smooth transition between the normal formulation and the small angle formulation.
+        This requires switching between different cases with if_else to avoid evaluationg functions where they are not defined.
+
+        See Also
+        --------
+        superimpose_markers : Constraint to superimpose marker positions
+        compute_bias_vector : Computes the bias term J̇q̇
+
+        References
+        ----------
+        .. [1] Murray, R. M., Li, Z., & Sastry, S. S. (1994). A Mathematical Introduction
+                to Robotic Manipulation. CRC Press.
         """
         # Symbolic variables
         q_sym = MX.sym("q", model.nb_q, 1)  # generalized coordinates
         q_dot_sym = MX.sym("q_dot", model.nb_qdot, 1)  # velocities
         parameters = model.parameters  # optional model parameters
 
-        # If a *local* reference frame is requested we first bring the two frames
-        # into that local frame (identical to the logic used for the marker
-        # constraint).
+        # If a local reference frame is requested, first bring the two frames into that local frame
         if local_frame_idx is not None:
             # Get the rotation matrix of the local frame in the global frame
             R_loc_glob = model.homogeneous_matrices_in_global(segment_index=local_frame_idx)(q_sym, parameters)[:3, :3]
@@ -375,16 +454,9 @@ class HolonomicConstraintsFcn:
             R1 = model.homogeneous_matrices_in_global(segment_index=frame_1_idx)(q_sym, parameters)[:3, :3]
             R2 = model.homogeneous_matrices_in_global(segment_index=frame_2_idx)(q_sym, parameters)[:3, :3]
 
-        # Relative rotation: R_rel = R1ᵀ·R2    (frame‑1 → frame‑2)
-        R_rel = R1.T @ R2  # still a symbolic 3×3 matrix
+        # Relative rotation: R_rel = R2ᵀ·R1    (frame‑1 → frame‑2)
+        R_rel = R2.T @ R1  # still a symbolic 3×3 matrix
 
-        # Minimal set of scalar constraints (3 equations)
-        # The skew‑symmetric part of a proper rotation is zero when the angle is zero:
-        #   S = (R_rel - R_relᵀ) / 2  →  S = 0   ⇔   ω = 0, θ = 0
-        # We vectorise the three independent components of S:
-        #    S_21, S_31, S_32
-        # (any consistent ordering works, we keep the same order used in the
-        #  analytical derivation of the constraint in the OP.)
         cos_theta = (trace(R_rel) - 1) / 2
 
         # Clip to the admissible interval to avoid acos‑NaN caused by rounding
@@ -410,7 +482,7 @@ class HolonomicConstraintsFcn:
         t = fmin(
             fmax(0, (theta - (smooth_transition - transition_epsilon / 2)) / transition_epsilon), 1
         )  # Shift and scale
-        s = t * t * (3 - 2 * t)  # Smoothstep
+        s = t * t * (3 - 2 * t)  # Smoothstep in [0,1]
         factor_smooth = (1 - s) * theta_over_sintheta_taylor + s * factor_regular
 
         factor = if_else(is_small, theta_over_sintheta_taylor, factor_smooth)
@@ -419,7 +491,6 @@ class HolonomicConstraintsFcn:
 
         constraint = vertcat(S[2, 1], -S[2, 0], S[1, 0])  # r32 - r23  # r13 - r31  # r21 - r12
 
-        # Jacobian and second derivative (CasADi)
         constraints_jacobian = jacobian(constraint, q_sym)
 
         constraints_func = Function(

@@ -2,8 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """
-Example: two cubes actuated by torques in all 3 directions, kept parallel by a holonomic
-constraint on their orientations (the “align_frames_generalized” constraint).
+Example: two cubes actuated by torques and forces along 6 DoF, kept parallel by a holonomic
+constraint on their orientations (the "align_frames_generalized" constraint).
+This example uses the constraint using the true formulation and the small angle approximation.
+It also demonstrates how the user can align the orientation according to different frames in the model.
 
 """
 
@@ -34,27 +36,30 @@ from .custom_dynamics import ModifiedHolonomicTorqueBiorbdModel, constraint_holo
 
 n_shooting = 30
 
-# Define the three points (each is a 4D vector)
-point1 = np.array([0]).T
-point2 = np.array([1]).T
-point3 = np.array([0]).T
-# Generate interpolation points (0 to 2)
-t = np.linspace(0, 2, n_shooting)
 
-# Interpolate between point1 and point2 (first half)
-interp1 = point1 + t[: n_shooting // 2, np.newaxis] * (point2 - point1)
+def build_dummy_trajectory_for_the_driving_cube(n_shooting: int):
+    # Define the three points (each is a 4D vector)
+    point1 = np.array([0]).T
+    point2 = np.array([1]).T  #
+    point3 = np.array([0]).T
+    # Generate interpolation points (0 to 2)
+    t = np.linspace(0, 2, n_shooting)
 
-# Interpolate between point2 and point3 (second half)
-interp2 = point2 + t[: n_shooting // 2, np.newaxis] * (point3 - point2)
+    # Interpolate between point1 and point2 (first half)
+    interp1 = point1 + t[: n_shooting // 2, np.newaxis] * (point2 - point1)
 
-# Combine the two interpolations
-interpolated_points = np.vstack((interp1, interp2))
+    # Interpolate between point2 and point3 (second half)
+    interp2 = point2 + t[: n_shooting // 2, np.newaxis] * (point3 - point2)
+
+    # Combine the two interpolations
+    return np.vstack((interp1, interp2))
 
 
 def prepare_ocp(
     biorbd_model_path: str,
     n_shooting: int = 30,
     final_time: float = 1.0,
+    interpolated_points: np.array = None,
     expand_dynamics: bool = False,
     ode_solver=OdeSolver.COLLOCATION(),
 ):
@@ -62,7 +67,7 @@ def prepare_ocp(
     # Create a holonomic constraint to create a double pendulum from two single pendulums
     holonomic_constraints = HolonomicConstraintsList()
     holonomic_constraints.add(
-        "holonomic_constraints",
+        "translation_constraint",
         HolonomicConstraintsFcn.superimpose_markers,
         marker_1="cube0_1",
         marker_2="cube1_1",
@@ -71,10 +76,10 @@ def prepare_ocp(
     )
 
     holonomic_constraints.add(
-        "align_cubes",
-        HolonomicConstraintsFcn.align_frames_generalized,
+        "orientation_constraint",
+        HolonomicConstraintsFcn.align_frames_orientation,
         frame_1_idx=1,
-        frame_2_idx=9,
+        frame_2_idx=2,  # The user can changethe frame to align to here
     )
 
     independant_joints = [0, 1, 2, 3, 4, 5]
@@ -147,7 +152,7 @@ def prepare_ocp(
     constraints.add(constraint_holonomic, node=Node.ALL_SHOOTING)
     constraints.add(constraint_holonomic_end, node=Node.END)
 
-    ocp = OptimalControlProgram(
+    return OptimalControlProgram(
         bio_model,
         n_shooting,
         final_time,
@@ -159,14 +164,17 @@ def prepare_ocp(
         objective_functions=objectives,
         constraints=constraints,
     )
-    return ocp, bio_model
 
 
 def main():
     model_folder = os.path.join(ExampleUtils.folder, "models")
     model_path = os.path.join(model_folder, "two_cubes_lagrange2D_6DOF.bioMod")
 
-    ocp, bio_model = prepare_ocp(biorbd_model_path=model_path, n_shooting=n_shooting, final_time=1.0)
+    interpolated_points = build_dummy_trajectory_for_the_driving_cube(n_shooting)
+
+    ocp = prepare_ocp(
+        biorbd_model_path=model_path, n_shooting=n_shooting, final_time=1.0, interpolated_points=interpolated_points
+    )
 
     solver = Solver.IPOPT()
     sol = ocp.solve(solver)
