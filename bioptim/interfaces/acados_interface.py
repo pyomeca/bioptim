@@ -1,5 +1,6 @@
 from time import perf_counter
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 import numpy as np
 from scipy import linalg
@@ -13,13 +14,15 @@ from ..limits.objective_functions import ObjectiveFunction, ObjectiveFcn
 from ..limits.path_conditions import Bounds
 from ..misc.enums import InterpolationType
 
+if TYPE_CHECKING:
+    from ..optimization.solution.solution import Solution
+
 
 from ..misc.parameters_types import (
     Str,
     Bool,
     AnyListorDict,
 )
-
 
 ACADOS_STATUS_LABELS = {
     0: "success",
@@ -955,20 +958,62 @@ class AcadosInterface(SolverInterface):
             except Exception:
                 # The available statistics depend on the acados_template version and solver configuration.
                 continue
+        diagnostics["iterates"] = self.get_iterates()
         return diagnostics
 
     def get_iterates(self) -> list[dict]:
-        """Return the current primal Acados iterate without exposing acados_template internals."""
+        """Return the current Acados iterate without exposing acados_template internals."""
 
         if self.ocp_solver is None:
             raise RuntimeError("Acados must be solved before its iterates can be retrieved")
-        return [
-            {
-                "x": np.asarray(self.ocp_solver.get(node, "x")).copy(),
-                "u": (np.asarray(self.ocp_solver.get(node, "u")).copy() if node < self.acados_ocp.dims.N else None),
-            }
-            for node in range(self.acados_ocp.dims.N + 1)
-        ]
+        iterates = []
+        for node in range(self.acados_ocp.dims.N + 1):
+            iterate = {"x": np.asarray(self.ocp_solver.get(node, "x")).copy()}
+            for field in ("u", "z", "pi", "lam", "sl", "su"):
+                if field in ("u", "pi") and node == self.acados_ocp.dims.N:
+                    iterate[field] = None
+                    continue
+                try:
+                    iterate[field] = np.asarray(self.ocp_solver.get(node, field)).copy()
+                except Exception:
+                    iterate[field] = None
+            iterates.append(iterate)
+        return iterates
+
+    def set_iterates(self, iterates: list[dict], include_multipliers: bool = False) -> None:
+        """Initialize Acados from compatible iterates.
+
+        Primal fields (``x``, ``u`` and ``z``) are always transferred. Multipliers (``pi``, ``lam``, ``sl`` and
+        ``su``) are transferred only when explicitly requested; their dimensions must already match the Acados OCP.
+        """
+
+        if self.ocp_solver is None:
+            raise RuntimeError("The Acados solver must be created before its iterates can be initialized")
+        if len(iterates) != self.acados_ocp.dims.N + 1:
+            raise ValueError(f"Expected {self.acados_ocp.dims.N + 1} Acados nodes, got {len(iterates)}")
+
+        primal_fields = ("x", "u", "z")
+        multiplier_fields = ("pi", "lam", "sl", "su") if include_multipliers else ()
+        for node, iterate in enumerate(iterates):
+            for field in primal_fields + multiplier_fields:
+                value = iterate.get(field)
+                if value is None:
+                    continue
+                if field in ("u", "pi") and node == self.acados_ocp.dims.N:
+                    raise ValueError(f"Acados field '{field}' is not defined at the terminal node")
+                self.ocp_solver.set(node, field, np.asarray(value))
+
+    def set_lagrange_multiplier(self, sol: "Solution") -> None:
+        """Transfer Acados multipliers only from a compatible Acados iterate."""
+
+        diagnostics = getattr(sol, "solver_diagnostics", None) or {}
+        iterates = diagnostics.get("iterates")
+        if iterates is None:
+            raise ValueError(
+                "IPOPT/NLP multipliers cannot be converted generically to Acados QP multipliers. "
+                "Use a primal-only warm start, or provide compatible Acados iterates."
+            )
+        self.set_iterates(iterates, include_multipliers=True)
 
     def solve(self, expand_during_shake_tree: Bool = False) -> AnyListorDict:
         """

@@ -38,6 +38,9 @@ def test_failed_window_is_reported_and_not_exported(monkeypatch):
 
 
 class _FakeAcadosSolver:
+    def __init__(self):
+        self.set_calls = []
+
     def get_stats(self, name):
         if name == "unavailable":
             raise RuntimeError
@@ -50,6 +53,9 @@ class _FakeAcadosSolver:
 
     def get(self, node, field):
         return np.array([node]) if field == "x" else np.array([-node])
+
+    def set(self, node, field, value):
+        self.set_calls.append((node, field, np.asarray(value)))
 
 
 def test_acados_diagnostics_and_iterates_are_public():
@@ -72,3 +78,28 @@ def test_acados_diagnostics_and_iterates_are_public():
     assert len(iterates) == 3
     np.testing.assert_array_equal(iterates[1]["u"], [-1])
     assert iterates[-1]["u"] is None
+
+    interface.set_iterates(iterates, include_multipliers=False)
+    assert not any(field in ("pi", "lam", "sl", "su") for _, field, _ in interface.ocp_solver.set_calls)
+
+
+def test_acados_multiplier_transfer_requires_explicit_opt_in():
+    pytest.importorskip("acados_template")
+    from bioptim.interfaces.acados_interface import AcadosInterface
+
+    interface = object.__new__(AcadosInterface)
+    interface.status = 0
+    interface.real_time_to_optimize = 0.03
+    interface.ocp_solver = _FakeAcadosSolver()
+    interface.acados_ocp = SimpleNamespace(dims=SimpleNamespace(N=1))
+    iterates = interface.get_iterates()
+
+    interface.set_iterates(iterates)
+    primal_fields = [field for _, field, _ in interface.ocp_solver.set_calls]
+    assert "x" in primal_fields and "u" in primal_fields
+    assert "pi" not in primal_fields and "lam" not in primal_fields
+
+    interface.ocp_solver.set_calls.clear()
+    interface.set_iterates(iterates, include_multipliers=True)
+    dual_fields = [field for _, field, _ in interface.ocp_solver.set_calls]
+    assert "pi" in dual_fields and "lam" in dual_fields
