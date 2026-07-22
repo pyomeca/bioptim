@@ -3,7 +3,6 @@ import pickle
 import numpy as np
 from casadi import jacobian, gradient, sum1, Function
 from matplotlib import pyplot as plt
-from matplotlib.cm import get_cmap
 
 from ..misc.parameters_types import Str, Int
 
@@ -18,7 +17,7 @@ def create_ipopt_output_plot(ocp, interface):
     axs[2].set_ylabel("inf_du", fontweight="bold")
 
     plots = []
-    colors = get_cmap("viridis")
+    colors = plt.get_cmap("viridis")
     for i in range(3):
         plot = axs[i].plot([0], [1], linestyle="-", marker=".", color="k")
         plots.append(plot[0])
