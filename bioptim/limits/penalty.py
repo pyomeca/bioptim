@@ -82,7 +82,7 @@ class PenaltyFunctionAbstract:
                 penalty.add_target_to_plot(controller=controller, combine_to=f"{key}_states")
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
 
-            # TODO: We should scale the target here!
+            # States exposed by the controller are already unscaled, so targets are expressed in physical units.
             return controller.states[key].cx_start
 
         @staticmethod
@@ -109,7 +109,7 @@ class PenaltyFunctionAbstract:
                 penalty.add_target_to_plot(controller=controller, combine_to=f"{key}_controls")
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
 
-            # TODO: We should scale the target here!
+            # Controls exposed by the controller are already unscaled, so targets are expressed in physical units.
             return controller.controls[key].cx_start
 
         @staticmethod
@@ -1355,7 +1355,16 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
 
-            return controller.parameters.cx if key is None or key == "all" else controller.parameters[key].cx
+            if key is None or key == "all":
+                return vertcat(
+                    *(
+                        controller.parameters[parameter_key].cx
+                        * controller.parameters[parameter_key].scaling.scaling
+                        for parameter_key in controller.parameters.keys()
+                    )
+                )
+
+            return controller.parameters[key].cx * controller.parameters[key].scaling.scaling
 
     @staticmethod
     def add(ocp, nlp):
