@@ -246,6 +246,8 @@ from .optimization.receding_horizon_optimization import (
     CyclicNonlinearModelPredictiveControl,
     CyclicMovingHorizonEstimator,
     MultiCyclicNonlinearModelPredictiveControl,
+    RecedingHorizonFailurePolicy,
+    RecedingHorizonWindowResult,
 )
 from .optimization.receding_horizon_optimization import MovingHorizonEstimator, NonlinearModelPredictiveControl
 from .optimization.solution.solution import Solution
