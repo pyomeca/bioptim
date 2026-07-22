@@ -122,7 +122,6 @@ def prepare_ocp(
     x_bounds["q_u"][:, 0] = 0  # Start and end positions
 
     x_bounds["qdot_u"] = bio_model.bounds_from_ranges("qdot", mapping=u_variable_bimapping)
-    # x_bounds["qdot_u"][:, [0, -1]] = 0  # Start and end without any velocity
 
     u_bounds = BoundsList()
     u_bounds["tau"] = [-100, -100, -100, -100, -100, -100, 0, 0, 0, 0, 0, 0], [
