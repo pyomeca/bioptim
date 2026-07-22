@@ -92,10 +92,14 @@ class IPOPT(GenericSolver):
     _constr_viol_tol: Float = 0.0001
     _compl_inf_tol: Float = 0.0001
     _acceptable_tol: Float = 1e-6
+    _acceptable_iter: Int = 15
+    _acceptable_obj_change_tol: Float = 1e20
     _acceptable_dual_inf_tol: Float = 1e10
     _acceptable_constr_viol_tol: Float = 1e-2
     _acceptable_compl_inf_tol: Float = 1e-2
     _max_iter: Int = 1000
+    _max_wall_time: Float = 1e20
+    _max_cpu_time: Float = 1e20
     _hessian_approximation: Str = "exact"  # "exact", "limited-memory"
     _nlp_scaling_method: Str = "gradient-based"  # "none"
     _limited_memory_max_history: Int = 50
@@ -134,6 +138,14 @@ class IPOPT(GenericSolver):
         return self._acceptable_tol
 
     @property
+    def acceptable_iter(self) -> Int:
+        return self._acceptable_iter
+
+    @property
+    def acceptable_obj_change_tol(self) -> Float:
+        return self._acceptable_obj_change_tol
+
+    @property
     def acceptable_dual_inf_tol(self) -> Float:
         return self._acceptable_dual_inf_tol
 
@@ -148,6 +160,14 @@ class IPOPT(GenericSolver):
     @property
     def max_iter(self) -> Int:
         return self._max_iter
+
+    @property
+    def max_wall_time(self) -> Float:
+        return self._max_wall_time
+
+    @property
+    def max_cpu_time(self) -> Float:
+        return self._max_cpu_time
 
     @property
     def hessian_approximation(self) -> Str:
@@ -228,6 +248,12 @@ class IPOPT(GenericSolver):
     def set_acceptable_tol(self, val: Float) -> None:
         self._acceptable_tol = val
 
+    def set_acceptable_iter(self, num: Int) -> None:
+        self._acceptable_iter = num
+
+    def set_acceptable_obj_change_tol(self, val: Float) -> None:
+        self._acceptable_obj_change_tol = val
+
     def set_acceptable_dual_inf_tol(self, val: Float) -> None:
         self._acceptable_dual_inf_tol = val
 
@@ -239,6 +265,12 @@ class IPOPT(GenericSolver):
 
     def set_maximum_iterations(self, num: Int) -> None:
         self._max_iter = num
+
+    def set_maximum_wall_time(self, val: Float) -> None:
+        self._max_wall_time = val
+
+    def set_maximum_cpu_time(self, val: Float) -> None:
+        self._max_cpu_time = val
 
     def set_hessian_approximation(self, val: Str) -> None:
         self._hessian_approximation = val
