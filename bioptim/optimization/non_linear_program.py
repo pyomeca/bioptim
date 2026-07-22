@@ -304,6 +304,9 @@ class NonLinearProgram:
         self, x_init: InitialGuessList | None, u_init: InitialGuessList | None, a_init: InitialGuessList | None
     ) -> None:
 
+        if u_init is not None and u_init.type == InterpolationType.ALL_POINTS:
+            raise ValueError("InterpolationType.ALL_POINTS cannot be used for control initial guesses")
+
         if x_init is not None or a_init is not None:
             not_direct_collocation = not self.dynamics_type.ode_solver.is_direct_collocation
             x_init_all_point = x_init.type == InterpolationType.ALL_POINTS if x_init is not None else False
