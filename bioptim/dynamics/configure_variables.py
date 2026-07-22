@@ -1204,16 +1204,23 @@ class ConfigureVariables:
 
         time_span_sym = vertcat(nlp.time_cx, nlp.dt)
 
+        sym_qv = (
+            nlp.controls.scaled.cx
+            if nlp.control_type == ControlType.CONSTANT
+            else nlp.cx.sym("new_control", nlp.controls.scaled.cx.shape[0], 2)
+        )
+        qv_init_w_algebraic = (
+            nlp.algebraic_states["q_v"].cx
+            if "q_v" in nlp.algebraic_states.keys()
+            else DM.zeros(nlp.model.nb_dependent_joints, 1)
+        )
+
         q_v_plot_function = Function(
             "qv_function",
             [
                 time_span_sym,
                 nlp.states.scaled.cx,
-                (
-                    nlp.controls.scaled.cx
-                    if nlp.control_type == ControlType.CONSTANT
-                    else nlp.cx.sym("new_control", nlp.controls.scaled.cx.shape[0], 2)
-                ),
+                sym_qv,
                 nlp.parameters.scaled.cx,
                 nlp.algebraic_states.scaled.cx,
                 nlp.numerical_timeseries.cx,
@@ -1221,11 +1228,7 @@ class ConfigureVariables:
             [
                 nlp.model.compute_q_v()(
                     nlp.states["q_u"].cx,
-                    (
-                        nlp.algebraic_states["q_v"].cx
-                        if "q_v" in nlp.algebraic_states.keys()
-                        else DM.zeros(nlp.model.nb_dependent_joints, 1)
-                    ),
+                    qv_init_w_algebraic,
                 )
             ],
             ["t_span", "x", "u", "p", "a", "d"],
@@ -1269,16 +1272,24 @@ class ConfigureVariables:
         """
 
         time_span_sym = vertcat(nlp.time_cx, nlp.dt)
+
+        sym_qv = (
+            nlp.controls.scaled.cx
+            if nlp.control_type == ControlType.CONSTANT
+            else nlp.cx.sym("new_control", nlp.controls.scaled.cx.shape[0], 2)
+        )
+        qv_init_w_algebraic = (
+            nlp.algebraic_states["q_v"].cx
+            if "q_v" in nlp.algebraic_states.keys()
+            else DM.zeros(nlp.model.nb_dependent_joints, 1)
+        )
+
         qdot_v_plot_function = Function(
             "qdot_v_function",
             [
                 time_span_sym,
                 nlp.states.scaled.cx,
-                (
-                    nlp.controls.scaled.cx
-                    if nlp.control_type == ControlType.CONSTANT
-                    else nlp.cx.sym("new_control", nlp.controls.scaled.cx.shape[0], 2)
-                ),
+                sym_qv,
                 nlp.parameters.scaled.cx,
                 nlp.algebraic_states.scaled.cx,
                 nlp.numerical_timeseries.cx,
@@ -1287,11 +1298,7 @@ class ConfigureVariables:
                 nlp.model._compute_qdot_v()(
                     nlp.states.scaled["q_u"].cx,
                     nlp.states.scaled["qdot_u"].cx,
-                    (
-                        nlp.algebraic_states["q_v"].cx
-                        if "q_v" in nlp.algebraic_states.keys()
-                        else DM.zeros(nlp.model.nb_dependent_joints, 1)
-                    ),
+                    qv_init_w_algebraic,
                 )
             ],
             ["t_span", "x", "u", "p", "a", "d"],
@@ -1334,67 +1341,44 @@ class ConfigureVariables:
             A reference to the phase
         """
 
-        if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-            new_control = nlp.cx.sym("new_control", nlp.controls.scaled.cx.shape[0], 2)
-
         time_span_sym = vertcat(nlp.time_cx, nlp.dt)
 
-        if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-            new_control = nlp.cx.sym("new_control", nlp.controls.scaled.cx.shape[0], 2)
+        sym_qv = (
+            nlp.controls.scaled.cx
+            if nlp.control_type == ControlType.CONSTANT
+            else nlp.cx.sym("new_control", nlp.controls.scaled.cx.shape[0], 2)
+        )
+        ctrl_cx = sym_qv[:, 1] if nlp.control_type == ControlType.LINEAR_CONTINUOUS else nlp.controls.scaled.cx
+        qv_init_w_algebraic = (
+            nlp.algebraic_states["q_v"].cx
+            if "q_v" in nlp.algebraic_states.keys()
+            else DM.zeros(nlp.model.nb_dependent_joints, 1)
+        )
 
-            lagrange_multipliers_plot_function = Function(
-                "lagrange_multipliers_function",
-                [
-                    time_span_sym,
-                    nlp.states.scaled.cx,
-                    new_control,
-                    nlp.parameters.scaled.cx,
-                    nlp.algebraic_states.scaled.cx,
-                    nlp.numerical_timeseries.cx,
-                ],
-                [
-                    nlp.model.compute_the_lagrangian_multipliers()(
-                        nlp.states.scaled["q_u"].cx,
-                        nlp.states.scaled["qdot_u"].cx,
-                        (
-                            nlp.algebraic_states["q_v"].cx
-                            if "q_v" in nlp.algebraic_states.keys()
-                            else DM.zeros(nlp.model.nb_dependent_joints, 1)
-                        ),
-                        DynamicsFunctions.get(nlp.controls["tau"], new_control[:, 1]),
-                        # ),
-                    )
-                ],
-                ["t_span", "x", "u", "p", "a", "d"],
-                ["lagrange_multipliers"],
-            )
-
-        else:
-            lagrange_multipliers_plot_function = Function(
-                "lagrange_multipliers_function",
-                [
-                    time_span_sym,
-                    nlp.states.scaled.cx,
-                    nlp.controls.scaled.cx,
-                    nlp.parameters.scaled.cx,
-                    nlp.algebraic_states.scaled.cx,
-                    nlp.numerical_timeseries.cx,
-                ],
-                [
-                    nlp.model.compute_the_lagrangian_multipliers()(
-                        nlp.states.scaled["q_u"].cx,
-                        nlp.states.scaled["qdot_u"].cx,
-                        (
-                            nlp.algebraic_states["q_v"].cx
-                            if "q_v" in nlp.algebraic_states.keys()
-                            else DM.zeros(nlp.model.nb_dependent_joints, 1)
-                        ),
-                        DynamicsFunctions.get(nlp.controls["tau"], nlp.controls.scaled.cx),
+        lagrange_multipliers_plot_function = Function(
+            "lagrange_multipliers_function",
+            [
+                time_span_sym,
+                nlp.states.scaled.cx,
+                sym_qv,
+                nlp.parameters.scaled.cx,
+                nlp.algebraic_states.scaled.cx,
+                nlp.numerical_timeseries.cx,
+            ],
+            [
+                nlp.model.compute_the_lagrangian_multipliers()(
+                    nlp.states.scaled["q_u"].cx,
+                    nlp.states.scaled["qdot_u"].cx,
+                    qv_init_w_algebraic,
+                    DynamicsFunctions.get(
+                        nlp.controls["tau"],
+                        ctrl_cx,
                     ),
-                ],
-                ["t_span", "x", "u", "p", "a", "d"],
-                ["lagrange_multipliers"],
-            )
+                )
+            ],
+            ["t_span", "x", "u", "p", "a", "d"],
+            ["lagrange_multipliers"],
+        )
 
         all_multipliers_names = []
         for nlp_i in ocp.nlp:
