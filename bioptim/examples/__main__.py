@@ -490,14 +490,14 @@ class PythonHighlighter(QSyntaxHighlighter):
             self.setFormat(start, length, style)
 
 
-def unnestedDict(exDict):
-    """Converts a dict-of-dicts to a singly nested dict for non-recursive parsing"""
+def unnestedDict(exDict, root_dir=""):
+    """Convert an example tree to a title-to-relative-path dictionary."""
     out = {}
     for kk, vv in exDict.items():
         if isinstance(vv, dict):
-            out.update(unnestedDict(vv))
+            out.update(unnestedDict(vv, os.path.join(root_dir, kk)))
         else:
-            out[kk] = vv
+            out[kk] = os.path.join(root_dir, vv)
     return out
 
 
@@ -575,19 +575,15 @@ class ExampleLoader(QtWidgets.QMainWindow):
         self.hl.setDocument(self.ui.codeView.document())
         text = text.lower()
         titles = []
-        for key, val in examples_.items():
-            if isinstance(val, OrderedDict):
-                root_dir = key
-                checkDict = unnestedDict(val)
-                for kk, vv in checkDict.items():
-                    path = os.getcwd() + "/" + root_dir
-                    filename = os.path.join(path, vv)
-                    contents = self.getExampleContent(filename).lower()
-                    if text in contents:
-                        titles.append(kk)
-            else:
-                pass
-            self.showExamplesByTitle(titles)
+        for root_dir, examples in examples_.items():
+            if not isinstance(examples, dict):
+                continue
+            for title, relative_filename in unnestedDict(examples, root_dir).items():
+                filename = os.path.join(path, relative_filename)
+                contents = self.getExampleContent(filename).lower()
+                if text in contents:
+                    titles.append(title)
+        self.showExamplesByTitle(titles)
 
     def getMatchingTitles(self, text, exDict=None, acceptAll=False):
         if exDict is None:
