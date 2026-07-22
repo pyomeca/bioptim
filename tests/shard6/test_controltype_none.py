@@ -28,6 +28,7 @@ from bioptim import (
     ConfigureVariables,
     StateDynamics,
 )
+from bioptim.gui.graph import OcpToGraph
 
 
 class NonControlledMethod(StateDynamics):
@@ -99,10 +100,10 @@ class NonControlledMethod(StateDynamics):
         controls: MX | SX,
         parameters: MX | SX,
         algebraic_states: MX | SX,
+        numerical_timeseries: MX | SX,
         nlp: NonLinearProgram,
-        my_ocp,
     ) -> DynamicsEvaluation:
-        t_phase = my_ocp.nlp[-1].tf
+        t_phase = nlp.tf
 
         return DynamicsEvaluation(
             dxdt=self.system_dynamics(a=states[0], b=states[1], c=states[2], t=time, t_phase=t_phase),
@@ -176,18 +177,7 @@ def prepare_ocp(
     -------
     The OptimalControlProgram ready to be solved
     """
-    models = (
-        NonControlledMethod(),
-        NonControlledMethod(),
-        NonControlledMethod(),
-        NonControlledMethod(),
-        NonControlledMethod(),
-        NonControlledMethod(),
-        NonControlledMethod(),
-        NonControlledMethod(),
-        NonControlledMethod(),
-        NonControlledMethod(),
-    )
+    models = tuple(NonControlledMethod() for _ in range(n_phase))
     n_shooting = [5 for i in range(n_phase)]  # Gives m node shooting for my n phases problem
     final_time = [0.01 for i in range(n_phase)]  # Set the final time for all my n phases
 
@@ -212,10 +202,22 @@ def prepare_ocp(
 
     objective_functions = ObjectiveList()
     objective_functions.add(
-        ObjectiveFcn.Mayer.MINIMIZE_STATE, target=5, key="c", node=Node.END, quadratic=True, weight=1, phase=9
+        ObjectiveFcn.Mayer.MINIMIZE_STATE,
+        target=5,
+        key="c",
+        node=Node.END,
+        quadratic=True,
+        weight=1,
+        phase=n_phase - 1,
     )
     objective_functions.add(
-        ObjectiveFcn.Mayer.MINIMIZE_STATE, target=100, key="a", node=Node.END, quadratic=True, weight=0.001, phase=9
+        ObjectiveFcn.Mayer.MINIMIZE_STATE,
+        target=100,
+        key="a",
+        node=Node.END,
+        quadratic=True,
+        weight=0.001,
+        phase=n_phase - 1,
     )
 
     # Sets the bound for all the phases
@@ -235,6 +237,21 @@ def prepare_ocp(
         constraints=constraints,
         use_sx=use_sx,
     )
+
+
+def test_print_control_type_none(capsys):
+    ocp = prepare_ocp(
+        n_phase=1,
+        time_min=[0.01],
+        time_max=[0.1],
+        use_sx=False,
+    )
+
+    ocp.print(to_console=True, to_graph=False)
+    graph = OcpToGraph(ocp)._prepare_print()
+
+    assert "CONTROLS" in capsys.readouterr().out
+    assert "cluster_0" in graph.source
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.ONE_PER_NODE])
