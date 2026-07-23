@@ -128,7 +128,7 @@ def create_conditioning_plots(ocp):
     objectives_hess_func = hessian_objective(variables_vector, all_objectives)
 
     # PLOT CONSTRAINTS
-    fig_constraints, axis_constraints = plt.subplots(1, 2, num="Check conditioning for constraints")
+    fig_constraints, axis_constraints = plt.subplots(1, 2, num="Check conditioning for constraints", clear=True)
 
     # Jacobian plot
     fake_jacobian = np.zeros((nb_constraints, nb_variables))
@@ -161,7 +161,7 @@ def create_conditioning_plots(ocp):
         pass
 
     # PLOT OBJECTIVES
-    fig_obj, axis_obj = plt.subplots(1, 1, num="Check conditioning for objectives")
+    fig_obj, axis_obj = plt.subplots(1, 1, num="Check conditioning for objectives", clear=True)
 
     # Hessian objective plot
     fake_hessian_obj = np.zeros((nb_variables, nb_variables))
