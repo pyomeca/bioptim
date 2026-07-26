@@ -39,6 +39,7 @@ jobs:
           activate-environment: bioptim
           environment-file: environment.yml
           conda-remove-defaults: true
+          channel-priority: strict
 
       - name: Print conda info
         if: matrix.shard == 1
@@ -54,7 +55,7 @@ jobs:
         working-directory: external
         run: |
           sudo apt-get install -y --no-install-recommends librhash-dev
-          ./acados_install_linux.sh 4 $CONDA_PREFIX
+          ./acados_install_linux.sh 4 "$CONDA_PREFIX"
 
       - name: Test installed version of bioptim
         if: matrix.shard == 1
@@ -64,7 +65,7 @@ jobs:
           python -c "import bioptim"
 
       - name: Run tests with code coverage
-        run: pytest -v --color=yes --cov-report term-missing --cov=bioptim tests/shard${{ matrix.shard }} --mpl-baseline-path=tests/plot_reference_images
+        run: python -m pytest -v --color=yes --durations=20 --durations-min=1.0 --cov-report term-missing --cov=bioptim tests/shard${{ matrix.shard }} --mpl-baseline-path=tests/plot_reference_images
 
       - name: Archive coverage report
         uses: actions/upload-artifact@v7
