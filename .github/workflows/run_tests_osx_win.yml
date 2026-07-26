@@ -1,16 +1,15 @@
-name: Run the tests
+name: Tests (macOS and Windows)
 
 on:
   pull_request:
     types: [review_requested]
 
 concurrency:
-  group: ci-pr-${{ github.event.pull_request.number }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
-env:
-  PREFIX_MACOS: /Users/runner/miniconda3/envs/bioptim
-  PREFIX_WINDOWS: C:\Miniconda3\envs\bioptim
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -22,57 +21,45 @@ jobs:
         shard: [1, 2, 3, 4, 5, 6]
     name: Tests on ${{ matrix.os }}-shard ${{ matrix.shard }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 75
     defaults:
       run:
         shell: bash -l {0}
 
     steps:
-      - name: Set prefix osx
-        run: |
-          echo "PREFIX=${{ env.PREFIX_MACOS }}" >> $GITHUB_ENV
-        if: matrix.os == 'macos-latest'
-
-      - name: Set prefix windows
-        run: |
-          echo "PREFIX=${{ env.PREFIX_WINDOWS }}" >> $GITHUB_ENV
-        if: matrix.os == 'windows-latest'
-
       - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Checkout submodules
-        if: matrix.shard == 1
-        run: git submodule update --init --recursive
+        uses: actions/checkout@v7
+        with:
+          submodules: ${{ matrix.shard == 1 && 'recursive' || 'false' }}
 
       - name: Setup environment
-        uses: conda-incubator/setup-miniconda@v3
+        uses: conda-incubator/setup-miniconda@v4
         with:
           miniforge-version: latest
           activate-environment: bioptim
           environment-file: environment.yml
+          conda-remove-defaults: true
 
       - name: Print conda info
+        if: matrix.shard == 1
         run: |
           conda info
           conda list
 
-      - name: Install extra dependencies
-        run: conda install "numpy>=2.4,<3" pip pytest-cov black pytest pytest-cov codecov packaging -cconda-forge
+      - name: Install test dependencies
+        run: python -m pip install --disable-pip-version-check pytest pytest-cov packaging
 
       - name: Install ACADOS on Mac
-        run: |
-          pwd
-          cd external
-          ./acados_install_mac.sh 4 ${{ env.PREFIX_MACOS }}
-          cd ..
         if: matrix.os == 'macos-latest' && matrix.shard == 1
+        working-directory: external
+        run: ./acados_install_mac.sh 4 "$CONDA_PREFIX"
 
       - name: Test installed version of bioptim
+        if: matrix.shard == 1
         run: |
-          pip install .
+          python -m pip install .
           cd
           python -c "import bioptim"
-        if: matrix.shard == 1
 
       - name: Run tests without code coverage
         run: pytest -v --color=yes tests/shard${{ matrix.shard }}

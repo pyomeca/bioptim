@@ -1,12 +1,15 @@
-name: Run the tests
+name: Tests (Linux)
 
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review, review_requested]
-    
+
 concurrency:
-  group: ci-pr-${{ github.event.pull_request.number }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   build:
@@ -18,57 +21,53 @@ jobs:
         shard: [1, 2, 3, 4, 5, 6]
     name: Tests on ${{ matrix.os }}-shard ${{ matrix.shard }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     defaults:
       run:
         shell: bash -l {0}
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
+        with:
+          submodules: ${{ matrix.shard == 1 && 'recursive' || 'false' }}
 
-      - name: Checkout submodules
-        if: matrix.shard == 1
-        run: git submodule update --init --recursive
-        
       - name: Setup environment
-        uses: conda-incubator/setup-miniconda@v3
+        uses: conda-incubator/setup-miniconda@v4
         with:
           miniforge-version: latest
           activate-environment: bioptim
           environment-file: environment.yml
+          conda-remove-defaults: true
 
       - name: Print conda info
+        if: matrix.shard == 1
         run: |
           conda info
           conda list
 
-      - name: Install extra dependencies
-        run: | 
-          conda install "numpy>=2.4,<3" pip pytest-cov black pytest pytest-cov codecov packaging pytest-mpl -cconda-forge
-          sudo apt install -y librhash-dev
+      - name: Install test dependencies
+        run: python -m pip install --disable-pip-version-check pytest pytest-cov pytest-mpl packaging
 
       - name: Install ACADOS on Linux
-        run: |
-          pwd
-          cd external
-          ./acados_install_linux.sh 4 $CONDA_PREFIX
-          cd ..
         if: matrix.shard == 1
+        working-directory: external
+        run: |
+          sudo apt-get install -y --no-install-recommends librhash-dev
+          ./acados_install_linux.sh 4 $CONDA_PREFIX
 
       - name: Test installed version of bioptim
+        if: matrix.shard == 1
         run: |
-          pip install .
+          python -m pip install .
           cd
           python -c "import bioptim"
-        if: matrix.shard == 1
 
       - name: Run tests with code coverage
         run: pytest -v --color=yes --cov-report term-missing --cov=bioptim tests/shard${{ matrix.shard }} --mpl-baseline-path=tests/plot_reference_images
-        if: matrix.os == 'ubuntu-latest'
 
       - name: Archive coverage report
-        id: archive
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-${{ matrix.shard }}
           path: .coverage
@@ -78,22 +77,24 @@ jobs:
   merge-coverage:
     needs: build
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash -l {0}
+    timeout-minutes: 10
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
 
-      - name: Install extra dependencies
-        run: |
-          sudo apt install -y python3-pip
-          pip3 install coverage
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: .github/workflows/run_tests_linux.yml
+
+      - name: Install coverage
+        run: python -m pip install --disable-pip-version-check coverage
 
       - name: Download all workflow run artifacts
-        id: download
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: coverage-*
 
@@ -111,7 +112,8 @@ jobs:
           coverage xml
           coverage report -m
 
-      - uses: codecov/codecov-action@v5
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v7
         with:
           files: ./coverage.xml
           flags: unittests
