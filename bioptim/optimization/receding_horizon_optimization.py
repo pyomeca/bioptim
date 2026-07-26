@@ -918,7 +918,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             p_init.add(
                 key,
                 parameters_tp,
-                interpolation=InterpolationType.EACH_FRAME,
+                interpolation=InterpolationType.CONSTANT,
                 phase=0,
             )
 
