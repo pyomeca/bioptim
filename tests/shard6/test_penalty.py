@@ -26,6 +26,8 @@ from bioptim import (
     TorqueActivationBiorbdModel,
     DynamicsOptions,
     ObjectiveWeight,
+    ParameterList,
+    VariableScaling,
 )
 from bioptim.limits.penalty import PenaltyOption
 from bioptim.limits.penalty_controller import PenaltyController
@@ -247,6 +249,22 @@ def test_penalty_minimize_state(penalty_origin, value, phase_dynamics):
     penalty = Objective(penalty_origin.MINIMIZE_STATE, key="qdot")
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
     npt.assert_almost_equal(res, np.array([[value]] * 4))
+
+
+@pytest.mark.parametrize("key", ["gravity", "all", None])
+def test_penalty_minimize_parameter_returns_physical_values(key):
+    parameters = ParameterList(use_sx=False)
+    parameters.add("gravity", lambda *_: None, size=2, scaling=VariableScaling("gravity", [10, 100]))
+    parameters.add("mass", lambda *_: None, size=1, scaling=VariableScaling("mass", [5]))
+
+    controller = type("Controller", (), {"parameters": parameters})()
+    penalty = type("Penalty", (), {"quadratic": None, "multi_thread": None})()
+    value = ObjectiveFcn.Parameter.MINIMIZE_PARAMETER(penalty, controller, key=key)
+    function = Function("physical_parameter", [parameters.cx], [value])
+
+    result = np.array(function([2, 3, 4])).squeeze()
+    expected = np.array([20, 300]) if key == "gravity" else np.array([20, 300, 20])
+    npt.assert_equal(result, expected)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
