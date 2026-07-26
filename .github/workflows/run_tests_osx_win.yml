@@ -1,6 +1,9 @@
 name: Run the tests
 
-on: [pull_request]
+on:
+  push:
+    branches: [master]
+  pull_request:
 
 env:
   PREFIX_MACOS: /Users/runner/miniconda3/envs/bioptim
