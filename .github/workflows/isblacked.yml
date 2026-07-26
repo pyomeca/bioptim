@@ -27,7 +27,7 @@ jobs:
           cache-dependency-path: .github/workflows/isblacked.yml
 
       - name: Install Black
-        run: python -m pip install --disable-pip-version-check black
+        run: python -m pip install --disable-pip-version-check black==26.5.1
 
       - name: Check formatting
         run: python -m black . --extend-exclude "^/external/" --check --line-length 120 --target-version py310

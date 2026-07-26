@@ -39,6 +39,7 @@ jobs:
           activate-environment: bioptim
           environment-file: environment.yml
           conda-remove-defaults: true
+          channel-priority: strict
 
       - name: Print conda info
         if: matrix.shard == 1
@@ -62,4 +63,4 @@ jobs:
           python -c "import bioptim"
 
       - name: Run tests without code coverage
-        run: pytest -v --color=yes tests/shard${{ matrix.shard }}
+        run: python -m pytest -v --color=yes --durations=20 --durations-min=1.0 tests/shard${{ matrix.shard }}
