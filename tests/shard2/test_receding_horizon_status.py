@@ -20,7 +20,7 @@ def test_failed_window_is_reported_and_not_exported(monkeypatch):
     monkeypatch.setattr(OptimalControlProgram, "solve", lambda *args, **kwargs: failed_solution)
 
     rhe = object.__new__(RecedingHorizonOptimization)
-    rhe.nlp = [SimpleNamespace()]
+    rhe.nlp = [SimpleNamespace(x_bounds={})]
     solver = SimpleNamespace(type=SolverType.IPOPT, online_optim=False)
     solution = rhe.solve(
         update_function=lambda *args: True,

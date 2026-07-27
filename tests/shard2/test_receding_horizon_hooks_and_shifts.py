@@ -17,7 +17,7 @@ def test_window_hooks_can_stop_after_collecting_diagnostics(monkeypatch):
     events = []
 
     rhe = object.__new__(RecedingHorizonOptimization)
-    rhe.nlp = [SimpleNamespace()]
+    rhe.nlp = [SimpleNamespace(x_bounds={})]
     solver = SimpleNamespace(type=SolverType.IPOPT, online_optim=False)
     returned = rhe.solve(
         update_function=lambda *args: True,
