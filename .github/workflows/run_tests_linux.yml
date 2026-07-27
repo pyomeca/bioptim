@@ -34,6 +34,9 @@ jobs:
         with:
           submodules: ${{ matrix.shard == 1 && 'recursive' || 'false' }}
 
+      - name: Verify Conda lockfiles
+        run: python .github/conda-lock/check_lockfiles.py
+
       - name: Setup environment
         uses: conda-incubator/setup-miniconda@v4
         with:
