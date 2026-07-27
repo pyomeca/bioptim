@@ -17,14 +17,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest]
+        target:
+          - os: macos-latest
+            conda-platform: osx-arm64
+          - os: windows-latest
+            conda-platform: win-64
         shard: [1, 2, 3, 4, 5, 6]
-    name: Tests on ${{ matrix.os }}-shard ${{ matrix.shard }}
-    runs-on: ${{ matrix.os }}
+    name: Tests on ${{ matrix.target.os }}-shard ${{ matrix.shard }}
+    runs-on: ${{ matrix.target.os }}
     timeout-minutes: 75
     defaults:
       run:
         shell: bash -l {0}
+    env:
+      CONDA_LOCKFILE: .github/conda-lock/conda-${{ matrix.target.conda-platform }}.lock
 
     steps:
       - name: Checkout code
@@ -37,9 +43,25 @@ jobs:
         with:
           miniforge-version: latest
           activate-environment: bioptim
-          environment-file: environment.yml
           conda-remove-defaults: true
           channel-priority: strict
+
+      - name: Get cache refresh period
+        id: cache-period
+        run: echo "week=$(date -u '+%G-W%V')" >> "$GITHUB_OUTPUT"
+
+      - name: Restore Conda environment
+        id: conda-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ env.CONDA }}/envs/bioptim
+          key: conda-env-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(env.CONDA_LOCKFILE) }}-${{ steps.cache-period.outputs.week }}
+          restore-keys: |
+            conda-env-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(env.CONDA_LOCKFILE) }}-
+
+      - name: Install locked Conda environment
+        if: steps.conda-cache.outputs.cache-hit != 'true'
+        run: conda install --name bioptim --file "$CONDA_LOCKFILE" --yes
 
       - name: Print conda info
         if: matrix.shard == 1
@@ -47,11 +69,8 @@ jobs:
           conda info
           conda list
 
-      - name: Install test dependencies
-        run: python -m pip install --disable-pip-version-check pytest pytest-cov packaging
-
       - name: Install ACADOS on Mac
-        if: matrix.os == 'macos-latest' && matrix.shard == 1
+        if: matrix.target.os == 'macos-latest' && matrix.shard == 1
         working-directory: external
         run: ./acados_install_mac.sh 4 "$CONDA_PREFIX"
 

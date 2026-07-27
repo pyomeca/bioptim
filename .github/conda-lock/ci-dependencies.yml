@@ -1,0 +1,7 @@
+channels:
+  - conda-forge
+dependencies:
+  - packaging
+  - pytest
+  - pytest-cov
+  - pytest-mpl
