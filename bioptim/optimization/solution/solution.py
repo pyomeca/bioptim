@@ -127,6 +127,7 @@ class Solution:
         real_time_to_optimize: FloatOptional = None,
         iterations: IntOptional = None,
         status: IntOptional = None,
+        solver_diagnostics: AnyDict | None = None,
     ):
         """
         Parameters
@@ -168,8 +169,18 @@ class Solution:
 
         # Solver options
         self.status, self.iterations = status, iterations
-        self.lam_g, self.lam_p, self.lam_x, self.inf_pr, self.inf_du = lam_g, lam_p, lam_x, inf_pr, inf_du
-        self.solver_time_to_optimize, self.real_time_to_optimize = solver_time_to_optimize, real_time_to_optimize
+        self.solver_diagnostics = solver_diagnostics
+        self.lam_g, self.lam_p, self.lam_x, self.inf_pr, self.inf_du = (
+            lam_g,
+            lam_p,
+            lam_x,
+            inf_pr,
+            inf_du,
+        )
+        self.solver_time_to_optimize, self.real_time_to_optimize = (
+            solver_time_to_optimize,
+            real_time_to_optimize,
+        )
 
         # Extract the data now for further use
         self._decision_states = None
@@ -223,6 +234,7 @@ class Solution:
             real_time_to_optimize=sol["real_time_to_optimize"],
             iterations=sol["iter"],
             status=sol["status"],
+            solver_diagnostics=sol.get("solver_diagnostics"),
         )
 
     @classmethod
@@ -292,7 +304,7 @@ class Solution:
                 ns = (
                     ocp.nlp[p].ns * nb_intermediate_frames
                     if ss[key].init.type == InterpolationType.ALL_POINTS
-                    else ocp.nlp[p].ns + 1 if ss[key].init.type != InterpolationType.EACH_FRAME else ocp.nlp[p].ns
+                    else (ocp.nlp[p].ns + 1 if ss[key].init.type != InterpolationType.EACH_FRAME else ocp.nlp[p].ns)
                 )
                 ss[key].init.check_and_adjust_dimensions(len(ocp.nlp[p].states[key]), ns, "states")
 
@@ -722,6 +734,8 @@ class Solution:
         new.solver_time_to_optimize = deepcopy(self.solver_time_to_optimize)
         new.real_time_to_optimize = deepcopy(self.real_time_to_optimize)
         new.iterations = deepcopy(self.iterations)
+        new.status = deepcopy(self.status)
+        new.solver_diagnostics = deepcopy(self.solver_diagnostics)
 
         new.phases_dt = deepcopy(self.phases_dt)
         new._stepwise_times = deepcopy(self._stepwise_times)
@@ -861,7 +875,7 @@ class Solution:
 
         if return_time:
             time_vector = self._return_time_vector(to_merge=to_merge, duplicated_times=duplicated_times)
-            return out if len(out) > 1 else out[0], time_vector if len(time_vector) > 1 else time_vector[0]
+            return out if len(out) > 1 else out[0], (time_vector if len(time_vector) > 1 else time_vector[0])
         else:
             return out if len(out) > 1 else out[0]
 
@@ -874,7 +888,9 @@ class Solution:
         """
         Integrated the states with different noise values sampled from the covariance matrix.
         """
-        from ...optimization.stochastic_optimal_control_program import StochasticOptimalControlProgram
+        from ...optimization.stochastic_optimal_control_program import (
+            StochasticOptimalControlProgram,
+        )
         from ...interfaces.interface_utils import get_numerical_timeseries
 
         if not isinstance(self.ocp, StochasticOptimalControlProgram):
@@ -1326,7 +1342,9 @@ class Solution:
 
         phases_dt = PenaltyHelpers.phases_dt(penalty, self.ocp, lambda p: np.array([self.phases_dt[idx] for idx in p]))
         params = PenaltyHelpers.parameters(
-            penalty, 0, lambda p_idx, n_idx, sn_idx: self._dispatch_params(self._parameters.scaled[0])
+            penalty,
+            0,
+            lambda p_idx, n_idx, sn_idx: self._dispatch_params(self._parameters.scaled[0]),
         )
 
         merged_x = self._decision_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)
@@ -1422,12 +1440,20 @@ class Solution:
                     continue
                 val, val_weighted = self._get_penalty_cost(penalty)
                 self._detailed_cost += [
-                    {"name": penalty.type.__str__(), "cost_value_weighted": val_weighted, "cost_value": val}
+                    {
+                        "name": penalty.type.__str__(),
+                        "cost_value_weighted": val_weighted,
+                        "cost_value": val,
+                    }
                 ]
         for penalty in self.ocp.J:
             val, val_weighted = self._get_penalty_cost(penalty)
             self._detailed_cost += [
-                {"name": penalty.type.__str__(), "cost_value_weighted": val_weighted, "cost_value": val}
+                {
+                    "name": penalty.type.__str__(),
+                    "cost_value_weighted": val_weighted,
+                    "cost_value": val,
+                }
             ]
         return
 
