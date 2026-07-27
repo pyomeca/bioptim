@@ -7,6 +7,7 @@ from casadi import SX, vertcat, Function
 from acados_template import AcadosModel, AcadosOcp, AcadosOcpSolver
 
 from .solver_interface import SolverInterface
+from .acados_utils import scaled_control_bounds
 from ..interfaces import Solver
 from ..misc.enums import Node, SolverType, PhaseDynamics
 from ..limits.objective_functions import ObjectiveFunction, ObjectiveFcn
@@ -368,16 +369,9 @@ class AcadosInterface(SolverInterface):
                 self.x_bound_min[index, i] = x_tp.min[:, i]
 
         # setup control constraints
-        u_bounds_max = np.ndarray((self.acados_ocp.dims.nu, 1))
-        u_bounds_min = np.ndarray((self.acados_ocp.dims.nu, 1))
-        for key in ocp.nlp[0].controls.keys():
-            u_tp = ocp.nlp[0].u_bounds[key].scale(ocp.nlp[0].u_scaling[key].scaling)
-            index = ocp.nlp[0].controls[key].index
-            u_bounds_max[index, 0] = np.array(u_tp.max[:, 0])
-            u_bounds_min[index, 0] = np.array(u_tp.min[:, 0])
-
-        self.acados_ocp.constraints.lbu = u_bounds_max
-        self.acados_ocp.constraints.ubu = u_bounds_min
+        u_bounds_min, u_bounds_max = scaled_control_bounds(ocp.nlp[0])
+        self.acados_ocp.constraints.lbu = u_bounds_min[:, np.newaxis]
+        self.acados_ocp.constraints.ubu = u_bounds_max[:, np.newaxis]
         self.acados_ocp.constraints.idxbu = np.array(range(self.acados_ocp.dims.nu))
         self.acados_ocp.dims.nbu = self.acados_ocp.dims.nu
 
@@ -808,14 +802,7 @@ class AcadosInterface(SolverInterface):
             self.ocp_solver.set(n, "u", u_init)
 
             # The u_bounds need to be ordered by index that's why we use a for loop
-            u_bounds_max = np.ndarray(self.acados_ocp.dims.nu)
-            u_bounds_min = np.ndarray(self.acados_ocp.dims.nu)
-            for key in self.ocp.nlp[0].controls.keys():
-                u_tp = self.ocp.nlp[0].u_bounds[key]
-                index = self.ocp.nlp[0].controls[key].index
-                u_bounds_max[index] = np.array(u_tp.max[:, 0])
-                u_bounds_min[index] = np.array(u_tp.min[:, 0])
-
+            u_bounds_min, u_bounds_max = scaled_control_bounds(self.ocp.nlp[0])
             self.ocp_solver.constraints_set(n, "lbu", u_bounds_min)
             self.ocp_solver.constraints_set(n, "ubu", u_bounds_max)
             self.ocp_solver.constraints_set(n, "uh", self.all_g_bounds.max[:, 0])
