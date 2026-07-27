@@ -26,6 +26,21 @@ conda-lock lock \
   --filename-template '.github/conda-lock/conda-{platform}.lock'
 ```
 
+Then update the source fingerprint and run the consistency check:
+
+```bash
+python .github/conda-lock/check_lockfiles.py --print-source-hash \
+  > .github/conda-lock/source-files.sha256
+python .github/conda-lock/check_lockfiles.py
+```
+
+The check runs before Conda setup in every test and cache-warming job. It fails
+when either source file changes without updating the fingerprint, and also
+validates each lockfile's platform, input hash, explicit marker, package URLs,
+and package checksums. The fingerprint is an accidental-staleness guard rather
+than a security boundary: changes to it must be reviewed together with the
+generated lockfile changes.
+
 The trusted `warm_conda_cache.yml` workflow caches the complete `bioptim`
 Conda environment on `master` and refreshes it every Monday. Pull-request
 workflows only restore these caches, so forked pull requests do not attempt a

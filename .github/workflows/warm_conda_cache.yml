@@ -43,6 +43,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v7
 
+      - name: Verify Conda lockfiles
+        run: python .github/conda-lock/check_lockfiles.py
+
       - name: Setup Conda
         uses: conda-incubator/setup-miniconda@v4
         with:
