@@ -23,13 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target:
-          - os: ubuntu-latest
-            conda-platform: linux-64
-          - os: macos-latest
-            conda-platform: osx-arm64
-          - os: windows-latest
-            conda-platform: win-64
+        target: ${{ fromJSON(github.event_name == 'push' && '[{"os":"macos-latest","conda-platform":"osx-arm64"},{"os":"windows-latest","conda-platform":"win-64"}]' || '[{"os":"ubuntu-latest","conda-platform":"linux-64"},{"os":"macos-latest","conda-platform":"osx-arm64"},{"os":"windows-latest","conda-platform":"win-64"}]') }}
     name: Cache ${{ matrix.target.conda-platform }}
     runs-on: ${{ matrix.target.os }}
     timeout-minutes: 30

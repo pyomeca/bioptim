@@ -41,10 +41,19 @@ and package checksums. The fingerprint is an accidental-staleness guard rather
 than a security boundary: changes to it must be reviewed together with the
 generated lockfile changes.
 
-The trusted `warm_conda_cache.yml` workflow caches the complete `bioptim`
-Conda environment on `master` and refreshes it every Monday. Pull-request
-workflows only restore these caches, so forked pull requests do not attempt a
-cache write and all pull requests can reuse the default-branch caches.
+Trusted cache producers run only on `master`. The `warm_conda_cache.yml`
+workflow prepares macOS and Windows after an environment-related push, and
+refreshes all three platforms every Monday. Pull-request workflows only restore
+these caches, so forked pull requests do not attempt a cache write and all pull
+requests can reuse the default-branch caches.
+
+The Linux test workflow also runs on pushes to `master`, preserving the default
+branch status used by the README badge. Its test shards wait for a trusted
+Linux cache-preparation job, so an environment change is installed and cached
+once before the six shards start. On the same environment-related push, the
+separate warmer handles only macOS and Windows. Weekly and manual warming still
+cover all three platforms. The macOS/Windows test shards remain pull-request
+only to avoid twelve additional post-merge jobs.
 
 The cache key contains the runner OS, runner architecture, lockfile hash, and
 ISO week. A lockfile change therefore invalidates the cache immediately. At the
