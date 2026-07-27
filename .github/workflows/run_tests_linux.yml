@@ -25,6 +25,8 @@ jobs:
     defaults:
       run:
         shell: bash -l {0}
+    env:
+      CONDA_LOCKFILE: .github/conda-lock/conda-linux-64.lock
 
     steps:
       - name: Checkout code
@@ -37,18 +39,31 @@ jobs:
         with:
           miniforge-version: latest
           activate-environment: bioptim
-          environment-file: environment.yml
           conda-remove-defaults: true
           channel-priority: strict
+
+      - name: Get cache refresh period
+        id: cache-period
+        run: echo "week=$(date -u '+%G-W%V')" >> "$GITHUB_OUTPUT"
+
+      - name: Restore Conda environment
+        id: conda-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ env.CONDA }}/envs/bioptim
+          key: conda-env-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(env.CONDA_LOCKFILE) }}-${{ steps.cache-period.outputs.week }}
+          restore-keys: |
+            conda-env-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(env.CONDA_LOCKFILE) }}-
+
+      - name: Install locked Conda environment
+        if: steps.conda-cache.outputs.cache-hit != 'true'
+        run: conda install --name bioptim --file "$CONDA_LOCKFILE" --yes
 
       - name: Print conda info
         if: matrix.shard == 1
         run: |
           conda info
           conda list
-
-      - name: Install test dependencies
-        run: python -m pip install --disable-pip-version-check pytest pytest-cov pytest-mpl packaging
 
       - name: Install ACADOS on Linux
         if: matrix.shard == 1

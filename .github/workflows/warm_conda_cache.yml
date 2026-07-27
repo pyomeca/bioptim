@@ -1,0 +1,81 @@
+name: Warm Conda environment caches
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - environment.yml
+      - .github/conda-lock/**
+      - .github/workflows/warm_conda_cache.yml
+  schedule:
+    - cron: "17 5 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  warm-cache:
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - os: ubuntu-latest
+            conda-platform: linux-64
+          - os: macos-latest
+            conda-platform: osx-arm64
+          - os: windows-latest
+            conda-platform: win-64
+    name: Cache ${{ matrix.target.conda-platform }}
+    runs-on: ${{ matrix.target.os }}
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash -l {0}
+    env:
+      CONDA_LOCKFILE: .github/conda-lock/conda-${{ matrix.target.conda-platform }}.lock
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Setup Conda
+        uses: conda-incubator/setup-miniconda@v4
+        with:
+          miniforge-version: latest
+          activate-environment: bioptim
+          conda-remove-defaults: true
+          channel-priority: strict
+
+      - name: Get cache refresh period
+        id: cache-period
+        run: echo "week=$(date -u '+%G-W%V')" >> "$GITHUB_OUTPUT"
+
+      - name: Restore Conda environment
+        id: conda-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ env.CONDA }}/envs/bioptim
+          key: conda-env-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(env.CONDA_LOCKFILE) }}-${{ steps.cache-period.outputs.week }}
+          restore-keys: |
+            conda-env-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(env.CONDA_LOCKFILE) }}-
+
+      - name: Install locked Conda environment
+        if: steps.conda-cache.outputs.cache-hit != 'true'
+        run: conda install --name bioptim --file "$CONDA_LOCKFILE" --yes
+
+      - name: Validate environment
+        run: |
+          python -c "import biorbd, numpy, pinocchio, pytest"
+          conda list
+
+      - name: Save Conda environment
+        if: steps.conda-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ env.CONDA }}/envs/bioptim
+          key: conda-env-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(env.CONDA_LOCKFILE) }}-${{ steps.cache-period.outputs.week }}
