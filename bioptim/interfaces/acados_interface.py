@@ -1,5 +1,6 @@
 from time import perf_counter
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 from scipy import linalg
@@ -19,6 +20,25 @@ from ..misc.parameters_types import (
     Bool,
     AnyListorDict,
 )
+
+
+def _configure_acados_codegen(acados_ocp: AcadosOcp, solver_options: Solver.ACADOS) -> None:
+    """Configure code generation with the Acados v0.5.5 API."""
+
+    if not hasattr(acados_ocp, "code_gen_options"):
+        raise RuntimeError(
+            "This version of bioptim requires Acados v0.5.5 or newer. "
+            "Please reinstall Acados using the scripts from bioptim/external."
+        )
+
+    code_gen_options = acados_ocp.code_gen_options
+    if solver_options.acados_dir:
+        acados_dir = Path(solver_options.acados_dir).expanduser().resolve()
+        code_gen_options.acados_include_path = str(acados_dir / "include")
+        code_gen_options.acados_lib_path = str(acados_dir / "lib")
+
+    code_gen_options.code_export_directory = solver_options.c_generated_code_path
+    code_gen_options.json_file = "acados_ocp.json"
 
 
 class AcadosInterface(SolverInterface):
@@ -115,8 +135,8 @@ class AcadosInterface(SolverInterface):
             solver_options = Solver.ACADOS()
         self.opts = solver_options
 
-        self.acados_ocp = AcadosOcp(acados_path=solver_options.acados_dir)
-        self.acados_ocp.code_export_directory = solver_options.c_generated_code_path
+        self.acados_ocp = AcadosOcp()
+        _configure_acados_codegen(self.acados_ocp, solver_options)
         self.acados_model = AcadosModel()
 
         self.__set_cost_type(solver_options.cost_type)
@@ -916,7 +936,12 @@ class AcadosInterface(SolverInterface):
         if self.ocp_solver is None:
             for key in options:
                 setattr(self.acados_ocp.solver_options, key, options[key])
-            self.ocp_solver = AcadosOcpSolver(self.acados_ocp, json_file="acados_ocp.json", build=self.opts.c_compile)
+            self.ocp_solver = AcadosOcpSolver(
+                self.acados_ocp,
+                json_file=self.acados_ocp.code_gen_options.json_file,
+                build=self.opts.c_compile,
+                check_reuse_possible=False,
+            )
             self.opts.set_only_first_options_has_changed(False)
             self.opts.set_has_tolerance_changed(False)
 

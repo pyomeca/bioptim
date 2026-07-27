@@ -19,7 +19,7 @@ ARG1=${1:-$NB_CPU_MAX}
 if [ -z "$1" ]; then
   echo "  Argument 1 (NB_CPU) not provided, falling back on maximum number of CPUs ($NB_CPU_MAX)."
 fi
-echo "  Number of threads for acados with openMP: NB_CPU=$ARG1"
+echo "  Number of build threads: NB_CPU=$ARG1"
 echo ""
 
 ARG2=${2:-$CONDA_PREFIX}
@@ -34,9 +34,18 @@ fi
 echo "  set CMAKE_INSTALL_PREFIX=$ARG2"
 echo ""
 
-ARG3=${3:-X64_AUTOMATIC}
+case "$(uname -m)" in
+  arm64)
+    DEFAULT_BLASFEO_TARGET=ARMV8A_APPLE_M1
+    ;;
+  *)
+    DEFAULT_BLASFEO_TARGET=X64_AUTOMATIC
+    ;;
+esac
+
+ARG3=${3:-$DEFAULT_BLASFEO_TARGET}
 if [ -z "$3" ]; then
-  echo "  Argument 3 (BLASFEO_TARGET) not provided, falling back on X64_AUTOMATIC"
+  echo "  Argument 3 (BLASFEO_TARGET) not provided, falling back on $DEFAULT_BLASFEO_TARGET"
 fi
 echo "  set BLASFEO_TARGET=$ARG3"
 echo ""
@@ -54,8 +63,7 @@ mkdir acados/build
 cd acados/build
 
 # We must manually change the minimum required cmake version in some of acados' dependencies
-sed -i "" "s/cmake_minimum_required(VERSION 3.5)/cmake_minimum_required(VERSION 3.14)/" ../external/blasfeo/CMakeLists.txt
-sed -i "" "s/cmake_minimum_required(VERSION 2.6)/cmake_minimum_required(VERSION 3.14)/" ../external/qpoases/CMakeLists.txt
+sed -i "" "s/cmake_minimum_required(VERSION 3.5)/cmake_minimum_required(VERSION 3.14)/" ../external/qpoases/CMakeLists.txt
 sed -i "" "s/CMAKE_MINIMUM_REQUIRED( VERSION 2.8 )/cmake_minimum_required(VERSION 3.14)/" ../external/qpdunes/CMakeLists.txt
 sed -i "" "s/cmake_minimum_required (VERSION 3.2)/cmake_minimum_required (VERSION 3.14)/" ../external/osqp/CMakeLists.txt
 sed -i "" "s/cmake_minimum_required (VERSION 3.2)/cmake_minimum_required (VERSION 3.14)/" ../external/osqp/lin_sys/direct/qdldl/qdldl_sources/CMakeLists.txt
@@ -64,15 +72,17 @@ sed -i "" "s/cmake_minimum_required (VERSION 3.2)/cmake_minimum_required (VERSIO
 cmake .. \
   -DCMAKE_INSTALL_PREFIX="$ARG2" \
   -DACADOS_INSTALL_DIR="$ARG2" \
-  -DACADOS_PYTHON=ON \
   -DACADOS_WITH_OSQP=ON \
   -DBLASFEO_TARGET="$ARG3" \
-  -DACADOS_WITH_OPENMP=ON \
-  -DACADOS_NUM_THREADS=$ARG1
+  -DACADOS_WITH_OPENMP=ON
   # The following two won't compile on Mac
   # -DACADOS_WITH_QPOASES=ON \
   # -DACADOS_WITH_QPDUNES=ON \
-make install -j$NB_CPU_MAX
+make install -j$ARG1
+
+# Acados v0.5.5 requires this generated metadata at code-generation time,
+# but its CMake install target does not copy it to the installation prefix.
+install -m 644 ../lib/link_libs.json ../lib/git_commit_hash "$ARG2/lib/"
 
 # Prepare the Python interface
 cd ../interfaces/acados_template
@@ -92,22 +102,15 @@ REPLACE_ACADOS_PYTHON_BY="import site\n    acados_path = site.getsitepackages()\
 TO_REPLACE_T_RENDERER="if input(msg) != 'y':"
 REPLACE_T_RENDERER_BY="if False:"
 
-# Change acados external library linking at run time
-TO_REPLACE_LIB_PATH="libacados_ocp_solver_name = f'{lib_prefix}acados_ocp_solver_{self.model_name}{lib_ext}'"
-REPLACE_LIB_PATH_BY="libacados_ocp_solver_name = f'{lib_prefix}acados_ocp_solver_{self.model_name}{lib_ext}'\n        self.shared_lib_name = os.path.join(code_export_directory, libacados_ocp_solver_name)\n        import site\n        acados_path = site.getsitepackages()\n        libacados_ocp_solver_name = f'{lib_prefix}acados_ocp_solver_{self.model_name}{lib_ext}'\n        # Relink macos lib\n        acados_ext_lib_path = os.path.abspath(acados_path[0]+'\/..\/..')\n        os.system(\n            f'install_name_tool -change libhpipm.dylib {acados_ext_lib_path}\/libhpipm.dylib {self.shared_lib_name}')\n        os.system(\n            f'install_name_tool -change libblasfeo.dylib {acados_ext_lib_path}\/libblasfeo.dylib {self.shared_lib_name}')"
-
 # Perform the modifications
 sed -i "" "s/$TO_REPLACE_CASADI_DEP/$REPLACE_CASADI_DEP_BY/" setup.py
 sed -i "" "s/$TO_REPLACE_ACADOS_PYTHON/$REPLACE_ACADOS_PYTHON_BY/" acados_template/utils.py
 sed -i "" "s/$TO_REPLACE_ACADOS_SOURCE/$REPLACE_ACADOS_SOURCE_BY/" acados_template/utils.py
 sed -i "" "s/$TO_REPLACE_T_RENDERER/$REPLACE_T_RENDERER_BY/" acados_template/utils.py
-sed -i "" "s/$TO_REPLACE_LIB_PATH/$REPLACE_LIB_PATH_BY/" acados_template/acados_ocp_solver.py
 
-# Change acados external lib linking permanently
-install_name_tool -change libqpOASES_e.3.1.dylib $CONDA_PREFIX/lib/libqpOASES_e.3.1.dylib $CONDA_PREFIX/lib/libacados.dylib
-install_name_tool -change libhpipm.dylib $CONDA_PREFIX/lib/libhpipm.dylib $CONDA_PREFIX/lib/libacados.dylib
-install_name_tool -change libblasfeo.dylib $CONDA_PREFIX/lib/libblasfeo.dylib $CONDA_PREFIX/lib/libacados.dylib
-install_name_tool -change libblasfeo.dylib $CONDA_PREFIX/lib/libblasfeo.dylib $CONDA_PREFIX/lib/libhpipm.dylib
+# Resolve the @rpath dependencies of the installed Acados libraries.
+install_name_tool -add_rpath "$ARG2/lib" "$ARG2/lib/libacados.dylib"
+install_name_tool -add_rpath "$ARG2/lib" "$ARG2/lib/libhpipm.dylib"
 
 # Install the Python interface
 pip install .

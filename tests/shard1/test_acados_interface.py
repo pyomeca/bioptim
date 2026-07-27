@@ -32,6 +32,29 @@ from bioptim import (
 from tests.utils import TestUtils
 
 
+def test_acados_v055_codegen_configuration(tmp_path, monkeypatch):
+    pytest.importorskip("acados_template")
+    from acados_template import AcadosOcp
+
+    from bioptim.interfaces.acados_interface import _configure_acados_codegen
+
+    monkeypatch.setenv("ACADOS_SOURCE_DIR", str(tmp_path / "source"))
+    acados_root = tmp_path / "installed_acados"
+    generated_code = tmp_path / "generated_code"
+
+    solver = Solver.ACADOS()
+    solver.set_acados_dir(str(acados_root))
+    solver.set_c_generated_code_path(str(generated_code))
+
+    acados_ocp = AcadosOcp()
+    _configure_acados_codegen(acados_ocp, solver)
+
+    assert acados_ocp.code_gen_options.acados_include_path == str(acados_root / "include")
+    assert acados_ocp.code_gen_options.acados_lib_path == str(acados_root / "lib")
+    assert acados_ocp.code_gen_options.code_export_directory == str(generated_code)
+    assert acados_ocp.code_gen_options.json_file == "acados_ocp.json"
+
+
 @pytest.mark.parametrize("cost_type", ["LINEAR_LS", "NONLINEAR_LS"])
 def test_acados_no_obj(cost_type):
     if platform == "win32":
