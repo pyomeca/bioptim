@@ -6,6 +6,112 @@ from ...misc.parameters_types import (
     NpArrayDict,
 )
 
+from ...limits.path_conditions import InitialGuessList
+from ...misc.enums import InterpolationType
+from .solution_data import SolutionMerge
+
+
+def _resample_initial_guess(values: np.ndarray, n_columns: int) -> np.ndarray:
+    """Linearly resample node values while preserving both endpoints."""
+
+    values = np.asarray(values, dtype=float)
+    if values.ndim == 1:
+        values = values[:, np.newaxis]
+    finite_columns = np.all(np.isfinite(values), axis=0)
+    values = values[:, finite_columns]
+    if values.shape[1] == 0:
+        raise ValueError("A solution variable contains no finite node that can be transferred")
+    if n_columns == 1:
+        return values[:, :1].copy()
+    if values.shape[1] == 1:
+        return np.repeat(values, n_columns, axis=1)
+
+    source_grid = np.linspace(0.0, 1.0, values.shape[1])
+    target_grid = np.linspace(0.0, 1.0, n_columns)
+    return np.vstack([np.interp(target_grid, source_grid, row) for row in values])
+
+
+def _target_column_count(initial_guess) -> int:
+    interpolation = initial_guess.type
+    if interpolation == InterpolationType.CONSTANT:
+        return 1
+    elif interpolation == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
+        return 3
+    elif interpolation == InterpolationType.LINEAR:
+        return 2
+    elif interpolation in (InterpolationType.EACH_FRAME, InterpolationType.ALL_POINTS):
+        return initial_guess.init.shape[1]
+    else:
+        raise NotImplementedError(f"Adapting a solution to {interpolation} is not implemented")
+
+
+def _as_phase_list(data, n_phases: int) -> list[dict]:
+    if n_phases == 1 and isinstance(data, dict):
+        return [data]
+    if not isinstance(data, list) or len(data) != n_phases:
+        raise ValueError(f"The solution has {len(data) if isinstance(data, list) else 1} phases, expected {n_phases}")
+    return data
+
+
+def _adapt_variable_group(source, target: InitialGuessList, group_name: str) -> InitialGuessList:
+    adapted = InitialGuessList()
+    n_phases = len(target.options)
+    source_phases = _as_phase_list(source, n_phases)
+    for phase, target_phase in enumerate(target.options):
+        for key, target_guess in target_phase.items():
+            if key not in source_phases[phase]:
+                raise KeyError(f"{group_name} '{key}' is absent from the solution phase {phase}")
+            if target_guess.type in (InterpolationType.SPLINE, InterpolationType.CUSTOM):
+                raise NotImplementedError(
+                    f"{group_name} '{key}' cannot be linearly resampled to {target_guess.type}. "
+                    "Spline time vectors and custom interpolation callbacks cannot be inferred from solution samples"
+                )
+            values = _resample_initial_guess(source_phases[phase][key], _target_column_count(target_guess))
+            adapted.add(key, values, interpolation=target_guess.type, phase=phase)
+    return adapted
+
+
+def adapt_solution_to_initial_guesses(
+    solution,
+    state_initial_guesses: InitialGuessList,
+    control_initial_guesses: InitialGuessList,
+    parameter_initial_guesses: InitialGuessList | None = None,
+    algebraic_state_initial_guesses: InitialGuessList | None = None,
+) -> tuple[InitialGuessList, InitialGuessList, InitialGuessList, InitialGuessList]:
+    """Adapt a solution's primal variables to the grids described by new initial-guess lists.
+
+    Resampling is performed on a normalized phase grid, so it supports different numbers of shooting and control
+    nodes. ``SPLINE`` and ``CUSTOM`` targets are rejected because their time vectors or callbacks cannot be inferred
+    from solution samples. Solver multipliers are deliberately not transferred by this function.
+    """
+
+    states = _adapt_variable_group(
+        solution.decision_states(to_merge=SolutionMerge.NODES), state_initial_guesses, "State"
+    )
+    controls = _adapt_variable_group(
+        solution.decision_controls(to_merge=SolutionMerge.NODES), control_initial_guesses, "Control"
+    )
+
+    parameters = InitialGuessList()
+    if parameter_initial_guesses is not None:
+        source_parameters = solution.decision_parameters()
+        for phase, target_phase in enumerate(parameter_initial_guesses.options):
+            for key, target_guess in target_phase.items():
+                if key not in source_parameters:
+                    raise KeyError(f"Parameter '{key}' is absent from the solution")
+                values = np.asarray(source_parameters[key], dtype=float).reshape((-1, 1))
+                parameters.add(key, values, interpolation=target_guess.type, phase=phase)
+
+    algebraic_states = InitialGuessList()
+    if algebraic_state_initial_guesses is not None:
+        algebraic_states = _adapt_variable_group(
+            solution.decision_algebraic_states(to_merge=SolutionMerge.NODES),
+            algebraic_state_initial_guesses,
+            "Algebraic state",
+        )
+
+    return states, controls, parameters, algebraic_states
+
 
 def concatenate_optimization_variables_dict(variable: list[NpArrayDict], continuous: Bool = True) -> list[NpArrayDict]:
     """
