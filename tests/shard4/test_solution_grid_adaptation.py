@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from bioptim import InitialGuessList, InterpolationType, adapt_solution_to_initial_guesses
 
@@ -47,6 +48,25 @@ def test_adapt_solution_preserves_control_grid_semantics():
 
     assert controls[0]["tau"].type == InterpolationType.LINEAR
     np.testing.assert_allclose(controls[0]["tau"].init, [[0.0, 2.0]])
+
+
+@pytest.mark.parametrize(
+    ("interpolation", "initial_guess", "extra_arguments"),
+    (
+        (InterpolationType.SPLINE, [[0.0, 0.0]], {"t": [0.0, 1.0]}),
+        (InterpolationType.CUSTOM, lambda _index: np.array([0.0]), {}),
+    ),
+)
+def test_adapt_solution_rejects_interpolations_that_cannot_be_inferred(
+    interpolation, initial_guess, extra_arguments
+):
+    x_init = InitialGuessList()
+    x_init.add("q", initial_guess, interpolation=interpolation, **extra_arguments)
+    u_init = InitialGuessList()
+    u_init.add("tau", np.zeros((1, 2)), interpolation=InterpolationType.EACH_FRAME)
+
+    with pytest.raises(NotImplementedError, match="cannot be linearly resampled"):
+        adapt_solution_to_initial_guesses(_FakeSolution(), x_init, u_init)
 
 
 class _FakeSolutionAdapter(_FakeSolution):

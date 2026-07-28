@@ -35,13 +35,14 @@ def _target_column_count(initial_guess) -> int:
     interpolation = initial_guess.type
     if interpolation == InterpolationType.CONSTANT:
         return 1
-    if interpolation == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
+    elif interpolation == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
         return 3
-    if interpolation == InterpolationType.LINEAR:
+    elif interpolation == InterpolationType.LINEAR:
         return 2
-    if interpolation in (InterpolationType.EACH_FRAME, InterpolationType.ALL_POINTS):
+    elif interpolation in (InterpolationType.EACH_FRAME, InterpolationType.ALL_POINTS):
         return initial_guess.init.shape[1]
-    raise NotImplementedError(f"Adapting a solution to {interpolation} is not implemented")
+    else:
+        raise NotImplementedError(f"Adapting a solution to {interpolation} is not implemented")
 
 
 def _as_phase_list(data, n_phases: int) -> list[dict]:
@@ -60,6 +61,11 @@ def _adapt_variable_group(source, target: InitialGuessList, group_name: str) -> 
         for key, target_guess in target_phase.items():
             if key not in source_phases[phase]:
                 raise KeyError(f"{group_name} '{key}' is absent from the solution phase {phase}")
+            if target_guess.type in (InterpolationType.SPLINE, InterpolationType.CUSTOM):
+                raise NotImplementedError(
+                    f"{group_name} '{key}' cannot be linearly resampled to {target_guess.type}. "
+                    "Spline time vectors and custom interpolation callbacks cannot be inferred from solution samples"
+                )
             values = _resample_initial_guess(source_phases[phase][key], _target_column_count(target_guess))
             adapted.add(key, values, interpolation=target_guess.type, phase=phase)
     return adapted
@@ -74,8 +80,9 @@ def adapt_solution_to_initial_guesses(
 ) -> tuple[InitialGuessList, InitialGuessList, InitialGuessList, InitialGuessList]:
     """Adapt a solution's primal variables to the grids described by new initial-guess lists.
 
-    Resampling is performed on a normalized phase grid, so it supports different numbers of shooting nodes,
-    collocation points and control nodes. Solver multipliers are deliberately not transferred by this function.
+    Resampling is performed on a normalized phase grid, so it supports different numbers of shooting and control
+    nodes. ``SPLINE`` and ``CUSTOM`` targets are rejected because their time vectors or callbacks cannot be inferred
+    from solution samples. Solver multipliers are deliberately not transferred by this function.
     """
 
     states = _adapt_variable_group(
