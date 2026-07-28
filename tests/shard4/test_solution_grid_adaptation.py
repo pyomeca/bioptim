@@ -57,9 +57,7 @@ def test_adapt_solution_preserves_control_grid_semantics():
         (InterpolationType.CUSTOM, lambda _index: np.array([0.0]), {}),
     ),
 )
-def test_adapt_solution_rejects_interpolations_that_cannot_be_inferred(
-    interpolation, initial_guess, extra_arguments
-):
+def test_adapt_solution_rejects_interpolations_that_cannot_be_inferred(interpolation, initial_guess, extra_arguments):
     x_init = InitialGuessList()
     x_init.add("q", initial_guess, interpolation=interpolation, **extra_arguments)
     u_init = InitialGuessList()
