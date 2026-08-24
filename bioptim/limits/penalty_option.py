@@ -4,6 +4,7 @@ import numpy as np
 from casadi import vertcat, Function, jacobian, diag
 
 from ..optimization.optimization_variable import OptimizationVariableList
+from ..optimization.variable_scaling import VariableScaling
 from .penalty_controller import PenaltyController
 from ..limits.penalty_helpers import PenaltyHelpers, Slicy
 from ..limits.weight import ObjectiveWeight, ConstraintWeight
@@ -48,6 +49,8 @@ class PenaltyOption(OptionGeneric):
         If the penalty should be expanded or not
     target: np.array(target)
         A target to track for the penalty
+    target_scaling: np.ndarray | VariableScaling
+        Scaling from the penalty-function coordinates to the physical target coordinates
     target_plot_name: str
         The plot name of the target
     target_to_plot: np.ndarray
@@ -109,6 +112,7 @@ class PenaltyOption(OptionGeneric):
         phase: Int = 0,
         node: Node | IntorNodeIterable = Node.DEFAULT,
         target: FloatIterableorNpArray | IntIterableorNpArray | NpArrayList | None = None,
+        target_scaling: FloatIterableorNpArray | IntIterableorNpArray | VariableScaling | None = None,
         quadratic: BoolOptional = None,
         derivative: Bool = False,
         explicit_derivative: Bool = False,
@@ -135,6 +139,10 @@ class PenaltyOption(OptionGeneric):
             The node within a phase on which the penalty is acting on
         target: int | float | np.ndarray | list[int] | list[float] | list[np.ndarray]
             A target to track for the penalty
+        target_scaling: int | float | np.ndarray | list[int] | list[float]
+            Scaling from the penalty-function coordinates to the physical target coordinates. Targets remain expressed
+            in physical units and are divided by this value only when passed to the weighted function. Built-in direct
+            parameter objectives infer it automatically; custom functions can provide it explicitly.
         quadratic: bool
             If the penalty is quadratic
         weight: ObjectiveWeight | ConstraintWeight
@@ -191,6 +199,8 @@ class PenaltyOption(OptionGeneric):
                 self.target = self.target[np.newaxis]
             if len(self.target.shape) == 1:
                 self.target = self.target[:, np.newaxis]
+        self.target_scaling = None
+        self.set_target_scaling(target_scaling)
 
         self.target_plot_name = None
         self.target_to_plot = None
@@ -230,6 +240,42 @@ class PenaltyOption(OptionGeneric):
         self.is_stochastic = is_stochastic
 
         self.multi_thread = multi_thread
+
+    def set_target_scaling(self, target_scaling) -> None:
+        """Set the optional scaling used to convert physical targets to function coordinates."""
+
+        if target_scaling is None or self.target_scaling is not None:
+            return
+        if hasattr(target_scaling, "scaling"):
+            target_scaling = target_scaling.scaling
+        target_scaling = np.asarray(target_scaling, dtype=float).squeeze()
+        if target_scaling.ndim == 0:
+            target_scaling = target_scaling[np.newaxis]
+        if target_scaling.ndim != 1:
+            raise ValueError("target_scaling must be a scalar or a vector")
+        if np.any(target_scaling <= 0):
+            raise ValueError("target_scaling values must be strictly positive")
+        self.target_scaling = target_scaling
+
+    def target_in_function_coordinates(self, target: np.ndarray) -> np.ndarray:
+        """Convert a physical target to the coordinates returned by the penalty function."""
+
+        if self.target_scaling is None or target.size == 0:
+            return target
+
+        scaling = self.target_scaling
+        if scaling.shape[0] != target.shape[0]:
+            rows = list(self.rows) if self.rows is not None else list(range(target.shape[0]))
+            if len(rows) == target.shape[0] and rows and max(rows) < scaling.shape[0]:
+                scaling = scaling[rows]
+            elif scaling.shape[0] == 1:
+                scaling = np.repeat(scaling, target.shape[0])
+            else:
+                raise ValueError(
+                    f"target_scaling has {scaling.shape[0]} rows but target has {target.shape[0]} rows"
+                )
+
+        return target / scaling.reshape((target.shape[0],) + (1,) * (target.ndim - 1))
 
     def set_penalty(self, penalty: CX, controllers: PenaltyController | list[PenaltyController]):
         """
