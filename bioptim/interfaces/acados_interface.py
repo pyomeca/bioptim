@@ -280,19 +280,9 @@ class AcadosInterface(SolverInterface):
             )
 
         for key in ocp.nlp[0].controls.keys():
-            if not np.all(
-                np.all(
-                    ocp.nlp[0].u_bounds[key].min.T == ocp.nlp[0].u_bounds[key].min.T[0, :],
-                    axis=0,
-                )
-            ):
+            if not np.all(np.all(ocp.nlp[0].u_bounds[key].min.T == ocp.nlp[0].u_bounds[key].min.T[0, :], axis=0)):
                 raise NotImplementedError("u_bounds min must be the same at each shooting point with ACADOS")
-            if not np.all(
-                np.all(
-                    ocp.nlp[0].u_bounds[key].max.T == ocp.nlp[0].u_bounds[key].max.T[0, :],
-                    axis=0,
-                )
-            ):
+            if not np.all(np.all(ocp.nlp[0].u_bounds[key].max.T == ocp.nlp[0].u_bounds[key].max.T[0, :], axis=0)):
                 raise NotImplementedError("u_bounds max must be the same at each shooting point with ACADOS")
 
             if (
@@ -500,11 +490,7 @@ class AcadosInterface(SolverInterface):
                     v_var[rows] = 1.0
                     return v_var, rows
 
-                if objectives.node[0] not in [
-                    Node.INTERMEDIATES,
-                    Node.PENULTIMATE,
-                    Node.END,
-                ]:
+                if objectives.node[0] not in [Node.INTERMEDIATES, Node.PENULTIMATE, Node.END]:
                     v_var, rows = _adjust_dim()
                     if is_state:
                         acados.Vx0 = np.vstack((acados.Vx0, np.diag(v_var)))
@@ -543,8 +529,7 @@ class AcadosInterface(SolverInterface):
                 u = vertcat(u, u)
 
             acados.lagrange_costs = vertcat(
-                acados.lagrange_costs,
-                objectives.function[0](t, dt, x, u, p, a, d).reshape((-1, 1)),
+                acados.lagrange_costs, objectives.function[0](t, dt, x, u, p, a, d).reshape((-1, 1))
             )
             acados.W = linalg.block_diag(
                 acados.W, np.diag(objectives.weight.evaluate_at(0, objectives.function[0].numel_out()))
@@ -557,11 +542,7 @@ class AcadosInterface(SolverInterface):
                 acados.y_ref.append([np.zeros((objectives.function[0].numel_out(), 1)) for _ in node_idx])
 
         def add_nonlinear_ls_mayer(acados, objectives, t, dt, x, u, p, a, d, node=None):
-            if objectives.node[0] not in [
-                Node.INTERMEDIATES,
-                Node.PENULTIMATE,
-                Node.END,
-            ]:
+            if objectives.node[0] not in [Node.INTERMEDIATES, Node.PENULTIMATE, Node.END]:
                 acados.W_0 = linalg.block_diag(
                     acados.W_0, np.diag(objectives.weight.evaluate_at(0, objectives.function[0].numel_out()))
                 )
@@ -577,8 +558,7 @@ class AcadosInterface(SolverInterface):
                 u_tp = u_tp if objectives.function[0].size_in("u") != (0, 0) else []
 
                 acados.mayer_costs = vertcat(
-                    acados.mayer_costs,
-                    objectives.function[0](t, dt, x_tp, u_tp, p, a, d).reshape((-1, 1)),
+                    acados.mayer_costs, objectives.function[0](t, dt, x_tp, u_tp, p, a, d).reshape((-1, 1))
                 )
 
                 if objectives.target is not None:
@@ -601,8 +581,7 @@ class AcadosInterface(SolverInterface):
                 u_tp = u_tp if objectives.function[-1].size_in("u") != (0, 0) else []
 
                 acados.mayer_costs_e = vertcat(
-                    acados.mayer_costs_e,
-                    objectives.function[-1](t, dt, x_tp, u_tp, p, a, d).reshape((-1, 1)),
+                    acados.mayer_costs_e, objectives.function[-1](t, dt, x_tp, u_tp, p, a, d).reshape((-1, 1))
                 )
 
                 if objectives.target is not None:
@@ -623,10 +602,7 @@ class AcadosInterface(SolverInterface):
         self.W_e = np.zeros((0, 0))
         self.W_0 = np.zeros((0, 0))
         allowed_control_objectives = [ObjectiveFcn.Lagrange.MINIMIZE_CONTROL]
-        allowed_state_objectives = [
-            ObjectiveFcn.Lagrange.MINIMIZE_STATE,
-            ObjectiveFcn.Mayer.TRACK_STATE,
-        ]
+        allowed_state_objectives = [ObjectiveFcn.Lagrange.MINIMIZE_STATE, ObjectiveFcn.Mayer.TRACK_STATE]
 
         if self.acados_ocp.cost.cost_type == "LINEAR_LS":
             n_states = ocp.nlp[0].states.shape
