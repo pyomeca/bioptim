@@ -271,9 +271,7 @@ class PenaltyOption(OptionGeneric):
             elif scaling.shape[0] == 1:
                 scaling = np.repeat(scaling, target.shape[0])
             else:
-                raise ValueError(
-                    f"target_scaling has {scaling.shape[0]} rows but target has {target.shape[0]} rows"
-                )
+                raise ValueError(f"target_scaling has {scaling.shape[0]} rows but target has {target.shape[0]} rows")
 
         return target / scaling.reshape((target.shape[0],) + (1,) * (target.ndim - 1))
 
