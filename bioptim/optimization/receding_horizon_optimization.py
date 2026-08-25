@@ -1026,11 +1026,16 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
     def _initialize_one_cycle(self, dt: Float, states: AnyDict, controls: AnyDict, parameters: AnyDict) -> Solution:
         """return a solution for a single window kept of the MHE"""
         x_init = InitialGuessList()
+        state_interpolation = (
+            InterpolationType.ALL_POINTS
+            if isinstance(self.nlp[0].dynamics_type.ode_solver, OdeSolver.COLLOCATION)
+            else InterpolationType.EACH_FRAME
+        )
         for key in self.nlp[0].states.keys():
             x_init.add(
                 key,
                 states[key],
-                interpolation=self.nlp[0].x_init.type,
+                interpolation=state_interpolation,
                 phase=0,
             )
 
