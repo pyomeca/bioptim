@@ -34,6 +34,9 @@ It is also a good idea to check the current opened pull-request not to redo some
 If your feature is mentioned in the issue section of GitHub, please assign it to yourself.
 Otherwise, please open a new issue explaining what you are currently working on (and assign it to yourself!).
 
+Before changing core behavior, consult the [architecture overview](architecture/OVERVIEW.md) and the
+[change context](architecture/LLM_CONTEXT.md) to locate the relevant modules, tests and numerical invariants.
+
 As soon as possible, you are asked to open a pull-request (see below) with a short but descriptive name. 
 Unless that pull-request is ready to be merged, please tag it as `work in progress` by adding `[WIP]` at the beginning of the pull-request name.
 If you are ready to get your PR reviewed, you can add the tag `ready to review` by adding `[RTR]`.
@@ -84,4 +87,3 @@ The easiest way to make sure black is happy is to locally run this command:
 black . -l120 --exclude "external/*"
 ```
 If you need to install black, you can do it via conda using the conda-forge channel.
-
