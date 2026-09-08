@@ -2,11 +2,11 @@ from enum import Enum
 from typing import Callable, Any
 
 import numpy as np
-from casadi import DM, vertcat, Function
+from casadi import DM, vertcat, Function, horzcat
 
 from .configure_new_variable import NewVariableConfiguration
 from .fatigue.fatigue_dynamics import FatigueList
-from ..misc.enums import PlotType, ContactType
+from ..misc.enums import PlotType, ContactType, ControlType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.mapping import BiMapping, Mapping
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
@@ -1204,20 +1204,31 @@ class ConfigureVariables:
 
         time_span_sym = vertcat(nlp.time_cx, nlp.dt)
 
-        nlp.q_v_function = Function(
+        sym_qv = (
+            nlp.controls.scaled.cx
+            if nlp.control_type == ControlType.CONSTANT
+            else nlp.cx.sym("linear_continuous_compatible_controls", nlp.controls.scaled.cx.shape[0], 2)
+        )
+        qv_init_w_algebraic = (
+            nlp.algebraic_states["q_v"].cx
+            if "q_v" in nlp.algebraic_states.keys()
+            else DM.zeros(nlp.model.nb_dependent_joints, 1)
+        )
+
+        q_v_plot_function = Function(
             "qv_function",
             [
                 time_span_sym,
-                nlp.states.cx,
-                nlp.controls.cx,
-                nlp.parameters.cx,
-                nlp.algebraic_states.cx,
+                nlp.states.scaled.cx,
+                sym_qv,
+                nlp.parameters.scaled.cx,
+                nlp.algebraic_states.scaled.cx,
                 nlp.numerical_timeseries.cx,
             ],
             [
                 nlp.model.compute_q_v()(
                     nlp.states["q_u"].cx,
-                    DM.zeros(nlp.model.nb_dependent_joints, 1),
+                    qv_init_w_algebraic,
                 )
             ],
             ["t_span", "x", "u", "p", "a", "d"],
@@ -1239,7 +1250,7 @@ class ConfigureVariables:
         )
 
         nlp.plot["q_v"] = CustomPlot(
-            lambda t0, phases_dt, node_idx, x, u, p, a, d: nlp.q_v_function(
+            lambda t0, phases_dt, node_idx, x, u, p, a, d: q_v_plot_function(
                 np.concatenate([t0, t0 + phases_dt[nlp.phase_idx]]), x, u, p, a, d
             ),
             plot_type=PlotType.INTEGRATED,
@@ -1261,12 +1272,24 @@ class ConfigureVariables:
         """
 
         time_span_sym = vertcat(nlp.time_cx, nlp.dt)
-        nlp.q_v_function = Function(
+
+        sym_qv = (
+            nlp.controls.scaled.cx
+            if nlp.control_type == ControlType.CONSTANT
+            else nlp.cx.sym("new_control", nlp.controls.scaled.cx.shape[0], 2)
+        )
+        qv_init_w_algebraic = (
+            nlp.algebraic_states["q_v"].cx
+            if "q_v" in nlp.algebraic_states.keys()
+            else DM.zeros(nlp.model.nb_dependent_joints, 1)
+        )
+
+        qdot_v_plot_function = Function(
             "qdot_v_function",
             [
                 time_span_sym,
                 nlp.states.scaled.cx,
-                nlp.controls.scaled.cx,
+                sym_qv,
                 nlp.parameters.scaled.cx,
                 nlp.algebraic_states.scaled.cx,
                 nlp.numerical_timeseries.cx,
@@ -1275,7 +1298,7 @@ class ConfigureVariables:
                 nlp.model._compute_qdot_v()(
                     nlp.states.scaled["q_u"].cx,
                     nlp.states.scaled["qdot_u"].cx,
-                    DM.zeros(nlp.model.nb_dependent_joints, 1),
+                    qv_init_w_algebraic,
                 )
             ],
             ["t_span", "x", "u", "p", "a", "d"],
@@ -1297,7 +1320,7 @@ class ConfigureVariables:
         )
 
         nlp.plot["qdot_v"] = CustomPlot(
-            lambda t0, phases_dt, node_idx, x, u, p, a, d: nlp.q_v_function(
+            lambda t0, phases_dt, node_idx, x, u, p, a, d: qdot_v_plot_function(
                 np.concatenate([t0, t0 + phases_dt[nlp.phase_idx]]), x, u, p, a, d
             ),
             plot_type=PlotType.INTEGRATED,
@@ -1319,12 +1342,25 @@ class ConfigureVariables:
         """
 
         time_span_sym = vertcat(nlp.time_cx, nlp.dt)
-        nlp.lagrange_multipliers_function = Function(
+
+        sym_qv = (
+            nlp.controls.scaled.cx
+            if nlp.control_type == ControlType.CONSTANT
+            else nlp.cx.sym("linear_continuous_compatible_controls", nlp.controls.scaled.cx.shape[0], 2)
+        )
+        ctrl_cx = sym_qv[:, 1] if nlp.control_type == ControlType.LINEAR_CONTINUOUS else nlp.controls.scaled.cx
+        qv_init_w_algebraic = (
+            nlp.algebraic_states["q_v"].cx
+            if "q_v" in nlp.algebraic_states.keys()
+            else DM.zeros(nlp.model.nb_dependent_joints, 1)
+        )
+
+        lagrange_multipliers_plot_function = Function(
             "lagrange_multipliers_function",
             [
                 time_span_sym,
                 nlp.states.scaled.cx,
-                nlp.controls.scaled.cx,
+                sym_qv,
                 nlp.parameters.scaled.cx,
                 nlp.algebraic_states.scaled.cx,
                 nlp.numerical_timeseries.cx,
@@ -1333,8 +1369,11 @@ class ConfigureVariables:
                 nlp.model.compute_the_lagrangian_multipliers()(
                     nlp.states.scaled["q_u"].cx,
                     nlp.states.scaled["qdot_u"].cx,
-                    DM.zeros(nlp.model.nb_dependent_joints, 1),
-                    DynamicsFunctions.get(nlp.controls["tau"], nlp.controls.scaled.cx),
+                    qv_init_w_algebraic,
+                    DynamicsFunctions.get(
+                        nlp.controls["tau"],
+                        ctrl_cx,
+                    ),
                 )
             ],
             ["t_span", "x", "u", "p", "a", "d"],
@@ -1360,7 +1399,7 @@ class ConfigureVariables:
         )
 
         nlp.plot["lagrange_multipliers"] = CustomPlot(
-            lambda t0, phases_dt, node_idx, x, u, p, a, d: nlp.lagrange_multipliers_function(
+            lambda t0, phases_dt, node_idx, x, u, p, a, d: lagrange_multipliers_plot_function(
                 np.concatenate([t0, t0 + phases_dt[nlp.phase_idx]]), x, u, p, a, d
             ),
             plot_type=PlotType.INTEGRATED,
