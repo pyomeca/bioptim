@@ -2,6 +2,7 @@ import inspect
 from math import inf
 from typing import Any
 
+import numpy as np
 from casadi import horzcat, vertcat, Function, MX_eye, SX_eye, SX, jacobian, trace, if_else
 
 from .penalty_controller import PenaltyController
@@ -82,7 +83,7 @@ class PenaltyFunctionAbstract:
                 penalty.add_target_to_plot(controller=controller, combine_to=f"{key}_states")
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
 
-            # TODO: We should scale the target here!
+            # The controller exposes states in physical coordinates, so the target is already in physical units.
             return controller.states[key].cx_start
 
         @staticmethod
@@ -109,7 +110,7 @@ class PenaltyFunctionAbstract:
                 penalty.add_target_to_plot(controller=controller, combine_to=f"{key}_controls")
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
 
-            # TODO: We should scale the target here!
+            # The controller exposes controls in physical coordinates, so the target is already in physical units.
             return controller.controls[key].cx_start
 
         @staticmethod
@@ -1354,6 +1355,17 @@ class PenaltyFunctionAbstract:
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
+
+            if key is None or key == "all":
+                target_scaling = np.concatenate(
+                    [
+                        controller.parameters[parameter_key].scaling.scaling[:, 0]
+                        for parameter_key in controller.parameters.keys()
+                    ]
+                )
+            else:
+                target_scaling = controller.parameters[key].scaling.scaling[:, 0]
+            penalty.set_target_scaling(target_scaling)
 
             return controller.parameters.cx if key is None or key == "all" else controller.parameters[key].cx
 

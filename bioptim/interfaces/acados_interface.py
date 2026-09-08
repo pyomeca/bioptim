@@ -11,6 +11,7 @@ from ..interfaces import Solver
 from ..misc.enums import Node, SolverType, PhaseDynamics
 from ..limits.objective_functions import ObjectiveFunction, ObjectiveFcn
 from ..limits.path_conditions import Bounds
+from ..limits.penalty_helpers import PenaltyHelpers
 from ..misc.enums import InterpolationType
 
 
@@ -456,8 +457,8 @@ class AcadosInterface(SolverInterface):
 
                 y_ref = [np.zeros((n_states if is_state else n_controls, 1)) for _ in node_idx]
                 if objectives.target is not None:
-                    for idx in node_idx:
-                        y_ref[idx][rows] = objectives.target[..., idx].T.reshape((-1, 1))
+                    for penalty_idx, idx in enumerate(node_idx):
+                        y_ref[idx][rows] = PenaltyHelpers.target(objectives, penalty_idx).T.reshape((-1, 1))
                 acados.y_ref.append(y_ref)
 
             if objectives.type in allowed_control_objectives:
@@ -489,7 +490,7 @@ class AcadosInterface(SolverInterface):
                     acados.W_0 = linalg.block_diag(acados.W_0, np.diag(objectives.weight.evaluate_at(0, n_variables)))
                     y_ref_start = np.zeros((n_variables, 1))
                     if objectives.target is not None:
-                        y_ref_start[rows] = objectives.target[..., 0].T.reshape((-1, 1))
+                        y_ref_start[rows] = PenaltyHelpers.target(objectives, 0).T.reshape((-1, 1))
                     acados.y_ref_start.append(y_ref_start)
 
                 if objectives.node[0] in [Node.END, Node.ALL]:
@@ -500,7 +501,7 @@ class AcadosInterface(SolverInterface):
                     acados.W_e = linalg.block_diag(acados.W_e, np.diag(objectives.weight.evaluate_at(0, n_states)))
                     y_ref_end = np.zeros((n_states, 1))
                     if objectives.target is not None:
-                        y_ref_end[rows] = objectives.target[..., -1].T.reshape((-1, 1))
+                        y_ref_end[rows] = PenaltyHelpers.target(objectives, -1).T.reshape((-1, 1))
                     acados.y_ref_end.append(y_ref_end)
 
             if objectives.type in allowed_control_objectives:
@@ -525,7 +526,12 @@ class AcadosInterface(SolverInterface):
 
             node_idx = objectives.node_idx[:-1] if objectives.node[0] == Node.ALL else objectives.node_idx
             if objectives.target is not None:
-                acados.y_ref.append([objectives.target[..., idx].T.reshape((-1, 1)) for idx in node_idx])
+                acados.y_ref.append(
+                    [
+                        PenaltyHelpers.target(objectives, penalty_idx).T.reshape((-1, 1))
+                        for penalty_idx, _ in enumerate(node_idx)
+                    ]
+                )
             else:
                 acados.y_ref.append([np.zeros((objectives.function[0].numel_out(), 1)) for _ in node_idx])
 
@@ -550,7 +556,7 @@ class AcadosInterface(SolverInterface):
                 )
 
                 if objectives.target is not None:
-                    acados.y_ref_start.append(objectives.target[..., 0].T.reshape((-1, 1)))
+                    acados.y_ref_start.append(PenaltyHelpers.target(objectives, 0).T.reshape((-1, 1)))
                 else:
                     acados.y_ref_start.append(np.zeros((objectives.function[0].numel_out(), 1)))
 
@@ -573,7 +579,7 @@ class AcadosInterface(SolverInterface):
                 )
 
                 if objectives.target is not None:
-                    acados.y_ref_end.append(objectives.target[..., -1].T.reshape((-1, 1)))
+                    acados.y_ref_end.append(PenaltyHelpers.target(objectives, -1).T.reshape((-1, 1)))
                 else:
                     acados.y_ref_end.append(np.zeros((objectives.function[-1].numel_out(), 1)))
 
