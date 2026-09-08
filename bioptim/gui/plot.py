@@ -705,8 +705,6 @@ class PlotOcp:
             else self.t
         )
 
-        # TODO: introduce repeat for the COLLOCATIONS min/max_bounds only for states graphs.
-        # For now the plots in COLLOCATIONS with LINEAR are not giving the right values
         nlp.plot[variable].bounds.check_and_adjust_dimensions(n_elements=len(mapping_to_first_index), n_shooting=ns)
 
         idx = mapping_to_first_index.index(ctr)
@@ -717,8 +715,11 @@ class PlotOcp:
             bounds_min = np.concatenate((bounds_min, [bounds_min[-1]]))
             bounds_max = np.concatenate((bounds_max, [bounds_max[-1]]))
 
-        self.plots_bounds.append([ax.step(t[i], bounds_min, where="post", **self.plot_options["bounds"]), i])
-        self.plots_bounds.append([ax.step(t[i], bounds_max, where="post", **self.plot_options["bounds"]), i])
+        is_linear = nlp.plot[variable].bounds.type == InterpolationType.LINEAR
+        plot_function = ax.plot if is_linear else ax.step
+        plot_options = {} if is_linear else {"where": "post"}
+        self.plots_bounds.append([plot_function(t[i], bounds_min, **plot_options, **self.plot_options["bounds"]), i])
+        self.plots_bounds.append([plot_function(t[i], bounds_max, **plot_options, **self.plot_options["bounds"]), i])
 
     def _add_new_axis(self, variable: Str, nb: Int, n_rows: Int, n_cols: Int) -> np.ndarray[plt.Axes]:
         """

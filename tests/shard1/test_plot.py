@@ -1,4 +1,7 @@
+from types import SimpleNamespace
+
 import numpy as np
+import matplotlib.pyplot as plt
 from casadi import DM
 
 from bioptim import (
@@ -11,6 +14,8 @@ from bioptim import (
     InitialGuessList,
     PlotType,
     CustomPlot,
+    Bounds,
+    InterpolationType,
 )
 from bioptim.gui.plot import DEFAULT_COLORS, PlotOcp
 
@@ -89,6 +94,30 @@ def test_default_colors():
     assert PlotType.INTEGRATED in DEFAULT_COLORS
     assert PlotType.STEP in DEFAULT_COLORS
     assert PlotType.POINT in DEFAULT_COLORS
+
+
+def test_linear_bounds_are_plotted_with_linear_interpolation():
+    """Linear bounds must not be rendered as steps on integrated state plots."""
+    plot_ocp = PlotOcp.__new__(PlotOcp)
+    plot_ocp.t = [np.linspace(0, 1, 3)]
+    plot_ocp.plots_bounds = []
+    plot_ocp.plot_options = {"bounds": {"color": "k"}}
+
+    bounds = Bounds(
+        "q",
+        min_bound=np.array([[0.0, 1.0]]),
+        max_bound=np.array([[2.0, 4.0]]),
+        interpolation=InterpolationType.LINEAR,
+    )
+    nlp = SimpleNamespace(ns=2, plot={"q_states": SimpleNamespace(bounds=bounds)})
+    figure, axis = plt.subplots()
+
+    plot_ocp._add_bounds_to_plot(0, nlp, "q_states", 0, axis, [0])
+
+    np.testing.assert_allclose(plot_ocp.plots_bounds[0][0][0].get_ydata(), [0.0, 0.5, 1.0])
+    np.testing.assert_allclose(plot_ocp.plots_bounds[1][0][0].get_ydata(), [2.0, 3.0, 4.0])
+    assert plot_ocp.plots_bounds[0][0][0].get_drawstyle() == "default"
+    plt.close(figure)
 
 
 def test_plot_options():
