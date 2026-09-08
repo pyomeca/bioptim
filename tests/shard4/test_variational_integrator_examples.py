@@ -30,6 +30,7 @@ def test_variational_pendulum(use_sx):
 
     # --- Solve the ocp --- #
     sol = ocp.solve(Solver.IPOPT())
+    TestUtils.assert_solver_success(sol, max_iterations=100)
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
 
@@ -64,6 +65,7 @@ def test_variational_pendulum_with_holonomic_constraints(use_sx):
 
     # --- Solve the ocp --- #
     sol = ocp.solve(Solver.IPOPT())
+    TestUtils.assert_solver_success(sol, max_iterations=100)
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
 

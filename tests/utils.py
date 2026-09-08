@@ -31,6 +31,18 @@ from bioptim.interfaces.ipopt_interface import IpoptInterface
 
 class TestUtils:
     @staticmethod
+    def assert_solver_success(solution: Solution, max_iterations: int | None = None):
+        """Assert convergence and optionally guard against a large iteration-count regression."""
+        assert solution.status == 0, (
+            f"Solver did not converge (status={solution.status}, iterations={solution.iterations})"
+        )
+        assert isinstance(solution.iterations, int) and solution.iterations >= 0
+        if max_iterations is not None:
+            assert solution.iterations <= max_iterations, (
+                f"Solver iteration regression: {solution.iterations} iterations, expected at most {max_iterations}"
+            )
+
+    @staticmethod
     def bioptim_folder() -> str:
         return TestUtils._capitalize_folder_drive(str(Path(__file__).parent / "../bioptim"))
 
