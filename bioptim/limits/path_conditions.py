@@ -317,7 +317,8 @@ class PathCondition(ndarray):
             return self[:, shooting_point]
         elif self.type == InterpolationType.SPLINE:
             spline = interp1d(self.t, self)
-            return spline(shooting_point / self.n_shooting * (self.t[-1] - self.t[0]))
+            time = self.t[0] + shooting_point / (self.n_shooting * repeat) * (self.t[-1] - self.t[0])
+            return spline(time)
         elif self.type == InterpolationType.CUSTOM:
             if self.slice_list is not None:
                 slice_list = self.slice_list
