@@ -36,6 +36,30 @@ global test_memory
 test_memory = {}
 
 
+def test_rk_one_per_node_does_not_declare_unused_state_cx():
+    from bioptim.examples.getting_started import basic_ocp as ocp_module
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=TestUtils.bioptim_folder() + "/examples/models/pendulum.bioMod",
+        final_time=1,
+        n_shooting=3,
+        ode_solver=OdeSolver.RK4(),
+        phase_dynamics=PhaseDynamics.ONE_PER_NODE,
+        expand_dynamics=False,
+    )
+    nlp = ocp.nlp[0]
+
+    for node_index in range(nlp.n_states_nodes):
+        nlp.states.node_index = node_index
+        nlp.states_dot.node_index = node_index
+        assert len(nlp.states["q"].original_cx) == 2
+        assert len(nlp.states_dot["q"].original_cx) == 2
+
+    # Controls are deliberately outside this optimization and retain their existing CX layout.
+    nlp.controls.node_index = 0
+    assert len(nlp.controls["tau"].original_cx) == 3
+
+
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("n_threads", [1, 2])
 @pytest.mark.parametrize("use_sx", [False, True])

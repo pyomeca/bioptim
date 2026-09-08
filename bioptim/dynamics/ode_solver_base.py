@@ -78,6 +78,11 @@ class OdeSolverBase:
         raise RuntimeError("This method should be implemented in the child class")
 
     @property
+    def uses_only_cx_start(self) -> Bool:
+        """Whether the integrator only consumes the first state and algebraic-state CX."""
+        return False
+
+    @property
     def defects_type(self) -> DefectType:
         """
         The type of defect

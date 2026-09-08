@@ -166,6 +166,15 @@ class NewVariableConfiguration:
             _cx[j] = _cx_scaled[j] * scaling
         return _cx
 
+    def define_cx_scaled_for_state(self, n_cx: Int, node_index: Int) -> CXList:
+        """Define state-like CX without a middle symbol when the integrator cannot consume it."""
+        if (
+            self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE
+            and self.nlp.dynamics_type.ode_solver.uses_only_cx_start
+        ):
+            n_cx -= 1
+        return self.define_cx_scaled(n_col=n_cx, node_index=node_index)
+
     def _declare_auto_variable_mapping(self) -> None:
         """Declare the mapping of the new variable if not already declared"""
         if self.name not in self.nlp.variable_mappings:
@@ -228,7 +237,7 @@ class NewVariableConfiguration:
                 self.nlp.n_states_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1
             ):
                 n_cx = self.nlp.dynamics_type.ode_solver.n_required_cx + 2
-                cx_scaled = self.define_cx_scaled(n_col=n_cx, node_index=node_index)
+                cx_scaled = self.define_cx_scaled_for_state(n_cx=n_cx, node_index=node_index)
                 cx = self.define_cx_unscaled(cx_scaled, self.nlp.x_scaling[self.name].scaling)
                 self.nlp.states.append(
                     self.name,
@@ -260,7 +269,7 @@ class NewVariableConfiguration:
                 self.nlp.n_states_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1
             ):
                 n_cx = self.nlp.dynamics_type.ode_solver.n_required_cx + 2
-                cx_scaled = self.define_cx_scaled(n_col=n_cx, node_index=node_index)
+                cx_scaled = self.define_cx_scaled_for_state(n_cx=n_cx, node_index=node_index)
                 cx = self.define_cx_unscaled(cx_scaled, np.ones_like(self.nlp.x_scaling[self.name].scaling))
                 self.nlp.states_dot.append(
                     self.name,
@@ -308,7 +317,7 @@ class NewVariableConfiguration:
                 self.nlp.n_states_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1
             ):
                 n_cx = self.nlp.dynamics_type.ode_solver.n_required_cx + 2
-                cx_scaled = self.define_cx_scaled(n_col=n_cx, node_index=node_index)
+                cx_scaled = self.define_cx_scaled_for_state(n_cx=n_cx, node_index=node_index)
                 cx = self.define_cx_unscaled(cx_scaled, self.nlp.a_scaling[self.name].scaling)
                 self.nlp.algebraic_states.append(
                     self.name,

@@ -38,6 +38,10 @@ class RK(OdeSolverBase):
         return 1
 
     @property
+    def uses_only_cx_start(self) -> Bool:
+        return True
+
+    @property
     def defects_type(self) -> DefectType:
         return DefectType.NOT_APPLICABLE
 
