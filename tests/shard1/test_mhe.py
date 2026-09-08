@@ -2,6 +2,7 @@ import pytest
 import os
 import shutil
 from sys import platform
+from types import SimpleNamespace
 
 from bioptim.misc.enums import SolverType
 from bioptim import (
@@ -18,6 +19,26 @@ import numpy as np
 import numpy.testing as npt
 
 from ..utils import TestUtils
+
+
+def test_mhe_advances_algebraic_state_initial_guesses():
+    mhe = MovingHorizonEstimator.__new__(MovingHorizonEstimator)
+    algebraic_init = SimpleNamespace(
+        type=InterpolationType.EACH_FRAME,
+        init=np.zeros((1, 4)),
+    )
+    mhe.nlp = [SimpleNamespace(a_init={"lambda": algebraic_init})]
+
+    class Solution:
+        @staticmethod
+        def decision_algebraic_states(to_merge):
+            assert to_merge == SolutionMerge.NODES
+            return {"lambda": np.array([[1.0, 2.0, 3.0, 4.0]])}
+
+    changed = mhe.advance_window_initial_guess_algebraic_states(Solution())
+
+    assert changed
+    npt.assert_equal(algebraic_init.init, [[2.0, 3.0, 4.0, 4.0]])
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])

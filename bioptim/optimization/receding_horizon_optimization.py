@@ -296,6 +296,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
 
         init_states_have_changed = self.advance_window_initial_guess_states(sol, **advance_options)
         init_controls_have_changed = self.advance_window_initial_guess_controls(sol, **advance_options)
+        init_algebraic_states_have_changed = self.advance_window_initial_guess_algebraic_states(sol, **advance_options)
         init_parameter_have_changed = self.advance_window_initial_guess_parameters(sol, **advance_options)
 
         if self.ocp_solver.opts.type != SolverType.ACADOS:
@@ -303,6 +304,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
                 self.nlp[0].x_init if init_states_have_changed else None,
                 self.nlp[0].u_init if init_controls_have_changed else None,
                 self.parameter_init if init_parameter_have_changed else None,
+                self.nlp[0].a_init if init_algebraic_states_have_changed else None,
             )
 
     def advance_window_bounds_states(self, sol: Solution, **advance_options) -> Bool:
@@ -365,6 +367,26 @@ class RecedingHorizonOptimization(OptimalControlProgram):
                 (controls[key][:, 1:], controls[key][:, -1][:, np.newaxis]), axis=1
             )
         return True
+
+    def advance_window_initial_guess_algebraic_states(self, sol: Solution, **advance_options) -> Bool:
+        algebraic_states = sol.decision_algebraic_states(to_merge=SolutionMerge.NODES)
+
+        for key in algebraic_states.keys():
+            if self.nlp[0].a_init[key].type != InterpolationType.EACH_FRAME:
+                self.nlp[0].a_init.add(
+                    key,
+                    np.ndarray(algebraic_states[key].shape),
+                    interpolation=InterpolationType.EACH_FRAME,
+                    phase=0,
+                )
+                self.nlp[0].a_init[key].check_and_adjust_dimensions(
+                    len(self.nlp[0].algebraic_states[key]), self.nlp[0].n_algebraic_states_nodes - 1
+                )
+
+            self.nlp[0].a_init[key].init[:, :] = np.concatenate(
+                (algebraic_states[key][:, 1:], algebraic_states[key][:, -1][:, np.newaxis]), axis=1
+            )
+        return bool(algebraic_states)
 
     def advance_window_initial_guess_parameters(self, sol: Solution, **advance_options) -> Bool:
         parameters = sol.parameters
@@ -636,6 +658,24 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
             self.nlp[0].u_init[key].init[:, :] = controls[key][:, :]
         return True
 
+    def advance_window_initial_guess_algebraic_states(self, sol: Solution, **advance_options) -> Bool:
+        algebraic_states = sol.decision_algebraic_states(to_merge=SolutionMerge.NODES)
+
+        for key in algebraic_states.keys():
+            if self.nlp[0].a_init[key].type != InterpolationType.EACH_FRAME:
+                self.nlp[0].a_init.add(
+                    key,
+                    np.ndarray(algebraic_states[key].shape),
+                    interpolation=InterpolationType.EACH_FRAME,
+                    phase=0,
+                )
+                self.nlp[0].a_init[key].check_and_adjust_dimensions(
+                    len(self.nlp[0].algebraic_states[key]), self.nlp[0].n_algebraic_states_nodes - 1
+                )
+
+            self.nlp[0].a_init[key].init[:, :] = algebraic_states[key]
+        return bool(algebraic_states)
+
 
 class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
     def __init__(
@@ -750,6 +790,47 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             else:
                 raise NotImplementedError(f"Control type {self.nlp[0].control_type} is not implemented yet")
             self.nlp[0].u_init[key].init[:, :] = controls[key][:, frames]
+
+    def advance_window_initial_guess_algebraic_states(self, sol: Solution, **advance_options) -> Bool:
+        algebraic_states = sol.decision_algebraic_states(to_merge=SolutionMerge.NODES)
+
+        for key in algebraic_states.keys():
+            if isinstance(self.nlp[0].dynamics_type.ode_solver, OdeSolver.COLLOCATION):
+                if self.nlp[0].a_init[key].type != InterpolationType.ALL_POINTS:
+                    self.nlp[0].a_init.add(
+                        key,
+                        np.ndarray((algebraic_states[key].shape[0], self.nlp[0].ns * self.nb_intermediate_frames + 1)),
+                        interpolation=InterpolationType.ALL_POINTS,
+                        phase=0,
+                    )
+                    self.nlp[0].a_init[key].check_and_adjust_dimensions(
+                        self.nlp[0].algebraic_states[key].shape,
+                        self.nlp[0].ns * self.nb_intermediate_frames,
+                    )
+                frames = []
+                for _ in range(self.n_cycles):
+                    frames.extend(
+                        range(
+                            self.n_cycles_to_advance * self.cycle_len * self.nb_intermediate_frames,
+                            (self.n_cycles_to_advance + 1) * self.cycle_len * self.nb_intermediate_frames,
+                        )
+                    )
+                frames.append((self.n_cycles_to_advance + 1) * self.cycle_len * self.nb_intermediate_frames)
+            else:
+                if self.nlp[0].a_init[key].type != InterpolationType.EACH_FRAME:
+                    self.nlp[0].a_init.add(
+                        key,
+                        np.ndarray((algebraic_states[key].shape[0], self.nlp[0].ns + 1)),
+                        interpolation=InterpolationType.EACH_FRAME,
+                        phase=0,
+                    )
+                    self.nlp[0].a_init[key].check_and_adjust_dimensions(
+                        self.nlp[0].algebraic_states[key].shape, self.nlp[0].ns
+                    )
+                frames = self.initial_guess_frames
+
+            self.nlp[0].a_init[key].init[:, :] = algebraic_states[key][:, frames]
+        return bool(algebraic_states)
 
     def solve(
         self,
