@@ -1106,7 +1106,7 @@ class ConfigureVariables:
         else:
             contact_names_in_phase = [name for name in nlp.model.rigid_contact_names]
             axes_idx = BiMapping(
-                to_first=[i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase],
+                to_first=list(range(len(contact_names_in_phase))),
                 to_second=[i for i, c in enumerate(all_contact_names) if c in contact_names_in_phase],
             )
 
