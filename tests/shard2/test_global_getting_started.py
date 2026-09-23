@@ -426,8 +426,8 @@ def test_initial_guesses(ode_solver, interpolation, random_init, phase_dynamics)
 
     np.random.seed(42)
 
-    if interpolation == InterpolationType.ALL_POINTS and ode_solver.is_direct_shooting:
-        with pytest.raises(ValueError, match="InterpolationType.ALL_POINTS must only be used with direct collocation"):
+    if interpolation == InterpolationType.ALL_POINTS:
+        with pytest.raises(ValueError, match="InterpolationType.ALL_POINTS cannot be used for control initial guesses"):
             _ = ocp_module.prepare_ocp(
                 biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
                 final_time=1,
