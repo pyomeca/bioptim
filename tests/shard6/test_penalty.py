@@ -16,6 +16,8 @@ from bioptim import (
     MultinodeConstraintList,
     MultinodeConstraint,
     MultinodeObjective,
+    MultinodeObjectiveFcn,
+    MultinodeObjectiveList,
     Node,
     ControlType,
     PhaseDynamics,
@@ -205,6 +207,17 @@ def test_penalty_targets_shapes():
     npt.assert_equal(Objective([], custom_type=p, target=[[1], [2]]).target.shape, (2, 1))
     npt.assert_equal(Objective([], custom_type=p, target=[[1, 2]]).target.shape, (1, 2))
     npt.assert_equal(Objective([], custom_type=p, target=np.array([[1, 2]])).target.shape, (1, 2))
+
+
+def test_multinode_objective_default_weight_is_one():
+    objectives = MultinodeObjectiveList()
+    objectives.add(
+        MultinodeObjectiveFcn.STATES_EQUALITY,
+        nodes=(Node.START, Node.END),
+        nodes_phase=(0, 0),
+    )
+
+    npt.assert_equal(objectives[0].weight, ObjectiveWeight(1))
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
