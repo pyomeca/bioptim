@@ -1,4 +1,5 @@
 import re
+from types import SimpleNamespace
 
 import numpy as np
 import numpy.testing as npt
@@ -19,6 +20,7 @@ from bioptim import (
     SolutionMerge,
 )
 from bioptim.limits.path_conditions import InitialGuess
+from bioptim.optimization.vector_utils import _compute_value_for_node
 from ..utils import TestUtils
 
 # TODO: Add negative test for sizes
@@ -135,6 +137,24 @@ def test_initial_guess_spline():
     for i, t in enumerate(time_to_test):
         expected_val = expected_matrix[:, i]
         npt.assert_almost_equal(init.init.evaluate_at(t), expected_val)
+
+
+def test_initial_guess_spline_at_collocation_points():
+    class VariableContainer(dict):
+        shape = 1
+
+    initial_guesses = InitialGuessList()
+    initial_guesses.add("x", [[0.0, 6.0]], t=[2.0, 8.0], interpolation=InterpolationType.SPLINE)
+    initial_guesses["x"].check_and_adjust_dimensions(1, 2)
+    variables = VariableContainer(x=SimpleNamespace(index=[0]))
+    scaling = {"x": SimpleNamespace(scaling=np.ones((1, 1)))}
+
+    values = [
+        _compute_value_for_node(node, sub_node, 0, 3, variables, initial_guesses, scaling).item()
+        for node in range(2)
+        for sub_node in range(3)
+    ]
+    npt.assert_allclose(values, [0, 1, 2, 3, 4, 5])
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
