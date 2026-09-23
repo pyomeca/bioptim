@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 import numpy.testing as npt
 import pytest
 from casadi import MX, SX
@@ -178,6 +180,41 @@ def test_configure_soft_contacts(cx):
     npt.assert_equal(nlp.states.keys(), ["soft_contact_forces"])
     npt.assert_equal(nlp.states_dot.shape, 6)
     npt.assert_equal(nlp.states_dot.keys(), ["soft_contact_forces"])
+
+
+def test_rigid_contact_plot_mapping_when_first_contact_is_removed():
+    class Model:
+        def __init__(self, rigid_contact_names):
+            self.rigid_contact_names = rigid_contact_names
+
+        def get_rigid_contact_forces(self, *args, **kwargs):
+            return MX.zeros(len(self.rigid_contact_names), 1)
+
+    def make_nlp(contact_names, phase_idx):
+        empty_variable = SimpleNamespace(scaled=SimpleNamespace(cx=MX.zeros(0, 1)))
+        return SimpleNamespace(
+            model=Model(contact_names),
+            time_cx=MX.sym(f"time_{phase_idx}", 1, 1),
+            dt=MX.sym(f"dt_{phase_idx}", 1, 1),
+            states=empty_variable,
+            controls=empty_variable,
+            parameters=empty_variable,
+            algebraic_states=empty_variable,
+            numerical_timeseries=SimpleNamespace(cx=MX.zeros(0, 1)),
+            plot_mapping={},
+            plot={},
+            phase_idx=phase_idx,
+        )
+
+    phase_0 = make_nlp(["heel", "toe"], 0)
+    phase_1 = make_nlp(["toe"], 1)
+    ocp = SimpleNamespace(nlp=[phase_0, phase_1])
+
+    ConfigureVariables.configure_rigid_contact_function(ocp, phase_1)
+
+    mapping = phase_1.plot["rigid_contact_forces"].phase_mappings
+    npt.assert_equal(mapping.to_first.map_idx, [0])
+    npt.assert_equal(mapping.to_second.map_idx, [1])
 
 
 @pytest.mark.parametrize("cx", [MX, SX])
