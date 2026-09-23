@@ -1,5 +1,6 @@
 from time import perf_counter
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 import numpy as np
 from scipy import linalg
@@ -13,12 +14,23 @@ from ..limits.objective_functions import ObjectiveFunction, ObjectiveFcn
 from ..limits.path_conditions import Bounds
 from ..misc.enums import InterpolationType
 
+if TYPE_CHECKING:
+    from ..optimization.solution.solution import Solution
+
 
 from ..misc.parameters_types import (
     Str,
     Bool,
     AnyListorDict,
 )
+
+ACADOS_STATUS_LABELS = {
+    0: "success",
+    1: "maximum_iterations_reached",
+    2: "minimum_step_reached",
+    3: "qp_solver_failure",
+    4: "ready",
+}
 
 
 class AcadosInterface(SolverInterface):
@@ -875,6 +887,7 @@ class AcadosInterface(SolverInterface):
             "iter": self.ocp_solver.get_stats("sqp_iter"),
             "status": self.status,
             "solver": SolverType.ACADOS,
+            "solver_diagnostics": self.get_solver_diagnostics(),
         }
 
         out["x"] = vertcat(out["x"], acados_x.reshape(-1, 1, order="F"))
@@ -892,6 +905,91 @@ class AcadosInterface(SolverInterface):
             out.append(self.out[key])
 
         return out[0] if len(out) == 1 else out
+
+    def get_solver_diagnostics(self) -> dict:
+        """Return stable, best-effort diagnostics for the last Acados solve."""
+
+        diagnostics = {
+            "status": self.status,
+            "status_label": ACADOS_STATUS_LABELS.get(self.status, "unknown"),
+            "wall_time": self.real_time_to_optimize,
+        }
+        if self.ocp_solver is None:
+            return diagnostics
+
+        stat_names = (
+            "res_stat",
+            "res_eq",
+            "res_ineq",
+            "res_comp",
+            "sqp_iter",
+            "qp_iter",
+            "alpha",
+            "time_tot",
+            "statistics",
+        )
+        for name in stat_names:
+            try:
+                diagnostics[name] = self.ocp_solver.get_stats(name)
+            except Exception:
+                # The available statistics depend on the acados_template version and solver configuration.
+                continue
+        diagnostics["iterates"] = self.get_iterates()
+        return diagnostics
+
+    def get_iterates(self) -> list[dict]:
+        """Return the current Acados iterate without exposing acados_template internals."""
+
+        if self.ocp_solver is None:
+            raise RuntimeError("Acados must be solved before its iterates can be retrieved")
+        iterates = []
+        for node in range(self.acados_ocp.dims.N + 1):
+            iterate = {"x": np.asarray(self.ocp_solver.get(node, "x")).copy()}
+            for field in ("u", "z", "pi", "lam", "sl", "su"):
+                if field in ("u", "pi") and node == self.acados_ocp.dims.N:
+                    iterate[field] = None
+                    continue
+                try:
+                    iterate[field] = np.asarray(self.ocp_solver.get(node, field)).copy()
+                except Exception:
+                    iterate[field] = None
+            iterates.append(iterate)
+        return iterates
+
+    def set_iterates(self, iterates: list[dict], include_multipliers: bool = False) -> None:
+        """Initialize Acados from compatible iterates.
+
+        Primal fields (``x``, ``u`` and ``z``) are always transferred. Multipliers (``pi``, ``lam``, ``sl`` and
+        ``su``) are transferred only when explicitly requested; their dimensions must already match the Acados OCP.
+        """
+
+        if self.ocp_solver is None:
+            raise RuntimeError("The Acados solver must be created before its iterates can be initialized")
+        if len(iterates) != self.acados_ocp.dims.N + 1:
+            raise ValueError(f"Expected {self.acados_ocp.dims.N + 1} Acados nodes, got {len(iterates)}")
+
+        primal_fields = ("x", "u", "z")
+        multiplier_fields = ("pi", "lam", "sl", "su") if include_multipliers else ()
+        for node, iterate in enumerate(iterates):
+            for field in primal_fields + multiplier_fields:
+                value = iterate.get(field)
+                if value is None:
+                    continue
+                if field in ("u", "pi") and node == self.acados_ocp.dims.N:
+                    raise ValueError(f"Acados field '{field}' is not defined at the terminal node")
+                self.ocp_solver.set(node, field, np.asarray(value))
+
+    def set_lagrange_multiplier(self, sol: "Solution") -> None:
+        """Transfer Acados multipliers only from a compatible Acados iterate."""
+
+        diagnostics = getattr(sol, "solver_diagnostics", None) or {}
+        iterates = diagnostics.get("iterates")
+        if iterates is None:
+            raise ValueError(
+                "IPOPT/NLP multipliers cannot be converted generically to Acados QP multipliers. "
+                "Use a primal-only warm start, or provide compatible Acados iterates."
+            )
+        self.set_iterates(iterates, include_multipliers=True)
 
     def solve(self, expand_during_shake_tree: Bool = False) -> AnyListorDict:
         """
