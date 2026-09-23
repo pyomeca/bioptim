@@ -184,7 +184,8 @@ def prepare_ocp(
             weight=1000,
             quadratic=True,
             custom_type=ObjectiveFcn.Parameter,
-            target=target_g / g_scaling.scaling,  # Make sure your target fits the scaling
+            target=target_g,
+            target_scaling=g_scaling,
             key="gravity_xyz",
         )
 
@@ -206,7 +207,8 @@ def prepare_ocp(
             weight=10000,
             quadratic=True,
             custom_type=ObjectiveFcn.Parameter,
-            target=target_m / m_scaling.scaling.T,  # Make sure your target fits the scaling
+            target=target_m,
+            target_scaling=m_scaling,
             key="mass",
         )
 
