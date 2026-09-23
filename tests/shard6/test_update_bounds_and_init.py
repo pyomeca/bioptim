@@ -212,6 +212,16 @@ def test_update_bounds_and_init_with_param(phase_dynamics):
         parameter_bounds=parameter_bounds,
     )
 
+    invalid_parameter_bounds = BoundsList()
+    invalid_parameter_bounds.add("gravity_z", min_bound=[g_min], max_bound=[g_max])
+    with pytest.raises(ValueError, match="Parameter bounds for 'gravity_z' must use InterpolationType.CONSTANT"):
+        ocp.update_bounds(parameter_bounds=invalid_parameter_bounds)
+
+    invalid_parameter_init = InitialGuessList()
+    invalid_parameter_init.add("gravity_z", [[g_init, g_init]], interpolation=InterpolationType.LINEAR)
+    with pytest.raises(ValueError, match="Parameter initial guess for 'gravity_z' must use InterpolationType.CONSTANT"):
+        ocp.update_initial_guess(parameter_init=invalid_parameter_init)
+
     # Before modifying
     expected = np.array([[0.1] + [-np.inf] * (nq * 2) * (ns + 1) + [-np.inf] * nq * ns + [g_min]]).T
     npt.assert_almost_equal(ocp.bounds_vectors[0], expected)
