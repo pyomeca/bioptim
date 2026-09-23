@@ -249,6 +249,7 @@ from .optimization.receding_horizon_optimization import (
 )
 from .optimization.receding_horizon_optimization import MovingHorizonEstimator, NonlinearModelPredictiveControl
 from .optimization.solution.solution import Solution
+from .optimization.solution.utils import adapt_solution_to_initial_guesses
 from .optimization.solution.solution_data import SolutionMerge, TimeAlignment
 from .optimization.stochastic_optimal_control_program import StochasticOptimalControlProgram
 from .optimization.variable_scaling import VariableScalingList, VariableScaling
