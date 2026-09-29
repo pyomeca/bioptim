@@ -4,7 +4,7 @@ Every number stored in ``data/features_*.npz`` is REAL bioptim / IPOPT output.
 
 Six experiments, one file each:
     features_objectives.npz   Lagrange (MINIMIZE_CONTROL) + Mayer (TRACK_STATE at Node.END) with several Mayer weights
-    features_constraints.npz  same swing-up with the torque bound |tau| <= u_max shrinking (+ a bound on the cart position)
+    features_constraints.npz  same swing-up with the torque bound |tau| <= u_max shrinking (+ bounds |y| <= L on the cart position, continuation)
     features_multiphase.npz   two phases of different durations, PhaseTransitionFcn.CONTINUOUS vs DISCONTINUOUS
     features_time.npz         ObjectiveFcn.Mayer.MINIMIZE_TIME for several torque bounds (the phase duration is optimized)
     features_parameters.npz   a ParameterList entry "max_tau" (peak torque, one value for all nodes) optimized with
@@ -145,16 +145,29 @@ def ocp_objectives(w_mayer: float):
 # 2. Constraints and bounds
 # --------------------------------------------------------------------------------------------------------------------
 U_MAXS = [100.0, 20.0, 15.0, 12.0]
-CART_LIMIT = 0.4
+CART_LIMITS = [
+    0.9,
+    0.7,
+    0.5,
+]  # successive bounds |y| <= L (continuation, each solve is warm started by the previous one)
+CART_LIMIT_TOO_TIGHT = 0.4  # tried as well: IPOPT does not converge (see FEATURES.md)
 
 
-def ocp_constraints(u_max: float, cart_limit: float = None):
+def ocp_constraints(u_max: float, cart_limit: float = None, previous=None):
+    """``previous``: solution used as initial guess (continuation on the cart bound, see FEATURES.md)."""
     bio_model = TorqueBiorbdModel(MODEL)
     objectives = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
     x_bounds, u_bounds = pendulum_bounds(bio_model, u_max=u_max)
     if cart_limit is not None:
         x_bounds["q"].min[0, 1:] = -cart_limit
         x_bounds["q"].max[0, 1:] = cart_limit
+    x_init, u_init = InitialGuessList(), InitialGuessList()
+    if previous is not None:
+        st, co = previous.decision_states(), previous.decision_controls()
+        each = InterpolationType.EACH_FRAME
+        x_init.add("q", np.array([st["q"][k][:, 0] for k in range(N1 + 1)]).T, interpolation=each)
+        x_init.add("qdot", np.array([st["qdot"][k][:, 0] for k in range(N1 + 1)]).T, interpolation=each)
+        u_init.add("tau", np.array([co["tau"][k][:, 0] for k in range(N1)]).T, interpolation=each)
     return OptimalControlProgram(
         bio_model,
         N1,
@@ -162,6 +175,8 @@ def ocp_constraints(u_max: float, cart_limit: float = None):
         dynamics=rk4(),
         x_bounds=x_bounds,
         u_bounds=u_bounds,
+        x_init=x_init,
+        u_init=u_init,
         objective_functions=objectives,
         use_sx=True,
     )
@@ -371,10 +386,32 @@ if __name__ == "__main__":
 
     if want("constraints"):
         print("2. constraints")
-        res = {"u_maxs": np.array(U_MAXS), "n_shooting": N1, "final_time": T1, "cart_limit": CART_LIMIT}
+        res = {
+            "u_maxs": np.array(U_MAXS),
+            "n_shooting": N1,
+            "final_time": T1,
+            "cart_limits": np.array(CART_LIMITS),
+            "cart_limit": CART_LIMITS[-1],
+        }
+        free = None
         for i, u in enumerate(U_MAXS):
-            res.update(extract(solve(ocp_constraints(u)), f"u{i}"))
-        res.update(extract(solve(ocp_constraints(100.0, cart_limit=CART_LIMIT)), "cart"))
+            sol = solve(ocp_constraints(u))
+            res.update(extract(sol, f"u{i}"))
+            free = free or sol  # u0 (|tau| <= 100 N, inactive) is the unbounded-position solution
+        # bound on the position: continuation, free solution -> 0.9 -> 0.7 -> 0.5 (y_final stays free, as for the free run)
+        previous = free
+        for j, lim in enumerate(CART_LIMITS):
+            previous = solve(ocp_constraints(100.0, cart_limit=lim, previous=previous))
+            res.update(extract(previous, f"cart{j}"))
+        res.update(
+            {
+                k.replace(f"cart{len(CART_LIMITS) - 1}", "cart"): v
+                for k, v in res.items()
+                if k.startswith(f"cart{len(CART_LIMITS) - 1}_")
+            }
+        )
+        # too tight (not shown in the video): same continuation, one more step
+        res.update(extract(solve(ocp_constraints(100.0, CART_LIMIT_TOO_TIGHT, previous)), "cart_tight"))
         np.savez_compressed(OUT / "features_constraints.npz", **res)
 
     if want("multiphase"):

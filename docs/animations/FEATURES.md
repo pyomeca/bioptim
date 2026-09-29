@@ -57,8 +57,16 @@ manim -pqm features_scenes.py ConstraintsBounds                                 
 * Same swing-up, fixed T = 1 s, minimum `MINIMIZE_CONTROL`, end state fixed by `x_bounds`. `u_bounds["tau"]` shrinks
   100 -> 20 -> 15 -> 12 N; the shaded band is the forbidden region. The 100 N bound is inactive (unconstrained peak
   24 N), 20/15/12 N are active. Costs: 40.3, 41.7, 48.6, 76.6.
-* Second beat: a bound on the sideways position, `x_bounds["q"].min[0, 1:] = -0.4` and `.max[0, 1:] = +0.4`
-  (cost 40 -> 686, peak torque 69 N).
+* Second beat: a bound on the sideways position, `x_bounds["q"].min[0, 1:] = -L` and `.max[0, 1:] = +L` with a
+  continuation L = 0.9 -> 0.7 -> 0.5 m (`cart0..cart2`, each solve warm started by the previous one, the first one by
+  the free solution `u0`; `y_final` stays free as in the free run). Plots: y, dy/dt, dtheta/dt stacked; the velocities
+  are ~0 while y rests on a bound and peak in the fast swing between the two sides. Real numbers (cost, IPOPT its,
+  peak |dy/dt|, peak |dtheta/dt|, peak |tau|): free 40.3, 51, 14.5, 15.1, 24 N; L=0.9 40.5, 9, 14.6, 15.3, 25 N;
+  L=0.7 87.7, 22, 20.7, 21.5, 43 N; L=0.5 911.9, 57, 26.4, 27.3, 100 N (tau saturates at its bound). All
+  `Solve_Succeeded`. `cart` = alias of `cart2`; `cart_tight` (L = 0.4) is stored but not shown: IPOPT returns
+  `Infeasible_Problem_Detected` (cost ~2160, not a valid solution): with |tau| <= 100 N and T = 1 s the task is out of
+  reach. The previous single cold-start solve with L = 0.4 (cost 686) was a poor local minimum (y jumped to +0.4 at
+  the last node) and was replaced.
 * Bounds act on decision variables. General path constraints are `ConstraintFcn` terms (for example
   `ConstraintFcn.TRACK_STATE` with `min_bound`/`max_bound`); this is mentioned on screen but NOT solved in the
   animation (see the exercises).
@@ -133,8 +141,9 @@ manim -pqm features_scenes.py ConstraintsBounds                                 
   ones that converged cleanly and vary monotonically; they are one local solution each, not a proof of global optimality.
 * The free-time result depends on the discretization (N = 30 gave 0.382 s at 100 N, N = 40 gives 0.328 s: bang-bang
   controls are poorly represented by piecewise constants on a coarse grid) and on the initial guess.
-* Minimum-control cost with a cart bound (scene 2, second beat) was also sensitive: the solution with `|y| <= 0.5`
-  had a higher cost than with 0.4 in one intermediate run, again a sign of local minima.
+* Minimum-control cost with a cart bound (scene 2, second beat) is sensitive: a cold start with `|y| <= 0.4` gave a
+  poor local minimum (cost 686), hence the continuation from the free solution (0.9 -> 0.7 -> 0.5). Below 0.5 m the
+  problem becomes infeasible (torque saturated at 100 N); the cost grows very fast (40 -> 912) near that limit.
 * The oscillations in the multiphase angular velocity and in the free-time torque are real solver output (the problem
   has no smoothness term).
 * `Parameters`: the swing-up with a minimum-effort cost has several local minima. The four solves use a continuation:

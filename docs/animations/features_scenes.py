@@ -350,17 +350,21 @@ class ConstraintsBounds(Scene):
         self.play(FadeIn(title))
 
         y_lim = 35
-        ax_u = make_axes([-3.55, 0.85, 0], 5.6, 2.6, [0, T], [-y_lim, y_lim], 0.5, 20)
-        ax_q = make_axes([-3.55, -2.2, 0], 5.6, 1.7, [0, T], [-1.2, 3.6], 0.5, 1)
+        ax_u = make_axes([-3.55, 1.4, 0], 5.6, 1.85, [0, T], [-y_lim, y_lim], 0.5, 20)
+        ax_q = make_axes([-3.55, -0.85, 0], 5.6, 1.3, [0, T], [-1.2, 3.6], 0.5, 1)
+        dq_lim = 0.6
+        ax_dq = make_axes([-3.55, -3.0, 0], 5.6, 1.3, [0, T], [-dq_lim, dq_lim], 0.5, 0.3)
         decos = VGroup(
             axis_label("τ(t)  actuated force (N)", ax_u, C_CTRL),
-            axis_label("θ(t)  angle (rad)", ax_q, C_STATE),
-            time_label(ax_q),
-            x_ticks(ax_q, [0, 0.5, 1.0], "{:.1f}"),
+            axis_label("θ(t)  angle (rad), dashed = unconstrained", ax_q, C_STATE),
+            axis_label("Δθ(t) = θ − θ_free  (rad, zoomed)", ax_dq, C_PAR),
+            time_label(ax_dq),
+            x_ticks(ax_dq, [0, 0.5, 1.0], "{:.1f}"),
             y_ticks(ax_u, [-30, 0, 30]),
             y_ticks(ax_q, [0, 3]),
+            y_ticks(ax_dq, [-0.5, 0, 0.5]),
         )
-        self.play(Create(ax_u), Create(ax_q), FadeIn(decos))
+        self.play(Create(ax_u), Create(ax_q), Create(ax_dq), FadeIn(decos))
 
         def bound_mobs(u):
             """Dashed limits and the shaded forbidden region beyond them (clipped to the plot)."""
@@ -388,14 +392,21 @@ class ConstraintsBounds(Scene):
         self.play(FadeIn(panel))
         lim_lines = [panel[1][2], panel[1][3]]
 
+        q_free = d["u0_p0_q"][ROT]
+        ghost = DashedVMobject(poly(ax_q, t_nodes, q_free, GRAY_B, 3), num_dashes=40).set_opacity(0.8)
+
+        def dtheta(i):
+            return float(np.abs(d[f"u{i}_p0_q"][ROT] - q_free).max())
+
         def curves(i):
             return (
                 steps(ax_u, t_nodes, d[f"u{i}_p0_tau"][TRANS], C_CTRL),
                 poly(ax_q, t_nodes, d[f"u{i}_p0_q"][ROT], C_STATE),
+                poly(ax_dq, t_nodes, d[f"u{i}_p0_q"][ROT] - q_free, C_PAR),
             )
 
         bounds = bound_mobs(float(u_maxs[0]))
-        curve_u, curve_q = curves(0)
+        curve_u, curve_q, curve_dq = curves(0)
         cap = Text(
             "|τ| ≤ 100 N is far away: the bound is inactive\n(the unconstrained optimum peaks at 24 N)",
             font_size=19,
@@ -408,14 +419,23 @@ class ConstraintsBounds(Scene):
             active = "  (bound active)" if abs(peak - u) < 0.05 * u else ""
             return Text(
                 f"|τ| ≤ {u:g} N   ·   peak |τ| = {peak:.1f} N{active}\ncost ∫ τ² dt = {float(d[f'u{i}_cost']):.1f}   ·   "
-                f"IPOPT {int(d[f'u{i}_iterations'])} it.",
+                f"IPOPT {int(d[f'u{i}_iterations'])} it.\n"
+                f"max |Δθ| = {dtheta(i):.2f} rad  (vs unconstrained)",
                 font_size=19,
                 color=GRAY_A,
                 line_spacing=0.9,
             ).move_to([CODE_X, -1.0, 0], aligned_edge=LEFT)
 
         info = readout(0)
-        self.play(Create(curve_u), Create(curve_q), FadeIn(bounds), FadeIn(info), run_time=1.5)
+        self.play(
+            FadeIn(ghost),
+            Create(curve_u),
+            Create(curve_q),
+            Create(curve_dq),
+            FadeIn(bounds),
+            FadeIn(info),
+            run_time=1.5,
+        )
         place(cap, CODE_X, -2.4)
         self.play(FadeIn(cap))
         self.wait(1.2)
@@ -427,10 +447,11 @@ class ConstraintsBounds(Scene):
             ]
             for old, new in zip(lim_lines, new_lines):
                 new.move_to(old, aligned_edge=LEFT)
-            new_u, new_q = curves(i)
+            new_u, new_q, new_dq = curves(i)
             anims = [
                 Transform(curve_u, new_u),
                 Transform(curve_q, new_q),
+                Transform(curve_dq, new_dq),
                 Transform(bounds, bound_mobs(float(u_maxs[i]))),
                 Transform(info, readout(i)),
                 *[Transform(o, nw) for o, nw in zip(lim_lines, new_lines)],
@@ -440,7 +461,9 @@ class ConstraintsBounds(Scene):
             self.play(*anims, run_time=2.4)
             self.wait(0.8)
         note = Text(
-            "Tighter bound → higher cost: the shaded region is\nforbidden, the optimizer squeezes the torque against it.",
+            "Tighter bound → higher cost: the shaded region is forbidden.\n"
+            "The passive angle θ adapts slightly: the actuated coordinate\n"
+            "absorbs the bound and the rotation follows through the dynamics.",
             font_size=19,
             color=YELLOW_C,
         )
@@ -449,49 +472,126 @@ class ConstraintsBounds(Scene):
         self.wait(2)
 
         # ------------------------------------------------------------ beat 2: a bound on a state (the cart position)
-        self.play(FadeOut(note), FadeOut(bounds), FadeOut(panel), FadeOut(info))
-        lim = float(d["cart_limit"])
-        ax_y = make_axes([-3.55, 0.85, 0], 5.6, 2.6, [0, T], [-1.2, 1.2], 0.5, 0.5)
+        new_sub = Text(
+            "same swing-up, now a bound on a state (x_bounds): the sideways position",
+            font_size=22,
+            color=GRAY_B,
+        ).move_to(title[1])
+        self.play(
+            *[
+                FadeOut(m)
+                for m in (note, bounds, panel, info, curve_u, curve_q, curve_dq, ghost, ax_u, ax_q, ax_dq, decos)
+            ],
+            Transform(title[1], new_sub),
+        )
+        limits = [float(v) for v in d["cart_limits"]]
+        # three stacked plots: position, its velocity, angular velocity (the bound acts on y, the velocities react)
+        lim_y, lim_v = 1.2, 30
+        ax_y = make_axes([-3.55, 1.4, 0], 5.6, 1.4, [0, T], [-lim_y, lim_y], 0.5, 0.5)
+        ax_v = make_axes([-3.55, -0.4, 0], 5.6, 1.4, [0, T], [-lim_v, lim_v], 0.5, 15)
+        ax_w = make_axes([-3.55, -2.2, 0], 5.6, 1.4, [0, T], [-lim_v, lim_v], 0.5, 15)
         new_deco = VGroup(
             axis_label("y(t)  sideways position (m)", ax_y, C_STATE),
+            axis_label("dy/dt  sideways velocity (m/s)", ax_v, C_CTRL),
+            axis_label("dθ/dt  angular velocity (rad/s)", ax_w, C_LAG),
+            time_label(ax_w),
+            x_ticks(ax_w, [0, 0.5, 1.0], "{:.1f}"),
             y_ticks(ax_y, [-1, 0, 1]),
+            y_ticks(ax_v, [-20, 0, 20]),
+            y_ticks(ax_w, [-20, 0, 20]),
         )
-        self.play(FadeOut(curve_u), FadeOut(ax_u), FadeOut(decos[0]), FadeOut(decos[4]))
-        # the lower plot now shows the torque, the upper one the position
-        y_free = poly(ax_y, t_nodes, d["u0_p0_q"][TRANS], C_STATE)
-        self.play(Create(ax_y), FadeIn(new_deco), Create(y_free))
+
+        def state_curves(tag):
+            q, qd = d[f"{tag}_p0_q"], d[f"{tag}_p0_qdot"]
+            return (
+                poly(ax_y, t_nodes, q[TRANS], C_STATE),
+                poly(ax_v, t_nodes, qd[TRANS], C_CTRL),
+                poly(ax_w, t_nodes, qd[ROT], C_LAG),
+            )
+
+        self.play(Create(ax_y), Create(ax_v), Create(ax_w), FadeIn(new_deco))
+        y_c, v_c, w_c = state_curves("u0")
+        self.play(Create(y_c), Create(v_c), Create(w_c), run_time=1.5)
+
+        def code_lines(lim):
+            return [
+                code(f'x_bounds["q"].min[0, 1:] = -{lim:g}', 19, C_BOUND),
+                code(f'x_bounds["q"].max[0, 1:] = +{lim:g}', 19, C_BOUND),
+            ]
+
         panel2 = code_panel(
             [
                 (0, "x_bounds = BoundsList()", WHITE),
                 (0, 'x_bounds["q"] = bio_model.bounds_from_ranges("q")', WHITE),
-                (0, 'x_bounds["q"][:, 0] = 0', GRAY_B),
-                (0, 'x_bounds["q"][1, -1] = 3.14', GRAY_B),
-                (0, 'x_bounds["q"].min[0, 1:] = -0.4', C_BOUND),
-                (0, 'x_bounds["q"].max[0, 1:] = +0.4', C_BOUND),
+                (0, 'x_bounds["q"][:, 0] = 0   # start', GRAY_B),
+                (0, 'x_bounds["q"][1, -1] = 3.14   # y_final stays free', GRAY_B),
+                (0, 'x_bounds["q"].min[0, 1:] = -0.9', C_BOUND),
+                (0, 'x_bounds["q"].max[0, 1:] = +0.9', C_BOUND),
+                (0, "x_init = <previous solution>   # warm start", GRAY_B),
             ],
             caption="Bioptim code: bound on a state (all nodes after the first)",
         )
-        cart_lines = [hline(ax_y, 0, T, s * lim, C_BOUND) for s in (1, -1)]
-        cart_bands = [band(ax_y, 0, T, s * lim, s * 1.2, C_BOUND) for s in (1, -1)]
-        cart_txt = Text(
-            f"Free solution: y in [{d['u0_p0_q'][TRANS].min():.2f}, {d['u0_p0_q'][TRANS].max():.2f}] m.\nWith |y| ≤ 0.4 the same task needs more torque\n"
-            f"(peak {np.abs(d['cart_p0_tau'][TRANS]).max():.0f} N): cost {float(d['u0_cost']):.0f} → {float(d['cart_cost']):.0f}.",
-            font_size=19,
-            color=GRAY_A,
-            line_spacing=0.9,
-        )
-        place(cart_txt, CODE_X, -1.2)
-        self.play(FadeIn(panel2))
-        self.play(*[Create(m) for m in cart_lines], *[FadeIn(m) for m in cart_bands], FadeIn(cart_txt))
-        y_cart = poly(ax_y, t_nodes, d["cart_p0_q"][TRANS], C_STATE)
-        theta_cart = poly(ax_q, t_nodes, d["cart_p0_q"][ROT], C_STATE)
-        self.play(Transform(y_free, y_cart), Transform(curve_q, theta_cart), run_time=3)
+        lim_lines = [panel2[1][4], panel2[1][5]]
+
+        def y_bound_mobs(lim):
+            g = VGroup()
+            for s in (1, -1):
+                g.add(hline(ax_y, 0, T, s * lim, C_BOUND))
+                g.add(band(ax_y, 0, T, s * lim, s * lim_y, C_BOUND))
+            return g
+
+        def readout(i):
+            tag = "u0" if i == 0 else f"cart{i - 1}"
+            qd = d[f"{tag}_p0_qdot"]
+            head = "no bound on y (|τ| ≤ 100 N is inactive)" if i == 0 else f"|y| ≤ {limits[i - 1]:g} m"
+            body = (
+                f"{head}\npeak |dy/dt| = {np.abs(qd[TRANS]).max():.1f} m/s  ·  peak |dθ/dt| = {np.abs(qd[ROT]).max():.1f} rad/s\n"
+                f"peak |τ| = {np.abs(d[f'{tag}_p0_tau'][TRANS]).max():.0f} N  ·  cost ∫ τ² dt = {float(d[f'{tag}_cost']):.1f}\n"
+                f"IPOPT {int(d[f'{tag}_iterations'])} it., {d[f'{tag}_exit']}"
+            )
+            return place(Text(body, font_size=19, color=GRAY_A, line_spacing=0.9), CODE_X, -1.5)
+
+        def comment(i):
+            texts = [
+                f"Free solution: y spans {d['u0_p0_q'][TRANS].min():.2f} to {d['u0_p0_q'][TRANS].max():.2f} m.",
+                "|y| ≤ 0.9 m is barely active: almost the same motion.",
+                "|y| ≤ 0.7 m: y rests on the bound (dy/dt ≈ 0),\nthe swing between the bounds is faster.",
+                "|y| ≤ 0.5 m: dy/dt ≈ 0 while y sits on a bound, the fast\nswing peaks higher and τ reaches its 100 N bound.",
+            ]
+            return place(Text(texts[i], font_size=19, color=YELLOW_C), CODE_X, -2.7)
+
+        info = readout(0)
+        note = comment(0)
+        self.play(FadeIn(panel2), FadeIn(info), FadeIn(note))
+        self.wait(1)
+        bmobs = y_bound_mobs(limits[0])
+        self.play(*[Create(m) if isinstance(m, DashedLine) else FadeIn(m) for m in bmobs])
+        self.wait(0.5)
+        for i in range(1, len(limits) + 1):
+            new_y, new_v, new_w = state_curves(f"cart{i - 1}")
+            new_lines = code_lines(limits[i - 1])
+            for old, nw in zip(lim_lines, new_lines):
+                nw.move_to(old, aligned_edge=LEFT)
+            self.play(
+                Transform(y_c, new_y),
+                Transform(v_c, new_v),
+                Transform(w_c, new_w),
+                Transform(bmobs, y_bound_mobs(limits[i - 1])),
+                Transform(info, readout(i)),
+                Transform(note, comment(i)),
+                *[Transform(o, nw) for o, nw in zip(lim_lines, new_lines)],
+                run_time=2.6,
+            )
+            self.wait(1.2)
         end = Text(
-            "Bounds act on decision variables; ConstraintFcn (e.g. TRACK_STATE) handles general path constraints.",
+            "Continuation: each solve starts from the previous one. |y| ≤ 0.4 m: IPOPT reports "
+            f"{d['cart_tight_exit']}\n(|τ| ≤ 100 N, T = 1 s: out of reach). "
+            "Bounds act on decision variables; ConstraintFcn handles general path constraints.",
             font_size=17,
             color=YELLOW_C,
+            line_spacing=0.9,
         )
-        fit(end, 13).to_edge(DOWN, buff=0.2)
+        fit(end, 13).to_edge(DOWN, buff=0.12)
         self.play(FadeIn(end))
         self.wait(3)
 
