@@ -114,7 +114,7 @@ class HolonomicDoublePendulum(Scene):
         ax = make_axes([3.2, 1.0, 0], 5.0, 2.4, [0, T], [-1.0, 1.0], 0.2, 1)
         zero = DashedLine(ax.c2p(0, 0), ax.c2p(T, 0), color=GRAY_B, stroke_width=2)
         ylab = axis_label("‖marker₁ − marker₃‖  (m)", ax, C_RES)
-        tl = Text('t (0 to %.1f s)' % T, font_size=16, color=GRAY_B).next_to(ax, DOWN, buff=0.15).align_to(ax, LEFT)
+        tl = Text("t (0 to %.1f s)" % T, font_size=16, color=GRAY_B).next_to(ax, DOWN, buff=0.15).align_to(ax, LEFT)
         rng = Text(f"axis ±1e−9 m", font_size=16, color=GRAY_B).next_to(ax, DOWN, buff=0.15).align_to(ax, RIGHT)
         norm = np.linalg.norm(res, axis=1)
         curve = poly(ax, t, np.clip(norm / 1e-9, 0, 1), C_RES, 6)  # scaled: axis top = 1e-9

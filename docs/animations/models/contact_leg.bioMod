@@ -1,0 +1,50 @@
+version 4
+
+// A vertical "leg": a light Foot resting on the floor (z = 0) and a heavy Body that slides along z above it.
+// q = (Foot_z, Body_z): Body_z is the leg length, actuated by tau (an INTERNAL force: it pushes the body up and
+// the foot down). The foot carries a rigid contact along z: with ContactType.RIGID_EXPLICIT the foot cannot move
+// vertically and the floor reacts with a normal force F.
+segment Foot
+    translations	z
+    rangesQ  -0.5 0.5
+    mass 5
+    inertia
+        1 0 0
+        0 1 0
+        0 0 1
+    com 0 0 0
+    mesh 0 0 0
+    mesh 0.15 0 0
+    mesh -0.15 0 0
+endsegment
+
+segment Body
+    parent Foot
+    translations	z
+    rangesQ  0.2 1.2
+    mass 70
+    inertia
+        1 0 0
+        0 1 0
+        0 0 1
+    com 0 0 0
+    mesh 0 0 0
+    mesh 0.1 0 0
+    mesh -0.1 0 0
+endsegment
+
+contact Foot_contact
+    parent Foot
+    position 0 0 0
+    axis z
+endcontact
+
+marker Foot_marker
+    parent Foot
+    position 0 0 0
+endmarker
+
+marker Body_marker
+    parent Body
+    position 0 0 0
+endmarker
