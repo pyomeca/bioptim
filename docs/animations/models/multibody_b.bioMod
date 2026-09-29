@@ -1,0 +1,39 @@
+version 4
+
+// Body B: double pendulum (2 DoF), hanging from a pivot at y = +0.8
+segment B_upper
+    RT 0 0 0 xyz 0 0.8 0
+    rotations	x
+    ranges
+        -3*pi 3*pi
+    mass 1
+    inertia
+        0.03  0.0000	0.0000
+	    0.0000	0.03	0.0000
+	    0.0000	0.0000	0.001
+    com  0 0 -0.3
+endsegment
+
+    marker B_elbow
+        parent B_upper
+        position 0 0 -0.6
+    endmarker
+
+segment B_lower
+    parent B_upper
+    RT 0 0 0 xyz 0 0 -0.6
+    rotations	x
+    ranges
+        -3*pi 3*pi
+    mass 1
+    inertia
+        0.03  0.0000	0.0000
+	    0.0000	0.03	0.0000
+	    0.0000	0.0000	0.001
+    com  0 0 -0.3
+endsegment
+
+    marker B_tip
+        parent B_lower
+        position 0 0 -0.6
+    endmarker
