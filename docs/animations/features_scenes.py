@@ -1,5 +1,5 @@
 """
-Manim Community animations, part 2: four bioptim features, each driven by REAL bioptim/IPOPT solves stored in
+Manim Community animations, part 2: six bioptim features, each driven by REAL bioptim/IPOPT solves stored in
 ``data/features_*.npz`` (see ``generate_features_data.py``). Same pendulum swing-up as in ``dms_vs_dc.py``.
 
 Scenes:
@@ -7,6 +7,8 @@ Scenes:
     2. ConstraintsBounds    u_bounds shrinking (4 real solves) and a bound on a state (x_bounds)
     3. MultiphaseTransitions  two phases of different durations, PhaseTransitionFcn.CONTINUOUS vs DISCONTINUOUS
     4. FreeTime             ObjectiveFcn.Mayer.MINIMIZE_TIME: the phase duration becomes an optimization variable
+    5. Parameters           ParameterList: a scalar (max torque) optimized with the trajectory, 4 real solves
+    6. Impact               PhaseTransitionFcn.IMPACT on a point mass hitting the floor (vs CONTINUOUS, infeasible)
 
 The code lines shown next to the curves are the ones used in generate_features_data.py (names checked against the
 bioptim source). No LaTeX needed. Render commands: see FEATURES.md.
@@ -30,6 +32,7 @@ C_BOUND = RED_C
 C_PH0 = BLUE_C
 C_PH1 = ORANGE
 C_TIME = TEAL_C
+C_PAR = PURPLE_B
 
 FONT = "Segoe UI" if sys.platform == "win32" else "DejaVu Sans"
 MONO = "Consolas" if sys.platform == "win32" else "DejaVu Sans Mono"
@@ -737,3 +740,410 @@ class FreeTime(Scene):
         fit(end, 13).to_edge(DOWN, buff=0.2)
         self.play(FadeIn(end))
         self.wait(3)
+
+
+# ====================================================================================================================
+# Scene 5 - parameters
+# ====================================================================================================================
+class Parameters(Scene):
+    def construct(self):
+        d = np.load(DATA_DIR / "features_parameters.npz")
+        weights = d["weights"]
+        n, T = int(d["n_shooting"]), float(d["final_time"])
+        t_nodes = np.linspace(0, T, n + 1)
+        nx, nu = int(d["layout_x_nodes"]), int(d["layout_u_nodes"])
+        px, pu = int(d["layout_x_per_node"]), int(d["layout_u_per_node"])
+        total = int(d["layout_total"])
+
+        title = scene_title("Parameters", "a number optimized with the trajectory, but not a function of time")
+        self.play(FadeIn(title))
+
+        # ---------------------------------------------------------------- beat 1: where a parameter lives
+        # Decision vector [dt | X | U | parameters]; all the sizes are read from the real OCP used for the solves.
+        x0, ybox = -6.6, 1.5
+        boxes = [
+            ("dt", 0.6, GRAY_B, f"{int(d['layout_dt'])}"),
+            ("X = (q, q̇)", 2.9, C_STATE, f"{nx} nodes × {px} = {nx * px}"),
+            ("U = τ", 1.9, C_CTRL, f"{nu} nodes × {pu} = {nu * pu}"),
+            ("p", 0.6, C_PAR, f"{int(d['layout_params'])}"),
+        ]
+        vec = VGroup()
+        cx = x0
+        for name, w, col, count in boxes:
+            rect = Rectangle(width=w, height=0.55, stroke_color=col, stroke_width=3, fill_color=col, fill_opacity=0.22)
+            rect.move_to([cx + w / 2, ybox, 0])
+            lab = fit(Text(name, font_size=19, color=col), w - 0.1).move_to(rect)
+            cnt = fit(Text(count, font_size=16, color=GRAY_B), w + 0.1).next_to(rect, DOWN, buff=0.1)
+            vec.add(VGroup(rect, lab, cnt))
+            cx += w + 0.05
+        vec_cap = Text(f"decision vector of the OCP: {total} variables", font_size=19, color=GRAY_B)
+        vec_cap.move_to([x0, ybox + 0.65, 0], aligned_edge=LEFT)
+        note_dt = Text("dt = duration of the phase (pinned by its bounds here)", font_size=16, color=GRAY_B)
+        note_dt.move_to([x0, ybox - 0.75, 0], aligned_edge=LEFT)
+        self.play(FadeIn(vec_cap))
+        for grp in vec:
+            self.play(FadeIn(grp), run_time=0.5)
+        self.play(FadeIn(note_dt))
+
+        # the same value p is used at all the nodes
+        xs = np.linspace(x0 + 0.1, -0.5, nu)
+        y_dots, y_box = -0.7, -2.35
+        dots = VGroup(*[Dot([x, y_dots, 0], radius=0.06, color=C_CTRL) for x in xs])
+        dots_cap = M(f"nodes k = 0 … {nu - 1}: one control τ<sub>k</sub> each", 16, C_CTRL)
+        dots_cap.move_to([x0, y_dots + 0.32, 0], aligned_edge=LEFT)
+        pbox = VGroup(
+            Rectangle(width=1.5, height=0.5, stroke_color=C_PAR, stroke_width=3, fill_color=C_PAR, fill_opacity=0.25),
+            Text("max_tau", font_size=19, color=C_PAR),
+        ).move_to([-3.55, y_box, 0])
+        fan = VGroup(
+            *[Line([-3.55, y_box + 0.25, 0], [x, y_dots - 0.06, 0], stroke_width=1.5, color=C_PAR) for x in xs]
+        )
+        fan.set_opacity(0.55)
+        fan_txt = M("the <b>same</b> value at every node:\n|τ<sub>k</sub>| ≤ max_tau", 16, C_PAR)
+        fan_txt.move_to([-2.6, y_box - 0.05, 0], aligned_edge=LEFT)
+        self.play(Indicate(vec[3], color=C_PAR, scale_factor=1.25), FadeIn(dots), FadeIn(dots_cap), FadeIn(pbox))
+        self.play(Create(fan, lag_ratio=0.02), FadeIn(fan_txt), run_time=2)
+        foot = Text(
+            "X and U have one value per node; a parameter is a single value for the whole trajectory.",
+            font_size=17,
+            color=YELLOW_C,
+        )
+        fit(foot, 13).to_edge(DOWN, buff=0.2)
+        self.play(FadeIn(foot))
+
+        panel1 = code_panel(
+            [
+                (0, "parameters = ParameterList(use_sx=True)", C_PAR),
+                (0, "parameters.add(", C_PAR),
+                (1, '"max_tau", no_model_change, size=1,', C_PAR),
+                (1, 'scaling=VariableScaling("max_tau", [1]))', C_PAR),
+                (0, "parameter_bounds.add(", WHITE),
+                (1, '"max_tau", min_bound=0, max_bound=100,', WHITE),
+                (1, "interpolation=InterpolationType.CONSTANT)", WHITE),
+                (0, 'parameter_init["max_tau"] = 50', WHITE),
+                (0, "bio_model = TorqueBiorbdModel(", C_PAR),
+                (1, "MODEL, parameters=parameters)", C_PAR),
+            ],
+            caption="Bioptim code: declare, bound and initialize the parameter",
+        )
+        self.play(FadeIn(panel1), run_time=1.5)
+        self.wait(3.5)
+
+        # ---------------------------------------------------------------- beat 2: four real solves
+        self.play(*[FadeOut(m) for m in self.mobjects if m is not title])
+        self.add(title)
+        y_lim = 40
+        ax_u = make_axes([-3.55, 0.85, 0], 5.6, 2.7, [0, T], [-y_lim, y_lim], 0.5, 20)
+        ax_q = make_axes([-3.55, -2.25, 0], 5.6, 1.6, [0, T], [-0.3, 3.6], 0.5, 1)
+        decos = VGroup(
+            axis_label("τ(t)  actuated force (N)", ax_u, C_CTRL),
+            axis_label("θ(t)  angle (rad)", ax_q, C_STATE),
+            time_label(ax_q),
+            x_ticks(ax_q, [0, 0.5, 1.0], "{:.1f}"),
+            y_ticks(ax_u, [-40, -20, 0, 20, 40]),
+            y_ticks(ax_q, [0, 3]),
+        )
+        self.play(Create(ax_u), Create(ax_q), FadeIn(decos))
+
+        def p_of(i):
+            return float(d[f"w{i}_max_tau"])
+
+        def bound_mobs(p):
+            g = VGroup()
+            for sign in (1, -1):
+                g.add(hline(ax_u, 0, T, sign * p, C_PAR))
+                g.add(band(ax_u, 0, T, sign * p, sign * y_lim, C_PAR, 0.18))
+                lab = Text("+max_tau" if sign > 0 else "−max_tau", font_size=16, color=C_PAR)
+                lab.next_to(ax_u.c2p(0.0, sign * p), UR if sign > 0 else DR, buff=0.04)
+                g.add(lab.align_to(ax_u.c2p(0.02, 0), LEFT))
+            return g
+
+        panel2 = code_panel(
+            [
+                (0, "parameter_objectives.add(", C_PAR),
+                (1, "ObjectiveFcn.Parameter.MINIMIZE_PARAMETER,", C_PAR),
+                (1, 'key="max_tau", weight=0.001, quadratic=True)', C_PAR),
+                (0, "def max_tau_upper(controller):", WHITE),
+                (1, 'return (controller.parameters["max_tau"].cx', WHITE),
+                (3, '- controller.controls["tau"].cx[0])', WHITE),
+                (0, "constraints.add(max_tau_upper,", WHITE),
+                (1, "node=Node.ALL_SHOOTING, min_bound=0, max_bound=np.inf)", WHITE),
+                (0, "# max_tau_lower: same with +  (max_tau + tau >= 0)", GRAY_B),
+            ],
+            caption="Bioptim code: cost on the parameter and |τ| ≤ max_tau",
+            top=2.35,
+        )
+        weight_line = panel2[1][2]
+
+        def curves(i):
+            return (
+                steps(ax_u, t_nodes, d[f"w{i}_p0_tau"][TRANS], C_CTRL),
+                poly(ax_q, t_nodes, d[f"w{i}_p0_q"][ROT], C_STATE),
+            )
+
+        def readout(i):
+            p = p_of(i)
+            tau = d[f"w{i}_p0_tau"][TRANS]
+            integral = float((tau**2).sum() * T / n)
+            body = (
+                f"weight = {weights[i]:g}   →   max_tau* = {p:.2f} N   (peak |τ| = {np.abs(tau).max():.2f} N)\n"
+                f"∫ τ² dt = {integral:.1f}   ·   weight · max_tau² = {weights[i] * p * p:.1f}\n"
+                f"IPOPT: {int(d[f'w{i}_iterations'])} iterations, "
+                f"{'converged' if d[f'w{i}_converged'] else 'not converged'}"
+            )
+            return place(Text(body, font_size=18, color=GRAY_A, line_spacing=0.9), CODE_X, -1.55)
+
+        comments = [
+            "Almost free peak: max_tau sits on the peak of the\nminimum-effort torque, the dashed lines touch the curve.",
+            "A higher price on the peak: the optimizer accepts a\nlarger ∫ τ² dt to get a lower max_tau.",
+            "Same idea, further: the torque is flattened\nagainst the two dashed lines.",
+            "Still one number: the lines stay horizontal because\nmax_tau does not depend on time.",
+        ]
+
+        def comment_mob(i):
+            return place(Text(comments[i], font_size=18, color=YELLOW_C), CODE_X, -2.75)
+
+        self.play(FadeIn(panel2))
+        bnd = bound_mobs(p_of(0))
+        curve_u, curve_q = curves(0)
+        info = readout(0)
+        comment = comment_mob(0)
+        self.play(Create(curve_u), Create(curve_q), FadeIn(bnd), FadeIn(info), FadeIn(comment), run_time=1.8)
+        self.wait(1.5)
+        for i in range(1, len(weights)):
+            new_line = code(f'key="max_tau", weight={weights[i]:g}, quadratic=True)', 19, C_PAR)
+            # same scale as the (shrunk) code panel: width ratio of the original line
+            new_line.scale(weight_line.width / code('key="max_tau", weight=0.001, quadratic=True)', 19).width)
+            new_line.move_to(weight_line, aligned_edge=LEFT)
+            new_u, new_q = curves(i)
+            self.play(
+                Transform(curve_u, new_u),
+                Transform(curve_q, new_q),
+                Transform(bnd, bound_mobs(p_of(i))),
+                Transform(info, readout(i)),
+                Transform(comment, comment_mob(i)),
+                Transform(weight_line, new_line),
+                run_time=2.4,
+            )
+            self.wait(1.0)
+        end = Text(
+            "Each solve starts from the previous solution (continuation): the problem is non-convex, see FEATURES.md.",
+            font_size=17,
+            color=YELLOW_C,
+        )
+        fit(end, 13).to_edge(DOWN, buff=0.2)
+        self.play(FadeIn(end))
+        self.wait(3)
+
+
+# ====================================================================================================================
+# Scene 6 - impact
+# ====================================================================================================================
+class Impact(Scene):
+    def construct(self):
+        d = np.load(DATA_DIR / "features_impact.npz")
+        t_ph = d["phase_times"]
+        T_total = float(t_ph.sum())
+        t_imp = float(t_ph[0])
+        n0 = len(d["impact_p0_t"])
+        # global time and states of the IMPACT solve; at t_imp the last node of phase 0 (before) and the first node of
+        # phase 1 (after) share the same time
+        t_all = np.concatenate([d["impact_p0_t"], d["impact_p1_t"]])
+        q_all = np.concatenate([d["impact_p0_q"], d["impact_p1_q"]], axis=1)
+        v_all = np.concatenate([d["impact_p0_qdot"], d["impact_p1_qdot"]], axis=1)
+        vz_pre, vz_post = float(d["impact_p0_qdot"][1, -1]), float(d["impact_p1_qdot"][1, 0])
+        vx_pre, vx_post = float(d["impact_p0_qdot"][0, -1]), float(d["impact_p1_qdot"][0, 0])
+        energy_lost = 0.5 * 1.0 * (vz_pre**2 - vz_post**2)  # the mass of point_floor.bioMod is 1 kg
+
+        title = scene_title(
+            "PhaseTransitionFcn.IMPACT", "a point mass hits the floor: the velocity jumps, the position does not"
+        )
+        self.play(FadeIn(title))
+
+        # ------------------------------------------------ axes: a side view (x, z) and the velocities
+        z_lo, z_hi = -0.6, 1.15
+        v_lo, v_hi = -5.2, 4.3
+        ax_s = make_axes([-3.55, 1.05, 0], 5.6, 2.2, [0, 3.1], [z_lo, z_hi], 1, 0.5)
+        ax_v = make_axes([-3.55, -2.0, 0], 5.6, 2.1, [0, T_total], [v_lo, v_hi], 0.5, 1)
+        floor = Line(ax_s.c2p(0, 0), ax_s.c2p(3.1, 0), color=GRAY_A, stroke_width=5)
+        ground = band(ax_s, 0, 3.1, z_lo, 0, GRAY_D, 0.35)
+        decos = VGroup(
+            axis_label("side view (x, z)  -  sketch, the two scales differ", ax_s, GRAY_B),
+            axis_label("velocity (m/s)", ax_v, GRAY_B),
+            time_label(ax_v),
+            x_ticks(ax_v, [0, 0.5, 1.0, 1.5], "{:.1f}"),
+            y_ticks(ax_v, [-4, -2, 0, 2]),
+            Text("floor  z = 0", font_size=16, color=GRAY_A).move_to(ax_s.c2p(0.06, -0.16), aligned_edge=LEFT),
+        )
+        bands_v = VGroup(
+            band(ax_v, 0, t_imp, v_lo, v_hi, C_PH0, 0.16), band(ax_v, t_imp, T_total, v_lo, v_hi, C_PH1, 0.16)
+        )
+        ph_lab = VGroup(
+            Text("phase 0: flight", font_size=16, color=C_PH0).move_to(ax_v.c2p(t_imp / 2, 3.75)),
+            Text("phase 1: on the floor", font_size=16, color=C_PH1).move_to(
+                ax_v.c2p(t_imp + (T_total - t_imp) / 2, 3.75)
+            ),
+        )
+        self.play(
+            Create(ax_s), Create(ax_v), FadeIn(decos), FadeIn(ground), Create(floor), FadeIn(bands_v), FadeIn(ph_lab)
+        )
+
+        panel = code_panel(
+            [
+                (0, "# point_floor.bioMod: contact Mass_contact, axis z", GRAY_B),
+                (0, "models = (", WHITE),
+                (1, "TorqueBiorbdModel(MODEL_IMPACT),", WHITE),
+                (1, "TorqueBiorbdModel(MODEL_IMPACT,", C_PH1),
+                (2, "contact_types=[ContactType.RIGID_EXPLICIT]))", C_PH1),
+                (0, "phase_transitions = PhaseTransitionList()", C_BOUND),
+                (0, "phase_transitions.add(", C_BOUND),
+                (1, "PhaseTransitionFcn.IMPACT, phase_pre_idx=0)", C_BOUND),
+            ],
+            caption="Bioptim code (phase 0: flight, phase 1: contact)",
+        )
+        rule = M(
+            "IMPACT constraint at the transition:\nq<sub>after</sub> = q<sub>before</sub>\n"
+            "q̇<sub>after</sub> = biorbd ComputeConstraintImpulsesDirect(q, q̇<sub>before</sub>)",
+            17,
+            YELLOW_C,
+        )
+        place(rule, CODE_X, -1.4)
+        self.play(FadeIn(panel), FadeIn(rule), run_time=1.2)
+
+        # ------------------------------------------------ animate the real trajectory
+        tr = ValueTracker(0.0)
+
+        def state_at(t):
+            xz = [float(np.interp(t, t_all, q_all[i])) for i in (0, 1)]
+            v = [float(np.interp(t, t_all, v_all[i])) for i in (0, 1)]
+            return xz, v
+
+        def dot():
+            xz, _ = state_at(tr.get_value())
+            col = C_PH0 if tr.get_value() < t_imp else C_PH1
+            return Dot(ax_s.c2p(*xz), radius=0.1, color=col)
+
+        def vel_arrow():
+            xz, v = state_at(tr.get_value())
+            start = ax_s.c2p(*xz)
+            vec = np.array([v[0] * 0.28, v[1] * 0.28, 0])
+            if np.linalg.norm(vec) < 0.08:
+                return VGroup()
+            return Arrow(
+                start, start + vec, buff=0.1, color=C_STATE, stroke_width=5, max_tip_length_to_length_ratio=0.3
+            )
+
+        def trail():
+            k = max(int(np.searchsorted(t_all, tr.get_value(), side="right")), 2)
+            pts = [ax_s.c2p(a, b) for a, b in zip(q_all[0, :k], q_all[1, :k])]
+            return VMobject(color=GRAY_B, stroke_width=2).set_points_as_corners(pts)
+
+        def curve_upto(idx, color):
+            def make():
+                out = VGroup()
+                for sel in (np.arange(n0), np.arange(n0, len(t_all))):
+                    keep = sel[t_all[sel] <= tr.get_value() + 1e-9]
+                    if len(keep) >= 2:
+                        out.add(poly(ax_v, t_all[keep], v_all[idx][keep], color, 5))
+                return out
+
+            return make
+
+        d_dot = always_redraw(dot)
+        d_arrow = always_redraw(vel_arrow)
+        d_trail = always_redraw(trail)
+        c_vz = always_redraw(curve_upto(1, C_STATE))
+        c_vx = always_redraw(curve_upto(0, C_CTRL))
+        lab_vz = M("v<sub>z</sub>", 19, C_STATE).move_to(ax_v.c2p(0.09, -3.4))
+        lab_vx = M("v<sub>x</sub>", 19, C_CTRL).move_to(ax_v.c2p(0.16, 0.7))
+        cursor = always_redraw(
+            lambda: DashedLine(
+                ax_v.c2p(tr.get_value(), v_lo), ax_v.c2p(tr.get_value(), v_hi), color=GRAY_B, stroke_width=2
+            )
+        )
+        self.add(d_trail, c_vz, c_vx, cursor, d_arrow, d_dot)
+        self.play(FadeIn(lab_vz), FadeIn(lab_vx))
+        self.play(tr.animate.set_value(t_imp), run_time=3.2, rate_func=linear)
+
+        # the impact: the jump of the vertical velocity
+        jump = Arrow(
+            ax_v.c2p(t_imp, vz_pre),
+            ax_v.c2p(t_imp, vz_post),
+            buff=0,
+            color=C_BOUND,
+            stroke_width=7,
+            max_tip_length_to_length_ratio=0.15,
+        )
+        jump_lbl = M(f"jump  +{vz_post - vz_pre:.2f} m/s", 18, C_BOUND).next_to(
+            ax_v.c2p(t_imp, (vz_pre + vz_post) / 2), RIGHT, buff=0.15
+        )
+        pre_lbl = M(f"v<sub>z</sub> before = {vz_pre:.2f}", 17, C_STATE).next_to(
+            ax_v.c2p(t_imp, vz_pre), RIGHT, buff=0.15
+        )
+        pre_lbl.shift(UP * 0.1)
+        post_lbl = M(f"v<sub>z</sub> after = {abs(vz_post):.2f}", 17, C_STATE).next_to(
+            ax_v.c2p(t_imp, vz_post), RIGHT, buff=0.15
+        )
+        post_lbl.shift(UP * 0.3)
+        self.play(GrowArrow(jump), FadeIn(jump_lbl), FadeIn(pre_lbl), FadeIn(post_lbl))
+        info = M(
+            f"IMPACT solve: IPOPT {int(d['impact_iterations'])} iterations, converged\n"
+            f"before: v<sub>x</sub> = {vx_pre:.2f}, v<sub>z</sub> = {vz_pre:.2f} m/s\n"
+            f"after:  v<sub>x</sub> = {vx_post:.2f}, v<sub>z</sub> = {abs(vz_post):.2f} m/s\n"
+            f"lost energy ½ m v<sub>z</sub>² = {energy_lost:.2f} J   (m = 1 kg)",
+            18,
+            GRAY_A,
+        )
+        place(info, CODE_X, -2.95)
+        self.play(FadeIn(info))
+        self.wait(1.5)
+        self.play(tr.animate.set_value(T_total), run_time=3.2, rate_func=linear)
+        self.wait(1.5)
+
+        # ------------------------------------------------ CONTINUOUS instead: infeasible
+        cx_all = np.concatenate([d["continuous_p0_q"][0], d["continuous_p1_q"][0]])
+        cz_all = np.concatenate([d["continuous_p0_q"][1], d["continuous_p1_q"][1]])
+        bad = DashedVMobject(
+            VMobject(color=C_BOUND, stroke_width=4).set_points_as_corners(
+                [ax_s.c2p(a, b) for a, b in zip(cx_all, cz_all)]
+            ),
+            num_dashes=60,
+        )
+        new_line = code("PhaseTransitionFcn.CONTINUOUS, phase_pre_idx=0)", 19, C_BOUND)
+        old_line = panel[1][7]
+        # same scale as the (shrunk) code panel
+        new_line.scale(old_line.width / code("PhaseTransitionFcn.IMPACT, phase_pre_idx=0)", 19).width)
+        new_line.move_to(old_line, aligned_edge=LEFT)
+        req = DashedLine(ax_v.c2p(t_imp, vz_pre), ax_v.c2p(T_total, vz_pre), color=C_BOUND, stroke_width=4)
+        req_lbl = M(f"CONTINUOUS would keep v<sub>z</sub> = {vz_pre:.2f}", 17, C_BOUND).next_to(req, UP, buff=0.05)
+        req_lbl.align_to(req, RIGHT)
+        new_info = M(
+            f"CONTINUOUS: IPOPT {str(d['continuous_exit']).replace('_', ' ')}\n"
+            f"({int(d['continuous_iterations'])} iterations, status {int(not d['continuous_converged'])}).\n"
+            f"v<sub>z</sub> cannot drop to 0, the contact keeps z̈ = 0\n"
+            f"and the mass would sink through the floor.",
+            18,
+            C_BOUND,
+        )
+        place(new_info, CODE_X, -2.7)
+        note = fit(Text("red dashes: last IPOPT iterate, NOT a solution", font_size=16, color=C_BOUND), 4.2)
+        note.move_to(ax_s.c2p(3.1, 1.0), aligned_edge=RIGHT)
+        self.play(
+            FadeOut(rule),
+            FadeOut(jump),
+            FadeOut(jump_lbl),
+            FadeOut(post_lbl),
+            FadeOut(pre_lbl),
+            Transform(old_line, new_line),
+            Transform(info, new_info),
+            run_time=1.2,
+        )
+        self.play(Create(bad), Create(req), FadeIn(req_lbl), FadeIn(note), run_time=2.5)
+        end = Text(
+            "IMPACT: inelastic, frictionless impact on the contact axes of the model; the floor is z = 0 by construction.",
+            font_size=17,
+            color=YELLOW_C,
+        )
+        fit(end, 13).to_edge(DOWN, buff=0.2)
+        self.play(FadeIn(end))
+        self.wait(3.5)
