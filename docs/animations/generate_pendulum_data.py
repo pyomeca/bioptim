@@ -34,10 +34,35 @@ FINAL_TIME = 1.0
 POLYNOMIAL_DEGREE = 3
 N_RK4_STEPS = 5
 EARLY_ITERATION = {"rk4": 0, "col": 0}  # IPOPT iteration at which the iterate is stored
+COL_MID_ITERATION = 3  # intermediate collocation iterate (defects already smaller, not yet zero)
 
 
-def prepare_ocp(ode_solver) -> OptimalControlProgram:
-    """Same OCP as the bioptim pendulum example, only the OdeSolver changes."""
+def all_points_guess(method: str):
+    """
+    Deliberately poor but smooth initial guess for collocation, given at ALL the collocation points
+    (InterpolationType.ALL_POINTS: N * (degree + 1) + 1 columns: node, collocation points, ..., last node).
+    q follows a smooth-step from 0 to 3.14, but qdot is a straight ramp that does NOT match dq/dt: at IPOPT iteration 0
+    the collocation defects (dP/dt - f(x, u)) are large. With bioptim's default
+    interpolation the collocation states are piecewise constant per interval at iteration 0 (flat polynomials, tiny defects).
+    """
+    from casadi import collocation_points
+
+    tau = np.array(collocation_points(POLYNOMIAL_DEGREE, method))
+    s = np.concatenate([(k + np.concatenate([[0.0], tau])) / N_SHOOTING for k in range(N_SHOOTING)] + [[1.0]])
+    q = 3.14 * (3 * s**2 - 2 * s**3)
+    # small constant offset of the interior node values: the polynomials then do not reach the next node (visible continuity gap)
+    nodes = np.arange(1, N_SHOOTING) * (POLYNOMIAL_DEGREE + 1)
+    q[nodes] += 0.025
+    qdot = 3.14 * s
+    zero = np.zeros_like(s)
+    return np.vstack([zero, q]), np.vstack([zero, qdot])
+
+
+def prepare_ocp(ode_solver, all_points: str = None) -> OptimalControlProgram:
+    """
+    Same OCP as the bioptim pendulum example, only the OdeSolver changes.
+    ``all_points`` (collocation only): "legendre" or "radau" to start from ``all_points_guess`` instead of the linear guess.
+    """
     bio_model = TorqueBiorbdModel(ExampleUtils.folder + "/models/pendulum.bioMod")
 
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
@@ -57,8 +82,13 @@ def prepare_ocp(ode_solver) -> OptimalControlProgram:
     # Initial guess: q from hanging to upright and qdot from 0 to 3.14 linearly in time, zero controls. Only used to start IPOPT (it is what we draw
     # as the "not converged" iterate: the integrated segments do not reach the next node yet).
     x_init = InitialGuessList()
-    x_init.add("q", [[0, 0], [0, 3.14]], interpolation=InterpolationType.LINEAR)
-    x_init.add("qdot", [[0, 0], [0, 3.14]], interpolation=InterpolationType.LINEAR)
+    if all_points:
+        q_guess, qdot_guess = all_points_guess(all_points)
+        x_init.add("q", q_guess, interpolation=InterpolationType.ALL_POINTS)
+        x_init.add("qdot", qdot_guess, interpolation=InterpolationType.ALL_POINTS)
+    else:
+        x_init.add("q", [[0, 0], [0, 3.14]], interpolation=InterpolationType.LINEAR)
+        x_init.add("qdot", [[0, 0], [0, 3.14]], interpolation=InterpolationType.LINEAR)
 
     return OptimalControlProgram(
         bio_model,
@@ -73,7 +103,7 @@ def prepare_ocp(ode_solver) -> OptimalControlProgram:
     )
 
 
-def solve(ode_solver, tag: str, max_iter: int = None):
+def solve(ode_solver, tag: str, max_iter: int = None, all_points: str = None):
     """
     Solve and return the arrays to store, prefixed by ``tag``.
 
@@ -85,7 +115,7 @@ def solve(ode_solver, tag: str, max_iter: int = None):
       t_steps             : (N, m)       time of these points
       tau                 : (dof, N)     piecewise-constant controls
     """
-    ocp = prepare_ocp(ode_solver)
+    ocp = prepare_ocp(ode_solver, all_points)
     solver = Solver.IPOPT(show_online_optim=False)
     solver.set_print_level(0)
     if max_iter is not None:
@@ -113,15 +143,19 @@ if __name__ == "__main__":
     results = {"n_shooting": N_SHOOTING, "final_time": FINAL_TIME, "polynomial_degree": POLYNOMIAL_DEGREE}
     rk4 = OdeSolver.RK4(n_integration_steps=N_RK4_STEPS)
     col = OdeSolver.COLLOCATION(polynomial_degree=POLYNOMIAL_DEGREE, method="legendre")
-    # "rk4" / "col": converged solutions; "rk4_it" / "col_it": an early (NOT converged) IPOPT iterate, in which the
-    # continuity constraints are still violated -> real gaps between the integrated segments and the next node.
-    for tag, ode, max_iter in (
-        ("rk4", rk4, None),
-        ("col", col, None),
-        ("rk4_it", rk4, EARLY_ITERATION["rk4"]),
-        ("col_it", col, EARLY_ITERATION["col"]),
+    rad = OdeSolver.COLLOCATION(polynomial_degree=POLYNOMIAL_DEGREE, method="radau")
+    # "rk4" / "col" / "rad": converged solutions; "*_it": IPOPT iteration 0; "col_mid": IPOPT iteration COL_MID_ITERATION.
+    # RK4 starts from the linear guess; the collocation runs start from the smooth ALL_POINTS guess (curved polynomials).
+    for tag, ode, max_iter, all_points in (
+        ("rk4", rk4, None, None),
+        ("rk4_it", rk4, EARLY_ITERATION["rk4"], None),
+        ("col", col, None, "legendre"),
+        ("col_it", col, EARLY_ITERATION["col"], "legendre"),
+        ("col_mid", col, COL_MID_ITERATION, "legendre"),
+        ("rad", rad, None, "radau"),
+        ("rad_it", rad, 0, "radau"),
     ):
-        out = solve(ode, tag, max_iter)
+        out = solve(ode, tag, max_iter, all_points)
         results.update(out)
         print(tag, {k[len(tag) + 1 :]: v for k, v in out.items() if np.isscalar(v)})
     path = Path(__file__).parent / "data" / "pendulum_solutions.npz"

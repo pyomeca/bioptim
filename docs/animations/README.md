@@ -33,9 +33,17 @@ interpolation of `q` from hanging to upright, zero controls. Content (`p` is `rk
 * `{p}_q_steps`, `{p}_qdot_steps`, `{p}_t_steps`: states/time *inside* each interval (the 6 RK4 integration points,
   or the node + the 3 collocation points);
 * `{p}_n_decision_variables`, `{p}_cost`, `{p}_iterations`;
-* `rk4_it_*` / `col_it_*`: same fields for an **early, not converged IPOPT iterate** (iteration 0 = the initial guess for both transcriptions
-  (linear interpolation of q and q̇, zero controls). They are what the animation shows before "the optimizer closes the gaps": the gaps and
-  slope mismatches drawn in red are the real constraint violations of that iterate.
+* `rk4_it_*` / `col_it_*` / `rad_it_*`: same fields for an **early, not converged IPOPT iterate** (`max_iter = 0`, i.e. the
+  initial guess). `col_mid_*` is the collocation iterate after 3 IPOPT iterations. They are what the animation shows before
+  "the optimizer closes the gaps": the gaps and slope mismatches drawn in red are the real constraint violations of that iterate.
+* Prefixes: `rk4` (RK4, N+1 nodes), `col` (COLLOCATION legendre), `rad` (COLLOCATION radau).
+
+Initial guesses: RK4 starts from a linear interpolation of q and q̇ (zero controls). With that guess bioptim initialises
+the collocation states piecewise constant per interval, so the polynomials of iteration 0 would be flat with tiny defects
+(a poor teaching picture). The collocation runs (`col*`, `rad*`) therefore start from a deliberately poor but smooth
+guess given at **all collocation points** (`InterpolationType.ALL_POINTS`, see `all_points_guess`): q is a smooth-step from 0 to 3.14 with a
+small constant offset on the interior nodes, q̇ is a straight ramp that does not match `dq/dt`. At iteration 0 the polynomials are
+curved, the slope defects `dP/dt − q̇` are several rad/s and the polynomial end misses the next node by 0.05 rad. Everything shown is still real bioptim/IPOPT output.
 
 Two honest remarks:
 
@@ -77,7 +85,7 @@ From the repository root:
 python docs/animations/generate_pendulum_data.py
 ```
 
-It takes about one minute and prints, for each of the four solves, the number of decision variables, the cost and the
+It takes about one minute and prints, for each of the seven solves (`rk4`, `rk4_it`, `col`, `col_it`, `col_mid`, `rad`, `rad_it`), the number of decision variables, the cost and the
 number of iterations.
 
 ## Render the animation
@@ -109,10 +117,14 @@ video, concatenate the five mp4 files (for instance with `ffmpeg -f concat`, or 
 3. **MultipleShooting**: inside each interval the dynamics are integrated with RK4 (5 steps) from `x_k`, giving `F(x_k, u_k)`.
    At the initial guess this does not reach `x_{k+1}`: the red gap is the **defect**. IPOPT moves `x_k, u_k` until all
    defects are zero, that is the **continuity constraint** `x_{k+1} = F(x_k, u_k)`.
-4. **DirectCollocation**: where the Legendre and Radau collocation points lie in `[0, 1]` (computed with numpy, same values as
-   `casadi.collocation_points`); then per interval a degree-3 polynomial through `x_k` and the 3 collocation states. At each
-   collocation point the polynomial slope must equal the dynamics `f(x, u)` (**defects**, red vs white tangents) and the
-   polynomial must reach `x_{k+1}` (continuity). No integration is performed: the NLP is larger but sparse.
+4. **DirectCollocation**: (a) where the Legendre and Radau collocation points lie in `[0, 1]` (computed with numpy, same values as
+   `casadi.collocation_points`); (b) five intervals with the nodes `x_k`, the 3 collocation states `x_{k,j}` per interval and the
+   degree-3 Lagrange polynomial `P_k` through them; (c) zoom on **one** interval: at each collocation point the polynomial slope
+   (red tangent) must equal the dynamics `f(x, u)` (white tangent) (**defects**, printed in rad/s) and the polynomial must reach
+   `x_{k+1}` (continuity gap, printed in rad). The animation morphs through three real IPOPT iterates (iteration 0, iteration 3,
+   converged): tangents merge and the gap closes; (d) **Radau** solution on 3 intervals: the last Radau point is `t_{k+1}`, so the
+   last collocation state coincides with the next node (red rings), whereas with Legendre continuity is an extra constraint.
+   No integration is performed: the NLP is larger but sparse.
 5. **Comparison**: table DMS vs DC (extra unknowns, constraints, dynamics evaluations, order, NLP structure, and the
    variable/iteration counts of this pendulum) and the exact bioptim lines to switch from one to the other.
 

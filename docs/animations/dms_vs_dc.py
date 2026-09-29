@@ -507,39 +507,40 @@ class DirectCollocation(Scene):
 
         self.show_points()  # where are the collocation points?
 
-        it, conv = "col_it", "col"
-        k0 = N // 2 - 2
-        ks = list(range(k0, k0 + WINDOW_WIDTH))
+        # three real IPOPT iterates of the same run: iteration 0 (poor guess), iteration 3, converged
+        stages = [
+            ("col_it", "IPOPT iterate no. 0: initial guess"),
+            ("col_mid", f"IPOPT iterate no. {int(DATA['col_mid_iterations'])}"),
+            ("col", f"IPOPT converged after {int(DATA['col_iterations'])} iterations"),
+        ]
+        prefixes = [name for name, _ in stages]
         tt = np.linspace(0, 1, 40)
+        k0 = N // 2 - 2
+
+        # ---- part 1: five intervals, nodes + collocation states + polynomial
+        ks = list(range(k0, k0 + WINDOW_WIDTH))
         curves = {
             (prefix, k): poly_through(DATA[f"{prefix}_t_steps"][k], DATA[f"{prefix}_q_steps"][k, ROT], k * H)
-            for prefix in (it, conv)
+            for prefix in prefixes
             for k in ks
         }
-        ys = [f(k * H + tt * H) for (_, k), (f, _) in curves.items()]
         y_lo, y_hi = y_range_of(
-            *ys,
-            DATA[f"{it}_q_nodes"][ROT, k0 : k0 + WINDOW_WIDTH + 1],
-            DATA[f"{conv}_q_nodes"][ROT, k0 : k0 + WINDOW_WIDTH + 1],
+            *[curves[("col_it", k)][0](k * H + tt * H) for k in ks], DATA["col_it_q_nodes"][ROT, k0 : k0 + 6]
         )
         win = Window(k0, WINDOW_WIDTH, y_lo, y_hi)
-        self.play(Create(win.ax), FadeIn(win.decorations()))
-
-        def build(prefix):
-            nodes = win.build_nodes(prefix)
-            polys, colloc = VGroup(), VGroup()
-            for k in ks:
-                f, _ = curves[(prefix, k)]
-                polys.add(
-                    VMobject(color=C_DC, stroke_width=5).set_points_smoothly(
-                        [win.p(k * H + s * H, f(k * H + s * H)) for s in tt]
-                    )
+        deco = win.decorations()
+        self.play(Create(win.ax), FadeIn(deco))
+        nodes = win.build_nodes("col_it")
+        polys, colloc = VGroup(), VGroup()
+        for k in ks:
+            f, _ = curves[("col_it", k)]
+            polys.add(
+                VMobject(color=C_DC, stroke_width=5).set_points_smoothly(
+                    [win.p(k * H + s * H, f(k * H + s * H)) for s in tt]
                 )
-                for t, y in list(zip(DATA[f"{prefix}_t_steps"][k], DATA[f"{prefix}_q_steps"][k, ROT]))[1:]:
-                    colloc.add(Square(0.16, color=WHITE, fill_color=C_DC, fill_opacity=1).move_to(win.p(t, y)))
-            return nodes, polys, colloc
-
-        nodes, polys, colloc = build(it)
+            )
+            for t, y in list(zip(DATA["col_it_t_steps"][k], DATA["col_it_q_steps"][k, ROT]))[1:]:
+                colloc.add(Square(0.16, color=WHITE, fill_color=C_DC, fill_opacity=1).move_to(win.p(t, y)))
         labels = win.node_labels(nodes)
         side = right_panel(
             [
@@ -547,61 +548,87 @@ class DirectCollocation(Scene):
                 (f"    {DEGREE} collocation states x<sub>k,j</sub> per interval", C_DC),
                 (f"2  A degree-{DEGREE} polynomial P<sub>k</sub> passes", C_DC),
                 ("    through x<sub>k</sub> and the x<sub>k,j</sub>", C_DC),
-                ("3  Defect at each collocation point τ<sub>j</sub>:", C_DEFECT),
-                ("    dP<sub>k</sub>/dt(τ<sub>j</sub>) − f(x<sub>k,j</sub>, u<sub>k</sub>) = 0", C_DEFECT),
+                ("3  Defect at each collocation time t<sub>k,j</sub>:", C_DEFECT),
+                ("    dP<sub>k</sub>/dt(t<sub>k,j</sub>) − f(x<sub>k,j</sub>, u<sub>k</sub>) = 0", C_DEFECT),
                 ("4  Continuity: P<sub>k</sub>(t<sub>k+1</sub>) = x<sub>k+1</sub>", C_DEFECT),
             ],
             size=19,
         )
-        state_txt = Text(
-            f"IPOPT iterate no. {int(DATA[f'{it}_iterations'])}: not converged", font_size=18, color=GRAY_A
-        )
+        state_txt = Text(stages[0][1], font_size=18, color=GRAY_A)
         right_info(state_txt)
-
         self.play(FadeIn(nodes), FadeIn(labels), FadeIn(side[0:2]), FadeIn(state_txt))
         self.play(FadeIn(colloc, scale=1.5), run_time=1.2)
         self.wait(0.3)
         self.play(FadeIn(side[2:4]))
         self.play(LaggedStart(*[Create(p) for p in polys], lag_ratio=0.3), run_time=2.5)
+        poly_lbl = M(
+            "P<sub>k</sub>(t) = Σ<sub>j</sub> x<sub>k,j</sub> L<sub>j</sub>(t)   (Lagrange polynomial)", 20, C_DC
+        )
+        poly_lbl.move_to([WINDOW_CENTER[0], 2.55, 0])
+        self.play(FadeIn(poly_lbl))
+        self.wait(2)
 
-        # defects at the collocation points of one interval: slope of P versus the slope given by the dynamics (q̇)
-        kk = ks[2]
+        # ---- part 2: zoom on ONE interval, defects and continuity gap, iterate 0 -> 3 -> converged
+        kk = k0 + 2
+        y_lo, y_hi = y_range_of(
+            *[curves[(p, kk)][0](kk * H + tt * H) for p in prefixes],
+            *[DATA[f"{p}_q_nodes"][ROT, kk : kk + 2] for p in prefixes],
+            pad=0.06,
+        )
+        zoom = Window(kk, 1, y_lo, y_hi, y_length=3.7)
+        self.play(FadeOut(VGroup(win.ax, nodes, labels, colloc, polys, poly_lbl, deco)))
+        self.play(Create(zoom.ax), FadeIn(zoom.decorations()))
+        self.play(FadeIn(side[4:6]))
 
-        def build_tangents(prefix):
-            group = VGroup()
-            _, df = curves[(prefix, kk)]
-            half = 0.4 * H
-            for t, y, qd in zip(
-                DATA[f"{prefix}_t_steps"][kk][1:],
-                DATA[f"{prefix}_q_steps"][kk, ROT][1:],
-                DATA[f"{prefix}_qdot_steps"][kk, ROT][1:],
-            ):
-                slope_poly = df(t)
-                group.add(
-                    Line(
-                        win.p(t - half, y - slope_poly * half),
-                        win.p(t + half, y + slope_poly * half),
-                        color=C_DEFECT,
-                        stroke_width=7,
-                    ),
-                    Line(win.p(t - half, y - qd * half), win.p(t + half, y + qd * half), color=WHITE, stroke_width=3),
-                )
-            return group
+        x_unit = np.linalg.norm(zoom.p(kk * H + 1.0, 0) - zoom.p(kk * H, 0))  # screen length per second
+        y_unit = np.linalg.norm(zoom.p(0, 1.0) - zoom.p(0, 0))  # screen length per rad
 
-        def build_defect_txt(prefix):
-            """Numerical q-defects dP/dt(tau_j) - qdot_j (rad/s) at the collocation points of interval kk."""
-            _, df = curves[(prefix, kk)]
+        def tangent(t, y, slope, color, width):
+            """Segment of fixed screen length 1.3 through (t, y) with the given slope (rad/s)."""
+            d = np.array([x_unit, slope * y_unit, 0.0])
+            d = d / np.linalg.norm(d) * 0.65
+            c = zoom.p(t, y)
+            return Line(c - d, c + d, color=color, stroke_width=width)
+
+        def build_zoom(prefix):
+            f, df = curves[(prefix, kk)]
             t_j = DATA[f"{prefix}_t_steps"][kk][1:]
-            values = df(t_j) - DATA[f"{prefix}_qdot_steps"][kk, ROT][1:]
+            q_j = DATA[f"{prefix}_q_steps"][kk, ROT][1:]
+            qd_j = DATA[f"{prefix}_qdot_steps"][kk, ROT][1:]
+            nd = zoom.build_nodes(prefix)
+            poly = VMobject(color=C_DC, stroke_width=5).set_points_smoothly(
+                [zoom.p(kk * H + s * H, f(kk * H + s * H)) for s in tt]
+            )
+            sq = VGroup(
+                *[
+                    Square(0.2, color=WHITE, fill_color=C_DC, fill_opacity=1).move_to(zoom.p(t, y))
+                    for t, y in zip(t_j, q_j)
+                ]
+            )
+            tang = VGroup()
+            for t, y, qd in zip(t_j, q_j, qd_j):
+                tang.add(tangent(t, y, float(df(t)), C_DEFECT, 7), tangent(t, y, qd, WHITE, 3))
+            gap = Line(
+                zoom.p((kk + 1) * H, f((kk + 1) * H)),
+                zoom.p((kk + 1) * H, DATA[f"{prefix}_q_nodes"][ROT, kk + 1]),
+                color=C_DEFECT,
+                stroke_width=8,
+            )
+            values = df(t_j) - qd_j
             numbers = "   ".join("0.00" if abs(v) < 0.005 else f"{v:+.2f}" for v in values)
-            return M(
-                f"defects of interval {kk} at τ<sub>1</sub>, τ<sub>2</sub>, τ<sub>3</sub> (rad/s):   {numbers}",
+            txt = M(
+                f"defects dP/dt − q̇ at t<sub>k,1</sub>, t<sub>k,2</sub>, t<sub>k,3</sub> (rad/s):   {numbers}",
                 19,
                 C_DEFECT,
             )
+            txt.move_to([WINDOW_CENTER[0], -3.4, 0])
+            gap_val = f((kk + 1) * H) - DATA[f"{prefix}_q_nodes"][ROT, kk + 1]
+            gtxt = M(f"P<sub>k</sub>(t<sub>k+1</sub>) − x<sub>k+1</sub> = {gap_val:+.3f} rad", 19, C_DEFECT)
+            gtxt.move_to([WINDOW_CENTER[0], 2.55, 0])
+            return nd, poly, sq, tang, gap, txt, gtxt
 
-        tang = build_tangents(it)
-        defect_txt = build_defect_txt(it).move_to([WINDOW_CENTER[0], -3.4, 0])
+        nd, poly, sq, tang, gap, txt, gtxt = build_zoom(prefixes[0])
+        zlabels = zoom.node_labels(nd)
         leg = VGroup(
             Line(ORIGIN, RIGHT * 0.5, color=C_DEFECT, stroke_width=7),
             Text("slope of P(t)", font_size=18),
@@ -612,32 +639,33 @@ class DirectCollocation(Scene):
         leg[2].next_to(leg[1], RIGHT, buff=0.4)
         leg[3].next_to(leg[2], RIGHT, buff=0.1)
         leg.move_to([WINDOW_CENTER[0], -3.0, 0])
-        self.play(FadeIn(side[4:6]))
-        self.play(Create(tang), FadeIn(leg), FadeIn(defect_txt))
-        self.wait(1)
-
-        def build_gaps(prefix):
-            group = VGroup()
-            for k in ks:
-                f, _ = curves[(prefix, k)]
-                a = win.p((k + 1) * H, f((k + 1) * H))
-                b = win.p((k + 1) * H, DATA[f"{prefix}_q_nodes"][ROT, k + 1])
-                if np.linalg.norm(a - b) > 0.02:
-                    group.add(Line(a, b, color=C_DEFECT, stroke_width=6))
-            return group
-
-        gap_lines = build_gaps(it)
-        self.play(FadeIn(side[6]))
-        self.play(*[Create(g) for g in gap_lines])
+        self.play(FadeIn(nd), FadeIn(zlabels), FadeIn(sq, scale=1.5))
+        self.play(Create(poly))
+        self.play(Create(tang), FadeIn(leg), FadeIn(txt))
         self.wait(1.5)
+        self.play(FadeIn(side[6]))
+        self.play(Create(gap), FadeIn(gtxt))
+        self.wait(2)
 
-        n2, p2, c2 = build(conv)
-        tang2 = build_tangents(conv)
-        defect_txt2 = build_defect_txt(conv).move_to(defect_txt)
-        end_txt = Text(
-            f"IPOPT converged after {int(DATA[f'{conv}_iterations'])} iterations", font_size=18, color=GRAY_A
-        )
-        end_txt.move_to(state_txt.get_right(), aligned_edge=RIGHT)
+        # the optimizer shrinks the defects: iteration 0 -> 3 -> converged (real iterates)
+        for prefix, text in stages[1:]:
+            n2, p2, s2, t2, g2, x2, gt2 = build_zoom(prefix)
+            end_txt = Text(text, font_size=18, color=GRAY_A)
+            end_txt.move_to(state_txt.get_right(), aligned_edge=RIGHT)
+            self.play(
+                Transform(nd, n2),
+                Transform(poly, p2),
+                Transform(sq, s2),
+                Transform(tang, t2),
+                Transform(gap, g2),
+                Transform(txt, x2),
+                Transform(gtxt, gt2),
+                Transform(state_txt, end_txt),
+                *[label.animate.shift(n2[i].get_center() - nd[i].get_center()) for i, label in enumerate(zlabels)],
+                run_time=3,
+            )
+            self.wait(1.5)
+
         closing = M(
             "At the solution both slopes match (defects = 0) and the polynomials connect: bigger but sparser NLP", 22
         )
@@ -649,19 +677,75 @@ class DirectCollocation(Scene):
             C_DC,
         )
         counts.move_to([6.9, -0.6, 0], aligned_edge=RIGHT)
-        self.play(
-            Transform(nodes, n2),
-            Transform(polys, p2),
-            Transform(colloc, c2),
-            Transform(tang, tang2),
-            Transform(defect_txt, defect_txt2),
-            FadeOut(gap_lines),
-            Transform(state_txt, end_txt),
-            *[label.animate.shift(n2[i].get_center() - nodes[i].get_center()) for i, label in enumerate(labels)],
-            run_time=3,
-        )
         self.play(FadeIn(closing), FadeIn(counts))
         self.wait(3)
+
+        self.radau_continuity(title)
+
+    def radau_continuity(self, title):
+        """Radau: the last collocation point is t(k+1), so the polynomial end IS a collocation state (real solution)."""
+        self.play(*[FadeOut(m) for m in self.mobjects if m is not title])
+        new_sub = Text(f"OdeSolver.COLLOCATION(polynomial_degree={DEGREE}, method='radau')", font_size=22, color=TEAL_C)
+        new_sub.move_to(title[1])
+        self.play(Transform(title[1], new_sub))
+
+        prefix = "rad"
+        k0, width = N // 2, 2
+        ks = list(range(k0, k0 + width))
+        tt = np.linspace(0, 1, 40)
+        curves = {k: poly_through(DATA[f"{prefix}_t_steps"][k], DATA[f"{prefix}_q_steps"][k, ROT], k * H) for k in ks}
+        y_lo, y_hi = y_range_of(
+            *[f(k * H + tt * H) for k, (f, _) in curves.items()],
+            DATA[f"{prefix}_q_nodes"][ROT, k0 : k0 + width + 1],
+        )
+        win = Window(k0, width, y_lo, y_hi)
+        self.play(Create(win.ax), FadeIn(win.decorations()))
+        nodes = win.build_nodes(prefix)
+        polys, colloc = VGroup(), VGroup()
+        for k in ks:
+            f, _ = curves[k]
+            polys.add(
+                VMobject(color=TEAL_C, stroke_width=5).set_points_smoothly(
+                    [win.p(k * H + s * H, f(k * H + s * H)) for s in tt]
+                )
+            )
+            for t, y in list(zip(DATA[f"{prefix}_t_steps"][k], DATA[f"{prefix}_q_steps"][k, ROT]))[1:]:
+                colloc.add(Square(0.16, color=WHITE, fill_color=TEAL_C, fill_opacity=1).move_to(win.p(t, y)))
+        labels = win.node_labels(nodes)
+        side = right_panel(
+            [
+                ("Radau points: the last one is τ = 1", TEAL_C),
+                ("    i.e. the end of the interval t<sub>k+1</sub>", TEAL_C),
+                ("The polynomial end P<sub>k</sub>(t<sub>k+1</sub>) is", C_STATE),
+                ("itself the collocation state x<sub>k,3</sub>:", C_STATE),
+                ("    x<sub>k,3</sub> = x<sub>k+1</sub>", C_DEFECT),
+                ("Legendre: P<sub>k</sub>(t<sub>k+1</sub>) is not a", C_DC),
+                ("collocation point, continuity is an extra", C_DC),
+                ("constraint on the polynomial end", C_DC),
+            ],
+            size=19,
+        )
+        info = Text(f"converged solution ({int(DATA['rad_iterations'])} iterations)", font_size=18, color=GRAY_A)
+        right_info(info)
+        self.play(FadeIn(nodes), FadeIn(labels), FadeIn(info))
+        self.play(FadeIn(colloc, scale=1.5), LaggedStart(*[Create(p) for p in polys], lag_ratio=0.3), run_time=2.5)
+        self.play(FadeIn(side[0:2]))
+        self.wait(1)
+        rings = VGroup(
+            *[Circle(radius=0.22, color=C_DEFECT, stroke_width=4).move_to(nodes[i + 1]) for i in range(width)]
+        )
+        self.play(FadeIn(side[2:5]), LaggedStart(*[Create(r) for r in rings], lag_ratio=0.3))
+        tag = M("red rings: last collocation point = next node", 20, C_DEFECT)
+        tag.move_to([WINDOW_CENTER[0], 2.55, 0])
+        self.play(FadeIn(tag))
+        self.wait(1.5)
+        self.play(FadeIn(side[5:8]))
+        closing = M(
+            "Radau: order 2d − 1 = 5, continuity built in   ·   Legendre: order 2d = 6, continuity as a constraint", 21
+        )
+        fit(closing, 12.8).to_edge(DOWN, buff=0.25)
+        self.play(FadeIn(closing))
+        self.wait(4)
 
     def show_points(self):
         """A mini number line [0, 1] with the legendre and radau points, computed with numpy."""
