@@ -1,0 +1,36 @@
+version 4
+
+// Planar arm in the (y, z) plane, hanging along -z at q = 0. Positive rotation about x swings it toward +y.
+segment Arm
+    rotations x
+    rangesQ -3.0 3.0
+    mass 2
+    inertia
+        0.02 0 0
+        0 0.02 0
+        0 0 0.005
+    com 0 0 -0.15
+endsegment
+
+segment Forearm
+    parent Arm
+    RT 0 0 0 xyz 0 0 -0.3
+    rotations x
+    rangesQ -0.1 2.6
+    mass 1.5
+    inertia
+        0.015 0 0
+        0 0.015 0
+        0 0 0.003
+    com 0 0 -0.15
+endsegment
+
+marker elbow
+    parent Forearm
+    position 0 0 0
+endmarker
+
+marker hand
+    parent Forearm
+    position 0 0 -0.3
+endmarker

@@ -1,0 +1,14 @@
+{
+  "Visualising a solution": "Visualiser une solution",
+  "double pendulum, N = {0}, T = {1} s: sol.animate()": "double pendule, N = {0}, T = {1} s : sol.animate()",
+  "the recording holds {0} time stamps, one per node\n{1} entities · {2} kB file\nIPOPT: {3} iterations, converged": "l'enregistrement contient {0} instants, un par nœud\n{1} entités · fichier de {2} ko\nIPOPT : {3} itérations, convergé",
+  "With show_now=False no window opens: the\nanimation is only written to the file.": "Avec show_now=False aucune fenêtre ne s'ouvre :\nl'animation est seulement écrite dans le fichier.",
+  "pyorerun ignores n_frames: {0} frames, one per node": "pyorerun ignore n_frames : {0} images, une par nœud",
+  "bioviz with n_frames={0}: {1} frames, one per node": "bioviz avec n_frames={0} : {1} images, une par nœud",
+  "Here bioviz is not installed, so the call raises:": "Ici bioviz n'est pas installé, donc l'appel lève :",
+  "bioviz would play the frames returned by\ninterpolate_data, pyorerun always plays the\nnodes.": "bioviz jouerait les images retournées par\ninterpolate_data, pyorerun joue toujours\nles nœuds.",
+  "bioviz was not run here: its frame counts come from the library function interpolate_data.": "bioviz n'a pas été exécuté ici : ses nombres d'images viennent de la fonction interpolate_data de la bibliothèque.",
+  "Stick figure re-drawn from the marker positions that pyorerun\nwrote to the file, not a screen capture.": "Personnage filaire redessiné à partir des positions de marqueurs\nécrites par pyorerun dans le fichier, pas une capture d'écran.",
+  "Stick figure re-drawn from the marker positions that pyorerun wrote to the file, not a screen capture.": "Personnage filaire redessiné à partir des positions de marqueurs écrites par pyorerun dans le fichier, pas une capture d'écran.",
+  "bioviz with n_frames={0}: {1} interpolated frames": "bioviz avec n_frames={0} : {1} images interpolées"
+}

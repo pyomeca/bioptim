@@ -1,0 +1,16 @@
+{
+ "Root-mean-square (RMS) error so far, in rad:": "Erreur quadratique moyenne (RMS) à ce stade, en rad :",
+ "measurement {0}   ·   estimate {1}": "mesure {0}   ·   estimation {1}",
+ "{0} real IPOPT solves, all converged (t = {1} to {2} s).": "{0} résolutions IPOPT, toutes ont convergé (t = {1} à {2} s).",
+ "Root-mean-square error of the noisy measurement: {0} rad.": "Erreur RMS de la mesure bruitée : {0} rad.",
+ "Root-mean-square error of the estimate: {0} rad.": "Erreur RMS de l'estimation : {0} rad.",
+ "Red bar: gap between the two linked nodes (dashed: start value).": "Barre rouge : écart entre les deux nœuds reliés (pointillé : valeur initiale).",
+ "The constraint closes the cycle exactly; the objective only pushes towards it.": "La contrainte ferme le cycle exactement ; l'objectif ne fait qu'y tendre.",
+ "Both cost more control effort.": "Les deux coûtent plus d'effort.",
+ "{0} real IPOPT solves, all converged.": "{0} résolutions IPOPT, toutes ont convergé.",
+ "The applied trajectory (green) chains the first node of each window.": "La trajectoire appliquée (verte) enchaîne le premier nœud de chaque fenêtre.",
+ "N is the number of nodes.": "N est le nombre de nœuds.",
+ "Median of {0} runs on one loaded machine (noisy), CasADi SX with RK4.": "Médiane de {0} essais sur une machine chargée (bruité), CasADi SX avec RK4.",
+ "{0} muscles: a_i(t) are the controls, tau is only a small residual": "{0} muscles : a_i(t) = commandes, tau = petit résidu",
+ "muscle activations a(t), the controls": "activations a(t) : les commandes"
+}

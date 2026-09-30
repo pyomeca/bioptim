@@ -1,0 +1,4 @@
+{
+ "Each solve starts from the previous solution (continuation): the\nproblem is non-convex, see FEATURES.md.": "Chaque calcul part de la solution précédente (continuation) :\nle problème est non convexe, voir FEATURES.md.",
+ "root angle  {0} rad": "angle racine  {0} rad"
+}

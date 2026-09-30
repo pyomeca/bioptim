@@ -1,0 +1,6 @@
+{
+ "boundary values": "valeurs limites",
+ "{0}  Node states x<sub>k</sub> are decision variables": "{0}  États aux nœuds x<sub>k</sub> : variables de décision",
+ "none (integration is hidden in F)": "aucune (intégration cachée dans F)",
+ "larger, very sparse Jacobian": "Jacobienne grande, très creuse"
+}

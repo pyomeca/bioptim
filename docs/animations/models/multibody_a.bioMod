@@ -1,0 +1,20 @@
+version 4
+
+// Body A: one pendulum link (1 DoF), hanging from a pivot at y = -0.8
+segment A_link
+    RT 0 0 0 xyz 0 -0.8 0
+    rotations	x
+    ranges
+        -3*pi 3*pi
+    mass 1
+    inertia
+        0.08  0.0000	0.0000
+	    0.0000	0.08	0.0000
+	    0.0000	0.0000	0.001
+    com  0 0 -0.5
+endsegment
+
+    marker A_tip
+        parent A_link
+        position 0 0 -1
+    endmarker

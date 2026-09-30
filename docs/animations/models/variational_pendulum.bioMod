@@ -1,0 +1,24 @@
+version 4
+
+// Simple pendulum: one point mass (1 kg) at 1 m below a revolute joint (rotation about x), q = 0 hanging down.
+segment Seg1
+    rotations	x
+    ranges
+        -2*pi 2*pi
+    mass 1
+    inertia
+        0.0001  0.0000	0.0000
+	    0.0000	0.0001	0.0000
+	    0.0000	0.0000	0.0001
+    com  0 0 -1
+endsegment
+
+    marker marker_1
+        parent Seg1
+        position 0 0 0
+    endmarker
+
+    marker marker_2
+        parent Seg1
+        position 0 0 -1
+    endmarker

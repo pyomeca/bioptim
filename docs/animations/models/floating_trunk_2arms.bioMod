@@ -1,0 +1,54 @@
+version 4
+
+// Planar (y-z plane, rotation about x) free-floating body in zero gravity: a trunk with a free root
+// (translations yz + rotation x, NOT actuated) and two arms hinged at the shoulders (rotations x).
+gravity 0 0 0
+
+segment Trunk
+    translations yz
+    rotations x
+    rangesQ -5 5
+            -5 5
+            -10*pi 10*pi
+    mass 10
+    inertia
+        1.0 0 0
+        0 0.5 0
+        0 0 0.2
+    com 0 0 0
+    mesh 0 -0.2 -0.3
+    mesh 0 0.2 -0.3
+    mesh 0 0.2 0.3
+    mesh 0 -0.2 0.3
+    mesh 0 -0.2 -0.3
+endsegment
+
+segment ArmL
+    parent Trunk
+    rotations x
+    rt 0 0 0 xyz 0 0.2 0.3
+    rangesQ -pi pi
+    mass 4
+    inertia
+        0.12 0 0
+        0 0.12 0
+        0 0 0.005
+    com 0 0 -0.35
+    mesh 0 0 0
+    mesh 0 0 -0.7
+endsegment
+
+segment ArmR
+    parent Trunk
+    rotations x
+    rt 0 0 0 xyz 0 -0.2 0.3
+    rangesQ -pi pi
+    mass 4
+    inertia
+        0.12 0 0
+        0 0.12 0
+        0 0 0.005
+    com 0 0 -0.35
+    mesh 0 0 0
+    mesh 0 0 -0.7
+endsegment

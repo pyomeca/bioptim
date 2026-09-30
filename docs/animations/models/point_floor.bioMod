@@ -1,0 +1,36 @@
+version 4
+
+// A point mass moving in the vertical x-z plane. The floor is the plane z = 0.
+// The contact point (at the mass) is a rigid contact along z: when the contact is active
+// (ContactType.RIGID_EXPLICIT) the mass cannot go through the floor, and PhaseTransitionFcn.IMPACT
+// applies the inelastic impulse that removes the vertical velocity.
+segment Mass
+    translations	xz
+    rangesQ  -5 5
+             -0.5 3
+    mass 1
+    inertia
+        1 0 0
+        0 1 0
+        0 0 1
+    com 0 0 0
+    mesh 0 0 0
+    mesh 0 0 0.05
+    mesh 0 0 0
+    mesh 0 0 -0.05
+    mesh 0 0 0
+    mesh 0.05 0 0
+    mesh 0 0 0
+    mesh -0.05 0 0
+endsegment
+
+    marker Mass_center
+        parent Mass
+        position 0 0 0
+    endmarker
+
+    contact Mass_contact
+        parent Mass
+        position 0 0 0
+        axis z
+    endcontact
