@@ -54,6 +54,7 @@ CORNER_ALIASES = {
     "bl": "bl",
 }
 FR_FRAME_MAX_WIDTH = 13.6
+FADE_PART = 0.45  # text cross-fade: fraction of the time used by each of the fade-out and the fade-in
 TEXT_FONT = "Segoe UI" if sys.platform == "win32" else "DejaVu Sans"
 MONO_FONT = "Consolas" if sys.platform == "win32" else "DejaVu Sans Mono"
 MONO_RE = re.compile(r"mono|consolas|courier|menlo|fira ?code|source code", re.I)
@@ -94,6 +95,9 @@ class Config:
         self.catalog = os.environ.get("SERIES_CATALOG", "") or str(DEFAULT_CATALOG)
         self.fit_x = _env_float("SERIES_FIT_X", 0.15)  # FR text may be this much wider than the EN one
         self.fit_min = _env_float("SERIES_FIT_MIN", 0.8)  # never scale a text below this factor
+        self.small_max = _env_float("SERIES_SMALL_MAX", 40.0)  # texts below this font size are built larger...
+        self.small_k = _env_float("SERIES_SMALL_K", 4.0)  # ...by this factor, then scaled back (Pango hinting)
+        self.i18n_extra = os.environ.get("SERIES_I18N_EXTRA", "")  # extra json files (os.pathsep separated)
         return self
 
 
@@ -159,6 +163,8 @@ def load_translations(lang: str) -> dict:
     """Merge i18n/<lang>.json and i18n/<lang>_*.json (several translators can work on separate files)."""
     table = {}
     files = sorted(I18N_DIR.glob(f"{lang}.json")) + sorted(I18N_DIR.glob(f"{lang}_*.json"))
+    if lang == "fr" and CFG.i18n_extra:  # SERIES_I18N_EXTRA: extra files (tests), applied last
+        files += [Path(f) for f in CFG.i18n_extra.split(os.pathsep) if f.strip()]
     for path in files:
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
@@ -204,6 +210,22 @@ def normalise(core: str, markup: bool = False):
     return key, numbers
 
 
+# a decimal number (digits.digits[e+-n]) that is not part of a version / file name / identifier (v1.2.3, a1.5, 3.14.py)
+DEC_RE = re.compile(r"(?<![\w.])\d+\.\d+(?:[eE][-+]?\d+)?(?!\.\w)(?![A-Za-z]*_)")
+
+
+def decimal_comma(text: str, markup: bool = False) -> str:
+    """FR: 0.25 -> 0,25 in any text (markup tags and entities are left alone)."""
+    if "." not in text:
+        return text
+    if markup:
+        parts = PROTECT_RE.split(text)
+        return "".join(
+            p if i % 2 else DEC_RE.sub(lambda m: m.group(0).replace(".", ","), p) for i, p in enumerate(parts)
+        )
+    return DEC_RE.sub(lambda m: m.group(0).replace(".", ","), text)
+
+
 def render_template(template: str, numbers: list, comma: bool) -> str:
     def sub(match):
         idx = int(match.group(1))
@@ -241,6 +263,8 @@ def translate(text: str, mono: bool, markup: bool):
         return text, None
     core = text.strip()
     if not core or not is_translatable(core, markup):
+        if CFG.lang == "fr" and CFG.fr_comma:  # numeric labels are never translated but still get the decimal comma
+            return decimal_comma(text, markup), None
         return text, None
     lead = text[: len(text) - len(text.lstrip())]
     trail = text[len(text.rstrip()) :]
@@ -263,8 +287,19 @@ def translate(text: str, mono: bool, markup: bool):
     return lead + render_template(template, numbers, CFG.fr_comma) + trail, "translated"
 
 
+def _small_text_factor(args, kwargs) -> float:
+    """Build factor for small texts: Pango hints/kerns badly at the tiny size Manim asks for (font_size / 4.8 pt)."""
+    if CFG.small_k <= 1 or kwargs.get("height") is not None or kwargs.get("width") is not None:
+        return 1.0
+    size = kwargs.get("font_size", args[3] if len(args) > 3 else 48)
+    try:
+        return CFG.small_k if 0 < float(size) < CFG.small_max else 1.0
+    except (TypeError, ValueError):
+        return 1.0
+
+
 def _install_text_patches():
-    from manim import MarkupText, Text
+    from manim import MarkupText, Paragraph, Text
 
     for cls in (Text, MarkupText):
         if getattr(cls.__init__, "_series_patched", False):
@@ -278,13 +313,52 @@ def _install_text_patches():
                 text = kwargs.pop("text")
             font = kwargs.get("font", args[5] if len(args) > 5 else None)
             new_text, status = translate(text, is_mono(font), __markup)
-            __orig(self, new_text, *args, **kwargs)
+            k = _small_text_factor(args, kwargs)
+            if k != 1.0:  # build at k x the size, then scale back: same size on screen, clean glyph spacing
+                size = float(kwargs.get("font_size", args[3] if len(args) > 3 else 48))
+                if "font_size" in kwargs or len(args) <= 3:
+                    kwargs["font_size"] = size * k
+                    b_args = args
+                else:
+                    b_args = args[:3] + (size * k,) + args[4:]
+                __orig(self, new_text, *b_args, **kwargs)
+                self.scale(1.0 / k)
+            else:
+                __orig(self, new_text, *args, **kwargs)
             self._series_text = new_text
             if status == "translated":
                 _autofit(self, type(self), text, args, kwargs, __orig)
 
         init._series_patched = True
         cls.__init__ = init
+
+    if not getattr(Paragraph.__init__, "_series_patched", False):
+        par_original = Paragraph.__init__
+
+        @functools.wraps(par_original)
+        def par_init(self, *text, **kwargs):
+            # Manim splits the Paragraph glyphs by the ENGLISH line lengths: translate the joined text first (one key,
+            # newlines included), then hand the translated string to Manim, which splits it by its own newline-separated lines.
+            joined = chr(10).join(text)
+            new_text, status = translate(joined, is_mono(kwargs.get("font")), False)
+            prev, S.guard = S.guard, True
+            try:
+                par_original(self, new_text, **kwargs)
+                ref_w = None
+                if status == "translated":
+                    try:
+                        ref_w = Paragraph(joined, **kwargs).width
+                    except Exception:
+                        pass
+            finally:
+                S.guard = prev
+            self._series_text = new_text
+            if status == "translated":
+                _fit_width(self, ref_w, new_text)
+                self.lines_initial_positions = [line.get_center() for line in self.lines_chars]
+
+        par_init._series_patched = True
+        Paragraph.__init__ = par_init
 
 
 def _autofit(mob, cls, original_text, args, kwargs, orig_init):
@@ -297,6 +371,10 @@ def _autofit(mob, cls, original_text, args, kwargs, orig_init):
         ref_w = None
     finally:
         S.guard = False
+    _fit_width(mob, ref_w, getattr(mob, "_series_text", "") or "")
+
+
+def _fit_width(mob, ref_w, text: str):
     width = mob.width
     target = min(ref_w * (1 + CFG.fit_x), FR_FRAME_MAX_WIDTH) if ref_w else FR_FRAME_MAX_WIDTH
     if width > target > 0:
@@ -305,7 +383,7 @@ def _autofit(mob, cls, original_text, args, kwargs, orig_init):
         S.fits.append(
             {
                 "kind": "fr_autofit",
-                "text": (getattr(mob, "_series_text", "") or "")[:70],
+                "text": text[:70],
                 "en_width": round(ref_w, 2) if ref_w else None,
                 "fr_width": round(width, 2),
                 "scale": round(scale, 3),
@@ -352,17 +430,18 @@ def _first_mobject(args, kwargs, name="mobject"):
 
 
 def _make_text_crossfade():
-    from manim import Animation, smooth
+    from manim import Animation, linear, smooth
 
     class TextCrossFade(Animation):
         """
-        Plain cross-fade between two texts (or groups of text). ``replace=False`` keeps Transform semantics: the
+        Two-step fade between two texts: the old one fades out during the first 45 % of the time, the new one fades in
+        during the last 45 % (a 10 % gap in between), so both are never readable together. Between two texts (or groups of text). ``replace=False`` keeps Transform semantics: the
         object ``mobject`` still exists afterwards and now shows the target text. ``replace=True`` keeps
         ReplacementTransform semantics: ``mobject`` leaves the scene and ``target`` takes its place.
         """
 
         def __init__(self, mobject, target, replace=False, **kwargs):
-            kwargs.setdefault("rate_func", smooth)
+            kwargs.setdefault("rate_func", linear)
             self.target_text = target
             self.replace = replace
             super().__init__(mobject, use_override=False, **kwargs)
@@ -413,13 +492,17 @@ def _make_text_crossfade():
             return self.mobject.copy() if not hasattr(self, "fade_out") else self.fade_out
 
         def interpolate_mobject(self, alpha):
-            k = min(max(self.rate_func(alpha), 0.0), 1.0)
+            a = min(max(self.rate_func(alpha), 0.0), 1.0)
+            k_out = 1.0 - smooth(min(a / FADE_PART, 1.0))  # old text: 1 -> 0 over the first 45 %
+            k_in = smooth(
+                min(max((a - (1.0 - FADE_PART)) / FADE_PART, 0.0), 1.0)
+            )  # new text: 0 -> 1 over the last 45 %
             for m, fo, so in self.rec_out:
-                m.set_fill(opacity=fo * (1 - k))
-                m.set_stroke(opacity=so * (1 - k))
+                m.set_fill(opacity=fo * k_out)
+                m.set_stroke(opacity=so * k_out)
             for m, fo, so in self.rec_in:
-                m.set_fill(opacity=fo * k)
-                m.set_stroke(opacity=so * k)
+                m.set_fill(opacity=fo * k_in)
+                m.set_stroke(opacity=so * k_in)
 
         def clean_up_from_scene(self, scene):
             super().clean_up_from_scene(scene)

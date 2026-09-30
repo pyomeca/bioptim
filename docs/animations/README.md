@@ -2,7 +2,7 @@
 
 *Version française : [README.fr.md](README.fr.md).*
 
-A series of **48 short videos** (about 15 to 60 seconds each, English and French) that teach
+A series of **48 short videos** (between 14 and 106 seconds each, median 31 s, about 27 minutes per language; English and French) that teach
 [Bioptim](https://github.com/pyomeca/bioptim), the optimal control library for biomechanics, one idea at a time. The
 videos are made with [Manim Community](https://www.manim.community/) and every curve shown comes from a **real Bioptim
 solve** (IPOPT), not from a sketch.

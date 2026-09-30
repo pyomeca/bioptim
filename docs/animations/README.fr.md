@@ -2,7 +2,7 @@
 
 *English version: [README.md](README.md).*
 
-Une série de **48 courtes vidéos** (environ 15 à 60 secondes chacune, en français et en anglais) qui enseignent
+Une série de **48 courtes vidéos** (de 14 à 106 secondes chacune, médiane 31 s, environ 27 minutes par langue ; en français et en anglais) qui enseignent
 [Bioptim](https://github.com/pyomeca/bioptim), la bibliothèque de commande optimale pour la biomécanique, une idée à la
 fois. Les vidéos sont réalisées avec [Manim Community](https://www.manim.community/) et chaque courbe affichée provient
 d'une **vraie résolution Bioptim** (IPOPT), pas d'un schéma.

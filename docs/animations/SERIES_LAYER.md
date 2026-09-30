@@ -32,7 +32,8 @@ Options: `--no-endcard`, `--no-logo`, `--logo-corner auto|br|bl|tr|tl`, `--slow 
 `--strict`, `--catalog PATH`, `--log-dir DIR`, `--media-dir DIR`, `--jobs N`. Everything is also configurable through
 environment variables (used by `series_style.install()`): `SERIES_LANG`, `SERIES_SLOW` (1.6), `SERIES_MIN_WAIT` (0.5),
 `SERIES_LOGO`, `SERIES_LOGO_CORNER`, `SERIES_ENDCARD`, `SERIES_CATALOG`, `SERIES_COLLECT`, `SERIES_MISSING`,
-`SERIES_LOG_DIR`, `SERIES_FR_COMMA` (1), `SERIES_FIT_X` (0.15), `SERIES_FIT_MIN` (0.8).
+`SERIES_LOG_DIR`, `SERIES_FR_COMMA` (1), `SERIES_FIT_X` (0.15), `SERIES_FIT_MIN` (0.8), `SERIES_SMALL_MAX` (40),
+`SERIES_SMALL_K` (4), `SERIES_I18N_EXTRA` (extra FR json files, `os.pathsep` separated, for tests).
 
 To use the layer from another script: set the variables, `import series_style; series_style.install()`, then import
 the scene module and render as usual.
@@ -77,18 +78,20 @@ them), everything else keeps the original class:
 | `Unwrite`, `RemoveTextLetterByLetter`, `UntypeWithCursor` | `FadeOut` |
 | `Create`, `DrawBorderThenFill`, `ShowIncreasingSubsets`, `ShowSubmobjectsOneByOne` (text only) | `FadeIn` |
 | `Uncreate` (text only) | `FadeOut` |
-| `Transform(a, b)` | cross-fade, **`a` still exists and now shows `b`** (Transform semantics) |
-| `ReplacementTransform`, `TransformMatchingShapes`, `TransformMatchingTex` | cross-fade, `a` leaves the scene, `b` takes its place |
+| `Transform(a, b)` | two-step fade, **`a` still exists and now shows `b`** (Transform semantics) |
+| `ReplacementTransform`, `TransformMatchingShapes`, `TransformMatchingTex` | two-step fade, `a` leaves the scene, `b` takes its place |
 | `Indicate`, `Circumscribe` | colour pulse without scaling or box |
 | `Wiggle`, `ApplyWave` | nothing (a `Wait` of the same duration) |
 
-`Transform` between curves / polygons / shapes, `Create` on plots, `Write` on non-text are untouched. The cross-fade
-copies the old text, fades it out at its place while the target content (assigned into the original object) fades in.
+`Transform` between curves / polygons / shapes, `Create` on plots, `Write` on non-text are untouched. The two-step fade
+copies the old text and fades it out at its place during the first 45 % of the animation time (smooth), then the target
+content (assigned into the original object) fades in during the last 45 %: the two texts are never readable together
+(10 % gap, total duration unchanged, `FADE_PART` in `series_style.py`).
 The number of replacements per name is in the audit json (`text_animation_replacements`).
 
 ## 4. EN / FR
 
-`Text.__init__` and `MarkupText.__init__` are patched (so `Paragraph`, which builds `Text` lines, is covered too).
+`Text.__init__`, `MarkupText.__init__` and `Paragraph.__init__` are patched.
 In `fr` mode the string is looked up in `i18n/fr*.json` **before** construction:
 
 1. the string is normalised: every numeric token (`-0.87`, `3.14`, `1e-3`, `12`, the `100` of `100 N`) becomes `{0}`,
@@ -98,6 +101,18 @@ In `fr` mode the string is looked up in `i18n/fr*.json` **before** construction:
    (`SERIES_FR_COMMA=0` to disable). Templates may reorder `{0}`, `{1}`;
 3. no translation: the string stays English and is logged (json lines `scene, key, file, line, count`) to
    `<out>/logs/<Scene>_fr_missing.jsonl`; `--strict` exits with status 3 if any.
+
+**Paragraph**: Manim splits the glyphs of a `Paragraph` into lines using the character counts of the string it was
+given, so a longer French line would be cropped (`17 itératio`). The layer translates the joined text of the
+Paragraph as ONE key (lines joined by a newline, as for a `Text`), then builds the Paragraph from the translated string
+with the translation bypassed, so Manim splits it by the translated newlines: one line per translated line, no
+slicing. FR auto-fit applies to the whole Paragraph.
+
+**Decimal comma without translation**: in FR, every non-code-font `Text`/`MarkupText` that is not translated (numeric
+labels, axis ticks, `t = 0.13 s`, `f = 5.1`, table cells, values) gets `.` -> `,` between digits (`0.25`, `1.05`).
+Not converted: version numbers / file names / identifiers (`v1.2.3`, `x1.5`, `a.py`, `3.14.py`, `1.5_a`), code-font
+text, markup tags/entities; `1e-3` is unchanged. Strings already made with a scene helper `dec()` contain no point any
+more, so there is no double conversion.
 
 Never translated: text in a monospace font (`Consolas`, `DejaVu Sans Mono`, ... : all code panels), strings without a
 real word (3 consecutive letters), single tokens that look like identifiers/acronyms (`OdeSolver`,
@@ -110,6 +125,15 @@ FR auto-fit: after construction, a translated text wider than `(1 + SERIES_FIT_X
 than 13.6 units) is scaled down, never below `SERIES_FIT_MIN` = 0.8, and logged in `fr_autofit`. Rule of thumb for
 translators: French is 15-20 % longer, keep sentences short. `t2c=` colour maps keyed on English words do not match
 translated text (none is used today).
+
+### Small-text spacing
+
+Manim asks Pango for `font_size / 4.8` pt, i.e. 3-4 pt for a 16-20 text; at this size Pango's hinting and kerning give
+irregular or glued word spacing (`nodeN-1`, `a control`) with Segoe UI. Every `Text`/`MarkupText` (and so every
+`Paragraph` line) with `font_size < SERIES_SMALL_MAX` (40) and no explicit `width=`/`height=` is therefore built at
+`SERIES_SMALL_K` (4) times the size and immediately scaled back by 1/4: same size, position and bounding box on
+screen, `t2c`/`t2f`/`t2w` and `.font_size` unchanged (the property still returns the requested size), regular spacing.
+`SERIES_SMALL_K=1` disables it. Cost: a few percent on the construction time (more glyph points).
 
 ## 5. End card
 
@@ -166,6 +190,8 @@ mid-animation is not detected.
   variant.
 * `Transform` between a text and a non-text mobject keeps Manim's morph.
 * A translated `Text` is scaled down on construction; scene code that later uses `.width` sees the scaled value.
+* Decimal comma: `(0.1, 0.2)` style lists also become `(0,1, 0,2)`; a scene that needs a point in FR must use a code font.
+* Small-text scaling: `Text.height`/`.width` are unchanged, but `mob.submobjects` glyph points are 4x denser.
 
 Repository notes: the root `.gitignore` ignores `*.json` and `*.png`; `docs/animations/.gitignore` re-includes
 `catalog.json` and `i18n/*.json` and ignores `assets/*.png`, `*.jsonl` and `series_out/`. The logo PNG must never be
