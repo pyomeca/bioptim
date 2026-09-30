@@ -13,7 +13,6 @@ from manim import *
 from features_scenes import (
     CODE_W,
     DATA_DIR,
-    M,
     code,
     fit,
     make_axes,
@@ -31,8 +30,8 @@ C_EST = GREEN_C
 CODE_X0 = 0.15
 
 
-def code_block(lines, size=15.5):
-    block = VGroup(*[code(text, size, color) for _, text, color in lines]).arrange(DOWN, aligned_edge=LEFT, buff=0.1)
+def code_block(lines, size=15):
+    block = VGroup(*[code(text, size, color) for _, text, color in lines]).arrange(DOWN, aligned_edge=LEFT, buff=0.07)
     for line, (level, _, _) in zip(block, lines):
         line.shift(RIGHT * 0.3 * level)
     return block
@@ -103,9 +102,11 @@ class MHEWindow(Scene):
                 (1, "solver=Solver.IPOPT())", W),
             ]
         )
-        panel = VGroup(obj, ctor, upd, slv).arrange(DOWN, aligned_edge=LEFT, buff=0.16)
+        panel = VGroup(obj, ctor, upd, slv).arrange(DOWN, aligned_edge=LEFT, buff=0.12)
+        cap = Text("Bioptim code", font_size=20, color=GRAY_B)
+        panel = VGroup(cap, panel).arrange(DOWN, aligned_edge=LEFT, buff=0.15)
         fit(panel, CODE_W)
-        panel.move_to([CODE_X0, 2.3, 0], aligned_edge=UL)
+        panel.move_to([CODE_X0, 2.35, 0], aligned_edge=UL)
 
         def box(mob, color=YELLOW):
             return SurroundingRectangle(mob, color=color, buff=0.06, stroke_width=2.5)
@@ -128,7 +129,7 @@ class MHEWindow(Scene):
             legend_item(C_WIN, "window fit", "faded"),
             legend_item(C_EST, "estimate (first node)"),
         ).arrange_in_grid(rows=2, cols=2, buff=(0.5, 0.12), col_alignments="ll")
-        legend.move_to([CODE_X0, -2.2, 0], aligned_edge=UL)
+        legend.move_to([CODE_X0, -2.02, 0], aligned_edge=UL)
 
         self.play(FadeIn(VGroup(ax_q, ax_e, decos)), FadeIn(panel), run_time=0.8)
         zero_e = DashedLine(ax_e.c2p(0, 0), ax_e.c2p(t_end, 0), color=GRAY_D).set_stroke(width=2)
@@ -139,14 +140,20 @@ class MHEWindow(Scene):
             it, st = int(d["iterations"][k]), int(d["status"][k])
             ok = "converged" if st == 0 else "FAILED"
             txt = f"window {k + 1}/{n_win}   IPOPT: {it} iterations, status {st} ({ok})"
-            return Text(txt, font_size=18, color=GRAY_B).move_to([CODE_X0, -3.2, 0], aligned_edge=LEFT)
+            return Text(txt, font_size=18, color=GRAY_B).move_to([CODE_X0, -3.0, 0], aligned_edge=LEFT)
 
         def rms(x):
             return float(np.sqrt(np.mean(np.asarray(x) ** 2)))
 
         def readout(k):
-            txt = f"RMS error so far:  measurement {rms(e_meas[: k + 1]):.3f}  estimate {rms(e_est[: k + 1]):.3f} rad"
-            return Text(txt, font_size=18, color=WHITE).move_to([CODE_X0, -3.6, 0], aligned_edge=LEFT)
+            txt = Paragraph(
+                "Root-mean-square (RMS) error so far, in rad:",
+                f"measurement {rms(e_meas[: k + 1]):.3f}   ·   estimate {rms(e_est[: k + 1]):.3f}",
+                font_size=18,
+                color=WHITE,
+                line_spacing=0.9,
+            )
+            return txt.move_to([CODE_X0, -3.45, 0], aligned_edge=LEFT)
 
         y_top, y_bot = ax_q.c2p(0, 2.0)[1], ax_e.c2p(0, -0.25)[1]
 
@@ -211,13 +218,17 @@ class MHEWindow(Scene):
         self.remove(*ghosts)
 
         # ------------------------------------------------------------------------------------------ outro
-        msg = M(
-            f"{n_win} real IPOPT solves, all converged. RMS error over t = 0-{(n_win - 1) * dt:.2f} s: "
-            f"noisy measurement {rms(e_meas[:n_win]):.3f} rad, estimate {rms(e_est):.3f} rad.",
-            19,
-            WHITE,
+        msg = Paragraph(
+            f"{n_win} real IPOPT solves, all converged (t = 0 to {(n_win - 1) * dt:.2f} s).",
+            f"Root-mean-square error of the noisy measurement: {rms(e_meas[:n_win]):.3f} rad.",
+            f"Root-mean-square error of the estimate: {rms(e_est):.3f} rad.",
+            font_size=19,
+            color=WHITE,
+            line_spacing=0.9,
         )
-        fit(msg, 13.2)
-        msg.to_edge(DOWN, buff=0.12)
-        self.play(FadeOut(status), FadeOut(ro), FadeOut(box_cur), FadeOut(band), FadeIn(msg), run_time=0.6)
+        fit(msg, 5.9)
+        msg.move_to([CODE_X0, -3.05, 0], aligned_edge=LEFT)
+        self.play(
+            FadeOut(status), FadeOut(ro), FadeOut(box_cur), FadeOut(band), FadeOut(legend), FadeIn(msg), run_time=0.6
+        )
         self.wait(2.0)

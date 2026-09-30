@@ -17,6 +17,7 @@ No LaTeX needed: only Text / MarkupText with Unicode math.
 """
 
 import sys
+import textwrap
 from pathlib import Path
 
 import numpy as np
@@ -43,8 +44,9 @@ MarkupText.set_default(font=FONT)
 
 # Layout of the "zoom on 5 intervals" scenes (MultipleShooting, DirectCollocation)
 WINDOW_WIDTH = 5
-WINDOW_CENTER = np.array([-2.6, -0.2, 0.0])
-PANEL_X = 2.75  # left edge of the explanation panel on the right
+WINDOW_CENTER = np.array([-3.0, -0.2, 0.0])
+PANEL_X = 1.3  # left edge of the explanation panel on the right (French text is ~15 % longer: it must end before 7.1)
+PANEL_W = 4.9
 
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -82,6 +84,29 @@ def fit(mob: Mobject, max_width: float) -> Mobject:
     if mob.width > max_width:
         mob.scale_to_fit_width(max_width)
     return mob
+
+
+def span(markup: str, color) -> str:
+    return f'<span foreground="{color.to_hex()}">{markup}</span>'
+
+
+def footer(text: str, size: int = 19, color=YELLOW_C, max_width: float = 10.4, markup: bool = False) -> Mobject:
+    """
+    One whole sentence wrapped on at most two or three lines, left aligned at the bottom of the frame. It stops before
+    the bottom-right corner (logo) and leaves 15 % of room for the French text.
+    """
+    make = M if markup else (lambda t, sz, col: Text(t, font_size=sz, color=col, line_spacing=0.9))
+    mob = make(text, size, color)
+    if mob.width > 1.1 * max_width:
+        n_lines = int(np.ceil(mob.width / max_width))
+        width = int(len(text) / n_lines * 1.25)
+        while True:
+            mob = make("\n".join(textwrap.wrap(text, width=width)), size, color)
+            if mob.width <= max_width or width < 30:
+                break
+            width -= 2
+    fit(mob, max_width)
+    return mob.move_to([-6.9, -3.92, 0], aligned_edge=DL)
 
 
 def scene_title(text: str, subtitle: str = None) -> VGroup:
@@ -128,7 +153,7 @@ def collocation_points(degree: int, method: str) -> np.ndarray:
 class Window:
     """Axes zoomed on ``width`` consecutive intervals (from interval ``k0``) of a rotation trajectory."""
 
-    def __init__(self, k0: int, width: int, y_min: float, y_max: float, x_length=8.4, y_length=4.0):
+    def __init__(self, k0: int, width: int, y_min: float, y_max: float, x_length=7.8, y_length=4.0):
         self.k0, self.width = k0, width
         self.t0, self.t1 = k0 * H, (k0 + width) * H
         pad_t = 0.25 * H
@@ -152,9 +177,9 @@ class Window:
             line = DashedLine(self.p(k * H, self.y_min), self.p(k * H, self.y_max), color=GRAY_D, stroke_width=1.5)
             label = M(f"t<sub>{k}</sub>", 20, GRAY_B).next_to(self.p(k * H, self.y_min), DOWN, buff=0.15)
             group.add(line, label)
-        ylab = Text("θ (rad)", font_size=22, color=GRAY_B).next_to(self.ax.get_y_axis(), UP, buff=0.1)
+        ylab = Text("θ(t)  angle (rad)", font_size=20, color=GRAY_B).next_to(self.ax.get_y_axis(), UP, buff=0.1)
         ylab.align_to(self.ax.get_y_axis(), LEFT)
-        xlab = Text("time", font_size=22, color=GRAY_B).next_to(self.ax.get_x_axis().get_end(), RIGHT, buff=0.1)
+        xlab = Text("t (s)", font_size=20, color=GRAY_B).next_to(self.ax.get_x_axis().get_end(), RIGHT, buff=0.1)
         group.add(ylab, xlab)
         return group
 
@@ -184,7 +209,7 @@ def y_range_of(*arrays, pad=0.25):
 def right_panel(lines: list, size: float = 20, top: float = 2.55) -> VGroup:
     """Explanation panel on the right: ``lines`` are (markup, color) tuples, stacked from the top."""
     panel = VGroup(*[M(markup, size, color) for markup, color in lines]).arrange(DOWN, aligned_edge=LEFT, buff=0.13)
-    fit(panel, 4.15)
+    fit(panel, PANEL_W)
     panel.move_to([PANEL_X, top, 0], aligned_edge=UL)
     return panel
 
@@ -230,7 +255,7 @@ class OCPStatement(Scene):
         heads = VGroup(
             Text("Mathematics", font_size=20, color=GRAY_B).move_to([col_math, header_y, 0], aligned_edge=LEFT),
             Text("Meaning", font_size=20, color=GRAY_B).move_to([col_name, header_y, 0], aligned_edge=LEFT),
-            Text("bioptim", font_size=20, color=GRAY_B).move_to([col_code, header_y, 0], aligned_edge=LEFT),
+            Text("Bioptim code", font_size=20, color=GRAY_B).move_to([col_code, header_y, 0], aligned_edge=LEFT),
         )
         rule = Line([-6.95, header_y - 0.3, 0], [6.95, header_y - 0.3, 0], color=GRAY_D)
         self.play(FadeIn(heads), Create(rule))
@@ -245,33 +270,28 @@ class OCPStatement(Scene):
             self.play(FadeIn(m, shift=RIGHT * 0.3), FadeIn(n), FadeIn(c, shift=LEFT * 0.3), run_time=0.9)
             self.wait(0.4)
 
-        legend = (
-            VGroup(
-                M(
-                    "<b>x</b>: state (q, q̇)  ·  <b>u</b>: control (τ)  ·  <b>T</b>: phase_time  ·  <b>N</b>: n_shooting",
-                    21,
-                    GRAY_A,
-                ),
-                M(
-                    "The problem is infinite-dimensional (x(t), u(t) are functions)  →  discretize it into an NLP.",
-                    21,
-                    YELLOW_C,
-                ),
-            )
-            .arrange(DOWN, buff=0.15)
-            .to_edge(DOWN, buff=0.3)
-        )
+        legend = VGroup(
+            M(
+                "<b>x</b>: state (q, q̇)  ·  <b>u</b>: control (τ)  ·  <b>T</b>: phase_time  ·  <b>N</b>: n_shooting",
+                20,
+                GRAY_A,
+            ),
+            M("The problem is infinite-dimensional (x(t) and u(t) are functions):", 20, YELLOW_C),
+            M("discretize it into a nonlinear program (NLP).", 20, YELLOW_C),
+        ).arrange(DOWN, aligned_edge=LEFT, buff=0.1)
+        fit(legend, 10.4).move_to([-6.9, -3.88, 0], aligned_edge=DL)
         self.play(FadeIn(legend, shift=UP * 0.2))
         self.wait(2.5)
 
         # ---- second beat: the pendulum example, animated with the real solution
         self.play(*[FadeOut(m) for m in [heads, rule, legend, *row_groups]])
         sub = Text(
-            "The bioptim pendulum: swing up from hanging (θ = 0) to upright (θ = 3.14), minimum ∫ τ² dt",
-            font_size=22,
+            "The Bioptim pendulum: swing up from hanging (θ = 0) to upright (θ = 3.14),\nminimizing ∫ τ² dt",
+            font_size=20,
             color=GRAY_A,
+            line_spacing=0.9,
         )
-        fit(sub, 13).next_to(title, DOWN, buff=0.3)
+        fit(sub, 11).next_to(title, DOWN, buff=0.3)
         self.play(FadeIn(sub))
 
         q = DATA["col_q_nodes"]
@@ -295,9 +315,9 @@ class OCPStatement(Scene):
             M("u = (F, 0)", 22),
             M("θ(0) = 0,  θ(T) = 3.14", 20, GRAY_A),
             M("q̇(0) = q̇(T) = 0", 20, GRAY_A),
-            M("only the sideways force F is actuated", 20, GRAY_A),
+            M("only the sideways force F\nis actuated", 20, GRAY_A),
         ).arrange(DOWN, aligned_edge=LEFT, buff=0.18)
-        fit(legend2, 3.3).move_to([6.7, 0.3, 0], aligned_edge=RIGHT)
+        fit(legend2, 3.5).move_to([6.7, 0.3, 0], aligned_edge=RIGHT)
         pend = always_redraw(pendulum)
         self.play(Create(rail), FadeIn(pend), FadeIn(legend2))
         self.play(tracker.animate.set_value(T_FINAL), run_time=5, rate_func=linear)
@@ -333,9 +353,10 @@ class TimeGrid(Scene):
             axis_config={"color": GRAY_B, "stroke_width": 2, "include_ticks": False},
         ).move_to([0.6, -1.75, 0])
 
-        lab_x = M("state θ(t<sub>k</sub>)", 22, C_STATE).move_to([-6.9, 0.5, 0], aligned_edge=LEFT)
-        lab_u = M("control τ(t)", 22, C_CTRL).move_to([-6.9, -1.75, 0], aligned_edge=LEFT)
-        self.play(Create(ax_x), Create(ax_u), FadeIn(lab_x), FadeIn(lab_u))
+        lab_x = M("state θ(t<sub>k</sub>)\n(rad)", 20, C_STATE).move_to([-6.9, 0.5, 0], aligned_edge=LEFT)
+        lab_u = M("control τ(t)\n(N)", 20, C_CTRL).move_to([-6.9, -1.75, 0], aligned_edge=LEFT)
+        lab_t = Text("t (s)", font_size=16, color=GRAY_B).move_to(ax_u.c2p(T_FINAL, ax_u.y_range[0]) + [0.5, -0.2, 0])
+        self.play(Create(ax_x), Create(ax_u), FadeIn(lab_x), FadeIn(lab_u), FadeIn(lab_t))
 
         grid = VGroup(
             *[
@@ -375,16 +396,15 @@ class TimeGrid(Scene):
         )
         brace_lbl = M("Δt = T / N", 22).next_to(brace, RIGHT, buff=0.15)
         hi_x = Circle(radius=0.16, color=WHITE).move_to(dots[k])
-        note_x = M("x<sub>k</sub>  decision variable at node t<sub>k</sub>  (N + 1 nodes)", 22, C_STATE)
-        note_u = M("u<sub>k</sub>  held constant on [t<sub>k</sub>, t<sub>k+1</sub>]  (N steps)", 22, C_CTRL)
+        note_x = M("x<sub>k</sub>  decision variable at node t<sub>k</sub>  (N + 1 nodes)", 21, C_STATE)
+        note_u = M("u<sub>k</sub>  held constant on [t<sub>k</sub>, t<sub>k+1</sub>]  (N steps)", 21, C_CTRL)
         notes = (
             VGroup(note_x, note_u).arrange(DOWN, aligned_edge=LEFT, buff=0.12).move_to([-6.9, 2.2, 0], aligned_edge=UL)
         )
         self.play(GrowFromCenter(brace), FadeIn(brace_lbl), Create(hi_x), FadeIn(note_x))
         self.play(FadeIn(note_u))
         self.wait(1)
-        foot = Text("Same grid for DMS and DC. Next: what happens between two nodes?", font_size=22, color=YELLOW_C)
-        foot.to_edge(DOWN, buff=0.2)
+        foot = footer("Same grid for multiple shooting and collocation. Next: what happens between two nodes?")
         self.play(FadeIn(foot))
         self.wait(2)
 
@@ -424,8 +444,11 @@ class MultipleShooting(Scene):
         side = right_panel(
             [
                 ("1  Node states x<sub>k</sub> are decision variables", C_STATE),
-                ("2  Inside [t<sub>k</sub>, t<sub>k+1</sub>] integrate ẋ = f(x, u<sub>k</sub>)", C_DMS),
-                ("    with 5 RK4 steps  →  F(x<sub>k</sub>, u<sub>k</sub>)", C_DMS),
+                (
+                    "2  Inside [t<sub>k</sub>, t<sub>k+1</sub>] integrate ẋ = f(x, u<sub>k</sub>)\n"
+                    "with 5 RK4 (Runge-Kutta 4) steps  →  F(x<sub>k</sub>, u<sub>k</sub>)",
+                    C_DMS,
+                ),
                 ("3  Continuity: F(x<sub>k</sub>, u<sub>k</sub>) = x<sub>k+1</sub>", C_DEFECT),
             ]
         )
@@ -439,7 +462,7 @@ class MultipleShooting(Scene):
 
         self.play(FadeIn(nodes), FadeIn(labels), FadeIn(side[0]), FadeIn(state_txt))
         self.wait(0.5)
-        self.play(FadeIn(side[1]), FadeIn(side[2]))
+        self.play(FadeIn(side[1]))
         for seg in segs:
             self.play(Create(seg, rate_func=linear), run_time=0.8)
         self.play(FadeIn(ticks), FadeIn(tick_note), run_time=0.6)
@@ -455,10 +478,10 @@ class MultipleShooting(Scene):
             return group
 
         gap_lines = build_gaps(it)
-        self.play(FadeIn(side[3]))
+        self.play(FadeIn(side[2]))
         self.play(LaggedStart(*[Create(g) for g in gap_lines], lag_ratio=0.2))
         defect_lbl = M("defect = F(x<sub>k</sub>, u<sub>k</sub>) − x<sub>k+1</sub> ≠ 0", 22, C_DEFECT)
-        defect_lbl.move_to([WINDOW_CENTER[0], -3.0, 0])
+        defect_lbl.move_to([WINDOW_CENTER[0], -3.05, 0])
         self.play(FadeIn(defect_lbl))
         self.wait(1.5)
 
@@ -468,15 +491,17 @@ class MultipleShooting(Scene):
             f"IPOPT converged after {int(DATA[f'{conv}_iterations'])} iterations", font_size=18, color=GRAY_A
         )
         end_txt.move_to(state_txt.get_right(), aligned_edge=RIGHT)
-        closing = M(
-            "The optimizer moves x<sub>k</sub>, u<sub>k</sub> until every defect is 0:  x<sub>k+1</sub> = F(x<sub>k</sub>, u<sub>k</sub>)",
-            22,
+        closing = footer(
+            "The optimizer moves x<sub>k</sub>, u<sub>k</sub> until every defect is 0:  "
+            "x<sub>k+1</sub> = F(x<sub>k</sub>, u<sub>k</sub>)",
+            size=22,
+            color=WHITE,
+            markup=True,
         )
-        fit(closing, 12.8).to_edge(DOWN, buff=0.25)
         counts = M(
             f"Decision variables (whole pendulum): <b>{int(DATA['rk4_n_decision_variables'])}</b>\n"
             "x at N+1 nodes, u at N intervals",
-            18,
+            17,
             C_DMS,
         )
         counts.move_to([6.9, -0.6, 0], aligned_edge=RIGHT)
@@ -544,22 +569,31 @@ class DirectCollocation(Scene):
         labels = win.node_labels(nodes)
         side = right_panel(
             [
-                ("1  Node states x<sub>k</sub> and", C_STATE),
-                (f"    {DEGREE} collocation states x<sub>k,j</sub> per interval", C_DC),
-                (f"2  A degree-{DEGREE} polynomial P<sub>k</sub> passes", C_DC),
-                ("    through x<sub>k</sub> and the x<sub>k,j</sub>", C_DC),
-                ("3  Defect at each collocation time t<sub>k,j</sub>:", C_DEFECT),
-                ("    dP<sub>k</sub>/dt(t<sub>k,j</sub>) − f(x<sub>k,j</sub>, u<sub>k</sub>) = 0", C_DEFECT),
+                (
+                    span("1  Node states x<sub>k</sub> and", C_STATE)
+                    + "\n"
+                    + span(f"{DEGREE} collocation states x<sub>k,j</sub> per interval", C_DC),
+                    WHITE,
+                ),
+                (
+                    f"2  A degree-{DEGREE} polynomial P<sub>k</sub> passes\nthrough x<sub>k</sub> and the x<sub>k,j</sub>",
+                    C_DC,
+                ),
+                (
+                    "3  Defect at each collocation time t<sub>k,j</sub>:\n"
+                    "dP<sub>k</sub>/dt(t<sub>k,j</sub>) − f(x<sub>k,j</sub>, u<sub>k</sub>) = 0",
+                    C_DEFECT,
+                ),
                 ("4  Continuity: P<sub>k</sub>(t<sub>k+1</sub>) = x<sub>k+1</sub>", C_DEFECT),
             ],
             size=19,
         )
         state_txt = Text(stages[0][1], font_size=18, color=GRAY_A)
         right_info(state_txt)
-        self.play(FadeIn(nodes), FadeIn(labels), FadeIn(side[0:2]), FadeIn(state_txt))
+        self.play(FadeIn(nodes), FadeIn(labels), FadeIn(side[0]), FadeIn(state_txt))
         self.play(FadeIn(colloc, scale=1.5), run_time=1.2)
         self.wait(0.3)
-        self.play(FadeIn(side[2:4]))
+        self.play(FadeIn(side[1]))
         self.play(LaggedStart(*[Create(p) for p in polys], lag_ratio=0.3), run_time=2.5)
         poly_lbl = M(
             "P<sub>k</sub>(t) = Σ<sub>j</sub> x<sub>k,j</sub> L<sub>j</sub>(t)   (Lagrange polynomial)", 20, C_DC
@@ -578,7 +612,7 @@ class DirectCollocation(Scene):
         zoom = Window(kk, 1, y_lo, y_hi, y_length=3.7)
         self.play(FadeOut(VGroup(win.ax, nodes, labels, colloc, polys, poly_lbl, deco)))
         self.play(Create(zoom.ax), FadeIn(zoom.decorations()))
-        self.play(FadeIn(side[4:6]))
+        self.play(FadeIn(side[2]))
 
         x_unit = np.linalg.norm(zoom.p(kk * H + 1.0, 0) - zoom.p(kk * H, 0))  # screen length per second
         y_unit = np.linalg.norm(zoom.p(0, 1.0) - zoom.p(0, 0))  # screen length per rad
@@ -617,11 +651,11 @@ class DirectCollocation(Scene):
             values = df(t_j) - qd_j
             numbers = "   ".join("0.00" if abs(v) < 0.005 else f"{v:+.2f}" for v in values)
             txt = M(
-                f"defects dP/dt − q̇ at t<sub>k,1</sub>, t<sub>k,2</sub>, t<sub>k,3</sub> (rad/s):   {numbers}",
+                f"defects dP/dt − q̇ at t<sub>k,1</sub>, t<sub>k,2</sub>, t<sub>k,3</sub> (rad/s):\n{numbers}",
                 19,
                 C_DEFECT,
             )
-            txt.move_to([WINDOW_CENTER[0], -3.4, 0])
+            txt.move_to([WINDOW_CENTER[0], -3.42, 0])
             gap_val = f((kk + 1) * H) - DATA[f"{prefix}_q_nodes"][ROT, kk + 1]
             gtxt = M(f"P<sub>k</sub>(t<sub>k+1</sub>) − x<sub>k+1</sub> = {gap_val:+.3f} rad", 19, C_DEFECT)
             gtxt.move_to([WINDOW_CENTER[0], 2.55, 0])
@@ -638,12 +672,12 @@ class DirectCollocation(Scene):
         leg[1].next_to(leg[0], RIGHT, buff=0.1)
         leg[2].next_to(leg[1], RIGHT, buff=0.4)
         leg[3].next_to(leg[2], RIGHT, buff=0.1)
-        leg.move_to([WINDOW_CENTER[0], -3.0, 0])
+        leg.move_to([WINDOW_CENTER[0], -2.65, 0])
         self.play(FadeIn(nd), FadeIn(zlabels), FadeIn(sq, scale=1.5))
         self.play(Create(poly))
         self.play(Create(tang), FadeIn(leg), FadeIn(txt))
         self.wait(1.5)
-        self.play(FadeIn(side[6]))
+        self.play(FadeIn(side[3]))
         self.play(Create(gap), FadeIn(gtxt))
         self.wait(2)
 
@@ -666,18 +700,20 @@ class DirectCollocation(Scene):
             )
             self.wait(1.5)
 
-        closing = M(
-            "At the solution both slopes match (defects = 0) and the polynomials connect: bigger but sparser NLP", 22
+        closing = footer(
+            "At the solution both slopes match (defects = 0) and the polynomials connect: "
+            "a bigger but sparser nonlinear program",
+            size=22,
+            color=WHITE,
         )
-        fit(closing, 12.8).to_edge(DOWN, buff=0.12)
         counts = M(
             f"Decision variables (whole pendulum): <b>{int(DATA['col_n_decision_variables'])}</b>\n"
-            f"x at nodes, {DEGREE} x per interval, u at N intervals",
-            18,
+            f"x at nodes, {DEGREE} x per interval,\nu at N intervals",
+            17,
             C_DC,
         )
         counts.move_to([6.9, -0.6, 0], aligned_edge=RIGHT)
-        self.play(FadeIn(closing), FadeIn(counts))
+        self.play(FadeOut(leg), FadeOut(txt), FadeIn(closing), FadeIn(counts))
         self.wait(3)
 
         self.radau_continuity(title)
@@ -714,14 +750,22 @@ class DirectCollocation(Scene):
         labels = win.node_labels(nodes)
         side = right_panel(
             [
-                ("Radau points: the last one is τ = 1", TEAL_C),
-                ("    i.e. the end of the interval t<sub>k+1</sub>", TEAL_C),
-                ("The polynomial end P<sub>k</sub>(t<sub>k+1</sub>) is", C_STATE),
-                ("itself the collocation state x<sub>k,3</sub>:", C_STATE),
-                ("    x<sub>k,3</sub> = x<sub>k+1</sub>", C_DEFECT),
-                ("Legendre: P<sub>k</sub>(t<sub>k+1</sub>) is not a", C_DC),
-                ("collocation point, continuity is an extra", C_DC),
-                ("constraint on the polynomial end", C_DC),
+                ("Radau points: the last one is τ = 1,\ni.e. the end of the interval t<sub>k+1</sub>", TEAL_C),
+                (
+                    span(
+                        "The polynomial end P<sub>k</sub>(t<sub>k+1</sub>) is\nitself the collocation state x<sub>k,3</sub>:",
+                        C_STATE,
+                    )
+                    + "\n"
+                    + span("x<sub>k,3</sub> = x<sub>k+1</sub>", C_DEFECT),
+                    WHITE,
+                ),
+                (
+                    "Legendre: P<sub>k</sub>(t<sub>k+1</sub>) is not a\n"
+                    "collocation point, continuity is an extra\n"
+                    "constraint on the polynomial end",
+                    C_DC,
+                ),
             ],
             size=19,
         )
@@ -729,21 +773,22 @@ class DirectCollocation(Scene):
         right_info(info)
         self.play(FadeIn(nodes), FadeIn(labels), FadeIn(info))
         self.play(FadeIn(colloc, scale=1.5), LaggedStart(*[Create(p) for p in polys], lag_ratio=0.3), run_time=2.5)
-        self.play(FadeIn(side[0:2]))
+        self.play(FadeIn(side[0]))
         self.wait(1)
         rings = VGroup(
             *[Circle(radius=0.22, color=C_DEFECT, stroke_width=4).move_to(nodes[i + 1]) for i in range(width)]
         )
-        self.play(FadeIn(side[2:5]), LaggedStart(*[Create(r) for r in rings], lag_ratio=0.3))
+        self.play(FadeIn(side[1]), LaggedStart(*[Create(r) for r in rings], lag_ratio=0.3))
         tag = M("red rings: last collocation point = next node", 20, C_DEFECT)
         tag.move_to([WINDOW_CENTER[0], 2.55, 0])
         self.play(FadeIn(tag))
         self.wait(1.5)
-        self.play(FadeIn(side[5:8]))
-        closing = M(
-            "Radau: order 2d − 1 = 5, continuity built in   ·   Legendre: order 2d = 6, continuity as a constraint", 21
+        self.play(FadeIn(side[2]))
+        closing = footer(
+            "Radau: order 2d − 1 = 5, continuity built in  ·  Legendre: order 2d = 6, continuity as a constraint",
+            size=21,
+            color=WHITE,
         )
-        fit(closing, 12.8).to_edge(DOWN, buff=0.25)
         self.play(FadeIn(closing))
         self.wait(4)
 
@@ -768,19 +813,12 @@ class DirectCollocation(Scene):
             end0 = M("t<sub>k</sub>", 20, GRAY_B).next_to(ln.get_start(), DOWN, buff=0.12)
             end1 = M("t<sub>k+1</sub>", 20, GRAY_B).next_to(ln.get_end(), DOWN, buff=0.12)
             rows.add(VGroup(ln, dots, ends, name, vals, end0, end1))
-        comment = (
-            VGroup(
-                Text(f"polynomial_degree = {DEGREE}  →  {DEGREE} collocation points per interval", font_size=22),
-                Text(
-                    "legendre: interior points, highest order (2d = 6)   ·   radau: last point = t(k+1), order 2d − 1 = 5",
-                    font_size=19,
-                    color=GRAY_A,
-                ),
-            )
-            .arrange(DOWN, buff=0.15)
-            .to_edge(DOWN, buff=0.4)
-        )
-        fit(comment, 13)
+        comment = VGroup(
+            Text(f"polynomial_degree = d = {DEGREE}  →  {DEGREE} collocation points per interval", font_size=20),
+            Text(f"legendre: interior points, highest order (2d = {2 * DEGREE})", font_size=18, color=GRAY_A),
+            Text(f"radau: last point = t(k+1), order 2d − 1 = {2 * DEGREE - 1}", font_size=18, color=GRAY_A),
+        ).arrange(DOWN, aligned_edge=LEFT, buff=0.1)
+        fit(comment, 10.4).move_to([-6.9, -3.88, 0], aligned_edge=DL)
         self.play(FadeIn(rows), FadeIn(comment))
         self.wait(3.5)
         self.play(FadeOut(rows), FadeOut(comment))
@@ -791,7 +829,10 @@ class DirectCollocation(Scene):
 # --------------------------------------------------------------------------------------------------------------------
 class Comparison(Scene):
     def construct(self):
-        title = scene_title("DMS vs DC in bioptim", "same OCP, same grid, different transcription")
+        title = scene_title(
+            "Multiple shooting vs collocation in Bioptim",
+            "same optimal control problem, same grid, different discretization",
+        )
         self.play(FadeIn(title))
 
         n_x = int(DATA["rk4_q_nodes"].shape[0] * 2)  # states per node: q and qdot
@@ -810,15 +851,15 @@ class Comparison(Scene):
             ),
             ("Dynamics evaluated", "4 × 5 = 20 times (RK4 steps)", f"{DEGREE} times (once per collocation point)"),
             ("Approximation order", "4 (RK4)", f"{2 * DEGREE} (legendre)  /  {2 * DEGREE - 1} (radau)"),
-            ("NLP structure", "smaller, denser Jacobian", "larger, very sparse Jacobian"),
+            ("Nonlinear program", "smaller, denser Jacobian", "larger, very sparse Jacobian"),
             (
                 f"This pendulum (N = {N})",
                 f"{int(DATA['rk4_n_decision_variables'])} variables, {int(DATA['rk4_iterations'])} IPOPT iterations",
                 f"{int(DATA['col_n_decision_variables'])} variables, {int(DATA['col_iterations'])} IPOPT iterations",
             ),
         ]
-        x_cols = [-6.9, -4.0, 0.2]
-        widths = [3.0, 4.0, 6.7]
+        x_cols = [-6.9, -3.6, 0.5]
+        widths = [2.9, 3.8, 5.5]
         y = 2.0
         row_groups = []
         for i, row in enumerate(rows):
@@ -842,14 +883,12 @@ class Comparison(Scene):
             self.play(FadeIn(group, shift=UP * 0.15), run_time=0.7)
             self.wait(0.3)
 
-        note = Text(
-            "Costs come from two independent IPOPT runs on a non-convex problem (they may end in different local minima):\n"
-            "the variable / iteration counts are meaningful, the cost difference is NOT an accuracy ranking.",
-            font_size=17,
+        note = footer(
+            "Two independent IPOPT runs on a non-convex problem may reach different local minima: "
+            "the counts are meaningful, the cost difference is not an accuracy ranking.",
+            size=16,
             color=GRAY_B,
-            line_spacing=0.9,
         )
-        fit(note, 13).to_edge(DOWN, buff=0.2)
         self.play(FadeIn(note))
         self.wait(4)
 
@@ -881,11 +920,10 @@ class Comparison(Scene):
                 ]
             ),
         ).arrange(DOWN, aligned_edge=LEFT, buff=0.25)
-        VGroup(code_dms, code_dc).arrange(RIGHT, aligned_edge=UP, buff=0.8).move_to([0, 0.3, 0])
-        takeaway = Text(
-            "Only this line changes: the objective, bounds and model stay identical.", font_size=22, color=YELLOW_C
-        )
-        takeaway.to_edge(DOWN, buff=0.6)
-        self.play(FadeIn(code_dms, shift=RIGHT * 0.3), FadeIn(code_dc, shift=LEFT * 0.3))
+        code_pair = VGroup(code_dms, code_dc).arrange(RIGHT, aligned_edge=UP, buff=0.8)
+        cap_code = Text("Bioptim code", font_size=20, color=GRAY_B)
+        VGroup(cap_code, code_pair).arrange(DOWN, aligned_edge=LEFT, buff=0.3).move_to([0, 0.3, 0])
+        takeaway = footer("Only this line changes: the objective, bounds and model stay identical.", size=22)
+        self.play(FadeIn(cap_code), FadeIn(code_dms, shift=RIGHT * 0.3), FadeIn(code_dc, shift=LEFT * 0.3))
         self.play(FadeIn(takeaway))
         self.wait(4)

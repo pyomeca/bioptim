@@ -53,8 +53,8 @@ def at(arr, s):
 
 class MuscleReaching(Scene):
     def construct(self):
-        title = scene_title("Muscle-driven OCP: reach a target")
-        self.add(title)
+        title = scene_title("Muscle-driven optimal control: reach a target")
+        self.play(FadeIn(title), run_time=0.4)
         n = ACT.shape[1]
 
         # ---------------- left top: the arm ----------------
@@ -86,7 +86,7 @@ class MuscleReaching(Scene):
 
         def dist_updater(m):
             d = np.linalg.norm(at(HAND, s.get_value()) - TGT) * 100
-            new = Text(f"hand - target: {d:4.1f} cm", font_size=20, color=YELLOW_C)
+            new = Text(f"hand to target: {d:.1f} cm", font_size=20, color=YELLOW_C)
             new.move_to([-1.7, 1.6, 0])
             m.become(new)
 
@@ -113,7 +113,7 @@ class MuscleReaching(Scene):
         legend.move_to([CODE_X + 2.6, -1.9, 0])
 
         # ---------------- right: code ----------------
-        cap = Text("torque-driven  ->  muscle-driven", font_size=20, color=GRAY_B)
+        cap = Text("Bioptim code: from torque-driven to muscle-driven", font_size=20, color=GRAY_B)
         old = code("bio_model = TorqueBiorbdModel(path)", 19, RED_C)
         new = code("bio_model = MusclesBiorbdModel(path, with_residual_torque=True)", 19, GREEN_C)
         model_blk = VGroup(cap, old).arrange(DOWN, aligned_edge=LEFT, buff=0.2)
@@ -135,17 +135,18 @@ class MuscleReaching(Scene):
             ],
             size=19,
             top=1.4,
+            caption=None,
         )
         rest_lines = rest[0]
         note = Text("6 muscles: a_i(t) are the controls, tau is only a small residual", font_size=17, color=GRAY_B)
-        note.move_to([CODE_X, -3.3, 0], aligned_edge=LEFT)
+        note.move_to([CODE_X, -3.05, 0], aligned_edge=LEFT)
         status = Text(
             f"IPOPT: converged, {int(D['iterations'])} iterations, "
             f"final error {float(D['marker_error'])*100:.1f} cm",
             font_size=17,
             color=GRAY_B,
         )
-        status.move_to([CODE_X, -3.65, 0], aligned_edge=LEFT)
+        status.move_to([CODE_X, -3.4, 0], aligned_edge=LEFT)
 
         # ---------------- timeline (~18 s) ----------------
         self.play(FadeIn(model_blk, shift=UP * 0.1), run_time=0.8)
@@ -176,4 +177,4 @@ class MuscleReaching(Scene):
         trail.clear_updaters()
         dist.clear_updaters()
         self.play(FadeIn(note), FadeIn(status), run_time=0.6)
-        self.wait(3.0)
+        self.wait(2.5)

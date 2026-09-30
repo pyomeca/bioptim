@@ -15,6 +15,7 @@ from features_scenes import (
     M,
     code,
     fit,
+    axis_label,
     make_axes,
     poly,
     scene_title,
@@ -38,7 +39,7 @@ def code_block(lines, size=18):
 
 
 def caption(text):
-    return Text(text, font_size=17, color=GRAY_B)
+    return Text(text, font_size=19, color=GRAY_B)
 
 
 class CyclicNMPC(Scene):
@@ -49,16 +50,16 @@ class CyclicNMPC(Scene):
         t_end = n_cycles * T
         tw = np.linspace(0, T, n + 1)
 
-        title = scene_title("Cyclic NMPC", "one solve per cycle; the window advances by a whole cycle")
+        title = scene_title(
+            "Cyclic nonlinear model predictive control", "one solve per cycle, the window advances by a whole cycle"
+        )
         self.play(FadeIn(title), run_time=0.6)
 
         # ------------------------------------------------------------------------------------------ axes
         ax_q = make_axes([-3.55, 0.95, 0], 5.6, 2.3, [0, t_end], [-0.9, 0.9], 4, 0.9)
         ax_t = make_axes([-3.55, -1.75, 0], 5.6, 1.9, [0, t_end], [-1.0, 1.0], 4, 1.0)
-        lab_q = Text("cart position (m)", font_size=20, color=GRAY_B).next_to(ax_q.get_y_axis(), UP, buff=0.08)
-        lab_q.align_to(ax_q.get_y_axis(), LEFT)
-        lab_t = Text("pendulum angle (rad)", font_size=20, color=GRAY_B).next_to(ax_t.get_y_axis(), UP, buff=0.08)
-        lab_t.align_to(ax_t.get_y_axis(), LEFT)
+        lab_q = axis_label("cart position (m)", ax_q)
+        lab_t = axis_label("pendulum angle (rad)", ax_t)
         decos = VGroup(
             lab_q,
             lab_t,
@@ -97,17 +98,15 @@ class CyclicNMPC(Scene):
                 (1, "solver=Solver.IPOPT())", W),
             ]
         )
-        cyc_cap = caption("after each solve, bioptim does (x_last = state at the last node):")
         cyc = code_block(
             [
+                (0, "# after each solve (x_last = state at the last node):", GRAY_B),
                 (0, "x_bounds[key][:, 0] = x_last", W),
                 (0, "x_bounds[key].min[s, 2] = x_last - 0.01 * range", W),
                 (0, "x_bounds[key].max[s, 2] = x_last + 0.01 * range", W),
             ]
         )
-        panel = VGroup(ctor, upd, slv, VGroup(cyc_cap, cyc).arrange(DOWN, aligned_edge=LEFT, buff=0.1)).arrange(
-            DOWN, aligned_edge=LEFT, buff=0.2
-        )
+        panel = VGroup(caption("Bioptim code"), ctor, upd, slv, cyc).arrange(DOWN, aligned_edge=LEFT, buff=0.2)
         fit(panel, CODE_W)
         panel.move_to([CODE_X0, 2.3, 0], aligned_edge=UL)
 
@@ -140,9 +139,11 @@ class CyclicNMPC(Scene):
         def status_text(k):
             it, st = int(d["iterations"][k]), int(d["status"][k])
             gap = np.abs(d["win_x_last"][k] - d["win_x_first"][k]).max()
-            ok = "converged" if st == 0 else "FAILED"
-            txt = f"cycle {k + 1}/{n_cycles}  IPOPT {it} it., status {st} ({ok})   max |x_last - x_first| = {gap:.3f}"
-            return Text(txt, font_size=17, color=GRAY_B).move_to([-6.7, -3.65, 0], aligned_edge=LEFT)
+            if st == 0:
+                txt = f"cycle {k + 1} of {n_cycles}: IPOPT converged in {it} iterations, max |x_last − x_first| = {gap:.3f}"
+            else:
+                txt = f"cycle {k + 1} of {n_cycles}: IPOPT FAILED (status {st}) after {it} iterations"
+            return Text(txt, font_size=16, color=GRAY_B).move_to([-6.7, -3.65, 0], aligned_edge=LEFT)
 
         band = win_band(0)
         status = status_text(0)
@@ -176,12 +177,12 @@ class CyclicNMPC(Scene):
             self.wait(0.15)
 
         msg = M(
-            f"{n_cycles} real IPOPT solves, all converged. Each cycle starts where the previous one ended; the "
-            f"amplitude change (cycle 3) pushes the gap to the edge of the 1 % slack.",
-            18,
+            f"{n_cycles} real IPOPT solves, all converged. Each cycle starts where the previous one ended.\n"
+            f"The amplitude change (cycle 3) pushes the gap to the edge of the 1 % slack.",
+            17,
             WHITE,
         )
-        fit(msg, 13.2)
-        msg.to_edge(DOWN, buff=0.1)
+        fit(msg, 11.0)
+        msg.move_to([-6.9, -3.68, 0], aligned_edge=LEFT)
         self.play(FadeOut(band), FadeOut(status), FadeOut(cur_box), FadeIn(msg), run_time=0.5)
-        self.wait(2.0)
+        self.wait(2.5)

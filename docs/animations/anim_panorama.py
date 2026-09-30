@@ -10,7 +10,7 @@ Scene: PenaltyPanorama (about 16 s).  Render (from docs/animations):  manim rend
 import numpy as np
 from manim import *
 
-from features_scenes import CODE_W, DATA_DIR, code, fit
+from features_scenes import CODE_W, DATA_DIR, code, fit, scene_title
 
 C_LAG = GREEN_C
 C_MAY = ORANGE
@@ -73,7 +73,7 @@ class PenaltyPanorama(Scene):
             assert sum(count(fam, c[0]) for c in CARDS) == len(names[fam])
 
         # ------------------------------------------------------------------ title with colored legend
-        title = Text("The penalty library", font_size=34, weight=BOLD)
+        title = scene_title("The penalty library")
         legend = VGroup(
             *[
                 VGroup(
@@ -83,13 +83,14 @@ class PenaltyPanorama(Scene):
                 for fam, short, color in FAMS
             ]
         ).arrange(RIGHT, buff=0.5)
-        head = VGroup(title, legend).arrange(DOWN, buff=0.14).to_edge(UP, buff=0.25)
+        legend.next_to(title, DOWN, buff=0.14)
+        head = VGroup(title, legend)
         self.play(FadeIn(head), run_time=0.4)
 
         # ------------------------------------------------------------------ beat 1: grouped cards
         card_w, card_h, gap = 3.3, 1.62, 0.15
         x0 = -(4 * card_w + 3 * gap) / 2 + card_w / 2
-        y0 = 1.85
+        y0 = 1.75
 
         def make_card(body_items, color, i):
             box = RoundedRectangle(corner_radius=0.12, width=card_w, height=card_h, stroke_color=color, stroke_width=3)
@@ -120,13 +121,13 @@ class PenaltyPanorama(Scene):
             "several names can point to one function (objectives: MINIMIZE_CONTROL and TRACK_CONTROL)",
             font_size=18,
             color=GRAY_B,
-        ).to_edge(DOWN, buff=0.3)
+        ).to_edge(DOWN, buff=0.75)
         self.play(LaggedStart(*[FadeIn(c, scale=0.85) for c in cards], lag_ratio=0.3, run_time=4.2))
         self.play(FadeIn(foot), run_time=0.4)
         self.wait(2.2)
 
         # ------------------------------------------------------------------ beat 2: how to pick
-        sub = Text("How to pick", font_size=34, weight=BOLD).to_edge(UP, buff=0.25)
+        sub = scene_title("How to pick")
         self.play(FadeOut(VGroup(*cards, foot, legend, title)), FadeIn(sub), run_time=0.6)
 
         ax_x0, ax_x1 = -6.4, -0.9

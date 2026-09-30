@@ -2,577 +2,2012 @@
   {
     "id": "features_scenes.py:ObjectivesNodes",
     "slug": "objectives-nodes",
-    "title_en": "Objectives Nodes",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Lagrange, Mayer and nodes",
+    "title_fr": "Lagrange, Mayer et nœuds",
+    "description_en": "Shows on a schematic node grid which nodes the Node enum selects (START, INTERMEDIATES, PENULTIMATE, END, ALL_SHOOTING, ALL), then five real pendulum swing-up solves with increasing Mayer weight on the final angle. The grid is schematic (N = 10); the solves use N = 30 and the end angle is free, so the weight alone pulls the pendulum up.",
+    "description_fr": "Montre sur une grille schématique quels nœuds sélectionne l'énumération Node (START, INTERMEDIATES, PENULTIMATE, END, ALL_SHOOTING, ALL), puis cinq résolutions réelles du balancement du pendule avec un poids de Mayer croissant sur l'angle final. La grille est schématique (N = 10); les résolutions utilisent N = 30 et l'angle final est libre : seul le poids relève le pendule.",
     "video_basename": "ObjectivesNodes",
     "duration_note": "",
-    "links": [],
-    "notes_file": ""
+    "links": [
+      {
+        "label_en": "Example: basic pendulum OCP",
+        "label_fr": "Exemple : OCP du pendule de base",
+        "path": "bioptim/examples/getting_started/basic_ocp.py",
+        "lines": "33-127"
+      },
+      {
+        "label_en": "Node enum",
+        "label_fr": "Énumération Node",
+        "path": "bioptim/misc/enums.py",
+        "lines": "33-47"
+      },
+      {
+        "label_en": "Lagrange and Mayer objective functions",
+        "label_fr": "Fonctions objectif Lagrange et Mayer",
+        "path": "bioptim/limits/objective_functions.py",
+        "lines": "362-483"
+      },
+      {
+        "label_en": "How nodes are turned into indices",
+        "label_fr": "Conversion des nœuds en indices",
+        "path": "bioptim/limits/penalty_option.py",
+        "lines": "989-1046"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_features_data.py"
+      }
+    ],
+    "notes_file": "",
+    "level": 2,
+    "section": "Objectives and constraints",
+    "section_fr": "Objectifs et contraintes"
   },
   {
     "id": "features_scenes.py:ConstraintsBounds",
     "slug": "constraints-bounds",
-    "title_en": "Constraints Bounds",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Bounds on controls and states",
+    "title_fr": "Bornes sur commandes et états",
+    "description_en": "The same pendulum swing-up is solved with a torque bound u_bounds that shrinks from 100 to 12 N, then with a bound on the cart position x_bounds. The bounds are limits on decision variables; general path constraints (ConstraintFcn) are only mentioned, not solved. Some solves are warm started, and an even tighter position bound was infeasible and is not shown.",
+    "description_fr": "Le même balancement de pendule est résolu avec une borne de couple u_bounds qui passe de 100 à 12 N, puis avec une borne sur la position du chariot x_bounds. Ce sont des bornes sur les variables de décision ; les contraintes de chemin générales (ConstraintFcn) sont seulement mentionnées, pas résolues. Certaines résolutions sont initialisées à chaud, et une borne de position encore plus serrée était infaisable et n'est pas montrée.",
     "video_basename": "ConstraintsBounds",
     "duration_note": "",
-    "links": [],
-    "notes_file": ""
+    "links": [
+      {
+        "label_en": "Example: bounds on states and controls",
+        "label_fr": "Exemple : bornes sur états et commandes",
+        "path": "bioptim/examples/toy_examples/feature_examples/pendulum_constrained_states_controls.py",
+        "lines": "35-126"
+      },
+      {
+        "label_en": "Example: pendulum with x_bounds and u_bounds",
+        "label_fr": "Exemple : pendule avec x_bounds et u_bounds",
+        "path": "bioptim/examples/getting_started/basic_ocp.py",
+        "lines": "33-127"
+      },
+      {
+        "label_en": "Bounds and BoundsList classes",
+        "label_fr": "Classes Bounds et BoundsList",
+        "path": "bioptim/limits/path_conditions.py",
+        "lines": "339-700"
+      },
+      {
+        "label_en": "Scene generator (constraint experiments)",
+        "label_fr": "Générateur de la scène (expériences de contraintes)",
+        "path": "docs/animations/generate_features_data.py",
+        "lines": "156-190"
+      }
+    ],
+    "notes_file": "FEATURES.md",
+    "level": 2,
+    "section": "Objectives and constraints",
+    "section_fr": "Objectifs et contraintes"
   },
   {
     "id": "features_scenes.py:MultiphaseTransitions",
     "slug": "multiphase-transitions",
-    "title_en": "Multiphase Transitions",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Multiphase problems and transitions",
+    "title_fr": "Problèmes multiphases et transitions",
+    "description_en": "A pendulum swing-up split in two phases of different durations (0.5 s and 1.0 s, 12 and 18 nodes). With PhaseTransitionFcn.CONTINUOUS the states at the end of phase 0 equal those at the start of phase 1; with DISCONTINUOUS nothing links them, so the angular velocity and the position jump. The discontinuous case is only a visual illustration, not a physical model.",
+    "description_fr": "Un balancier de pendule découpé en deux phases de durées différentes (0,5 s et 1,0 s, 12 et 18 nœuds). Avec PhaseTransitionFcn.CONTINUOUS, les états à la fin de la phase 0 sont égaux à ceux du début de la phase 1 ; avec DISCONTINUOUS, rien ne les relie et la vitesse angulaire ainsi que la position sautent. Le cas discontinu sert seulement d'illustration visuelle, ce n'est pas un modèle physique.",
     "video_basename": "MultiphaseTransitions",
     "duration_note": "",
-    "links": [],
-    "notes_file": ""
+    "links": [
+      {
+        "label_en": "Example: multiphase OCP",
+        "label_fr": "Exemple : OCP multiphase",
+        "path": "bioptim/examples/getting_started/example_multiphase.py",
+        "lines": "39-189"
+      },
+      {
+        "label_en": "PhaseTransitionFcn enum",
+        "label_fr": "Énumération PhaseTransitionFcn",
+        "path": "bioptim/limits/phase_transition.py",
+        "lines": "355-375"
+      },
+      {
+        "label_en": "CONTINUOUS transition (states equality)",
+        "label_fr": "Transition CONTINUOUS (égalité des états)",
+        "path": "bioptim/limits/phase_transition.py",
+        "lines": "157-185"
+      },
+      {
+        "label_en": "DISCONTINUOUS transition (no link)",
+        "label_fr": "Transition DISCONTINUOUS (aucun lien)",
+        "path": "bioptim/limits/phase_transition.py",
+        "lines": "222-238"
+      },
+      {
+        "label_en": "Scene data: two-phase OCP",
+        "label_fr": "Données de la scène : OCP à deux phases",
+        "path": "docs/animations/generate_features_data.py",
+        "lines": "193-228"
+      }
+    ],
+    "notes_file": "FEATURES.md",
+    "level": 2,
+    "section": "Phases and time",
+    "section_fr": "Phases et temps"
   },
   {
     "id": "features_scenes.py:FreeTime",
     "slug": "free-time",
-    "title_en": "Free Time",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Free-time optimization",
+    "title_fr": "Optimisation à temps libre",
+    "description_en": "With ObjectiveFcn.Mayer.MINIMIZE_TIME the phase duration becomes a decision variable; phase_time is only an initial guess. Real swing-up solves with torque bounds of 100, 80 and 60 N give optimal durations of 0.328, 0.463 and 0.601 s (N = 40); the torque sits on its bound most of the time with some chattering.",
+    "description_fr": "Avec ObjectiveFcn.Mayer.MINIMIZE_TIME, la durée de la phase devient une variable de décision; phase_time n'est qu'une estimation initiale. Des résolutions réelles avec des bornes de couple de 100, 80 et 60 N donnent des durées optimales de 0,328, 0,463 et 0,601 s (N = 40); le couple reste sur sa borne la plupart du temps, avec quelques oscillations.",
     "video_basename": "FreeTime",
     "duration_note": "",
-    "links": [],
-    "notes_file": ""
+    "links": [
+      {
+        "label_en": "Example: minimum-time pendulum",
+        "label_fr": "Exemple : pendule en temps minimal",
+        "path": "bioptim/examples/toy_examples/optimal_time_ocp/pendulum_min_time_Mayer.py",
+        "lines": "30-112"
+      },
+      {
+        "label_en": "Mayer minimize_time implementation",
+        "label_fr": "Implémentation de Mayer minimize_time",
+        "path": "bioptim/limits/objective_functions.py",
+        "lines": "288-311"
+      },
+      {
+        "label_en": "Mayer objective list (MINIMIZE_TIME)",
+        "label_fr": "Liste des objectifs de Mayer (MINIMIZE_TIME)",
+        "path": "bioptim/limits/objective_functions.py",
+        "lines": "428-483"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_features_data.py"
+      }
+    ],
+    "notes_file": "",
+    "level": 2,
+    "section": "Phases and time",
+    "section_fr": "Phases et temps"
   },
   {
     "id": "features_scenes.py:Parameters",
     "slug": "parameters",
-    "title_en": "Parameters",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Optimizing a parameter",
+    "title_fr": "Optimiser un paramètre",
+    "description_en": "A scalar parameter, the peak torque max_tau, is declared with ParameterList and optimized together with the trajectory. Four solves with increasing weight on the parameter show max_tau shrinking, and a diagram shows where the parameter sits in the decision vector. Here the parameter changes no model property; it only appears in constraints and an objective.",
+    "description_fr": "Un paramètre scalaire, le couple maximal max_tau, est déclaré avec ParameterList et optimisé avec la trajectoire. Quatre résolutions avec un poids croissant sur le paramètre montrent max_tau qui diminue, et un schéma indique la place du paramètre dans le vecteur de décision. Ici le paramètre ne modifie aucune propriété du modèle ; il apparaît seulement dans des contraintes et un coût.",
     "video_basename": "Parameters",
     "duration_note": "",
-    "links": [],
-    "notes_file": ""
+    "links": [
+      {
+        "label_en": "Example: custom parameters",
+        "label_fr": "Exemple : paramètres personnalisés",
+        "path": "bioptim/examples/getting_started/custom_parameters.py",
+        "lines": "89-252"
+      },
+      {
+        "label_en": "Example: minimize the maximum torque with a parameter",
+        "label_fr": "Exemple : minimiser le couple maximal avec un paramètre",
+        "path": "bioptim/examples/toy_examples/torque_driven_ocp/minimize_maximum_torque_by_extra_parameter.py",
+        "lines": "47-135"
+      },
+      {
+        "label_en": "ParameterList class",
+        "label_fr": "Classe ParameterList",
+        "path": "bioptim/optimization/parameters.py",
+        "lines": "149-298"
+      },
+      {
+        "label_en": "Scene generator (ocp_parameters)",
+        "label_fr": "Générateur de la scène (ocp_parameters)",
+        "path": "docs/animations/generate_features_data.py",
+        "lines": "263-332"
+      }
+    ],
+    "notes_file": "FEATURES.md",
+    "level": 2,
+    "section": "Objectives and constraints",
+    "section_fr": "Objectifs et contraintes"
   },
   {
     "id": "features_scenes.py:Impact",
     "slug": "impact",
-    "title_en": "Impact",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Impact phase transition",
+    "title_fr": "Transition de phase par impact",
+    "description_en": "A 1 kg point mass falls onto the floor and then slides on it (two phases). PhaseTransitionFcn.IMPACT keeps the position and applies the rigid-contact impulse to the velocity: the vertical velocity jumps to zero, the horizontal one is kept. The same problem with CONTINUOUS is reported infeasible by IPOPT. The impact is inelastic and frictionless, on a point mass.",
+    "description_fr": "Une masse ponctuelle de 1 kg tombe sur le sol puis glisse dessus (deux phases). PhaseTransitionFcn.IMPACT conserve la position et applique l'impulsion du contact rigide à la vitesse : la vitesse verticale saute à zéro, la vitesse horizontale est conservée. Le même problème avec CONTINUOUS est déclaré infaisable par IPOPT. L'impact est inélastique et sans frottement, sur une masse ponctuelle.",
     "video_basename": "Impact",
     "duration_note": "",
-    "links": [],
-    "notes_file": ""
+    "links": [
+      {
+        "label_en": "Example using PhaseTransitionFcn.IMPACT",
+        "label_fr": "Exemple utilisant PhaseTransitionFcn.IMPACT",
+        "path": "bioptim/examples/getting_started/custom_phase_transitions.py",
+        "lines": "68-204"
+      },
+      {
+        "label_en": "IMPACT transition implementation",
+        "label_fr": "Implémentation de la transition IMPACT",
+        "path": "bioptim/limits/phase_transition.py",
+        "lines": "260-306"
+      },
+      {
+        "label_en": "Model impulse: qdot_from_impact",
+        "label_fr": "Impulsion du modèle : qdot_from_impact",
+        "path": "bioptim/models/biorbd/biorbd_model.py",
+        "lines": "824-835"
+      },
+      {
+        "label_en": "Scene data: impact OCP",
+        "label_fr": "Données de la scène : OCP d'impact",
+        "path": "docs/animations/generate_features_data.py",
+        "lines": "335-371"
+      }
+    ],
+    "notes_file": "FEATURES.md",
+    "level": 3,
+    "section": "Phases and time",
+    "section_fr": "Phases et temps"
   },
   {
     "id": "dms_vs_dc.py:OCPStatement",
     "slug": "ocp-statement",
-    "title_en": "OCP Statement",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "What is an OCP?",
+    "title_fr": "Qu'est-ce qu'un OCP ?",
+    "description_en": "Writes the optimal control problem as a table mapping each mathematical piece (Lagrange and Mayer cost, dynamics, boundary values, bounds, path constraints) to its Bioptim call, then shows the pendulum swing-up solution as the running example. The problem is infinite-dimensional, so it must be discretized.",
+    "description_fr": "Écrit le problème de commande optimale (OCP) sous forme de tableau associant chaque élément mathématique (coût de Lagrange et de Mayer, dynamique, valeurs aux limites, bornes, contraintes de chemin) à son appel Bioptim, puis montre la solution du balancement du pendule comme exemple courant. Le problème est de dimension infinie : il doit être discrétisé.",
     "video_basename": "OCPStatement",
     "duration_note": "",
-    "links": [],
-    "notes_file": ""
+    "links": [
+      {
+        "label_en": "Example: pendulum swing-up",
+        "label_fr": "Exemple : balancement du pendule",
+        "path": "bioptim/examples/toy_examples/sqp_method/pendulum.py",
+        "lines": "22-97"
+      },
+      {
+        "label_en": "Objective class",
+        "label_fr": "Classe Objective",
+        "path": "bioptim/limits/objective_functions.py",
+        "lines": "21-181"
+      },
+      {
+        "label_en": "Constraint class",
+        "label_fr": "Classe Constraint",
+        "path": "bioptim/limits/constraints.py",
+        "lines": "25-162"
+      },
+      {
+        "label_en": "OptimalControlProgram constructor",
+        "label_fr": "Constructeur d'OptimalControlProgram",
+        "path": "bioptim/optimization/optimal_control_program.py",
+        "lines": "160-338"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_pendulum_data.py"
+      }
+    ],
+    "notes_file": "",
+    "level": 1,
+    "section": "Fundamentals",
+    "section_fr": "Fondamentaux"
   },
   {
     "id": "dms_vs_dc.py:TimeGrid",
     "slug": "time-grid",
-    "title_en": "Time Grid",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Discretizing time into nodes",
+    "title_fr": "Discrétiser le temps en nœuds",
+    "description_en": "The horizon T is cut into N shooting intervals of length T/N. States live at the nodes and controls are piecewise constant on each interval. The curves come from a real Bioptim pendulum solution.",
+    "description_fr": "L'horizon T est découpé en N intervalles de tir de longueur T/N. Les états sont définis aux nœuds et les commandes sont constantes par morceaux sur chaque intervalle. Les courbes proviennent d'une vraie solution Bioptim du pendule.",
     "video_basename": "TimeGrid",
     "duration_note": "",
-    "links": [],
-    "notes_file": ""
+    "links": [
+      {
+        "label_en": "Example: pendulum swing-up (n_shooting)",
+        "label_fr": "Exemple : balancement du pendule (n_shooting)",
+        "path": "bioptim/examples/toy_examples/sqp_method/pendulum.py",
+        "lines": "22-97"
+      },
+      {
+        "label_en": "Node enum",
+        "label_fr": "Énumération Node",
+        "path": "bioptim/misc/enums.py",
+        "lines": "33-47"
+      },
+      {
+        "label_en": "Scene data generator (pendulum OCP)",
+        "label_fr": "Générateur de données de la scène (OCP du pendule)",
+        "path": "docs/animations/generate_pendulum_data.py",
+        "lines": "61-104"
+      }
+    ],
+    "notes_file": "README.md",
+    "level": 1,
+    "section": "Discretization",
+    "section_fr": "Discrétisation"
   },
   {
     "id": "dms_vs_dc.py:MultipleShooting",
     "slug": "multiple-shooting",
-    "title_en": "Multiple Shooting",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Direct multiple shooting",
+    "title_fr": "Tir multiple direct",
+    "description_en": "On the pendulum swing-up (20 shooting intervals), shows a window of nodes with OdeSolver.RK4(n_integration_steps=5): each interval is integrated from x_k, and the continuity constraint F(x_k, u_k) = x_(k+1) is a defect that is non-zero at an early IPOPT iterate and zero at the converged solution.",
+    "description_fr": "Sur le balancier du pendule (20 intervalles de tir), montre une fenêtre de nœuds avec OdeSolver.RK4(n_integration_steps=5) : chaque intervalle est intégré à partir de x_k, et la contrainte de continuité F(x_k, u_k) = x_(k+1) est un défaut non nul à une itération précoce d'IPOPT et nul à la solution convergée.",
     "video_basename": "MultipleShooting",
     "duration_note": "",
-    "links": [],
-    "notes_file": ""
+    "links": [
+      {
+        "label_en": "Example: pendulum swing-up",
+        "label_fr": "Exemple : balancier du pendule",
+        "path": "bioptim/examples/toy_examples/sqp_method/pendulum.py",
+        "lines": "22-97"
+      },
+      {
+        "label_en": "OdeSolver.RK4",
+        "label_fr": "OdeSolver.RK4",
+        "path": "bioptim/dynamics/ode_solvers.py",
+        "lines": "35-42"
+      },
+      {
+        "label_en": "RK4 integration step",
+        "label_fr": "Pas d'intégration RK4",
+        "path": "bioptim/dynamics/integrator.py",
+        "lines": "366-379"
+      },
+      {
+        "label_en": "State continuity constraint",
+        "label_fr": "Contrainte de continuité des états",
+        "path": "bioptim/limits/penalty.py",
+        "lines": "1224-1276"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_pendulum_data.py",
+        "lines": "61-103"
+      }
+    ],
+    "notes_file": "README.md",
+    "level": 1,
+    "section": "Discretization",
+    "section_fr": "Discrétisation"
   },
   {
     "id": "dms_vs_dc.py:DirectCollocation",
     "slug": "direct-collocation",
-    "title_en": "Direct Collocation",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Direct collocation",
+    "title_fr": "Collocation directe",
+    "description_en": "Shows OdeSolver.COLLOCATION(polynomial_degree=3, method='legendre'): collocation points, the Lagrange polynomial per interval, and the defects (polynomial slope minus dynamics) that IPOPT drives to zero, over real iterates 0, 3 and the converged one. A last part shows Radau points, where the polynomial end is a collocation state. One pendulum problem, not an accuracy benchmark.",
+    "description_fr": "Présente OdeSolver.COLLOCATION(polynomial_degree=3, method='legendre') : points de collocation, polynôme de Lagrange par intervalle et défauts (pente du polynôme moins dynamique) que IPOPT annule, sur les itérations réelles 0, 3 et la solution convergée. Une dernière partie montre les points de Radau, où l'extrémité du polynôme est un état de collocation. Un seul problème de pendule, pas une comparaison de précision.",
     "video_basename": "DirectCollocation",
     "duration_note": "",
-    "links": [],
-    "notes_file": ""
+    "links": [
+      {
+        "label_en": "Example: pendulum swing-up",
+        "label_fr": "Exemple : balancement du pendule",
+        "path": "bioptim/examples/toy_examples/sqp_method/pendulum.py",
+        "lines": "22-97"
+      },
+      {
+        "label_en": "OdeSolver.COLLOCATION",
+        "label_fr": "OdeSolver.COLLOCATION",
+        "path": "bioptim/dynamics/ode_solvers.py",
+        "lines": "111-214"
+      },
+      {
+        "label_en": "Lagrange interpolation",
+        "label_fr": "Interpolation de Lagrange",
+        "path": "bioptim/dynamics/lagrange_interpolation.py",
+        "lines": "15-202"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_pendulum_data.py"
+      }
+    ],
+    "notes_file": "",
+    "level": 2,
+    "section": "Discretization",
+    "section_fr": "Discrétisation"
   },
   {
     "id": "dms_vs_dc.py:Comparison",
     "slug": "comparison",
-    "title_en": "Comparison",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Multiple shooting vs collocation",
+    "title_fr": "Tir multiple vs collocation",
+    "description_en": "A table compares direct multiple shooting (OdeSolver.RK4) and direct collocation (OdeSolver.COLLOCATION) on the same pendulum: extra unknowns, constraints per interval, dynamics evaluations, approximation order, and the real number of variables and IPOPT iterations. The numbers come from one problem and one run, not from general rules.",
+    "description_fr": "Un tableau compare le tir multiple direct (OdeSolver.RK4) et la collocation directe (OdeSolver.COLLOCATION) sur le même pendule : inconnues supplémentaires, contraintes par intervalle, évaluations de la dynamique, ordre d'approximation, et nombres réels de variables et d'itérations IPOPT. Les valeurs viennent d'un seul problème et d'une seule exécution, pas de règles générales.",
     "video_basename": "Comparison",
     "duration_note": "",
-    "links": [],
-    "notes_file": ""
+    "links": [
+      {
+        "label_en": "Example: pendulum with RK4 or collocation",
+        "label_fr": "Exemple : pendule avec RK4 ou collocation",
+        "path": "bioptim/examples/toy_examples/sqp_method/pendulum.py",
+        "lines": "22-97"
+      },
+      {
+        "label_en": "OdeSolver classes (RK4, COLLOCATION)",
+        "label_fr": "Classes OdeSolver (RK4, COLLOCATION)",
+        "path": "bioptim/dynamics/ode_solvers.py",
+        "lines": "12-357"
+      },
+      {
+        "label_en": "COLLOCATION integrator",
+        "label_fr": "Intégrateur COLLOCATION",
+        "path": "bioptim/dynamics/integrator.py",
+        "lines": "569-695"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur de données de la scène",
+        "path": "docs/animations/generate_pendulum_data.py",
+        "lines": "61-104"
+      }
+    ],
+    "notes_file": "README.md",
+    "level": 1,
+    "section": "Discretization",
+    "section_fr": "Discrétisation"
   },
   {
     "id": "anim_accuracy.py:AccuracyCheck",
     "slug": "accuracy-check",
-    "title_en": "Accuracy Check",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Checking the solution accuracy",
+    "title_fr": "Vérifier la précision de la solution",
+    "description_en": "Four solves of the same pendulum swing-up (RK4 with 1 or 5 steps, collocation of degree 3 or 5) are re-integrated from the initial state with Solution.integrate(Shooting.SINGLE, DOP853). The drift from the optimised trajectory is compared with the solve time. Errors are specific to this fast, high-torque problem, and times come from a single laptop run, not a benchmark.",
+    "description_fr": "Quatre résolutions du même balancier de pendule (RK4 à 1 ou 5 pas, collocation de degré 3 ou 5) sont réintégrées depuis l'état initial avec Solution.integrate(Shooting.SINGLE, DOP853). La dérive par rapport à la trajectoire optimisée est comparée au temps de résolution. Les erreurs sont propres à ce problème rapide à fort couple, et les temps viennent d'un seul essai sur un portable, pas d'un banc d'essai.",
     "video_basename": "AccuracyCheck",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/accuracy.md"
+    "links": [
+      {
+        "label_en": "Example: single-shooting reintegration",
+        "label_fr": "Exemple : réintégration en tir simple",
+        "path": "bioptim/examples/getting_started/example_simulation.py"
+      },
+      {
+        "label_en": "Solution.integrate",
+        "label_fr": "Solution.integrate",
+        "path": "bioptim/optimization/solution/solution.py",
+        "lines": "785-866"
+      },
+      {
+        "label_en": "Shooting enum",
+        "label_fr": "Énumération Shooting",
+        "path": "bioptim/misc/enums.py",
+        "lines": "64-74"
+      },
+      {
+        "label_en": "SolutionIntegrator enum",
+        "label_fr": "Énumération SolutionIntegrator",
+        "path": "bioptim/misc/enums.py",
+        "lines": "184-194"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_accuracy_data.py",
+        "lines": "52-72"
+      }
+    ],
+    "notes_file": "notes/accuracy.md",
+    "level": 3,
+    "section": "Solvers and numerics",
+    "section_fr": "Solveurs et numérique"
   },
   {
     "id": "anim_arch.py:ArchitecturePath",
     "slug": "architecture-path",
-    "title_en": "Architecture Path",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "From inputs to Solution",
+    "title_fr": "Des entrées à Solution",
+    "description_en": "Follows the path from the user's inputs through OptimalControlProgram, NonLinearProgram, ConfigureProblem, penalties, the decision-vector helper and the solver interface to Solution, then replays it with real sizes of a small pendulum OCP (decision vector of 125, 80 continuity constraints). The boxes show the conceptual path, not every private step.",
+    "description_fr": "Suit le chemin des entrées de l'utilisateur vers Solution, en passant par OptimalControlProgram, NonLinearProgram, ConfigureProblem, les pénalités, l'assembleur du vecteur de décision et l'interface du solveur, puis le rejoue avec les tailles réelles d'un petit OCP de pendule (vecteur de décision de 125, 80 contraintes de continuité). Les boîtes montrent le chemin conceptuel, pas toutes les étapes privées.",
     "video_basename": "ArchitecturePath",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/arch.md"
+    "links": [
+      {
+        "label_en": "NonLinearProgram.declare_shooting_points",
+        "label_fr": "NonLinearProgram.declare_shooting_points",
+        "path": "bioptim/optimization/non_linear_program.py",
+        "lines": "357-366"
+      },
+      {
+        "label_en": "ConfigureProblem.initialize",
+        "label_fr": "ConfigureProblem.initialize",
+        "path": "bioptim/dynamics/configure_problem.py",
+        "lines": "25-48"
+      },
+      {
+        "label_en": "OptimizationVectorHelper",
+        "label_fr": "OptimizationVectorHelper",
+        "path": "bioptim/optimization/optimization_vector.py",
+        "lines": "20-283"
+      },
+      {
+        "label_en": "generic_solve",
+        "label_fr": "generic_solve",
+        "path": "bioptim/interfaces/interface_utils.py",
+        "lines": "98-204"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_arch_data.py"
+      }
+    ],
+    "notes_file": "notes/arch.md",
+    "level": 1,
+    "section": "Library overview",
+    "section_fr": "Vue d'ensemble de la bibliothèque"
   },
   {
     "id": "anim_colloc.py:CollocationDegree",
     "slug": "collocation-degree",
-    "title_en": "Collocation Degree",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Collocation degree and points",
+    "title_fr": "Degré et points de collocation",
+    "description_en": "Shows where the collocation points fall inside one interval for degrees 2 to 6 (Legendre: interior, Radau: the last one is the next node), then the dynamics error, number of variables and IPOPT iterations of real solves. The error drops strongly with the degree while the vector grows linearly. The target is a gentle 1 rad move; a full swing-up gave irregular results.",
+    "description_fr": "Montre où se placent les points de collocation dans un intervalle pour les degrés 2 à 6 (Legendre : intérieurs, Radau : le dernier est le nœud suivant), puis l'erreur de dynamique, le nombre de variables et d'itérations IPOPT de vraies résolutions. L'erreur chute fortement avec le degré alors que le vecteur croît linéairement. La cible est un mouvement doux de 1 rad ; un balancement complet donnait des résultats irréguliers.",
     "video_basename": "CollocationDegree",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/colloc.md"
+    "links": [
+      {
+        "label_en": "OdeSolver.COLLOCATION options",
+        "label_fr": "Options d'OdeSolver.COLLOCATION",
+        "path": "bioptim/dynamics/ode_solvers.py",
+        "lines": "111-170"
+      },
+      {
+        "label_en": "COLLOCATION integrator (points)",
+        "label_fr": "Intégrateur COLLOCATION (points)",
+        "path": "bioptim/dynamics/integrator.py",
+        "lines": "569-695"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur de données de la scène",
+        "path": "docs/animations/generate_colloc_data.py"
+      }
+    ],
+    "notes_file": "notes/colloc.md",
+    "level": 2,
+    "section": "Discretization",
+    "section_fr": "Discrétisation"
   },
   {
     "id": "anim_contact.py:UnilateralContact",
     "slug": "unilateral-contact",
-    "title_en": "Unilateral Contact",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Unilateral contact force",
+    "title_fr": "Force de contact unilatérale",
+    "description_en": "A vertical leg (5 kg foot, 70 kg body) extends against the floor with a rigid contact. Unconstrained, the floor force becomes negative (it would pull the foot down); adding TRACK_EXPLICIT_RIGID_CONTACT_FORCES with a zero lower bound keeps it non-negative. The constrained solve was warm-started from the free one, and there is no flight phase.",
+    "description_fr": "Une jambe verticale (pied de 5 kg, corps de 70 kg) s'étend contre le sol avec un contact rigide. Sans contrainte, la force du sol devient négative (elle tirerait le pied vers le bas) ; ajouter TRACK_EXPLICIT_RIGID_CONTACT_FORCES avec une borne inférieure nulle la garde positive. La solution contrainte a été initialisée à chaud depuis la solution libre, et il n'y a pas de phase de vol.",
     "video_basename": "UnilateralContact",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/contact.md"
+    "links": [
+      {
+        "label_en": "Example: rigid contact (older API names)",
+        "label_fr": "Exemple : contact rigide (anciens noms d'API)",
+        "path": "bioptim/examples/toy_examples/torque_driven_ocp/example_rigid_contact.py",
+        "lines": "40-138"
+      },
+      {
+        "label_en": "ContactType enum",
+        "label_fr": "Énumération ContactType",
+        "path": "bioptim/misc/enums.py",
+        "lines": "219-238"
+      },
+      {
+        "label_en": "TRACK_EXPLICIT_RIGID_CONTACT_FORCES constraint",
+        "label_fr": "Contrainte TRACK_EXPLICIT_RIGID_CONTACT_FORCES",
+        "path": "bioptim/limits/constraints.py",
+        "lines": "871"
+      },
+      {
+        "label_en": "Rigid contact force penalty",
+        "label_fr": "Pénalité sur la force de contact rigide",
+        "path": "bioptim/limits/penalty.py",
+        "lines": "768-817"
+      },
+      {
+        "label_en": "Model: rigid_contact_forces",
+        "label_fr": "Modèle : rigid_contact_forces",
+        "path": "bioptim/models/biorbd/biorbd_model.py",
+        "lines": "1223-1234"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_contact_data.py",
+        "lines": "46-90"
+      }
+    ],
+    "notes_file": "notes/contact.md",
+    "level": 2,
+    "section": "Models and biomechanics",
+    "section_fr": "Modèles et biomécanique"
   },
   {
     "id": "anim_controls.py:ControlTypes",
     "slug": "control-types",
-    "title_en": "Control Types",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Control interpolation types",
+    "title_fr": "Types d'interpolation des commandes",
+    "description_en": "Solves the same pendulum swing-up with ControlType CONSTANT, LINEAR_CONTINUOUS and CONSTANT_WITH_LAST_NODE and shows the torque curves and decision-vector sizes (125, 127, 127). CONSTANT_WITH_LAST_NODE gives the same result as CONSTANT here because nothing penalizes the last control; the cost difference of the linear case is an illustration, not a ranking.",
+    "description_fr": "Résout le même balancement de pendule avec ControlType CONSTANT, LINEAR_CONTINUOUS et CONSTANT_WITH_LAST_NODE et montre les courbes de couple et les tailles du vecteur de décision (125, 127, 127). CONSTANT_WITH_LAST_NODE donne ici le même résultat que CONSTANT car rien ne pénalise la dernière commande; la différence de coût du cas linéaire est une illustration, pas un classement.",
     "video_basename": "ControlTypes",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/controls.md"
+    "links": [
+      {
+        "label_en": "Example with control_type argument",
+        "label_fr": "Exemple avec l'argument control_type",
+        "path": "bioptim/examples/getting_started/basic_ocp.py",
+        "lines": "33-127"
+      },
+      {
+        "label_en": "ControlType enum",
+        "label_fr": "Énumération ControlType",
+        "path": "bioptim/misc/enums.py",
+        "lines": "126-170"
+      },
+      {
+        "label_en": "OptimalControlProgram constructor",
+        "label_fr": "Constructeur d'OptimalControlProgram",
+        "path": "bioptim/optimization/optimal_control_program.py",
+        "lines": "160-338"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_controls_data.py"
+      }
+    ],
+    "notes_file": "notes/controls.md",
+    "level": 2,
+    "section": "Discretization",
+    "section_fr": "Discrétisation"
   },
   {
     "id": "anim_cyclic.py:CyclicNMPC",
     "slug": "cyclic-nmpc",
     "title_en": "Cyclic NMPC",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_fr": "NMPC cyclique",
+    "description_en": "In a cyclic NMPC the window is one full cycle and advances by a whole cycle at each solve, with the target amplitude changed between cycles. The cyclic condition is a box of about 1 % of the range around the previous end state, not an equality. Cart-pendulum, four cycles, one IPOPT solve each.",
+    "description_fr": "Dans un NMPC cyclique, la fenêtre est un cycle complet et avance d'un cycle entier à chaque résolution, avec une amplitude cible modifiée entre les cycles. La condition cyclique est une boîte d'environ 1 % de la plage autour de l'état final précédent, pas une égalité. Chariot-pendule, quatre cycles, une résolution IPOPT chacun.",
     "video_basename": "CyclicNMPC",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/cyclic.md"
+    "links": [
+      {
+        "label_en": "Example: cyclic NMPC",
+        "label_fr": "Exemple : NMPC cyclique",
+        "path": "bioptim/examples/toy_examples/moving_horizon_estimation/cyclic_nmpc.py",
+        "lines": "35-95"
+      },
+      {
+        "label_en": "CyclicRecedingHorizonOptimization",
+        "label_fr": "CyclicRecedingHorizonOptimization",
+        "path": "bioptim/optimization/receding_horizon_optimization.py",
+        "lines": "448-637"
+      },
+      {
+        "label_en": "CyclicNonlinearModelPredictiveControl",
+        "label_fr": "CyclicNonlinearModelPredictiveControl",
+        "path": "bioptim/optimization/receding_horizon_optimization.py",
+        "lines": "950-955"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur de données de la scène",
+        "path": "docs/animations/generate_cyclic_data.py"
+      }
+    ],
+    "notes_file": "notes/cyclic.md",
+    "level": 3,
+    "section": "Advanced control",
+    "section_fr": "Commande avancée"
   },
   {
     "id": "anim_deriv.py:DerivativePenalty",
     "slug": "derivative-penalty",
-    "title_en": "Derivative Penalty",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Penalty on a control derivative",
+    "title_fr": "Pénalité sur la dérivée d'une commande",
+    "description_en": "On a cart-pendulum swing-up, adds MINIMIZE_CONTROL with derivative=True on tau with weights 0, 1, 10 and 100. The torque spikes are smoothed and peak |dtau/dt| falls. It only acts with ControlType.LINEAR_CONTINUOUS: with constant controls the term is exactly zero in this version.",
+    "description_fr": "Sur un balancier de pendule sur chariot, ajoute MINIMIZE_CONTROL avec derivative=True sur tau, avec des poids de 0, 1, 10 et 100. Les pics de couple sont lissés et le maximum de |dtau/dt| diminue. Cela n'agit qu'avec ControlType.LINEAR_CONTINUOUS : avec des commandes constantes, le terme est exactement nul dans cette version.",
     "video_basename": "DerivativePenalty",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/deriv.md"
+    "links": [
+      {
+        "label_en": "Base example: swing-up OCP",
+        "label_fr": "Exemple de base : OCP de balancier",
+        "path": "bioptim/examples/getting_started/basic_ocp.py",
+        "lines": "33-127"
+      },
+      {
+        "label_en": "MINIMIZE_CONTROL penalty",
+        "label_fr": "Pénalité MINIMIZE_CONTROL",
+        "path": "bioptim/limits/penalty.py",
+        "lines": "89-113"
+      },
+      {
+        "label_en": "derivative=True: difference end minus start",
+        "label_fr": "derivative=True : différence fin moins début",
+        "path": "bioptim/limits/penalty_option.py",
+        "lines": "580-614"
+      },
+      {
+        "label_en": "Alternative: TorqueDerivativeBiorbdModel",
+        "label_fr": "Alternative : TorqueDerivativeBiorbdModel",
+        "path": "bioptim/models/biorbd/model_dynamics.py",
+        "lines": "269-293"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_deriv_data.py",
+        "lines": "46-72"
+      }
+    ],
+    "notes_file": "notes/deriv.md",
+    "level": 2,
+    "section": "Objectives and constraints",
+    "section_fr": "Objectifs et contraintes"
   },
   {
     "id": "anim_excitation.py:ExcitationActivation",
     "slug": "excitation-activation",
-    "title_en": "Excitation Activation",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Excitation to activation",
+    "title_fr": "De l'excitation à l'activation",
+    "description_en": "With MusclesWithExcitationsBiorbdModel the muscle excitation is the control and the activation is a state, so activation lags the excitation (about 18 ms up, 14 ms down, measured on the data). Shown on the arm26 reaching task: IPOPT converged but the hand ends 3.0 cm from the target; the time constants belong to biorbd, not Bioptim.",
+    "description_fr": "Avec MusclesWithExcitationsBiorbdModel, l'excitation musculaire est la commande et l'activation est un état : l'activation est donc en retard sur l'excitation (environ 18 ms en montée, 14 ms en descente, mesurés sur les données). Illustré sur la tâche d'atteinte du bras arm26 : IPOPT converge mais la main s'arrête à 3,0 cm de la cible; les constantes de temps viennent de biorbd, pas de Bioptim.",
     "video_basename": "ExcitationActivation",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/excitation.md"
+    "links": [
+      {
+        "label_en": "Example: reaching with muscle activations",
+        "label_fr": "Exemple : atteinte avec activations musculaires",
+        "path": "bioptim/examples/toy_examples/muscle_driven_ocp/static_arm.py",
+        "lines": "28-124"
+      },
+      {
+        "label_en": "Example: muscle excitations",
+        "label_fr": "Exemple : excitations musculaires",
+        "path": "bioptim/examples/toy_examples/muscle_driven_ocp/muscle_excitations_tracker.py",
+        "lines": "210-322"
+      },
+      {
+        "label_en": "MusclesDynamicsWithExcitations",
+        "label_fr": "MusclesDynamicsWithExcitations",
+        "path": "bioptim/dynamics/state_space_dynamics/muscle_dynamics_with_excitations.py",
+        "lines": "13-190"
+      },
+      {
+        "label_en": "MusclesWithExcitationsBiorbdModel",
+        "label_fr": "MusclesWithExcitationsBiorbdModel",
+        "path": "bioptim/models/biorbd/model_dynamics.py",
+        "lines": "325-351"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_excitation_data.py"
+      }
+    ],
+    "notes_file": "notes/excitation.md",
+    "level": 3,
+    "section": "Models and biomechanics",
+    "section_fr": "Modèles et biomécanique"
   },
   {
     "id": "anim_extforces.py:ExternalForces",
     "slug": "external-forces",
-    "title_en": "External Forces",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "External forces in the dynamics",
+    "title_fr": "Forces externes dans la dynamique",
+    "description_en": "A known wind-like force on the hand is described with ExternalForceSetTimeSeries and passed to the model and the dynamics. Two real reach solves are compared, with and without the force, and the torque difference is plotted. The reach is enforced by a tracking cost, so the torque difference is not only the torque that cancels the force.",
+    "description_fr": "Une force connue, de type vent, appliquée à la main est décrite avec ExternalForceSetTimeSeries et transmise au modèle et à la dynamique. Deux vraies résolutions d'atteinte sont comparées, avec et sans force, et la différence de couple est tracée. L'atteinte est imposée par un coût de suivi, donc la différence de couple n'est pas seulement le couple qui annule la force.",
     "video_basename": "ExternalForces",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/extforces.md"
+    "links": [
+      {
+        "label_en": "Example: external forces",
+        "label_fr": "Exemple : forces externes",
+        "path": "bioptim/examples/getting_started/example_external_forces.py",
+        "lines": "30-118"
+      },
+      {
+        "label_en": "ExternalForceSetTimeSeries",
+        "label_fr": "ExternalForceSetTimeSeries",
+        "path": "bioptim/models/biorbd/external_forces.py",
+        "lines": "121-288"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur de données de la scène",
+        "path": "docs/animations/generate_extforces_data.py",
+        "lines": "57-104"
+      }
+    ],
+    "notes_file": "notes/extforces.md",
+    "level": 2,
+    "section": "Models and biomechanics",
+    "section_fr": "Modèles et biomécanique"
   },
   {
     "id": "anim_fatigue.py:FatigueXia",
     "slug": "fatigue-xia",
-    "title_en": "Fatigue Xia",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Xia fatigue model on torque",
+    "title_fr": "Fatigue de Xia sur le couple",
+    "description_en": "A pendulum swing-up where the torque carries an XiaTauFatigue model: extra states track the active, resting and fatigued fractions of each side. Over 1 s the fatigue stays small (fatigued fraction at most about 4 %), so the effect is modest. The scene plots the torque, the fractions and the angle, with the code lines from the example.",
+    "description_fr": "Un balancier de pendule où le couple porte un modèle XiaTauFatigue : des états supplémentaires suivent les fractions active, au repos et fatiguée de chaque côté. Sur 1 s la fatigue reste faible (fraction fatiguée d'au plus 4 % environ), l'effet est donc modeste. La scène trace le couple, les fractions et l'angle, avec les lignes de code de l'exemple.",
     "video_basename": "FatigueXia",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/fatigue.md"
+    "links": [
+      {
+        "label_en": "Example: pendulum with fatigue",
+        "label_fr": "Exemple : pendule avec fatigue",
+        "path": "bioptim/examples/toy_examples/fatigue/pendulum_with_fatigue.py",
+        "lines": "39-194"
+      },
+      {
+        "label_en": "XiaFatigue dynamics",
+        "label_fr": "Dynamique XiaFatigue",
+        "path": "bioptim/dynamics/fatigue/xia_fatigue.py",
+        "lines": "15-95"
+      },
+      {
+        "label_en": "XiaTauFatigue (torque)",
+        "label_fr": "XiaTauFatigue (couple)",
+        "path": "bioptim/dynamics/fatigue/xia_fatigue.py",
+        "lines": "121-132"
+      },
+      {
+        "label_en": "FatigueList",
+        "label_fr": "FatigueList",
+        "path": "bioptim/dynamics/fatigue/fatigue_dynamics.py",
+        "lines": "372-419"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_fatigue_data.py"
+      }
+    ],
+    "notes_file": "notes/fatigue.md",
+    "level": 3,
+    "section": "Models and biomechanics",
+    "section_fr": "Modèles et biomécanique"
   },
   {
     "id": "anim_floating.py:FloatingReorient",
     "slug": "floating-reorient",
-    "title_en": "Floating Reorient",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Free-floating base reorientation",
+    "title_fr": "Réorientation à base flottante",
+    "description_en": "With TorqueFreeFloatingBaseBiorbdModel the root torque is structurally zero; in zero gravity a planar trunk with two arms rotates by 0.80 rad by moving its arms around a closed loop. The angular momentum splits into root and joint parts that cancel. The model is a planar variant, not the 3D somersault of the Bioptim example.",
+    "description_fr": "Avec TorqueFreeFloatingBaseBiorbdModel, le couple de la base est structurellement nul; en apesanteur, un tronc plan à deux bras tourne de 0,80 rad en déplaçant ses bras selon une boucle fermée. Le moment cinétique se sépare en parties racine et articulations qui s'annulent. Le modèle est une variante plane, pas le saut périlleux 3D de l'exemple Bioptim.",
     "video_basename": "FloatingReorient",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/floating.md"
+    "links": [
+      {
+        "label_en": "Example: free floating base (3D)",
+        "label_fr": "Exemple : base flottante (3D)",
+        "path": "bioptim/examples/toy_examples/torque_driven_ocp/torque_driven_free_floating_base.py",
+        "lines": "23-172"
+      },
+      {
+        "label_en": "TorqueFreeFloatingBaseDynamics",
+        "label_fr": "TorqueFreeFloatingBaseDynamics",
+        "path": "bioptim/dynamics/state_space_dynamics/torque_dynamics_free_floating_base.py",
+        "lines": "8-61"
+      },
+      {
+        "label_en": "TorqueFreeFloatingBaseBiorbdModel",
+        "label_fr": "TorqueFreeFloatingBaseBiorbdModel",
+        "path": "bioptim/models/biorbd/model_dynamics.py",
+        "lines": "165-187"
+      },
+      {
+        "label_en": "angular_momentum",
+        "label_fr": "angular_momentum",
+        "path": "bioptim/models/biorbd/biorbd_model.py",
+        "lines": "414-425"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_floating_data.py"
+      }
+    ],
+    "notes_file": "notes/floating.md",
+    "level": 3,
+    "section": "Models and biomechanics",
+    "section_fr": "Modèles et biomécanique"
   },
   {
     "id": "anim_holonomic.py:HolonomicDoublePendulum",
     "slug": "holonomic-double-pendulum",
-    "title_en": "Holonomic Double Pendulum",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Holonomic constraint: double pendulum",
+    "title_fr": "Contrainte holonome : double pendule",
+    "description_en": "A closed-loop constraint superimposing two markers turns two single pendulums into a double pendulum. The coordinates are split into independent ones, which are the OCP variables, and dependent ones recovered from the constraint. Real IPOPT solution, shown 10 times slower; the residual is near zero by construction at the nodes.",
+    "description_fr": "Une contrainte de boucle fermée superposant deux marqueurs transforme deux pendules simples en un double pendule. Les coordonnées sont séparées en indépendantes, qui sont les variables de l'OCP, et dépendantes, retrouvées à partir de la contrainte. Vraie solution IPOPT, montrée 10 fois plus lentement ; le résidu est quasi nul par construction aux nœuds.",
     "video_basename": "HolonomicDoublePendulum",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/holonomic.md"
+    "links": [
+      {
+        "label_en": "Example: two pendulums",
+        "label_fr": "Exemple : deux pendules",
+        "path": "bioptim/examples/toy_examples/holonomic_constraints/two_pendulums.py",
+        "lines": "28-134"
+      },
+      {
+        "label_en": "HolonomicConstraintsFcn.superimpose_markers",
+        "label_fr": "HolonomicConstraintsFcn.superimpose_markers",
+        "path": "bioptim/models/protocols/holonomic_constraints.py",
+        "lines": "36-159"
+      },
+      {
+        "label_en": "HolonomicTorqueBiorbdModel",
+        "label_fr": "HolonomicTorqueBiorbdModel",
+        "path": "bioptim/models/biorbd/model_dynamics.py",
+        "lines": "120-135"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur de données de la scène",
+        "path": "docs/animations/generate_holonomic_data.py"
+      }
+    ],
+    "notes_file": "notes/holonomic.md",
+    "level": 3,
+    "section": "Models and biomechanics",
+    "section_fr": "Modèles et biomécanique"
   },
   {
     "id": "anim_mapping.py:Mapping",
     "slug": "mapping",
-    "title_en": "Mapping",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Sharing variables with a mapping",
+    "title_fr": "Partager des variables avec un mapping",
+    "description_en": "A double pendulum is solved twice: with two torques, then with a BiMappingList that makes both joints share one torque (decision vector 185 to 155). The torque curves collapse onto one. The two IPOPT costs are not comparable because the mapped cost counts the shared torque once.",
+    "description_fr": "Un double pendule est résolu deux fois : avec deux couples, puis avec une BiMappingList qui fait partager un seul couple aux deux articulations (vecteur de décision de 185 à 155). Les courbes de couple se confondent. Les deux coûts d'IPOPT ne sont pas comparables car le coût avec mapping compte le couple partagé une seule fois.",
     "video_basename": "Mapping",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/mapping.md"
+    "links": [
+      {
+        "label_en": "Example: symmetry by mapping",
+        "label_fr": "Exemple : symétrie par mapping",
+        "path": "bioptim/examples/toy_examples/symmetrical_torque_driven_ocp/symmetry_by_mapping.py",
+        "lines": "49-146"
+      },
+      {
+        "label_en": "BiMapping",
+        "label_fr": "BiMapping",
+        "path": "bioptim/misc/mapping.py",
+        "lines": "122-173"
+      },
+      {
+        "label_en": "BiMappingList",
+        "label_fr": "BiMappingList",
+        "path": "bioptim/misc/mapping.py",
+        "lines": "180-263"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_mapping_data.py",
+        "lines": "35-64"
+      }
+    ],
+    "notes_file": "notes/mapping.md",
+    "level": 2,
+    "section": "Models and biomechanics",
+    "section_fr": "Modèles et biomécanique"
   },
   {
     "id": "anim_markers.py:TrackMarkers",
     "slug": "track-markers",
-    "title_en": "Track Markers",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Tracking measured markers",
+    "title_fr": "Suivi de marqueurs mesurés",
+    "description_en": "ObjectiveFcn.Lagrange.TRACK_MARKERS with a target makes model markers follow measured ones; the video shows them converging over IPOPT iterations, then the final error (1.3 cm RMS). The data are synthetic, a known planar motion with 1 cm Gaussian noise, and each intermediate iteration is a separate solve with a limited iteration count.",
+    "description_fr": "ObjectiveFcn.Lagrange.TRACK_MARKERS avec une cible fait suivre par les marqueurs du modèle les marqueurs mesurés; la vidéo les montre converger au fil des itérations d'IPOPT, puis l'erreur finale (1,3 cm RMS). Les données sont synthétiques, un mouvement plan connu avec un bruit gaussien de 1 cm, et chaque itération intermédiaire est une résolution séparée à nombre d'itérations limité.",
     "video_basename": "TrackMarkers",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/markers.md"
+    "links": [
+      {
+        "label_en": "Example: tracking markers on a pendulum",
+        "label_fr": "Exemple : suivi de marqueurs sur un pendule",
+        "path": "bioptim/examples/toy_examples/torque_driven_ocp/track_markers_2D_pendulum.py",
+        "lines": "68-147"
+      },
+      {
+        "label_en": "TRACK_MARKERS in ObjectiveFcn",
+        "label_fr": "TRACK_MARKERS dans ObjectiveFcn",
+        "path": "bioptim/limits/objective_functions.py",
+        "lines": "362-483"
+      },
+      {
+        "label_en": "minimize_markers penalty",
+        "label_fr": "Pénalité minimize_markers",
+        "path": "bioptim/limits/penalty.py",
+        "lines": "281-331"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_markers_data.py"
+      }
+    ],
+    "notes_file": "notes/markers.md",
+    "level": 2,
+    "section": "Models and biomechanics",
+    "section_fr": "Modèles et biomécanique"
   },
   {
     "id": "anim_mhe.py:MHEWindow",
     "slug": "mhe-window",
-    "title_en": "MHE Window",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Moving horizon estimation",
+    "title_fr": "Estimation à horizon glissant",
+    "description_en": "A 0.5 s window slides over noisy measurements of the pendulum angle; at each new measurement the target is updated and the OCP is solved again. The estimate is the first node of each window, so it uses future data and is delayed. The noise is synthetic, the model is exact and there is no arrival cost.",
+    "description_fr": "Une fenêtre de 0,5 s glisse sur des mesures bruitées de l'angle du pendule ; à chaque nouvelle mesure la cible est mise à jour et l'OCP est résolu de nouveau. L'estimation est le premier nœud de chaque fenêtre, elle utilise donc des données futures et est retardée. Le bruit est synthétique, le modèle est exact et il n'y a pas de coût d'arrivée.",
     "video_basename": "MHEWindow",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/mhe.md"
+    "links": [
+      {
+        "label_en": "Example: moving horizon estimation",
+        "label_fr": "Exemple : estimation à horizon glissant",
+        "path": "bioptim/examples/toy_examples/moving_horizon_estimation/mhe.py",
+        "lines": "88-158"
+      },
+      {
+        "label_en": "MovingHorizonEstimator",
+        "label_fr": "MovingHorizonEstimator",
+        "path": "bioptim/optimization/receding_horizon_optimization.py",
+        "lines": "966-971"
+      },
+      {
+        "label_en": "RecedingHorizonOptimization",
+        "label_fr": "RecedingHorizonOptimization",
+        "path": "bioptim/optimization/receding_horizon_optimization.py",
+        "lines": "35-445"
+      },
+      {
+        "label_en": "update_objectives_target",
+        "label_fr": "update_objectives_target",
+        "path": "bioptim/optimization/optimal_control_program.py",
+        "lines": "956-980"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur de données de la scène",
+        "path": "docs/animations/generate_mhe_data.py"
+      }
+    ],
+    "notes_file": "notes/mhe.md",
+    "level": 3,
+    "section": "Advanced control",
+    "section_fr": "Commande avancée"
   },
   {
     "id": "anim_multibody.py:MultiBody",
     "slug": "multi-body",
-    "title_en": "Multi Body",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Two bodies in one OCP",
+    "title_fr": "Deux corps dans un même OCP",
+    "description_en": "MultiTorqueBiorbdModel puts two independent biorbd models in one phase: q, qdot and tau keep their names and are stacked, and variable_index gives each model's slice. The bodies are coupled only by a SUPERIMPOSE_MARKERS constraint at the last node, which is our own construction, not the shipped example.",
+    "description_fr": "MultiTorqueBiorbdModel place deux modèles biorbd indépendants dans une même phase : q, qdot et tau gardent leur nom et sont empilés, et variable_index donne la portion de chaque modèle. Les corps ne sont couplés que par une contrainte SUPERIMPOSE_MARKERS au dernier nœud, construction propre à la scène et non l'exemple fourni.",
     "video_basename": "MultiBody",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/multibody.md"
+    "links": [
+      {
+        "label_en": "Example: multi biorbd model",
+        "label_fr": "Exemple : modèle multi-biorbd",
+        "path": "bioptim/examples/toy_examples/torque_driven_ocp/example_multi_biorbd_model.py",
+        "lines": "20-74"
+      },
+      {
+        "label_en": "MultiBiorbdModel",
+        "label_fr": "MultiBiorbdModel",
+        "path": "bioptim/models/biorbd/multi_biorbd_model.py",
+        "lines": "23-1088"
+      },
+      {
+        "label_en": "variable_index",
+        "label_fr": "variable_index",
+        "path": "bioptim/models/biorbd/multi_biorbd_model.py",
+        "lines": "136-204"
+      },
+      {
+        "label_en": "MultiTorqueBiorbdModel",
+        "label_fr": "MultiTorqueBiorbdModel",
+        "path": "bioptim/models/biorbd/model_dynamics.py",
+        "lines": "379-389"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_multibody_data.py",
+        "lines": "38-68"
+      }
+    ],
+    "notes_file": "notes/multibody.md",
+    "level": 3,
+    "section": "Models and biomechanics",
+    "section_fr": "Modèles et biomécanique"
   },
   {
     "id": "anim_multinode.py:MultinodeLink",
     "slug": "multinode-link",
-    "title_en": "Multinode Link",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Multinode link",
+    "title_fr": "Lien multi-nœuds",
+    "description_en": "Links variables at distant nodes, here the last node to the first for a cyclic motion, either as a constraint (MultinodeConstraintFcn.STATES_EQUALITY) or as a weighted objective. On a cart-pendulum the state gap drops from 15.25 without link to 0.09 with the objective and to numerical zero with the constraint.",
+    "description_fr": "Lie des variables de nœuds éloignés, ici le dernier nœud au premier pour un mouvement cyclique, soit par une contrainte (MultinodeConstraintFcn.STATES_EQUALITY), soit par un objectif pondéré. Sur un chariot-pendule, l'écart d'état passe de 15,25 sans lien à 0,09 avec l'objectif et à un zéro numérique avec la contrainte.",
     "video_basename": "MultinodeLink",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/multinode.md"
+    "links": [
+      {
+        "label_en": "Example: multinode constraints",
+        "label_fr": "Exemple : contraintes multi-nœuds",
+        "path": "bioptim/examples/toy_examples/feature_examples/example_multinode_constraints.py",
+        "lines": "67-204"
+      },
+      {
+        "label_en": "Example: multinode objective",
+        "label_fr": "Exemple : objectif multi-nœuds",
+        "path": "bioptim/examples/toy_examples/feature_examples/example_multinode_objective.py",
+        "lines": "36-118"
+      },
+      {
+        "label_en": "MultinodeConstraintList and Fcn",
+        "label_fr": "MultinodeConstraintList et Fcn",
+        "path": "bioptim/limits/multinode_constraint.py",
+        "lines": "84-164"
+      },
+      {
+        "label_en": "MultinodeObjectiveList and Fcn",
+        "label_fr": "MultinodeObjectiveList et Fcn",
+        "path": "bioptim/limits/multinode_objective.py",
+        "lines": "55-122"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_multinode_data.py"
+      }
+    ],
+    "notes_file": "notes/multinode.md",
+    "level": 3,
+    "section": "Objectives and constraints",
+    "section_fr": "Objectifs et contraintes"
   },
   {
     "id": "anim_muscfull.py:MuscFullPaths",
     "slug": "musc-full-paths",
-    "title_en": "Musc Full Paths",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Muscle vs torque reach",
+    "title_fr": "Atteinte musculaire vs couples",
+    "description_en": "The same arm reach is solved once with muscle activations as controls and once with joint torques, and the two hand paths are compared. Both minimize a squared-control term, so their costs are not comparable, and neither cost controls the path shape, so both paths detour.",
+    "description_fr": "La même atteinte de bras est résolue une fois avec les activations musculaires comme commandes et une fois avec des couples articulaires, et les deux trajectoires de la main sont comparées. Les deux minimisent un terme de commande au carré, leurs coûts ne sont donc pas comparables, et aucun coût ne contrôle la forme du chemin, donc les deux chemins font un détour.",
     "video_basename": "MuscFullPaths",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/muscfull.md"
+    "links": [
+      {
+        "label_en": "Example: muscle-driven static arm",
+        "label_fr": "Exemple : bras statique piloté par muscles",
+        "path": "bioptim/examples/toy_examples/muscle_driven_ocp/static_arm.py",
+        "lines": "28-124"
+      },
+      {
+        "label_en": "MusclesBiorbdModel",
+        "label_fr": "MusclesBiorbdModel",
+        "path": "bioptim/models/biorbd/model_dynamics.py",
+        "lines": "296-322"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur de données de la scène",
+        "path": "docs/animations/generate_muscfull_data.py"
+      }
+    ],
+    "notes_file": "notes/muscfull.md",
+    "level": 3,
+    "section": "Models and biomechanics",
+    "section_fr": "Modèles et biomécanique"
   },
   {
     "id": "anim_muscfull.py:MuscFullActivations",
     "slug": "musc-full-activations",
-    "title_en": "Musc Full Activations",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Muscle activations and joint torque",
+    "title_fr": "Activations musculaires et couple articulaire",
+    "description_en": "For a reach with a 2-dof, 6-muscle arm driven only by muscle activations, shows the activation of each muscle with running peaks, and the joint torque the muscles produce compared with a torque-driven solve. The cost is an effort proxy (integral of squared activations), not a metabolic cost, and the two solutions differ in trajectory.",
+    "description_fr": "Pour un mouvement d'atteinte d'un bras à 2 degrés de liberté et 6 muscles commandé uniquement par des activations musculaires, montre l'activation de chaque muscle avec ses pics, et le couple articulaire produit par les muscles comparé à une résolution pilotée par couples. Le coût est un indicateur d'effort (intégrale des activations au carré), pas un coût métabolique, et les deux solutions ont des trajectoires différentes.",
     "video_basename": "MuscFullActivations",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/muscfull.md"
+    "links": [
+      {
+        "label_en": "Example: muscle-driven reach",
+        "label_fr": "Exemple : atteinte pilotée par muscles",
+        "path": "bioptim/examples/toy_examples/muscle_driven_ocp/static_arm.py",
+        "lines": "28-124"
+      },
+      {
+        "label_en": "MusclesBiorbdModel",
+        "label_fr": "MusclesBiorbdModel",
+        "path": "bioptim/models/biorbd/model_dynamics.py",
+        "lines": "296-322"
+      },
+      {
+        "label_en": "Model: muscle_joint_torque",
+        "label_fr": "Modèle : muscle_joint_torque",
+        "path": "bioptim/models/biorbd/biorbd_model.py",
+        "lines": "880-895"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_muscfull_data.py",
+        "lines": "43-75"
+      }
+    ],
+    "notes_file": "notes/muscfull.md",
+    "level": 2,
+    "section": "Models and biomechanics",
+    "section_fr": "Modèles et biomécanique"
   },
   {
     "id": "anim_muscle.py:MuscleReaching",
     "slug": "muscle-reaching",
-    "title_en": "Muscle Reaching",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Muscle-driven reaching",
+    "title_fr": "Atteinte par actionnement musculaire",
+    "description_en": "Replacing TorqueBiorbdModel by MusclesBiorbdModel makes the 6 muscle activations of the arm26 model the controls, bounded in [0, 1], with a Mayer marker objective for the reach. A real IPOPT solve is shown; the hand ends 3.0 cm from the target (soft penalty) and a small residual torque remains. The torque model is shown as code only.",
+    "description_fr": "Remplacer TorqueBiorbdModel par MusclesBiorbdModel fait des 6 activations musculaires du modèle arm26 les commandes, bornées dans [0, 1], avec un objectif de Mayer sur les marqueurs pour l'atteinte. Une résolution réelle d'IPOPT est montrée; la main s'arrête à 3,0 cm de la cible (pénalité souple) et un petit couple résiduel subsiste. Le modèle à couples n'est montré que sous forme de code.",
     "video_basename": "MuscleReaching",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/muscle.md"
+    "links": [
+      {
+        "label_en": "Example: static arm reaching",
+        "label_fr": "Exemple : atteinte du bras statique",
+        "path": "bioptim/examples/toy_examples/muscle_driven_ocp/static_arm.py",
+        "lines": "28-124"
+      },
+      {
+        "label_en": "MusclesBiorbdModel",
+        "label_fr": "MusclesBiorbdModel",
+        "path": "bioptim/models/biorbd/model_dynamics.py",
+        "lines": "296-322"
+      },
+      {
+        "label_en": "MusclesDynamics",
+        "label_fr": "MusclesDynamics",
+        "path": "bioptim/dynamics/state_space_dynamics/muscle_dynamics.py",
+        "lines": "13-171"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_muscle_data.py"
+      }
+    ],
+    "notes_file": "notes/muscle.md",
+    "level": 2,
+    "section": "Models and biomechanics",
+    "section_fr": "Modèles et biomécanique"
   },
   {
     "id": "anim_nmpc.py:NMPCWindow",
     "slug": "nmpc-window",
-    "title_en": "NMPC Window",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Receding-horizon NMPC",
+    "title_fr": "NMPC à horizon glissant",
+    "description_en": "A 1 s window is solved, only the first node is applied, then the window slides by one node with an updated reference and is solved again from a shifted warm start. The cart follows a sine reference. This is nominal MPC: no noise, no model mismatch, and no claim about solve time.",
+    "description_fr": "Une fenêtre de 1 s est résolue, seul le premier nœud est appliqué, puis la fenêtre glisse d'un nœud avec une référence mise à jour et est résolue de nouveau depuis une initialisation à chaud décalée. Le chariot suit une référence sinusoïdale. C'est un MPC nominal : sans bruit, sans écart de modèle, et sans affirmation sur le temps de calcul.",
     "video_basename": "NMPCWindow",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/nmpc.md"
+    "links": [
+      {
+        "label_en": "Example: cyclic NMPC (same cart-pendulum)",
+        "label_fr": "Exemple : NMPC cyclique (même chariot-pendule)",
+        "path": "bioptim/examples/toy_examples/moving_horizon_estimation/cyclic_nmpc.py",
+        "lines": "35-95"
+      },
+      {
+        "label_en": "NonlinearModelPredictiveControl",
+        "label_fr": "NonlinearModelPredictiveControl",
+        "path": "bioptim/optimization/receding_horizon_optimization.py",
+        "lines": "942-947"
+      },
+      {
+        "label_en": "advance_window and bounds update",
+        "label_fr": "advance_window et mise à jour des bornes",
+        "path": "bioptim/optimization/receding_horizon_optimization.py",
+        "lines": "288-327"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur de données de la scène",
+        "path": "docs/animations/generate_nmpc_data.py"
+      }
+    ],
+    "notes_file": "notes/nmpc.md",
+    "level": 3,
+    "section": "Advanced control",
+    "section_fr": "Commande avancée"
   },
   {
     "id": "anim_online.py:OnlineIterates",
     "slug": "online-iterates",
-    "title_en": "Online Iterates",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Online plots during the solve",
+    "title_fr": "Graphiques en ligne pendant la résolution",
+    "description_en": "Redraws, in Manim, the window shown by Solver.IPOPT(show_online_optim=True) from real IPOPT iterates of a pendulum swing-up: states, controls, a custom plot and IPOPT output, next to the code that enables them. It is not a screen capture of the real window, and the cost is shown as a number, not a curve.",
+    "description_fr": "Redessine, dans Manim, la fenêtre affichée par Solver.IPOPT(show_online_optim=True) à partir d'itérés réels d'IPOPT sur un balancier de pendule : états, commandes, un graphique personnalisé et la sortie d'IPOPT, à côté du code qui les active. Ce n'est pas une capture d'écran de la vraie fenêtre, et le coût est affiché comme un nombre, pas comme une courbe.",
     "video_basename": "OnlineIterates",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/online.md"
+    "links": [
+      {
+        "label_en": "Example: custom plotting",
+        "label_fr": "Exemple : graphiques personnalisés",
+        "path": "bioptim/examples/getting_started/custom_plotting.py",
+        "lines": "38-113"
+      },
+      {
+        "label_en": "IPOPT solver options",
+        "label_fr": "Options du solveur IPOPT",
+        "path": "bioptim/interfaces/ipopt_options.py",
+        "lines": "19-348"
+      },
+      {
+        "label_en": "OnlineOptim enum",
+        "label_fr": "Énumération OnlineOptim",
+        "path": "bioptim/misc/enums.py",
+        "lines": "98-123"
+      },
+      {
+        "label_en": "IPOPT output plot",
+        "label_fr": "Graphique de sortie d'IPOPT",
+        "path": "bioptim/gui/ipopt_output_plot.py",
+        "lines": "10-63"
+      },
+      {
+        "label_en": "OCP.add_plot",
+        "label_fr": "OCP.add_plot",
+        "path": "bioptim/optimization/optimal_control_program.py",
+        "lines": "1161-1206"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_online_data.py",
+        "lines": "42-71"
+      }
+    ],
+    "notes_file": "notes/online.md",
+    "level": 2,
+    "section": "Solvers and numerics",
+    "section_fr": "Solveurs et numérique"
   },
   {
     "id": "anim_online.py:OfflineGraphs",
     "slug": "offline-graphs",
-    "title_en": "Offline Graphs",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Offline graphs",
+    "title_fr": "Graphiques hors ligne",
+    "description_en": "After the solve, sol.graphs(show_bounds=True, save_name=...) draws the same plots that the online window shows during optimization, including custom plots added with ocp.add_plot. The two figures are real matplotlib output written by Bioptim, not a screen capture.",
+    "description_fr": "Après la résolution, sol.graphs(show_bounds=True, save_name=...) trace les mêmes graphiques que la fenêtre en ligne pendant l'optimisation, y compris les graphiques personnalisés ajoutés avec ocp.add_plot. Les deux figures sont de vraies sorties matplotlib écrites par Bioptim, pas une capture d'écran.",
     "video_basename": "OfflineGraphs",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/online.md"
+    "links": [
+      {
+        "label_en": "Example: custom plots",
+        "label_fr": "Exemple : graphiques personnalisés",
+        "path": "bioptim/examples/getting_started/custom_plotting.py",
+        "lines": "38-113"
+      },
+      {
+        "label_en": "Solution.graphs",
+        "label_fr": "Solution.graphs",
+        "path": "bioptim/optimization/solution/solution.py",
+        "lines": "1219-1261"
+      },
+      {
+        "label_en": "OptimalControlProgram.add_plot",
+        "label_fr": "OptimalControlProgram.add_plot",
+        "path": "bioptim/optimization/optimal_control_program.py",
+        "lines": "1161-1206"
+      },
+      {
+        "label_en": "PlotOcp",
+        "label_fr": "PlotOcp",
+        "path": "bioptim/gui/plot.py",
+        "lines": "162-1255"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_online_data.py"
+      }
+    ],
+    "notes_file": "notes/online.md",
+    "level": 1,
+    "section": "Library overview",
+    "section_fr": "Vue d'ensemble de la bibliothèque"
   },
   {
     "id": "anim_panorama.py:PenaltyPanorama",
     "slug": "penalty-panorama",
-    "title_en": "Penalty Panorama",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "The penalty library",
+    "title_fr": "La bibliothèque de pénalités",
+    "description_en": "Lists the penalties of ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer and ConstraintFcn grouped by what they act on, then explains how to choose: Lagrange integrates over intervals, Mayer acts at one node, a constraint keeps a function between bounds. The grouping is the author's own classification, and only two example names per group are shown.",
+    "description_fr": "Liste les pénalités de ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer et ConstraintFcn regroupées selon ce sur quoi elles agissent, puis explique comment choisir : Lagrange intègre sur les intervalles, Mayer agit à un nœud, une contrainte garde une fonction entre des bornes. Le regroupement est une classification propre à l'auteur, et seuls deux noms d'exemple par groupe sont affichés.",
     "video_basename": "PenaltyPanorama",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/panorama.md"
+    "links": [
+      {
+        "label_en": "ObjectiveFcn (Lagrange, Mayer)",
+        "label_fr": "ObjectiveFcn (Lagrange, Mayer)",
+        "path": "bioptim/limits/objective_functions.py",
+        "lines": "362-522"
+      },
+      {
+        "label_en": "ConstraintFcn",
+        "label_fr": "ConstraintFcn",
+        "path": "bioptim/limits/constraints.py",
+        "lines": "831-897"
+      },
+      {
+        "label_en": "Penalty implementations",
+        "label_fr": "Implémentations des pénalités",
+        "path": "bioptim/limits/penalty.py"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur de données de la scène",
+        "path": "docs/animations/generate_panorama_data.py"
+      }
+    ],
+    "notes_file": "notes/panorama.md",
+    "level": 2,
+    "section": "Library overview",
+    "section_fr": "Vue d'ensemble de la bibliothèque"
   },
   {
     "id": "anim_phasedyn.py:PhaseDynamicsScene",
     "slug": "phase-dynamics-scene",
-    "title_en": "Phase Dynamics Scene",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "PhaseDynamics: shared or per node",
+    "title_fr": "PhaseDynamics : partagée ou par nœud",
+    "description_en": "Compares SHARED_DURING_THE_PHASE (one integrator function for the phase) with ONE_PER_NODE (one per node): measured build and solve times for 30, 60 and 120 nodes, identical optimum, and a multinode constraint on 7 nodes that only works with ONE_PER_NODE. Timings were taken on a busy machine, so read the ratios, not the seconds.",
+    "description_fr": "Compare SHARED_DURING_THE_PHASE (une fonction d'intégration pour la phase) et ONE_PER_NODE (une par nœud) : temps de construction et de résolution mesurés pour 30, 60 et 120 nœuds, optimum identique, et une contrainte multi-nœuds sur 7 nœuds qui ne fonctionne qu'avec ONE_PER_NODE. Les temps ont été mesurés sur une machine chargée : il faut lire les rapports, pas les secondes.",
     "video_basename": "PhaseDynamicsScene",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/phasedyn.md"
+    "links": [
+      {
+        "label_en": "Example: time-dependent pendulum",
+        "label_fr": "Exemple : pendule dépendant du temps",
+        "path": "bioptim/examples/toy_examples/torque_driven_ocp/example_pendulum_time_dependent.py",
+        "lines": "82-166"
+      },
+      {
+        "label_en": "PhaseDynamics enum",
+        "label_fr": "Énumération PhaseDynamics",
+        "path": "bioptim/misc/enums.py",
+        "lines": "5-7"
+      },
+      {
+        "label_en": "One integrator vs one per node",
+        "label_fr": "Un intégrateur ou un par nœud",
+        "path": "bioptim/dynamics/ode_solver_base.py",
+        "lines": "268-339"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_phasedyn_data.py",
+        "lines": "58-91"
+      }
+    ],
+    "notes_file": "notes/phasedyn.md",
+    "level": 3,
+    "section": "Solvers and numerics",
+    "section_fr": "Solveurs et numérique"
   },
   {
     "id": "anim_scaling.py:Scaling",
     "slug": "scaling",
-    "title_en": "Scaling",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Variable scaling",
+    "title_fr": "Mise à l'échelle des variables",
+    "description_en": "VariableScalingList (x_scaling, u_scaling) changes only what the solver sees (x divided by scale); bounds and objectives stay in physical units. On the pendulum example IPOPT needs 65 iterations with scaling versus 374 without, for the same optimum. IPOPT's own scaling option was left at its default.",
+    "description_fr": "VariableScalingList (x_scaling, u_scaling) ne change que ce que voit le solveur (x divisé par l'échelle); les bornes et les objectifs restent en unités physiques. Sur l'exemple du pendule, IPOPT nécessite 65 itérations avec mise à l'échelle contre 374 sans, pour le même optimum. L'option de mise à l'échelle propre à IPOPT est restée par défaut.",
     "video_basename": "Scaling",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/scaling.md"
+    "links": [
+      {
+        "label_en": "Example: variable scaling",
+        "label_fr": "Exemple : mise à l'échelle des variables",
+        "path": "bioptim/examples/toy_examples/feature_examples/example_variable_scaling.py",
+        "lines": "27-111"
+      },
+      {
+        "label_en": "VariableScalingList",
+        "label_fr": "VariableScalingList",
+        "path": "bioptim/optimization/variable_scaling.py",
+        "lines": "67-136"
+      },
+      {
+        "label_en": "VariableScaling",
+        "label_fr": "VariableScaling",
+        "path": "bioptim/optimization/variable_scaling.py",
+        "lines": "17-64"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_scaling_data.py"
+      }
+    ],
+    "notes_file": "notes/scaling.md",
+    "level": 3,
+    "section": "Solvers and numerics",
+    "section_fr": "Solveurs et numérique"
   },
   {
     "id": "anim_socp.py:RobustPath",
     "slug": "robust-path",
-    "title_en": "Robust Path",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Robust path constraint (SOCP)",
+    "title_fr": "Contrainte de chemin robuste (SOCP)",
+    "description_en": "A stochastic OCP optimizes the mean trajectory and the state covariance at each node. With a robustified obstacle constraint, the loop keeps its uncertainty tube away from the obstacles, at a cost of about 4 % more time than the mean-only version. Real solves with an increased motor noise; each took minutes.",
+    "description_fr": "Un OCP stochastique optimise la trajectoire moyenne et la covariance de l'état à chaque nœud. Avec une contrainte d'obstacle robustifiée, la boucle garde son tube d'incertitude à l'écart des obstacles, pour environ 4 % de temps en plus que la version sur la moyenne seule. Vraies résolutions avec un bruit moteur augmenté ; chacune a pris des minutes.",
     "video_basename": "RobustPath",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/socp.md"
+    "links": [
+      {
+        "label_en": "Example: obstacle avoidance (SOCP)",
+        "label_fr": "Exemple : évitement d'obstacles (SOCP)",
+        "path": "bioptim/examples/toy_examples/stochastic_optimal_control/obstacle_avoidance_direct_collocation.py",
+        "lines": "368-533"
+      },
+      {
+        "label_en": "Robustified path constraint",
+        "label_fr": "Contrainte de chemin robustifiée",
+        "path": "bioptim/examples/toy_examples/stochastic_optimal_control/obstacle_avoidance_direct_collocation.py",
+        "lines": "327-354"
+      },
+      {
+        "label_en": "StochasticOptimalControlProgram",
+        "label_fr": "StochasticOptimalControlProgram",
+        "path": "bioptim/optimization/stochastic_optimal_control_program.py",
+        "lines": "29-675"
+      },
+      {
+        "label_en": "Covariance continuity constraint",
+        "label_fr": "Contrainte de continuité de la covariance",
+        "path": "bioptim/limits/constraints.py",
+        "lines": "581-625"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur de données de la scène",
+        "path": "docs/animations/generate_socp_data.py"
+      }
+    ],
+    "notes_file": "notes/socp.md",
+    "level": 3,
+    "section": "Advanced control",
+    "section_fr": "Commande avancée"
   },
   {
     "id": "anim_soft.py:SoftContact",
     "slug": "soft-contact",
-    "title_en": "Soft Contact",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Soft (compliant) contact",
+    "title_fr": "Contact souple (compliant)",
+    "description_en": "A 1 kg ball is pushed 3 cm into a soft ground declared in the bioMod and enabled with ContactType.SOFT_EXPLICIT. The force comes from soft_contact_forces; for stiffness 1e4, 1e5 and 1e6 the same depth needs far more force and IPOPT needs more iterations. At 1e6, RK4 with one step per interval fails.",
+    "description_fr": "Une balle de 1 kg est enfoncée de 3 cm dans un sol souple déclaré dans le bioMod et activé par ContactType.SOFT_EXPLICIT. La force vient de soft_contact_forces ; pour des raideurs de 1e4, 1e5 et 1e6, la même profondeur demande beaucoup plus de force et IPOPT demande plus d'itérations. À 1e6, RK4 avec un pas par intervalle échoue.",
     "video_basename": "SoftContact",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/soft.md"
+    "links": [
+      {
+        "label_en": "Example: soft contact",
+        "label_fr": "Exemple : contact souple",
+        "path": "bioptim/examples/toy_examples/torque_driven_ocp/example_soft_contact.py",
+        "lines": "103-191"
+      },
+      {
+        "label_en": "ContactType enum",
+        "label_fr": "Énumération ContactType",
+        "path": "bioptim/misc/enums.py",
+        "lines": "219-238"
+      },
+      {
+        "label_en": "Model: soft_contact_forces",
+        "label_fr": "Modèle : soft_contact_forces",
+        "path": "bioptim/models/biorbd/biorbd_model.py",
+        "lines": "1163-1181"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_soft_data.py",
+        "lines": "63-95"
+      }
+    ],
+    "notes_file": "notes/soft.md",
+    "level": 2,
+    "section": "Models and biomechanics",
+    "section_fr": "Modèles et biomécanique"
   },
   {
     "id": "anim_solution.py:SolutionTour",
     "slug": "solution-tour",
-    "title_en": "Solution Tour",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Reading the Solution object",
+    "title_fr": "Lire l'objet Solution",
+    "description_en": "One real two-phase pendulum solve read through decision_states, stepwise_states, interpolate and integrate, with the array shape each returns, plus the SolutionMerge options and sol.cost / detailed_cost. graphs() and animate() are only named, not run.",
+    "description_fr": "Une résolution réelle de pendule à deux phases lue avec decision_states, stepwise_states, interpolate et integrate, avec la forme du tableau retourné par chacun, ainsi que les options de SolutionMerge et sol.cost / detailed_cost. graphs() et animate() sont seulement nommés, pas exécutés.",
     "video_basename": "SolutionTour",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/solution.md"
+    "links": [
+      {
+        "label_en": "Solution states and controls accessors",
+        "label_fr": "Accesseurs d'états et de commandes de Solution",
+        "path": "bioptim/optimization/solution/solution.py",
+        "lines": "544-635"
+      },
+      {
+        "label_en": "Solution.integrate",
+        "label_fr": "Solution.integrate",
+        "path": "bioptim/optimization/solution/solution.py",
+        "lines": "785-866"
+      },
+      {
+        "label_en": "Solution.interpolate",
+        "label_fr": "Solution.interpolate",
+        "path": "bioptim/optimization/solution/solution.py",
+        "lines": "1158-1217"
+      },
+      {
+        "label_en": "SolutionMerge",
+        "label_fr": "SolutionMerge",
+        "path": "bioptim/optimization/solution/solution_data.py",
+        "lines": "13-21"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_solution_data.py"
+      }
+    ],
+    "notes_file": "notes/solution.md",
+    "level": 1,
+    "section": "Library overview",
+    "section_fr": "Vue d'ensemble de la bibliothèque"
   },
   {
     "id": "anim_solver.py:IpoptIterates",
     "slug": "ipopt-iterates",
-    "title_en": "Ipopt Iterates",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "IPOPT iterates",
+    "title_fr": "Itérés d'IPOPT",
+    "description_en": "Shows that an IPOPT iterate is generally not a feasible trajectory: for iterations 0 to 51 the objective and the primal infeasibility are displayed with the trajectory. Each iterate comes from a separate solve limited to k iterations. Trajectories are drawn between node values, not integrated.",
+    "description_fr": "Montre qu'un itéré d'IPOPT n'est en général pas une trajectoire faisable : pour les itérations 0 à 51, le coût et l'infaisabilité primale sont affichés avec la trajectoire. Chaque itéré provient d'une résolution séparée limitée à k itérations. Les trajectoires sont tracées entre les valeurs aux nœuds, sans intégration.",
     "video_basename": "IpoptIterates",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/solver.md"
+    "links": [
+      {
+        "label_en": "IPOPT solver options",
+        "label_fr": "Options du solveur IPOPT",
+        "path": "bioptim/interfaces/ipopt_options.py",
+        "lines": "19-348"
+      },
+      {
+        "label_en": "set_maximum_iterations",
+        "label_fr": "set_maximum_iterations",
+        "path": "bioptim/interfaces/ipopt_options.py",
+        "lines": "240-241"
+      },
+      {
+        "label_en": "Example: pendulum swing-up",
+        "label_fr": "Exemple : balancement du pendule",
+        "path": "bioptim/examples/getting_started/basic_ocp.py",
+        "lines": "33-127"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur de données de la scène",
+        "path": "docs/animations/generate_solver_data.py"
+      }
+    ],
+    "notes_file": "notes/solver.md",
+    "level": 2,
+    "section": "Solvers and numerics",
+    "section_fr": "Solveurs et numérique"
   },
   {
     "id": "anim_solver.py:IpoptMultiStart",
     "slug": "ipopt-multi-start",
-    "title_en": "Ipopt Multi Start",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Multi-start: several local minima",
+    "title_fr": "Multi-départ : plusieurs minima locaux",
+    "description_en": "The pendulum swing-up is solved from different initial guesses: IPOPT converges each time, but to different local minima (costs from 40.3 to 302.9 are shown). This is a plain loop over random guesses, not bioptim's MultiStart class, and the lowest cost found is not certified global.",
+    "description_fr": "Le balancier du pendule est résolu à partir de différentes estimations initiales : IPOPT converge à chaque fois, mais vers des minima locaux différents (des coûts de 40,3 à 302,9 sont montrés). C'est une simple boucle sur des estimations aléatoires, pas la classe MultiStart de bioptim, et le plus faible coût trouvé n'est pas certifié global.",
     "video_basename": "IpoptMultiStart",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/solver.md"
+    "links": [
+      {
+        "label_en": "Example: multi-start",
+        "label_fr": "Exemple : multi-départ",
+        "path": "bioptim/examples/getting_started/example_multistart.py",
+        "lines": "29-121"
+      },
+      {
+        "label_en": "MultiStart class",
+        "label_fr": "Classe MultiStart",
+        "path": "bioptim/optimization/multi_start.py",
+        "lines": "18-115"
+      },
+      {
+        "label_en": "IPOPT: set_maximum_iterations",
+        "label_fr": "IPOPT : set_maximum_iterations",
+        "path": "bioptim/interfaces/ipopt_options.py",
+        "lines": "240-241"
+      },
+      {
+        "label_en": "IPOPT: set_tol",
+        "label_fr": "IPOPT : set_tol",
+        "path": "bioptim/interfaces/ipopt_options.py",
+        "lines": "216-217"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_solver_data.py",
+        "lines": "45-73"
+      }
+    ],
+    "notes_file": "notes/solver.md",
+    "level": 2,
+    "section": "Solvers and numerics",
+    "section_fr": "Solveurs et numérique"
   },
   {
     "id": "anim_sx.py:SxVsMx",
     "slug": "sx-vs-mx",
-    "title_en": "Sx Vs Mx",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "SX versus MX graphs",
+    "title_fr": "Graphes SX ou MX",
+    "description_en": "use_sx=True builds the CasADi graph with SX instead of MX. A schematic of the two graph types is followed by measured times on one pendulum OCP (N = 50): IPOPT time drops from 0.54 to 0.14 s but solver set-up grows from 0.48 to 1.06 s, with identical cost and iterations. One problem, medians of 3 runs, not a general benchmark.",
+    "description_fr": "use_sx=True construit le graphe CasADi avec SX plutôt que MX. Un schéma des deux types de graphes précède des temps mesurés sur un OCP de pendule (N = 50) : le temps d'IPOPT passe de 0,54 à 0,14 s mais la préparation du solveur passe de 0,48 à 1,06 s, avec coût et itérations identiques. Un seul problème, médianes de 3 exécutions, pas un banc d'essai général.",
     "video_basename": "SxVsMx",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/sx.md"
+    "links": [
+      {
+        "label_en": "Example exposing use_sx",
+        "label_fr": "Exemple exposant use_sx",
+        "path": "bioptim/examples/getting_started/basic_ocp.py",
+        "lines": "33-127"
+      },
+      {
+        "label_en": "use_sx in OptimalControlProgram",
+        "label_fr": "use_sx dans OptimalControlProgram",
+        "path": "bioptim/optimization/optimal_control_program.py",
+        "lines": "523-547"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_sx_data.py"
+      }
+    ],
+    "notes_file": "notes/sx.md",
+    "level": 3,
+    "section": "Solvers and numerics",
+    "section_fr": "Solveurs et numérique"
   },
   {
     "id": "anim_track.py:TrackState",
     "slug": "track-state",
-    "title_en": "Track State",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Tracking a reference",
+    "title_fr": "Suivre une référence",
+    "description_en": "The pendulum angle must follow a sine reference with ObjectiveFcn.Lagrange.TRACK_STATE at weights 1, 30 and 1000, then with a hard ConstraintFcn.TRACK_STATE. A higher weight tracks better but needs more effort. The hard version is exact at the nodes, with a chattering torque, and the cart is free to travel far.",
+    "description_fr": "L'angle du pendule doit suivre une référence sinusoïdale avec ObjectiveFcn.Lagrange.TRACK_STATE aux poids 1, 30 et 1000, puis avec une contrainte ConstraintFcn.TRACK_STATE. Un poids plus élevé suit mieux mais demande plus d'effort. La version contrainte est exacte aux nœuds, avec un couple oscillant, et le chariot peut se déplacer loin.",
     "video_basename": "TrackState",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/track.md"
+    "links": [
+      {
+        "label_en": "Example: cyclic tracking objective",
+        "label_fr": "Exemple : objectif de suivi cyclique",
+        "path": "bioptim/examples/toy_examples/moving_horizon_estimation/multi_cyclic_nmpc_with_parameters.py",
+        "lines": "178-186"
+      },
+      {
+        "label_en": "minimize_states (TRACK_STATE)",
+        "label_fr": "minimize_states (TRACK_STATE)",
+        "path": "bioptim/limits/penalty.py",
+        "lines": "60-86"
+      },
+      {
+        "label_en": "ObjectiveFcn (Lagrange, Mayer)",
+        "label_fr": "ObjectiveFcn (Lagrange, Mayer)",
+        "path": "bioptim/limits/objective_functions.py",
+        "lines": "362-522"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur de données de la scène",
+        "path": "docs/animations/generate_track_data.py"
+      }
+    ],
+    "notes_file": "notes/track.md",
+    "level": 1,
+    "section": "Objectives and constraints",
+    "section_fr": "Objectifs et contraintes"
   },
   {
     "id": "anim_variational.py:DiscreteMechanics",
     "slug": "discrete-mechanics",
-    "title_en": "Discrete Mechanics",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Discrete mechanics (variational)",
+    "title_fr": "Mécanique discrète (variationnelle)",
+    "description_en": "With VariationalOptimalControlProgram the state is only q_k and the dynamics are the discrete Euler-Lagrange equations. On a free pendulum over 600 s the energy error of the variational scheme stays bounded while RK4 drifts, then a real swing-up OCP is shown. RK4 is more accurate for the first 284 s: the message is boundedness, not short-time accuracy.",
+    "description_fr": "Avec VariationalOptimalControlProgram, l'état est seulement q_k et la dynamique est donnée par les équations d'Euler-Lagrange discrètes. Sur un pendule libre pendant 600 s, l'erreur d'énergie du schéma variationnel reste bornée alors que RK4 dérive, puis un vrai OCP de balancier est montré. RK4 est plus précis pendant les 284 premières secondes : le message porte sur le caractère borné, pas sur la précision à court terme.",
     "video_basename": "DiscreteMechanics",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/variational.md"
+    "links": [
+      {
+        "label_en": "Example: variational integrator pendulum",
+        "label_fr": "Exemple : pendule à intégrateur variationnel",
+        "path": "bioptim/examples/toy_examples/discrete_mechanics_and_optimal_control/example_variational_integrator_pendulum.py",
+        "lines": "21-86"
+      },
+      {
+        "label_en": "VariationalOptimalControlProgram",
+        "label_fr": "VariationalOptimalControlProgram",
+        "path": "bioptim/optimization/variational_optimal_control_program.py",
+        "lines": "33-377"
+      },
+      {
+        "label_en": "Discrete Euler-Lagrange equations",
+        "label_fr": "Équations d'Euler-Lagrange discrètes",
+        "path": "bioptim/models/biorbd/variational_biorbd_model.py",
+        "lines": "163-232"
+      },
+      {
+        "label_en": "OdeSolver.VARIATIONAL (placeholder)",
+        "label_fr": "OdeSolver.VARIATIONAL (espace réservé)",
+        "path": "bioptim/dynamics/ode_solvers.py",
+        "lines": "53-61"
+      },
+      {
+        "label_en": "Scene data: free motion",
+        "label_fr": "Données de la scène : mouvement libre",
+        "path": "docs/animations/generate_variational_data.py",
+        "lines": "43-113"
+      },
+      {
+        "label_en": "Scene data: swing-up OCP",
+        "label_fr": "Données de la scène : OCP de balancier",
+        "path": "docs/animations/generate_variational_data.py",
+        "lines": "116-162"
+      }
+    ],
+    "notes_file": "notes/variational.md",
+    "level": 3,
+    "section": "Discretization",
+    "section_fr": "Discrétisation"
   },
   {
     "id": "anim_vector.py:VectorOrdering",
     "slug": "vector-ordering",
-    "title_en": "Vector Ordering",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Decision vector ordering",
+    "title_fr": "Ordre du vecteur de décision",
+    "description_en": "Shows the flat vector IPOPT sees (time, states, controls, parameters) and how VectorLayout.index_map locates each block, then reorders the same 24 numbers with OrderingStrategy.TIME_MAJOR. Reading results through sol.decision_states() and similar helpers is recommended over indexing by hand.",
+    "description_fr": "Montre le vecteur plat vu par IPOPT (temps, états, commandes, paramètres) et comment VectorLayout.index_map localise chaque bloc, puis réordonne les mêmes 24 nombres avec OrderingStrategy.TIME_MAJOR. Lire les résultats avec sol.decision_states() et les fonctions similaires est préférable à l'indexation manuelle.",
     "video_basename": "VectorOrdering",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/vector.md"
+    "links": [
+      {
+        "label_en": "VectorLayout",
+        "label_fr": "VectorLayout",
+        "path": "bioptim/optimization/vector_layout.py",
+        "lines": "110-286"
+      },
+      {
+        "label_en": "OrderingStrategy",
+        "label_fr": "OrderingStrategy",
+        "path": "bioptim/optimization/vector_layout.py",
+        "lines": "105-107"
+      },
+      {
+        "label_en": "OptimizationVectorHelper",
+        "label_fr": "OptimizationVectorHelper",
+        "path": "bioptim/optimization/optimization_vector.py",
+        "lines": "20-283"
+      },
+      {
+        "label_en": "Example: basic OCP",
+        "label_fr": "Exemple : OCP de base",
+        "path": "bioptim/examples/getting_started/basic_ocp.py",
+        "lines": "33-127"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_vector_data.py"
+      }
+    ],
+    "notes_file": "notes/vector.md",
+    "level": 3,
+    "section": "Solvers and numerics",
+    "section_fr": "Solveurs et numérique"
   },
   {
     "id": "anim_vector.py:VectorCollocation",
     "slug": "vector-collocation",
-    "title_en": "Vector Collocation",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Decision vector with collocation",
+    "title_fr": "Vecteur de décision et collocation",
+    "description_en": "With direct collocation of degree 3, each state node holds 4 columns (the node plus 3 collocation points) in the flat vector seen by IPOPT. The scene zooms on one node as a 4x4 grid filled column by column, on a small real problem of 60 variables.",
+    "description_fr": "Avec la collocation directe de degré 3, chaque nœud d'état contient 4 colonnes (le nœud plus 3 points de collocation) dans le vecteur plat vu par IPOPT. La scène zoome sur un nœud sous forme de grille 4x4 remplie colonne par colonne, sur un petit problème réel de 60 variables.",
     "video_basename": "VectorCollocation",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/vector.md"
+    "links": [
+      {
+        "label_en": "VectorLayout (index_map)",
+        "label_fr": "VectorLayout (index_map)",
+        "path": "bioptim/optimization/vector_layout.py",
+        "lines": "110-286"
+      },
+      {
+        "label_en": "OrderingStrategy",
+        "label_fr": "OrderingStrategy",
+        "path": "bioptim/optimization/vector_layout.py",
+        "lines": "105-107"
+      },
+      {
+        "label_en": "n_states_decision_steps",
+        "label_fr": "n_states_decision_steps",
+        "path": "bioptim/optimization/non_linear_program.py",
+        "lines": "433-445"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur de données de la scène",
+        "path": "docs/animations/generate_vector_data.py",
+        "lines": "56-115"
+      }
+    ],
+    "notes_file": "notes/vector.md",
+    "level": 2,
+    "section": "Solvers and numerics",
+    "section_fr": "Solveurs et numérique"
   },
   {
     "id": "anim_walk.py:Hopper",
     "slug": "hopper",
-    "title_en": "Hopper",
-    "title_fr": "",
-    "description_en": "",
-    "description_fr": "",
+    "title_en": "Hop cycle with impact",
+    "title_fr": "Cycle de saut avec impact",
+    "description_en": "A 1-D hopper (foot and body on a vertical axis) does one periodic hop in three phases: flight, stance with a rigid contact and a non-negative force, flight. PhaseTransitionFcn.IMPACT zeroes the foot velocity at touch-down, not the body's. The force constraint is not binding, and the problem is overconstrained by its fixed phase durations. Not a walking model.",
+    "description_fr": "Un sauteur 1-D (pied et corps sur un axe vertical) effectue un saut périodique en trois phases : vol, appui avec un contact rigide et une force non négative, vol. PhaseTransitionFcn.IMPACT annule la vitesse du pied à l'atterrissage, pas celle du corps. La contrainte de force n'est pas active, et le problème est sur-contraint par ses durées de phase fixes. Ce n'est pas un modèle de marche.",
     "video_basename": "Hopper",
     "duration_note": "",
-    "links": [],
-    "notes_file": "notes/walk.md"
+    "links": [
+      {
+        "label_en": "Example: phase transitions incl. IMPACT",
+        "label_fr": "Exemple : transitions de phase dont IMPACT",
+        "path": "bioptim/examples/getting_started/custom_phase_transitions.py",
+        "lines": "68-204"
+      },
+      {
+        "label_en": "Example: rigid contact",
+        "label_fr": "Exemple : contact rigide",
+        "path": "bioptim/examples/toy_examples/torque_driven_ocp/example_rigid_contact.py",
+        "lines": "40-138"
+      },
+      {
+        "label_en": "IMPACT transition implementation",
+        "label_fr": "Implémentation de la transition IMPACT",
+        "path": "bioptim/limits/phase_transition.py",
+        "lines": "260-306"
+      },
+      {
+        "label_en": "Rigid contact force penalty",
+        "label_fr": "Pénalité sur la force de contact rigide",
+        "path": "bioptim/limits/penalty.py",
+        "lines": "768-817"
+      },
+      {
+        "label_en": "Scene data generator (3-phase OCP)",
+        "label_fr": "Générateur des données (OCP à 3 phases)",
+        "path": "docs/animations/generate_walk_data.py",
+        "lines": "52-118"
+      }
+    ],
+    "notes_file": "notes/walk.md",
+    "level": 3,
+    "section": "Phases and time",
+    "section_fr": "Phases et temps"
   }
 ]

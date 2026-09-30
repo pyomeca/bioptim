@@ -116,11 +116,11 @@ class RobustPath(Scene):
             return grp
 
         # ------------------------------------------------------------------------------------------ clearance plot
-        ax_c = make_axes([3.05, -2.75, 0], 6.0, 1.55, [0, t_end], [0, Z_MAX], 0.5, 1)
-        lab_c = Text("distance to obstacle in sigmas, z = h / sqrt(dh P dh')", font_size=17, color=GRAY_B)
+        ax_c = make_axes([3.05, -2.25, 0], 6.0, 1.55, [0, t_end], [0, Z_MAX], 0.5, 1)
+        lab_c = Text("distance to obstacle (sigma): z = h / sqrt(dh P dh')", font_size=17, color=GRAY_B)
         lab_c.next_to(ax_c.get_y_axis(), UP, buff=0.06).align_to(ax_c.get_y_axis(), LEFT)
         zero = DashedLine(ax_c.c2p(0, 1), ax_c.c2p(t_end, 1), color=GRAY_B).set_stroke(width=2)
-        gam = Text("gamma = 1", font_size=15, color=GRAY_B).next_to(ax_c.c2p(t_end, 1), UP, buff=0.04)
+        gam = Text("γ = 1", font_size=15, color=GRAY_B).next_to(ax_c.c2p(t_end, 1), UP, buff=0.04)
         gam.align_to(ax_c.c2p(t_end, 1), RIGHT)
         deco = VGroup(
             lab_c, gam, time_label(ax_c), x_ticks(ax_c, [0, 0.5, 1.0, 1.5], "{:g}"), y_ticks(ax_c, [0, 1, 2, 3])
@@ -138,7 +138,7 @@ class RobustPath(Scene):
                 (0, "socp = StochasticOptimalControlProgram(bio_model, 40, 4, problem_type=socp_type, ...)", W),
             ]
         )
-        cap1 = Text("SOCP: model, noise, covariance P as a control", font_size=17, color=GRAY_B)
+        cap1 = Text("Bioptim code: model, noise, covariance P as a control", font_size=17, color=GRAY_B)
         g1 = VGroup(cap1, setup).arrange(DOWN, aligned_edge=LEFT, buff=0.12)
 
         flag_false = code("is_robustified=False", 14.5, C_NOM)
@@ -156,7 +156,7 @@ class RobustPath(Scene):
                 (1, "out -= safe_guard", W),
             ]
         )
-        cap2 = Text("h(q) >= 0 outside the obstacle, at every node", font_size=17, color=GRAY_B)
+        cap2 = Text("path constraint: h(q) >= 0 outside the obstacle, at every node", font_size=17, color=GRAY_B)
         g2 = VGroup(cap2, cons, inner).arrange(DOWN, aligned_edge=LEFT, buff=0.12)
         panel = VGroup(g1, g2).arrange(DOWN, aligned_edge=LEFT, buff=0.22)
         fit(panel, 6.5)
@@ -192,7 +192,7 @@ class RobustPath(Scene):
         n_bad = int(np.sum(hs0 < 0.99))
         row0 = legend_item(
             C_NOM,
-            f"mean only: min {hs0.min():.2f} sigma, {n_bad}/{n + 1} nodes overlap (red)",
+            f"mean only: min {hs0.min():.2f} sigma, {n_bad} of {n + 1} nodes overlap (red)",
         )
         row0.move_to([-6.85, -3.2, 0], aligned_edge=LEFT)
         self.play(Create(box), Create(loop0), FadeIn(row0), run_time=1.2)
@@ -233,4 +233,4 @@ class RobustPath(Scene):
         )
         foot.move_to([-6.85, -3.8, 0], aligned_edge=LEFT)
         self.play(FadeIn(foot), run_time=0.4)
-        self.wait(2.5)
+        self.wait(2.0)

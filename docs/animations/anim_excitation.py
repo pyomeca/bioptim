@@ -15,6 +15,7 @@ from manim import *
 sys.path.insert(0, str(Path(__file__).parent))
 from features_scenes import (  # noqa: E402  (also sets the default fonts)
     CODE_X,
+    fit,
     code_panel,
     hline,
     make_axes,
@@ -64,14 +65,18 @@ class ExcitationActivation(Scene):
             lags.append((t0, t1, (t1 - t0) * 1000))
 
         self.play(
-            FadeIn(scene_title("Excitation → activation", f"MusclesWithExcitationsBiorbdModel, {NAMES[M_IDX]}")),
+            FadeIn(
+                scene_title(
+                    "Muscle excitation and activation", "the excitation is a control, the activation is a state"
+                )
+            ),
             run_time=0.5,
         )
 
         # ---------------- top left: full time course ----------------
         ax = make_axes([-3.6, 1.05, 0], 5.6, 2.25, (0, FT), (-0.1, 1.15), y_step=0.5)
         deco = VGroup(
-            axis_label("BICshort", ax),
+            axis_label(f"{NAMES[M_IDX]} (0–1)", ax),
             time_label(ax),
             x_ticks(ax, [0, 0.25, 0.5], "{:g}"),
             y_ticks(ax, [0, 1]),
@@ -85,7 +90,7 @@ class ExcitationActivation(Scene):
         leg.next_to(ax.c2p(FT, 1.15), UP, buff=0.05, aligned_edge=RIGHT)
 
         # ---------------- right bottom: joints ----------------
-        axq = make_axes([3.45, -2.2, 0], 5.2, 1.6, (0, FT), (-1.2, 2.8), y_step=1)
+        axq = make_axes([3.45, -2.4, 0], 5.2, 1.4, (0, FT), (-1.2, 2.8), y_step=1)
         decq = VGroup(
             axis_label("joint angles q (rad)", axq),
             time_label(axq),
@@ -112,14 +117,16 @@ class ExcitationActivation(Scene):
                 (1, 'ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles")', C_EXC),
             ],
             size=19,
-            top=2.35,
+            top=2.4,
+            caption="Bioptim code",
         )
         info = VGroup(
             Text("da/dt = f(e, a): biorbd activationDot (De Groote)", font_size=16, color=GRAY_A),
-            Text("nominal τ_act = 10 ms, τ_deact = 40 ms", font_size=16, color=GRAY_A),
-            Text("vs MusclesBiorbdModel: a is the control, no lag", font_size=16, color=GRAY_B),
+            Text("nominal time constants: activation 10 ms, deactivation 40 ms", font_size=16, color=GRAY_A),
+            Text("with MusclesBiorbdModel, a is the control and there is no lag", font_size=16, color=GRAY_B),
         ).arrange(DOWN, aligned_edge=LEFT, buff=0.05)
-        info.move_to([CODE_X, -0.55, 0], aligned_edge=LEFT)
+        fit(info, 6.0)
+        info.move_to([CODE_X, -0.75, 0], aligned_edge=LEFT)
         status = place(
             Text(
                 f"IPOPT: converged, {int(D['iterations'])} iterations, final hand-target error "
@@ -128,7 +135,7 @@ class ExcitationActivation(Scene):
                 color=GRAY_B,
             ),
             CODE_X,
-            -3.55,
+            -3.7,
         )
 
         self.play(Create(ax), FadeIn(deco), FadeIn(leg), Write(panel), run_time=1.3)
@@ -153,10 +160,10 @@ class ExcitationActivation(Scene):
             g0 = DashedLine(az.c2p(t0, -0.1), az.c2p(t0, 1.15), color=C_EXC, stroke_width=2)
             g1 = DashedLine(az.c2p(t1, -0.1), az.c2p(t1, 1.15), color=C_ACT, stroke_width=2)
             arrow = DoubleArrow(az.c2p(t0, 0.5), az.c2p(t1, 0.5), buff=0, stroke_width=3, tip_length=0.12, color=WHITE)
-            txt = Text(f"lag to a = 0.5: {lag:.0f} ms", font_size=18, color=WHITE)
+            txt = Text(f"delay to reach a = 0.5: {lag:.0f} ms", font_size=18, color=WHITE)
             txt.move_to(az.c2p(t1 + 0.004, 0.25 if up else 0.75), aligned_edge=LEFT)
             ttl = Text(
-                "e steps up (0 → 0.67, then 1)" if up else "e steps down (1 → 0)",
+                "excitation steps up (0 → 0.67, then 1)" if up else "excitation steps down (1 → 0)",
                 font_size=16,
                 color=C_EXC,
             )
@@ -180,4 +187,4 @@ class ExcitationActivation(Scene):
         self.play(ReplacementTransform(z0, z1), ReplacementTransform(b0, b1), run_time=1.2)
         self.wait(2.0)
         self.play(FadeIn(status), run_time=0.5)
-        self.wait(1.5)
+        self.wait(2.5)

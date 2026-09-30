@@ -40,7 +40,7 @@ class ControlTypes(Scene):
         n, T = int(d["n_shooting"]), float(d["final_time"])
         t = np.linspace(0, T, n + 1)
 
-        self.play(FadeIn(scene_title("Control interpolation", "same swing-up, three ControlType")), run_time=0.5)
+        self.play(FadeIn(scene_title("Control interpolation", "same swing-up, three control types")), run_time=0.5)
 
         ax_u = make_axes([-3.6, 0.55, 0], 5.6, 2.9, (0, T), (-25, 8), y_step=10)
         ax_q = make_axes([-3.6, -2.55, 0], 5.6, 1.5, (0, T), (0, 3.4))
@@ -135,4 +135,4 @@ class ControlTypes(Scene):
                 Transform(cmt, comment(i)),
                 run_time=1.6,
             )
-            self.wait(2.2)
+            self.wait(2.2 if i == 1 else 2.5)

@@ -14,7 +14,7 @@ from manim import *
 from features_scenes import CODE_W, DATA_DIR, code, fit, scene_title
 
 W = WHITE
-C_DT, C_X, C_U, C_P = TEAL_C, BLUE_C, GREEN_C, PURPLE_B
+C_DT, C_X, C_U, C_P = TEAL_C, YELLOW_C, GREEN_C, PURPLE_B  # states yellow, controls green (series roles)
 VAR_NAMES = {"states": ["q0", "q1", "dq0", "dq1"], "controls": ["tau0", "tau1"]}
 COLORS = {"states": C_X, "controls": C_U, "time": C_DT, "parameters": C_P}
 
@@ -113,7 +113,7 @@ class VectorOrdering(Scene):
         note_alg = caption("algebraic_states: empty block here (0 variables), between U and p", 15)
         note_alg.move_to([0, -0.05, 0])
         panel = code_panel_at(
-            "layout of the flat vector: ocp.vector_layout.index_map",
+            "Bioptim code: layout of the flat vector, ocp.vector_layout.index_map",
             [
                 (0, "OptimalControlProgram(..., ordering_strategy=", W),
                 (1, "OrderingStrategy.VARIABLE_MAJOR)   # default", W),
@@ -127,7 +127,7 @@ class VectorOrdering(Scene):
         self.play(LaggedStart(*[FadeIn(c, shift=DOWN * 0.15) for c in strip], lag_ratio=0.03), run_time=1.5)
         br_var = brackets(var)
         self.play(FadeIn(br_var), FadeIn(note_alg), FadeIn(panel), run_time=0.5)
-        hl = SurroundingRectangle(x1_cells(), color=YELLOW, buff=0.06, stroke_width=3)
+        hl = SurroundingRectangle(x1_cells(), color=WHITE, buff=0.06, stroke_width=3)
         self.play(Create(hl), run_time=0.4)
         self.wait(1.3)
 
@@ -135,7 +135,7 @@ class VectorOrdering(Scene):
         self.play(FadeOut(hl), FadeOut(br_var), FadeOut(panel), FadeOut(note_alg), run_time=0.3)
         tim_pos = {(block_name(b), j): b["start"] + j for b in tim for j in range(b["stop"] - b["start"])}
         panel2 = code_panel_at(
-            "same 24 numbers, other order",
+            "Bioptim code: same 24 numbers, other order",
             [
                 (0, "OptimalControlProgram(..., ordering_strategy=", W),
                 (1, "OrderingStrategy.TIME_MAJOR)", W),
@@ -145,14 +145,14 @@ class VectorOrdering(Scene):
         )
         moves = [c.animate.move_to(slot(tim_pos[key]) + DOWN * 0.15) for key, c in cells.items()]
         self.play(FadeIn(panel2), *moves, run_time=2.0)
-        hl2 = SurroundingRectangle(x1_cells(), color=YELLOW, buff=0.06, stroke_width=3)
+        hl2 = SurroundingRectangle(x1_cells(), color=WHITE, buff=0.06, stroke_width=3)
         self.play(FadeIn(brackets(tim)), Create(hl2), run_time=0.5)
         self.wait(1.0)
 
         # ------------------------------------------------ reading: never by hand
         q_var, q_time = float(d["rk4_var_q_nodes"][1, 1]), float(d["rk4_time_q_nodes"][1, 1])
         panel3 = code_panel_at(
-            "read it with the helpers, whatever the ordering",
+            "Bioptim code: read it with the helpers, whatever the ordering",
             [
                 (0, "states = sol.decision_states()", W),
                 (
@@ -210,14 +210,14 @@ class VectorCollocation(Scene):
 
         # ---- zoom on X1: 16 cells = 4 variables x 4 columns
         x1 = groups["X1"]
-        hl = SurroundingRectangle(x1, color=YELLOW, buff=0.06, stroke_width=3)
+        hl = SurroundingRectangle(x1, color=WHITE, buff=0.06, stroke_width=3)
         self.play(Create(hl), run_time=0.4)
         blk = d["colloc_var_x1_block"]  # (4 states, 4 columns)
         gx0, gy0, s = -6.3, -0.2, 0.62
-        heads = ["node", "pt 1", "pt 2", "pt 3"]
+        heads = ["node", "point 1", "point 2", "point 3"]
         grid, grid_cells = VGroup(), {}
         for c in range(4):
-            grid.add(Text(heads[c], font_size=13, color=GRAY_B).move_to([gx0 + 0.55 + c * s, gy0 + 0.45, 0]))
+            grid.add(Text(heads[c], font_size=12, color=GRAY_B).move_to([gx0 + 0.55 + c * s, gy0 + 0.45, 0]))
         for r in range(4):
             grid.add(Text(VAR_NAMES["states"][r], font_size=13, color=GRAY_B).move_to([gx0, gy0 - r * 0.42, 0]))
             for c in range(4):
@@ -241,17 +241,17 @@ class VectorCollocation(Scene):
 
         q1_shape = tuple(d["colloc_var_q1"].shape)
         panel = VGroup(
-            caption("why 4 columns, and how to read them", 19),
+            caption("Bioptim code: why 4 columns, and how to read them", 19),
             code_block(
                 [
                     (0, "OdeSolver.COLLOCATION(polynomial_degree=3)", W),
                     (0, f"nlp.n_states_decision_steps(1)   # {n_cols} = 1 + degree", C_X),
                     (0, 'q1 = sol.decision_states()["q"][1]', W),
-                    (1, f"# shape {q1_shape}: rows q0, q1 / columns node, pt 1..3", GRAY_A),
+                    (1, f"# shape {q1_shape}: rows q0, q1 / columns node, point 1..3", GRAY_A),
                 ]
             ),
         ).arrange(DOWN, aligned_edge=LEFT, buff=0.16)
         fit(panel, CODE_W)
         panel.move_to([0.15, 0.35, 0], aligned_edge=UL)
         self.play(FadeIn(panel), run_time=0.5)
-        self.wait(2.5)
+        self.wait(2.0)

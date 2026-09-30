@@ -80,16 +80,19 @@ class FatigueXia(Scene):
         legend.scale(0.85).next_to(ax_f, UP, buff=0.05).align_to(ax_f, RIGHT)
 
         lines = [
+            (0, "fatigue_dynamics = FatigueList()", WHITE),
             (0, "for i in range(n_tau):", WHITE),
             (1, "fatigue_dynamics.add(XiaTauFatigue(", WHITE),
             (2, "XiaFatigue(LD=100, LR=100, F=5, R=10, scaling=tau_min),", WHITE),
             (2, "XiaFatigue(LD=100, LR=100, F=5, R=10, scaling=tau_max),", WHITE),
             (2, "state_only=False, split_controls=False))", WHITE),
             (0, "bio_model = TorqueBiorbdModel(path, fatigue=fatigue_dynamics)", WHITE),
-            (0, "x_bounds.concatenate(FatigueBounds(fatigue_dynamics, fix_first_frame=True))", WHITE),
-            (0, "x_init.concatenate(FatigueInitialGuess(fatigue_dynamics))", WHITE),
+            (0, "x_bounds.concatenate(", WHITE),
+            (1, "FatigueBounds(fatigue_dynamics, fix_first_frame=True))", WHITE),
+            (0, "x_init.concatenate(", WHITE),
+            (1, "FatigueInitialGuess(fatigue_dynamics))", WHITE),
         ]
-        panel = code_panel(lines, size=19, top=2.35, caption="Bioptim code (fatigue_dynamics = FatigueList())")
+        panel = code_panel(lines, size=19, top=2.35, caption="Bioptim code")
 
         max_fat = max(f("tau_plus_mf").max(), f("tau_minus_mf").max())
         min_rest = min(f("tau_plus_mr").min(), f("tau_minus_mr").min())
@@ -105,17 +108,18 @@ class FatigueXia(Scene):
                 line_spacing=0.9,
             ),
             CODE_X,
-            -1.05,
+            -2.0,
         )
         cmt = place(
             Text(
                 "Torque demand recruits active fibres, some of which\n"
-                "become fatigued and only slowly recover (rest = 1 − active − fatigued).",
+                "become fatigued and only slowly recover.\n"
+                "Resting fraction = 1 − active − fatigued.",
                 font_size=19,
                 color=YELLOW_C,
             ),
             CODE_X,
-            -2.6,
+            -3.3,
         )
 
         self.play(FadeIn(panel), FadeIn(legend), FadeIn(cursor), run_time=0.8)
@@ -126,4 +130,4 @@ class FatigueXia(Scene):
             run_time=5,
         )
         self.play(FadeIn(info), FadeIn(cmt), run_time=0.6)
-        self.wait(3)
+        self.wait(2.5)

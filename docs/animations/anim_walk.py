@@ -16,10 +16,12 @@ from manim import *
 
 sys.path.insert(0, str(Path(__file__).parent))
 from features_scenes import (  # noqa: E402  (also sets the default fonts)
+    CODE_W,
     CODE_X,
     MONO,
     band,
-    code_panel,
+    code,
+    fit,
     make_axes,
     place,
     poly,
@@ -88,7 +90,7 @@ class Hopper(Scene):
             Text("flight", font_size=15, color=C_AIR).move_to(ax_v.c2p((t_off + T) / 2, 2.5)),
         )
         neg = band(ax_f, 0, T, f_lo, 0, C_IMPACT, 0.3)
-        neg_txt = Text("F < 0 forbidden", font_size=14, color=RED_B).move_to(ax_f.c2p(T * 0.5, -330))
+        neg_txt = Text("F < 0 is forbidden", font_size=14, color=RED_B).move_to(ax_f.c2p(T * 0.5, -330))
         w_line = DashedLine(ax_f.c2p(0, weight), ax_f.c2p(T, weight), color=GRAY_C, stroke_width=2)
         w_txt = Text(f"weight {weight:.0f} N", font_size=14, color=GRAY_B)
         w_txt.move_to(ax_f.c2p(0.01, weight + 250), aligned_edge=LEFT)
@@ -110,8 +112,14 @@ class Hopper(Scene):
             (1, "node=Node.PENULTIMATE, contact_index=0,", ORANGE),
             (1, "min_bound=0, max_bound=0, phase=1)", ORANGE),
         ]
-        panel = code_panel(lines, size=16, top=2.55, caption="Bioptim code (M = walk_hopper.bioMod)")
-        block = panel[1]
+        # compact panel (same convention as code_panel: caption above the code) so that the messages below never touch it
+        block = VGroup(*[code(text, 15, color) for _, text, color in lines]).arrange(DOWN, aligned_edge=LEFT, buff=0.07)
+        for line, (level, _, _) in zip(block, lines):
+            line.shift(RIGHT * 0.3 * level)
+        cap = Text("Bioptim code (M = walk_hopper.bioMod)", font_size=19, color=GRAY_B)
+        panel = VGroup(cap, block).arrange(DOWN, aligned_edge=LEFT, buff=0.15)
+        fit(panel, CODE_W)
+        panel.move_to([CODE_X, 2.55, 0], aligned_edge=UL)
         groups = [VGroup(*[block[i] for i in r]) for r in (range(0, 4), range(4, 7), range(7, 10), range(10, 13))]
         for g in groups:
             g.set_opacity(0)
@@ -241,9 +249,9 @@ class Hopper(Scene):
             stroke_width=7,
             max_tip_length_to_length_ratio=0.15,
         )
-        jump_txt = Text(f"foot  {vf_pre:.2f} → {vf_post:.0f}", font_size=15, color=C_FOOT)
+        jump_txt = Text(f"foot: {vf_pre:.2f} → {vf_post:.0f} m/s", font_size=15, color=C_FOOT)
         jump_txt.move_to(ax_v.c2p(t_imp + 0.01, 1.35), aligned_edge=LEFT)
-        body_txt = Text(f"body  {vb_post:.2f}, no jump", font_size=15, color=C_BODY)
+        body_txt = Text(f"body: {vb_post:.2f} m/s, no jump", font_size=15, color=C_BODY)
         body_txt.move_to(ax_v.c2p(t_imp + 0.01, 0.75), aligned_edge=LEFT)
         info2 = place(
             Text(
@@ -296,8 +304,9 @@ class Hopper(Scene):
         # ---- take-off, flight back to the apex ----------------------------------------------------------------
         info4 = place(
             Text(
-                f"Peak force {f_max:.0f} N ({f_max / weight:.1f} x weight); F ≥ 0 is not binding here (F > 0 until take-off).\n"
-                "Take-off, then phase 2: flight back to the apex (periodic).\n"
+                f"Peak force {f_max:.0f} N ({f_max / weight:.1f} times the weight).\n"
+                "F ≥ 0 is not binding here: F > 0 until take-off.\n"
+                "Then phase 2: flight back to the apex (periodic).\n"
                 f"IPOPT status {int(d['status'])}, {int(d['iterations'])} iterations.",
                 font_size=18,
                 color=GRAY_A,

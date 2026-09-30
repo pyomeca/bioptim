@@ -82,7 +82,8 @@ class SxVsMx(Scene):
         reps = int(d["repeats"])
 
         title = scene_title(
-            "use_sx: MX or SX graph?", f"same OCP, N = {n}, RK4, IPOPT: measured, median of {reps} runs"
+            "use_sx: MX or SX graph?",
+            f"same optimal control problem (N = {n}, RK4, IPOPT), median of {reps} measured runs",
         )
         self.play(FadeIn(title), run_time=0.4)
 
@@ -118,7 +119,7 @@ class SxVsMx(Scene):
         sx_lab = M("<b>SX</b>: every scalar operation is a node (one big flat graph)", 19, C_SX)
         fit(mx_lab, 6.2).move_to([-6.95, 2.2, 0], aligned_edge=LEFT)
         fit(sx_lab, 6.2).move_to([-6.95, 0.3, 0], aligned_edge=LEFT)
-        sch = caption("schematic, not the real CasADi graph", 15).move_to([-6.95, -2.35, 0], aligned_edge=LEFT)
+        sch = caption("schematic, not the real CasADi graph", 16).move_to([-6.95, -2.35, 0], aligned_edge=LEFT)
         self.play(FadeIn(mx_lab), FadeIn(mx), run_time=0.7)
         self.play(FadeIn(sx_lab), FadeIn(sx), FadeIn(sch), run_time=0.9)
         self.wait(2.0)
@@ -129,7 +130,7 @@ class SxVsMx(Scene):
         vmax = 1.3
         x0, gw = -6.0, 1.95
         groups = [
-            ("build", "OCP build", "constructor"),
+            ("build", "problem build", "constructor"),
             ("setup", "solver set-up", "in ocp.solve"),
             ("solve", "IPOPT solve", f"{stat['mx']['iters']} iterations"),
         ]
@@ -196,4 +197,4 @@ class SxVsMx(Scene):
         msg.move_to([CODE_X0, 0.35, 0], aligned_edge=UL)
         self.play(FadeIn(msg[:3], lag_ratio=0.3), run_time=1.2)
         self.play(FadeIn(msg[3:]), run_time=0.6)
-        self.wait(3.0)
+        self.wait(2.0)

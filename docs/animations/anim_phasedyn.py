@@ -9,7 +9,20 @@ Scene: PhaseDynamicsScene (about 20 s).  Render (from docs/animations):  manim r
 import numpy as np
 from manim import *
 
-from features_scenes import CODE_W, DATA_DIR, M, code, fit, scene_title, make_axes, poly, band, y_ticks, x_ticks
+from features_scenes import (
+    CODE_W,
+    DATA_DIR,
+    M,
+    code,
+    fit,
+    scene_title,
+    make_axes,
+    poly,
+    band,
+    y_ticks,
+    x_ticks,
+    time_label,
+)
 
 CODE_X0 = 0.15
 C_SH = BLUE_C
@@ -41,7 +54,9 @@ class PhaseDynamicsScene(Scene):
         series = np.load(DATA_DIR / "phasedyn_series.npz")
         n0 = 30
 
-        title = scene_title("PhaseDynamics: one function or one per node", "time-dependent pendulum, RK4, measured")
+        title = scene_title(
+            "PhaseDynamics: one function or one per node", "time-dependent pendulum, RK4 integrator, measured timings"
+        )
         self.play(FadeIn(title), run_time=0.4)
 
         # ------------------------------------------------------------ beat 1: what the enum means
@@ -71,7 +86,7 @@ class PhaseDynamicsScene(Scene):
         read_b = M(f"<b>{u_pn}</b> integrator Function objects, one per node", 20, W).move_to(
             [-6.95, -2.05, 0], aligned_edge=LEFT
         )
-        foot = caption("counted with id() on nlp.dynamics after building the OCP", 15).move_to(
+        foot = caption("counted with id() on nlp.dynamics after building the problem", 15).move_to(
             [-6.95, -2.85, 0], aligned_edge=LEFT
         )
 
@@ -112,7 +127,7 @@ class PhaseDynamicsScene(Scene):
             return float(np.median(bench[f"{opt}_{n}_{key}"]))
 
         panels = []
-        for j, (key, name) in enumerate((("build", "OCP build time (s)"), ("solve", "IPOPT solve time (s)"))):
+        for j, (key, name) in enumerate((("build", "problem build time (s)"), ("solve", "IPOPT solve time (s)"))):
             x0 = -6.6 + j * 3.4
             base_y, height, width = -0.6, 2.6, 2.7
             vmax = max(med(o, n, key) for o in ("shared", "per_node") for n in ns) * 1.15
@@ -143,14 +158,18 @@ class PhaseDynamicsScene(Scene):
         dq = float(bench["max_dq"])
         dq_txt = "0 (identical)" if dq == 0 else f"{dq:.0e} rad"
         same = M(
-            f"<b>same optimum</b> (N = 30):  cost {cs:.4f} vs {cp:.4f},  max |Δq| = {dq_txt}",
+            f"<b>same optimum</b> (30 nodes):  cost {cs:.4f} vs {cp:.4f},  max |Δq| = {dq_txt}",
             19,
             W,
         ).move_to([-6.95, -2.2, 0], aligned_edge=LEFT)
         fit(same, 6.3)
-        note = caption("median of 3 runs, one loaded machine (noisy), SX + RK4", 14).move_to(
-            [-6.95, -2.7, 0], aligned_edge=LEFT
-        )
+        note = Paragraph(
+            "N is the number of nodes.",
+            "Median of 3 runs on one loaded machine (noisy), CasADi SX with RK4.",
+            font_size=14,
+            color=GRAY_B,
+            line_spacing=0.9,
+        ).move_to([-6.95, -2.85, 0], aligned_edge=LEFT)
         code_b = code_block(
             [
                 (0, "DynamicsOptions(ode_solver=OdeSolver.RK4(),", W),
@@ -173,10 +192,10 @@ class PhaseDynamicsScene(Scene):
             .next_to(ax.get_y_axis(), UP, buff=0.1)
             .align_to(ax.get_y_axis(), LEFT)
         )
-        xlab = caption("t (s)", 15).next_to(ax.c2p(1, -0.2), DOWN, buff=0.05).shift(RIGHT * 0.5)
+        xlab = time_label(ax)
         nodes = [int(k) for k in hold["nodes"]]
         bd = band(ax, t[nodes[0]], t[nodes[-1]], -0.2, 3.4, C_PN, 0.18)
-        bd_lab = code(f"nodes {nodes[0]} to {nodes[-1]}", 14, C_PN).move_to(ax.c2p(0.9, 0.3))
+        bd_lab = Text(f"nodes {nodes[0]} to {nodes[-1]}", font_size=15, color=C_PN).move_to(ax.c2p(0.9, 0.3))
         ghost = poly(ax, t, hold["free_q"][1], GRAY_C, 3)
         curve = poly(ax, t, hold["hold_q"][1], C_PN, 5)
         gl = caption("without the constraint", 15, GRAY_C).move_to(ax.c2p(0.05, 2.5), aligned_edge=LEFT)
@@ -200,11 +219,11 @@ class PhaseDynamicsScene(Scene):
         ).arrange(DOWN, aligned_edge=LEFT, buff=0.08)
         res_pn = VGroup(
             code("ONE_PER_NODE", 16, C_PN),
-            code(
-                f"IPOPT status {int(hold['hold_status'])}, {int(hold['hold_iterations'])} it, "
+            Text(
+                f"IPOPT status {int(hold['hold_status'])}, {int(hold['hold_iterations'])} iterations, "
                 f"cost {float(hold['hold_cost']):.1f} (free: {float(hold['free_cost']):.1f})",
-                14,
-                W,
+                font_size=16,
+                color=W,
             ),
         ).arrange(DOWN, aligned_edge=LEFT, buff=0.08)
         d = float(series["max_dq"])
@@ -213,11 +232,11 @@ class PhaseDynamicsScene(Scene):
         assert abs(cost_series - float(series["per_node_cost"])) < 1e-6 * cost_series
         res_ts = VGroup(
             caption("numerical_data_timeseries (external forces):", 15),
-            code(f"both options solve, cost {cost_series:.2f}, max |dq| = {d_txt}", 14, W),
+            Text(f"both options solve, cost {cost_series:.2f}, max |Δq| = {d_txt} rad", font_size=16, color=W),
         ).arrange(DOWN, aligned_edge=LEFT, buff=0.08)
         panel3 = panel_of(caption("Bioptim code: 7 nodes of ONE phase"), code_c, res_sh, res_pn, res_ts)
         self.play(FadeIn(VGroup(ax, yt, xt, ylab, xlab, bd, bd_lab, ghost, gl)), FadeIn(panel3[:2]), run_time=0.6)
         self.play(FadeIn(panel3[2]), run_time=0.5)
         self.play(FadeIn(panel3[3]), Create(curve), run_time=1.2)
         self.play(FadeIn(panel3[4]), run_time=0.5)
-        self.wait(3.2)
+        self.wait(2.5)

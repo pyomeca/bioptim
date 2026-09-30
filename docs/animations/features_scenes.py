@@ -15,6 +15,7 @@ bioptim source). No LaTeX needed. Render commands: see FEATURES.md.
 """
 
 import sys
+import textwrap
 from pathlib import Path
 
 import numpy as np
@@ -78,10 +79,10 @@ def scene_title(text: str, subtitle: str = None) -> VGroup:
     return group
 
 
-def code_panel(lines: list, size: float = 19, top: float = 2.3, caption: str = None) -> VGroup:
+def code_panel(lines: list, size: float = 19, top: float = 2.3, caption: str = "Bioptim code") -> VGroup:
     """
     Code lines given as (indent_level, text, color) stacked at the top of the right panel. The whole block is scaled
-    to fit CODE_W; an optional caption (Text) is put above.
+    to fit CODE_W; the caption ("Bioptim code" in the whole series) is always put ABOVE the code lines.
     """
     block = VGroup(*[code(text, size, color) for _, text, color in lines]).arrange(DOWN, aligned_edge=LEFT, buff=0.13)
     for line, (level, _, _) in zip(block, lines):
@@ -119,6 +120,38 @@ def steps(ax: Axes, t, u, color, width=4) -> VMobject:
     return VMobject(color=color, stroke_width=width).set_points_as_corners(pts)
 
 
+def para(text: str, chars: int = 46) -> str:
+    """Wrap a whole sentence on short lines (the right panel is ~6 units wide); the lines are part of the FR key."""
+    return "\n".join(textwrap.fill(part, width=chars) for part in text.split("\n"))
+
+
+def say(text: str, size: int = 19, color=YELLOW_C, chars: int = 46) -> Text:
+    """Yellow remark of the right panel: one sentence, wrapped by ``para``."""
+    return Text(para(text, chars), font_size=size, color=color, line_spacing=0.9)
+
+
+def footer(text: str, size: int = 16, color=YELLOW_C, max_width: float = 10.4) -> Text:
+    """
+    One whole sentence wrapped on at most two lines, left aligned at the bottom of the frame. It stops before the
+    bottom-right corner (logo) and leaves 15 % of room for the French text.
+    """
+    mob = Text(text, font_size=size, color=color)
+    if mob.width > 1.1 * max_width:
+        n_lines = int(np.ceil(mob.width / max_width))
+        width = int(len(text) / n_lines * 1.25)
+        while True:
+            mob = Text("\n".join(textwrap.wrap(text, width=width)), font_size=size, color=color, line_spacing=0.9)
+            if mob.width <= max_width or width < 30:
+                break
+            width -= 2
+    fit(mob, max_width)
+    return mob.move_to([-6.9, -3.92, 0], aligned_edge=DL)
+
+
+def ipopt_line(iterations: int, converged: bool) -> str:
+    return f"IPOPT: {iterations} iterations, " + ("converged" if converged else "not converged")
+
+
 def axis_label(text: str, ax: Axes, color=GRAY_B) -> Text:
     lab = Text(text, font_size=20, color=color).next_to(ax.get_y_axis(), UP, buff=0.08)
     return lab.align_to(ax.get_y_axis(), LEFT)
@@ -131,7 +164,10 @@ def time_label(ax: Axes, text="t (s)") -> Text:
     )
 
 
-def place(mob: Mobject, x: float, y: float, max_width: float = CODE_W) -> Mobject:
+TEXT_W = 5.9  # widest text of the right panel: French is ~15 % longer and must still end before x = 7.1
+
+
+def place(mob: Mobject, x: float, y: float, max_width: float = TEXT_W) -> Mobject:
     """Shrink to ``max_width`` if needed, then put the left edge at x, the vertical center at y."""
     fit(mob, max_width)
     return mob.move_to([x, y, 0], aligned_edge=LEFT)
@@ -181,13 +217,13 @@ class ObjectivesNodes(Scene):
 
         # ---------------------------------------------------------------- beat 1: the Node enum on a time grid
         n_demo = 10
-        xs = np.linspace(-2.6, 3.4, n_demo + 1)
+        xs = np.linspace(-3.0, 3.0, n_demo + 1)
         rows = [
             ("Node.START", [0], "first node"),
-            ("Node.INTERMEDIATES", list(range(1, n_demo - 1)), "1 … N−2  (bioptim excludes N−1 too)"),
+            ("Node.INTERMEDIATES", list(range(1, n_demo - 1)), "1 … N−2  (N−1 excluded too)"),
             ("Node.PENULTIMATE", [n_demo - 1], "node N−1"),
             ("Node.END", [n_demo], "last node N"),
-            ("Node.ALL_SHOOTING", list(range(n_demo)), "0 … N−1  (all nodes with a control)"),
+            ("Node.ALL_SHOOTING", list(range(n_demo)), "0 … N−1  (nodes with a control)"),
             ("Node.ALL", list(range(n_demo + 1)), "0 … N"),
         ]
         y0 = 1.85
@@ -209,8 +245,8 @@ class ObjectivesNodes(Scene):
             base = VGroup(*[Dot([x, y, 0], radius=0.07, color=GRAY_D) for x in xs])
             on = VGroup(*[Dot([xs[k], y, 0], radius=0.11, color=C_MAY) for k in idx])
             lab = code(name, 18, WHITE).move_to([-6.9, y, 0], aligned_edge=LEFT)
-            com = Text(comment, font_size=16, color=GRAY_B).move_to([3.9, y, 0], aligned_edge=LEFT)
-            fit(com, 3.0).move_to([3.9, y, 0], aligned_edge=LEFT)
+            com = Text(comment, font_size=16, color=GRAY_B).move_to([3.55, y, 0], aligned_edge=LEFT)
+            fit(com, 3.0).move_to([3.55, y, 0], aligned_edge=LEFT)
             grid.add(base)
             row_mobs.append((lab, base, on, com))
             self.play(FadeIn(lab), FadeIn(base), FadeIn(on, scale=1.6), FadeIn(com), run_time=0.7)
@@ -226,9 +262,9 @@ class ObjectivesNodes(Scene):
             ]
         )
         lag_txt = M(
-            "<b>Lagrange</b>  ∫ L(x, u) dt : summed over the N intervals   →  Node.ALL_SHOOTING (default)", 20, C_LAG
+            "<b>Lagrange</b>  ∫ L(x, u) dt: summed over the N intervals  →  Node.ALL_SHOOTING (default)", 20, C_LAG
         )
-        may_txt = M("<b>Mayer</b>  M(x) : evaluated at one node   →  Node.END (default)", 20, C_MAY)
+        may_txt = M("<b>Mayer</b>  M(x): evaluated at one node  →  Node.END (default)", 20, C_MAY)
         summary = (
             VGroup(lag_txt, may_txt)
             .arrange(DOWN, aligned_edge=LEFT, buff=0.15)
@@ -238,8 +274,7 @@ class ObjectivesNodes(Scene):
         summary.move_to([-6.9, -2.05, 0], aligned_edge=LEFT)
         self.play(FadeIn(shades), FadeIn(lag_txt))
         self.play(Indicate(row_mobs[3][2], color=C_MAY, scale_factor=1.6), FadeIn(may_txt))
-        foot = Text("Schematic grid with N = 10; the real problem below uses N = 30.", font_size=17, color=GRAY_B)
-        foot.to_edge(DOWN, buff=0.25)
+        foot = footer(f"Schematic grid with N = {n_demo} intervals; the real problem below uses N = {n}.", color=GRAY_B)
         self.play(FadeIn(foot))
         self.wait(2.5)
 
@@ -249,7 +284,7 @@ class ObjectivesNodes(Scene):
         ax_q = make_axes([-3.55, 0.9, 0], 5.6, 2.7, [0, T], [-0.6, 3.6], 0.5, 1)
         ax_u = make_axes([-3.55, -2.2, 0], 5.6, 1.7, [0, T], [-40, 40], 0.5, 40)
         decos = VGroup(
-            axis_label("θ(t)  pendulum angle (rad)", ax_q, C_STATE),
+            axis_label("θ(t)  angle (rad)", ax_q, C_STATE),
             axis_label("τ(t)  actuated force (N)", ax_u, C_CTRL),
             time_label(ax_u),
             x_ticks(ax_u, [0, 0.5, 1.0], "{:.1f}"),
@@ -258,7 +293,7 @@ class ObjectivesNodes(Scene):
         )
         target_line = hline(ax_q, 0, T, 3.14, GRAY_B)
         target_lbl = (
-            Text("3.14 (upright)", font_size=16, color=GRAY_B)
+            Text(f"{3.14} (upright)", font_size=16, color=GRAY_B)
             .next_to(ax_q.c2p(T, 3.14), UP, buff=0.05)
             .shift(LEFT * 0.7)
         )
@@ -284,7 +319,7 @@ class ObjectivesNodes(Scene):
                 (1, "node=Node.END,", C_MAY),
                 (1, "weight=0)", C_MAY),
             ],
-            caption="Bioptim code (Mayer weight is the only change)",
+            size=17,
         )
         self.play(FadeIn(panel))
         weight_line = panel[1][-1]
@@ -295,31 +330,29 @@ class ObjectivesNodes(Scene):
             w = weights[i]
             q_end = float(d[f"w{i}_p0_q"][ROT, -1])
             tau_max = float(np.abs(d[f"w{i}_p0_tau"][TRANS]).max())
-            body = (
-                f"Mayer weight = {w:g}\nθ(T) = {q_end:.2f} rad   ·   max |τ| = {tau_max:.0f} N\n"
-                f"IPOPT: {int(d[f'w{i}_iterations'])} iterations, status {'converged' if d[f'w{i}_converged'] else 'not converged'}"
+            body = f"Mayer weight = {w:g}\nθ(T) = {q_end:.2f} rad  ·  max |τ| = {tau_max:.0f} N\n" + ipopt_line(
+                int(d[f"w{i}_iterations"]), bool(d[f"w{i}_converged"])
             )
-            return place(Text(body, font_size=19, color=GRAY_A, line_spacing=0.9), CODE_X, -2.3)
+            return place(Text(body, font_size=19, color=GRAY_A, line_spacing=0.9), CODE_X, -2.15)
 
         info = readout(0)
         self.play(FadeIn(info))
         comments = [
-            "Only the Lagrange term (weight 1.0):\nthe cheapest control is tau = 0, nothing moves.",
-            "Small Mayer weight: reaching 3.14 costs more\ntorque than the terminal error saves.",
+            "Only the Lagrange term (weight 1.0): the cheapest control is τ = 0, nothing moves.",
+            "Small Mayer weight: reaching 3.14 costs more torque than the terminal error saves.",
             "Larger weight: the pendulum goes further up.",
             "Larger still: almost at the target.",
-            "A large Mayer weight makes the final state (almost) a\nhard target; the Lagrange term still shapes the way.",
+            "A large Mayer weight makes the final state (almost) a hard target; the Lagrange term still shapes the way.",
         ]
-        comments = [c.replace("tau", "τ") for c in comments]
 
         def comment_mob(i):
-            return place(Text(comments[i], font_size=19, color=YELLOW_C), CODE_X, -3.3)
+            return place(say(comments[i], 17, chars=54), CODE_X, -3.1)
 
         comment = comment_mob(0)
         self.play(FadeIn(comment))
         self.wait(1.5)
         for i in range(1, len(weights)):
-            new_line = code(f"weight={weights[i]:g})", 19, C_MAY)
+            new_line = code(f"weight={weights[i]:g})", 17, C_MAY)
             new_line.move_to(weight_line, aligned_edge=LEFT)
             new_q, new_u = curves(i)
             self.play(
@@ -387,7 +420,6 @@ class ConstraintsBounds(Scene):
                 (0, ")", C_BOUND),
                 (0, 'u_bounds["tau"][1, :] = 0   # rotation passive', GRAY_B),
             ],
-            caption="Bioptim code: bound on the control",
         )
         self.play(FadeIn(panel))
         lim_lines = [panel[1][2], panel[1][3]]
@@ -416,15 +448,18 @@ class ConstraintsBounds(Scene):
         def readout(i):
             u = float(u_maxs[i])
             peak = float(np.abs(d[f"u{i}_p0_tau"][TRANS]).max())
-            active = "  (bound active)" if abs(peak - u) < 0.05 * u else ""
+            if abs(peak - u) < 0.05 * u:
+                first = f"|τ| ≤ {u:g} N  ·  peak |τ| = {peak:.1f} N (bound active)"
+            else:
+                first = f"|τ| ≤ {u:g} N  ·  peak |τ| = {peak:.1f} N"
             return Text(
-                f"|τ| ≤ {u:g} N   ·   peak |τ| = {peak:.1f} N{active}\ncost ∫ τ² dt = {float(d[f'u{i}_cost']):.1f}   ·   "
-                f"IPOPT {int(d[f'u{i}_iterations'])} it.\n"
-                f"max |Δθ| = {dtheta(i):.2f} rad  (vs unconstrained)",
+                f"{first}\ncost ∫ τ² dt = {float(d[f'u{i}_cost']):.1f}\n"
+                + ipopt_line(int(d[f"u{i}_iterations"]), bool(d[f"u{i}_converged"]))
+                + f"\nmax |Δθ| = {dtheta(i):.2f} rad (vs unconstrained)",
                 font_size=19,
                 color=GRAY_A,
                 line_spacing=0.9,
-            ).move_to([CODE_X, -1.0, 0], aligned_edge=LEFT)
+            ).move_to([CODE_X, -1.15, 0], aligned_edge=LEFT)
 
         info = readout(0)
         self.play(
@@ -460,20 +495,19 @@ class ConstraintsBounds(Scene):
                 anims.append(FadeOut(cap))
             self.play(*anims, run_time=2.4)
             self.wait(0.8)
-        note = Text(
-            "Tighter bound → higher cost: the shaded region is forbidden.\n"
-            "The passive angle θ adapts slightly: the actuated coordinate\n"
-            "absorbs the bound and the rotation follows through the dynamics.",
-            font_size=19,
-            color=YELLOW_C,
+        note = say(
+            "Tighter bound → higher cost: the shaded region is forbidden. The passive angle θ adapts slightly: "
+            "the actuated coordinate absorbs the bound and the rotation follows through the dynamics.",
+            18,
+            chars=52,
         )
-        place(note, CODE_X, -2.4)
+        place(note, CODE_X, -2.75)
         self.play(FadeIn(note))
         self.wait(2)
 
         # ------------------------------------------------------------ beat 2: a bound on a state (the cart position)
         new_sub = Text(
-            "same swing-up, now a bound on a state (x_bounds): the sideways position",
+            "same swing-up, now a bound on a state: the sideways position",
             font_size=22,
             color=GRAY_B,
         ).move_to(title[1])
@@ -525,13 +559,13 @@ class ConstraintsBounds(Scene):
                 (0, 'x_bounds["q"] = bio_model.bounds_from_ranges("q")', WHITE),
                 (0, 'x_bounds["q"][:, 0] = 0   # start', GRAY_B),
                 (0, 'x_bounds["q"][1, -1] = 3.14   # y_final stays free', GRAY_B),
+                (0, "# bound on a state: all the nodes after the first", GRAY_B),
                 (0, 'x_bounds["q"].min[0, 1:] = -0.9', C_BOUND),
                 (0, 'x_bounds["q"].max[0, 1:] = +0.9', C_BOUND),
                 (0, "x_init = <previous solution>   # warm start", GRAY_B),
             ],
-            caption="Bioptim code: bound on a state (all nodes after the first)",
         )
-        lim_lines = [panel2[1][4], panel2[1][5]]
+        lim_lines = [panel2[1][5], panel2[1][6]]
 
         def y_bound_mobs(lim):
             g = VGroup()
@@ -545,20 +579,20 @@ class ConstraintsBounds(Scene):
             qd = d[f"{tag}_p0_qdot"]
             head = "no bound on y (|τ| ≤ 100 N is inactive)" if i == 0 else f"|y| ≤ {limits[i - 1]:g} m"
             body = (
-                f"{head}\npeak |dy/dt| = {np.abs(qd[TRANS]).max():.1f} m/s  ·  peak |dθ/dt| = {np.abs(qd[ROT]).max():.1f} rad/s\n"
+                f"{head}\npeak |dy/dt| = {np.abs(qd[TRANS]).max():.1f} m/s\npeak |dθ/dt| = {np.abs(qd[ROT]).max():.1f} rad/s\n"
                 f"peak |τ| = {np.abs(d[f'{tag}_p0_tau'][TRANS]).max():.0f} N  ·  cost ∫ τ² dt = {float(d[f'{tag}_cost']):.1f}\n"
-                f"IPOPT {int(d[f'{tag}_iterations'])} it., {d[f'{tag}_exit']}"
+                + ipopt_line(int(d[f"{tag}_iterations"]), bool(d[f"{tag}_converged"]))
             )
-            return place(Text(body, font_size=19, color=GRAY_A, line_spacing=0.9), CODE_X, -1.5)
+            return place(Text(body, font_size=19, color=GRAY_A, line_spacing=0.9), CODE_X, -1.6)
 
         def comment(i):
             texts = [
                 f"Free solution: y spans {d['u0_p0_q'][TRANS].min():.2f} to {d['u0_p0_q'][TRANS].max():.2f} m.",
                 "|y| ≤ 0.9 m is barely active: almost the same motion.",
-                "|y| ≤ 0.7 m: y rests on the bound (dy/dt ≈ 0),\nthe swing between the bounds is faster.",
-                "|y| ≤ 0.5 m: dy/dt ≈ 0 while y sits on a bound, the fast\nswing peaks higher and τ reaches its 100 N bound.",
+                "|y| ≤ 0.7 m: y rests on the bound (dy/dt ≈ 0), the swing between the bounds is faster.",
+                "|y| ≤ 0.5 m: dy/dt ≈ 0 while y sits on a bound, the fast swing peaks higher and τ reaches its 100 N bound.",
             ]
-            return place(Text(texts[i], font_size=19, color=YELLOW_C), CODE_X, -2.7)
+            return place(say(texts[i], 18, chars=52), CODE_X, -3.0)
 
         info = readout(0)
         note = comment(0)
@@ -583,16 +617,16 @@ class ConstraintsBounds(Scene):
                 run_time=2.6,
             )
             self.wait(1.2)
-        end = Text(
-            "Continuation: each solve starts from the previous one. |y| ≤ 0.4 m: IPOPT reports "
-            f"{d['cart_tight_exit']}\n(|τ| ≤ 100 N, T = 1 s: out of reach). "
-            "Bounds act on decision variables; ConstraintFcn handles general path constraints.",
-            font_size=17,
-            color=YELLOW_C,
-            line_spacing=0.9,
+        tight_exit = str(d["cart_tight_exit"]).replace("_", " ").lower()
+        end = footer(
+            f"Continuation: each solve starts from the previous one. |y| ≤ 0.4 m: IPOPT reports {tight_exit} "
+            "(out of reach for |τ| ≤ 100 N, T = 1 s).",
+            size=16,
         )
-        fit(end, 13).to_edge(DOWN, buff=0.12)
         self.play(FadeIn(end))
+        self.wait(3)
+        end2 = footer("Bounds act on decision variables; ConstraintFcn handles general path constraints.", size=16)
+        self.play(Transform(end, end2))
         self.wait(3)
 
 
@@ -647,6 +681,7 @@ class MultiphaseTransitions(Scene):
 
         panel = code_panel(
             [
+                (0, "# one model, dynamics and objective per phase", GRAY_B),
                 (0, "n_shooting = (12, 18)", WHITE),
                 (0, "phase_time = (0.5, 1.0)", WHITE),
                 (0, "phase_transitions = PhaseTransitionList()", C_PH1),
@@ -655,7 +690,6 @@ class MultiphaseTransitions(Scene):
                 (1, "phase_pre_idx=0)", C_PH1),
                 (0, "# x, q̇ at the end of phase 0 == start of phase 1", GRAY_B),
             ],
-            caption="Bioptim code (one model, dynamics, objective per phase)",
         )
         self.play(FadeIn(panel))
         cont_q, cont_w = curves("continuous")
@@ -663,12 +697,13 @@ class MultiphaseTransitions(Scene):
         info = Text(
             f"CONTINUOUS: phase 1 starts exactly where phase 0 ended\n"
             f"ω at the junction = {d['continuous_p0_qdot'][ROT, -1]:.2f} rad/s on both sides\n"
-            f"cost = {float(d['continuous_cost']):.1f}, IPOPT {int(d['continuous_iterations'])} it.",
+            f"cost = {float(d['continuous_cost']):.1f}\n"
+            + ipopt_line(int(d["continuous_iterations"]), bool(d["continuous_converged"])),
             font_size=18,
             color=GRAY_A,
             line_spacing=0.9,
         )
-        place(info, CODE_X, -1.7)
+        place(info, CODE_X, -1.95)
         self.play(FadeIn(info))
         self.wait(2)
 
@@ -677,21 +712,22 @@ class MultiphaseTransitions(Scene):
             code("PhaseTransitionFcn.DISCONTINUOUS,", 19, C_PH1),
             code("# no link: phase 1 restarts at rest (bounds)", 19, GRAY_B),
         ]
-        old_a, old_b = panel[1][4], panel[1][6]
+        old_a, old_b = panel[1][5], panel[1][7]
         new_lines[0].move_to(old_a, aligned_edge=LEFT)
         new_lines[1].scale_to_fit_width(min(new_lines[1].width, CODE_W)).move_to(old_b, aligned_edge=LEFT)
         disc_q, disc_w = curves("discontinuous")
         ang_v = "ω"
         info2 = Text(
             "DISCONTINUOUS: the states are not linked, both jump\n"
-            f"y {d['discontinuous_p0_q'][TRANS, -1]:.2f} → {d['discontinuous_p1_q'][TRANS, 0]:.2f} m,   "
+            f"y {d['discontinuous_p0_q'][TRANS, -1]:.2f} → {d['discontinuous_p1_q'][TRANS, 0]:.2f} m\n"
             f"{ang_v} {d['discontinuous_p0_qdot'][ROT, -1]:.2f} → {d['discontinuous_p1_qdot'][ROT, 0]:.2f} rad/s\n"
-            f"cost = {float(d['discontinuous_cost']):.1f}, IPOPT {int(d['discontinuous_iterations'])} it.",
+            f"cost = {float(d['discontinuous_cost']):.1f}\n"
+            + ipopt_line(int(d["discontinuous_iterations"]), bool(d["discontinuous_converged"])),
             font_size=18,
             color=GRAY_A,
             line_spacing=0.9,
         )
-        place(info2, CODE_X, -1.7)
+        place(info2, CODE_X, -1.95)
         self.play(
             Transform(cont_q, disc_q),
             Transform(cont_w, disc_w),
@@ -710,12 +746,9 @@ class MultiphaseTransitions(Scene):
         )
         jump_lbl = Text("velocity jump", font_size=16, color=C_BOUND).next_to(ax_w.c2p(t_ph[0], -9), LEFT, buff=0.08)
         self.play(GrowArrow(jump), FadeIn(jump_lbl))
-        end = Text(
-            "PhaseTransitionFcn.IMPACT also exists (rigid contact): the velocity jump is then given by the impact model.",
-            font_size=17,
-            color=YELLOW_C,
+        end = footer(
+            "PhaseTransitionFcn.IMPACT also exists (rigid contact): the velocity jump is then given by the impact model."
         )
-        fit(end, 13).to_edge(DOWN, buff=0.2)
         self.play(FadeIn(end))
         self.wait(3.5)
 
@@ -762,7 +795,6 @@ class FreeTime(Scene):
                 (1, "bio_model, n_shooting=40, phase_time=1.0, ...", WHITE),
                 (0, 'u_bounds["tau"] = [-100]*nb_tau, [100]*nb_tau', C_BOUND),
             ],
-            caption="Bioptim code",
         )
         self.play(FadeIn(panel), Create(guess_bar), FadeIn(guess_lbl))
         self.wait(0.8)
@@ -779,10 +811,10 @@ class FreeTime(Scene):
 
         def duration_mob(i):
             te = t_end(i)
-            bar = Line(ax_q.c2p(0, 4.7), ax_q.c2p(te, 4.7), color=C_TIME, stroke_width=8)
+            bar = Line(ax_q.c2p(0, 4.5), ax_q.c2p(te, 4.5), color=C_TIME, stroke_width=8)
             ticks = VGroup(
-                Line(ax_q.c2p(0, 4.4), ax_q.c2p(0, 5.0), color=C_TIME, stroke_width=4),
-                Line(ax_q.c2p(te, 4.4), ax_q.c2p(te, 5.0), color=C_TIME, stroke_width=4),
+                Line(ax_q.c2p(0, 4.2), ax_q.c2p(0, 4.8), color=C_TIME, stroke_width=4),
+                Line(ax_q.c2p(te, 4.2), ax_q.c2p(te, 4.8), color=C_TIME, stroke_width=4),
             )
             return VGroup(bar, ticks)
 
@@ -791,9 +823,9 @@ class FreeTime(Scene):
 
         def readout(i):
             mob = Text(
-                f"|τ| ≤ {u_maxs[i]:g} N   →   optimal duration T* = {t_end(i):.3f} s\n"
-                f"IPOPT: {int(d[f'u{i}_iterations'])} iterations, {'converged' if d[f'u{i}_converged'] else 'acceptable level'}",
-                font_size=21,
+                f"|τ| ≤ {u_maxs[i]:g} N  →  optimal duration T* = {t_end(i):.3f} s\n"
+                + ipopt_line(int(d[f"u{i}_iterations"]), bool(d[f"u{i}_converged"])),
+                font_size=20,
                 color=WHITE,
                 line_spacing=0.9,
             )
@@ -805,12 +837,12 @@ class FreeTime(Scene):
         info = readout(0)
         dur_lbl = M(f"T* = {t_end(0):.3f} s", 20, C_TIME).next_to(dur[0], RIGHT, buff=0.12)
         self.play(Create(curve_q), Create(curve_u), Create(dur), Create(bnd), FadeIn(info), FadeIn(dur_lbl), run_time=2)
-        info_txt = Text(
-            "The torque sits on the bound most of the time (bang-bang like,\nwith some chattering): the fastest swing-up uses all the force.",
-            font_size=19,
-            color=YELLOW_C,
+        info_txt = say(
+            "The torque sits on the bound most of the time (bang-bang like, with some chattering): "
+            "the fastest swing-up uses all the force.",
+            18,
         )
-        place(info_txt, CODE_X, -2.7)
+        place(info_txt, CODE_X, -2.95)
         self.play(FadeIn(info_txt))
         self.wait(1.5)
         for i in range(1, len(u_maxs)):
@@ -827,17 +859,12 @@ class FreeTime(Scene):
                 Transform(info, readout(i)),
                 Transform(old, new),
                 Transform(
-                    dur_lbl, M(f"T* = {t_end(i):.3f} s", 20, C_TIME).next_to(ax_q.c2p(t_end(i), 4.7), RIGHT, buff=0.12)
+                    dur_lbl, M(f"T* = {t_end(i):.3f} s", 20, C_TIME).next_to(ax_q.c2p(t_end(i), 4.5), RIGHT, buff=0.12)
                 ),
                 run_time=2.5,
             )
             self.wait(1)
-        end = Text(
-            "Less force → longer T*. One extra decision variable, no fixed duration: this replaces a manual search on phase_time.",
-            font_size=17,
-            color=YELLOW_C,
-        )
-        fit(end, 13).to_edge(DOWN, buff=0.2)
+        end = footer("Less force → longer T*: the free duration replaces a manual search on phase_time.")
         self.play(FadeIn(end))
         self.wait(3)
 
@@ -876,7 +903,7 @@ class Parameters(Scene):
             cnt = fit(Text(count, font_size=16, color=GRAY_B), w + 0.1).next_to(rect, DOWN, buff=0.1)
             vec.add(VGroup(rect, lab, cnt))
             cx += w + 0.05
-        vec_cap = Text(f"decision vector of the OCP: {total} variables", font_size=19, color=GRAY_B)
+        vec_cap = Text(f"decision vector of the problem: {total} variables", font_size=19, color=GRAY_B)
         vec_cap.move_to([x0, ybox + 0.65, 0], aligned_edge=LEFT)
         note_dt = Text("dt = duration of the phase (pinned by its bounds here)", font_size=16, color=GRAY_B)
         note_dt.move_to([x0, ybox - 0.75, 0], aligned_edge=LEFT)
@@ -903,16 +930,12 @@ class Parameters(Scene):
         fan_txt.move_to([-2.6, y_box - 0.05, 0], aligned_edge=LEFT)
         self.play(Indicate(vec[3], color=C_PAR, scale_factor=1.25), FadeIn(dots), FadeIn(dots_cap), FadeIn(pbox))
         self.play(Create(fan, lag_ratio=0.02), FadeIn(fan_txt), run_time=2)
-        foot = Text(
-            "X and U have one value per node; a parameter is a single value for the whole trajectory.",
-            font_size=17,
-            color=YELLOW_C,
-        )
-        fit(foot, 13).to_edge(DOWN, buff=0.2)
+        foot = footer("X and U have one value per node; a parameter is a single value for the whole trajectory.")
         self.play(FadeIn(foot))
 
         panel1 = code_panel(
             [
+                (0, "# declare, bound and initialize the parameter", GRAY_B),
                 (0, "parameters = ParameterList(use_sx=True)", C_PAR),
                 (0, "parameters.add(", C_PAR),
                 (1, '"max_tau", no_model_change, size=1,', C_PAR),
@@ -924,7 +947,6 @@ class Parameters(Scene):
                 (0, "bio_model = TorqueBiorbdModel(", C_PAR),
                 (1, "MODEL, parameters=parameters)", C_PAR),
             ],
-            caption="Bioptim code: declare, bound and initialize the parameter",
         )
         self.play(FadeIn(panel1), run_time=1.5)
         self.wait(3.5)
@@ -960,6 +982,7 @@ class Parameters(Scene):
 
         panel2 = code_panel(
             [
+                (0, "# cost on the parameter, then |tau| <= max_tau", GRAY_B),
                 (0, "parameter_objectives.add(", C_PAR),
                 (1, "ObjectiveFcn.Parameter.MINIMIZE_PARAMETER,", C_PAR),
                 (1, 'key="max_tau", weight=0.001, quadratic=True)', C_PAR),
@@ -970,10 +993,9 @@ class Parameters(Scene):
                 (1, "node=Node.ALL_SHOOTING, min_bound=0, max_bound=np.inf)", WHITE),
                 (0, "# max_tau_lower: same with +  (max_tau + tau >= 0)", GRAY_B),
             ],
-            caption="Bioptim code: cost on the parameter and |τ| ≤ max_tau",
             top=2.35,
         )
-        weight_line = panel2[1][2]
+        weight_line = panel2[1][3]
 
         def curves(i):
             return (
@@ -986,22 +1008,22 @@ class Parameters(Scene):
             tau = d[f"w{i}_p0_tau"][TRANS]
             integral = float((tau**2).sum() * T / n)
             body = (
-                f"weight = {weights[i]:g}   →   max_tau* = {p:.2f} N   (peak |τ| = {np.abs(tau).max():.2f} N)\n"
-                f"∫ τ² dt = {integral:.1f}   ·   weight · max_tau² = {weights[i] * p * p:.1f}\n"
-                f"IPOPT: {int(d[f'w{i}_iterations'])} iterations, "
-                f"{'converged' if d[f'w{i}_converged'] else 'not converged'}"
+                f"weight = {weights[i]:g}  →  max_tau* = {p:.2f} N\n"
+                f"peak |τ| = {np.abs(tau).max():.2f} N\n"
+                f"∫ τ² dt = {integral:.1f}  ·  weight · max_tau² = {weights[i] * p * p:.1f}\n"
+                + ipopt_line(int(d[f"w{i}_iterations"]), bool(d[f"w{i}_converged"]))
             )
-            return place(Text(body, font_size=18, color=GRAY_A, line_spacing=0.9), CODE_X, -1.55)
+            return place(Text(body, font_size=18, color=GRAY_A, line_spacing=0.9), CODE_X, -1.75)
 
         comments = [
-            "Almost free peak: max_tau sits on the peak of the\nminimum-effort torque, the dashed lines touch the curve.",
-            "A higher price on the peak: the optimizer accepts a\nlarger ∫ τ² dt to get a lower max_tau.",
-            "Same idea, further: the torque is flattened\nagainst the two dashed lines.",
-            "Still one number: the lines stay horizontal because\nmax_tau does not depend on time.",
+            "Almost free peak: max_tau sits on the peak of the minimum-effort torque, the dashed lines touch the curve.",
+            "A higher price on the peak: the optimizer accepts a larger ∫ τ² dt to get a lower max_tau.",
+            "Same idea, further: the torque is flattened against the two dashed lines.",
+            "Still one number: the lines stay horizontal because max_tau does not depend on time.",
         ]
 
         def comment_mob(i):
-            return place(Text(comments[i], font_size=18, color=YELLOW_C), CODE_X, -2.75)
+            return place(say(comments[i], 18), CODE_X, -3.0)
 
         self.play(FadeIn(panel2))
         bnd = bound_mobs(p_of(0))
@@ -1026,12 +1048,9 @@ class Parameters(Scene):
                 run_time=2.4,
             )
             self.wait(1.0)
-        end = Text(
-            "Each solve starts from the previous solution (continuation): the problem is non-convex, see FEATURES.md.",
-            font_size=17,
-            color=YELLOW_C,
+        end = footer(
+            "Each solve starts from the previous solution (continuation): the problem is non-convex, see FEATURES.md."
         )
-        fit(end, 13).to_edge(DOWN, buff=0.2)
         self.play(FadeIn(end))
         self.wait(3)
 
@@ -1068,7 +1087,7 @@ class Impact(Scene):
         floor = Line(ax_s.c2p(0, 0), ax_s.c2p(3.1, 0), color=GRAY_A, stroke_width=5)
         ground = band(ax_s, 0, 3.1, z_lo, 0, GRAY_D, 0.35)
         decos = VGroup(
-            axis_label("side view (x, z)  -  sketch, the two scales differ", ax_s, GRAY_B),
+            axis_label("side view (x, z): sketch, the two scales differ", ax_s, GRAY_B),
             axis_label("velocity (m/s)", ax_v, GRAY_B),
             time_label(ax_v),
             x_ticks(ax_v, [0, 0.5, 1.0, 1.5], "{:.1f}"),
@@ -1090,6 +1109,7 @@ class Impact(Scene):
 
         panel = code_panel(
             [
+                (0, "# phase 0: flight, phase 1: contact", GRAY_B),
                 (0, "# point_floor.bioMod: contact Mass_contact, axis z", GRAY_B),
                 (0, "models = (", WHITE),
                 (1, "TorqueBiorbdModel(MODEL_IMPACT),", WHITE),
@@ -1099,7 +1119,6 @@ class Impact(Scene):
                 (0, "phase_transitions.add(", C_BOUND),
                 (1, "PhaseTransitionFcn.IMPACT, phase_pre_idx=0)", C_BOUND),
             ],
-            caption="Bioptim code (phase 0: flight, phase 1: contact)",
         )
         rule = M(
             "IMPACT constraint at the transition:\nq<sub>after</sub> = q<sub>before</sub>\n"
@@ -1107,7 +1126,7 @@ class Impact(Scene):
             17,
             YELLOW_C,
         )
-        place(rule, CODE_X, -1.4)
+        place(rule, CODE_X, -1.65)
         self.play(FadeIn(panel), FadeIn(rule), run_time=1.2)
 
         # ------------------------------------------------ animate the real trajectory
@@ -1187,14 +1206,14 @@ class Impact(Scene):
         post_lbl.shift(UP * 0.3)
         self.play(GrowArrow(jump), FadeIn(jump_lbl), FadeIn(pre_lbl), FadeIn(post_lbl))
         info = M(
-            f"IMPACT solve: IPOPT {int(d['impact_iterations'])} iterations, converged\n"
-            f"before: v<sub>x</sub> = {vx_pre:.2f}, v<sub>z</sub> = {vz_pre:.2f} m/s\n"
-            f"after:  v<sub>x</sub> = {vx_post:.2f}, v<sub>z</sub> = {abs(vz_post):.2f} m/s\n"
-            f"lost energy ½ m v<sub>z</sub>² = {energy_lost:.2f} J   (m = 1 kg)",
+            ipopt_line(int(d["impact_iterations"]), bool(d["impact_converged"]))
+            + f"\nbefore: v<sub>x</sub> = {vx_pre:.2f}, v<sub>z</sub> = {vz_pre:.2f} m/s\n"
+            f"after: v<sub>x</sub> = {vx_post:.2f}, v<sub>z</sub> = {abs(vz_post):.2f} m/s\n"
+            f"lost energy ½ m v<sub>z</sub>² = {energy_lost:.2f} J (m = 1 kg)",
             18,
             GRAY_A,
         )
-        place(info, CODE_X, -2.95)
+        place(info, CODE_X, -2.75)
         self.play(FadeIn(info))
         self.wait(1.5)
         self.play(tr.animate.set_value(T_total), run_time=3.2, rate_func=linear)
@@ -1210,7 +1229,7 @@ class Impact(Scene):
             num_dashes=60,
         )
         new_line = code("PhaseTransitionFcn.CONTINUOUS, phase_pre_idx=0)", 19, C_BOUND)
-        old_line = panel[1][7]
+        old_line = panel[1][8]
         # same scale as the (shrunk) code panel
         new_line.scale(old_line.width / code("PhaseTransitionFcn.IMPACT, phase_pre_idx=0)", 19).width)
         new_line.move_to(old_line, aligned_edge=LEFT)
@@ -1218,14 +1237,14 @@ class Impact(Scene):
         req_lbl = M(f"CONTINUOUS would keep v<sub>z</sub> = {vz_pre:.2f}", 17, C_BOUND).next_to(req, UP, buff=0.05)
         req_lbl.align_to(req, RIGHT)
         new_info = M(
-            f"CONTINUOUS: IPOPT {str(d['continuous_exit']).replace('_', ' ')}\n"
-            f"({int(d['continuous_iterations'])} iterations, status {int(not d['continuous_converged'])}).\n"
+            f"CONTINUOUS: IPOPT reports {str(d['continuous_exit']).replace('_', ' ').lower()}\n"
+            f"after {int(d['continuous_iterations'])} iterations.\n"
             f"v<sub>z</sub> cannot drop to 0, the contact keeps z̈ = 0\n"
             f"and the mass would sink through the floor.",
             18,
             C_BOUND,
         )
-        place(new_info, CODE_X, -2.7)
+        place(new_info, CODE_X, -2.75)
         note = fit(Text("red dashes: last IPOPT iterate, NOT a solution", font_size=16, color=C_BOUND), 4.2)
         note.move_to(ax_s.c2p(3.1, 1.0), aligned_edge=RIGHT)
         self.play(
@@ -1239,11 +1258,8 @@ class Impact(Scene):
             run_time=1.2,
         )
         self.play(Create(bad), Create(req), FadeIn(req_lbl), FadeIn(note), run_time=2.5)
-        end = Text(
-            "IMPACT: inelastic, frictionless impact on the contact axes of the model; the floor is z = 0 by construction.",
-            font_size=17,
-            color=YELLOW_C,
+        end = footer(
+            "IMPACT: inelastic, frictionless impact on the contact axes of the model; the floor is z = 0 by construction."
         )
-        fit(end, 13).to_edge(DOWN, buff=0.2)
         self.play(FadeIn(end))
         self.wait(3.5)

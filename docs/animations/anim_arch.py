@@ -126,16 +126,16 @@ class ArchitecturePath(Scene):
 
         # ---------------------------------------------------------------- beat 2: same path, real numbers
         tags = [
-            f"pendulum, N = {N}, T = 1 s",
-            f"n_phases = {n_ph}",
-            f"len(ocp.nlp) = {n_ph} · nx = {nx}, nu = {nu}",
-            "states q, qdot · controls tau",
-            f"1 Lagrange objective, {n_g} continuity",
-            f"vector {nv} = {n_t} + {n_x} + {n_u}  (t + X + U)",
-            f"IPOPT status {int(d['status'])} · {n_g} constraints",
-            f"cost = {float(d['cost']):.2f}",
+            f"pendulum, N = {N} intervals, T = 1 s",
+            f"number of phases: {n_ph}",
+            f"one nonlinear program per phase\n{nx} states, {nu} controls",
+            "states: q and qdot, control: tau",
+            f"1 Lagrange objective, {n_g} continuity constraints",
+            f"decision variables: {nv}\n= {n_t} time + {n_x} states + {n_u} controls",
+            f"IPOPT solver status {int(d['status'])}, {n_g} constraints",
+            f"final cost {float(d['cost']):.2f}",
         ]
-        cap2 = Text("the same path, real pendulum OCP", font_size=19, color=GRAY_B).move_to(cap, aligned_edge=LEFT)
+        cap2 = Text("the same path, with real numbers", font_size=19, color=GRAY_B).move_to(cap, aligned_edge=LEFT)
         self.play(FadeOut(code_lines), FadeOut(cap), FadeIn(cap2), run_time=0.4)
         for i, tag in enumerate(tags):
             t = Text(tag, font_size=17, color=WHITE)
@@ -147,4 +147,4 @@ class ArchitecturePath(Scene):
                 run_time=0.3,
             )
             self.play(boxes[i][0].animate.set_stroke(ROWS[i][3], 3), run_time=0.1)
-        self.wait(3.0)
+        self.wait(2.5)

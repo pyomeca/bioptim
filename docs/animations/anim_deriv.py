@@ -9,7 +9,20 @@ Scene: DerivativePenalty (about 20 s).  Render (from docs/animations):  manim re
 import numpy as np
 from manim import *
 
-from features_scenes import CODE_W, DATA_DIR, M, code, fit, make_axes, poly, scene_title, x_ticks, y_ticks, steps
+from features_scenes import (
+    CODE_W,
+    DATA_DIR,
+    M,
+    code,
+    fit,
+    make_axes,
+    poly,
+    scene_title,
+    steps,
+    time_label,
+    x_ticks,
+    y_ticks,
+)
 
 CODE_X0 = 0.15
 W = WHITE
@@ -51,17 +64,17 @@ class DerivativePenalty(Scene):
         ax1 = make_axes([-3.6, 1.05, 0], 6.0, 2.5, (0, horizon), (-40, 12))
         ax2 = make_axes([-3.6, -2.25, 0], 6.0, 1.75, (0, horizon), (0, CAP))
         lab1 = caption("torque (N)", 17).next_to(ax1.get_y_axis(), UP, buff=0.05).align_to(ax1.get_y_axis(), LEFT)
-        lab2 = caption("|dtau/dt| (N/s), from the nodes", 17)
+        lab2 = caption("torque rate |dτ/dt| (N/s)", 17)
         lab2.next_to(ax2.get_y_axis(), UP, buff=0.05).align_to(ax2.get_y_axis(), LEFT)
         ticks = VGroup(
             y_ticks(ax1, [-30, -15, 0, 10]),
             y_ticks(ax2, [0, 100, 200]),
             x_ticks(ax2, [0, 0.5, 1]),
         )
-        tlab = caption("t (s)", 15).next_to(ax2.c2p(horizon, 0), RIGHT, buff=0.15)
+        tlab = time_label(ax2)
         plain1 = poly(ax1, t, tau(0), C_PLAIN, 4)
         plain2 = steps(ax2, t, np.minimum(dtau(0), CAP), C_PLAIN, 4)
-        clip = caption(f"clipped: peak {d['w0_dtau_max']:.0f}", 15, C_PLAIN).move_to(ax2.c2p(0.5, CAP * 0.9))
+        clip = caption(f"clipped, peak {d['w0_dtau_max']:.0f} N/s", 15, C_PLAIN).move_to(ax2.c2p(0.5, CAP * 0.9))
         clip.shift(RIGHT * 0.9)
         self.play(FadeIn(VGroup(ax1, ax2, lab1, lab2, ticks, tlab)), run_time=0.5)
 
@@ -69,16 +82,18 @@ class DerivativePenalty(Scene):
         cap1 = caption("Bioptim code")
         code1 = code_block(
             [
-                (0, 'objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")', W),
-                (0, 'objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau",', C_W[1]),
-                (1, "derivative=True, weight=w)", C_W[1]),
-                (0, "OptimalControlProgram(..., control_type=ControlType.LINEAR_CONTINUOUS)", GRAY_A),
+                (0, "objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,", W),
+                (1, 'key="tau")', W),
+                (0, "objectives.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,", C_W[1]),
+                (1, 'key="tau", derivative=True, weight=w)', C_W[1]),
+                (0, "OptimalControlProgram(...,", GRAY_A),
+                (1, "control_type=ControlType.LINEAR_CONTINUOUS)", GRAY_A),
             ]
         )
         panel = VGroup(cap1, code1).arrange(DOWN, aligned_edge=LEFT, buff=0.16)
         fit(panel, CODE_W)
         panel.move_to([CODE_X0, 2.3, 0], aligned_edge=UL)
-        new_line = VGroup(code1[1], code1[2])
+        new_line = VGroup(code1[2], code1[3])
         new_line.set_opacity(0)
         self.play(FadeIn(panel), Create(plain1), run_time=1.2)
         self.play(Create(plain2), FadeIn(clip), run_time=1.0)
@@ -92,7 +107,7 @@ class DerivativePenalty(Scene):
             assert int(d[f"w{w}_status"]) == 0
             return code(f"{w:<4d} {r[0]:8.1f} {r[1]:13.0f} {r[2]:8d} it", 16, color)
 
-        table_top = [CODE_X0, 0.6, 0]
+        table_top = [CODE_X0, 0.2, 0]
         header.move_to(table_top, aligned_edge=UL)
         first = row(0, C_PLAIN).next_to(header, DOWN, buff=0.14, aligned_edge=LEFT)
         rows.append(first)
@@ -130,11 +145,17 @@ class DerivativePenalty(Scene):
         c0, c100 = float(d["const_w0_cost"]), float(d["const_w100_cost"])
         assert abs(float(np.abs(d["const_w0_tau"] - d["const_w100_tau"]).max())) == 0.0
         note = VGroup(
-            M("<b>with the default ControlType.CONSTANT</b>", 20, W),
-            M(f"the derivative term is exactly 0: cost {c0:.4f} with w = 0 and {c100:.4f} with w = 100", 18, GRAY_B),
-            M("(penalty_option.py: u_end = u_start), so use LINEAR_CONTINUOUS", 18, GRAY_B),
+            M("<b>With the default ControlType.CONSTANT</b>", 20, W),
+            M(
+                "the derivative term is exactly 0 (u_end = u_start),\n"
+                f"so the cost does not depend on w:\n"
+                f"{c0:.4f} with w = 0, {c100:.4f} with w = 100.\n"
+                "Use LINEAR_CONTINUOUS to make the penalty work.",
+                18,
+                GRAY_B,
+            ),
         ).arrange(DOWN, aligned_edge=LEFT, buff=0.1)
         fit(note, CODE_W)
-        note.next_to(rows[-1], DOWN, buff=0.35, aligned_edge=LEFT)
+        note.next_to(rows[-1], DOWN, buff=0.3, aligned_edge=LEFT)
         self.play(FadeIn(note), run_time=0.6)
-        self.wait(2.0)
+        self.wait(2.5)

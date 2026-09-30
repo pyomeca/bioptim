@@ -9,7 +9,7 @@ Scene: MultiBody (about 18 s).  Render (from docs/animations):  manim render -qh
 import numpy as np
 from manim import *
 
-from features_scenes import CODE_W, DATA_DIR, M, code, fit, make_axes, scene_title, x_ticks
+from features_scenes import CODE_W, DATA_DIR, M, code, fit, make_axes, scene_title, time_label, x_ticks
 
 C_A = BLUE_C
 C_B = ORANGE
@@ -55,7 +55,7 @@ class MultiBody(Scene):
             assert np.allclose(tp, d["markers"][k][2][1:], atol=1e-6)
 
         title = scene_title(
-            "MultiBiorbdModel: two bodies, one OCP", "each body keeps its own model; q, qdot and tau are stacked"
+            "MultiBiorbdModel: two bodies, one problem", "each body keeps its own model; q, qdot and tau are stacked"
         )
         self.play(FadeIn(title), run_time=0.4)
 
@@ -161,7 +161,7 @@ class MultiBody(Scene):
         self.wait(1.0)
 
         # ---------------------------------------------------------------- coupling: constraint + gap plot
-        cap4 = caption("coupling between the two models (last node)")
+        cap4 = caption("Bioptim code: coupling between the two models (last node)")
         code4 = code_block(
             [
                 (0, "constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS,", W),
@@ -181,7 +181,7 @@ class MultiBody(Scene):
         yt = VGroup(
             *[Text(f"{v:g}", font_size=16, color=GRAY_B).next_to(ax.c2p(0, v), LEFT, buff=0.08) for v in (0, 1)]
         )
-        tlab = Text("t (s)", font_size=16, color=GRAY_B).move_to(ax.c2p(T, 0) + np.array([0.5, -0.24, 0]))
+        tlab = time_label(ax)
         self.play(FadeIn(VGroup(ax, lab, xt, yt, tlab)), FadeIn(trace_a), FadeIn(trace_b), run_time=0.5)
 
         gap_f = np.array([np.linalg.norm(k_[0] - k_[2]) for k_ in kin])
@@ -200,7 +200,7 @@ class MultiBody(Scene):
             M(f"IPOPT status {int(d['status'])} (optimal), {int(d['iterations'])} iterations", 19, GRAY_B),
             M("the dynamics are block-diagonal: only the constraint couples A and B", 19, GRAY_B),
         ).arrange(DOWN, aligned_edge=LEFT, buff=0.14)
-        fit(msg, CODE_W)
+        fit(msg, 5.9)
         msg.move_to([CODE_X0, -1.85, 0], aligned_edge=UL)
         self.play(FadeIn(msg), run_time=0.6)
         self.wait(2.2)

@@ -21,6 +21,8 @@ from features_scenes import (  # helpers only (also sets the default fonts)
     poly,
     scene_title,
     time_label,
+    x_ticks,
+    y_ticks,
 )
 
 C_U = BLUE_C  # independent coordinates
@@ -62,7 +64,7 @@ class HolonomicDoublePendulum(Scene):
             (1, "independent_joint_index=[0, 3],", C_U),
             (1, "dependent_joint_index=[1, 2])", C_V),
         ]
-        panel = code_panel(code_lines, 19, top=2.35)
+        panel = code_panel(code_lines, 19, top=2.3, caption="Bioptim code")
         self.play(FadeIn(row), run_time=0.5)
         self.play(FadeIn(u_lab), FadeIn(v_lab), run_time=0.6)
         self.play(FadeIn(cons), Create(cons_box), run_time=0.5)
@@ -113,11 +115,16 @@ class HolonomicDoublePendulum(Scene):
         # residual plot (right)
         ax = make_axes([3.2, 1.0, 0], 5.0, 2.4, [0, T], [-1.0, 1.0], 0.2, 1)
         zero = DashedLine(ax.c2p(0, 0), ax.c2p(T, 0), color=GRAY_B, stroke_width=2)
-        ylab = axis_label("‖marker₁ − marker₃‖  (m)", ax, C_RES)
-        tl = Text("t (0 to %.1f s)" % T, font_size=16, color=GRAY_B).next_to(ax, DOWN, buff=0.15).align_to(ax, LEFT)
-        rng = Text(f"axis ±1e−9 m", font_size=16, color=GRAY_B).next_to(ax, DOWN, buff=0.15).align_to(ax, RIGHT)
+        ylab = axis_label("‖marker₁ − marker₃‖ (m)", ax, C_RES)
+        tl = VGroup(
+            time_label(ax),
+            x_ticks(ax, [0, round(T, 2)]),
+            y_ticks(ax, [1], "{:g}e−9"),
+            y_ticks(ax, [0], "{:g}"),
+        )
         norm = np.linalg.norm(res, axis=1)
         curve = poly(ax, t, np.clip(norm / 1e-9, 0, 1), C_RES, 6)  # scaled: axis top = 1e-9
+        cap_b = Text("Bioptim code", font_size=19, color=GRAY_B)
         code_res = code("q, qdot, qddot, lambdas =", 18, WHITE)
         code_res2 = code("  bio_model.compute_all_states_from_u_iterative(", 18, C_V)
         code_res3 = code("      q_u, qdot_u, tau)", 18, C_U)
@@ -127,8 +134,9 @@ class HolonomicDoublePendulum(Scene):
             .move_to([0.3, -2.25, 0], aligned_edge=LEFT)
         )
         fit(cb, 6.6)
-        cb.move_to([0.3, -2.3, 0], aligned_edge=LEFT)
-        self.play(FadeIn(ax), FadeIn(zero), FadeIn(ylab), FadeIn(tl), FadeIn(rng), FadeIn(cb), run_time=0.5)
+        cb.move_to([0.3, -2.7, 0], aligned_edge=LEFT)
+        cap_b.move_to([0.3, -1.85, 0], aligned_edge=LEFT)
+        self.play(FadeIn(ax), FadeIn(zero), FadeIn(ylab), FadeIn(tl), FadeIn(cap_b), FadeIn(cb), run_time=0.5)
         mover = always_redraw(
             lambda: (
                 poly(ax, t[: idx() + 1], np.clip(norm[: idx() + 1] / 1e-9, 0, 1), C_RES, 6) if idx() > 0 else VMobject()
@@ -136,7 +144,7 @@ class HolonomicDoublePendulum(Scene):
         )
         self.add(mover)
         self.play(tr.animate.set_value(T), run_time=6, rate_func=linear)
-        verdict = M(f"max ‖residual‖ = {max_res:.0e} m  (IPOPT status: optimal)", 22, C_RES).move_to([3.6, -1.35, 0])
+        verdict = M(f"max ‖residual‖ = {max_res:.0e} m  (IPOPT status: optimal)", 22, C_RES).move_to([3.6, -0.85, 0])
         fit(verdict, 6.0)
         self.play(FadeIn(verdict), run_time=0.5)
-        self.wait(2.0)
+        self.wait(2.5)

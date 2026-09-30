@@ -53,8 +53,8 @@ class UnilateralContact(Scene):
         ax_f = make_axes([-2.35, 0.85, 0], 4.3, 3.3, (0, T), (-700, 2500), y_step=1000)
         ax_q = make_axes([-2.35, -2.55, 0], 4.3, 1.3, (0, T), (0.3, 1.0))
         decos = VGroup(
-            axis_label("F (N)", ax_f),
-            axis_label("leg (m)", ax_q),
+            axis_label("contact force F (N)", ax_f),
+            axis_label("leg length (m)", ax_q),
             time_label(ax_q),
             x_ticks(ax_q, [0, 0.2, 0.4], "{:.1f}"),
             y_ticks(ax_f, [0, 1000, 2000]),
@@ -69,7 +69,9 @@ class UnilateralContact(Scene):
         ).move_to((ax_f.c2p(0, 0) + ax_f.c2p(T, -700)) / 2)
         neg_txt = Text("F < 0: floor pulls", font_size=15, color=RED_B).move_to(ax_f.c2p(0.14, -420))
         weight_line = DashedLine(ax_f.c2p(0, weight), ax_f.c2p(T, weight), color=GRAY_C, stroke_width=2)
-        weight_txt = Text(f"weight {weight:.0f} N", font_size=15, color=GRAY_B).move_to(ax_f.c2p(0.32, weight + 210))
+        weight_txt = Text(f"body weight {weight:.0f} N", font_size=15, color=GRAY_B).move_to(
+            ax_f.c2p(0.32, weight + 210)
+        )
 
         # ---- the leg, drawn from the current time ----------------------------------------------------------------
         clock = ValueTracker(0.0)
@@ -239,4 +241,4 @@ class UnilateralContact(Scene):
             -2.55,
         )
         self.play(FadeIn(res2), run_time=0.5)
-        self.wait(2.2)
+        self.wait(2.5)

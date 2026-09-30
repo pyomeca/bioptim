@@ -9,7 +9,7 @@ Scenes: FloatingReorient (about 18 s).  Render (from docs/animations):  manim re
 import numpy as np
 from manim import *
 
-from features_scenes import CODE_W, DATA_DIR, M, code, fit, make_axes, poly, scene_title, x_ticks, y_ticks
+from features_scenes import CODE_W, DATA_DIR, M, code, fit, make_axes, poly, scene_title, time_label, x_ticks, y_ticks
 
 CODE_X0 = 0.15
 C_ROOT = YELLOW_C
@@ -84,8 +84,8 @@ class FloatingReorient(Scene):
         theta_end = float(q[2, -1])
 
         title = scene_title(
-            "Free floating base: reorientation without torque on the root",
-            f"zero gravity, only the arms are actuated, N = {N}, T = {T:g} s",
+            "Free floating base: reorientation",
+            f"no root torque, zero gravity, actuated arms only, N = {N}, T = {T:g} s",
         )
         self.play(FadeIn(title), run_time=0.4)
 
@@ -98,14 +98,14 @@ class FloatingReorient(Scene):
                 (0, "# controls: tau_joints only (no torque on the root)", GRAY_B),
             ]
         )
-        cap2 = caption("boundary conditions")
         code2 = code_block(
             [
+                (0, "# boundary conditions", GRAY_B),
                 (0, 'x_bounds["q_joints"][:, [0, -1]] = 0', W),
                 (0, 'x_bounds["q_roots"][2, -1] = 0.8', W),
             ]
         )
-        panel = VGroup(cap1, code1, cap2, code2).arrange(DOWN, aligned_edge=LEFT, buff=0.16)
+        panel = VGroup(cap1, code1, code2).arrange(DOWN, aligned_edge=LEFT, buff=0.16)
         panel[2].shift(DOWN * 0.15)
         fit(panel, CODE_W)
         panel.move_to([CODE_X0, 2.3, 0], aligned_edge=UL)
@@ -115,7 +115,7 @@ class FloatingReorient(Scene):
         ylab = caption("angles (rad)", 16).next_to(ax, UP, buff=0.05).align_to(ax, LEFT)
         yt = y_ticks(ax, [-1.5, 0, 1.5])
         xt = x_ticks(ax, [0, T])
-        xl = caption("t (s)", 16).move_to(ax.c2p(T, -1.6) + np.array([0.5, -0.24, 0]))
+        xl = time_label(ax)
         zero = DashedLine(ax.c2p(0, 0), ax.c2p(T, 0), color=GRAY_D, stroke_width=1.5)
         c_root = poly(ax, t, q[2], C_ROOT, 5)
         c_l = poly(ax, t, q[3], C_ARML, 3)
@@ -161,10 +161,14 @@ class FloatingReorient(Scene):
             run_time=0.5,
         )
         axm = make_axes([-3.7, -0.15, 0], 5.4, 2.2, [0, T], [-12, 12], y_step=12)
-        yl = caption("angular momentum about the CoM (kg m²/s)", 16).next_to(axm, UP, buff=0.05).align_to(axm, LEFT)
+        yl = (
+            caption("angular momentum about the centre of mass (kg m²/s)", 16)
+            .next_to(axm, UP, buff=0.05)
+            .align_to(axm, LEFT)
+        )
         ytm = y_ticks(axm, [-10, 0, 10])
         xtm = x_ticks(axm, [0, T])
-        xlm = caption("t (s)", 16).move_to(axm.c2p(T, -12) + np.array([0.5, -0.24, 0]))
+        xlm = time_label(axm)
         cLr = poly(axm, t, Lr, C_LROOT, 4)
         cLj = poly(axm, t, Lj, C_LJ, 4)
         cL = poly(axm, t, L, W, 5)
@@ -177,9 +181,10 @@ class FloatingReorient(Scene):
         lab_z = caption("same L, zoomed (tight axis)", 15).next_to(axt, UP, buff=0.04).align_to(axt, LEFT)
         cLz = poly(axt, t, L, W, 4)
 
-        cap3 = caption("Bioptim code (biorbd, about the centre of mass)")
+        cap3 = caption("Bioptim code")
         code3 = code_block(
             [
+                (0, "# biorbd, about the centre of mass", GRAY_B),
                 (0, "am = bio_model.angular_momentum()", W),
                 (0, "L = am(q, qdot, [])[0]", W),
                 (0, "L_root = am(q, [qdot_roots; 0], [])[0]", W),
@@ -197,10 +202,9 @@ class FloatingReorient(Scene):
             M("<b>L = L_root + L_joints</b>", 22, W),
             M(f"max |L_root| = {np.abs(Lr).max():.1f}    max |L_joints| = {np.abs(Lj).max():.1f}", 20, GRAY_A),
             M(f"max |L| = {np.abs(L).max():.1e}", 22, W),
-            M("the trunk counter-rotates exactly against the arms:", 19, GRAY_B),
-            M("angular momentum is conserved", 19, GRAY_B),
+            M("the trunk counter-rotates exactly against the arms:\nangular momentum is conserved", 19, GRAY_B),
         ).arrange(DOWN, aligned_edge=LEFT, buff=0.16)
         fit(msg, CODE_W)
         msg.move_to([CODE_X0, 0.0, 0], aligned_edge=UL)
         self.play(FadeIn(msg), run_time=0.6)
-        self.wait(2.2)
+        self.wait(2.5)

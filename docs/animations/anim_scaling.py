@@ -116,7 +116,7 @@ class Scaling(Scene):
                 for v in (0, 100, 200, 300, n_u)
             ],
         )
-        ylab = axis_label("IPOPT inf_pr (log)", ax)
+        ylab = axis_label("IPOPT inf_pr (log scale)", ax)
         xlab = Text("iteration", font_size=16, color=GRAY_B).next_to(ax.c2p(n_u, lo), DOWN, buff=0.4).shift(LEFT * 0.4)
         self.play(Create(ax), FadeIn(ticks2), FadeIn(ylab), FadeIn(xlab), run_time=0.5)
 
@@ -148,15 +148,16 @@ class Scaling(Scene):
         self.play(it.animate.set_value(n_u), run_time=5.0, rate_func=linear)
         dtau = abs(d["unscaled_tau"] - d["scaled_tau"]).max()
         note = place(
-            Text(
-                f"same problem, same optimum: cost {float(d['scaled_cost']):.1f} in both,\n"
-                f"max |Δτ| between the two solutions = {dtau:.0e} N\n"
-                f"{n_u} vs {n_s} iterations  ({n_u / n_s:.1f}× fewer)",
+            Paragraph(
+                f"Same problem, same optimum: cost {float(d['scaled_cost']):.1f} in both.",
+                f"Largest torque difference between the two solutions: {dtau:.0e} N.",
+                f"{n_u} vs {n_s} iterations  ({n_u / n_s:.1f}× fewer).",
                 font_size=19,
                 color=YELLOW_C,
+                line_spacing=0.9,
             ),
             CODE_X,
-            -3.05,
+            -3.0,
         )
         self.play(FadeIn(note), run_time=0.5)
-        self.wait(2.0)
+        self.wait(2.5)

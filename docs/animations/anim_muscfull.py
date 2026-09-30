@@ -26,6 +26,7 @@ from features_scenes import (  # noqa: E402  (read-only reuse of the helpers; al
     poly,
     scene_title,
     steps,
+    time_label,
     x_ticks,
     y_ticks,
 )
@@ -50,7 +51,8 @@ def legend_item(color, text):
 class MuscFullPaths(Scene):
     def construct(self):
         title = scene_title(
-            "Muscles or torques: the same reach", f"arm26, N = {N}, T = {T[-1]:.1f} s, at rest in A and in B"
+            "Muscles or torques: the same reach",
+            f"arm26 model, {N} nodes, duration {T[-1]:.1f} s, at rest in A and in B",
         )
         self.play(FadeIn(title), run_time=0.4)
 
@@ -60,7 +62,9 @@ class MuscFullPaths(Scene):
         h = w * (y1 - y0) / (x1 - x0)
         ax = make_axes([-3.7, -0.75, 0], w, h, [x0, x1], [y0, y1])
         box = SurroundingRectangle(ax, buff=0.0, color=GRAY_D, stroke_width=2)
-        lab = Text("hand (COM_hand) in the plane of the arm, m", font_size=18, color=GRAY_B).next_to(box, UP, buff=0.1)
+        lab = Text("hand position (COM_hand) in the plane of the arm (m)", font_size=18, color=GRAY_B).next_to(
+            box, UP, buff=0.1
+        )
         mus = D["mus_hand"][:, :2]
         tor = D["tor_hand"][:, :2]
         p_mus = poly(ax, mus[:, 0], mus[:, 1], C_MUS, 6)
@@ -88,7 +92,7 @@ class MuscFullPaths(Scene):
             ],
             size=17,
             top=2.3,
-            caption="Bioptim code (same OCP, only the model and the key change)",
+            caption="Bioptim code (same problem, only the model and the key change)",
         )
         self.play(FadeIn(VGroup(ax, box, lab, a_dot, b_dot, a_lab, b_lab, lg)), FadeIn(panel), run_time=0.7)
 
@@ -123,18 +127,18 @@ class MuscFullPaths(Scene):
 
         direct = float(np.linalg.norm(mus[-1] - mus[0]))
         st = (
-            f"IPOPT status {int(D['mus_status'])} ({int(D['mus_iters'])} it) / "
-            f"status {int(D['tor_status'])} ({int(D['tor_iters'])} it)"
+            f"IPOPT: muscles status {int(D['mus_status'])} ({int(D['mus_iters'])} iterations), "
+            f"torques status {int(D['tor_status'])} ({int(D['tor_iters'])} iterations)"
         )
         msg = VGroup(
             Text(f"path length  muscles {length(mus):.2f} m,  torques {length(tor):.2f} m", font_size=20),
             Text(f"straight line A-B: {direct:.2f} m; no hand-path cost, so both detour", font_size=18, color=GRAY_B),
             Text(st, font_size=18, color=GRAY_B),
         ).arrange(DOWN, aligned_edge=LEFT, buff=0.14)
-        fit(msg, CODE_W)
+        fit(msg, 5.9)
         msg.move_to([CODE_X, -0.9, 0], aligned_edge=UL)
         self.play(FadeIn(msg), run_time=0.5)
-        self.wait(1.6)
+        self.wait(2.5)
 
 
 class MuscFullActivations(Scene):
@@ -186,14 +190,14 @@ class MuscFullActivations(Scene):
 
         # ------------------------------------------------ joint torques (right)
         axes, curves = [], []
-        specs = [("shoulder torque, N m", 0, (-17, 11)), ("elbow torque, N m", 1, (-5, 9))]
+        specs = [("shoulder torque (N·m)", 0, (-17, 11)), ("elbow torque (N·m)", 1, (-5, 9))]
         for row, (name, j, (lo, hi)) in enumerate(specs):
-            cy = 0.55 - row * 2.3
-            ax = make_axes([2.4, cy, 0], 5.0, 1.55, [0, T[-1]], [lo, hi])
+            cy = 0.1 - row * 2.15
+            ax = make_axes([2.4, cy, 0], 5.0, 1.45, [0, T[-1]], [lo, hi])
             zero = Line(ax.c2p(0, 0), ax.c2p(T[-1], 0), color=GRAY_D, stroke_width=2)
             lab = axis_label(name, ax)
             yt = y_ticks(ax, [-15, 0, 10] if row == 0 else [0, 5])
-            xt = x_ticks(ax, [0, 0.4, 0.8]) if row == 1 else VGroup()
+            xt = VGroup(x_ticks(ax, [0, 0.4, 0.8]), time_label(ax)) if row == 1 else VGroup()
             c1 = steps(ax, T, D["mus_tau"][j], C_MUS, 4)
             c2 = steps(ax, T, D["tor_tau"][j], C_TOR, 4)
             cur = always_redraw(
@@ -204,20 +208,21 @@ class MuscFullActivations(Scene):
             axes.append(VGroup(ax, zero, lab, yt, xt, cur))
             curves.append((c1, c2))
         leg = VGroup(
-            Text("muscle-implied", font_size=17, color=C_MUS),
-            Text("tau of the torque-driven solve", font_size=17, color=C_TOR),
+            Text("muscle-implied torque", font_size=17, color=C_MUS),
+            Text("torque-driven solution", font_size=17, color=C_TOR),
         ).arrange(RIGHT, buff=0.35)
-        leg.move_to([2.4, -3.0, 0])
-        note = Text("the two trajectories differ (previous scene)", font_size=15, color=GRAY_B).move_to([2.4, -3.45, 0])
+        leg.move_to([2.4, -3.3, 0])
+        note = Text("the two trajectories differ (previous scene)", font_size=15, color=GRAY_B).move_to([2.4, -3.65, 0])
         code_lines = code_panel(
             [
                 (0, "muscle_joint_torque = bio_model.muscle_joint_torque()", C_MUS),
                 (0, "tau = muscle_joint_torque(act, q, qdot, [])", C_MUS),
             ],
             size=16,
-            top=3.0,
+            top=2.3,
+            caption="Bioptim code",
         )
-        code_lines.move_to([-0.2, 2.15, 0], aligned_edge=LEFT)
+        code_lines.move_to([-0.2, 2.3, 0], aligned_edge=UL)
         self.play(FadeIn(VGroup(floor, top_line, top_lab, names, cap, *axes, leg, note, code_lines)), run_time=0.6)
         self.add(bars_mob, clock)
         self.play(
@@ -240,7 +245,7 @@ class MuscFullActivations(Scene):
             ),
             Text("(co-contraction, partly biarticular muscles)", font_size=17, color=GRAY_B),
         ).arrange(DOWN, aligned_edge=LEFT, buff=0.1)
-        fit(readout, 6.4)
+        fit(readout, 5.8)
         readout.move_to([bx0 - 0.4, -3.1, 0], aligned_edge=LEFT)
         self.play(FadeIn(readout), run_time=0.5)
-        self.wait(1.8)
+        self.wait(2.5)

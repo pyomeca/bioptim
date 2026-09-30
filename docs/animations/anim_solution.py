@@ -88,20 +88,27 @@ class SolutionTour(Scene):
         # ------------------------------------------------------------ right panel: code
         cap = caption("Bioptim code")
         solve = code("sol = ocp.solve(Solver.IPOPT())", 17, W)
+
+        def merge_row(name, text):
+            key = code(name, 14, GRAY_A)
+            return VGroup(key, caption(text, 14, GRAY_A).next_to(key, RIGHT, buff=0.15))
+
         legend = VGroup(
-            caption("SolutionMerge (argument  to_merge=)", 15, GRAY_B),
-            code("KEYS    q, qdot stacked: 4 = 2 + 2", 14, GRAY_A),
-            code("NODES   nodes side by side", 14, GRAY_A),
-            code("PHASES  phases side by side", 14, GRAY_A),
-            code("ALL     the three together", 14, GRAY_A),
+            caption("SolutionMerge (argument to_merge=)", 15, GRAY_B),
+            merge_row("KEYS", "q and qdot stacked: 4 = 2 + 2"),
+            merge_row("NODES", "nodes side by side"),
+            merge_row("PHASES", "phases side by side"),
+            merge_row("ALL", "the three together"),
         ).arrange(DOWN, aligned_edge=LEFT, buff=0.08)
+        for row in legend[1:]:
+            row[1].align_to(legend[1][0], LEFT).shift(RIGHT * 1.0)
         head = VGroup(cap, solve, legend).arrange(DOWN, aligned_edge=LEFT, buff=0.14)
         fit(head, CODE_W)
-        head.move_to([CODE_X0, 2.6, 0], aligned_edge=UL)
+        head.move_to([CODE_X0, 2.65, 0], aligned_edge=UL)
         self.play(FadeIn(head), run_time=0.5)
 
         # ------------------------------------------------------------ the four rows
-        ys = [0.3, -0.55, -1.4, -2.25]
+        ys = [0.1, -0.7, -1.5, -2.3]
         n0, n1 = len(d["decision_time_p0"]), len(d["decision_time_p1"])
         s0, s1 = len(d["stepwise_time_p0"]), len(d["stepwise_time_p1"])
         rows = [
@@ -179,7 +186,8 @@ class SolutionTour(Scene):
                 code("sol.cost", 17, W),
                 code(f"-> {c:.2f}", 17, GRAY_A),
                 code("sol.detailed_cost", 17, W).shift(RIGHT * 0.5),
-                code(f"-> {dc0:.2f} (phase 0), {dc1:.2f} (phase 1)", 17, GRAY_A).shift(RIGHT * 0.5),
+                code(f"-> [{dc0:.2f}, {dc1:.2f}]", 17, GRAY_A).shift(RIGHT * 0.5),
+                caption("one value per phase", 15).shift(RIGHT * 0.5),
             ).arrange(RIGHT, buff=0.25),
             VGroup(
                 code("sol.print_cost()", 17, W),
@@ -190,4 +198,4 @@ class SolutionTour(Scene):
         fit(end, 13.2)
         end.move_to([-6.85, -3.42, 0], aligned_edge=LEFT)
         self.play(FadeIn(end), run_time=0.5)
-        self.wait(2.5)
+        self.wait(2.0)

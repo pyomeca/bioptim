@@ -48,7 +48,7 @@ class Mapping(Scene):
         ax_d = make_axes([-3.6, -2.5, 0], 5.6, 1.1, (0, T), (-10, 10), y_step=10)
         decos = VGroup(
             axis_label("τ (N·m)", ax),
-            axis_label("τ1 − τ2", ax_d),
+            axis_label("τ1 − τ2 (N·m)", ax_d),
             time_label(ax_d),
             x_ticks(ax_d, [0, 1, 2, 3], "{:g}"),
             y_ticks(ax, [-5, 0, 5]),
@@ -79,58 +79,65 @@ class Mapping(Scene):
             (1, "variable_mappings=None,", GRAY_B),
             (0, ")", WHITE),
         ]
-        panel = code_panel(code_lines, size=19, top=1.75, caption="Bioptim code")
+        # one caption above all the code: the mapping lines slot in between the caption and the OCP call
+        cap = Text("Bioptim code", font_size=20, color=GRAY_B).move_to([CODE_X, 2.3, 0], aligned_edge=UL)
+        panel = code_panel(code_lines, size=19, top=1.2, caption=None)
         map_lines = [
             (0, "mappings = BiMappingList()", C1),
             (0, 'mappings.add("tau", to_second=[0, 0], to_first=[0])', C1),
         ]
-        map_panel = code_panel(map_lines, size=19, top=2.65)
+        map_panel = code_panel(map_lines, size=19, top=1.9, caption=None)
 
         def readout(k):
             tag = "free" if k == "free" else "mapped"
             n_tau = 2 * n if k == "free" else n
-            body = (
-                f"decision vector: {int(d[tag + '_n_vars'])} variables   (τ: {n_tau} of them)\n"
-                f"IPOPT cost {float(d[tag + '_cost']):.1f}   ·   Σ(τ1² + τ2²)·dt = {phys[tag]:.1f}\n"
-                f"max |τ1 − τ2| = {gap[tag]:.1f} N·m   ·   {int(d[tag + '_iterations'])} iterations"
-                f"{'' if int(d[tag + '_status']) == 0 else '  (NOT converged)'}"
+            status = "" if int(d[tag + "_status"]) == 0 else "  (NOT converged)"
+            body = Paragraph(
+                f"decision vector: {int(d[tag + '_n_vars'])} variables, {n_tau} of them torques",
+                f"IPOPT cost {float(d[tag + '_cost']):.1f}   ·   torque effort Σ(τ1² + τ2²)·dt = {phys[tag]:.1f}",
+                f"largest torque difference = {gap[tag]:.1f} N·m   ·   {int(d[tag + '_iterations'])} iterations{status}",
+                font_size=19,
+                color=GRAY_A,
+                line_spacing=0.9,
             )
-            return place(Text(body, font_size=19, color=GRAY_A, line_spacing=0.9), CODE_X, -1.9)
+            return place(body, CODE_X, -1.95)
 
         comment_free = place(
-            Text("No mapping: 2 torques per node,\neach joint has its own curve.", font_size=19, color=YELLOW_C),
+            Paragraph(
+                "No mapping: two torques per node,", "each joint has its own curve.", font_size=19, color=YELLOW_C
+            ),
             CODE_X,
-            -2.9,
+            -2.85,
         )
         comment_map = place(
-            Text(
-                "to_second=[0, 0]: the one optimised value feeds both joints.\n"
-                "to_first=[0]: only joint 1's torque is kept as a variable.",
+            Paragraph(
+                "to_second=[0, 0]: the one optimised value feeds both joints.",
+                "to_first=[0]: only the torque of joint 1 is kept as a variable.",
                 font_size=19,
                 color=YELLOW_C,
             ),
             CODE_X,
-            -2.9,
+            -2.85,
         )
         note = place(
-            Text(
-                "Costs are not comparable: the objective sees the reduced tau\n"
-                "(1 curve), so the mapped IPOPT cost counts τ once.",
+            Paragraph(
+                "The costs are not comparable.",
+                "The mapped cost counts the shared torque only once.",
                 font_size=16,
                 color=GRAY_B,
             ),
             CODE_X,
-            -3.6,
+            -3.3,
         )
 
         c1, c2, dd = curve(free_tau, 0, C1), curve(free_tau, 1, C2), diff(free_tau)
         info = readout("free")
-        self.play(FadeIn(panel), Create(c1), Create(c2), Create(dd), FadeIn(leg), run_time=1.4)
+        self.play(FadeIn(cap), FadeIn(panel), Create(c1), Create(c2), Create(dd), FadeIn(leg), run_time=1.4)
         self.play(FadeIn(info), FadeIn(comment_free), run_time=0.4)
         self.wait(2.4)
 
         # the mapping is declared, u_bounds shrink to one torque, the OCP receives it
-        ub_old, vm_old = panel[1][0], panel[1][5]
+        ub_old, vm_old = panel[0][0], panel[0][5]
         ub_new = code('u_bounds["tau"] = [-60] * 1, [60] * 1', 19, C1)
         ub_new.scale(ub_old.height / ub_new.height).move_to(ub_old, aligned_edge=LEFT)
         vm_new = code("variable_mappings=mappings,", 19, C1)

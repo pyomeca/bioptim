@@ -27,7 +27,7 @@ from features_scenes import (
 
 ROT = 1
 TAGS = ["rk4_coarse", "rk4_fine", "col3", "col5"]
-NAMES = ["RK4, 1 step", "RK4, 5 steps", "COLL. deg 3", "COLL. deg 5"]
+NAMES = ["RK4, 1 step", "RK4, 5 steps", "Collocation, degree 3", "Collocation, degree 5"]
 ODE = [
     "OdeSolver.RK4(n_integration_steps=1)",
     "OdeSolver.RK4(n_integration_steps=5)",
@@ -43,9 +43,7 @@ class AccuracyCheck(Scene):
     def construct(self):
         d = np.load(DATA_DIR / "accuracy_pendulum.npz")
         T = 1.0
-        title = scene_title(
-            "Is the solution consistent with the dynamics?", "re-integrate the optimal controls, N = 30"
-        )
+        title = scene_title("Does the solution respect the dynamics?", "re-integrate the optimal controls, N = 30")
         self.play(FadeIn(title), run_time=0.5)
 
         # ------------------------------------------------------------------ beat 1: optimised vs re-integrated
@@ -56,19 +54,19 @@ class AccuracyCheck(Scene):
             x_ticks(ax, [0, 0.5, 1.0], "{:.1f}"),
             y_ticks(ax, [0, 3, 6]),
         )
-        opt_lbl = Text("optimised (IPOPT)", font_size=20, color=C_OPT).move_to([-6.4, -2.85, 0], aligned_edge=LEFT)
+        opt_lbl = Text("optimized (IPOPT)", font_size=20, color=C_OPT).move_to([-6.4, -2.85, 0], aligned_edge=LEFT)
         int_lbl = Text("re-integrated from x₀", font_size=20, color=C_INT).move_to([-3.0, -2.85, 0], aligned_edge=LEFT)
 
         code_lines = [
-            (0, "# ode_solver of the OCP:", GRAY_B),
+            (0, "# ode_solver of the problem:", GRAY_B),
             (0, ODE[0], WHITE),
             (0, "sol = ocp.solve(Solver.IPOPT())", WHITE),
             (0, "out = sol.integrate(", C_INT),
             (1, "shooting_type=Shooting.SINGLE,", C_INT),
             (1, "integrator=SolutionIntegrator.SCIPY_DOP853)", C_INT),
         ]
-        panel = code_panel(code_lines, size=19, top=2.2)
-        first = panel[0][1]
+        panel = code_panel(code_lines, size=19, top=2.3, caption="Bioptim code")
+        first = panel[1][1]
         # the ode_solver line is replaced for each case, with the same scale as the panel lines
         scale = first.height / code(code_lines[1][1], 19).height
 
@@ -147,10 +145,12 @@ class AccuracyCheck(Scene):
             bar = Rectangle(width=0.9, height=h, stroke_width=0, fill_color=C_BAR[i], fill_opacity=0.9)
             bar.move_to([x, base_y + h / 2, 0])
             val = Text(f"{e:.1e}" if e < 0.01 else f"{e:.2f}", font_size=18).next_to(bar, UP, buff=0.06)
-            name = Text(NAMES[i], font_size=15, color=C_BAR[i])
-            name.scale_to_fit_width(min(name.width, 1.35))
-            name.move_to([x, base_y - 0.25, 0])
-            cst = Text(f"solve {c:.2f} s", font_size=15, color=GRAY_B).move_to([x, base_y - 0.55, 0])
+            name = Text(NAMES[i].replace(", ", "\n"), font_size=15, color=C_BAR[i], line_spacing=0.8)
+            name.scale_to_fit_width(min(name.width, 1.2))
+            name.move_to([x, base_y - 0.42, 0])
+            cst = Text(f"solve {c:.2f} s", font_size=15, color=GRAY_B)
+            cst.scale_to_fit_width(min(cst.width, 1.25))
+            cst.move_to([x, base_y - 0.85, 0])
             self.play(GrowFromEdge(bar, DOWN), FadeIn(val), FadeIn(name), FadeIn(cst), run_time=0.45)
 
         # right panel: what to conclude
@@ -159,8 +159,11 @@ class AccuracyCheck(Scene):
             M("Only the transcription changes:", 22, WHITE),
             M("•  RK4: more integration steps  →  drift shrinks 1000x", 20, C_BAR[1]),
             M("•  COLLOCATION: degree 5 drifts less than degree 3", 20, C_BAR[3]),
-            M("•  the optimizer exploits a coarse scheme: a small", 20, GRAY_B),
-            M("   defect in the OCP is not a small error in reality", 20, GRAY_B),
+            M(
+                "•  the optimizer exploits a coarse scheme:\n   a small defect is not a small error in reality",
+                20,
+                GRAY_B,
+            ),
         ).arrange(DOWN, aligned_edge=LEFT, buff=0.22)
         fit(notes, 6.6)
         notes.move_to([CODE_X, 0.9, 0], aligned_edge=LEFT)
@@ -172,8 +175,9 @@ class AccuracyCheck(Scene):
             ],
             size=19,
             top=3.0,
+            caption="Bioptim code",
         )
         final_code.next_to(notes, DOWN, buff=0.4).align_to(notes, LEFT)
         self.play(FadeOut(panel), run_time=0.3)
         self.play(FadeIn(final_code), FadeIn(notes), run_time=0.6)
-        self.wait(2.0)
+        self.wait(2.5)

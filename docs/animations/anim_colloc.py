@@ -52,9 +52,13 @@ class CollocationDegree(Scene):
                 (2, 'polynomial_degree=d, method="legendre"))', W),
             ]
         )
-        cap2 = caption("points used by the integrator (integrator.py)")
-        code2 = code_block([(0, "[0] + collocation_points(degree, method)", GRAY_A)])
-        panel = VGroup(cap1, code1, cap2, code2).arrange(DOWN, aligned_edge=LEFT, buff=0.16)
+        code2 = code_block(
+            [
+                (0, "# points used by the integrator (integrator.py)", GRAY_B),
+                (0, "[0] + collocation_points(degree, method)", GRAY_A),
+            ]
+        )
+        panel = VGroup(cap1, code1, code2).arrange(DOWN, aligned_edge=LEFT, buff=0.16)
         panel[2].shift(DOWN * 0.15)
         fit(panel, CODE_W)
         panel.move_to([CODE_X0, 2.3, 0], aligned_edge=UL)
@@ -89,9 +93,9 @@ class CollocationDegree(Scene):
         note1 = caption("one interval, rescaled to [0, 1]:  hollow = shooting node, dots = collocation points", 18)
         note1.move_to([-6.95, -2.2, 0], aligned_edge=LEFT)
         note2 = M(
-            "<b>legendre</b>: all points inside the interval    <b>radau</b>: the last point is the next node", 19, W
+            "<b>legendre</b>: all points are inside the interval\n<b>radau</b>: the last point is the next node", 19, W
         )
-        note2.move_to([-6.95, -2.75, 0], aligned_edge=LEFT)
+        note2.move_to([-6.95, -3.05, 0], aligned_edge=LEFT)
         self.play(FadeIn(heads), FadeIn(ends), FadeIn(panel), FadeIn(note1), run_time=0.6)
         for g in row_groups:
             self.play(FadeIn(g), run_time=0.45)
@@ -101,7 +105,7 @@ class CollocationDegree(Scene):
         # ---------------------------------------------------------------- beat 2: error vs degree
         self.play(
             FadeOut(VGroup(heads, ends, note1, note2, *row_groups)),
-            FadeOut(VGroup(cap2, code2)),
+            FadeOut(code2),
             run_time=0.5,
         )
         lo, hi = -4.5, 0.0
@@ -134,7 +138,7 @@ class CollocationDegree(Scene):
                 for e in decades
             ]
         )
-        ylab = caption("‖x(T) re-integrated − x(T) optimised‖, log scale", 17).move_to(
+        ylab = caption("‖x(T) re-integrated − x(T) optimized‖ (log scale)", 17).move_to(
             [ax_x0 - 1.1, base_y + height + 0.3, 0], aligned_edge=LEFT
         )
         xt = VGroup(*[Text(str(deg), font_size=18, color=W).move_to([col(deg), base_y - 0.25, 0]) for deg in DEGREES])
@@ -152,14 +156,16 @@ class CollocationDegree(Scene):
         it = VGroup(
             *[
                 Text(
-                    f"{int(val('legendre', deg, 'iterations'))} it, {float(val('legendre', deg, 'solve_time')):.1f} s",
+                    f"{int(val('legendre', deg, 'iterations'))} / {float(val('legendre', deg, 'solve_time')):.1f} s",
                     font_size=14,
                     color=GRAY_A,
                 ).move_to([col(deg), y2, 0])
                 for deg in DEGREES
             ]
         )
-        note_rows = caption("(IPOPT row: legendre, one run each)", 13).move_to([-6.95, y2 - 0.35, 0], aligned_edge=LEFT)
+        note_rows = caption("(IPOPT row: iterations / solve time, legendre, one run each)", 13).move_to(
+            [-6.95, y2 - 0.35, 0], aligned_edge=LEFT
+        )
         self.play(FadeIn(VGroup(axis, yaxis, ticks, guides, ylab, xt, xlab, r1, r2, note_rows)), run_time=0.5)
 
         cap_code = caption("Bioptim code")
@@ -190,9 +196,8 @@ class CollocationDegree(Scene):
             M("<b>legendre, degree 2 to 5</b>", 22, C_LEG),
             M(f"error  {e2:.1e} to {e5:.1e}   (÷ {e2 / e5:.0f})", 22, W),
             M(f"variables  {v2} to {v5}   (× {v5 / v2:.2f}, +{n * 4} per degree)", 22, W),
-            M("radau: one order lower (2d−1 vs 2d):", 19, GRAY_B),
-            M("legendre wins from degree 4; beyond degree 5", 19, GRAY_B),
-            M("the optimizer, not the scheme, limits the error", 19, GRAY_B),
+            M("radau is one order lower (2d−1 vs 2d):\nlegendre wins from degree 4.", 19, GRAY_B),
+            M("Beyond degree 5, the optimizer,\nnot the scheme, limits the error.", 19, GRAY_B),
         ).arrange(DOWN, aligned_edge=LEFT, buff=0.16)
         msg[3:].shift(DOWN * 0.15)
         fit(msg, CODE_W)
@@ -200,4 +205,4 @@ class CollocationDegree(Scene):
         self.play(FadeIn(msg[:3]), run_time=0.7)
         self.wait(1.0)
         self.play(FadeIn(msg[3:]), run_time=0.6)
-        self.wait(2.2)
+        self.wait(2.5)

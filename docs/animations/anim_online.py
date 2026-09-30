@@ -54,7 +54,7 @@ class OnlineIterates(Scene):
         # ---- the (re-drawn) window
         win = RoundedRectangle(corner_radius=0.08, width=6.9, height=6.35, stroke_color=GRAY_B, stroke_width=2)
         win.move_to([-3.55, -0.42, 0])
-        head = Text("bioptim online plot", font_size=17, color=GRAY_B)
+        head = Text("Bioptim online plot", font_size=17, color=GRAY_B)
         head.move_to(win.get_top() + DOWN * 0.22).align_to(win, LEFT).shift(RIGHT * 0.2)
         disclaimer = Text("re-drawn from real IPOPT iterates, not a screen capture", font_size=16, color=ORANGE)
         disclaimer.move_to(win.get_bottom() + UP * 0.2)
@@ -71,9 +71,9 @@ class OnlineIterates(Scene):
             return Text(s, font_size=14, color=col).next_to(ax, UP, buff=0.06).align_to(ax, LEFT)
 
         labels = VGroup(
-            lab("q  (pendulum angle, rad)", ax_q, C_STATE),
-            lab("tau  (force, N)", ax_u, C_CTRL),
-            lab('custom: "angle (deg)"', ax_c, C_CUSTOM),
+            lab("pendulum angle q (rad)", ax_q, C_STATE),
+            lab("cart force tau (N)", ax_u, C_CTRL),
+            lab("custom: angle (deg)", ax_c, C_CUSTOM),
             lab("IPOPT output", ax_i, GRAY_B),
         )
         zero = VGroup(
@@ -95,9 +95,9 @@ class OnlineIterates(Scene):
         for grp in ticks:
             for m in grp:
                 m.scale(0.8)
-        legend = VGroup(Text("inf_pr", font_size=13, color=C_PR), Text("inf_du", font_size=13, color=C_DU))
+        legend = VGroup(Text("inf_pr", font_size=14, color=C_PR), Text("inf_du", font_size=14, color=C_DU))
         legend.arrange(RIGHT, buff=0.15).next_to(ax_i, UP, buff=0.06).align_to(ax_i, RIGHT)
-        log_note = Text("log scale", font_size=13, color=GRAY_B).move_to(ax_i.c2p(n * 0.5, -8.6))
+        log_note = Text("log scale", font_size=14, color=GRAY_B).move_to(ax_i.c2p(n * 0.5, -8.6))
 
         self.play(
             FadeIn(title),
@@ -124,7 +124,7 @@ class OnlineIterates(Scene):
             ],
             size=17,
             top=2.45,
-            caption="1. ask the solver for the live window",
+            caption="Bioptim code, step 1: the live window",
         )
         pb = code_panel(
             [
@@ -136,7 +136,7 @@ class OnlineIterates(Scene):
             ],
             size=17,
             top=0.15,
-            caption="2. optional: custom plots and the IPOPT-output panel",
+            caption="Bioptim code, step 2: custom plots and IPOPT outputs",
         )
         self.play(FadeIn(pa), FadeIn(pb), run_time=0.6)
 
@@ -171,7 +171,7 @@ class OnlineIterates(Scene):
         def readout():
             k = cur()
             r = VGroup(
-                Text(f"iteration {k:2d}", font_size=17, weight=BOLD, color=WHITE),
+                Text(f"iteration {k}", font_size=17, weight=BOLD, color=WHITE),
                 Text(f"f = {cost[k]:.1f}", font_size=16, color=GRAY_B),
             ).arrange(RIGHT, buff=0.35)
             return r.move_to(win.get_top() + DOWN * 0.22).align_to(win, RIGHT).shift(LEFT * 0.2)
@@ -179,10 +179,10 @@ class OnlineIterates(Scene):
         self.add(always_redraw(curves), always_redraw(readout))
         self.play(kt.animate.set_value(n), run_time=8, rate_func=linear)
         done = Text(f"Solve_Succeeded: {n} iterations, cost {float(d['full_cost']):.2f}", font_size=20, color=GREEN_C)
-        fit(done, CODE_W)
-        done.move_to([CODE_X, -3.55, 0], aligned_edge=LEFT)
-        self.play(FadeIn(done))
-        self.wait(1.2)
+        fit(done, 5.9)
+        done.move_to([CODE_X, -3.2, 0], aligned_edge=LEFT)
+        self.play(FadeIn(done), run_time=0.5)
+        self.wait(2.5)
 
 
 class OfflineGraphs(Scene):
@@ -193,7 +193,7 @@ class OfflineGraphs(Scene):
         for im in (img_q, img_c):
             im.set_height(2.4)
         pair = Group(img_q, img_c).arrange(RIGHT, buff=0.2).move_to([-3.5, 0.3, 0])
-        note = Text("real matplotlib figures saved by bioptim (Agg backend)", font_size=17, color=ORANGE)
+        note = Text("real matplotlib figures saved by Bioptim (Agg backend)", font_size=17, color=ORANGE)
         cap_q = Text("q_states", font_size=16, color=GRAY_B).next_to(img_q, UP, buff=0.08)
         cap_c = Text('custom plot "angle (deg)"', font_size=16, color=GRAY_B).next_to(img_c, UP, buff=0.08)
         note.next_to(pair, DOWN, buff=0.25)
@@ -209,7 +209,7 @@ class OfflineGraphs(Scene):
             ],
             size=19,
             top=2.45,
-            caption="the same custom plots, drawn once from the solution",
+            caption="Bioptim code: the same plots after the solve",
         )
         self.play(FadeIn(panel), run_time=0.5)
         info = VGroup(
@@ -217,7 +217,7 @@ class OfflineGraphs(Scene):
             Text("show_bounds=True: axes follow the bounds, not the data", font_size=18, color=GRAY_B),
             Text("the IPOPT-output panel is live only (not in sol.graphs)", font_size=18, color=GRAY_B),
         ).arrange(DOWN, aligned_edge=LEFT, buff=0.14)
-        fit(info, CODE_W)
+        fit(info, 5.9)
         info.move_to([CODE_X, -0.3, 0], aligned_edge=UL)
         self.play(FadeIn(info), run_time=0.5)
         self.wait(2.5)

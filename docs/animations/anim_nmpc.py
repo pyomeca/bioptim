@@ -12,7 +12,6 @@ from manim import *
 from features_scenes import (
     CODE_W,
     DATA_DIR,
-    M,
     code,
     fit,
     make_axes,
@@ -44,7 +43,9 @@ class NMPCWindow(Scene):
         amp, period = float(d["amp"]), float(d["period"])
         t_end = n_steps * dt + n * dt  # 3 s of motion + the last horizon
 
-        title = scene_title("Receding horizon (NMPC)", "solve a 1 s window, apply the first control, slide by one node")
+        title = scene_title(
+            "Nonlinear model predictive control", "solve a 1 s window, apply the first control, slide by one node"
+        )
         self.play(FadeIn(title), run_time=0.6)
 
         # ------------------------------------------------------------------------------------------ axes and code
@@ -90,6 +91,8 @@ class NMPCWindow(Scene):
             ]
         )
         panel = VGroup(ctor, upd, slv).arrange(DOWN, aligned_edge=LEFT, buff=0.22)
+        cap_code = Text("Bioptim code", font_size=20, color=GRAY_B)
+        panel = VGroup(cap_code, panel).arrange(DOWN, aligned_edge=LEFT, buff=0.18)
         fit(panel, CODE_W)
         panel.move_to([CODE_X0, 2.3, 0], aligned_edge=UL)
 
@@ -119,7 +122,7 @@ class NMPCWindow(Scene):
             it, st = int(d["iterations"][k]), int(d["status"][k])
             ok = "converged" if st == 0 else "FAILED"
             txt = f"window {k + 1}/{n_steps}   IPOPT: {it} iterations, status {st} ({ok})"
-            return Text(txt, font_size=18, color=GRAY_B).move_to([CODE_X0, -3.6, 0], aligned_edge=LEFT)
+            return Text(txt, font_size=18, color=GRAY_B).move_to([CODE_X0, -3.1, 0], aligned_edge=LEFT)
 
         y_top, y_bot = ax_q.c2p(0, 0.8)[1], ax_u.c2p(0, -70)[1]
 
@@ -161,8 +164,8 @@ class NMPCWindow(Scene):
                 bu = box(upd)
                 self.play(ReplacementTransform(box_ctor, bu), run_time=0.4)
                 self.play(*anims, run_time=rt)
-                cap = Text("predicted horizon (faded)", font_size=18, color=C_PRED).next_to(
-                    ax_q.c2p(1.0, 0.8), UP, buff=0.05
+                cap = Text("predicted horizon", font_size=18, color=C_PRED).next_to(
+                    ax_q.c2p(t_end, 0.8), UP, buff=0.05, aligned_edge=RIGHT
                 )
                 self.play(FadeIn(cap), run_time=0.3)
                 self.wait(0.4)
@@ -181,13 +184,14 @@ class NMPCWindow(Scene):
         self.remove(*[m for g in ghosts[:-1] for m in g])
 
         # ------------------------------------------------------------------------------------------ outro
-        msg = M(
-            f"{n_steps} real IPOPT solves, all converged. The applied trajectory (green) chains the first node "
-            f"of each window.",
-            19,
-            WHITE,
+        msg = Paragraph(
+            f"{n_steps} real IPOPT solves, all converged.",
+            "The applied trajectory (green) chains the first node of each window.",
+            font_size=19,
+            color=WHITE,
+            line_spacing=0.9,
         )
-        fit(msg, 13.2)
-        msg.to_edge(DOWN, buff=0.12)
-        self.play(FadeOut(band), FadeOut(status), FadeOut(box_cur), FadeIn(msg), run_time=0.6)
+        fit(msg, 5.9)
+        msg.move_to([CODE_X0, -2.2, 0], aligned_edge=LEFT)
+        self.play(FadeOut(band), FadeOut(status), FadeOut(box_cur), FadeOut(legend), FadeIn(msg), run_time=0.6)
         self.wait(2.0)

@@ -9,7 +9,7 @@ Scene: MultinodeLink (about 18 s).  Render (from docs/animations):  manim render
 import numpy as np
 from manim import *
 
-from features_scenes import CODE_W, DATA_DIR, M, code, fit, make_axes, poly, scene_title, x_ticks, y_ticks
+from features_scenes import CODE_W, DATA_DIR, M, code, fit, make_axes, poly, scene_title, time_label, x_ticks, y_ticks
 
 CODE_X0 = 0.15
 C_FREE = GRAY_B
@@ -61,7 +61,7 @@ class MultinodeLink(Scene):
             labs.append(lab)
         ticks = VGroup(*[y_ticks(ax, [ax.y_range[0], ax.y_range[1]], "{:g}") for ax in axes])
         xt = x_ticks(axes[1], [0, 1, 2], "{:g}")
-        xlab = Text("t (s)", font_size=15, color=GRAY_B).next_to(axes[1].c2p(T, axes[1].y_range[0]), RIGHT, buff=0.15)
+        xlab = time_label(axes[1])
         y_grid = 2.05
         gx = [axes[0].c2p(t, 0)[0] for t in tk]
         dots = VGroup(*[Dot([px, y_grid, 0], radius=0.045, color=GRAY_C) for px in gx])
@@ -79,7 +79,7 @@ class MultinodeLink(Scene):
         )
 
         # ---------------------------------------------------------------- code (right)
-        cap_c = caption("hard link: MultinodeConstraint")
+        cap_c = caption("Bioptim code: hard link (MultinodeConstraint)")
         code_c = code_block(
             [
                 (0, "multinode_constraints = MultinodeConstraintList()", W),
@@ -150,14 +150,15 @@ class MultinodeLink(Scene):
             self.play(*[FadeIn(o[0]) for o in objs], *[Create(o[1]) for o in objs], FadeIn(line), run_time=0.6)
             prev = [o[2] for o in objs]
             self.wait(0.9 if m != "cons" else 0.6)
-        note = M(
-            "red bar: gap between the two linked nodes (dashed: start value).\n"
-            "the constraint closes the cycle exactly; the objective only pushes towards it, "
-            "and both cost more control effort",
-            16,
-            GRAY_B,
+        note = Paragraph(
+            "Red bar: gap between the two linked nodes (dashed: start value).",
+            "The constraint closes the cycle exactly; the objective only pushes towards it.",
+            "Both cost more control effort.",
+            font_size=16,
+            color=GRAY_B,
+            line_spacing=0.9,
         )
-        fit(note, CODE_W)
-        note.move_to([CODE_X0, y0 - 2.05, 0], aligned_edge=UL)
+        fit(note, 5.9)
+        note.move_to([CODE_X0, y0 - 1.7, 0], aligned_edge=UL)
         self.play(FadeIn(note), run_time=0.5)
         self.wait(2.2)

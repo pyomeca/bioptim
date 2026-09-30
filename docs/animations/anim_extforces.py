@@ -52,9 +52,7 @@ class ExternalForces(Scene):
         dtau = tau_p - tau_f
         peak = float(d["peak"])
 
-        title = scene_title(
-            "External forces", "a wind-like push on the hand: same reach, same objective, one extra input"
-        )
+        title = scene_title("External forces", "a wind-like push on the hand: same reach, one extra input")
         self.play(FadeIn(title), run_time=0.4)
 
         # ---------------------------------------------------------------- axes (left)
@@ -78,30 +76,31 @@ class ExternalForces(Scene):
         zero_d = DashedLine(ax_d.c2p(0, 0), ax_d.c2p(T, 0), color=GRAY_D).set_stroke(width=2)
 
         # ---------------------------------------------------------------- code (right)
-        cap1 = caption("the force set (external_forces.py); force is a (3, N) array")
+        cap1 = caption("Bioptim code", 19)
         code1 = code_block(
             [
+                (0, "# the force set (external_forces.py); force is a (3, N) array", GRAY_B),
                 (0, "hand = np.tile([[0], [0], [-0.3]], (1, N))", W),
                 (0, "fset = ExternalForceSetTimeSeries(nb_frames=N)", W),
                 (0, 'fset.add_translational_force("push", "Forearm",', W),
                 (1, "force, point_of_application_in_local=hand)", W),
             ]
         )
-        cap2 = caption("given to the model and to the dynamics")
         code2 = code_block(
             [
+                (0, "# given to the model and to the dynamics", GRAY_B),
                 (0, "bio_model = TorqueBiorbdModel(path, external_force_set=fset)", W),
                 (0, "DynamicsOptions(numerical_data_timeseries={", W),
                 (1, '"external_forces": fset.to_numerical_time_series()})', W),
             ]
         )
-        panel = VGroup(cap1, code1, cap2, code2).arrange(DOWN, aligned_edge=LEFT, buff=0.14)
+        panel = VGroup(cap1, code1, code2).arrange(DOWN, aligned_edge=LEFT, buff=0.14)
         panel[2].shift(DOWN * 0.1)
         fit(panel, CODE_W)
         panel.move_to([CODE_X0, 2.55, 0], aligned_edge=UL)
 
         # ---------------------------------------------------------------- arm sketch (right, below the code)
-        sh = np.array([1.9, -1.55, 0.0])
+        sh = np.array([1.9, -1.9, 0.0])
         scale = 3.4
 
         def to_screen(yz):
@@ -121,7 +120,7 @@ class ExternalForces(Scene):
         tr = ValueTracker(0.0)
         base = Dot(sh, radius=0.12, color=GRAY_B)
         arm_lab = caption("arm in the (y, z) plane, shoulder at the grey dot", 15).move_to(
-            [CODE_X0 + 0.3, -1.05, 0], aligned_edge=LEFT
+            [CODE_X0 + 0.3, -1.32, 0], aligned_edge=LEFT
         )
 
         def force_now(tt):
@@ -142,7 +141,7 @@ class ExternalForces(Scene):
         def readout():
             tt = tr.get_value()
             return caption(f"t = {tt:.2f} s    F = {force_now(tt):4.1f} N", 18, W).move_to(
-                [CODE_X0 + 0.3, -0.7, 0], aligned_edge=LEFT
+                [CODE_X0 + 0.3, -1.0, 0], aligned_edge=LEFT
             )
 
         ghost_arm = always_redraw(lambda: arm_at("free", tr.get_value(), GRAY_B, 4, 0.55))
@@ -200,13 +199,13 @@ class ExternalForces(Scene):
         # ---------------------------------------------------------------- outro
         pk = np.abs(dtau).max(axis=1)
         msg = M(
-            f"2 real IPOPT solves (status {int(d['free_status'])} and {int(d['push_status'])}). "
-            f"Peak torque change: shoulder {pk[0]:.1f} N·m, elbow {pk[1]:.1f} N·m, "
-            f"for a peak push of {peak:g} N (hand 0.6 m from the shoulder).",
+            f"2 real IPOPT solves (status {int(d['free_status'])} and {int(d['push_status'])}),\n"
+            f"peak push {peak:g} N (hand 0.6 m from the shoulder).\n"
+            f"Peak torque change: shoulder {pk[0]:.1f} N·m, elbow {pk[1]:.1f} N·m.",
             18,
             W,
         )
-        fit(msg, 13.2)
-        msg.to_edge(DOWN, buff=0.1)
+        fit(msg, 5.2)
+        msg.move_to([CODE_X0 + 0.15, -3.1, 0], aligned_edge=LEFT)
         self.play(FadeIn(msg), run_time=0.5)
-        self.wait(2.0)
+        self.wait(2.5)

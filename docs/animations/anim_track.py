@@ -94,8 +94,8 @@ class TrackState(Scene):
             head = f"weight {W[i]:g}" if i < 3 else "hard constraint"
             body = (
                 f"{head}\n"
-                f"rms error   {float(d[tg + '_rms_err']):.3f} rad   (max {float(d[tg + '_max_err']):.3f})\n"
-                f"effort ∫τ² dt   {float(d[tg + '_effort']):.4g}\n"
+                f"root-mean-square error = {float(d[tg + '_rms_err']):.3f} rad (max {float(d[tg + '_max_err']):.3f})\n"
+                f"effort ∫τ² dt = {float(d[tg + '_effort']):.4g}\n"
                 f"IPOPT status {int(d[tg + '_status'])}, {int(d[tg + '_iterations'])} iterations"
             )
             return place(Text(body, font_size=18, color=GRAY_A, line_spacing=0.95), CODE_X, -1.55)
@@ -133,7 +133,7 @@ class TrackState(Scene):
             (1, 'key="q", index=[1], node=Node.ALL,', WHITE),
             (1, "target=q_ref)", C_ACH),
         ]
-        hard = code_panel(hard_lines, size=19, top=2.35, caption="Hard-constraint alternative")
+        hard = code_panel(hard_lines, size=19, top=2.35, caption="Bioptim code: hard-constraint alternative")
         hard_cmt = place(
             Text(
                 "the error is forced to 0 at every node:\nmore effort, chattering τ, no trade-off to tune.",

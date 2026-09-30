@@ -86,12 +86,14 @@ class DiscreteMechanics(Scene):
         var_lo, var_hi = float(de["var"].min()), float(de["var"].max())
         i_cross = int(np.argmax(np.abs(de["rk4"]) > max(abs(var_lo), abs(var_hi))))
 
-        title = scene_title("Discrete mechanics", "the variational integrator replaces the ODE")
+        title = scene_title(
+            "Discrete mechanics", "the variational integrator replaces the ordinary differential equation (ODE)"
+        )
         self.play(FadeIn(title), run_time=0.5)
 
         # ------------------------------------------------------------------------------------------------ beat 1
         ax = make_axes([-3.55, 0.35, 0], 5.6, 3.4, [0, t_end], [y_lo, y_hi], 200, 0.1)
-        lab = Text("E(t) − E(0)  (J)   free pendulum, τ = 0, same Δt for all", font_size=19, color=GRAY_B)
+        lab = Text("energy error E(t) − E(0) (J), free pendulum, τ = 0", font_size=19, color=GRAY_B)
         lab.next_to(ax.get_y_axis(), UP, buff=0.08).align_to(ax.get_y_axis(), LEFT)
         decos = VGroup(
             lab,
@@ -102,7 +104,7 @@ class DiscreteMechanics(Scene):
         zero = DashedLine(ax.c2p(0, 0), ax.c2p(t_end, 0), color=GRAY_D, stroke_width=2)
 
         blk_a = captioned(
-            "the OCP builds the variational dynamics:",
+            "Bioptim code: variational dynamics of the problem",
             [
                 (0, "dynamics.add(skip_continuity=True,"),
                 (1, "ode_solver=OdeSolver.VARIATIONAL())"),
@@ -120,7 +122,7 @@ class DiscreteMechanics(Scene):
             ],
         )
         blk_c = captioned(
-            "reference schemes, one step per Δt:",
+            "reference schemes, same Δt, one step each:",
             [
                 (0, "x = x + dt * f(x)                 # RK1"),
                 (0, "f(x) = [qdot, model.forward_dynamics(...)]"),
@@ -185,7 +187,7 @@ class DiscreteMechanics(Scene):
         final.move_to([-6.6, -2.95, 0], aligned_edge=LEFT)
         fit(final, 13.2)
         self.play(FadeIn(arrow), FadeIn(arr_txt), FadeOut(rows), FadeIn(final), run_time=0.6)
-        self.wait(1.6)
+        self.wait(2.0)
 
         # ------------------------------------------------------------------------------------------------ beat 2
         tq = np.linspace(0, float(d["su_final_time"]), int(d["su_n"]) + 1)
@@ -210,7 +212,7 @@ class DiscreteMechanics(Scene):
         zero_u = DashedLine(ax_u.c2p(0, 0), ax_u.c2p(T, 0), color=GRAY_D, stroke_width=2)
 
         panel2 = captioned(
-            "swing-up with the variational OCP:",
+            "Bioptim code: variational swing-up problem",
             [
                 (0, 'q_bounds["q"][:, 0] = 0'),
                 (0, 'q_bounds["q"][:, -1] = np.pi'),
@@ -227,7 +229,9 @@ class DiscreteMechanics(Scene):
         )
         fit(panel2, CODE_W)
         panel2.move_to([CODE_X0, 2.35, 0], aligned_edge=UL)
-        title2 = scene_title("Variational OCP", f"pendulum swing-up, {int(d['su_n'])} intervals, {T:g} s")
+        title2 = scene_title(
+            "Variational optimal control problem", f"pendulum swing-up, {int(d['su_n'])} intervals, {T:g} s"
+        )
         self.play(
             FadeOut(VGroup(ax, decos, zero, panel, m1, mv, m4, arrow, arr_txt, final, title)),
             FadeIn(VGroup(ax_q, ax_u, decos2, pi_line, zero_u, panel2, title2)),
@@ -246,4 +250,4 @@ class DiscreteMechanics(Scene):
         fit(status, 13.2)
         status.to_edge(DOWN, buff=0.15)
         self.play(FadeIn(status), run_time=0.4)
-        self.wait(1.6)
+        self.wait(2.0)

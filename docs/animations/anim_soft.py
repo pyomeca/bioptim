@@ -55,7 +55,7 @@ class SoftContact(Scene):
         self.play(FadeIn(title), run_time=0.4)
 
         # ------------------------------------------------------------ code, beat 1 (caption above its code)
-        cap_a = caption("soft contact declared in the bioMod")
+        cap_a = caption("Bioptim code: soft contact declared in the bioMod")
         code_a = code_block(
             [
                 (0, "softcontact Contact1", W),
@@ -67,14 +67,14 @@ class SoftContact(Scene):
                 (0, "endsoftcontact", W),
             ]
         )
-        cap_b = caption("model with the soft contact dynamics")
+        cap_b = caption("Bioptim code: model with the soft contact dynamics")
         code_b = code_block(
             [
                 (0, "bio_model = TorqueBiorbdModel(path,", W),
                 (1, "contact_types=[ContactType.SOFT_EXPLICIT])", W),
             ]
         )
-        cap_c = caption("force computed by biorbd, measured: c = 0.298 (depth > 1 cm)")
+        cap_c = caption("force from biorbd; measured c = 0.298 (depth > 1 cm)")
         code_c = code_block([(0, "F = c * k * depth^1.5 * (1 + 1.5 * damping * speed)", GRAY_A)])
         panel = panel_of(cap_a, code_a, cap_b, code_b, cap_c, code_c)
 
@@ -117,8 +117,8 @@ class SoftContact(Scene):
             f = float(val(1e4, "force")[i])
             return (
                 VGroup(
-                    Text(f"depth  {max(dep, 0):4.1f} cm", font_size=18, color=W),
-                    Text(f"force  {f:5.1f} N", font_size=18, color=C_F),
+                    Text(f"depth = {max(dep, 0):.1f} cm", font_size=18, color=W),
+                    Text(f"contact force = {f:.1f} N", font_size=18, color=C_F),
                 )
                 .arrange(DOWN, aligned_edge=LEFT, buff=0.08)
                 .move_to([-6.9, -2.9, 0], aligned_edge=LEFT)
@@ -161,14 +161,14 @@ class SoftContact(Scene):
 
         ax1 = make_axes([-3.5, 1.05, 0], 5.6, 1.9, (0, t[-1]), (-1, 3.5))
         ax2 = make_axes([-3.5, -1.55, 0], 5.6, 1.9, (0, t[-1]), (0, 400))
-        lab1 = caption("depth (cm)  [dashed: reference]", 16).next_to(ax1, UP, buff=0.05).align_to(ax1, LEFT)
+        lab1 = caption("depth (cm), dashed: reference", 16).next_to(ax1, UP, buff=0.05).align_to(ax1, LEFT)
         lab2 = caption("contact force (N)", 16).next_to(ax2, UP, buff=0.05).align_to(ax2, LEFT)
         z_ref = radius * 100 - 100 * (0.06 + (0.02 - 0.06) * 0.5 * (1 - np.cos(np.pi * np.linspace(0, 1, n))))
         ref = DashedVMobject(poly(ax1, t, z_ref, WHITE, 3), num_dashes=60).set_z_index(5)
         zero1 = DashedLine(ax1.c2p(0, 0), ax1.c2p(t[-1], 0), color=GRAY_D, stroke_width=2)
         t_lab = caption("t (s)", 14).next_to(ax2, DOWN, buff=0.05).align_to(ax2, RIGHT)
 
-        cap_d = caption("same push, only the number in the bioMod changes")
+        cap_d = caption("Bioptim code: same push, only the number in the bioMod changes")
         code_d = code_block(
             [
                 (0, "stiffness 1e4   ->   1e5   ->   1e6", YELLOW_C),
@@ -187,13 +187,13 @@ class SoftContact(Scene):
             c2 = poly(ax2, t, np.array(val(k, "force")), c, 5)
             row = VGroup(
                 code(f"{k:.0e}".replace("e+0", "e"), 17, c),
-                Text(f"max depth {val(k, 'depth').max() * 100:.1f} cm", font_size=18, color=W),
-                Text(f"peak {val(k, 'force').max():.0f} N", font_size=18, color=W),
-                Text(f"IPOPT {int(val(k, 'iterations'))} it", font_size=18, color=GRAY_A),
+                Text(f"max depth = {val(k, 'depth').max() * 100:.1f} cm", font_size=18, color=W),
+                Text(f"peak force = {val(k, 'force').max():.0f} N", font_size=18, color=W),
+                Text(f"IPOPT: {int(val(k, 'iterations'))} iterations", font_size=18, color=GRAY_A),
             ).arrange(RIGHT, buff=0.3)
             rows.append(row)
             self.play(Create(c1), Create(c2), run_time=1.1)
-        table = VGroup(caption("stiffness   result (status 0 for all three)", 17), *rows).arrange(
+        table = VGroup(caption("stiffness and result (IPOPT status 0 for all three)", 17), *rows).arrange(
             DOWN, aligned_edge=LEFT, buff=0.14
         )
         fit(table, CODE_W)
@@ -212,4 +212,4 @@ class SoftContact(Scene):
         msg.move_to([CODE_X0, -1.7, 0], aligned_edge=UL)
         self.play(FadeIn(msg[0]), run_time=0.5)
         self.play(FadeIn(msg[1:]), run_time=0.6)
-        self.wait(2.2)
+        self.wait(2.0)

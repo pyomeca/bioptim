@@ -128,7 +128,7 @@ class TrackMarkers(Scene):
 
         def readout(label, mk):
             return place(
-                Text(f"IPOPT iteration {label}   ·   RMS error {rms(mk):.1f} cm", font_size=21, color=WHITE),
+                Text(f"IPOPT iteration {label}   ·   RMS error {rms(mk):.1f} cm", font_size=20, color=WHITE),
                 CODE_X,
                 -1.3,
             )
@@ -138,14 +138,17 @@ class TrackMarkers(Scene):
 
         mk_final = d["markers_opt"]
         legend = place(
-            Text(
-                "grey dots: measured (synthetic)   ·   green: model markers\nred: gap between model and measurement",
+            Paragraph(
+                "Grey dots: measured markers (synthetic).",
+                "Green: markers of the model.",
+                "Red: gap between the model and the measurement.",
+                "RMS: root-mean-square error over both markers and all nodes.",
                 font_size=16,
                 color=GRAY_B,
                 line_spacing=0.9,
             ),
             CODE_X,
-            -2.2,
+            -2.3,
         )
 
         # ---- iteration 0
