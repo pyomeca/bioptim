@@ -1753,7 +1753,8 @@
     "notes_file": "notes/solver.md",
     "level": 2,
     "section": "Solvers and numerics",
-    "section_fr": "Solveurs et numérique"
+    "section_fr": "Solveurs et numérique",
+    "logo_corner": "tl"
   },
   {
     "id": "anim_sx.py:SxVsMx",
