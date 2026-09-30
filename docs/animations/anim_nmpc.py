@@ -36,6 +36,13 @@ def code_block(lines, size=18):
     return block
 
 
+def Lines(*lines, font_size=18, color=WHITE, line_spacing=0.9):
+    """Left-aligned stack of Text lines. Unlike Paragraph, every line is translated on its own (no truncation in FR)."""
+    return VGroup(*[Text(s, font_size=font_size, color=color) for s in lines]).arrange(
+        DOWN, aligned_edge=LEFT, buff=0.16 * font_size / 18 * line_spacing
+    )
+
+
 class NMPCWindow(Scene):
     def construct(self):
         d = np.load(DATA_DIR / "nmpc_results.npz")
@@ -184,7 +191,7 @@ class NMPCWindow(Scene):
         self.remove(*[m for g in ghosts[:-1] for m in g])
 
         # ------------------------------------------------------------------------------------------ outro
-        msg = Paragraph(
+        msg = Lines(
             f"{n_steps} real IPOPT solves, all converged.",
             "The applied trajectory (green) chains the first node of each window.",
             font_size=19,

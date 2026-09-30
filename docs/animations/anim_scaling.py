@@ -148,9 +148,9 @@ class Scaling(Scene):
         self.play(it.animate.set_value(n_u), run_time=5.0, rate_func=linear)
         dtau = abs(d["unscaled_tau"] - d["scaled_tau"]).max()
         note = place(
-            Paragraph(
-                f"Same problem, same optimum: cost {float(d['scaled_cost']):.1f} in both.",
-                f"Largest torque difference between the two solutions: {dtau:.0e} N.",
+            Text(
+                f"Same problem, same optimum: cost {float(d['scaled_cost']):.1f} in both.\n"
+                f"Largest torque difference between the two solutions: {dtau:.0e} N.\n"
                 f"{n_u} vs {n_s} iterations  ({n_u / n_s:.1f}× fewer).",
                 font_size=19,
                 color=YELLOW_C,

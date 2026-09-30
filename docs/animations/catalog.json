@@ -340,7 +340,7 @@
     "links": [
       {
         "label_en": "Example: pendulum swing-up",
-        "label_fr": "Exemple : balancier du pendule",
+        "label_fr": "Exemple : balancement du pendule",
         "path": "bioptim/examples/toy_examples/sqp_method/pendulum.py",
         "lines": "22-97"
       },
@@ -718,7 +718,7 @@
     "links": [
       {
         "label_en": "Base example: swing-up OCP",
-        "label_fr": "Exemple de base : OCP de balancier",
+        "label_fr": "Exemple de base : OCP de balancement",
         "path": "bioptim/examples/getting_started/basic_ocp.py",
         "lines": "33-127"
       },
@@ -1707,7 +1707,8 @@
     "notes_file": "notes/solver.md",
     "level": 2,
     "section": "Solvers and numerics",
-    "section_fr": "Solveurs et numérique"
+    "section_fr": "Solveurs et numérique",
+    "logo_corner": "tl"
   },
   {
     "id": "anim_solver.py:IpoptMultiStart",
@@ -1870,7 +1871,7 @@
       },
       {
         "label_en": "Scene data: swing-up OCP",
-        "label_fr": "Données de la scène : OCP de balancier",
+        "label_fr": "Données de la scène : OCP de balancement",
         "path": "docs/animations/generate_variational_data.py",
         "lines": "116-162"
       }

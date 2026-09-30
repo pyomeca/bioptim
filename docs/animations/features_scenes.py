@@ -14,6 +14,7 @@ The code lines shown next to the curves are the ones used in generate_features_d
 bioptim source). No LaTeX needed. Render commands: see FEATURES.md.
 """
 
+import os
 import sys
 import textwrap
 from pathlib import Path
@@ -185,10 +186,17 @@ def band(ax: Axes, t0, t1, y0, y1, color, opacity=0.22) -> Rectangle:
     ).move_to((a + b) / 2)
 
 
+def dec(text: str) -> str:
+    """Decimal comma for numeric-only labels in the French videos (the series layer skips strings without a word)."""
+    if os.environ.get("SERIES_LANG", "en").strip().lower() == "fr" and os.environ.get("SERIES_FR_COMMA", "1") != "0":
+        return text.replace(".", ",")
+    return text
+
+
 def y_ticks(ax: Axes, values, fmt="{:g}") -> VGroup:
     return VGroup(
         *[
-            Text(fmt.format(v), font_size=16, color=GRAY_B).next_to(ax.c2p(ax.x_range[0], v), LEFT, buff=0.08)
+            Text(dec(fmt.format(v)), font_size=16, color=GRAY_B).next_to(ax.c2p(ax.x_range[0], v), LEFT, buff=0.08)
             for v in values
         ]
     )
@@ -197,7 +205,7 @@ def y_ticks(ax: Axes, values, fmt="{:g}") -> VGroup:
 def x_ticks(ax: Axes, values, fmt="{:g}") -> VGroup:
     return VGroup(
         *[
-            Text(fmt.format(v), font_size=16, color=GRAY_B).next_to(ax.c2p(v, ax.y_range[0]), DOWN, buff=0.08)
+            Text(dec(fmt.format(v)), font_size=16, color=GRAY_B).next_to(ax.c2p(v, ax.y_range[0]), DOWN, buff=0.08)
             for v in values
         ]
     )
@@ -835,7 +843,7 @@ class FreeTime(Scene):
         dur = duration_mob(0)
         bnd = bound_mobs(float(u_maxs[0]))
         info = readout(0)
-        dur_lbl = M(f"T* = {t_end(0):.3f} s", 20, C_TIME).next_to(dur[0], RIGHT, buff=0.12)
+        dur_lbl = M(dec(f"T* = {t_end(0):.3f} s"), 20, C_TIME).next_to(dur[0], RIGHT, buff=0.12)
         self.play(Create(curve_q), Create(curve_u), Create(dur), Create(bnd), FadeIn(info), FadeIn(dur_lbl), run_time=2)
         info_txt = say(
             "The torque sits on the bound most of the time (bang-bang like, with some chattering): "
@@ -859,7 +867,8 @@ class FreeTime(Scene):
                 Transform(info, readout(i)),
                 Transform(old, new),
                 Transform(
-                    dur_lbl, M(f"T* = {t_end(i):.3f} s", 20, C_TIME).next_to(ax_q.c2p(t_end(i), 4.5), RIGHT, buff=0.12)
+                    dur_lbl,
+                    M(dec(f"T* = {t_end(i):.3f} s"), 20, C_TIME).next_to(ax_q.c2p(t_end(i), 4.5), RIGHT, buff=0.12),
                 ),
                 run_time=2.5,
             )

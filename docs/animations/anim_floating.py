@@ -120,7 +120,7 @@ class FloatingReorient(Scene):
         c_root = poly(ax, t, q[2], C_ROOT, 5)
         c_l = poly(ax, t, q[3], C_ARML, 3)
         c_r = poly(ax, t, q[4], C_ARMR, 3)
-        leg = VGroup(code("root", 15, C_ROOT), code("arm L", 15, C_ARML), code("arm R", 15, C_ARMR)).arrange(
+        leg = VGroup(caption("root", 15, C_ROOT), caption("arm L", 15, C_ARML), caption("arm R", 15, C_ARMR)).arrange(
             RIGHT, buff=0.3
         )
         leg.next_to(ax, UP, buff=0.05).align_to(ax, RIGHT)

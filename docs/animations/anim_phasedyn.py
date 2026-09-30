@@ -37,6 +37,13 @@ def code_block(lines, size=17):
     return block
 
 
+def Lines(*lines, font_size=18, color=WHITE, line_spacing=0.9):
+    """Left-aligned stack of Text lines. Unlike Paragraph, every line is translated on its own (no truncation in FR)."""
+    return VGroup(*[Text(s, font_size=font_size, color=color) for s in lines]).arrange(
+        DOWN, aligned_edge=LEFT, buff=0.16 * font_size / 18 * line_spacing
+    )
+
+
 def caption(text, size=19, color=GRAY_B):
     return Text(text, font_size=size, color=color)
 
@@ -163,7 +170,7 @@ class PhaseDynamicsScene(Scene):
             W,
         ).move_to([-6.95, -2.2, 0], aligned_edge=LEFT)
         fit(same, 6.3)
-        note = Paragraph(
+        note = Lines(
             "N is the number of nodes.",
             "Median of 3 runs on one loaded machine (noisy), CasADi SX with RK4.",
             font_size=14,

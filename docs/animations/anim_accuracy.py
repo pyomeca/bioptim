@@ -15,6 +15,7 @@ from features_scenes import (
     axis_label,
     code,
     code_panel,
+    dec,
     fit,
     make_axes,
     M,
@@ -144,7 +145,7 @@ class AccuracyCheck(Scene):
             h = y_of(e) - base_y
             bar = Rectangle(width=0.9, height=h, stroke_width=0, fill_color=C_BAR[i], fill_opacity=0.9)
             bar.move_to([x, base_y + h / 2, 0])
-            val = Text(f"{e:.1e}" if e < 0.01 else f"{e:.2f}", font_size=18).next_to(bar, UP, buff=0.06)
+            val = Text(dec(f"{e:.1e}" if e < 0.01 else f"{e:.2f}"), font_size=18).next_to(bar, UP, buff=0.06)
             name = Text(NAMES[i].replace(", ", "\n"), font_size=15, color=C_BAR[i], line_spacing=0.8)
             name.scale_to_fit_width(min(name.width, 1.2))
             name.move_to([x, base_y - 0.42, 0])

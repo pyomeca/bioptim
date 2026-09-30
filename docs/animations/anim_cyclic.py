@@ -183,6 +183,6 @@ class CyclicNMPC(Scene):
             WHITE,
         )
         fit(msg, 11.0)
-        msg.move_to([-6.9, -3.68, 0], aligned_edge=LEFT)
+        msg.move_to([-6.9, -3.6, 0], aligned_edge=LEFT)
         self.play(FadeOut(band), FadeOut(status), FadeOut(cur_box), FadeIn(msg), run_time=0.5)
         self.wait(2.5)

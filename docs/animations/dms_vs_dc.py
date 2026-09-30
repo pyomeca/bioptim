@@ -16,6 +16,7 @@ Scenes (render them one by one or all together, see README.md):
 No LaTeX needed: only Text / MarkupText with Unicode math.
 """
 
+import os
 import sys
 import textwrap
 from pathlib import Path
@@ -56,6 +57,13 @@ def keep_indent(text: str) -> str:
     """Replace leading spaces by non-breaking spaces (Pango strips regular leading spaces)."""
     stripped = text.lstrip(" ")
     return " " * (len(text) - len(stripped)) + stripped
+
+
+def dec(text: str) -> str:
+    """Decimal comma for numeric-only labels in the French videos (the series layer skips strings without a word)."""
+    if os.environ.get("SERIES_LANG", "en").strip().lower() == "fr" and os.environ.get("SERIES_FR_COMMA", "1") != "0":
+        return text.replace(".", ",")
+    return text
 
 
 def M(markup: str, size: float = 26, color=WHITE) -> MarkupText:
@@ -313,7 +321,7 @@ class OCPStatement(Scene):
             M("q = (y, θ)", 22),
             M("x = (q, q̇)", 22),
             M("u = (F, 0)", 22),
-            M("θ(0) = 0,  θ(T) = 3.14", 20, GRAY_A),
+            M(dec("θ(0) = 0,  θ(T) = 3.14"), 20, GRAY_A),
             M("q̇(0) = q̇(T) = 0", 20, GRAY_A),
             M("only the sideways force F\nis actuated", 20, GRAY_A),
         ).arrange(DOWN, aligned_edge=LEFT, buff=0.18)
@@ -807,7 +815,7 @@ class DirectCollocation(Scene):
                 .next_to(ln, UP, buff=0.35)
                 .align_to(ln, LEFT)
             )
-            vals = Text("τ = " + ",  ".join(f"{p:.3f}" for p in pts), font_size=20, color=GRAY_A).next_to(
+            vals = Text(dec("τ = " + ",  ".join(f"{p:.3f}" for p in pts)), font_size=20, color=GRAY_A).next_to(
                 ln, DOWN, buff=0.5
             )
             end0 = M("t<sub>k</sub>", 20, GRAY_B).next_to(ln.get_start(), DOWN, buff=0.12)

@@ -27,6 +27,13 @@ def code_block(lines, size=16):
     return block
 
 
+def Lines(*lines, font_size=18, color=WHITE, line_spacing=0.9):
+    """Left-aligned stack of Text lines. Unlike Paragraph, every line is translated on its own (no truncation in FR)."""
+    return VGroup(*[Text(s, font_size=font_size, color=color) for s in lines]).arrange(
+        DOWN, aligned_edge=LEFT, buff=0.16 * font_size / 18 * line_spacing
+    )
+
+
 def caption(text, size=18, color=GRAY_B):
     return Text(text, font_size=size, color=color)
 
@@ -49,7 +56,7 @@ class MultinodeLink(Scene):
         self.play(FadeIn(title), run_time=0.4)
 
         # ---------------------------------------------------------------- axes and time grid (left)
-        rows = [(0, "cart position (m)", 0.35), (1, "pendulum angle (rad)", -1.95)]
+        rows = [(0, "cart position (m)", 0.2), (1, "pendulum angle (rad)", -2.05)]
         axes, labs = [], []
         for idx, name, yc in rows:
             allv = np.concatenate([x[m][idx] for m, _ in modes])
@@ -62,7 +69,7 @@ class MultinodeLink(Scene):
         ticks = VGroup(*[y_ticks(ax, [ax.y_range[0], ax.y_range[1]], "{:g}") for ax in axes])
         xt = x_ticks(axes[1], [0, 1, 2], "{:g}")
         xlab = time_label(axes[1])
-        y_grid = 2.05
+        y_grid = 1.95
         gx = [axes[0].c2p(t, 0)[0] for t in tk]
         dots = VGroup(*[Dot([px, y_grid, 0], radius=0.045, color=GRAY_C) for px in gx])
         p0, p1 = dots[0].get_center(), dots[-1].get_center()
@@ -70,7 +77,7 @@ class MultinodeLink(Scene):
         hl = VGroup(*[Dot(dots[k].get_center(), radius=0.1, color=C_LINK) for k in (0, n)])
         lab0 = code("Node.START", 15, C_LINK).next_to(dots[0], DOWN, buff=0.14).align_to(dots[0], LEFT)
         lab1 = code("Node.END", 15, C_LINK).next_to(dots[-1], DOWN, buff=0.14).align_to(dots[-1], RIGHT)
-        lab_arc = M(f"x(END) = x(START)   ({n + 1} nodes, phase 0)", 18, C_LINK).move_to([-3.55, y_grid + 0.65, 0])
+        lab_arc = M(f"x(END) = x(START)   ({n + 1} nodes, phase 0)", 18, C_LINK).move_to([-3.55, y_grid + 0.58, 0])
         guides = VGroup(
             *[
                 DashedLine([px, y_grid - 0.05, 0], axes[1].c2p(t, axes[1].y_range[0]), color=GRAY_D, stroke_width=1.5)
@@ -150,7 +157,7 @@ class MultinodeLink(Scene):
             self.play(*[FadeIn(o[0]) for o in objs], *[Create(o[1]) for o in objs], FadeIn(line), run_time=0.6)
             prev = [o[2] for o in objs]
             self.wait(0.9 if m != "cons" else 0.6)
-        note = Paragraph(
+        note = Lines(
             "Red bar: gap between the two linked nodes (dashed: start value).",
             "The constraint closes the cycle exactly; the objective only pushes towards it.",
             "Both cost more control effort.",
@@ -159,6 +166,6 @@ class MultinodeLink(Scene):
             line_spacing=0.9,
         )
         fit(note, 5.9)
-        note.move_to([CODE_X0, y0 - 1.7, 0], aligned_edge=UL)
+        note.move_to([CODE_X0 + 0.25, y0 - 1.7, 0], aligned_edge=UL)
         self.play(FadeIn(note), run_time=0.5)
         self.wait(2.2)

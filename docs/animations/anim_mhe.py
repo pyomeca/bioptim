@@ -37,6 +37,13 @@ def code_block(lines, size=15):
     return block
 
 
+def Lines(*lines, font_size=18, color=WHITE, line_spacing=0.9):
+    """Left-aligned stack of Text lines. Unlike Paragraph, every line is translated on its own (no truncation in FR)."""
+    return VGroup(*[Text(s, font_size=font_size, color=color) for s in lines]).arrange(
+        DOWN, aligned_edge=LEFT, buff=0.16 * font_size / 18 * line_spacing
+    )
+
+
 class MHEWindow(Scene):
     def construct(self):
         d = np.load(DATA_DIR / "mhe_results.npz")
@@ -140,20 +147,20 @@ class MHEWindow(Scene):
             it, st = int(d["iterations"][k]), int(d["status"][k])
             ok = "converged" if st == 0 else "FAILED"
             txt = f"window {k + 1}/{n_win}   IPOPT: {it} iterations, status {st} ({ok})"
-            return Text(txt, font_size=18, color=GRAY_B).move_to([CODE_X0, -3.0, 0], aligned_edge=LEFT)
+            return Text(txt, font_size=18, color=GRAY_B).move_to([CODE_X0 + 0.2, -3.0, 0], aligned_edge=LEFT)
 
         def rms(x):
             return float(np.sqrt(np.mean(np.asarray(x) ** 2)))
 
         def readout(k):
-            txt = Paragraph(
+            txt = Lines(
                 "Root-mean-square (RMS) error so far, in rad:",
                 f"measurement {rms(e_meas[: k + 1]):.3f}   ·   estimate {rms(e_est[: k + 1]):.3f}",
                 font_size=18,
                 color=WHITE,
                 line_spacing=0.9,
             )
-            return txt.move_to([CODE_X0, -3.45, 0], aligned_edge=LEFT)
+            return txt.move_to([CODE_X0 + 0.2, -3.45, 0], aligned_edge=LEFT)
 
         y_top, y_bot = ax_q.c2p(0, 2.0)[1], ax_e.c2p(0, -0.25)[1]
 
@@ -218,7 +225,7 @@ class MHEWindow(Scene):
         self.remove(*ghosts)
 
         # ------------------------------------------------------------------------------------------ outro
-        msg = Paragraph(
+        msg = Lines(
             f"{n_win} real IPOPT solves, all converged (t = 0 to {(n_win - 1) * dt:.2f} s).",
             f"Root-mean-square error of the noisy measurement: {rms(e_meas[:n_win]):.3f} rad.",
             f"Root-mean-square error of the estimate: {rms(e_est):.3f} rad.",
@@ -227,7 +234,7 @@ class MHEWindow(Scene):
             line_spacing=0.9,
         )
         fit(msg, 5.9)
-        msg.move_to([CODE_X0, -3.05, 0], aligned_edge=LEFT)
+        msg.move_to([CODE_X0 + 0.2, -3.05, 0], aligned_edge=LEFT)
         self.play(
             FadeOut(status), FadeOut(ro), FadeOut(box_cur), FadeOut(band), FadeOut(legend), FadeIn(msg), run_time=0.6
         )

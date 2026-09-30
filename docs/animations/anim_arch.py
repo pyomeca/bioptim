@@ -135,7 +135,9 @@ class ArchitecturePath(Scene):
             f"IPOPT solver status {int(d['status'])}, {n_g} constraints",
             f"final cost {float(d['cost']):.2f}",
         ]
-        cap2 = Text("the same path, with real numbers", font_size=19, color=GRAY_B).move_to(cap, aligned_edge=LEFT)
+        cap2 = Text("the same path, with real numbers", font_size=19, color=GRAY_B)
+        fit(cap2, PANEL_W - 0.3)
+        cap2.move_to(cap, aligned_edge=LEFT)
         self.play(FadeOut(code_lines), FadeOut(cap), FadeIn(cap2), run_time=0.4)
         for i, tag in enumerate(tags):
             t = Text(tag, font_size=17, color=WHITE)

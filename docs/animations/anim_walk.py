@@ -93,7 +93,7 @@ class Hopper(Scene):
         neg_txt = Text("F < 0 is forbidden", font_size=14, color=RED_B).move_to(ax_f.c2p(T * 0.5, -330))
         w_line = DashedLine(ax_f.c2p(0, weight), ax_f.c2p(T, weight), color=GRAY_C, stroke_width=2)
         w_txt = Text(f"weight {weight:.0f} N", font_size=14, color=GRAY_B)
-        w_txt.move_to(ax_f.c2p(0.01, weight + 250), aligned_edge=LEFT)
+        w_txt.move_to(ax_f.c2p(T - 0.01, weight + 250), aligned_edge=RIGHT)
 
         # ---- code (verified against generate_walk_data.py) -------------------------------------------------------
         W = WHITE

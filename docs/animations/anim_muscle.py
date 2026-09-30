@@ -139,14 +139,14 @@ class MuscleReaching(Scene):
         )
         rest_lines = rest[0]
         note = Text("6 muscles: a_i(t) are the controls, tau is only a small residual", font_size=17, color=GRAY_B)
-        note.move_to([CODE_X, -3.05, 0], aligned_edge=LEFT)
+        note.move_to([CODE_X + 0.25, -3.05, 0], aligned_edge=LEFT)
         status = Text(
             f"IPOPT: converged, {int(D['iterations'])} iterations, "
             f"final error {float(D['marker_error'])*100:.1f} cm",
             font_size=17,
             color=GRAY_B,
         )
-        status.move_to([CODE_X, -3.4, 0], aligned_edge=LEFT)
+        status.move_to([CODE_X + 0.25, -3.4, 0], aligned_edge=LEFT)
 
         # ---------------- timeline (~18 s) ----------------
         self.play(FadeIn(model_blk, shift=UP * 0.1), run_time=0.8)

@@ -1,0 +1,3 @@
+{
+ "real IPOPT solve: {0} iterations, status {1} (converged); no velocity state, only q at each node": "vraie résolution IPOPT : {0} itérations, statut {1} (convergé) ; sans vitesse, seulement q à chaque nœud"
+}

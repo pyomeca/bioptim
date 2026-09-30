@@ -32,6 +32,12 @@ DATA = Path(__file__).parent / "data" / "mapping_double_pendulum.npz"
 C1, C2, C_DIFF = GREEN_C, ORANGE, RED_C
 
 
+def para(*lines, **kw):
+    """Multi-line text as ONE Text (a Paragraph would crop longer French lines to the English glyph count)."""
+    kw.pop("line_spacing", None)
+    return Text(chr(10).join(lines), **kw)
+
+
 class Mapping(Scene):
     def construct(self):
         d = np.load(DATA)
@@ -92,7 +98,7 @@ class Mapping(Scene):
             tag = "free" if k == "free" else "mapped"
             n_tau = 2 * n if k == "free" else n
             status = "" if int(d[tag + "_status"]) == 0 else "  (NOT converged)"
-            body = Paragraph(
+            body = para(
                 f"decision vector: {int(d[tag + '_n_vars'])} variables, {n_tau} of them torques",
                 f"IPOPT cost {float(d[tag + '_cost']):.1f}   ·   torque effort Σ(τ1² + τ2²)·dt = {phys[tag]:.1f}",
                 f"largest torque difference = {gap[tag]:.1f} N·m   ·   {int(d[tag + '_iterations'])} iterations{status}",
@@ -103,14 +109,12 @@ class Mapping(Scene):
             return place(body, CODE_X, -1.95)
 
         comment_free = place(
-            Paragraph(
-                "No mapping: two torques per node,", "each joint has its own curve.", font_size=19, color=YELLOW_C
-            ),
+            para("No mapping: two torques per node,", "each joint has its own curve.", font_size=19, color=YELLOW_C),
             CODE_X,
             -2.85,
         )
         comment_map = place(
-            Paragraph(
+            para(
                 "to_second=[0, 0]: the one optimised value feeds both joints.",
                 "to_first=[0]: only the torque of joint 1 is kept as a variable.",
                 font_size=19,
@@ -120,7 +124,7 @@ class Mapping(Scene):
             -2.85,
         )
         note = place(
-            Paragraph(
+            para(
                 "The costs are not comparable.",
                 "The mapped cost counts the shared torque only once.",
                 font_size=16,

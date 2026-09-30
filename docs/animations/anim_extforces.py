@@ -100,8 +100,8 @@ class ExternalForces(Scene):
         panel.move_to([CODE_X0, 2.55, 0], aligned_edge=UL)
 
         # ---------------------------------------------------------------- arm sketch (right, below the code)
-        sh = np.array([1.9, -1.9, 0.0])
-        scale = 3.4
+        sh = np.array([1.9, -1.75, 0.0])
+        scale = 3.2
 
         def to_screen(yz):
             return sh + np.array([yz[0] * scale, yz[1] * scale, 0])
