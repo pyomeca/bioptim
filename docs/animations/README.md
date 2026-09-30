@@ -213,6 +213,8 @@ no logo, pacing, French nor end card.
 
 ## Adding a new scene
 
+**Standard for new videos:** the authoritative specification and checklist is [STANDARD.md](STANDARD.md) (French: [STANDARD.fr.md](STANDARD.fr.md)); start from [templates/scene_template.py](templates/scene_template.py).
+
 1. Write `anim_<topic>.py` (and `generate_<topic>_data.py` if it needs a solve; commit only the small `.npz`), reusing the
    helpers of `features_scenes.py` and the look of the existing scenes. Add `notes/<topic>.md`: what is real, what is
    simplified, the numbers shown.

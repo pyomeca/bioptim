@@ -217,6 +217,8 @@ logo, rythme, français ni carte de fin.
 
 ## Ajouter une scène
 
+**Norme pour les nouvelles vidéos :** la spécification de référence et sa liste de contrôle sont dans [STANDARD.fr.md](STANDARD.fr.md) (anglais : [STANDARD.md](STANDARD.md)) ; partez de [templates/scene_template.py](templates/scene_template.py).
+
 1. Écrire `anim_<sujet>.py` (et `generate_<sujet>_data.py` si une résolution est nécessaire ; ne versionner que le petit
    `.npz`), en réutilisant les outils de `features_scenes.py` et l'aspect des scènes existantes. Ajouter
    `notes/<sujet>.md` : ce qui est réel, ce qui est simplifié, les chiffres montrés.

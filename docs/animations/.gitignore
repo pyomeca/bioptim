@@ -7,3 +7,6 @@ series_out/
 *.jsonl
 !catalog.json
 !i18n/*.json
+
+# placeholder data of templates/scene_template.py (regenerate with templates/generate_template_data.py)
+data/template_demo.npz
