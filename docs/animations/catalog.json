@@ -2011,5 +2011,309 @@
     "level": 3,
     "section": "Phases and time",
     "section_fr": "Phases et temps"
+  },
+  {
+    "id": "anim_bounds.py:BoundsInitialGuess",
+    "slug": "bounds-initial-guess",
+    "title_en": "Bounds and initial guess",
+    "title_fr": "Bornes et estimation initiale",
+    "description_en": "Shows how a bound and an initial guess are given per node with the InterpolationType values CONSTANT, CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT, LINEAR and EACH_FRAME (array shapes from real InitialGuess and Bounds objects, N = 20), then the same pendulum swing-up solved by IPOPT from three initial guesses: zeros (67 iterations, cost 39.9), a straight line (33 iterations, cost 112.9) and a coarse solve (13 iterations, cost 51.3), which end in three different local minima.",
+    "description_fr": "Montre comment une borne et une estimation initiale sont données par nœud avec les InterpolationType CONSTANT, CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT, LINEAR et EACH_FRAME (formes de tableaux de vrais objets InitialGuess et Bounds, N = 20), puis le même balancement du pendule résolu par IPOPT depuis trois estimations initiales : des zéros (67 itérations, coût 39,9), une droite (33 itérations, coût 112,9) et une résolution grossière (13 itérations, coût 51,3), qui aboutissent à trois minima locaux différents.",
+    "video_basename": "BoundsInitialGuess",
+    "duration_note": "",
+    "links": [
+      {
+        "label_en": "Example: all the initial guess interpolations",
+        "label_fr": "Exemple : toutes les interpolations de l'estimation initiale",
+        "path": "bioptim/examples/toy_examples/feature_examples/custom_initial_guess.py",
+        "lines": "147-208"
+      },
+      {
+        "label_en": "InterpolationType enum",
+        "label_fr": "Énumération InterpolationType",
+        "path": "bioptim/misc/enums.py",
+        "lines": "50-61"
+      },
+      {
+        "label_en": "PathCondition.evaluate_at: the value at each node",
+        "label_fr": "PathCondition.evaluate_at : la valeur à chaque nœud",
+        "path": "bioptim/limits/path_conditions.py",
+        "lines": "280-336"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_bounds_data.py",
+        "lines": "75-91"
+      }
+    ],
+    "notes_file": "notes/bounds.md",
+    "level": 1,
+    "section": "Fundamentals",
+    "section_fr": "Fondamentaux"
+  },
+  {
+    "id": "anim_customdyn.py:CustomDynamics",
+    "slug": "custom-dynamics",
+    "title_en": "Custom dynamics: your own model",
+    "title_fr": "Dynamique personnalisée : votre propre modèle",
+    "description_en": "A model written in CasADi without biorbd, as a StateDynamics subclass, plugs into an OCP by declaring its state and control variables and returning the state derivative. Adding a viscous friction term to a pendulum dissipates 12.0 J of the 18.7 J released by gravity and lowers the cost from 134.0 to 108.5 (two real IPOPT solves, both converged).",
+    "description_fr": "Un modèle écrit en CasADi sans biorbd, sous forme de sous-classe de StateDynamics, s'insère dans un OCP en déclarant ses variables d'état et de commande et en renvoyant la dérivée de l'état. Un terme de frottement visqueux ajouté à un pendule dissipe 12,0 J des 18,7 J libérés par la gravité et fait passer le coût de 134,0 à 108,5 (deux résolutions IPOPT réelles, convergées).",
+    "video_basename": "CustomDynamics",
+    "duration_note": "",
+    "links": [
+      {
+        "label_en": "Example: custom model, OCP",
+        "label_fr": "Exemple : modèle personnalisé, OCP",
+        "path": "bioptim/examples/toy_examples/custom_model/main.py",
+        "lines": "26-115"
+      },
+      {
+        "label_en": "Example: the custom model class",
+        "label_fr": "Exemple : la classe du modèle personnalisé",
+        "path": "bioptim/examples/toy_examples/custom_model/custom_package/my_model.py",
+        "lines": "10-102"
+      },
+      {
+        "label_en": "StateDynamics: what a model must define",
+        "label_fr": "StateDynamics : ce qu'un modèle doit définir",
+        "path": "bioptim/dynamics/state_space_dynamics/abstract_dynamics.py",
+        "lines": "10-82"
+      },
+      {
+        "label_en": "Scene data generator (DampedPendulum)",
+        "label_fr": "Générateur des données (DampedPendulum)",
+        "path": "docs/animations/generate_customdyn_data.py",
+        "lines": "45-86"
+      }
+    ],
+    "notes_file": "notes/customdyn.md",
+    "level": 3,
+    "section": "Models and biomechanics",
+    "section_fr": "Modèles et biomécanique"
+  },
+  {
+    "id": "anim_custompen.py:CustomPenalty",
+    "slug": "custom-penalty",
+    "title_en": "Custom objective and custom constraint",
+    "title_fr": "Objectif et contrainte personnalisés",
+    "description_en": "A user function f(controller, **extra) that returns a casadi expression replaces an ObjectiveFcn (with custom_type) or a ConstraintFcn: on a real pendulum swing-up, a custom Lagrange objective on the tip height changes the motion, and a custom constraint on the power torque x velocity keeps it under a limit that the plain solve exceeds.",
+    "description_fr": "Une fonction utilisateur f(controller, **extra) qui renvoie une expression casadi remplace une ObjectiveFcn (avec custom_type) ou une ConstraintFcn : sur une vraie montée de pendule, un objectif de Lagrange personnalisé sur la hauteur de l'extrémité change le mouvement, et une contrainte personnalisée sur la puissance couple x vitesse la maintient sous une limite que la résolution simple dépasse.",
+    "video_basename": "CustomPenalty",
+    "duration_note": "",
+    "links": [
+      {
+        "label_en": "Example: custom objective",
+        "label_fr": "Exemple : objectif personnalisé",
+        "path": "bioptim/examples/getting_started/custom_objectives.py",
+        "lines": "29-56"
+      },
+      {
+        "label_en": "Example: custom constraint",
+        "label_fr": "Exemple : contrainte personnalisée",
+        "path": "bioptim/examples/toy_examples/feature_examples/custom_constraint.py",
+        "lines": "30-58"
+      },
+      {
+        "label_en": "PenaltyController: model, time, states, controls",
+        "label_fr": "PenaltyController : modèle, temps, états, commandes",
+        "path": "bioptim/limits/penalty_controller.py",
+        "lines": "123-232"
+      },
+      {
+        "label_en": "A function becomes ObjectiveFcn.CUSTOM",
+        "label_fr": "Une fonction devient ObjectiveFcn.CUSTOM",
+        "path": "bioptim/limits/objective_functions.py",
+        "lines": "54-64"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_custompen_data.py",
+        "lines": "53-71"
+      }
+    ],
+    "notes_file": "notes/custompen.md",
+    "level": 2,
+    "section": "Objectives and constraints",
+    "section_fr": "Objectifs et contraintes"
+  },
+  {
+    "id": "anim_dynamics.py:DynamicsOverview",
+    "slug": "dynamics-overview",
+    "title_en": "Choosing the dynamics of a model",
+    "title_fr": "Choisir la dynamique d'un modèle",
+    "description_en": "Maps the dynamics of model_dynamics.py (torque, muscle, floating base, holonomic, variational, multi-body, stochastic) with their states and controls, then solves the same reaching task with TorqueBiorbdModel, TorqueActivationBiorbdModel, TorqueDerivativeBiorbdModel and JointAccelerationBiorbdModel. Each control has its own unit and cost; the activation gives the torque solution again, the torque rate and the joint acceleration give other motions.",
+    "description_fr": "Cartographie les dynamiques de model_dynamics.py (couples, muscles, base flottante, holonome, variationnelle, multi-corps, stochastique) avec leurs états et commandes, puis résout la même tâche d'atteinte avec TorqueBiorbdModel, TorqueActivationBiorbdModel, TorqueDerivativeBiorbdModel et JointAccelerationBiorbdModel. Chaque commande a sa propre unité et son propre coût ; l'activation redonne la solution en couple, le taux de couple et l'accélération articulaire donnent d'autres mouvements.",
+    "video_basename": "DynamicsOverview",
+    "duration_note": "",
+    "links": [
+      {
+        "label_en": "Example: joint-acceleration dynamics",
+        "label_fr": "Exemple : dynamique en accélération articulaire",
+        "path": "bioptim/examples/toy_examples/feature_examples/example_joints_acceleration_driven.py",
+        "lines": "28-105"
+      },
+      {
+        "label_en": "Example: torque-activation dynamics",
+        "label_fr": "Exemple : dynamique en activation de couple",
+        "path": "bioptim/examples/toy_examples/torque_driven_ocp/torque_activation_driven.py",
+        "lines": "22-108"
+      },
+      {
+        "label_en": "TorqueActivation and TorqueDerivative models",
+        "label_fr": "Modèles TorqueActivation et TorqueDerivative",
+        "path": "bioptim/models/biorbd/model_dynamics.py",
+        "lines": "240-293"
+      },
+      {
+        "label_en": "JointAccelerationDynamics: states and controls",
+        "label_fr": "JointAccelerationDynamics : états et commandes",
+        "path": "bioptim/dynamics/state_space_dynamics/joint_acceleration_dynamics.py",
+        "lines": "9-27"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_dynamics_data.py",
+        "lines": "62-113"
+      }
+    ],
+    "notes_file": "notes/dynamics.md",
+    "level": 2,
+    "section": "Models and biomechanics",
+    "section_fr": "Modèles et biomécanique"
+  },
+  {
+    "id": "anim_first.py:FirstOCP",
+    "slug": "first-ocp",
+    "title_en": "My first OCP, step by step",
+    "title_fr": "Mon premier OCP, pas à pas",
+    "description_en": "The pendulum swing-up of basic_ocp.py built line by line: the model (stick figure drawn from the real biorbd markers), the objective (squared force), the bounds (fixed start and end poses, cart range, force limits), the initial guess (a pendulum at rest), then the real IPOPT solution (N = 30, T = 1 s, cost 41.6, 57 iterations, converged), a local minimum found from a cold start.",
+    "description_fr": "Le balancement du pendule de basic_ocp.py construit ligne par ligne : le modèle (bonhomme filaire tracé à partir des vrais marqueurs de biorbd), l'objectif (force au carré), les bornes (poses de départ et d'arrivée fixées, course du chariot, limites de force), l'estimation initiale (un pendule au repos), puis la vraie solution d'IPOPT (N = 30, T = 1 s, coût 41,6, 57 itérations, convergé), un minimum local trouvé à froid.",
+    "video_basename": "FirstOCP",
+    "duration_note": "",
+    "links": [
+      {
+        "label_en": "Example: basic pendulum OCP",
+        "label_fr": "Exemple : OCP du pendule de base",
+        "path": "bioptim/examples/getting_started/basic_ocp.py",
+        "lines": "33-127"
+      },
+      {
+        "label_en": "OptimalControlProgram constructor",
+        "label_fr": "Constructeur d'OptimalControlProgram",
+        "path": "bioptim/optimization/optimal_control_program.py",
+        "lines": "160-193"
+      },
+      {
+        "label_en": "ocp.solve",
+        "label_fr": "ocp.solve",
+        "path": "bioptim/optimization/optimal_control_program.py",
+        "lines": "1387-1426"
+      },
+      {
+        "label_en": "bounds_from_ranges",
+        "label_fr": "bounds_from_ranges",
+        "path": "bioptim/models/utils.py",
+        "lines": "62-86"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_first_data.py",
+        "lines": "40-75"
+      }
+    ],
+    "notes_file": "notes/first.md",
+    "level": 1,
+    "section": "Fundamentals",
+    "section_fr": "Fondamentaux"
+  },
+  {
+    "id": "anim_socpk.py:StochasticArmFeedback",
+    "slug": "stochastic-arm-feedback",
+    "title_en": "Stochastic control: the feedback gain K",
+    "title_fr": "Commande stochastique : le gain de rétroaction K",
+    "description_en": "A stochastic optimal control problem (SocpType.COLLOCATION, StochasticTorqueBiorbdModel) for a two-link arm reaching in 0.8 s with motor and sensory noise: besides the mean motion it optimises the covariance P (hand standard deviation up to about 11 mm, 4 mm at the target) and the feedback gain K. Two real solves show that tripling the sensory noise standard deviation gives larger gains and a higher cost. The mean hand path stays the deterministic one.",
+    "description_fr": "Un problème de commande optimale stochastique (SocpType.COLLOCATION, StochasticTorqueBiorbdModel) pour un bras à deux segments qui atteint une cible en 0,8 s avec du bruit moteur et sensoriel : en plus du mouvement moyen, il optimise la covariance P (écart-type de la main jusqu'à environ 11 mm, 4 mm à la cible) et le gain de rétroaction K. Deux vraies résolutions montrent que tripler l'écart-type du bruit sensoriel donne des gains plus grands et un coût plus élevé. Le trajet moyen de la main reste le déterministe.",
+    "video_basename": "StochasticArmFeedback",
+    "duration_note": "",
+    "links": [
+      {
+        "label_en": "Example: torque-driven arm reaching (collocation)",
+        "label_fr": "Exemple : atteinte du bras par couples (collocation)",
+        "path": "bioptim/examples/toy_examples/stochastic_optimal_control/arm_reaching_torque_driven_collocations.py",
+        "lines": "62-305"
+      },
+      {
+        "label_en": "Feedback law tau = tau_nominal + K (y - ref + noise)",
+        "label_fr": "Loi de rétroaction tau = tau_nominal + K (y - ref + bruit)",
+        "path": "bioptim/models/biorbd/stochastic_biorbd_model.py",
+        "lines": "18-38"
+      },
+      {
+        "label_en": "SocpType.COLLOCATION",
+        "label_fr": "SocpType.COLLOCATION",
+        "path": "bioptim/optimization/problem_type.py",
+        "lines": "44-81"
+      },
+      {
+        "label_en": "Scene data generator (3 solves)",
+        "label_fr": "Générateur des données (3 résolutions)",
+        "path": "docs/animations/generate_socpk_data.py",
+        "lines": "63-142"
+      }
+    ],
+    "notes_file": "notes/socpk.md",
+    "level": 3,
+    "section": "Advanced control",
+    "section_fr": "Commande avancée"
+  },
+  {
+    "id": "anim_viz.py:Visualization",
+    "slug": "visualization",
+    "title_en": "Visualising a solution with sol.animate",
+    "title_fr": "Visualiser une solution avec sol.animate",
+    "description_en": "sol.animate(viewer=\"pyorerun\" | \"bioviz\", show_now=..., n_frames=...) on one real double-pendulum solve (31 nodes, IPOPT status 0): pyorerun is run headlessly and saved to a file, whose markers redraw the motion; pyorerun always plays the 31 nodes and ignores n_frames, while bioviz (not installed here, so not run) would get the frames of interpolate_data.",
+    "description_fr": "sol.animate(viewer=\"pyorerun\" | \"bioviz\", show_now=..., n_frames=...) sur une résolution réelle de double pendule (31 nœuds, statut IPOPT 0) : pyorerun est exécuté sans fenêtre et enregistré dans un fichier dont les marqueurs redessinent le mouvement ; pyorerun joue toujours les 31 nœuds et ignore n_frames, tandis que bioviz (non installé ici, donc non exécuté) recevrait les images de interpolate_data.",
+    "video_basename": "Visualization",
+    "duration_note": "",
+    "links": [
+      {
+        "label_en": "Example: animating the solution (commented block)",
+        "label_fr": "Exemple : animer la solution (bloc commenté)",
+        "path": "bioptim/examples/getting_started/basic_ocp.py",
+        "lines": "182-188"
+      },
+      {
+        "label_en": "Solution.animate",
+        "label_fr": "Solution.animate",
+        "path": "bioptim/optimization/solution/solution.py",
+        "lines": "1263-1311"
+      },
+      {
+        "label_en": "pyorerun viewer",
+        "label_fr": "Visualiseur pyorerun",
+        "path": "bioptim/models/viewer_pyorerun.py",
+        "lines": "9-145"
+      },
+      {
+        "label_en": "bioviz frames (interpolate_data)",
+        "label_fr": "Images de bioviz (interpolate_data)",
+        "path": "bioptim/models/biorbd/viewer_bioviz.py",
+        "lines": "136-149"
+      },
+      {
+        "label_en": "Scene data generator",
+        "label_fr": "Générateur des données de la scène",
+        "path": "docs/animations/generate_viz_data.py",
+        "lines": "86-97"
+      }
+    ],
+    "notes_file": "notes/viz.md",
+    "level": 1,
+    "section": "Library overview",
+    "section_fr": "Vue d'ensemble de la bibliothèque"
   }
 ]

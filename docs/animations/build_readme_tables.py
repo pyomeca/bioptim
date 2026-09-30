@@ -24,7 +24,16 @@ SECTION_ORDER = [
     "Advanced control",
     "Library overview",
 ]
-START_HERE = ["OCPStatement", "MultipleShooting", "ArchitecturePath", "ObjectivesNodes", "SolutionTour", "TrackState"]
+START_HERE = [
+    "OCPStatement",
+    "FirstOCP",
+    "BoundsInitialGuess",
+    "MultipleShooting",
+    "ArchitecturePath",
+    "ObjectivesNodes",
+    "SolutionTour",
+    "TrackState",
+]
 LEVELS = {
     "en": {1: "1 - introductory", 2: "2 - intermediate", 3: "3 - advanced"},
     "fr": {1: "1 - introduction", 2: "2 - intermédiaire", 3: "3 - avancé"},
@@ -48,6 +57,8 @@ TEXT = {
 START_WHY = {
     "en": {
         "OCPStatement": "The vocabulary: state, control, dynamics, cost, constraints, bounds.",
+        "FirstOCP": "Your first OCP built line by line, with the real solution.",
+        "BoundsInitialGuess": "Bounds and initial guesses, and how they change the solve.",
         "MultipleShooting": "How Bioptim turns an OCP into an NLP (nodes, defects).",
         "ArchitecturePath": "The map of the library: from your inputs to the Solution.",
         "ObjectivesNodes": "Lagrange versus Mayer terms and the Node enum.",
@@ -56,6 +67,8 @@ START_WHY = {
     },
     "fr": {
         "OCPStatement": "Le vocabulaire : état, commande, dynamique, coût, contraintes, bornes.",
+        "FirstOCP": "Votre premier OCP construit ligne par ligne, avec la vraie solution.",
+        "BoundsInitialGuess": "Bornes et estimations initiales, et leur effet sur la résolution.",
         "MultipleShooting": "Comment Bioptim transforme un OCP en NLP (nœuds, défauts).",
         "ArchitecturePath": "La carte de la bibliothèque : de vos entrées à la Solution.",
         "ObjectivesNodes": "Termes de Lagrange et de Mayer, énumération Node.",

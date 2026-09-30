@@ -1,0 +1,18 @@
+{
+  "Bounds and initial guess": "Bornes et estimation initiale",
+  "pendulum swing-up, N = {0} intervals, T = {1} s": "balancement d'un pendule, N = {0} intervalles, T = {1} s",
+  "rotation angle q_rot (rad)": "angle de rotation q_rot (rad)",
+  "guess: array of shape ({0}, {1}), used at {2} nodes\nbounds (red circles): array of shape ({3}, {4}), ±{5} rad in between": "estimation : tableau de forme ({0}, {1}), utilisé aux {2} nœuds\nbornes (cercles rouges) : tableau de forme ({3}, {4}), ±{5} rad entre les deux",
+  "One column: the same value at every node.": "Une colonne : la même valeur à chaque nœud.",
+  "Three columns: the first node, all the middle\nnodes, the last node.": "Trois colonnes : le premier nœud, tous les\nnœuds du milieu, le dernier nœud.",
+  "Two columns: the first and the last value, a\nstraight line between them.": "Deux colonnes : la première et la dernière\nvaleur, une droite entre les deux.",
+  "One column per node ({0} columns): any curve\nyou want.": "Une colonne par nœud ({0} colonnes) : la\ncourbe que vous voulez.",
+  "Real InitialGuess and Bounds objects; the last guess is a coarse\n{0}-interval solve. SPLINE and CUSTOM also exist.": "Vrais objets InitialGuess et Bounds ; la dernière estimation vient d'une résolution grossière\nà {0} intervalles. SPLINE et CUSTOM existent aussi.",
+  "q_rot (rad): guess (dashed) and solution": "q_rot (rad) : estimation (pointillés) et solution",
+  "Δq_rot = q_rot − q_rot from zeros (rad)": "Δq_rot = q_rot − q_rot depuis les zéros (rad)",
+  "IPOPT: {0} iterations, converged\ncost = {1}  ·  peak |τ| = {2} N": "IPOPT : {0} itérations, convergé\ncoût = {1}  ·  pic |τ| = {2} N",
+  "The costs {0}, {1} and {2} are three\ndifferent local minima: the guess picks one.": "Les coûts {0}, {1} et {2} sont trois\nminima locaux différents : l'estimation choisit.",
+  "Warm start: the third guess comes from a coarse solve ({0} iterations,\nnot counted above) interpolated on the nodes.": "Initialisation à chaud : la 3e estimation vient d'une résolution grossière ({0} itérations,\nnon comptées) interpolée sur les nœuds.",
+  "Real InitialGuess and Bounds objects; the last guess is a coarse {0}-interval solve. SPLINE and CUSTOM also exist.": "Vrais objets InitialGuess et Bounds ; la dernière estimation vient d'une résolution grossière à {0} intervalles. SPLINE et CUSTOM existent aussi.",
+  "Warm start: the third guess comes from a coarse solve ({0} iterations, not counted above) interpolated on the nodes.": "Initialisation à chaud : la 3e estimation vient d'une résolution grossière ({0} itérations, non comptées) interpolée sur les nœuds."
+}

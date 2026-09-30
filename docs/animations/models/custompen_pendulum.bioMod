@@ -1,0 +1,20 @@
+version 4
+
+// One-link pendulum for the custom penalty video: a 1 kg point mass at the tip of a 1 m massless rod.
+// q = 0: hanging down (tip at z = -1 m); q = pi: upright (tip at z = +1 m).
+segment Link
+    rotations x
+    ranges
+        -2*pi 2*pi
+    mass 1
+    inertia
+        0.001 0 0
+        0 0.001 0
+        0 0 0.001
+    com 0 0 -1
+endsegment
+
+marker tip
+    parent Link
+    position 0 0 -1
+endmarker

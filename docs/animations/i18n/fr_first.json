@@ -1,0 +1,15 @@
+{
+ "My first optimal control problem (OCP)": "Mon premier problème de commande optimale (OCP)",
+ "pendulum swing-up, N = {0} intervals, T = {1} s, multiple shooting, IPOPT": "balancement du pendule, N = {0} intervalles, T = {1} s, tir multiple, IPOPT",
+ "cart position q₀ (m)": "position du chariot q₀ (m)",
+ "The model gives the pole: a segment between\ntwo markers, on a cart that slides.": "Le modèle donne la tige : un segment entre\ndeux marqueurs, sur un chariot qui glisse.",
+ "force on the cart (N)": "force sur le chariot (N)",
+ "cost = Σ (force)² Δt": "coût = Σ (force)² Δt",
+ "The objective adds up the squared force at\nevery node: less force, lower cost.": "L'objectif additionne la force au carré à\nchaque nœud : moins de force, coût plus bas.",
+ "q₁(t)  rotation (rad)": "q₁(t)  rotation (rad)",
+ "Bounds: start and end poses are fixed (red\ndots), and the cart stays between {0} and {1} m.": "Bornes : les poses de départ et d'arrivée sont\nfixées (points rouges), le chariot reste entre {0} et {1} m.",
+ "The initial guess is where IPOPT starts: here\nnothing moves and no force is applied.": "L'estimation initiale est le point de départ d'IPOPT :\nici rien ne bouge et aucune force n'est appliquée.",
+ "cost = {0}  ·  peak force = {1} N\nIPOPT: {2} iterations, converged\ncold start from the initial guess above": "coût = {0}  ·  force maximale = {1} N\nIPOPT : {2} itérations, convergé\ndémarrage à froid depuis l'estimation initiale ci-dessus",
+ "The cart backs up to its bound of {0} m, then\npushes the pole up.": "Le chariot recule jusqu'à sa borne de {0} m,\npuis relève la tige.",
+ "IPOPT returns a local minimum reached from this initial guess.": "IPOPT renvoie un minimum local atteint depuis cette estimation initiale."
+}
