@@ -47,9 +47,7 @@ def _rk8_integrator(number_of_finite_elements: int, rhs):
 
 
 def _integrate(integrator: RK8, initial_state: float):
-    return float(
-        integrator(t_span=[0, 1], x0=[initial_state], u=[0], p=[], a=[], d=[])["xf"]
-    )
+    return float(integrator(t_span=[0, 1], x0=[initial_state], u=[0], p=[], a=[], d=[])["xf"])
 
 
 def test_rk8_non_autonomous_dynamics_uses_butcher_abscissas():
