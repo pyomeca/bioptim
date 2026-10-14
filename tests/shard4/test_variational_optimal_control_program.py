@@ -9,6 +9,8 @@ from bioptim import (
     ConstraintFcn,
     InitialGuessList,
     InterpolationType,
+    MultinodeConstraintFcn,
+    MultinodeConstraintList,
     Node,
     ObjectiveFcn,
     ParameterConstraintList,
@@ -84,3 +86,15 @@ def test_variational_ocp_accepts_subclasses_of_variational_models():
 def test_variational_ocp_rejects_non_variational_models():
     with pytest.raises(TypeError, match="bio_model must be of type VariationalBiorbdModel"):
         _prepare_variational_ocp(model_type=TorqueBiorbdModel)
+
+
+def test_variational_ocp_does_not_mutate_user_multinode_constraints():
+    multinode_constraints = MultinodeConstraintList()
+    multinode_constraints.add(MultinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 0), nodes=(0, 5), key="q")
+
+    ocp = _prepare_variational_ocp(multinode_constraints=multinode_constraints)
+
+    assert len(multinode_constraints) == 1
+    # The user constraint plus n_shooting - 1 three-node and 2 boundary variational constraints
+    n_shooting = ocp.nlp[0].ns
+    assert len([g for g in ocp.nlp[0].g_internal if g]) == 1 + (n_shooting - 1) + 2
