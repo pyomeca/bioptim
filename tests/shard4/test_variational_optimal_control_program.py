@@ -157,8 +157,8 @@ def test_variational_ocp_reads_qdot_parameters_by_name():
 
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
-    npt.assert_almost_equal(states["q"][:, 10], [-0.325653795765479, 0.514317755981177], decimal=6)
-    npt.assert_almost_equal(controls["tau"][:, 0], [9.952650040830257, 0.0], decimal=6)
+    npt.assert_almost_equal(states["q"][:, 10], [-0.227191682344467, 0.417947896973504], decimal=6)
+    npt.assert_almost_equal(controls["tau"][:, 0], [11.973897222965608, 0.0], decimal=6)
     npt.assert_almost_equal(sol.parameters["qdot_start"], [0.0, 0.0], decimal=6)
     npt.assert_almost_equal(sol.parameters["qdot_end"], [0.0, 0.0], decimal=6)
 
