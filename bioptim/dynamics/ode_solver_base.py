@@ -107,6 +107,18 @@ class OdeSolverBase:
         """
         raise RuntimeError("This method should be implemented in the child class")
 
+    @property
+    def integrates_ode(self) -> Bool:
+        """
+        Whether this ode solver integrates a continuous-time ode over each shooting interval. If False, the states are
+        only defined at the nodes and a solution cannot be reintegrated.
+
+        Returns
+        -------
+        True if the ode solver integrates an ode
+        """
+        return True
+
     def t_ode(self, nlp) -> AnyList:
         """
         The time span of the integration
