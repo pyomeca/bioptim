@@ -176,13 +176,13 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                 )
             parameter_bounds.add(key, qdot_bounds[key], phase=0)
 
-        for init in qdot_init.keys():
+        for key in qdot_init.keys():
             if key in parameter_init.keys():
                 raise KeyError(
                     f"{key} cannot be declared in parameters_init as it is a reserved word in "
                     f"VariationalOptimalControlProgram"
                 )
-            parameter_init.add(init, qdot_init[key], phase=0)
+            parameter_init.add(key, qdot_init[key], phase=0)
 
         if multinode_constraints is None:
             multinode_constraints = MultinodeConstraintList()
