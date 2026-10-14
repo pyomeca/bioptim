@@ -1039,7 +1039,7 @@ And some of the currently available dynamics:
 - `TorqueDynamics`:The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as *tau*. The derivative of *q* is trivially *qdot*. The derivative of *qdot* is given by the biorbd function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`. If external forces are provided, they are added to the ForwardDynamics function.
 - `TorqueDerivativeDynamics`: The torque derivative driven defines the states (x) as *q*, *qdot*, *tau* and the controls (u) as *taudot*. The derivative of *q* is trivially *qdot*. The derivative of *qdot* is given by the biorbd function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`. The derivative of *tau* is trivially *taudot*. If external forces are provided, they are added to the ForwardDynamics function.
 - `TorqueActivationsDynamics`: The torque activations driven defines the states (x) as *q* and *qdot* and the controls (u) as the level of activation of *tau*. The derivative of *q* is trivially *qdot*. The actual *tau* is computed from the activation by the biorbd function: `tau = bio_model.torque(torque_act, q, qdot)`. The derivative of *qdot* is given by the biorbd function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`.
-(Please note, this dynamics is expected to be very slow to converge, if it ever does. One is therefore encourage using TORQUE_DRIVEN instead, and to add the TORQUE_MAX_FROM_ACTUATORS constraint. This has been shown to be more efficient and allows defining minimum torque. **with_residual_torque = True:** The residual torque is taken into account in the *tau*.)
+(Please note, this dynamics is expected to be very slow to converge, if it ever does. One is therefore encourage using TORQUE_DRIVEN instead, and to add the TORQUE_MAX_FROM_Q_AND_QDOT constraint. This has been shown to be more efficient and allows defining minimum torque. **with_residual_torque = True:** The residual torque is taken into account in the *tau*.)
 - `JointsAccelerationDynamics`: The joints acceleration driven defines the states (x) as *q* and *qdot* and the controls (u) as *qddot_joints*. The derivative of *q* is trivially *qdot*. The joints' acceleration *qddot_joints* is the acceleration of the actual joints of the `biorb_model` without its root's joints. The model's root's joints acceleration *qddot_root* are computed by the `biorbd` function: `qddot_root = boirbd_model.ForwardDynamicsFreeFloatingBase(q, qdot, qddot_joints)`. The derivative of *qdot* is the vertical stack of *qddot_root* and *qddot_joints*.
 (This dynamic is suitable for bodies in free fall.)
 - `MuscleDynamics`: The muscle driven defines the states (x) as *q* and *qdot* and the controls (u) as the muscle activations. The derivative of *q* is trivially *qdot*. Possible options: The actual *tau* is computed from the muscle activation converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(muscles_states, q, qdot)`. The derivative of *qdot* is given by the `biorbd` function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`. The actual *tau* is computed from the sum of *tau* to the *a* converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(a, q, qdot)`. **with_residual_torque = True:** The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as the *tau* and the muscle activations (*a*). The actual *tau* is computed from the sum of *tau* to the muscle activation converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(a, q, qdot)`. **with_excitations = True:** The torque driven defines the states (x) as *q*, *qdot* and muscle activations (*a*) and the controls (u) as the *tau* and the *EMG*. The derivative of *a* is computed by the `biorbd` function: `adot = model.activationDot(emg, a)`
@@ -1246,20 +1246,18 @@ This constraint assumes that the normal forces is positive (that is having an ad
 - **PROPORTIONAL_STATE** &mdash; Links one state to another, such that `x[first_dof] - first_dof_intercept = coef * (x[second_dof] - second_dof_intercept)`. The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Constraint` constructor.
 - **SUPERIMPOSE_MARKERS** &mdash; Matches one marker with another one. The extra parameters `first_marker_idx: int` and `second_marker_idx: int` informs which markers are to be superimposed.
 - **TIME_CONSTRAINT**  &mdash; Adds the time to the optimization variable set. It will leave the time free within the given boundaries.
-- **TORQUE_MAX_FROM_ACTUATORS**  &mdash; Adds a constraint of maximal torque to the generalized forces controls such that the maximal *tau* are computed from the `biorbd` method `bio_model.torque_max(q, qdot)`. This is an efficient alternative to torque activation dynamics.  The extra parameter `min_torque` can be passed to ensure that the model is never too weak.
-- **TRACK_ALL_CONTROLS**  &mdash; Tracks all the control variables toward a target.
-- **TRACK_ANGULAR_MOMENTUM**  &mdash; Constraints the angular momentum in the global reference frame toward a target. The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the momentum should be tracked.
-- **TRACK_COM_POSITION**  &mdash; Constraints the center of mass toward a target. The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the center of mass should be tracked.
-- **TRACK_COM_VELOCITY**  &mdash; Constraints the center of mass velocity toward a target. The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the velocity should be tracked.
-- **TRACK_RIGID_CONTACT_FORCES**  &mdash; Tracks the non-acceleration point reaction forces toward a target.
-- **TRACK_LINEAR_MOMENTUM**  &mdash; Constraints the linear momentum toward a target. The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the momentum should be tracked.
+- **TORQUE_MAX_FROM_Q_AND_QDOT**  &mdash; Adds a constraint of maximal torque to the generalized forces controls such that the maximal *tau* are computed from the torque-position-velocity relationship of the model. This is an efficient alternative to torque activation dynamics.  The extra parameter `min_torque` can be passed to ensure that the model is never too weak.
+- **TRACK_ANGULAR_MOMENTUM**  &mdash; Constraints the angular momentum in the global reference frame toward a target. The extra parameter `axes` can be sent to specify the axes along which the momentum should be tracked.
+- **TRACK_COM_POSITION**  &mdash; Constraints the center of mass toward a target. The extra parameter `axes` can be sent to specify the axes along which the center of mass should be tracked.
+- **TRACK_COM_VELOCITY**  &mdash; Constraints the center of mass velocity toward a target. The extra parameter `axes` can be provided to specify the axes along which the velocity should be tracked.
+- **TRACK_EXPLICIT_RIGID_CONTACT_FORCES**  &mdash; Tracks the non-acceleration point reaction forces toward a target.
+- **TRACK_LINEAR_MOMENTUM**  &mdash; Constraints the linear momentum toward a target. The extra parameter `axes` can be sent to specify the axes along which the momentum should be tracked.
 - **TRACK_MARKER_WITH_SEGMENT_AXIS**  &mdash; Tracks a marker using a segment, that is aligning an axis toward the marker. The extra parameters `marker_idx: int`, `segment_index: int`, and `axis: Axis` must be passed to the `Constraint` constructor
 - **TRACK_MARKERS_VELOCITY** &mdash; Tracks the skin marker velocities toward a target.
-- **TRACK_MARKERS** &mdash; Tracks the skin markers toward a target. The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the markers should be tracked.
-- **TRACK_MUSCLES_CONTROL**  &mdash; Tracks the muscles (part of the control variables) toward a target.
+- **TRACK_MARKERS** &mdash; Tracks the skin markers toward a target. The extra parameter `axes` can be provided to specify the axes along which the markers should be tracked.
 - **TRACK_SEGMENT_WITH_CUSTOM_RT**  &mdash;Links a segment with an RT (for instance, an Inertial Measurement Unit). It does so by computing the homogenous transformation between the segment and the RT and then converting this to Euler angles. The extra parameters `segment_index: int` and `rt_index: int` must be passed to the `Constraint` constructor.
 - **TRACK_STATE** &mdash; Tracks the state's variable toward a target.
-- **TRACK_TORQUE**  &mdash; Tracks the generalized forces (part of the control variables) toward a target.
+- **TRACK_CONTROL**  &mdash; Tracks the control variable named by the extra parameter `key` (e.g., `key="tau"` for the generalized forces or `key="muscles"` for the muscle controls) toward a target.
 - **CUSTOM**  &mdash; The user should not directly send CUSTOM, but the user should pass the custom_constraint function directly. You can look at Constraint and ConstraintList sections for more information about how to define custom constraints.
 
 
@@ -1940,14 +1938,14 @@ forces have to remain inside of a cone of friction), as shown in the part of the
 ```python
 constraints = ConstraintList()
    constraints.add(
-   ConstraintFcn.TRACK_RIGID_CONTACT_FORCES,
+   ConstraintFcn.TRACK_EXPLICIT_RIGID_CONTACT_FORCES,
    min_bound=min_bound,
    max_bound=max_bound,
    node=Node.ALL,
    contact_index=1,
    )
 constraints.add(
-    ConstraintFcn.TRACK_RIGID_CONTACT_FORCES,
+    ConstraintFcn.TRACK_EXPLICIT_RIGID_CONTACT_FORCES,
     min_bound=min_bound,
     max_bound=max_bound,
     node=Node.ALL,
