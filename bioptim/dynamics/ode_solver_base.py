@@ -12,6 +12,8 @@ from ..misc.parameters_types import (
 
 if TYPE_CHECKING:
     from ..models.protocols.biomodel import BioModel
+    from ..optimization.non_linear_program import NonLinearProgram
+    from ..optimization.optimal_control_program import OptimalControlProgram
     from ..optimization.parameters import ParameterList
 
 
@@ -25,6 +27,8 @@ class OdeSolverBase:
         The interface of the OdeSolver to the corresponding integrator
     declare_parameters(self, parameters, model)
         Declare the parameters the discretization needs, if any
+    declare_continuity(self, ocp, nlp)
+        Declare the continuity of the states between the nodes of a phase
     prepare_dynamic_integrator(ocp, nlp)
         Properly set the integration in an nlp
     """
@@ -51,6 +55,39 @@ class OdeSolverBase:
         model: BioModel
             The model of the phase this ode solver is used in
         """
+
+    def declare_continuity(self, ocp: "OptimalControlProgram", nlp: "NonLinearProgram") -> None:
+        """
+        Declare, in the penalty pool of the ocp, the continuity of the states between the nodes of a phase. By default,
+        the continuity is a constraint, but it is declared as an objective if the state_continuity_weight of the
+        dynamics is not a ConstraintWeight. The continuity between phases is declared by the ocp.
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            The phase this ode solver is used in
+        """
+        # Imported here since the limits depend on the dynamics
+        from ..limits.constraints import Constraint, ConstraintFcn
+        from ..limits.objective_functions import Objective, ObjectiveFcn
+        from ..limits.weight import ConstraintWeight
+        from ..misc.enums import Node, PenaltyType
+
+        if isinstance(nlp.dynamics_type.state_continuity_weight, ConstraintWeight):
+            penalty = Constraint(
+                ConstraintFcn.STATE_CONTINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL
+            )
+        else:
+            penalty = Objective(
+                ObjectiveFcn.Mayer.STATE_CONTINUITY,
+                weight=nlp.dynamics_type.state_continuity_weight,
+                quadratic=True,
+                node=Node.ALL_SHOOTING,
+                penalty_type=PenaltyType.INTERNAL,
+            )
+        penalty.add_or_replace_to_penalty_pool(ocp, nlp)
 
     @property
     def integrator(self):
