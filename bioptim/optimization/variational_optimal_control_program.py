@@ -19,7 +19,6 @@ from ..models.biorbd.variational_biorbd_model import VariationalBiorbdModel
 from ..models.protocols.variational_biomodel import VariationalBioModel
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.parameters import ParameterList
-from ..optimization.variable_scaling import VariableScaling
 from ..misc.parameters_types import (
     Bool,
     Int,
@@ -82,7 +81,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             )
 
         self.bio_model = bio_model
-        n_qdot = n_q = self.bio_model.nb_q
+        n_q = self.bio_model.nb_q
 
         # Dynamics
         dynamics = DynamicsOptionsList()
@@ -122,7 +121,6 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             if key not in qdot_init.keys():
                 qdot_init.add(key, [0] * n_q)
 
-        # Declare parameters for the initial and final velocities
         if parameters is None:
             parameters = ParameterList(use_sx=use_sx)
         if not isinstance(parameters, ParameterList):
@@ -147,25 +145,6 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             parameter_objectives = ParameterObjectiveList()
         if not isinstance(parameter_objectives, ParameterObjectiveList):
             raise ValueError("parameter_objectives must be a ParameterObjectiveList")
-
-        if "qdot_start" in parameters.keys() or "qdot_end" in parameters.keys():
-            raise KeyError(
-                "'qdot_start' and 'qdot_end' cannot be declared in parameters as they are reserved words in "
-                "VariationalOptimalControlProgram. To define the initial and final velocities, please use "
-                "`qdot_init` and `qdot_bounds` instead."
-            )
-        parameters.add(
-            "qdot_start",  # The name of the parameter
-            function=self.qdot_function,  # The function that modifies the biorbd model
-            size=n_qdot,  # The number of elements this particular parameter vector has
-            scaling=VariableScaling("qdot_start", np.ones((n_qdot, 1))),
-        )
-        parameters.add(
-            "qdot_end",  # The name of the parameter
-            function=self.qdot_function,  # The function that modifies the biorbd model
-            size=n_qdot,  # The number of elements this particular parameter vector has
-            scaling=VariableScaling("qdot_end", np.ones((n_qdot, 1))),
-        )
 
         for key in qdot_bounds.keys():
             if key in parameter_bounds.keys():
@@ -206,17 +185,6 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             use_sx=use_sx,
             **kwargs,
         )
-
-    @staticmethod
-    def qdot_function(model, value) -> None:
-        """
-        It is currently mandatory to provide a function to the method add of ParameterList.
-        Parameters
-        ----------
-        model
-        value
-        """
-        pass
 
     def _lambdas(self, controller: PenaltyController) -> list:
         """
