@@ -187,7 +187,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             multinode_constraints = MultinodeConstraintList()
         if not isinstance(multinode_constraints, MultinodeConstraintList):
             raise ValueError("multinode_constraints must be a MultinodeConstraintList")
-        self.variational_continuity(multinode_constraints, n_shooting, n_q)
+        multinode_constraints = self.variational_continuity(multinode_constraints, n_shooting, n_q)
 
         super().__init__(
             self.bio_model,
@@ -348,13 +348,20 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         Parameters
         ----------
         multinode_constraints: MultinodeConstraintList
+            The user-defined multinode constraints, left untouched
         n_shooting: int
         n_qdot: int
 
         Returns
         -------
-        The list of continuity constraints for the integration.
+        A new list holding the user-defined multinode constraints followed by the continuity constraints for the
+        integration.
         """
+        user_multinode_constraints = multinode_constraints
+        multinode_constraints = MultinodeConstraintList()
+        for constraint in user_multinode_constraints:
+            multinode_constraints.copy(constraint)
+
         for i in range(n_shooting - 1):
             multinode_constraints.add(
                 self.variational_integrator_three_nodes,
