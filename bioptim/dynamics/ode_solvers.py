@@ -290,6 +290,23 @@ class OdeSolver:
             self.method = method
             self._defects_type = defects_type
 
+        def declare_continuity(self, ocp, nlp) -> None:
+            super().declare_continuity(ocp, nlp)
+
+            # Imported here since the limits depend on the dynamics
+            from ..limits.constraints import Constraint, ConstraintFcn
+            from ..limits.weight import ConstraintWeight
+            from ..misc.enums import Node, PenaltyType
+
+            if self.duplicate_starting_point and isinstance(
+                nlp.dynamics_type.state_continuity_weight, ConstraintWeight
+            ):
+                Constraint(
+                    ConstraintFcn.FIRST_COLLOCATION_HELPER_EQUALS_STATE,
+                    node=Node.ALL_SHOOTING,
+                    penalty_type=PenaltyType.INTERNAL,
+                ).add_or_replace_to_penalty_pool(ocp, nlp)
+
         @property
         def integrator(self):
             return integrator.COLLOCATION
