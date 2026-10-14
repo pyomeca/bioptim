@@ -42,6 +42,12 @@ class ConfigureProblem:
 
         if not nlp.model.has_continuous_dynamics:
             # The model is only described by discrete equations, there is no ode to configure
+            if nlp.dynamics_type.ode_solver.integrates_ode:
+                raise ValueError(
+                    f"The model of phase {nlp.phase_idx} has no continuous-time dynamics, so it cannot be used with "
+                    f"OdeSolver {nlp.dynamics_type.ode_solver} that integrates an ode. Please use the ode solver "
+                    f"dedicated to this model (e.g. OdeSolver.VARIATIONAL)."
+                )
             return
 
         ConfigureProblem.configure_dynamics_function(ocp, nlp, nlp.model.dynamics, **nlp.dynamics_type.extra_parameters)
