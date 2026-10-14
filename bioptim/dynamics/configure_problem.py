@@ -40,6 +40,10 @@ class ConfigureProblem:
             functions=nlp.model.extra_configuration_functions,
         ).initialize(ocp, nlp)
 
+        if not nlp.model.has_continuous_dynamics:
+            # The model is only described by discrete equations, there is no ode to configure
+            return
+
         ConfigureProblem.configure_dynamics_function(ocp, nlp, nlp.model.dynamics, **nlp.dynamics_type.extra_parameters)
 
         if nlp.model.extra_dynamics is not None:
