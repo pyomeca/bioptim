@@ -11,13 +11,20 @@ The current GitHub-hosted runners require these Conda platforms:
 - macOS Apple Silicon: `osx-arm64`
 - Windows: `win-64`
 
+The Linux lock uses the Haswell (`x86_64_v3`) build of BLASFEO 0.1.4.3.
+Its Intel Core (`x86_64`) build makes FATROP 0.0.4 fail the pendulum solve
+before convergence. The CI dependency pin and `virtual-packages.yml` select
+this variant and its matching `_x86_64-microarch-level` dependency during
+regeneration. The Linux runner must support AVX2; the other platform locks
+keep their own variants.
+
 Regenerate all lockfiles from the repository root with `conda-lock 4.0.2`:
 
 ```bash
 conda-lock lock \
   --kind explicit \
   --micromamba \
-  --without-cuda \
+  --virtual-package-spec .github/conda-lock/virtual-packages.yml \
   --platform linux-64 \
   --platform osx-arm64 \
   --platform win-64 \

@@ -67,7 +67,9 @@ jobs:
 
       - name: Validate environment
         if: steps.cache-lookup.outputs.cache-hit != 'true'
-        run: python -c "import biorbd, numpy, pinocchio, pytest"
+        run: |
+          python -c "import biorbd, numpy, pinocchio, pytest"
+          python .github/conda-lock/check_fatrop.py
 
       - name: Save Conda environment
         if: steps.cache-lookup.outputs.cache-hit != 'true'
@@ -149,6 +151,10 @@ jobs:
           python -m pip install .
           cd
           python -c "import bioptim"
+
+      - name: Validate FATROP backend
+        if: matrix.shard == 2
+        run: python .github/conda-lock/check_fatrop.py
 
       - name: Run tests with code coverage
         run: python -m pytest -v --color=yes --durations=20 --durations-min=1.0 --cov-report term-missing --cov=bioptim tests/shard${{ matrix.shard }} --mpl-baseline-path=tests/plot_reference_images

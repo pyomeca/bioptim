@@ -13,6 +13,7 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 SOURCE_FILES = (
     Path("environment.yml"),
     Path(".github/conda-lock/ci-dependencies.yml"),
+    Path(".github/conda-lock/virtual-packages.yml"),
 )
 SOURCE_HASH_FILE = Path(".github/conda-lock/source-files.sha256")
 LOCKFILES = {
