@@ -200,6 +200,8 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             parameters=parameters,
             parameter_init=parameter_init,
             parameter_bounds=parameter_bounds,
+            parameter_objectives=parameter_objectives,
+            parameter_constraints=parameter_constraints,
             multinode_constraints=multinode_constraints,
             control_type=ControlType.LINEAR_CONTINUOUS,
             use_sx=use_sx,
