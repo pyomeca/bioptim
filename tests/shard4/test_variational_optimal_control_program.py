@@ -5,8 +5,13 @@ Tests of the construction of VariationalOptimalControlProgram (no solving involv
 import numpy.testing as npt
 from bioptim import (
     BoundsList,
+    ConstraintFcn,
     InitialGuessList,
     InterpolationType,
+    Node,
+    ObjectiveFcn,
+    ParameterConstraintList,
+    ParameterObjectiveList,
     VariationalOptimalControlProgram,
     VariationalTorqueBiorbdModel,
 )
@@ -44,3 +49,19 @@ def test_variational_qdot_init_is_forwarded_to_the_matching_parameter():
 
     npt.assert_equal(ocp.parameter_init["qdot_start"].init, [[1], [2]])
     npt.assert_equal(ocp.parameter_init["qdot_end"].init, [[3], [4]])
+
+
+def test_variational_parameter_penalties_are_forwarded_to_the_ocp():
+    parameter_objectives = ParameterObjectiveList()
+    parameter_objectives.add(ObjectiveFcn.Parameter.MINIMIZE_PARAMETER, key="qdot_start", weight=1)
+    parameter_constraints = ParameterConstraintList()
+    parameter_constraints.add(
+        ConstraintFcn.TRACK_PARAMETER, key="qdot_end", node=Node.START, min_bound=-0.5, max_bound=0.5
+    )
+
+    ocp = _prepare_variational_ocp(
+        parameter_objectives=parameter_objectives, parameter_constraints=parameter_constraints
+    )
+
+    assert [(j.name, j.extra_parameters["key"]) for j in ocp.J] == [("MINIMIZE_PARAMETER", "qdot_start")]
+    assert [(g.name, g.extra_parameters["key"]) for g in ocp.nlp[0].g if g] == [("TRACK_PARAMETER", "qdot_end")]
