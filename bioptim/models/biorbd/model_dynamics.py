@@ -79,7 +79,9 @@ class StochasticTorqueBiorbdModel(StochasticBiorbdModel, StochasticTorqueDynamic
         **kwargs,
     ):
         if isinstance(bio_model, str):
-            bio_model = self._module_biorbd.Model(bio_model)
+            import biorbd_casadi as biorbd
+
+            bio_model = biorbd.Model(bio_model)
 
         n_noised_tau = (
             len(motor_noise_mapping["tau"].to_first.map_idx)

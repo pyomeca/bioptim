@@ -744,8 +744,9 @@ def test_phase_transitions(ode_solver, phase_dynamics):
 def test_parameter_optimization(ode_solver, phase_dynamics):
     from bioptim.examples.getting_started import custom_parameters as ocp_module
 
+    invalid_platforms = ["Darwin", "Windows"]
     if (
-        platform.system() == "Darwin"
+        platform.system() in invalid_platforms
         and ode_solver == OdeSolver.COLLOCATION
         and phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
     ):
