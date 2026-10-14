@@ -13,6 +13,13 @@ from bioptim import (
     TorqueBiorbdModel,
     PhaseDynamics,
     SolutionMerge,
+    TorqueFreeFloatingBaseBiorbdModel,
+    OptimalControlProgram,
+    DynamicsOptionsList,
+    DynamicsOptions,
+    ObjectiveList,
+    ObjectiveFcn,
+    ControlType,
 )
 from bioptim.models.viewer_utils import _prepare_tracked_markers_for_animation
 import numpy.testing as npt
@@ -358,6 +365,40 @@ def test_track_marker_2D_pendulum(ode_solver, phase_dynamics):
     npt.assert_almost_equal(
         tracked_markers[0][1:, :, -1], np.array([[0.76078505, 0.11005192], [0.98565045, 0.65998405]])
     )
+
+
+def test_trapezoidal_with_quaternions_builds():
+    """
+    Regression test: TRAPEZOIDAL used to call normalize_state_quaternions(x) instead of
+    normalize_state_quaternions()(x), which made cache_function try to hash a symbolic and crash while building the OCP.
+    """
+    bioptim_folder = TestUtils.bioptim_folder()
+    bio_model = TorqueFreeFloatingBaseBiorbdModel(bioptim_folder + "/examples/models/trunk_and_2arm_quaternion.bioMod")
+
+    objective_functions = ObjectiveList()
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau_joints", node=Node.ALL_SHOOTING)
+
+    dynamics = DynamicsOptionsList()
+    dynamics.add(
+        DynamicsOptions(
+            ode_solver=OdeSolver.TRAPEZOIDAL(),
+            expand_dynamics=True,
+            phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
+        )
+    )
+
+    # TRAPEZOIDAL refuses ControlType.CONSTANT, so CONSTANT_WITH_LAST_NODE is used
+    ocp = OptimalControlProgram(
+        bio_model,
+        n_shooting=2,
+        phase_time=0.25,
+        dynamics=dynamics,
+        objective_functions=objective_functions,
+        control_type=ControlType.CONSTANT_WITH_LAST_NODE,
+    )
+
+    assert ocp.nlp[0].model.nb_quaternions > 0
+    assert isinstance(ocp.nlp[0].dynamics_type.ode_solver, OdeSolver.TRAPEZOIDAL)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE])
