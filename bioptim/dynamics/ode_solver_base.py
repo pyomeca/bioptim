@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, TYPE_CHECKING
 
 from casadi import MX, vertcat
 
@@ -10,6 +10,10 @@ from ..misc.parameters_types import (
     AnyList,
 )
 
+if TYPE_CHECKING:
+    from ..models.protocols.biomodel import BioModel
+    from ..optimization.parameters import ParameterList
+
 
 class OdeSolverBase:
     """
@@ -19,6 +23,8 @@ class OdeSolverBase:
     -------
     integrator(self, ocp, nlp, node_index) -> list
         The interface of the OdeSolver to the corresponding integrator
+    declare_parameters(self, parameters, model)
+        Declare the parameters the discretization needs, if any
     prepare_dynamic_integrator(ocp, nlp)
         Properly set the integration in an nlp
     """
@@ -32,6 +38,19 @@ class OdeSolverBase:
         """
 
         self.duplicate_starting_point = duplicate_starting_point
+
+    def declare_parameters(self, parameters: "ParameterList", model: "BioModel") -> None:
+        """
+        Declare, on the parameters of the ocp, the parameters this ode solver needs for its discretization.
+        By default, an ode solver does not need any.
+
+        Parameters
+        ----------
+        parameters: ParameterList
+            The parameters of the ocp, to which the ones needed by the ode solver must be added
+        model: BioModel
+            The model of the phase this ode solver is used in
+        """
 
     @property
     def integrator(self):
