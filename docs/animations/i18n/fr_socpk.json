@@ -1,0 +1,22 @@
+{
+ "Stochastic control: the feedback gain K": "Commande stochastique : le gain de rétroaction K",
+ "SOCP (stochastic optimal control problem): arm reaching, N = {0}, T = {1} s": "SOCP (problème de commande optimale stochastique) : atteinte du bras, N = {0}, T = {1} s",
+ "hand path (m): x lateral, y forward": "trajet de la main (m) : x latéral, y avant",
+ "hand position, largest standard deviation (mm)": "position de la main, plus grand écart-type (mm)",
+ "target": "cible",
+ "hand std: peak {0} mm, {1} mm at the target\nbound: {2} mm on x and on y (dashed red)\nmean path vs deterministic solve: {3} mm apart at most\nIPOPT: {4} iterations, converged": "écart-type de la main : pic {0} mm, {1} mm à la cible\nborne : {2} mm sur x et sur y (pointillé rouge)\ntrajet moyen vs solution déterministe : {3} mm d'écart au plus\nIPOPT : {4} itérations, convergé",
+ "shoulder": "épaule",
+ "elbow": "coude",
+ "feedback gain K, low sensory noise": "gain K, bruit sensoriel faible",
+ "K, high sensory noise": "K, bruit sensoriel élevé",
+ "difference K(high) − K(low)": "différence K(élevé) − K(faible)",
+ "K in N·m per m or m/s · green > {0} · blue < {1}\ncolour saturates at ±{2} (difference map: ±{3})": "K en N·m par m ou m/s · vert > {0} · bleu < {1}\ncouleur saturée à ±{2} (carte de différence : ±{3})",
+ "sensory noise ×{0}: mean |K| = {1} → {2}\ncost = {3} → {4}  ·  peak hand std = {5} → {6} mm\nIPOPT: {7} then {8} iterations, both converged": "bruit sensoriel ×{0} : |K| moyen = {1} → {2}\ncoût = {3} → {4}  ·  écart-type max. de la main = {5} → {6} mm\nIPOPT : {7} puis {8} itérations, les deux ont convergé",
+ "Noisier sensors call for larger feedback gains\noverall, at a higher cost.": "Des capteurs plus bruités demandent des gains\nde rétroaction plus grands, pour un coût plus élevé.",
+ "The mean path is the same as the deterministic\none (dashed): the uncertainty lives in the\nellipses.": "Le trajet moyen est le même que le déterministe\n(pointillé) : l'incertitude se lit dans les\nellipses.",
+ "Ellipses: {0} standard deviations (std) of the hand position from the optimised covariance P, fixed to initial_cov at the first node.": "Ellipses : {0} écarts-types de la position de la main, issus de la covariance P optimisée, fixée à initial_cov au premier nœud.",
+ "Ellipses: {0} standard deviations (std) of the hand position from the optimised\ncovariance P, fixed to initial_cov at the first node.": "Ellipses : {0} écarts-types de la position de la main, issus de la covariance P optimisée,\nfixée à initial_cov au premier nœud.",
+ "Two real solves, no warm start. Noise ×{0} and ×{1} ended with IPOPT status {2} (not shown); ×{3} is the largest that converged.": "Deux vraies résolutions, sans initialisation à chaud. Bruit ×{0} et ×{1} : statut IPOPT {2} (non montré) ; ×{3} est le plus grand ayant convergé.",
+ "Two real solves, no warm start. Noise ×{0} and ×{1} ended with IPOPT status\n{2} (not shown); ×{3} is the largest that converged.": "Deux vraies résolutions, sans initialisation à chaud. Bruit ×{0} et ×{1} :\nstatut IPOPT {2} (non montré) ; ×{3} est le plus grand ayant convergé.",
+ "Two real solves, no warm start. Noise ×{0} and ×{1} ended with IPOPT status {2}\n(not shown); ×{3} is the largest that converged.": "Deux vraies résolutions, sans initialisation à chaud. Bruit ×{0} et ×{1} :\nstatut IPOPT {2} (non montré) ; ×{3} est le plus grand ayant convergé."
+}

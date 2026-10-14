@@ -1,0 +1,16 @@
+{
+  "Custom dynamics: your own model": "Dynamique personnalisée : votre propre modèle",
+  "pendulum written in CasADi, not biorbd  ·  N = {0}, T = {1} s": "pendule écrit en CasADi, sans biorbd  ·  N = {0}, T = {1} s",
+  "state derivative returned by the dynamics function": "dérivée de l'état renvoyée par la fonction de dynamique",
+  "d(q)/dt = qdot": "d(q)/dt = qdot",
+  "d(qdot)/dt = ( tau − g·m·L·sin(q) ) / (I + m·L²)": "d(qdot)/dt = ( tau − g·m·L·sin(q) ) / (I + m·L²)",
+  "+ ( −d·qdot ) / (I + m·L²)": "+ ( −d·qdot ) / (I + m·L²)",
+  "the added viscous friction term, d = {0} N·m·s/rad": "le terme de frottement visqueux ajouté, d = {0} N·m·s/rad",
+  "Bioptim code (custom_model example)": "Code Bioptim (exemple custom_model)",
+  "Bounds and objectives refer to the variable\nnames you declare here: q, qdot and tau.": "Les bornes et les objectifs utilisent les noms\nde variables déclarés ici : q, qdot et tau.",
+  "τ(t)  torque (N·m)": "τ(t)  couple (N·m)",
+  "Δτ = τ − τ_free (N·m)": "Δτ = τ − τ_libre (N·m)",
+  "friction dissipates {0} J\nof the {1} J released by gravity\ncost: {2} without friction, {3} with\nmax |Δτ| = {4} N·m\nIPOPT: {5} and {6} iterations, both converged": "le frottement dissipe {0} J\nsur les {1} J libérés par la gravité\ncoût : {2} sans frottement, {3} avec\nmax |Δτ| = {4} N·m\nIPOPT : {5} et {6} itérations, convergés",
+  "Friction brakes the pendulum, so the torque\nhas to brake less: the dashed curve is the run\nwithout it.": "Le frottement freine le pendule : le couple\ndoit moins freiner. La courbe en pointillés\nest le calcul sans frottement.",
+  "Same motion in both runs (max |Δq| = {0} rad), only the torque changes.\nOne-dof pendulum of the custom_model example; friction is the only change between the two solves.": "Même mouvement dans les deux calculs (max |Δq| = {0} rad), seul le couple change.\nPendule à un degré de liberté de l'exemple custom_model ; seul le frottement change entre les deux calculs."
+}

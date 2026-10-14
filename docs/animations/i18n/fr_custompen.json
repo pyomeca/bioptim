@@ -1,0 +1,15 @@
+{
+  "Custom objective and custom constraint": "Objectif et contrainte personnalisés",
+  "pendulum swing-up, N = {0} intervals, T = {1} s": "montée du pendule, N = {0} intervalles, T = {1} s",
+  "tip height z (m)": "hauteur de l'extrémité z (m)",
+  "Δz = z − z_plain (m)": "Δz = z − z_simple (m)",
+  "weight = {0}  ·  mean tip height = {1} m\nplain solve: mean tip height = {2} m\npeak |τ| = {3} N·m (plain solve: {4} N·m)\nIPOPT: {5} iterations, converged": "poids = {0}  ·  hauteur moyenne de l'extrémité = {1} m\nrésolution simple : hauteur moyenne = {2} m\npic |τ| = {3} N·m (résolution simple : {4} N·m)\nIPOPT : {5} itérations, convergé",
+  "The height penalty keeps the tip low as long\nas possible, so the swing-up is late and fast.": "La pénalité de hauteur garde l'extrémité basse\nle plus longtemps possible : la montée est\ntardive et rapide.",
+  "Bioptim sets ObjectiveFcn.Lagrange.CUSTOM by itself when a function is passed; it must return a casadi expression.": "Bioptim choisit ObjectiveFcn.Lagrange.CUSTOM tout seul quand on passe une fonction ; elle doit renvoyer une expression casadi.",
+  "power P = τ · q̇ (W)": "puissance P = τ · q̇ (W)",
+  "Bioptim sets ConstraintFcn.CUSTOM by itself. The three solves start from the same guess; each returns a local minimum.": "Bioptim choisit ConstraintFcn.CUSTOM tout seul. Les trois résolutions partent de la même estimation initiale ; chacune renvoie un minimum local.",
+  "Bioptim sets ConstraintFcn.CUSTOM by itself. The three solves start from\nthe same guess; each returns a local minimum.": "Bioptim choisit ConstraintFcn.CUSTOM tout seul. Les trois résolutions partent de\nla même estimation initiale ; chacune renvoie un minimum local.",
+  "Bioptim sets ObjectiveFcn.Lagrange.CUSTOM by itself when a function is\npassed; it must return a casadi expression.": "Bioptim choisit ObjectiveFcn.Lagrange.CUSTOM tout seul quand on passe une\nfonction ; elle doit renvoyer une expression casadi.",
+  "The plain solution enters the red region; the\nconstrained one stays on its limit.": "La solution simple entre dans la zone rouge ;\nla solution contrainte reste sur sa limite.",
+  "limit p_max = {0} W  ·  margin = {1} W\nplain solve: peak |P| = {2} W, over the limit at {3} nodes\nconstrained: peak |P| = {4} W, at the limit at {5} nodes\nIPOPT: {6} iterations, converged": "limite p_max = {0} W  ·  marge = {1} W\nrésolution simple : pic |P| = {2} W, hors limite à {3} nœuds\ncontrainte : pic |P| = {4} W, sur la limite à {5} nœuds\nIPOPT : {6} itérations, convergé"
+}

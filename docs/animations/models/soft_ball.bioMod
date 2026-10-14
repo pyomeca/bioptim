@@ -1,0 +1,40 @@
+version 4
+
+// A 1 kg ball that can only move vertically (z), resting on a compliant (soft) ground at z = 0.
+// The soft contact is a sphere of radius 0.05 m attached to the ball: ground reaction = spring-damper on the
+// penetration of the sphere below z = 0 (biorbd SoftContactSphere).
+
+segment ground
+endsegment
+
+segment ball
+    parent ground
+    translations z
+    ranges
+        -1 1
+    mass 1
+    inertia
+        1 0 0
+        0 1 0
+        0 0 1
+    com 0 0 0
+    mesh 0 0 0
+    mesh 0 0 0.05
+endsegment
+
+softcontact Contact1
+    parent ball
+    type sphere
+    position 0 0 0
+    radius 0.05
+    stiffness 1e4
+    damping 2
+    muStatic 0
+    muDynamic 0
+    muViscous 0
+endsoftcontact
+
+marker ball_center
+    parent ball
+    position 0 0 0
+endmarker
