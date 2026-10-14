@@ -561,7 +561,7 @@ class TRAPEZOIDAL(Integrator):
         )
 
         if self.model.nb_quaternions > 0:
-            x_prev[: self.model.nb_q, 1] = self.model.normalize_state_quaternions(x_prev[: self.model.nb_q, 1])
+            x_prev[: self.model.nb_q, 1] = self.model.normalize_state_quaternions()(x_prev[: self.model.nb_q, 1])
 
         return x_prev[:, 1], x_prev
 
