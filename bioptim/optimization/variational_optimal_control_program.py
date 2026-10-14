@@ -219,7 +219,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         for the integration from node i-1, i,to i+1.
 
         """
-        return controllers[0].get_nlp.dynamics_defects_func(
+        return controllers[0].get_nlp.variational_three_nodes_func(
             controllers[0].dt.cx,
             controllers[0].states["q"].cx,
             controllers[1].states["q"].cx,
@@ -247,7 +247,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         The symbolic expression of the initial continuity constraint for the integration.
 
         """
-        return controllers[0].get_nlp.dynamics_defects_func_first_node(
+        return controllers[0].get_nlp.variational_first_node_func(
             controllers[0].dt.cx,
             controllers[0].states["q"].cx,
             controllers[0].parameters["qdot_start"].cx,
@@ -275,7 +275,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         The symbolic expression of the final continuity constraint for the integration.
 
         """
-        return controllers[0].get_nlp.dynamics_defects_func_last_node(
+        return controllers[0].get_nlp.variational_last_node_func(
             controllers[0].dt.cx,
             controllers[0].states["q"].cx,
             controllers[1].states["q"].cx,

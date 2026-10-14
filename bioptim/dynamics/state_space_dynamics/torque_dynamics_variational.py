@@ -1,6 +1,5 @@
 from ..configure_variables import States, Controls
 from ..dynamics_evaluation import DynamicsEvaluation
-from ..configure_variables import ConfigureVariables
 from .abstract_dynamics import StateDynamics
 
 
@@ -24,7 +23,7 @@ class VariationalTorqueDynamics(StateDynamics):
 
     @property
     def extra_configuration_functions(self):
-        return [ConfigureVariables.configure_variational_functions]
+        return []
 
     def dynamics(
         self,
