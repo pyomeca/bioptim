@@ -829,6 +829,19 @@ def test_parameter_optimization(ode_solver, phase_dynamics):
         # gravity parameter
         npt.assert_almost_equal(gravity, np.array([0, 5.19787253e-03, -9.84722491e00]))
 
+    elif isinstance(ode_solver, OdeSolver.COLLOCATION) and phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
+        npt.assert_equal(g.shape, (400, 1))
+        npt.assert_almost_equal(g, np.zeros((400, 1)), decimal=6)
+
+        TestUtils.assert_objective_value(sol=sol, expected_value=99.67117614751174, decimal=6)
+
+        # initial and final controls
+        npt.assert_almost_equal(tau[:, 0], np.array((9.5552488, 0.0)))
+        npt.assert_almost_equal(tau[:, -1], np.array((-24.212346, 0.0)))
+
+        # gravity parameter
+        npt.assert_almost_equal(gravity, np.array([0, 7.0281362e-03, -1.0000000e01]))
+
     else:
         npt.assert_equal(g.shape, (400, 1))
         npt.assert_almost_equal(g, np.zeros((400, 1)), decimal=6)
