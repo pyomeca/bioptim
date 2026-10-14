@@ -14,7 +14,7 @@ It interfaces the robust [`Ipopt`](https://github.com/coin-or/Ipopt) and the fas
 | Type | Status |
 |---|---|
 | License | <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-success" alt="License"/></a> |
-| Continuous integration | [![Build status](https://github.com/pyomeca/bioptim/actions/workflows/run_tests_linux.yml/badge.svg)](https://github.com/pyomeca/bioptim/actions) |
+| Continuous integration | [![Build status](https://github.com/pyomeca/bioptim/actions/workflows/run_tests_linux.yml/badge.svg?branch=master)](https://github.com/pyomeca/bioptim/actions/workflows/run_tests_linux.yml) |
 | Code coverage | [![codecov](https://codecov.io/gh/pyomeca/bioptim/graph/badge.svg?token=NK1V6QE2CK)](https://codecov.io/gh/pyomeca/bioptim) |
 | DOI | [![DOI](https://zenodo.org/badge/251615517.svg)](https://zenodo.org/badge/latestdoi/251615517) |
 | Publication | [![IEEE Badge](https://img.shields.io/badge/IEEE-00629B?logo=ieee&logoColor=fff&style=plastic)](https://ieeexplore.ieee.org/document/9808374) |
