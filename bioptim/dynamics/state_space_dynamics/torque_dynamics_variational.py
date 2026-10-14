@@ -1,5 +1,4 @@
 from ..configure_variables import States, Controls
-from ..dynamics_evaluation import DynamicsEvaluation
 from .abstract_dynamics import StateDynamics
 
 
@@ -25,22 +24,14 @@ class VariationalTorqueDynamics(StateDynamics):
     def extra_configuration_functions(self):
         return []
 
-    def dynamics(
-        self,
-        time,
-        states,
-        controls,
-        parameters,
-        algebraic_states,
-        numerical_timeseries,
-        nlp,
-    ):
-        # For variational integrator, the traditional dynamics is skipped, but its declaration is mandatory in bioptim
-        return DynamicsEvaluation(
-            dxdt=nlp.cx(
-                nlp.states.shape,
-            ),
-            defects=nlp.cx(0),
+    @property
+    def has_continuous_dynamics(self):
+        return False
+
+    def dynamics(self, *args, **kwargs):
+        raise NotImplementedError(
+            "The variational integrator has no continuous-time dynamics, the discrete Euler-Lagrange equations are "
+            "declared by OdeSolver.VARIATIONAL."
         )
 
     @property
