@@ -1,6 +1,5 @@
-from typing import Protocol, Callable
+from typing import Protocol, Callable, TYPE_CHECKING
 
-from biorbd_casadi import GeneralizedCoordinates
 from casadi import MX, Function
 from .biomodel import BioModel
 from .holonomic_constraints import HolonomicConstraintsList
@@ -11,6 +10,9 @@ from ...misc.parameters_types import (
     IntList,
     IntListOptional,
 )
+
+if TYPE_CHECKING:
+    from biorbd_casadi import GeneralizedCoordinates
 
 
 class HolonomicBioModel(BioModel, Protocol):

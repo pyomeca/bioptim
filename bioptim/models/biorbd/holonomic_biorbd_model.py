@@ -1,11 +1,7 @@
-from typing import Callable
+from typing import Callable, TYPE_CHECKING
 
-import biorbd_casadi as biorbd
 import numpy as np
 import scipy.linalg as la
-from biorbd_casadi import (
-    GeneralizedCoordinates,
-)
 from casadi import MX, DM, vertcat, horzcat, Function, solve, rootfinder, inv, nlpsol, jacobian
 
 from .biorbd_model import BiorbdModel
@@ -20,6 +16,10 @@ from ...misc.parameters_types import (
     AnyList,
 )
 from ..utils import cache_function
+
+if TYPE_CHECKING:
+    import biorbd_casadi as biorbd
+    from biorbd_casadi import GeneralizedCoordinates
 
 
 class HolonomicBiorbdModel(BiorbdModel):

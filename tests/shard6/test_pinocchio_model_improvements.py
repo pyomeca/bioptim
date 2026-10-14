@@ -16,14 +16,10 @@ import pytest
 from bioptim import PinocchioModel, TorquePinocchioModel
 from ..utils import TestUtils
 
-HAS_PINOCCHIO = importlib.util.find_spec("pinocchio") is not None
 HAS_PYORERUN = importlib.util.find_spec("pyorerun") is not None
 
-pytestmark = pytest.mark.skipif(not HAS_PINOCCHIO, reason="Pinocchio is not installed")
-
-if HAS_PINOCCHIO:
-    import pinocchio as pin
-    import pinocchio.casadi as cpin
+import pinocchio as pin
+import pinocchio.casadi as cpin
 
 EMPTY = np.zeros((0, 1))
 
@@ -40,9 +36,7 @@ def _manipulator_pin_model() -> "pin.Model":
         (model.njoints - 1, np.array([0.0, 0.1, -0.2])),
     ]
     for i, (joint_id, translation) in enumerate(placements):
-        model.addFrame(
-            pin.Frame(f"marker_{i}", joint_id, pin.SE3(np.eye(3), translation), pin.FrameType.FIXED_JOINT)
-        )
+        model.addFrame(pin.Frame(f"marker_{i}", joint_id, pin.SE3(np.eye(3), translation), pin.FrameType.FIXED_JOINT))
     return model
 
 
@@ -50,10 +44,16 @@ def _spherical_pin_model() -> "pin.Model":
     """Spherical joint (nq=4, nv=3) followed by a revolute joint (nq=1, nv=1): nq != nv."""
     model = pin.Model()
     sph = model.addJoint(0, pin.JointModelSpherical(), pin.SE3.Identity(), "sph")
-    model.appendBodyToJoint(sph, pin.Inertia(1.0, np.array([0.0, 0.0, -0.2]), np.diag([0.02, 0.02, 0.01])), pin.SE3.Identity())
+    model.appendBodyToJoint(
+        sph, pin.Inertia(1.0, np.array([0.0, 0.0, -0.2]), np.diag([0.02, 0.02, 0.01])), pin.SE3.Identity()
+    )
     rev = model.addJoint(sph, pin.JointModelRY(), pin.SE3(np.eye(3), np.array([0.0, 0.0, -0.4])), "rev")
-    model.appendBodyToJoint(rev, pin.Inertia(0.5, np.array([0.0, 0.0, -0.15]), np.diag([0.01, 0.01, 0.005])), pin.SE3.Identity())
-    model.addFrame(pin.Frame("marker_0", rev, pin.SE3(np.eye(3), np.array([0.0, 0.0, -0.3])), pin.FrameType.FIXED_JOINT))
+    model.appendBodyToJoint(
+        rev, pin.Inertia(0.5, np.array([0.0, 0.0, -0.15]), np.diag([0.01, 0.01, 0.005])), pin.SE3.Identity()
+    )
+    model.addFrame(
+        pin.Frame("marker_0", rev, pin.SE3(np.eye(3), np.array([0.0, 0.0, -0.3])), pin.FrameType.FIXED_JOINT)
+    )
     return model
 
 
@@ -61,15 +61,23 @@ def _freeflyer_pin_model() -> "pin.Model":
     """Free-flyer root (nq=7, nv=6) followed by a revolute joint."""
     model = pin.Model()
     root = model.addJoint(0, pin.JointModelFreeFlyer(), pin.SE3.Identity(), "root")
-    model.appendBodyToJoint(root, pin.Inertia(2.0, np.array([0.0, 0.0, 0.1]), np.diag([0.05, 0.06, 0.03])), pin.SE3.Identity())
+    model.appendBodyToJoint(
+        root, pin.Inertia(2.0, np.array([0.0, 0.0, 0.1]), np.diag([0.05, 0.06, 0.03])), pin.SE3.Identity()
+    )
     rev = model.addJoint(root, pin.JointModelRX(), pin.SE3(np.eye(3), np.array([0.0, 0.0, 0.3])), "rev")
-    model.appendBodyToJoint(rev, pin.Inertia(1.0, np.array([0.0, 0.0, 0.2]), np.diag([0.02, 0.02, 0.01])), pin.SE3.Identity())
+    model.appendBodyToJoint(
+        rev, pin.Inertia(1.0, np.array([0.0, 0.0, 0.2]), np.diag([0.02, 0.02, 0.01])), pin.SE3.Identity()
+    )
     return model
 
 
 def _random_state(model: "pin.Model", seed: int = 42):
     rng = np.random.default_rng(seed)
-    q = pin.randomConfiguration(model, -np.ones(model.nq) * 1.5, np.ones(model.nq) * 1.5) if model.nq == model.nv else None
+    q = (
+        pin.randomConfiguration(model, -np.ones(model.nq) * 1.5, np.ones(model.nq) * 1.5)
+        if model.nq == model.nv
+        else None
+    )
     if q is None:
         q = pin.neutral(model)
         q = pin.integrate(model, q, rng.uniform(-0.8, 0.8, model.nv))

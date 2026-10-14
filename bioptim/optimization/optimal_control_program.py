@@ -1,7 +1,6 @@
 from math import inf
 from typing import Any
 
-import biorbd_casadi as biorbd
 import casadi
 import numpy as np
 from casadi import MX, SX, sum1, horzcat
@@ -251,8 +250,6 @@ class OptimalControlProgram:
             The nature of the casadi variables. MX are used if False.
         """
 
-        self._check_bioptim_version()
-
         bio_model = self._initialize_model(bio_model)
 
         self._check_and_set_threads(n_threads)
@@ -336,10 +333,6 @@ class OptimalControlProgram:
         )
 
         self._prepare_vector_layout(ordering_strategy)
-
-    def _check_bioptim_version(self) -> None:
-        self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "bioptim": __version__}
-        return
 
     def _initialize_model(self, bio_model: AnyIterable | BioModel) -> list[BioModel]:
         """
