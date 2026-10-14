@@ -3,6 +3,7 @@ Tests of the construction of VariationalOptimalControlProgram (no solving involv
 """
 
 import numpy.testing as npt
+import pytest
 from bioptim import (
     BoundsList,
     ConstraintFcn,
@@ -12,6 +13,7 @@ from bioptim import (
     ObjectiveFcn,
     ParameterConstraintList,
     ParameterObjectiveList,
+    TorqueBiorbdModel,
     VariationalOptimalControlProgram,
     VariationalTorqueBiorbdModel,
 )
@@ -19,8 +21,10 @@ from bioptim import (
 from ..utils import TestUtils
 
 
-def _prepare_variational_ocp(**kwargs) -> VariationalOptimalControlProgram:
-    bio_model = VariationalTorqueBiorbdModel(TestUtils.bioptim_folder() + "/examples/models/pendulum.bioMod")
+def _prepare_variational_ocp(
+    model_type: type = VariationalTorqueBiorbdModel, **kwargs
+) -> VariationalOptimalControlProgram:
+    bio_model = model_type(TestUtils.bioptim_folder() + "/examples/models/pendulum.bioMod")
     n_q = bio_model.nb_q
 
     q_bounds = BoundsList()
@@ -65,3 +69,18 @@ def test_variational_parameter_penalties_are_forwarded_to_the_ocp():
 
     assert [(j.name, j.extra_parameters["key"]) for j in ocp.J] == [("MINIMIZE_PARAMETER", "qdot_start")]
     assert [(g.name, g.extra_parameters["key"]) for g in ocp.nlp[0].g if g] == [("TRACK_PARAMETER", "qdot_end")]
+
+
+class _SubclassedVariationalTorqueBiorbdModel(VariationalTorqueBiorbdModel):
+    pass
+
+
+def test_variational_ocp_accepts_subclasses_of_variational_models():
+    ocp = _prepare_variational_ocp(model_type=_SubclassedVariationalTorqueBiorbdModel)
+
+    assert isinstance(ocp.nlp[0].model, _SubclassedVariationalTorqueBiorbdModel)
+
+
+def test_variational_ocp_rejects_non_variational_models():
+    with pytest.raises(TypeError, match="bio_model must be of type VariationalBiorbdModel"):
+        _prepare_variational_ocp(model_type=TorqueBiorbdModel)
