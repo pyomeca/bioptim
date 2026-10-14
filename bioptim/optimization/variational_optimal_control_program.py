@@ -218,6 +218,21 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         """
         pass
 
+    def _lambdas(self, controller: PenaltyController) -> list:
+        """
+        The Lagrange multipliers of the node, as the trailing inputs expected by the variational integrator functions.
+
+        Parameters
+        ----------
+        controller: PenaltyController
+            The controller of the node holding the Lagrange multipliers
+
+        Returns
+        -------
+        A list holding the symbolic Lagrange multipliers if the model has holonomic constraints, an empty list otherwise
+        """
+        return [controller.states["lambdas"].cx] if self.bio_model.has_holonomic_constraints else []
+
     def variational_integrator_three_nodes(
         self,
         controllers: list[PenaltyController, PenaltyController, PenaltyController],
@@ -236,27 +251,16 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         for the integration from node i-1, i,to i+1.
 
         """
-        if self.bio_model.has_holonomic_constraints:
-            return controllers[0].get_nlp.dynamics_defects_func(
-                controllers[0].dt.cx,
-                controllers[0].states["q"].cx,
-                controllers[1].states["q"].cx,
-                controllers[2].states["q"].cx,
-                controllers[0].controls["tau"].cx,
-                controllers[1].controls["tau"].cx,
-                controllers[2].controls["tau"].cx,
-                controllers[1].states["lambdas"].cx,
-            )
-        else:
-            return controllers[0].get_nlp.dynamics_defects_func(
-                controllers[0].dt.cx,
-                controllers[0].states["q"].cx,
-                controllers[1].states["q"].cx,
-                controllers[2].states["q"].cx,
-                controllers[0].controls["tau"].cx,
-                controllers[1].controls["tau"].cx,
-                controllers[2].controls["tau"].cx,
-            )
+        return controllers[0].get_nlp.dynamics_defects_func(
+            controllers[0].dt.cx,
+            controllers[0].states["q"].cx,
+            controllers[1].states["q"].cx,
+            controllers[2].states["q"].cx,
+            controllers[0].controls["tau"].cx,
+            controllers[1].controls["tau"].cx,
+            controllers[2].controls["tau"].cx,
+            *self._lambdas(controllers[1]),
+        )
 
     def variational_integrator_initial(
         self,
@@ -278,25 +282,15 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         The symbolic expression of the initial continuity constraint for the integration.
 
         """
-        if self.bio_model.has_holonomic_constraints:
-            return controllers[0].get_nlp.dynamics_defects_func_first_node(
-                controllers[0].dt.cx,
-                controllers[0].states["q"].cx,
-                controllers[0].parameters.cx[:n_qdot],  # hardcoded
-                controllers[1].states["q"].cx,
-                controllers[0].controls["tau"].cx,
-                controllers[1].controls["tau"].cx,
-                controllers[0].states["lambdas"].cx,
-            )
-        else:
-            return controllers[0].get_nlp.dynamics_defects_func_first_node(
-                controllers[0].dt.cx,
-                controllers[0].states["q"].cx,
-                controllers[0].parameters.cx[:n_qdot],  # hardcoded
-                controllers[1].states["q"].cx,
-                controllers[0].controls["tau"].cx,
-                controllers[1].controls["tau"].cx,
-            )
+        return controllers[0].get_nlp.dynamics_defects_func_first_node(
+            controllers[0].dt.cx,
+            controllers[0].states["q"].cx,
+            controllers[0].parameters.cx[:n_qdot],  # hardcoded
+            controllers[1].states["q"].cx,
+            controllers[0].controls["tau"].cx,
+            controllers[1].controls["tau"].cx,
+            *self._lambdas(controllers[0]),
+        )
 
     def variational_integrator_final(
         self,
@@ -319,25 +313,15 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         The symbolic expression of the final continuity constraint for the integration.
 
         """
-        if self.bio_model.has_holonomic_constraints:
-            return controllers[0].get_nlp.dynamics_defects_func_last_node(
-                controllers[0].dt.cx,
-                controllers[0].states["q"].cx,
-                controllers[1].states["q"].cx,
-                controllers[0].parameters.cx[n_qdot : 2 * n_qdot],  # hardcoded
-                controllers[0].controls["tau"].cx,
-                controllers[1].controls["tau"].cx,
-                controllers[1].states["lambdas"].cx,
-            )
-        else:
-            return controllers[0].get_nlp.dynamics_defects_func_last_node(
-                controllers[0].dt.cx,
-                controllers[0].states["q"].cx,
-                controllers[1].states["q"].cx,
-                controllers[0].parameters.cx[n_qdot : 2 * n_qdot],  # hardcoded
-                controllers[0].controls["tau"].cx,
-                controllers[1].controls["tau"].cx,
-            )
+        return controllers[0].get_nlp.dynamics_defects_func_last_node(
+            controllers[0].dt.cx,
+            controllers[0].states["q"].cx,
+            controllers[1].states["q"].cx,
+            controllers[0].parameters.cx[n_qdot : 2 * n_qdot],  # hardcoded
+            controllers[0].controls["tau"].cx,
+            controllers[1].controls["tau"].cx,
+            *self._lambdas(controllers[1]),
+        )
 
     def variational_continuity(
         self, multinode_constraints: MultinodeConstraintList, n_shooting: Int, n_qdot: Int
