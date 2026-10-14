@@ -123,6 +123,120 @@ class OdeSolver:
             for name in names:
                 parameters.add(name, function=None, size=model.nb_q)
 
+        def declare_continuity(self, ocp, nlp) -> None:
+            """
+            Declare the discrete Euler-Lagrange equations as internal multinode constraints: the main equations link
+            each triplet of consecutive nodes, and the initial and final boundary conditions link the two first and the
+            two last nodes. The velocities of these boundary conditions are the parameters qdot_start and qdot_end.
+            """
+            # Imported here since the limits depend on the dynamics
+            from ..limits.multinode_constraint import MultinodeConstraintList
+
+            phase = nlp.phase_idx
+            constraints = MultinodeConstraintList()
+            for node in range(nlp.ns - 1):
+                constraints.add(
+                    self.three_nodes_equations,
+                    nodes_phase=(phase, phase, phase),
+                    nodes=(node, node + 1, node + 2),
+                )
+            constraints.add(self.initial_node_equations, nodes_phase=(phase, phase), nodes=(0, 1))
+            constraints.add(self.final_node_equations, nodes_phase=(phase, phase), nodes=(nlp.ns - 1, nlp.ns))
+            constraints.add_or_replace_to_penalty_pool(ocp)
+
+        @staticmethod
+        def _lambdas(controller) -> list:
+            """
+            The Lagrange multipliers of a node, as the trailing inputs expected by the discrete functions.
+
+            Parameters
+            ----------
+            controller: PenaltyController
+                The controller of the node holding the Lagrange multipliers
+
+            Returns
+            -------
+            A list holding the symbolic Lagrange multipliers if the model has holonomic constraints, an empty list
+            otherwise
+            """
+            return [controller.states["lambdas"].cx] if controller.get_nlp.model.has_holonomic_constraints else []
+
+        @staticmethod
+        def three_nodes_equations(controllers) -> CX:
+            """
+            The discrete Euler-Lagrange equations for the integration from node i-1 to i+1 through node i.
+
+            Parameters
+            ----------
+            controllers: list[PenaltyController]
+                The controllers of the three nodes
+
+            Returns
+            -------
+            The symbolic expression of the discrete Euler-Lagrange equations
+            """
+            return controllers[0].get_nlp.variational_three_nodes_func(
+                controllers[0].dt.cx,
+                controllers[0].states["q"].cx,
+                controllers[1].states["q"].cx,
+                controllers[2].states["q"].cx,
+                controllers[0].controls["tau"].cx,
+                controllers[1].controls["tau"].cx,
+                controllers[2].controls["tau"].cx,
+                *OdeSolver.VARIATIONAL._lambdas(controllers[1]),
+            )
+
+        @staticmethod
+        def initial_node_equations(controllers) -> CX:
+            """
+            The initial condition of the integration, that links the initial velocity (qdot_start) to the two first
+            nodes.
+
+            Parameters
+            ----------
+            controllers: list[PenaltyController]
+                The controllers of the two first nodes
+
+            Returns
+            -------
+            The symbolic expression of the initial condition
+            """
+            return controllers[0].get_nlp.variational_first_node_func(
+                controllers[0].dt.cx,
+                controllers[0].states["q"].cx,
+                controllers[0].parameters["qdot_start"].cx,
+                controllers[1].states["q"].cx,
+                controllers[0].controls["tau"].cx,
+                controllers[1].controls["tau"].cx,
+                *OdeSolver.VARIATIONAL._lambdas(controllers[0]),
+            )
+
+        @staticmethod
+        def final_node_equations(controllers) -> CX:
+            """
+            The final condition of the integration, that links the final velocity (qdot_end) to the two last nodes.
+            Warning: When the system has holonomic constraints, there are more variables than equations so the lambda
+            and the velocity of the last node are "free" variables.
+
+            Parameters
+            ----------
+            controllers: list[PenaltyController]
+                The controllers of the two last nodes
+
+            Returns
+            -------
+            The symbolic expression of the final condition
+            """
+            return controllers[0].get_nlp.variational_last_node_func(
+                controllers[0].dt.cx,
+                controllers[0].states["q"].cx,
+                controllers[1].states["q"].cx,
+                controllers[0].parameters["qdot_end"].cx,
+                controllers[0].controls["tau"].cx,
+                controllers[1].controls["tau"].cx,
+                *OdeSolver.VARIATIONAL._lambdas(controllers[1]),
+            )
+
         def prepare_dynamic_integrator(self, ocp, nlp):
             self._declare_discrete_functions(nlp)
             super().prepare_dynamic_integrator(ocp, nlp)
