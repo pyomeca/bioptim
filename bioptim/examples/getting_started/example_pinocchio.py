@@ -134,8 +134,8 @@ def main():
     # sol.graphs(show_bounds=True, save_name="results.png")
 
     # --- Animate the solution --- #
-    # PinocchioModel animates through pyorerun; pass visual_model and collision_model to prepare_ocp to see the
-    # geometries rather than the frames alone.
+    # PinocchioModel animates through pyorerun; load visual_model and collision_model automatically from the URDF file
+    # otherwise pass the visual_model and collision_model to the PinocchioModel constructor
     sol.animate(n_frames=0, viewer="pyorerun", show_now=True)
 
 
