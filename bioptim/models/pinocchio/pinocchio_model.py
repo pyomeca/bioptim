@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Callable
 
 from casadi import SX, Function, horzcat, vertcat, norm_fro
@@ -48,6 +49,13 @@ class PinocchioModel:
             self._path = bio_model
             self._model = self._pinocchio_module.buildModelFromUrdf(bio_model)
             self._casadi_model = self._casadi_pinocchio_module.Model(self._model)
+
+            # buildModelFromUrdf only reads the kinematics; the geometries declared in the URDF have to be asked
+            # for separately, otherwise there is simply nothing to animate.
+            if visual_model is None:
+                visual_model = self._geometry_from_urdf(self._pinocchio_module.GeometryType.VISUAL)
+            if collision_model is None:
+                collision_model = self._geometry_from_urdf(self._pinocchio_module.GeometryType.COLLISION)
         elif isinstance(bio_model, self._pinocchio_module.Model):
             self._model = bio_model
             self._casadi_model = self._casadi_pinocchio_module.Model(self._model)
@@ -71,6 +79,23 @@ class PinocchioModel:
         self._marker_names = self._extract_marker_names()
         self._symbolic_variables()
         self._cached_functions = {}
+
+    def _geometry_from_urdf(self, geometry_type):
+        """
+        Read one geometry model out of the URDF, resolving mesh paths against the folder holding it.
+
+        Returns None when the geometries cannot be read, typically because the URDF points at meshes that are not
+        shipped alongside it. The model stays perfectly usable then, only without anything to display.
+        """
+        try:
+            return self._pinocchio_module.buildGeomFromUrdf(
+                self._model,
+                self._path,
+                geometry_type,
+                package_dirs=[str(Path(self._path).parent)],
+            )
+        except Exception:
+            return None
 
     def _symbolic_variables(self):
         self.q = SX.sym("q_sx", self.nb_q, 1)

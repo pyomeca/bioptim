@@ -14,8 +14,10 @@ import numpy.testing as npt
 import pytest
 
 from bioptim import PinocchioModel, TorquePinocchioModel
+from ..utils import TestUtils
 
 HAS_PINOCCHIO = importlib.util.find_spec("pinocchio") is not None
+HAS_PYORERUN = importlib.util.find_spec("pyorerun") is not None
 
 pytestmark = pytest.mark.skipif(not HAS_PINOCCHIO, reason="Pinocchio is not installed")
 
@@ -446,3 +448,217 @@ def test_pinocchio_bounds_from_ranges_q_match_position_limits(manipulator):
     for column in range(3):
         npt.assert_almost_equal(np.array(bounds.min)[:, column], pin_model.lowerPositionLimit)
         npt.assert_almost_equal(np.array(bounds.max)[:, column], pin_model.upperPositionLimit)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# A. Markers on OP_FRAME frames (OpenSim conversions emit markers as operational points)
+# ----------------------------------------------------------------------------------------------------------------------
+def _manipulator_with_op_frame_only() -> "pin.Model":
+    model = pin.buildSampleModelManipulator()
+    model.addFrame(pin.Frame("mk", 1, 0, pin.SE3(np.eye(3), np.array([0.1, -0.2, 0.3])), pin.FrameType.OP_FRAME))
+    return model
+
+
+def _manipulator_with_mixed_markers() -> "pin.Model":
+    """FIXED_JOINT, OP_FRAME, FIXED_JOINT, in that frame order."""
+    model = pin.buildSampleModelManipulator()
+    model.addFrame(pin.Frame("fixed_a", 2, pin.SE3(np.eye(3), np.array([0.1, 0.0, 0.2])), pin.FrameType.FIXED_JOINT))
+    model.addFrame(pin.Frame("op_b", 3, 0, pin.SE3(np.eye(3), np.array([0.0, 0.3, 0.1])), pin.FrameType.OP_FRAME))
+    model.addFrame(pin.Frame("fixed_c", 5, pin.SE3(np.eye(3), np.array([-0.1, 0.1, 0.0])), pin.FrameType.FIXED_JOINT))
+    return model
+
+
+def _frame_translations(pin_model, q):
+    data = pin_model.createData()
+    pin.forwardKinematics(pin_model, data, q)
+    pin.updateFramePlacements(pin_model, data)
+    return {f.name: data.oMf[i].translation.copy() for i, f in enumerate(pin_model.frames)}
+
+
+def test_pinocchio_op_frame_is_exposed_as_marker():
+    pin_model = _manipulator_with_op_frame_only()
+    model = PinocchioModel(pin_model)
+    assert model.marker_names == ("mk",)
+    assert model.nb_markers == 1
+
+    q, _, _, _ = _random_state(pin_model)
+    expected = _frame_translations(pin_model, q)["mk"]
+    npt.assert_almost_equal(np.array(model.marker(0)(_col(q), EMPTY)).squeeze(), expected, decimal=8)
+    npt.assert_almost_equal(np.array(model.markers()(_col(q), EMPTY)), expected.reshape(3, 1), decimal=8)
+
+
+def test_pinocchio_mixed_fixed_joint_and_op_frame_markers_keep_frame_order():
+    pin_model = _manipulator_with_mixed_markers()
+    model = PinocchioModel(pin_model)
+    assert model.marker_names == ("fixed_a", "op_b", "fixed_c")
+    assert model.nb_markers == 3
+
+    q, _, _, _ = _random_state(pin_model)
+    translations = _frame_translations(pin_model, q)
+    expected = np.array([translations[name] for name in model.marker_names]).T
+    npt.assert_almost_equal(np.array(model.markers()(_col(q), EMPTY)), expected, decimal=8)
+    for i in range(3):
+        npt.assert_almost_equal(np.array(model.marker(i)(_col(q), EMPTY)).squeeze(), expected[:, i], decimal=8)
+
+
+def test_pinocchio_model_without_op_frame_has_same_markers_as_before():
+    # The OP_FRAME support is additive: only FIXED_JOINT frames are markers when there is no OP_FRAME.
+    pin_model = _manipulator_pin_model()
+    model = PinocchioModel(pin_model)
+    expected = tuple(f.name for f in pin_model.frames[1:] if f.type == pin.FrameType.FIXED_JOINT)
+    assert expected == ("marker_0", "marker_1", "marker_2")
+    assert model.marker_names == expected
+    assert not any(f.type == pin.FrameType.OP_FRAME for f in pin_model.frames)
+
+    # JOINT and BODY frames never become markers
+    base = PinocchioModel(pin.buildSampleModelManipulator())
+    assert base.nb_markers == 0
+
+
+def test_pinocchio_marker_index_and_marker_frame_index_are_consistent_for_op_frame():
+    pin_model = _manipulator_with_mixed_markers()
+    model = PinocchioModel(pin_model)
+    index = model.marker_index("op_b")
+    assert index == 1
+    frame_id = model._marker_frame_index(index)
+    assert frame_id == pin_model.getFrameId("op_b")
+    assert pin_model.frames[frame_id].type == pin.FrameType.OP_FRAME
+    for i, name in enumerate(model.marker_names):
+        assert model.marker_index(name) == i
+        assert pin_model.frames[model._marker_frame_index(i)].name == name
+
+
+def test_pinocchio_op_frame_marker_velocity_matches_frame_velocity():
+    pin_model = _manipulator_with_op_frame_only()
+    model = PinocchioModel(pin_model)
+    q, qdot, _, _ = _random_state(pin_model)
+    data = pin_model.createData()
+    pin.forwardKinematics(pin_model, data, q, qdot)
+    pin.updateFramePlacements(pin_model, data)
+    expected = pin.getFrameVelocity(
+        pin_model, data, pin_model.getFrameId("mk"), pin.ReferenceFrame.LOCAL_WORLD_ALIGNED
+    ).linear
+    value = model.marker_velocity(0)(_col(q), _col(qdot), EMPTY)
+    npt.assert_almost_equal(np.array(value).squeeze(), expected, decimal=8)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# B. pyorerun integration (never opens a viewer here)
+# ----------------------------------------------------------------------------------------------------------------------
+def test_pinocchio_pyorerun_marker_names_is_list_of_marker_names():
+    model = PinocchioModel(_manipulator_with_mixed_markers())
+    names = model.pyorerun_marker_names
+    assert isinstance(names, list)
+    assert names == list(model.marker_names)
+    assert names == ["fixed_a", "op_b", "fixed_c"]
+
+
+def test_pinocchio_pyorerun_marker_names_empty_without_markers():
+    assert PinocchioModel(pin.buildSampleModelManipulator()).pyorerun_marker_names == []
+
+
+@pytest.mark.skipif(not HAS_PYORERUN, reason="pyorerun is not installed")
+def test_pinocchio_to_pyorerun_model_from_pin_model():
+    import pyorerun
+
+    model = PinocchioModel(_manipulator_pin_model())
+    pyorerun_model = model.to_pyorerun_model()
+    assert isinstance(pyorerun_model, pyorerun.PinocchioModel)
+
+
+@pytest.mark.skipif(not HAS_PYORERUN, reason="pyorerun is not installed")
+def test_pinocchio_to_pyorerun_model_from_casadi_model():
+    # This path goes through pin.Model(cpin_model) internally, which is the fragile one.
+    import pyorerun
+
+    pin_model = _manipulator_pin_model()
+    model = PinocchioModel(cpin.Model(pin_model))
+    pyorerun_model = model.to_pyorerun_model()
+    assert isinstance(pyorerun_model, pyorerun.PinocchioModel)
+
+
+def test_pinocchio_visual_and_collision_models_are_stored_as_is():
+    visual, collision = object(), object()
+    model = PinocchioModel(_manipulator_pin_model(), visual_model=visual, collision_model=collision)
+    assert model.visual_model is visual
+    assert model.collision_model is collision
+
+    default = PinocchioModel(_manipulator_pin_model())
+    assert default.visual_model is None
+    assert default.collision_model is None
+
+
+@pytest.mark.parametrize("model_class", [PinocchioModel, TorquePinocchioModel])
+def test_pinocchio_visual_and_collision_models_survive_serialize_and_copy(model_class):
+    visual, collision = object(), object()
+    model = model_class(_manipulator_pin_model(), visual_model=visual, collision_model=collision)
+
+    serializer, data = model.serialize()
+    assert serializer is model_class
+    assert data["visual_model"] is visual
+    assert data["collision_model"] is collision
+    rebuilt = serializer(**data)
+    assert rebuilt.visual_model is visual and rebuilt.collision_model is collision
+
+    model_copy = model.copy()
+    assert type(model_copy) is model_class
+    assert model_copy.visual_model is visual
+    assert model_copy.collision_model is collision
+
+
+def test_pinocchio_animate_refuses_other_viewers_and_mentions_pyorerun():
+    with pytest.raises(NotImplementedError, match="pyorerun"):
+        PinocchioModel.animate(None, None, viewer="bioviz")
+
+    # Also reachable from an instance, since animate is a staticmethod
+    model = PinocchioModel(_manipulator_pin_model())
+    with pytest.raises(NotImplementedError, match="pyorerun"):
+        model.animate(None, None, show_now=False, viewer="bioviz")
+
+
+def test_pinocchio_animate_signature():
+    import inspect
+
+    parameters = inspect.signature(PinocchioModel.animate).parameters
+    assert list(parameters) == ["ocp", "solution", "show_now", "show_tracked_markers", "viewer", "n_frames", "kwargs"]
+    assert parameters["show_now"].default is True
+    assert parameters["show_tracked_markers"].default is False
+    assert parameters["viewer"].default == "pyorerun"
+    assert parameters["n_frames"].default == 0
+    assert isinstance(inspect.getattr_static(PinocchioModel, "animate"), staticmethod)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Geometries declared in the URDF
+# ----------------------------------------------------------------------------------------------------------------------
+def _pendulum_urdf_path() -> str:
+    return TestUtils.bioptim_folder() + "/examples/models/pendulum.urdf"
+
+
+def test_pinocchio_geometries_are_read_from_the_urdf():
+    """buildModelFromUrdf reads the kinematics only, so without this the animation had nothing to display."""
+    model = PinocchioModel(_pendulum_urdf_path())
+
+    assert model.visual_model is not None
+    assert model.collision_model is not None
+    assert model.visual_model.ngeoms == 1
+    assert model.collision_model.ngeoms == 1
+    # The mesh is resolved against the folder holding the URDF, not against the working directory.
+    assert model.visual_model.geometryObjects[0].meshPath.endswith("mesh/pendulum.STL")
+
+
+def test_pinocchio_explicit_geometries_win_over_the_urdf_ones():
+    sentinel_visual, sentinel_collision = object(), object()
+
+    model = PinocchioModel(_pendulum_urdf_path(), visual_model=sentinel_visual, collision_model=sentinel_collision)
+
+    assert model.visual_model is sentinel_visual
+    assert model.collision_model is sentinel_collision
+
+
+def test_pinocchio_model_built_from_an_object_has_no_geometry():
+    """Only a URDF carries geometries; a model handed over as an object has none to read."""
+    model = PinocchioModel(_manipulator_pin_model())
+
+    assert model.visual_model is None
+    assert model.collision_model is None
