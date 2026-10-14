@@ -11,6 +11,8 @@ import numpy.testing as npt
 import pytest
 from bioptim import (
     BoundsList,
+    ControlType,
+    QuadratureRule,
     DynamicsOptions,
     InterpolationType,
     MultinodeConstraintFcn,
@@ -27,7 +29,7 @@ from bioptim import (
 from ..utils import TestUtils
 
 
-def _prepare_variational_ocp(n_shooting: int = 5, use_sx: bool = False) -> VariationalOptimalControlProgram:
+def _prepare_variational_ocp(n_shooting: int = 5, use_sx: bool = False, **kwargs) -> VariationalOptimalControlProgram:
     bio_model = VariationalTorqueBiorbdModel(TestUtils.bioptim_folder() + "/examples/models/pendulum.bioMod")
     n_q = bio_model.nb_q
 
@@ -52,6 +54,7 @@ def _prepare_variational_ocp(n_shooting: int = 5, use_sx: bool = False) -> Varia
         u_bounds=u_bounds,
         qdot_bounds=qdot_bounds,
         use_sx=use_sx,
+        **kwargs,
     )
 
 
@@ -171,3 +174,83 @@ def test_variational_continuity_leaves_the_user_multinode_constraints_first():
     names = [g.name.split("_Multinode")[0] for g in ocp.nlp[0].g_internal if g]
     assert names[0] == "STATES_EQUALITY"
     assert len(names) == 1 + 4 + 2
+
+
+@pytest.mark.parametrize("control_type", [ControlType.CONSTANT, ControlType.NONE])
+def test_variational_rejects_control_types_without_last_node(control_type):
+    bio_model = VariationalTorqueBiorbdModel(TestUtils.bioptim_folder() + "/examples/models/pendulum.bioMod")
+
+    with pytest.raises(NotImplementedError, match="not supported by OdeSolver.VARIATIONAL"):
+        OptimalControlProgram(
+            bio_model,
+            n_shooting=5,
+            phase_time=1,
+            dynamics=DynamicsOptions(ode_solver=OdeSolver.VARIATIONAL()),
+            control_type=control_type,
+        )
+
+
+def test_variational_accepts_constant_controls_with_last_node():
+    bio_model = VariationalTorqueBiorbdModel(TestUtils.bioptim_folder() + "/examples/models/pendulum.bioMod")
+
+    ocp = OptimalControlProgram(
+        bio_model,
+        n_shooting=5,
+        phase_time=1,
+        dynamics=DynamicsOptions(ode_solver=OdeSolver.VARIATIONAL()),
+        control_type=ControlType.CONSTANT_WITH_LAST_NODE,
+    )
+
+    assert ocp.nlp[0].variational_three_nodes_func is not None
+
+
+def test_variational_ode_solver_options_are_validated():
+    with pytest.raises(TypeError, match="discrete_approximation should be a QuadratureRule"):
+        OdeSolver.VARIATIONAL(discrete_approximation="trapezoidal")
+    with pytest.raises(TypeError, match="control_discrete_approximation should be a QuadratureRule"):
+        OdeSolver.VARIATIONAL(control_discrete_approximation=1)
+    with pytest.raises(TypeError, match="ode_solver must be of type OdeSolver.VARIATIONAL"):
+        _prepare_variational_ocp(ode_solver=OdeSolver.RK4())
+
+
+def _three_nodes_residual(ode_solver: OdeSolver.VARIATIONAL | None) -> np.ndarray:
+    kwargs = {} if ode_solver is None else {"ode_solver": ode_solver}
+    nlp = _prepare_variational_ocp(**kwargs).nlp[0]
+    q_prev, q_cur, q_next = [0.1, 0.2], [0.3, 0.5], [0.8, 0.9]
+    tau_prev, tau_cur, tau_next = [1.0, 0.0], [4.0, 0.0], [9.0, 0.0]
+    return np.array(nlp.variational_three_nodes_func(0.1, q_prev, q_cur, q_next, tau_prev, tau_cur, tau_next))
+
+
+def test_variational_default_options_are_trapezoidal_lagrangian_and_midpoint_forcing():
+    default = OdeSolver.VARIATIONAL()
+
+    assert default.discrete_approximation == QuadratureRule.TRAPEZOIDAL
+    assert default.control_discrete_approximation == QuadratureRule.MIDPOINT
+    npt.assert_almost_equal(
+        _three_nodes_residual(None),
+        _three_nodes_residual(
+            OdeSolver.VARIATIONAL(
+                discrete_approximation=QuadratureRule.TRAPEZOIDAL,
+                control_discrete_approximation=QuadratureRule.MIDPOINT,
+            )
+        ),
+    )
+
+
+def test_variational_quadrature_options_reach_the_discrete_equations():
+    default = _three_nodes_residual(None)
+
+    lagrangian = _three_nodes_residual(OdeSolver.VARIATIONAL(discrete_approximation=QuadratureRule.MIDPOINT))
+    forcing_left = _three_nodes_residual(
+        OdeSolver.VARIATIONAL(control_discrete_approximation=QuadratureRule.RECTANGLE_LEFT)
+    )
+    forcing_right = _three_nodes_residual(
+        OdeSolver.VARIATIONAL(control_discrete_approximation=QuadratureRule.RECTANGLE_RIGHT)
+    )
+
+    assert not np.allclose(lagrangian, default)
+    assert not np.allclose(forcing_left, default)
+    assert not np.allclose(forcing_right, forcing_left)
+    # The forcing only enters the residual through the controls: left uses (prev, cur) and right uses (cur, next), so
+    # they differ by dt / 2 * (tau_next - tau_prev) = 0.1 / 2 * (9 - 1)
+    npt.assert_almost_equal((forcing_right - forcing_left).squeeze(), [0.4, 0.0])
