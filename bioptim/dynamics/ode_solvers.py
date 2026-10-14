@@ -7,6 +7,8 @@ from .ode_solver_base import OdeSolverBase
 from .rk_base import RK
 from ..misc.enums import ControlType, DefectType
 from ..misc.parameters_types import Bool, Int, Str, CX
+from ..models.protocols.biomodel import BioModel
+from ..optimization.parameters import ParameterList
 
 
 class OdeSolver:
@@ -55,6 +57,32 @@ class OdeSolver:
         This is a fake enum to be able to use the variational integrator.
         TODO: The implementation of the variational integrator could be moved here (see issue #962).
         """
+
+        def declare_parameters(self, parameters: ParameterList, model: BioModel) -> None:
+            """
+            Declare the initial and final velocities, which are not states of the variational integrator.
+
+            Parameters
+            ----------
+            parameters: ParameterList
+                The parameters of the ocp
+            model: BioModel
+                The model of the phase
+
+            Raises
+            ------
+            KeyError
+                If 'qdot_start' or 'qdot_end' is already declared
+            """
+            names = ("qdot_start", "qdot_end")
+            if any(name in parameters.keys() for name in names):
+                raise KeyError(
+                    "'qdot_start' and 'qdot_end' cannot be declared in parameters as they are reserved words of "
+                    "OdeSolver.VARIATIONAL. To define the initial and final velocities, please use `qdot_init` "
+                    "and `qdot_bounds` instead."
+                )
+            for name in names:
+                parameters.add(name, function=None, size=model.nb_q)
 
         @property
         def integrator(self):
