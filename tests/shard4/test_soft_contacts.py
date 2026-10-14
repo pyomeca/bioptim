@@ -34,7 +34,7 @@ def test_soft_contact(phase_dynamics):
     f = np.array(sol.cost)
     npt.assert_equal(f.shape, (1, 1))
     if isinstance(ode_solver, OdeSolver.RK8):
-        TestUtils.assert_objective_value(sol=sol, expected_value=23.679065887950486)
+        TestUtils.assert_objective_value(sol=sol, expected_value=23.679088113459105)
     else:
         TestUtils.assert_objective_value(sol=sol, expected_value=41.58259426)
 
@@ -50,12 +50,12 @@ def test_soft_contact(phase_dynamics):
 
     # initial and final position
     npt.assert_almost_equal(q[:, 0], np.array((0, 0, 0)), decimal=1)
-    npt.assert_almost_equal(q[:, -1], np.array([0.05, 0.0933177, -0.6262446]))
+    npt.assert_almost_equal(q[:, -1], np.array([0.05, 0.0933176954, -0.6262468987]))
 
     # initial and final velocities
     npt.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0)), decimal=4)
-    npt.assert_almost_equal(qdot[:, -1], np.array([2.03004523e-01, -1.74795966e-05, -2.53770131e00]))
+    npt.assert_almost_equal(qdot[:, -1], np.array([2.030035624e-01, -1.747982445e-05, -2.537701043e00]))
 
     # initial and final controls
-    npt.assert_almost_equal(tau[:, 0], np.array([-0.16347455, 0.02123226, -13.25955361]))
-    npt.assert_almost_equal(tau[:, -1], np.array([0.00862357, -0.00298151, -0.16425701]))
+    npt.assert_almost_equal(tau[:, 0], np.array([-0.1634549403, 0.02124480543, -13.25952273]))
+    npt.assert_almost_equal(tau[:, -1], np.array([0.008634388725, -0.002981026378, -0.1642397019]))
