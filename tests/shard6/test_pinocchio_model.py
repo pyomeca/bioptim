@@ -1,4 +1,5 @@
 import importlib.util
+import re
 
 import numpy as np
 import pytest
@@ -10,10 +11,12 @@ HAS_PINOCCHIO = importlib.util.find_spec("pinocchio") is not None
 
 
 def test_pinocchio_model_import_is_lazy():
-    with pytest.raises(ValueError, match="The model should be of type 'str' or 'pinocchio.Model'"):
+    expected_message = "The model should be of type 'str', 'pinocchio.Model' or 'pinocchio.casadi.Model'"
+
+    with pytest.raises(ValueError, match=re.escape(expected_message)):
         PinocchioModel(1)
 
-    with pytest.raises(ValueError, match="The model should be of type 'str' or 'pinocchio.Model'"):
+    with pytest.raises(ValueError, match=re.escape(expected_message)):
         PinocchioModel([])
 
 
@@ -98,8 +101,9 @@ def test_pinocchio_not_implemented_methods_raise():
     with pytest.raises(NotImplementedError, match="forward_dynamics with contact is not implemented"):
         model.forward_dynamics(with_contact=True)
 
-    with pytest.raises(NotImplementedError, match="Animation is not implemented"):
-        model.animate()
+    # Animation now goes through pyorerun; any other viewer is still refused.
+    with pytest.raises(NotImplementedError, match="only 'pyorerun' is supported"):
+        model.animate(ocp=None, solution=None, viewer="bioviz")
 
 
 @pytest.mark.skipif(not HAS_PINOCCHIO, reason="Pinocchio is not installed")
