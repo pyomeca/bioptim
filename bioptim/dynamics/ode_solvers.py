@@ -86,6 +86,83 @@ class OdeSolver:
             for name in names:
                 parameters.add(name, function=None, size=model.nb_q)
 
+        def prepare_dynamic_integrator(self, ocp, nlp):
+            self._declare_discrete_functions(nlp)
+            super().prepare_dynamic_integrator(ocp, nlp)
+
+        @staticmethod
+        def _declare_discrete_functions(nlp) -> None:
+            """
+            Build the casadi functions of the discrete Euler-Lagrange equations, that depend on the nodes i-1, i and
+            i+1 and can therefore not be expressed as a dynamics of a single node. They are stored in
+            nlp.variational_three_nodes_func (main nodes), nlp.variational_first_node_func (initial boundary condition)
+            and nlp.variational_last_node_func (final boundary condition).
+
+            Parameters
+            ----------
+            nlp: NonLinearProgram
+                A reference to the current phase of the ocp
+            """
+            model = nlp.model
+            n_q = model.nb_q
+
+            dt = nlp.cx.sym("time_step")
+            q_prev = nlp.cx.sym("q_prev", n_q, 1)
+            q_cur = nlp.cx.sym("q_cur", n_q, 1)
+            q_next = nlp.cx.sym("q_next", n_q, 1)
+            control_prev = nlp.cx.sym("control_prev", n_q, 1)
+            control_cur = nlp.cx.sym("control_cur", n_q, 1)
+            control_next = nlp.cx.sym("control_next", n_q, 1)
+            q0 = nlp.cx.sym("q0", n_q, 1)
+            qdot0 = nlp.cx.sym("qdot_start", n_q, 1)
+            q1 = nlp.cx.sym("q1", n_q, 1)
+            control0 = nlp.cx.sym("control0", n_q, 1)
+            control1 = nlp.cx.sym("control1", n_q, 1)
+            q_ultimate = nlp.cx.sym("q_ultimate", n_q, 1)
+            qdot_ultimate = nlp.cx.sym("qdot_ultimate", n_q, 1)
+            q_penultimate = nlp.cx.sym("q_penultimate", n_q, 1)
+            controlN_minus_1 = nlp.cx.sym("controlN_minus_1", n_q, 1)
+            controlN = nlp.cx.sym("controlN", n_q, 1)
+
+            three_nodes_input = [dt, q_prev, q_cur, q_next, control_prev, control_cur, control_next]
+            first_node_input = [dt, q0, qdot0, q1, control0, control1]
+            last_node_input = [dt, q_penultimate, q_ultimate, qdot_ultimate, controlN_minus_1, controlN]
+
+            if model.has_holonomic_constraints:
+                lambdas = nlp.cx.sym("lambda", model.nb_holonomic_constraints, 1)
+                three_nodes_input.append(lambdas)
+                first_node_input.append(lambdas)
+                last_node_input.append(lambdas)
+            else:
+                lambdas = None
+
+            # TODO: see how to restore the possibility to not expand the functions
+            nlp.variational_three_nodes_func = Function(
+                "ThreeNodesIntegration",
+                three_nodes_input,
+                [
+                    model.discrete_euler_lagrange_equations(
+                        dt, q_prev, q_cur, q_next, control_prev, control_cur, control_next, lambdas
+                    )
+                ],
+            ).expand()
+
+            nlp.variational_first_node_func = Function(
+                "TwoFirstNodesIntegration",
+                first_node_input,
+                [model.compute_initial_states(dt, q0, qdot0, q1, control0, control1, lambdas)],
+            ).expand()
+
+            nlp.variational_last_node_func = Function(
+                "TwoLastNodesIntegration",
+                last_node_input,
+                [
+                    model.compute_final_states(
+                        dt, q_penultimate, q_ultimate, qdot_ultimate, controlN_minus_1, controlN, lambdas
+                    )
+                ],
+            ).expand()
+
         @property
         def integrator(self):
             return integrator.VARIATIONAL
