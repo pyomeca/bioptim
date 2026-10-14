@@ -25,45 +25,31 @@ def test_variational_model():
 
     time_step = MX(0.5)
 
-    TestUtils.assert_equal(model.discrete_lagrangian(q, qdot, time_step), 1.1629533)
-    model_mid_point = VariationalBiorbdModel(biorbd_model_path, discrete_approximation=QuadratureRule.MIDPOINT)
-    TestUtils.assert_equal(model_mid_point.discrete_lagrangian(q, qdot, time_step), -4.49869015)
-    model_right = VariationalBiorbdModel(biorbd_model_path, discrete_approximation=QuadratureRule.RECTANGLE_RIGHT)
-    TestUtils.assert_equal(model_right.discrete_lagrangian(q, qdot, time_step), 1.88558012)
-    model_left = VariationalBiorbdModel(biorbd_model_path, discrete_approximation=QuadratureRule.RECTANGLE_LEFT)
-    TestUtils.assert_equal(model_left.discrete_lagrangian(q, qdot, time_step), 0.44032649)
+    for rule, expected in (
+        (QuadratureRule.TRAPEZOIDAL, 1.1629533),
+        (QuadratureRule.MIDPOINT, -4.49869015),
+        (QuadratureRule.RECTANGLE_RIGHT, 1.88558012),
+        (QuadratureRule.RECTANGLE_LEFT, 0.44032649),
+    ):
+        TestUtils.assert_equal(model.discrete_lagrangian(q, qdot, time_step, rule), expected)
 
     control0 = MX([10.0, 5.0])
     control1 = MX([3.0, 9.0])
 
-    TestUtils.assert_equal(model.control_approximation(control0, control1, time_step), [2.5, 1.25])
-    model_linear = VariationalBiorbdModel(biorbd_model_path, control_type=ControlType.LINEAR_CONTINUOUS)
-    TestUtils.assert_equal(model_linear.control_approximation(control0, control1, time_step), [1.625, 1.75])
-    model_linear_left = VariationalBiorbdModel(
-        biorbd_model_path,
-        control_type=ControlType.LINEAR_CONTINUOUS,
-        control_discrete_approximation=QuadratureRule.RECTANGLE_LEFT,
-    )
-    TestUtils.assert_equal(
-        model_linear_left.control_approximation(
-            control0,
-            control1,
-            time_step,
-        ),
-        [2.5, 1.25],
-    )
-    model_linear_right = VariationalBiorbdModel(
-        biorbd_model_path,
-        control_type=ControlType.LINEAR_CONTINUOUS,
-        control_discrete_approximation=QuadratureRule.RECTANGLE_RIGHT,
-    )
-    TestUtils.assert_equal(
-        model_linear_right.control_approximation(
-            control0,
-            control1,
-            time_step,
-        ),
-        [0.75, 2.25],
+    for control_type, rule, expected in (
+        (ControlType.CONSTANT, QuadratureRule.MIDPOINT, [2.5, 1.25]),
+        (ControlType.CONSTANT_WITH_LAST_NODE, QuadratureRule.MIDPOINT, [2.5, 1.25]),
+        (ControlType.LINEAR_CONTINUOUS, QuadratureRule.MIDPOINT, [1.625, 1.75]),
+        (ControlType.LINEAR_CONTINUOUS, QuadratureRule.RECTANGLE_LEFT, [2.5, 1.25]),
+        (ControlType.LINEAR_CONTINUOUS, QuadratureRule.RECTANGLE_RIGHT, [0.75, 2.25]),
+    ):
+        TestUtils.assert_equal(model.control_approximation(control0, control1, time_step, control_type, rule), expected)
+
+    # The defaults of the ode solver
+    discretization = dict(
+        discrete_approximation=QuadratureRule.TRAPEZOIDAL,
+        control_type=ControlType.CONSTANT,
+        control_discrete_approximation=QuadratureRule.MIDPOINT,
     )
 
     q_prev = MX([1.0, 2.0])
@@ -87,7 +73,14 @@ def test_variational_model():
         [time_step_sym, q_prev_sym, q_cur_sym, q_next_sym, control_prev_sym, control_cur_sym, control_next_sym],
         [
             model.discrete_euler_lagrange_equations(
-                time_step_sym, q_prev_sym, q_cur_sym, q_next_sym, control_prev_sym, control_cur_sym, control_next_sym
+                time_step_sym,
+                q_prev_sym,
+                q_cur_sym,
+                q_next_sym,
+                control_prev_sym,
+                control_cur_sym,
+                control_next_sym,
+                **discretization,
             )
         ],
     )
@@ -100,7 +93,7 @@ def test_variational_model():
         [time_step_sym, q_cur_sym, qdot_sym, q_next_sym, control_cur_sym, control_next_sym],
         [
             model.compute_initial_states(
-                time_step_sym, q_cur_sym, qdot_sym, q_next_sym, control_cur_sym, control_next_sym
+                time_step_sym, q_cur_sym, qdot_sym, q_next_sym, control_cur_sym, control_next_sym, **discretization
             )
         ],
     )
@@ -110,7 +103,11 @@ def test_variational_model():
     compute_final_states = Function(
         "compute_final_states",
         [time_step_sym, q_prev_sym, q_cur_sym, qdot_sym, control_prev_sym, control_cur_sym],
-        [model.compute_final_states(time_step_sym, q_prev_sym, q_cur_sym, qdot_sym, control_prev_sym, control_cur_sym)],
+        [
+            model.compute_final_states(
+                time_step_sym, q_prev_sym, q_cur_sym, qdot_sym, control_prev_sym, control_cur_sym, **discretization
+            )
+        ],
     )
     TestUtils.assert_equal(
         compute_final_states(time_step, q_prev, q_cur, qdot, control_prev, control_cur), [3.83070605, 7.36751722]
@@ -173,6 +170,7 @@ def test_variational_model():
                 control_cur_sym,
                 control_next_sym,
                 lambdas_sym,
+                **discretization,
             )
         ],
     )
@@ -185,7 +183,14 @@ def test_variational_model():
         [time_step_sym, q_cur_sym, qdot_sym, q_next_sym, control_cur_sym, control_next_sym, lambdas_sym],
         [
             holonomic_model.compute_initial_states(
-                time_step_sym, q_cur_sym, qdot_sym, q_next_sym, control_cur_sym, control_next_sym, lambdas_sym
+                time_step_sym,
+                q_cur_sym,
+                qdot_sym,
+                q_next_sym,
+                control_cur_sym,
+                control_next_sym,
+                lambdas_sym,
+                **discretization,
             )
         ],
     )
@@ -198,7 +203,14 @@ def test_variational_model():
         [time_step_sym, q_prev_sym, q_cur_sym, qdot_sym, control_prev_sym, control_cur_sym, lambdas_sym],
         [
             holonomic_model.compute_final_states(
-                time_step_sym, q_prev_sym, q_cur_sym, qdot_sym, control_prev_sym, control_cur_sym, lambdas_sym
+                time_step_sym,
+                q_prev_sym,
+                q_cur_sym,
+                qdot_sym,
+                control_prev_sym,
+                control_cur_sym,
+                lambdas_sym,
+                **discretization,
             )
         ],
     )
