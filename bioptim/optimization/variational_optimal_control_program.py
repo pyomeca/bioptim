@@ -30,6 +30,9 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
     """
     q_init and q_bounds only the positions initial guess and bounds since there are no velocities in the variational
     integrator.
+
+    The controls are linear continuous. The quadrature rules of the discretization are chosen with the ode_solver, e.g.
+    OdeSolver.VARIATIONAL(discrete_approximation=QuadratureRule.MIDPOINT).
     """
 
     def __init__(
@@ -48,6 +51,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         parameter_constraints: ParameterConstraintList = None,
         multinode_constraints: MultinodeConstraintList = None,
         use_sx: Bool = False,
+        ode_solver: OdeSolver.VARIATIONAL | None = None,
         **kwargs,
     ):
         if not isinstance(bio_model, VariationalBiorbdModel):
@@ -78,6 +82,11 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                 "since there are no velocities."
             )
 
+        if ode_solver is None:
+            ode_solver = OdeSolver.VARIATIONAL()
+        if not isinstance(ode_solver, OdeSolver.VARIATIONAL):
+            raise TypeError("ode_solver must be of type OdeSolver.VARIATIONAL")
+
         self.bio_model = bio_model
         n_q = self.bio_model.nb_q
 
@@ -86,7 +95,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         expand = True
         dynamics.add(
             expand_dynamics=expand,
-            ode_solver=OdeSolver.VARIATIONAL(),
+            ode_solver=ode_solver,
         )
 
         if qdot_bounds is None or not isinstance(qdot_bounds, BoundsList):

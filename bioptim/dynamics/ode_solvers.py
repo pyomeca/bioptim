@@ -5,7 +5,7 @@ from casadi import MX, SX, integrator as casadi_integrator, horzcat, Function, v
 from . import integrator
 from .ode_solver_base import OdeSolverBase
 from .rk_base import RK
-from ..misc.enums import ControlType, DefectType
+from ..misc.enums import ControlType, DefectType, QuadratureRule
 from ..misc.parameters_types import Bool, Int, Str, CX
 
 if TYPE_CHECKING:
@@ -60,7 +60,44 @@ class OdeSolver:
         the discrete Euler-Lagrange equations link the positions of three consecutive nodes. The states of the problem
         are therefore only the positions (and Lagrange multipliers) at the nodes, and the initial and final velocities
         are parameters (qdot_start and qdot_end).
+
+        The control type is the one of the ocp. Since the final condition needs the controls of the last node, it must
+        be ControlType.LINEAR_CONTINUOUS or ControlType.CONSTANT_WITH_LAST_NODE. With the latter, the forcing of an
+        interval is the one of its first node and control_discrete_approximation is not used.
+
+        Attributes
+        ----------
+        discrete_approximation: QuadratureRule
+            The quadrature rule of the discrete Lagrangian
+        control_discrete_approximation: QuadratureRule
+            The quadrature rule of the discrete forcing of a linear control
         """
+
+        SUPPORTED_CONTROL_TYPES = (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE)
+
+        def __init__(
+            self,
+            discrete_approximation: QuadratureRule = QuadratureRule.TRAPEZOIDAL,
+            control_discrete_approximation: QuadratureRule = QuadratureRule.MIDPOINT,
+            **kwargs,
+        ):
+            """
+            Parameters
+            ----------
+            discrete_approximation: QuadratureRule
+                The quadrature rule of the discrete Lagrangian
+            control_discrete_approximation: QuadratureRule
+                The quadrature rule of the discrete forcing of a linear control
+            """
+            super().__init__(**kwargs)
+            for name, rule in (
+                ("discrete_approximation", discrete_approximation),
+                ("control_discrete_approximation", control_discrete_approximation),
+            ):
+                if not isinstance(rule, QuadratureRule):
+                    raise TypeError(f"{name} should be a QuadratureRule")
+            self.discrete_approximation = discrete_approximation
+            self.control_discrete_approximation = control_discrete_approximation
 
         @property
         def is_direct_collocation(self) -> Bool:
@@ -95,7 +132,10 @@ class OdeSolver:
             return nlp.numerical_timeseries.cx_start
 
         def __str__(self) -> Str:
-            return f"{self.integrator.__name__} (variational integrator)"
+            return (
+                f"{self.integrator.__name__} (variational integrator, {self.discrete_approximation.name} Lagrangian, "
+                f"{self.control_discrete_approximation.name} forcing)"
+            )
 
         def declare_parameters(self, parameters: "ParameterList", model: "BioModel") -> None:
             """
@@ -241,8 +281,7 @@ class OdeSolver:
             self._declare_discrete_functions(nlp)
             super().prepare_dynamic_integrator(ocp, nlp)
 
-        @staticmethod
-        def _declare_discrete_functions(nlp) -> None:
+        def _declare_discrete_functions(self, nlp) -> None:
             """
             Build the casadi functions of the discrete Euler-Lagrange equations, that depend on the nodes i-1, i and
             i+1 and can therefore not be expressed as a dynamics of a single node. They are stored in
@@ -254,8 +293,20 @@ class OdeSolver:
             nlp: NonLinearProgram
                 A reference to the current phase of the ocp
             """
+            if nlp.control_type not in self.SUPPORTED_CONTROL_TYPES:
+                raise NotImplementedError(
+                    f"The control type {nlp.control_type} is not supported by OdeSolver.VARIATIONAL, as the final "
+                    f"condition needs the controls of the last node. Please use one of "
+                    f"{[control_type.name for control_type in self.SUPPORTED_CONTROL_TYPES]}."
+                )
+
             model = nlp.model
             n_q = model.nb_q
+            discretization = dict(
+                discrete_approximation=self.discrete_approximation,
+                control_type=nlp.control_type,
+                control_discrete_approximation=self.control_discrete_approximation,
+            )
 
             dt = nlp.cx.sym("time_step")
             q_prev = nlp.cx.sym("q_prev", n_q, 1)
@@ -293,7 +344,7 @@ class OdeSolver:
                 three_nodes_input,
                 [
                     model.discrete_euler_lagrange_equations(
-                        dt, q_prev, q_cur, q_next, control_prev, control_cur, control_next, lambdas
+                        dt, q_prev, q_cur, q_next, control_prev, control_cur, control_next, lambdas, **discretization
                     )
                 ],
             ).expand()
@@ -301,7 +352,7 @@ class OdeSolver:
             nlp.variational_first_node_func = Function(
                 "TwoFirstNodesIntegration",
                 first_node_input,
-                [model.compute_initial_states(dt, q0, qdot0, q1, control0, control1, lambdas)],
+                [model.compute_initial_states(dt, q0, qdot0, q1, control0, control1, lambdas, **discretization)],
             ).expand()
 
             nlp.variational_last_node_func = Function(
@@ -309,7 +360,14 @@ class OdeSolver:
                 last_node_input,
                 [
                     model.compute_final_states(
-                        dt, q_penultimate, q_ultimate, qdot_ultimate, controlN_minus_1, controlN, lambdas
+                        dt,
+                        q_penultimate,
+                        q_ultimate,
+                        qdot_ultimate,
+                        controlN_minus_1,
+                        controlN,
+                        lambdas,
+                        **discretization,
                     )
                 ],
             ).expand()
