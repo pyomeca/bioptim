@@ -54,11 +54,48 @@ class OdeSolver:
         def integrator(self):
             return integrator.RK8
 
-    class VARIATIONAL(RK):
+    class VARIATIONAL(OdeSolverBase):
         """
-        This is a fake enum to be able to use the variational integrator.
-        TODO: The implementation of the variational integrator could be moved here (see issue #962).
+        The variational integrator (discrete mechanics). Instead of integrating an ode over each shooting interval,
+        the discrete Euler-Lagrange equations link the positions of three consecutive nodes. The states of the problem
+        are therefore only the positions (and Lagrange multipliers) at the nodes, and the initial and final velocities
+        are parameters (qdot_start and qdot_end).
         """
+
+        @property
+        def is_direct_collocation(self) -> Bool:
+            return False
+
+        @property
+        def is_direct_shooting(self) -> Bool:
+            return True
+
+        @property
+        def n_required_cx(self) -> Int:
+            return 1
+
+        @property
+        def defects_type(self) -> DefectType:
+            return DefectType.NOT_APPLICABLE
+
+        @property
+        def integrates_ode(self) -> Bool:
+            return False
+
+        def x_ode(self, nlp):
+            return nlp.states.scaled.cx_start
+
+        def p_ode(self, nlp):
+            return horzcat(nlp.controls.scaled.cx_start, nlp.controls.scaled.cx_end)
+
+        def a_ode(self, nlp):
+            return nlp.algebraic_states.scaled.cx_start
+
+        def d_ode(self, nlp):
+            return nlp.numerical_timeseries.cx_start
+
+        def __str__(self) -> Str:
+            return f"{self.integrator.__name__} (variational integrator)"
 
         def declare_parameters(self, parameters: "ParameterList", model: "BioModel") -> None:
             """
