@@ -13,7 +13,6 @@ from ..limits.constraints import ParameterConstraintList
 from ..limits.multinode_constraint import MultinodeConstraintList
 from ..limits.objective_functions import ParameterObjectiveList
 from ..limits.path_conditions import BoundsList, InitialGuessList
-from ..limits.penalty_controller import PenaltyController
 from ..misc.enums import ControlType, ContactType
 from ..models.biorbd.variational_biorbd_model import VariationalBiorbdModel
 from ..models.protocols.variational_biomodel import VariationalBioModel
@@ -24,7 +23,6 @@ from ..misc.parameters_types import (
     Int,
     Float,
     NpArrayDictOptional,
-    Callable,
 )
 
 
@@ -88,7 +86,6 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         expand = True
         dynamics.add(
             expand_dynamics=expand,
-            skip_continuity=True,
             ode_solver=OdeSolver.VARIATIONAL(),
         )
 
@@ -166,7 +163,6 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             multinode_constraints = MultinodeConstraintList()
         if not isinstance(multinode_constraints, MultinodeConstraintList):
             raise ValueError("multinode_constraints must be a MultinodeConstraintList")
-        multinode_constraints = self.variational_continuity(multinode_constraints, n_shooting)
 
         super().__init__(
             self.bio_model,
@@ -185,144 +181,3 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             use_sx=use_sx,
             **kwargs,
         )
-
-    def _lambdas(self, controller: PenaltyController) -> list:
-        """
-        The Lagrange multipliers of the node, as the trailing inputs expected by the variational integrator functions.
-
-        Parameters
-        ----------
-        controller: PenaltyController
-            The controller of the node holding the Lagrange multipliers
-
-        Returns
-        -------
-        A list holding the symbolic Lagrange multipliers if the model has holonomic constraints, an empty list otherwise
-        """
-        return [controller.states["lambdas"].cx] if self.bio_model.has_holonomic_constraints else []
-
-    def variational_integrator_three_nodes(
-        self,
-        controllers: list[PenaltyController, PenaltyController, PenaltyController],
-    ) -> Callable:
-        """
-        The discrete Euler Lagrange equations for the main integration.
-
-        Parameters
-        ----------
-        controllers: list[PenaltyController, PenaltyController, PenaltyController]
-            The controllers of the three nodes considered in the input list.
-
-        Returns
-        -------
-        The symbolic expression of the discrete Euler Lagrange equations
-        for the integration from node i-1, i,to i+1.
-
-        """
-        return controllers[0].get_nlp.variational_three_nodes_func(
-            controllers[0].dt.cx,
-            controllers[0].states["q"].cx,
-            controllers[1].states["q"].cx,
-            controllers[2].states["q"].cx,
-            controllers[0].controls["tau"].cx,
-            controllers[1].controls["tau"].cx,
-            controllers[2].controls["tau"].cx,
-            *self._lambdas(controllers[1]),
-        )
-
-    def variational_integrator_initial(
-        self,
-        controllers: list[PenaltyController, PenaltyController],
-    ) -> Callable:
-        """
-        The initial continuity constraint for the integration.
-
-        Parameters
-        ----------
-        controllers: list[PenaltyController, PenaltyController]
-            The controllers of the two first nodes considered in the input list.
-
-        Returns
-        -------
-        The symbolic expression of the initial continuity constraint for the integration.
-
-        """
-        return controllers[0].get_nlp.variational_first_node_func(
-            controllers[0].dt.cx,
-            controllers[0].states["q"].cx,
-            controllers[0].parameters["qdot_start"].cx,
-            controllers[1].states["q"].cx,
-            controllers[0].controls["tau"].cx,
-            controllers[1].controls["tau"].cx,
-            *self._lambdas(controllers[0]),
-        )
-
-    def variational_integrator_final(
-        self,
-        controllers: list[PenaltyController, PenaltyController],
-    ) -> Callable:
-        """
-        The final continuity constraint for the integration. Warning: When the system has holonomic constraints, there
-        are more variables than equations so the lambda and the velocity of the last node are "free" variables.
-
-        Parameters
-        ----------
-        controllers: list[PenaltyController, PenaltyController]
-            The controllers of the two last nodes considered in the input list.
-
-        Returns
-        -------
-        The symbolic expression of the final continuity constraint for the integration.
-
-        """
-        return controllers[0].get_nlp.variational_last_node_func(
-            controllers[0].dt.cx,
-            controllers[0].states["q"].cx,
-            controllers[1].states["q"].cx,
-            controllers[0].parameters["qdot_end"].cx,
-            controllers[0].controls["tau"].cx,
-            controllers[1].controls["tau"].cx,
-            *self._lambdas(controllers[1]),
-        )
-
-    def variational_continuity(
-        self, multinode_constraints: MultinodeConstraintList, n_shooting: Int
-    ) -> MultinodeConstraintList:
-        """
-        The continuity constraint for the integration.
-
-        Parameters
-        ----------
-        multinode_constraints: MultinodeConstraintList
-            The user-defined multinode constraints, left untouched
-        n_shooting: int
-
-        Returns
-        -------
-        A new list holding the user-defined multinode constraints followed by the continuity constraints for the
-        integration.
-        """
-        user_multinode_constraints = multinode_constraints
-        multinode_constraints = MultinodeConstraintList()
-        for constraint in user_multinode_constraints:
-            multinode_constraints.copy(constraint)
-
-        for i in range(n_shooting - 1):
-            multinode_constraints.add(
-                self.variational_integrator_three_nodes,
-                nodes_phase=(0, 0, 0),
-                nodes=(i, i + 1, i + 2),
-            )
-        # add initial and final constraints
-        multinode_constraints.add(
-            self.variational_integrator_initial,
-            nodes_phase=(0, 0),
-            nodes=(0, 1),
-        )
-
-        multinode_constraints.add(
-            self.variational_integrator_final,
-            nodes_phase=(0, 0),
-            nodes=(n_shooting - 1, n_shooting),
-        )
-        return multinode_constraints
