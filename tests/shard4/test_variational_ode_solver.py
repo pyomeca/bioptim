@@ -2,11 +2,22 @@
 Tests of OdeSolver.VARIATIONAL, that owns the discrete Euler-Lagrange functions of the variational integrator.
 """
 
+import matplotlib
+
+matplotlib.use("Agg")
+
 import numpy as np
+import numpy.testing as npt
 import pytest
 from bioptim import (
     BoundsList,
+    DynamicsOptions,
     InterpolationType,
+    OdeSolver,
+    OptimalControlProgram,
+    Shooting,
+    SolutionMerge,
+    Solver,
     VariationalOptimalControlProgram,
     VariationalTorqueBiorbdModel,
 )
@@ -60,5 +71,65 @@ def test_variational_functions_are_owned_by_the_ode_solver(use_sx):
 def test_variational_functions_do_not_hijack_the_dynamics_defects():
     nlp = _prepare_variational_ocp().nlp[0]
 
-    assert nlp.dynamics_defects_func is not nlp.variational_three_nodes_func
+    assert nlp.dynamics_defects_func is None
     assert nlp.extra_dynamics_defects_func == []
+
+
+def test_variational_has_no_continuous_time_dynamics():
+    nlp = _prepare_variational_ocp().nlp[0]
+
+    assert not nlp.model.has_continuous_dynamics
+    assert nlp.dynamics_func is None
+    assert nlp.extra_dynamics_func == []
+    assert not nlp.dynamics_type.ode_solver.integrates_ode
+
+
+def test_variational_model_cannot_be_used_with_an_integrating_ode_solver():
+    bio_model = VariationalTorqueBiorbdModel(TestUtils.bioptim_folder() + "/examples/models/pendulum.bioMod")
+
+    with pytest.raises(ValueError, match="no continuous-time dynamics"):
+        OptimalControlProgram(
+            bio_model, n_shooting=5, phase_time=1, dynamics=DynamicsOptions(ode_solver=OdeSolver.RK4())
+        )
+
+
+def test_variational_ode_solver_is_not_a_runge_kutta():
+    ode_solver = OdeSolver.VARIATIONAL()
+
+    assert not isinstance(ode_solver, OdeSolver.RK4)
+    assert not hasattr(ode_solver, "n_integration_steps")
+    assert ode_solver.is_direct_shooting and not ode_solver.is_direct_collocation
+    assert "variational" in str(ode_solver)
+
+
+@pytest.fixture(scope="module")
+def solution():
+    ocp = _prepare_variational_ocp(n_shooting=5)
+    solver = Solver.IPOPT()
+    solver.set_maximum_iterations(100)
+    solver.set_print_level(0)
+    return ocp.solve(solver)
+
+
+@pytest.mark.parametrize("shooting_type", [Shooting.SINGLE, Shooting.MULTIPLE, Shooting.SINGLE_DISCONTINUOUS_PHASE])
+def test_variational_solution_cannot_be_integrated(solution, shooting_type):
+    with pytest.raises(NotImplementedError, match="variational integrator"):
+        solution.integrate(shooting_type=shooting_type)
+
+
+def test_variational_stepwise_outputs_are_the_decision_nodes(solution):
+    decision_states = solution.decision_states(to_merge=SolutionMerge.NODES)
+    stepwise_states = solution.stepwise_states(to_merge=SolutionMerge.NODES)
+
+    npt.assert_almost_equal(stepwise_states["q"], decision_states["q"])
+    npt.assert_almost_equal(
+        solution.stepwise_time(to_merge=SolutionMerge.NODES), solution.decision_time(to_merge=SolutionMerge.NODES)
+    )
+    assert decision_states["q"].shape == (2, 6)
+
+
+def test_variational_solution_outputs_still_work(solution):
+    solution.print_cost()
+    assert solution.parameters["qdot_start"].shape == (2,)
+    solution.ocp.print(to_console=False, to_graph=False)
+    solution.graphs(show_now=False)
