@@ -63,6 +63,7 @@ def validate_lockfile(repository_root: Path, platform: str, relative_path: Path)
 
     allowed_subdirectories = {"noarch", platform}
     package_count = 0
+    package_names: set[str] = set()
     for line_number, line in enumerate(lines[4:], start=5):
         if not line or line.startswith("#"):
             continue
@@ -72,6 +73,8 @@ def validate_lockfile(repository_root: Path, platform: str, relative_path: Path)
             errors.append(f"{relative_path}:{line_number}: invalid package URL")
             continue
         package_path, package_hash = line[len(prefix) :].rsplit("#", 1)
+        filename = package_path.rsplit("/", 1)[-1]
+        package_names.add(filename.rsplit("-", 2)[0])
         subdirectory = package_path.split("/", 1)[0]
         if subdirectory not in allowed_subdirectories:
             errors.append(f"{relative_path}:{line_number}: unexpected subdirectory " f"{subdirectory!r}")
@@ -80,6 +83,9 @@ def validate_lockfile(repository_root: Path, platform: str, relative_path: Path)
 
     if package_count == 0:
         errors.append(f"{relative_path}: lockfile contains no packages")
+    for required in ("pip", "setuptools", "wheel"):
+        if required not in package_names:
+            errors.append(f"{relative_path}: missing build/install dependency {required!r}")
 
     return errors
 

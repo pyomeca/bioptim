@@ -68,6 +68,7 @@ jobs:
       - name: Validate environment
         run: |
           python -c "import biorbd, numpy, pinocchio, pytest"
+          python -m pip --version
           conda list
 
       - name: Save Conda environment

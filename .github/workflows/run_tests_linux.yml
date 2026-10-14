@@ -69,6 +69,7 @@ jobs:
         if: steps.cache-lookup.outputs.cache-hit != 'true'
         run: |
           python -c "import biorbd, numpy, pinocchio, pytest"
+          python -m pip --version
           python .github/conda-lock/check_fatrop.py
 
       - name: Save Conda environment
