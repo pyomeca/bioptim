@@ -187,7 +187,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             multinode_constraints = MultinodeConstraintList()
         if not isinstance(multinode_constraints, MultinodeConstraintList):
             raise ValueError("multinode_constraints must be a MultinodeConstraintList")
-        multinode_constraints = self.variational_continuity(multinode_constraints, n_shooting, n_q)
+        multinode_constraints = self.variational_continuity(multinode_constraints, n_shooting)
 
         super().__init__(
             self.bio_model,
@@ -265,7 +265,6 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
     def variational_integrator_initial(
         self,
         controllers: list[PenaltyController, PenaltyController],
-        n_qdot: Int,
     ) -> Callable:
         """
         The initial continuity constraint for the integration.
@@ -274,8 +273,6 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         ----------
         controllers: list[PenaltyController, PenaltyController]
             The controllers of the two first nodes considered in the input list.
-        n_qdot:
-            The number of generalized velocities
 
         Returns
         -------
@@ -285,7 +282,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         return controllers[0].get_nlp.dynamics_defects_func_first_node(
             controllers[0].dt.cx,
             controllers[0].states["q"].cx,
-            controllers[0].parameters.cx[:n_qdot],  # hardcoded
+            controllers[0].parameters["qdot_start"].cx,
             controllers[1].states["q"].cx,
             controllers[0].controls["tau"].cx,
             controllers[1].controls["tau"].cx,
@@ -295,7 +292,6 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
     def variational_integrator_final(
         self,
         controllers: list[PenaltyController, PenaltyController],
-        n_qdot: Int,
     ) -> Callable:
         """
         The final continuity constraint for the integration. Warning: When the system has holonomic constraints, there
@@ -304,9 +300,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         Parameters
         ----------
         controllers: list[PenaltyController, PenaltyController]
-            The controllers of the two first nodes considered in the input list.
-        n_qdot:
-            The number of generalized velocities
+            The controllers of the two last nodes considered in the input list.
 
         Returns
         -------
@@ -317,14 +311,14 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             controllers[0].dt.cx,
             controllers[0].states["q"].cx,
             controllers[1].states["q"].cx,
-            controllers[0].parameters.cx[n_qdot : 2 * n_qdot],  # hardcoded
+            controllers[0].parameters["qdot_end"].cx,
             controllers[0].controls["tau"].cx,
             controllers[1].controls["tau"].cx,
             *self._lambdas(controllers[1]),
         )
 
     def variational_continuity(
-        self, multinode_constraints: MultinodeConstraintList, n_shooting: Int, n_qdot: Int
+        self, multinode_constraints: MultinodeConstraintList, n_shooting: Int
     ) -> MultinodeConstraintList:
         """
         The continuity constraint for the integration.
@@ -334,7 +328,6 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         multinode_constraints: MultinodeConstraintList
             The user-defined multinode constraints, left untouched
         n_shooting: int
-        n_qdot: int
 
         Returns
         -------
@@ -357,13 +350,11 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             self.variational_integrator_initial,
             nodes_phase=(0, 0),
             nodes=(0, 1),
-            n_qdot=n_qdot,
         )
 
         multinode_constraints.add(
             self.variational_integrator_final,
             nodes_phase=(0, 0),
             nodes=(n_shooting - 1, n_shooting),
-            n_qdot=n_qdot,
         )
         return multinode_constraints
