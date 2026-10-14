@@ -350,7 +350,10 @@ def test_update_noised_init_rk4(interpolation, phase_dynamics):
         **extra_params_x,
     )
     u_init = InitialGuessList()
-    u_init.add("tau", u, interpolation=interpolation, t=t)
+    control_interpolation = (
+        InterpolationType.EACH_FRAME if interpolation == InterpolationType.ALL_POINTS else interpolation
+    )
+    u_init.add("tau", u, interpolation=control_interpolation, t=t)
     u_init.add_noise(
         bounds=u_bounds,
         magnitude=0.01,
@@ -680,7 +683,7 @@ def test_update_noised_initial_guess_rk4(interpolation, phase_dynamics):
             x_init[i, :] = np.linspace(i, i + 1, ns + 1)
         x.add("q", x_init[:nq, :], interpolation=interpolation)
         x.add("qdot", x_init[nq:, :], interpolation=interpolation)
-        u.add("tau", np.zeros((ntau, ns)), interpolation=interpolation)
+        u.add("tau", np.zeros((ntau, ns)), interpolation=InterpolationType.EACH_FRAME)
     elif interpolation == InterpolationType.SPLINE:
         # Bound spline assume the first and last point are 0 and final respectively
         np.random.seed(42)
@@ -1035,7 +1038,7 @@ def test_update_noised_initial_guess_collocation(interpolation, phase_dynamics):
             x_init[i, :] = np.linspace(0, 1, ns * (ode_solver.polynomial_degree + 1) + 1)
         x.add("q", x_init[:nq, :], interpolation=interpolation)
         x.add("qdot", x_init[nq:, :], interpolation=interpolation)
-        u.add("tau", np.zeros((ntau, ns)), interpolation=interpolation)
+        u.add("tau", np.zeros((ntau, ns)), interpolation=InterpolationType.EACH_FRAME)
     elif interpolation == InterpolationType.SPLINE:
         # Bound spline assume the first and last point are 0 and final respectively
         np.random.seed(42)
