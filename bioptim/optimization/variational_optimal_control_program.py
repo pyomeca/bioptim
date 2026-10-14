@@ -17,7 +17,6 @@ from ..limits.penalty_controller import PenaltyController
 from ..misc.enums import ControlType, ContactType
 from ..models.biorbd.variational_biorbd_model import VariationalBiorbdModel
 from ..models.protocols.variational_biomodel import VariationalBioModel
-from ..models.biorbd.model_dynamics import VariationalTorqueBiorbdModel
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.parameters import ParameterList
 from ..optimization.variable_scaling import VariableScaling
@@ -54,7 +53,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         use_sx: Bool = False,
         **kwargs,
     ):
-        if type(bio_model) != VariationalBiorbdModel and type(bio_model) != VariationalTorqueBiorbdModel:
+        if not isinstance(bio_model, VariationalBiorbdModel):
             raise TypeError("bio_model must be of type VariationalBiorbdModel")
 
         if "phase_time" in kwargs:
