@@ -89,7 +89,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         dynamics.add(
             expand_dynamics=expand,
             skip_continuity=True,
-            ode_solver=OdeSolver.VARIATIONAL(),  # This is a fake ode_solver to be able to use the variational integrator
+            ode_solver=OdeSolver.VARIATIONAL(),
         )
 
         if qdot_bounds is None or not isinstance(qdot_bounds, BoundsList):
