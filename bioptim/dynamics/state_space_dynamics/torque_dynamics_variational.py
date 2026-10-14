@@ -8,8 +8,6 @@ class VariationalTorqueDynamics(StateDynamics):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # TODO: QDOT are declared as parameters in VariationalOptimalControlProgram, these parameters should instead be
-        #   declared here as self.parameter_configuration = [Parameter.QDOT_INIT, Parameter.QDOT_END]
         # If the model has no holonomic constraint, there will be no lambdas defined
 
     @property
