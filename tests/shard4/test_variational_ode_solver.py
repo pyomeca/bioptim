@@ -13,6 +13,8 @@ from bioptim import (
     BoundsList,
     DynamicsOptions,
     InterpolationType,
+    MultinodeConstraintFcn,
+    MultinodeConstraintList,
     OdeSolver,
     OptimalControlProgram,
     Shooting,
@@ -133,3 +135,39 @@ def test_variational_solution_outputs_still_work(solution):
     assert solution.parameters["qdot_start"].shape == (2,)
     solution.ocp.print(to_console=False, to_graph=False)
     solution.graphs(show_now=False)
+
+
+def test_variational_continuity_is_declared_by_the_ode_solver():
+    n_shooting = 5
+    nlp = _prepare_variational_ocp(n_shooting=n_shooting).nlp[0]
+
+    names = [g.name.split("_Multinode")[0] for g in nlp.g_internal if g]
+
+    assert names == (
+        ["three_nodes_equations"] * (n_shooting - 1) + ["initial_node_equations"] + ["final_node_equations"]
+    )
+    assert not nlp.dynamics_type.skip_continuity
+
+
+def test_variational_continuity_leaves_the_user_multinode_constraints_first():
+    multinode_constraints = MultinodeConstraintList()
+    multinode_constraints.add(MultinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 0), nodes=(0, 5), key="q")
+    bio_model = VariationalTorqueBiorbdModel(TestUtils.bioptim_folder() + "/examples/models/pendulum.bioMod")
+    q_bounds = BoundsList()
+    q_bounds["q"] = bio_model.bounds_from_ranges("q")
+    qdot_bounds = BoundsList()
+    for key in ("qdot_start", "qdot_end"):
+        qdot_bounds.add(key, min_bound=[0, 0], max_bound=[0, 0], interpolation=InterpolationType.CONSTANT)
+
+    ocp = VariationalOptimalControlProgram(
+        bio_model,
+        n_shooting=5,
+        final_time=1,
+        q_bounds=q_bounds,
+        qdot_bounds=qdot_bounds,
+        multinode_constraints=multinode_constraints,
+    )
+
+    names = [g.name.split("_Multinode")[0] for g in ocp.nlp[0].g_internal if g]
+    assert names[0] == "STATES_EQUALITY"
+    assert len(names) == 1 + 4 + 2
