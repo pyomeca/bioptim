@@ -1324,41 +1324,40 @@ objective_list.add(objective)
 ```
 
 ### Class: ObjectiveFcn
-Here a list of objective function with its type (Lagrange and/or Mayer) in alphabetical order: 
-- **MINIMIZE_ALL_CONTROLS** (Lagrange) &mdash; Minimizes all the control variables toward zero (or a target).
-- **MINIMIZE_ANGULAR_MOMENTUM** (Lagrange and Mayer)  &mdash; Minimizes the angular momentum in the global reference frame toward zero (or a target). The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the momentum should be minimized.
-- **MINIMIZE_COM_ACCELERATION** (Lagrange and Mayer)  &mdash; Minimizes the center of mass acceleration towards zero (or a target). The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the acceleration should be minimized.
-- **MINIMIZE_COM_POSITION** (Lagrange and Mayer)  &mdash; Minimizes the center of mass position toward zero (or a target). The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the center of mass should be minimized.
-- **MINIMIZE_COM_VELOCITY**  (Lagrange and Mayer)  &mdash; Minimizes the center of mass velocity towards zero (or a target). The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the velocity should be minimized.
-- **MINIMIZE_EXPLICIT_RIGID_CONTACT_FORCES** (Lagrange) &mdash; Minimizes the non-acceleration points of the reaction forces toward zero (or a target).
-- **MINIMIZE_LINEAR_MOMENTUM** (Lagrange and Mayer)  &mdash; Minimizes the linear momentum towards zero (or a target). The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the momentum should be minimized.
-- **MINIMIZE_MARKERS_DISPLACEMENT** (Lagrange) &mdash; Minimizes the difference between a state at a node and the same state at the next node, effectively minimizing the velocity. The extra parameter `coordinates_system_idx` can be specified to compute the marker position in that coordinate system. Otherwise, it is computed in the global reference frame. 
-- **MINIMIZE_MARKERS_VELOCITY or MINIMIZE_MARKERS_ACCELERATION** (Lagrange and Mayer) &mdash; Minimizes the marker velocities or accelerations toward zero (or a target).
-- **MINIMIZE_MARKERS** (Lagrange and Mayer) &mdash; Minimizes the position of the markers toward zero (or a target). The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the markers should be minimized.
-- **MINIMIZE_MUSCLES_CONTROL** (Lagrange) &mdash;  Minimizes the muscles' controls (part of the control variables) toward zero (or a target).
+Here a list of objective function with its type (Lagrange and/or Mayer) in alphabetical order. 
+The `TRACK_*` functions are aliases of the corresponding `MINIMIZE_*` functions and are meant to be used with a `target`: 
+- **CUSTOM** (Lagrange and Mayer)  &mdash; The user should not directly send CUSTOM, but pass the custom_objective function directly. 
+- **MINIMIZE_ALGEBRAIC_STATES** (Lagrange) or **MINIMIZE_ALGEBRAIC_STATE** (Mayer) &mdash; Minimizes the algebraic states toward zero (or a target). Aliased by `TRACK_ALGEBRAIC_STATES` (Lagrange) and `TRACK_ALGEBRAIC_STATE` (Mayer).
+- **MINIMIZE_ANGULAR_MOMENTUM** (Lagrange and Mayer)  &mdash; Minimizes the angular momentum in the global reference frame toward zero (or a target). The extra parameter `axes` can be provided to specify the axes along which the momentum should be minimized.
+- **MINIMIZE_COM_ACCELERATION** (Lagrange and Mayer)  &mdash; Minimizes the center of mass acceleration towards zero (or a target). The extra parameter `axes` can be provided to specify the axes along which the acceleration should be minimized.
+- **MINIMIZE_COM_POSITION** (Lagrange and Mayer)  &mdash; Minimizes the center of mass position toward zero (or a target). The extra parameter `axes` can be sent to specify the axes along which the center of mass should be minimized.
+- **MINIMIZE_COM_VELOCITY**  (Lagrange and Mayer)  &mdash; Minimizes the center of mass velocity towards zero (or a target). The extra parameter `axes` can be provided to specify the axes along which the velocity should be minimized.
+- **MINIMIZE_CONTROL** (Lagrange and Mayer) &mdash; Minimizes the control variable named by the extra parameter `key` (e.g., `key="tau"` for the generalized forces or `key="muscles"` for the muscle controls) toward zero (or a target). Aliased by `TRACK_CONTROL` (Lagrange).
+- **MINIMIZE_EXPLICIT_RIGID_CONTACT_FORCES** (Lagrange and Mayer) &mdash; Minimizes the non-acceleration points of the reaction forces toward zero (or a target). Aliased by `TRACK_EXPLICIT_RIGID_CONTACT_FORCES` (Lagrange).
+- **MINIMIZE_EXPLICIT_RIGID_CONTACT_FORCES_END_OF_INTERVAL** (Mayer) &mdash; Minimizes the contact forces at the end of the interval, computed by integrating the dynamics with contact, toward zero (or a target).
+- **MINIMIZE_FATIGUE** (Lagrange and Mayer) &mdash; Minimizes the fatigue state variable named by the extra parameter `key` toward zero (or a target).
+- **MINIMIZE_LINEAR_MOMENTUM** (Lagrange and Mayer)  &mdash; Minimizes the linear momentum towards zero (or a target). The extra parameter `axes` can be provided to specify the axes along which the momentum should be minimized.
+- **MINIMIZE_MARKERS_VELOCITY or MINIMIZE_MARKERS_ACCELERATION** (Lagrange and Mayer) &mdash; Minimizes the marker velocities or accelerations toward zero (or a target). Aliased by `TRACK_MARKERS_VELOCITY` and `TRACK_MARKERS_ACCELERATION`.
+- **MINIMIZE_MARKERS** (Lagrange and Mayer) &mdash; Minimizes the position of the markers toward zero (or a target). The extra parameter `axes` can be sent to specify the axes along which the markers should be minimized. Aliased by `TRACK_MARKERS`.
+- **MINIMIZE_POWER** (Lagrange and Mayer) &mdash; Minimizes the product of a state variable by the control variable `key_control` (e.g., joint power or muscle power) toward zero (or a target). Aliased by `TRACK_POWER`.
 - **MINIMIZE_PREDICTED_COM_HEIGHT** (Mayer)  &mdash; Minimizes the maximal height of the center of mass, predicted from the parabolic equation, assuming vertical axis is Z (2): CoM_dot[2]**2 / (2 * -g) + CoM[2]. To maximize a jump, one can use this function at the end of the push-off phase and declare a weight of -1.
-- **MINIMIZE_SOFT_CONTACT_FORCES** (Lagrange) &mdash; Minimizes the external forces induced by soft contacts (or a target).
-- **MINIMIZE_STATE_DERIVATIVE** (Lagrange) &mdash; Minimizes the difference between a state at a node and the same state at the next node, i.e., minimizes the generalized state derivative.
-- **MINIMIZE_STATE** (Lagrange and Mayer) &mdash; Minimizes the state variable towards zero (or a target).
+- **MINIMIZE_QDDOT** (Lagrange and Mayer) &mdash; Minimizes the generalized accelerations (qddot) toward zero (or a target).
+- **MINIMIZE_SEGMENT_ROTATION** (Lagrange and Mayer) &mdash; Minimizes the orientation of a segment in the global reference frame (Euler sequence given by the extra parameter `sequence`, `"xyz"` by default) toward zero (or a target). The extra parameter `segment` must be passed and `axes` can be provided.
+- **MINIMIZE_SEGMENT_VELOCITY** (Lagrange and Mayer) &mdash; Minimizes the velocity of a segment toward zero (or a target). The extra parameter `segment` must be passed and `axes` can be provided.
+- **MINIMIZE_SOFT_CONTACT_FORCES** (Lagrange) &mdash; Minimizes the external forces induced by soft contacts (or a target). Aliased by `TRACK_SOFT_CONTACT_FORCES`.
+- **MINIMIZE_STATE** (Lagrange and Mayer) &mdash; Minimizes the state variable named by the extra parameter `key` (e.g., `key="q"`) towards zero (or a target). Aliased by `TRACK_STATE`.
 - **MINIMIZE_TIME** (Lagrange and Mayer) &mdash; Adds the time to the optimization variable set. It will minimize the time toward minus infinity or a target. If the Mayer term is used, `min_bound` and `max_bound` can also be defined.
-- **MINIMIZE_TORQUE_DERIVATIVE** (Lagrange) &mdash; Minimizes the difference between a *tau* at a node and the same *tau* at the next node, i.e., minimizes the generalized forces derivative.
-- **MINIMIZE_TORQUE** (Lagrange) &mdash; Minimizes the generalized forces (part of the control variables) toward zero (or a target).
 - **PROPORTIONAL_CONTROL** (Lagrange) &mdash; Minimizes the difference between one control and another, such that `u[first_dof] - first_dof_intercept = coef * (u[second_dof] - second_dof_intercept)`. The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Objective` constructor.
 - **PROPORTIONAL_STATE** (Lagrange and Mayer) &mdash; Minimizes the difference between one state and another, such that `x[first_dof] - first_dof_intercept = coef * (x[second_dof] - second_dof_intercept)`. The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Objective` constructor.
-- **SUPERIMPOSE_MARKERS** (Lagrange and Mayer) &mdash; Tracks one marker with another one. The extra parameters `first_marker_idx: int` and `second_marker_idx: int` informs which markers are to be superimposed
-- **TRACK_ALL_CONTROLS (Lagrange)** &mdash; Tracks all the control variables toward a target.
-- **TRACK_RIGID_CONTACT_FORCES** (Lagrange) &mdash; Tracks the non-acceleration points of the reaction forces toward a target.
-- **TRACK_MARKER_WITH_SEGMENT_AXIS** (Lagrange and Mayer) &mdash; Minimizes the distance between a marker and an axis of a segment, that is aligning an axis toward the marker. The extra parameters `marker_idx: int`, `segment_index: int` and `axis: Axis` must be passed to the `Objective` constructor
-- **TRACK_MARKERS_VELOCITY or TRACK_MARKERS_ACCELERATION** (Lagrange and Mayer) &mdash;  Tracks the marker velocities or accelerations toward a target.
-- **TRACK_MARKERS** (Lagrange and Mayer) &mdash; Tracks the skin markers towards a target. The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the markers should be tracked.
-- **TRACK_MUSCLES_CONTROL** (Lagrange) &mdash; Tracks the muscles' controls (part of the control variables) toward a target.
-- **TRACK_SEGMENT_WITH_CUSTOM_RT** (Lagrange and Mayer)  &mdash; Minimizes the distance between a segment and an RT (for instance, an Inertial Measurement Unit). It does so by computing the homogenous transformation between the segment and the RT and then converting this to Euler angles. The extra parameters `segment_index: int` and `rt_index: int` must be passed to the `Objective` constructor.
-- **TRACK_SOFT_CONTACT_FORCES**  (Lagrange)  &mdash; Tracks the external forces induced by soft contacts toward a target.
-- **TRACK_STATE**  (Lagrange and Mayer) &mdash; Tracks the state variable toward a target.
-- **TRACK_TORQUE** (Lagrange &mdash; Tracks the generalized forces (part of the control variables) toward a target.
-- **CUSTOM** (Lagrange and Mayer)  &mdash; The user should not directly send CUSTOM, but pass the custom_objective function directly. 
-You can look at Objective and ObjectiveList sections for more information about defining custom objective function.
+- **STOCHASTIC_MINIMIZE_EXPECTED_FEEDBACK_EFFORTS** (Lagrange) &mdash; Minimizes the expected effort due to the motor command and the feedback gains for a given sensory noise magnitude (stochastic OCP only). No target can be used.
+- **SUPERIMPOSE_MARKERS** (Lagrange and Mayer) &mdash; Tracks one marker with another one. The extra parameters `first_marker` and `second_marker` (marker names or indices) inform which markers are to be superimposed.
+- **SUPERIMPOSE_MARKERS_VELOCITY** (Mayer) &mdash; Same as `SUPERIMPOSE_MARKERS` but for the marker velocities.
+- **TRACK_CENTER_OF_PRESSURE** (Lagrange and Mayer) &mdash; Tracks the center of pressure, computed from the contact forces, toward a target. The extra parameter `contact_index` must be passed to the `Objective` constructor.
+- **TRACK_MARKER_WITH_SEGMENT_AXIS** (Lagrange and Mayer) &mdash; Minimizes the distance between a marker and an axis of a segment, that is aligning an axis toward the marker. The extra parameters `marker`, `segment` and `axis: Axis` must be passed to the `Objective` constructor
+- **TRACK_SEGMENT_WITH_CUSTOM_RT** (Lagrange and Mayer)  &mdash; Minimizes the distance between a segment and an RT (for instance, an Inertial Measurement Unit). It does so by computing the homogenous transformation between the segment and the RT and then converting this to Euler angles. The extra parameters `segment` and `rt_index: int` must be passed to the `Objective` constructor.
+- **TRACK_SUM_REACTION_FORCES** (Lagrange and Mayer) &mdash; Tracks the sum of the reaction forces (e.g., force plate data) toward a target. The extra parameter `contact_index` must be passed to the `Objective` constructor.
 
+You can look at Objective and ObjectiveList sections for more information about defining custom objective function.
 
 ## The parameters
 Parameters are time-independent variables (e.g., a muscle maximal isometric force, the value of gravity ). that affect the dynamics of the whole system. 
