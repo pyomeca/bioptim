@@ -174,7 +174,7 @@ class ParameterList(OptimizationVariableList):
     def add(
         self,
         name: Str,
-        function: Callable,
+        function: Callable | None,
         size: Int,
         scaling: VariableScaling = None,
         mapping: BiMapping = None,
@@ -189,8 +189,8 @@ class ParameterList(OptimizationVariableList):
         ----------
         name: str
             The name of the parameter
-        function: callable
-            The user defined function that modify the model
+        function: callable | None
+            The user defined function that modify the model. None if the parameter does not modify the model
         size: int
             The number of variables this parameter has
         scaling: VariableScaling
