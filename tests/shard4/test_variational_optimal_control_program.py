@@ -161,3 +161,34 @@ def test_variational_ocp_reads_qdot_parameters_by_name():
     npt.assert_almost_equal(controls["tau"][:, 0], [9.952650040830257, 0.0], decimal=6)
     npt.assert_almost_equal(sol.parameters["qdot_start"], [0.0, 0.0], decimal=6)
     npt.assert_almost_equal(sol.parameters["qdot_end"], [0.0, 0.0], decimal=6)
+
+
+def test_variational_ocp_declares_qdot_parameters_without_model_function():
+    ocp = _prepare_variational_ocp()
+
+    parameters = ocp.nlp[0].parameters
+    assert parameters.keys() == ["qdot_start", "qdot_end"]
+    for key in parameters.keys():
+        assert parameters[key].size == ocp.nlp[0].model.nb_q
+        assert parameters[key].function is None
+
+
+def test_variational_ocp_does_not_mutate_user_parameters():
+    parameters = ParameterList(use_sx=False)
+    parameters.add("unused", lambda model, value: None, size=1)
+
+    ocp = _prepare_variational_ocp(parameters=parameters)
+
+    assert parameters.keys() == ["unused"]
+    assert ocp.nlp[0].parameters.keys() == ["unused", "qdot_start", "qdot_end"]
+    # The same user parameters can therefore be used to build another ocp
+    _prepare_variational_ocp(parameters=parameters)
+
+
+@pytest.mark.parametrize("name", ["qdot_start", "qdot_end"])
+def test_variational_ocp_rejects_user_parameters_named_as_qdot_parameters(name):
+    parameters = ParameterList(use_sx=False)
+    parameters.add(name, lambda model, value: None, size=2)
+
+    with pytest.raises(KeyError, match="reserved words of OdeSolver.VARIATIONAL.*qdot_init"):
+        _prepare_variational_ocp(parameters=parameters)
