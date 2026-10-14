@@ -361,7 +361,7 @@ The optimization variables can be subject to equality and/or inequality constrai
 # A first practical example
 The easiest way to learn `bioptim` is to dive into it.
 So let us do that and build our first optimal control program together.
-Please note that this tutorial is designed to recreate the `examples/getting_started/pendulum.py` file where a pendulum is asked to start in a downward position and end, balanced, in an upward position while only being able to move sideways actively.
+Please note that this tutorial is designed to recreate the `bioptim/examples/getting_started/basic_ocp.py` file where a pendulum is asked to start in a downward position and end, balanced, in an upward position while only being able to move sideways actively.
 
 ## The import
 We will not spend time explaining the import since every one of them will be explained in detail later, and it is pretty straightforward anyway.
@@ -430,7 +430,7 @@ Even though, it is possible to define an OCP without objective, it is not so muc
 So the pendulum's goal (or the cost function) is to perform its task while using the minimum forces possible. 
 Therefore, an objective function that minimizes the generalized forces is defined:
 ```python
-objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE)
+objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 ```
 
 At that point, it is possible to solve the program.
@@ -570,6 +570,7 @@ from bioptim import (
     InitialGuessList,
     ObjectiveFcn,
     Objective,
+    Solver,
 )
 
 bio_model = TorqueBiorbdModel("pendulum.bioMod")
@@ -585,14 +586,14 @@ x_bounds["qdot"][:, [0, -1]] = 0
 u_bounds = BoundsList()
 u_bounds["tau"] = [-100, 0], [100, 0]
 
-objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE)
+objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
 # Initial guess is optional (default = 0)
 x_init = InitialGuessList()
 x_init["q"] = [0, 0]
 x_init["qdot"] = [0, 0]
 u_init = InitialGuessList()
-u_init = [0, 0]
+u_init["tau"] = [0, 0]
 
 ocp = OptimalControlProgram(
         bio_model,
@@ -605,7 +606,7 @@ ocp = OptimalControlProgram(
         objective_functions=objective_functions,
     )
     
-sol = ocp.solve(show_online_optim=True)
+sol = ocp.solve(Solver.IPOPT(show_online_optim=True))
 sol.print_cost()
 sol.animate()
 ```
@@ -1038,7 +1039,7 @@ And some of the currently available dynamics:
 - `TorqueDynamics`:The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as *tau*. The derivative of *q* is trivially *qdot*. The derivative of *qdot* is given by the biorbd function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`. If external forces are provided, they are added to the ForwardDynamics function.
 - `TorqueDerivativeDynamics`: The torque derivative driven defines the states (x) as *q*, *qdot*, *tau* and the controls (u) as *taudot*. The derivative of *q* is trivially *qdot*. The derivative of *qdot* is given by the biorbd function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`. The derivative of *tau* is trivially *taudot*. If external forces are provided, they are added to the ForwardDynamics function.
 - `TorqueActivationsDynamics`: The torque activations driven defines the states (x) as *q* and *qdot* and the controls (u) as the level of activation of *tau*. The derivative of *q* is trivially *qdot*. The actual *tau* is computed from the activation by the biorbd function: `tau = bio_model.torque(torque_act, q, qdot)`. The derivative of *qdot* is given by the biorbd function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`.
-(Please note, this dynamics is expected to be very slow to converge, if it ever does. One is therefore encourage using TORQUE_DRIVEN instead, and to add the TORQUE_MAX_FROM_ACTUATORS constraint. This has been shown to be more efficient and allows defining minimum torque. **with_residual_torque = True:** The residual torque is taken into account in the *tau*.)
+(Please note, this dynamics is expected to be very slow to converge, if it ever does. One is therefore encourage using TORQUE_DRIVEN instead, and to add the TORQUE_MAX_FROM_Q_AND_QDOT constraint. This has been shown to be more efficient and allows defining minimum torque. **with_residual_torque = True:** The residual torque is taken into account in the *tau*.)
 - `JointsAccelerationDynamics`: The joints acceleration driven defines the states (x) as *q* and *qdot* and the controls (u) as *qddot_joints*. The derivative of *q* is trivially *qdot*. The joints' acceleration *qddot_joints* is the acceleration of the actual joints of the `biorb_model` without its root's joints. The model's root's joints acceleration *qddot_root* are computed by the `biorbd` function: `qddot_root = boirbd_model.ForwardDynamicsFreeFloatingBase(q, qdot, qddot_joints)`. The derivative of *qdot* is the vertical stack of *qddot_root* and *qddot_joints*.
 (This dynamic is suitable for bodies in free fall.)
 - `MuscleDynamics`: The muscle driven defines the states (x) as *q* and *qdot* and the controls (u) as the muscle activations. The derivative of *q* is trivially *qdot*. Possible options: The actual *tau* is computed from the muscle activation converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(muscles_states, q, qdot)`. The derivative of *qdot* is given by the `biorbd` function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`. The actual *tau* is computed from the sum of *tau* to the *a* converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(a, q, qdot)`. **with_residual_torque = True:** The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as the *tau* and the muscle activations (*a*). The actual *tau* is computed from the sum of *tau* to the muscle activation converted in muscle forces and thereafter converted to *tau* by the `biorbd` function: `bio_model.muscularJointTorque(a, q, qdot)`. **with_excitations = True:** The torque driven defines the states (x) as *q*, *qdot* and muscle activations (*a*) and the controls (u) as the *tau* and the *EMG*. The derivative of *a* is computed by the `biorbd` function: `adot = model.activationDot(emg, a)`
@@ -1245,20 +1246,18 @@ This constraint assumes that the normal forces is positive (that is having an ad
 - **PROPORTIONAL_STATE** &mdash; Links one state to another, such that `x[first_dof] - first_dof_intercept = coef * (x[second_dof] - second_dof_intercept)`. The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Constraint` constructor.
 - **SUPERIMPOSE_MARKERS** &mdash; Matches one marker with another one. The extra parameters `first_marker_idx: int` and `second_marker_idx: int` informs which markers are to be superimposed.
 - **TIME_CONSTRAINT**  &mdash; Adds the time to the optimization variable set. It will leave the time free within the given boundaries.
-- **TORQUE_MAX_FROM_ACTUATORS**  &mdash; Adds a constraint of maximal torque to the generalized forces controls such that the maximal *tau* are computed from the `biorbd` method `bio_model.torque_max(q, qdot)`. This is an efficient alternative to torque activation dynamics.  The extra parameter `min_torque` can be passed to ensure that the model is never too weak.
-- **TRACK_ALL_CONTROLS**  &mdash; Tracks all the control variables toward a target.
-- **TRACK_ANGULAR_MOMENTUM**  &mdash; Constraints the angular momentum in the global reference frame toward a target. The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the momentum should be tracked.
-- **TRACK_COM_POSITION**  &mdash; Constraints the center of mass toward a target. The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the center of mass should be tracked.
-- **TRACK_COM_VELOCITY**  &mdash; Constraints the center of mass velocity toward a target. The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the velocity should be tracked.
-- **TRACK_RIGID_CONTACT_FORCES**  &mdash; Tracks the non-acceleration point reaction forces toward a target.
-- **TRACK_LINEAR_MOMENTUM**  &mdash; Constraints the linear momentum toward a target. The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the momentum should be tracked.
+- **TORQUE_MAX_FROM_Q_AND_QDOT**  &mdash; Adds a constraint of maximal torque to the generalized forces controls such that the maximal *tau* are computed from the torque-position-velocity relationship of the model. This is an efficient alternative to torque activation dynamics.  The extra parameter `min_torque` can be passed to ensure that the model is never too weak.
+- **TRACK_ANGULAR_MOMENTUM**  &mdash; Constraints the angular momentum in the global reference frame toward a target. The extra parameter `axes` can be sent to specify the axes along which the momentum should be tracked.
+- **TRACK_COM_POSITION**  &mdash; Constraints the center of mass toward a target. The extra parameter `axes` can be sent to specify the axes along which the center of mass should be tracked.
+- **TRACK_COM_VELOCITY**  &mdash; Constraints the center of mass velocity toward a target. The extra parameter `axes` can be provided to specify the axes along which the velocity should be tracked.
+- **TRACK_EXPLICIT_RIGID_CONTACT_FORCES**  &mdash; Tracks the non-acceleration point reaction forces toward a target.
+- **TRACK_LINEAR_MOMENTUM**  &mdash; Constraints the linear momentum toward a target. The extra parameter `axes` can be sent to specify the axes along which the momentum should be tracked.
 - **TRACK_MARKER_WITH_SEGMENT_AXIS**  &mdash; Tracks a marker using a segment, that is aligning an axis toward the marker. The extra parameters `marker_idx: int`, `segment_index: int`, and `axis: Axis` must be passed to the `Constraint` constructor
 - **TRACK_MARKERS_VELOCITY** &mdash; Tracks the skin marker velocities toward a target.
-- **TRACK_MARKERS** &mdash; Tracks the skin markers toward a target. The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the markers should be tracked.
-- **TRACK_MUSCLES_CONTROL**  &mdash; Tracks the muscles (part of the control variables) toward a target.
+- **TRACK_MARKERS** &mdash; Tracks the skin markers toward a target. The extra parameter `axes` can be provided to specify the axes along which the markers should be tracked.
 - **TRACK_SEGMENT_WITH_CUSTOM_RT**  &mdash;Links a segment with an RT (for instance, an Inertial Measurement Unit). It does so by computing the homogenous transformation between the segment and the RT and then converting this to Euler angles. The extra parameters `segment_index: int` and `rt_index: int` must be passed to the `Constraint` constructor.
 - **TRACK_STATE** &mdash; Tracks the state's variable toward a target.
-- **TRACK_TORQUE**  &mdash; Tracks the generalized forces (part of the control variables) toward a target.
+- **TRACK_CONTROL**  &mdash; Tracks the control variable named by the extra parameter `key` (e.g., `key="tau"` for the generalized forces or `key="muscles"` for the muscle controls) toward a target.
 - **CUSTOM**  &mdash; The user should not directly send CUSTOM, but the user should pass the custom_constraint function directly. You can look at Constraint and ConstraintList sections for more information about how to define custom constraints.
 
 
@@ -1324,41 +1323,40 @@ objective_list.add(objective)
 ```
 
 ### Class: ObjectiveFcn
-Here a list of objective function with its type (Lagrange and/or Mayer) in alphabetical order: 
-- **MINIMIZE_ALL_CONTROLS** (Lagrange) &mdash; Minimizes all the control variables toward zero (or a target).
-- **MINIMIZE_ANGULAR_MOMENTUM** (Lagrange and Mayer)  &mdash; Minimizes the angular momentum in the global reference frame toward zero (or a target). The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the momentum should be minimized.
-- **MINIMIZE_COM_ACCELERATION** (Lagrange and Mayer)  &mdash; Minimizes the center of mass acceleration towards zero (or a target). The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the acceleration should be minimized.
-- **MINIMIZE_COM_POSITION** (Lagrange and Mayer)  &mdash; Minimizes the center of mass position toward zero (or a target). The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the center of mass should be minimized.
-- **MINIMIZE_COM_VELOCITY**  (Lagrange and Mayer)  &mdash; Minimizes the center of mass velocity towards zero (or a target). The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the velocity should be minimized.
-- **MINIMIZE_EXPLICIT_RIGID_CONTACT_FORCES** (Lagrange) &mdash; Minimizes the non-acceleration points of the reaction forces toward zero (or a target).
-- **MINIMIZE_LINEAR_MOMENTUM** (Lagrange and Mayer)  &mdash; Minimizes the linear momentum towards zero (or a target). The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the momentum should be minimized.
-- **MINIMIZE_MARKERS_DISPLACEMENT** (Lagrange) &mdash; Minimizes the difference between a state at a node and the same state at the next node, effectively minimizing the velocity. The extra parameter `coordinates_system_idx` can be specified to compute the marker position in that coordinate system. Otherwise, it is computed in the global reference frame. 
-- **MINIMIZE_MARKERS_VELOCITY or MINIMIZE_MARKERS_ACCELERATION** (Lagrange and Mayer) &mdash; Minimizes the marker velocities or accelerations toward zero (or a target).
-- **MINIMIZE_MARKERS** (Lagrange and Mayer) &mdash; Minimizes the position of the markers toward zero (or a target). The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the markers should be minimized.
-- **MINIMIZE_MUSCLES_CONTROL** (Lagrange) &mdash;  Minimizes the muscles' controls (part of the control variables) toward zero (or a target).
+Here a list of objective function with its type (Lagrange and/or Mayer) in alphabetical order. 
+The `TRACK_*` functions are aliases of the corresponding `MINIMIZE_*` functions and are meant to be used with a `target`: 
+- **CUSTOM** (Lagrange and Mayer)  &mdash; The user should not directly send CUSTOM, but pass the custom_objective function directly. 
+- **MINIMIZE_ALGEBRAIC_STATES** (Lagrange) or **MINIMIZE_ALGEBRAIC_STATE** (Mayer) &mdash; Minimizes the algebraic states toward zero (or a target). Aliased by `TRACK_ALGEBRAIC_STATES` (Lagrange) and `TRACK_ALGEBRAIC_STATE` (Mayer).
+- **MINIMIZE_ANGULAR_MOMENTUM** (Lagrange and Mayer)  &mdash; Minimizes the angular momentum in the global reference frame toward zero (or a target). The extra parameter `axes` can be provided to specify the axes along which the momentum should be minimized.
+- **MINIMIZE_COM_ACCELERATION** (Lagrange and Mayer)  &mdash; Minimizes the center of mass acceleration towards zero (or a target). The extra parameter `axes` can be provided to specify the axes along which the acceleration should be minimized.
+- **MINIMIZE_COM_POSITION** (Lagrange and Mayer)  &mdash; Minimizes the center of mass position toward zero (or a target). The extra parameter `axes` can be sent to specify the axes along which the center of mass should be minimized.
+- **MINIMIZE_COM_VELOCITY**  (Lagrange and Mayer)  &mdash; Minimizes the center of mass velocity towards zero (or a target). The extra parameter `axes` can be provided to specify the axes along which the velocity should be minimized.
+- **MINIMIZE_CONTROL** (Lagrange and Mayer) &mdash; Minimizes the control variable named by the extra parameter `key` (e.g., `key="tau"` for the generalized forces or `key="muscles"` for the muscle controls) toward zero (or a target). Aliased by `TRACK_CONTROL` (Lagrange).
+- **MINIMIZE_EXPLICIT_RIGID_CONTACT_FORCES** (Lagrange and Mayer) &mdash; Minimizes the non-acceleration points of the reaction forces toward zero (or a target). Aliased by `TRACK_EXPLICIT_RIGID_CONTACT_FORCES` (Lagrange).
+- **MINIMIZE_EXPLICIT_RIGID_CONTACT_FORCES_END_OF_INTERVAL** (Mayer) &mdash; Minimizes the contact forces at the end of the interval, computed by integrating the dynamics with contact, toward zero (or a target).
+- **MINIMIZE_FATIGUE** (Lagrange and Mayer) &mdash; Minimizes the fatigue state variable named by the extra parameter `key` toward zero (or a target).
+- **MINIMIZE_LINEAR_MOMENTUM** (Lagrange and Mayer)  &mdash; Minimizes the linear momentum towards zero (or a target). The extra parameter `axes` can be provided to specify the axes along which the momentum should be minimized.
+- **MINIMIZE_MARKERS_VELOCITY or MINIMIZE_MARKERS_ACCELERATION** (Lagrange and Mayer) &mdash; Minimizes the marker velocities or accelerations toward zero (or a target). Aliased by `TRACK_MARKERS_VELOCITY` and `TRACK_MARKERS_ACCELERATION`.
+- **MINIMIZE_MARKERS** (Lagrange and Mayer) &mdash; Minimizes the position of the markers toward zero (or a target). The extra parameter `axes` can be sent to specify the axes along which the markers should be minimized. Aliased by `TRACK_MARKERS`.
+- **MINIMIZE_POWER** (Lagrange and Mayer) &mdash; Minimizes the product of a state variable by the control variable `key_control` (e.g., joint power or muscle power) toward zero (or a target). Aliased by `TRACK_POWER`.
 - **MINIMIZE_PREDICTED_COM_HEIGHT** (Mayer)  &mdash; Minimizes the maximal height of the center of mass, predicted from the parabolic equation, assuming vertical axis is Z (2): CoM_dot[2]**2 / (2 * -g) + CoM[2]. To maximize a jump, one can use this function at the end of the push-off phase and declare a weight of -1.
-- **MINIMIZE_SOFT_CONTACT_FORCES** (Lagrange) &mdash; Minimizes the external forces induced by soft contacts (or a target).
-- **MINIMIZE_STATE_DERIVATIVE** (Lagrange) &mdash; Minimizes the difference between a state at a node and the same state at the next node, i.e., minimizes the generalized state derivative.
-- **MINIMIZE_STATE** (Lagrange and Mayer) &mdash; Minimizes the state variable towards zero (or a target).
+- **MINIMIZE_QDDOT** (Lagrange and Mayer) &mdash; Minimizes the generalized accelerations (qddot) toward zero (or a target).
+- **MINIMIZE_SEGMENT_ROTATION** (Lagrange and Mayer) &mdash; Minimizes the orientation of a segment in the global reference frame (Euler sequence given by the extra parameter `sequence`, `"xyz"` by default) toward zero (or a target). The extra parameter `segment` must be passed and `axes` can be provided.
+- **MINIMIZE_SEGMENT_VELOCITY** (Lagrange and Mayer) &mdash; Minimizes the velocity of a segment toward zero (or a target). The extra parameter `segment` must be passed and `axes` can be provided.
+- **MINIMIZE_SOFT_CONTACT_FORCES** (Lagrange) &mdash; Minimizes the external forces induced by soft contacts (or a target). Aliased by `TRACK_SOFT_CONTACT_FORCES`.
+- **MINIMIZE_STATE** (Lagrange and Mayer) &mdash; Minimizes the state variable named by the extra parameter `key` (e.g., `key="q"`) towards zero (or a target). Aliased by `TRACK_STATE`.
 - **MINIMIZE_TIME** (Lagrange and Mayer) &mdash; Adds the time to the optimization variable set. It will minimize the time toward minus infinity or a target. If the Mayer term is used, `min_bound` and `max_bound` can also be defined.
-- **MINIMIZE_TORQUE_DERIVATIVE** (Lagrange) &mdash; Minimizes the difference between a *tau* at a node and the same *tau* at the next node, i.e., minimizes the generalized forces derivative.
-- **MINIMIZE_TORQUE** (Lagrange) &mdash; Minimizes the generalized forces (part of the control variables) toward zero (or a target).
 - **PROPORTIONAL_CONTROL** (Lagrange) &mdash; Minimizes the difference between one control and another, such that `u[first_dof] - first_dof_intercept = coef * (u[second_dof] - second_dof_intercept)`. The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Objective` constructor.
 - **PROPORTIONAL_STATE** (Lagrange and Mayer) &mdash; Minimizes the difference between one state and another, such that `x[first_dof] - first_dof_intercept = coef * (x[second_dof] - second_dof_intercept)`. The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Objective` constructor.
-- **SUPERIMPOSE_MARKERS** (Lagrange and Mayer) &mdash; Tracks one marker with another one. The extra parameters `first_marker_idx: int` and `second_marker_idx: int` informs which markers are to be superimposed
-- **TRACK_ALL_CONTROLS (Lagrange)** &mdash; Tracks all the control variables toward a target.
-- **TRACK_RIGID_CONTACT_FORCES** (Lagrange) &mdash; Tracks the non-acceleration points of the reaction forces toward a target.
-- **TRACK_MARKER_WITH_SEGMENT_AXIS** (Lagrange and Mayer) &mdash; Minimizes the distance between a marker and an axis of a segment, that is aligning an axis toward the marker. The extra parameters `marker_idx: int`, `segment_index: int` and `axis: Axis` must be passed to the `Objective` constructor
-- **TRACK_MARKERS_VELOCITY or TRACK_MARKERS_ACCELERATION** (Lagrange and Mayer) &mdash;  Tracks the marker velocities or accelerations toward a target.
-- **TRACK_MARKERS** (Lagrange and Mayer) &mdash; Tracks the skin markers towards a target. The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the markers should be tracked.
-- **TRACK_MUSCLES_CONTROL** (Lagrange) &mdash; Tracks the muscles' controls (part of the control variables) toward a target.
-- **TRACK_SEGMENT_WITH_CUSTOM_RT** (Lagrange and Mayer)  &mdash; Minimizes the distance between a segment and an RT (for instance, an Inertial Measurement Unit). It does so by computing the homogenous transformation between the segment and the RT and then converting this to Euler angles. The extra parameters `segment_index: int` and `rt_index: int` must be passed to the `Objective` constructor.
-- **TRACK_SOFT_CONTACT_FORCES**  (Lagrange)  &mdash; Tracks the external forces induced by soft contacts toward a target.
-- **TRACK_STATE**  (Lagrange and Mayer) &mdash; Tracks the state variable toward a target.
-- **TRACK_TORQUE** (Lagrange &mdash; Tracks the generalized forces (part of the control variables) toward a target.
-- **CUSTOM** (Lagrange and Mayer)  &mdash; The user should not directly send CUSTOM, but pass the custom_objective function directly. 
-You can look at Objective and ObjectiveList sections for more information about defining custom objective function.
+- **STOCHASTIC_MINIMIZE_EXPECTED_FEEDBACK_EFFORTS** (Lagrange) &mdash; Minimizes the expected effort due to the motor command and the feedback gains for a given sensory noise magnitude (stochastic OCP only). No target can be used.
+- **SUPERIMPOSE_MARKERS** (Lagrange and Mayer) &mdash; Tracks one marker with another one. The extra parameters `first_marker` and `second_marker` (marker names or indices) inform which markers are to be superimposed.
+- **SUPERIMPOSE_MARKERS_VELOCITY** (Mayer) &mdash; Same as `SUPERIMPOSE_MARKERS` but for the marker velocities.
+- **TRACK_CENTER_OF_PRESSURE** (Lagrange and Mayer) &mdash; Tracks the center of pressure, computed from the contact forces, toward a target. The extra parameter `contact_index` must be passed to the `Objective` constructor.
+- **TRACK_MARKER_WITH_SEGMENT_AXIS** (Lagrange and Mayer) &mdash; Minimizes the distance between a marker and an axis of a segment, that is aligning an axis toward the marker. The extra parameters `marker`, `segment` and `axis: Axis` must be passed to the `Objective` constructor
+- **TRACK_SEGMENT_WITH_CUSTOM_RT** (Lagrange and Mayer)  &mdash; Minimizes the distance between a segment and an RT (for instance, an Inertial Measurement Unit). It does so by computing the homogenous transformation between the segment and the RT and then converting this to Euler angles. The extra parameters `segment` and `rt_index: int` must be passed to the `Objective` constructor.
+- **TRACK_SUM_REACTION_FORCES** (Lagrange and Mayer) &mdash; Tracks the sum of the reaction forces (e.g., force plate data) toward a target. The extra parameter `contact_index` must be passed to the `Objective` constructor.
 
+You can look at Objective and ObjectiveList sections for more information about defining custom objective function.
 
 ## The parameters
 Parameters are time-independent variables (e.g., a muscle maximal isometric force, the value of gravity ). that affect the dynamics of the whole system. 
@@ -1940,14 +1938,14 @@ forces have to remain inside of a cone of friction), as shown in the part of the
 ```python
 constraints = ConstraintList()
    constraints.add(
-   ConstraintFcn.TRACK_RIGID_CONTACT_FORCES,
+   ConstraintFcn.TRACK_EXPLICIT_RIGID_CONTACT_FORCES,
    min_bound=min_bound,
    max_bound=max_bound,
    node=Node.ALL,
    contact_index=1,
    )
 constraints.add(
-    ConstraintFcn.TRACK_RIGID_CONTACT_FORCES,
+    ConstraintFcn.TRACK_EXPLICIT_RIGID_CONTACT_FORCES,
     min_bound=min_bound,
     max_bound=max_bound,
     node=Node.ALL,
@@ -2091,19 +2089,19 @@ it is supposed to balance the pendulum. It is designed to show how to track mark
 
 Note that the final node is not tracked. 
 
-In this example, we use both `ObjectiveFcn.Lagrange.TRACK_MARKERS` and `ObjectiveFcn.Lagrange.TRACK_TORQUE` objective 
+In this example, we use both `ObjectiveFcn.Lagrange.TRACK_MARKERS` and `ObjectiveFcn.Lagrange.TRACK_CONTROL` objective 
 functions to track data, as shown in the definition of the objective functions used in this example:
 
 ```python
 objective_functions = ObjectiveList()
 objective_functions.add(
-    ObjectiveFcn.Lagrange.TRACK_MARKERS, axis_to_track=[Axis.Y, Axis.Z], weight=100, target=markers_ref
+    ObjectiveFcn.Lagrange.TRACK_MARKERS, axes=[Axis.Y, Axis.Z], weight=100, target=markers_ref
 )
-objective_functions.add(ObjectiveFcn.Lagrange.TRACK_TORQUE, target=tau_ref)
+objective_functions.add(ObjectiveFcn.Lagrange.TRACK_CONTROL, key="tau", target=tau_ref)
 ```
 
 This is a good example of how to load data for tracking tasks and how to plot data. The extra parameter 
-`axis_to_track` allows users to specify the axes to track the markers (x and y axes in this example).
+`axes` allows users to specify the axes to track the markers (x and y axes in this example).
 This example is close to the example_save_and_load.py and custom_plotting.py files you can find in the 
 examples/getting_started repository. 
 
@@ -2147,7 +2145,7 @@ Then, the kinematics associated with these data are generated by numerical integ
 `scipy.integrate.solve_ivp`. 
 
 To implement this tracking task, we use the ObjectiveFcn.Lagrange.TRACK_STATE objective function in the case of state tracking, or the `ObjectiveFcn.Lagrange.TRACK_MARKERS` objective function in the case of marker tracking. We also use 
-the `ObjectiveFcn.Lagrange.TRACK_MUSCLES_CONTROL` objective function. The user can choose between marker or state 
+the `ObjectiveFcn.Lagrange.TRACK_CONTROL` objective function with `key="muscles"`. The user can choose between marker or state 
 tracking thanks to the string `kin_data_to_track`, which is one of the `prepare_ocp` function parameters. 
 
 ### The [muscle_excitations_tracker.py](./bioptim/examples/toy_examples/muscle_driven_ocp/muscle_activations_tracker.py)  file
@@ -2202,13 +2200,13 @@ In this case, the dynamics function used is `DynamicsFcn.MUSCLE_EXCITATIONS_AND_
 
 ### The [muscle_activations_contacts_tracker.py](./bioptim/examples/toy_examples/muscle_driven_with_contact/muscle_activations_contacts_tracker.py) file 
 In this example, we track both muscle controls and contact forces, as it is defined when adding the two objective 
-functions below, using both `ObjectiveFcn.Lagrange.TRACK_MUSCLES_CONTROL` and 
-`ObjectiveFcn.Lagrange.TRACK_RIGID_CONTACT_FORCES` objective functions. 
+functions below, using both `ObjectiveFcn.Lagrange.TRACK_CONTROL` (with `key="muscles"`) and 
+`ObjectiveFcn.Lagrange.TRACK_EXPLICIT_RIGID_CONTACT_FORCES` objective functions. 
 
 ```python
 objective_functions = ObjectiveList()
-objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MUSCLES_CONTROL, target=muscle_activations_ref)
-objective_functions.add(ObjectiveFcn.Lagrange.TRACK_RIGID_CONTACT_FORCES, target=contact_forces_ref)
+objective_functions.add(ObjectiveFcn.Lagrange.TRACK_CONTROL, key="muscles", target=muscle_activations_ref)
+objective_functions.add(ObjectiveFcn.Lagrange.TRACK_EXPLICIT_RIGID_CONTACT_FORCES, target=contact_forces_ref)
 ```
 
 Let us take a look at the structure of this example. First, we load data to track and generate data using the 
