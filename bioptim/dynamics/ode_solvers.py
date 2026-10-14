@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, TYPE_CHECKING
 
 from casadi import MX, SX, integrator as casadi_integrator, horzcat, Function, vertcat
 
@@ -7,8 +7,10 @@ from .ode_solver_base import OdeSolverBase
 from .rk_base import RK
 from ..misc.enums import ControlType, DefectType
 from ..misc.parameters_types import Bool, Int, Str, CX
-from ..models.protocols.biomodel import BioModel
-from ..optimization.parameters import ParameterList
+
+if TYPE_CHECKING:
+    from ..models.protocols.biomodel import BioModel
+    from ..optimization.parameters import ParameterList
 
 
 class OdeSolver:
@@ -58,7 +60,7 @@ class OdeSolver:
         TODO: The implementation of the variational integrator could be moved here (see issue #962).
         """
 
-        def declare_parameters(self, parameters: ParameterList, model: BioModel) -> None:
+        def declare_parameters(self, parameters: "ParameterList", model: "BioModel") -> None:
             """
             Declare the initial and final velocities, which are not states of the variational integrator.
 
