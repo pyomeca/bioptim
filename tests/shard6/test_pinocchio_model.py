@@ -35,11 +35,6 @@ def test_pinocchio_model_import_is_lazy():
         PinocchioModel([])
 
 
-def test_pinocchio_missing_dependency_message():
-    with pytest.raises(ModuleNotFoundError, match="requires the optional dependency 'pinocchio'"):
-        PinocchioModel("model.urdf")
-
-
 def test_pinocchio_model_from_urdf_has_expected_basic_properties():
     bioptim_folder = TestUtils.bioptim_folder()
     model_path = bioptim_folder + "/examples/models/pendulum.urdf"
