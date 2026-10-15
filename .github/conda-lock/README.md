@@ -41,8 +41,10 @@ python .github/conda-lock/check_lockfiles.py --print-source-hash \
 python .github/conda-lock/check_lockfiles.py
 ```
 
-The check runs before Conda setup in every test and cache-warming job. It fails
-when either source file changes without updating the fingerprint, and also
+The source fingerprint normalizes CRLF to LF, so Git checkouts on Windows
+produce the same hash as Linux and macOS. The check runs before Conda setup
+in every test and cache-warming job. It fails when a source file changes
+without updating the fingerprint, and also
 validates each lockfile's platform, input hash, explicit marker, package URLs,
 and package checksums. The fingerprint is an accidental-staleness guard rather
 than a security boundary: changes to it must be reviewed together with the
