@@ -70,7 +70,11 @@ class BioModel(Protocol):
 
     @property
     def nb_quaternions(self) -> Int:
-        """Get the number of quaternion"""
+        """
+        Deprecated (#1037): use nb_q/nb_qdot and normalize_q. Will be removed from the protocol.
+
+        Get the number of quaternion
+        """
         return -1
 
     @property
@@ -80,12 +84,12 @@ class BioModel(Protocol):
 
     @property
     def nb_q(self) -> Int:
-        """Get the number of Generalized coordinates"""
+        """Dimension of the coordinates of the configuration space Q (size of q)"""
         return -1
 
     @property
     def nb_qdot(self) -> Int:
-        """Get the number of Generalized velocities"""
+        """Dimension of the tangent space TQ (size of qdot, qddot, tau). Equals nb_q for Euclidean spaces"""
         return -1
 
     @property
@@ -160,15 +164,46 @@ class BioModel(Protocol):
     @cache_function
     def reshape_qdot(self) -> Function:
         """
-        In case, qdot need to be reshaped, such as if one want to get velocities from quaternions.
-        Since we don't know if this is the case, this function is always called
-        args: q, qdot
+        Maps (q, qdot, parameters) to dq/dt (size nb_q); identity when nb_q == nb_qdot.
+        Since we don't know if the configuration space is Euclidean, this function is always called
+        args: q, qdot, parameters
         """
 
     @property
     def name_dofs(self) -> StrTuple:
-        """Get the name of the degrees of freedom"""
+        """Alias of name_q, kept for custom models"""
         return ()
+
+    @property
+    def name_q(self) -> StrTuple:
+        """
+        One label per configuration coordinate (length nb_q).
+
+        Ordering conventions for quaternions: Biorbd stores the (x, y, z) components of a quaternion in place in the
+        segment's DoF block and appends all the w components at the end of q; Pinocchio stores (x, y, z, w)
+        contiguously.
+        """
+        return ()
+
+    @property
+    def name_qdot(self) -> StrTuple:
+        """
+        One label per tangent (velocity) coordinate (length nb_qdot). Used for qdot, qddot and qdddot, and also for the
+        generalized forces tau, taudot and residual_tau, which live in the dual of the tangent space (same size and
+        indexing as qdot). Actuation/under-actuation is expressed by variable mappings, not here.
+
+        Ordering conventions follow name_q: Biorbd keeps the angular velocity of a quaternion in place in the segment's
+        DoF block, Pinocchio stores the tangent coordinates of a free-flyer/spherical joint contiguously.
+        """
+        return ()
+
+    @cache_function
+    def normalize_q(self) -> Function:
+        """
+        Projects the coordinates back onto the configuration space Q (e.g. unit quaternions).
+        Identity for Euclidean configuration spaces. Must work with MX and SX.
+        args: q (size nb_q) -> q_normalized (size nb_q)
+        """
 
     @property
     def rigid_contact_names(self) -> StrTuple:
@@ -350,6 +385,8 @@ class BioModel(Protocol):
     @cache_function
     def normalize_state_quaternions(self) -> Function:
         """
+        Deprecated (#1037): use nb_q/nb_qdot and normalize_q. Will be removed from the protocol.
+
         Normalize the quaternions of the state
         args: q (The joint generalized coordinates to normalize)
         """
