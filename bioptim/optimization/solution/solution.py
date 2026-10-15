@@ -736,6 +736,25 @@ class Solution:
             new._parameters = deepcopy(self._parameters)
         return new
 
+    def to_initial_guesses(
+        self,
+        state_initial_guesses: InitialGuessList,
+        control_initial_guesses: InitialGuessList,
+        parameter_initial_guesses: InitialGuessList | None = None,
+        algebraic_state_initial_guesses: InitialGuessList | None = None,
+    ) -> tuple[InitialGuessList, InitialGuessList, InitialGuessList, InitialGuessList]:
+        """Adapt this solution's primal variables to new initial-guess grids."""
+
+        from .utils import adapt_solution_to_initial_guesses
+
+        return adapt_solution_to_initial_guesses(
+            self,
+            state_initial_guesses,
+            control_initial_guesses,
+            parameter_initial_guesses,
+            algebraic_state_initial_guesses,
+        )
+
     def _prepare_integrate(self, integrator: SolutionIntegrator) -> AnyTuple:
         """
         Prepare the variables for the states integration and checks if the integrator is compatible with the ocp.
