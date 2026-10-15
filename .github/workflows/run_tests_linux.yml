@@ -1,11 +1,11 @@
-name: Run the tests
+name: Run the Linux tests
 
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     
 concurrency:
-  group: ${{ github.workflow }}-pr-${{ github.event.pull_request.number }}
+  group: linux-pr-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 jobs:
