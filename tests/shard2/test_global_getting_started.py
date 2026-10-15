@@ -36,6 +36,30 @@ global test_memory
 test_memory = {}
 
 
+def test_rk_one_per_node_does_not_declare_unused_state_cx():
+    from bioptim.examples.getting_started import basic_ocp as ocp_module
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=TestUtils.bioptim_folder() + "/examples/models/pendulum.bioMod",
+        final_time=1,
+        n_shooting=3,
+        ode_solver=OdeSolver.RK4(),
+        phase_dynamics=PhaseDynamics.ONE_PER_NODE,
+        expand_dynamics=False,
+    )
+    nlp = ocp.nlp[0]
+
+    for node_index in range(nlp.n_states_nodes):
+        nlp.states.node_index = node_index
+        nlp.states_dot.node_index = node_index
+        assert len(nlp.states["q"].original_cx) == 2
+        assert len(nlp.states_dot["q"].original_cx) == 2
+
+    # Controls are deliberately outside this optimization and retain their existing CX layout.
+    nlp.controls.node_index = 0
+    assert len(nlp.controls["tau"].original_cx) == 3
+
+
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("n_threads", [1, 2])
 @pytest.mark.parametrize("use_sx", [False, True])
@@ -835,6 +859,19 @@ def test_parameter_optimization(ode_solver, phase_dynamics):
 
         # # gravity parameter
         # npt.assert_almost_equal(gravity, np.array([0, 7.0281362e-03, -1.0000000e01]))
+
+    elif isinstance(ode_solver, OdeSolver.COLLOCATION) and phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
+        npt.assert_equal(g.shape, (400, 1))
+        npt.assert_almost_equal(g, np.zeros((400, 1)), decimal=6)
+
+        TestUtils.assert_objective_value(sol=sol, expected_value=99.67117614751174, decimal=6)
+
+        # initial and final controls
+        npt.assert_almost_equal(tau[:, 0], np.array((9.5552488, 0.0)))
+        npt.assert_almost_equal(tau[:, -1], np.array((-24.212346, 0.0)))
+
+        # gravity parameter
+        npt.assert_almost_equal(gravity, np.array([0, 7.0281362e-03, -1.0000000e01]))
 
     else:
         npt.assert_equal(g.shape, (400, 1))
