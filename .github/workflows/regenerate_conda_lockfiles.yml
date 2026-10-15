@@ -1,0 +1,116 @@
+name: Regenerate Conda lockfiles
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  regenerate:
+    name: Check and regenerate Conda lockfiles
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Check committed lockfiles
+        id: inspect
+        run: |
+          if python3 .github/conda-lock/check_lockfiles.py; then
+            echo "stale=false" >> "$GITHUB_OUTPUT"
+            echo 'Conda lockfiles are current; no dependency resolution is needed.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up lockfile generator
+        if: steps.inspect.outputs.stale == 'true'
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: Install conda-lock
+        if: steps.inspect.outputs.stale == 'true'
+        run: python -m pip install --disable-pip-version-check "conda-lock==4.0.2"
+
+      - name: Regenerate all platforms once
+        if: steps.inspect.outputs.stale == 'true'
+        run: |
+          conda-lock lock \
+            --kind explicit \
+            --micromamba \
+            --lockfile "$RUNNER_TEMP/conda-lock.yml" \
+            --virtual-package-spec .github/conda-lock/virtual-packages.yml \
+            --platform linux-64 \
+            --platform osx-arm64 \
+            --platform win-64 \
+            --file environment.yml \
+            --file .github/conda-lock/ci-dependencies.yml \
+            --filename-template '.github/conda-lock/conda-{platform}.lock'
+          python .github/conda-lock/check_lockfiles.py --print-source-hash \
+            > .github/conda-lock/source-files.sha256
+          python .github/conda-lock/check_lockfiles.py
+
+      - name: Prepare lockfiles and patch
+        if: steps.inspect.outputs.stale == 'true'
+        env:
+          LOCKFILE_ARTIFACT: ${{ runner.temp }}/conda-lockfiles
+        run: |
+          mkdir -p "$LOCKFILE_ARTIFACT"
+          for conda_platform in linux-64 osx-arm64 win-64; do
+            cp ".github/conda-lock/conda-${conda_platform}.lock" "$LOCKFILE_ARTIFACT/"
+          done
+          cp .github/conda-lock/source-files.sha256 "$LOCKFILE_ARTIFACT/"
+          git rev-parse HEAD > "$LOCKFILE_ARTIFACT/source-commit.txt"
+          git add --intent-to-add -- \
+            .github/conda-lock/conda-{linux-64,osx-arm64,win-64}.lock \
+            .github/conda-lock/source-files.sha256
+          git diff --binary HEAD -- \
+            .github/conda-lock/conda-{linux-64,osx-arm64,win-64}.lock \
+            .github/conda-lock/source-files.sha256 \
+            > "$LOCKFILE_ARTIFACT/conda-lockfiles.patch"
+          {
+            echo '## Conda lockfiles regenerated'
+            echo ''
+            echo 'Download the conda-lockfiles artifact and apply its patch from the repository root:'
+            echo ''
+            echo '```bash'
+            echo "gh run download $GITHUB_RUN_ID --repo $GITHUB_REPOSITORY --name conda-lockfiles --dir lockfile-update"
+            echo 'git apply --check lockfile-update/conda-lockfiles.patch'
+            echo 'git apply lockfile-update/conda-lockfiles.patch'
+            echo 'python .github/conda-lock/check_lockfiles.py'
+            echo '```'
+            echo ''
+            echo 'Commit the three lockfiles and source-files.sha256, then push the PR branch.'
+            echo 'The artifact records its source commit; rebase first if the branch has advanced.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload regenerated lockfiles
+        if: steps.inspect.outputs.stale == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: conda-lockfiles
+          path: ${{ runner.temp }}/conda-lockfiles
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Require regenerated lockfiles to be committed
+        if: steps.inspect.outputs.stale == 'true'
+        run: |
+          echo '::error::Commit the lockfile patch from the conda-lockfiles artifact before merging this PR.'
+          exit 1
