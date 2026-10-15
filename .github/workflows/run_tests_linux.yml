@@ -4,6 +4,7 @@ on: [pull_request]
 
 jobs:
   build:
+    if: github.event.pull_request.draft == false
     strategy:
       fail-fast: false
       matrix:
