@@ -1,5 +1,5 @@
-from typing import Callable
-import biorbd_casadi as biorbd
+from typing import Callable, TYPE_CHECKING
+
 
 from .external_forces import ExternalForceSetTimeSeries, ExternalForceSetVariables
 from ...optimization.parameters import ParameterList
@@ -27,6 +27,9 @@ from ...misc.mapping import BiMappingList
 from ...misc.enums import ContactType, QuadratureRule, ControlType
 from ...optimization.problem_type import SocpType
 from ...dynamics.fatigue.fatigue_dynamics import FatigueList
+
+if TYPE_CHECKING:
+    import biorbd_casadi as biorbd
 
 
 class TorqueBiorbdModel(BiorbdModel, TorqueDynamics):
@@ -76,6 +79,8 @@ class StochasticTorqueBiorbdModel(StochasticBiorbdModel, StochasticTorqueDynamic
         **kwargs,
     ):
         if isinstance(bio_model, str):
+            import biorbd_casadi as biorbd
+
             bio_model = biorbd.Model(bio_model)
 
         n_noised_tau = (

@@ -1,11 +1,12 @@
+from typing import Callable, TYPE_CHECKING
+
 import numpy as np
-import biorbd_casadi as biorbd
 from casadi import MX, vertcat, Function, horzcat
-from typing import Callable
 
 from .biorbd_model import BiorbdModel
 from ..utils import _var_mapping, bounds_from_ranges, cache_function
 from ...limits.path_conditions import Bounds
+from ...misc.utils import check_version
 from ...misc.mapping import BiMapping, BiMappingList
 
 from ...misc.parameters_types import (
@@ -18,6 +19,25 @@ from ...misc.parameters_types import (
     StrList,
     AnyDict,
 )
+
+
+def _import_biorbd() -> biorbd:
+    try:
+        import biorbd_casadi as biorbd
+
+        check_version(biorbd, "1.11.1", "1.13.0")
+    except ModuleNotFoundError as e:
+        raise ModuleNotFoundError(
+            "BiorbdModel requires the optional dependency 'biorbd'. "
+            "Install the biorbd Python bindings to use this model backend. "
+            "You can do this from conda forge: 'conda install -c conda-forge biorbd'."
+        ) from e
+
+    return biorbd
+
+
+if TYPE_CHECKING:
+    import biorbd_casadi as biorbd
 
 
 class MultiBiorbdModel:
@@ -54,6 +74,8 @@ class MultiBiorbdModel:
         """
         super().__init__(**kwargs)  # For multiple inheritance compatibility
 
+        self._module_biorbd = _import_biorbd()
+
         self.models: list[BiorbdModel] = []
         if not isinstance(bio_model, tuple):
             raise ValueError("The models must be a 'str', 'biorbd.Model', 'bioptim.BiorbdModel'" " or a tuple of those")
@@ -61,7 +83,7 @@ class MultiBiorbdModel:
         for model in bio_model:
             if isinstance(model, str):
                 self.models.append(BiorbdModel(model))
-            elif isinstance(model, biorbd.Model):
+            elif isinstance(model, self._module_biorbd.Model):
                 self.models.append(BiorbdModel(model))
             elif isinstance(model, BiorbdModel):
                 self.models.append(model)
@@ -79,7 +101,7 @@ class MultiBiorbdModel:
         for model in extra_bio_models:
             if isinstance(model, str):
                 self.extra_models.append(BiorbdModel(model))
-            elif isinstance(model, biorbd.Model):
+            elif isinstance(model, self._module_biorbd.Model):
                 self.extra_models.append(BiorbdModel(model))
             elif isinstance(model, BiorbdModel):
                 self.extra_models.append(model)
@@ -808,7 +830,7 @@ class MultiBiorbdModel:
     def marker_index(self, name):
         for i, model in enumerate(self.models):
             if name in model.marker_names:
-                marker_id = biorbd.marker_index(model.model, name)
+                marker_id = self._module_biorbd.marker_index(model.model, name)
                 return self.variable_index("markers", model_index=i)[marker_id]
 
         raise ValueError(f"{name} is not in the MultiBiorbdModel")

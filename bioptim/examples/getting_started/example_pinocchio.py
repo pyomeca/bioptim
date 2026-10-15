@@ -133,6 +133,11 @@ def main():
     sol.print_cost()
     # sol.graphs(show_bounds=True, save_name="results.png")
 
+    # --- Animate the solution --- #
+    # PinocchioModel animates through pyorerun; load visual_model and collision_model automatically from the URDF file
+    # otherwise pass the visual_model and collision_model to the PinocchioModel constructor
+    sol.animate(n_frames=0, viewer="pyorerun", show_now=True)
+
 
 if __name__ == "__main__":
     main()

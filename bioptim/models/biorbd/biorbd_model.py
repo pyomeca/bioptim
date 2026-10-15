@@ -1,13 +1,6 @@
-from typing import Callable
+from typing import Callable, TYPE_CHECKING
 
-import biorbd_casadi as biorbd
 import numpy as np
-from biorbd_casadi import (
-    GeneralizedCoordinates,
-    GeneralizedVelocity,
-    GeneralizedTorque,
-    GeneralizedAcceleration,
-)
 from casadi import SX, MX, vertcat, horzcat, norm_fro, Function, DM
 
 from ..utils import _var_mapping, bounds_from_ranges, cache_function, check_contacts
@@ -20,7 +13,23 @@ from ...optimization.parameters import Parameter, ParameterList
 
 from ...misc.parameters_types import Int, IntTuple, CX, CXOptional
 
-check_version(biorbd, "1.11.1", "1.13.0")
+if TYPE_CHECKING:
+    import biorbd_casadi as biorbd
+
+
+def _import_biorbd() -> biorbd:
+    try:
+        import biorbd_casadi as biorbd
+
+        check_version(biorbd, "1.11.1", "1.13.0")
+    except ModuleNotFoundError as e:
+        raise ModuleNotFoundError(
+            "BiorbdModel requires the optional dependency 'biorbd'. "
+            "Install the biorbd Python bindings to use this model backend. "
+            "You can do this from conda forge: 'conda install -c conda-forge biorbd'."
+        ) from e
+
+    return biorbd
 
 
 class BiorbdModel:
@@ -58,10 +67,12 @@ class BiorbdModel:
         """
         super().__init__(**kwargs)  # For multiple inheritance compatibility
 
-        if not isinstance(bio_model, str) and not isinstance(bio_model, biorbd.Model):
+        self._module_biorbd = _import_biorbd()
+
+        if not isinstance(bio_model, str) and not isinstance(bio_model, self._module_biorbd.Model):
             raise ValueError("The model should be of type 'str' or 'biorbd.Model'")
 
-        self.model = biorbd.Model(bio_model) if isinstance(bio_model, str) else bio_model
+        self.model = self._module_biorbd.Model(bio_model) if isinstance(bio_model, str) else bio_model
 
         check_contacts(contact_types, self)
         self._contact_types = contact_types
@@ -208,7 +219,7 @@ class BiorbdModel:
         return self.model.nbSegment()
 
     def segment_index(self, name) -> int:
-        return biorbd.segment_index(self.model, name)
+        return self._module_biorbd.segment_index(self.model, name)
 
     @property
     def nb_quaternions(self) -> int:
@@ -252,8 +263,10 @@ class BiorbdModel:
         Returns the rotation matrix to euler angles function.
         """
         r = MX.sym("r_mx", 3, 3)
-        r_matrix = biorbd.Rotation(r[0, 0], r[0, 1], r[0, 2], r[1, 0], r[1, 1], r[1, 2], r[2, 0], r[2, 1], r[2, 2])
-        biorbd_return = biorbd.Rotation.toEulerAngles(r_matrix, sequence).to_mx()
+        r_matrix = self._module_biorbd.Rotation(
+            r[0, 0], r[0, 1], r[0, 2], r[1, 0], r[1, 1], r[1, 2], r[2, 0], r[2, 1], r[2, 2]
+        )
+        biorbd_return = self._module_biorbd.Rotation.toEulerAngles(r_matrix, sequence).to_mx()
         casadi_fun = Function(
             "rotation_matrix_to_euler_angles",
             [r],
@@ -268,7 +281,7 @@ class BiorbdModel:
         """
         Returns the roto-translation matrix of the segment in the global reference frame.
         """
-        q_biorbd = GeneralizedCoordinates(self.q)
+        q_biorbd = self._module_biorbd.GeneralizedCoordinates(self.q)
         jcs = self.model.globalJCS(q_biorbd, segment_index)
         biorbd_return = jcs.transpose().to_mx() if inverse else jcs.to_mx()
         casadi_fun = Function(
@@ -316,7 +329,7 @@ class BiorbdModel:
 
     @cache_function
     def rt(self, rt_index) -> Function:
-        q_biorbd = GeneralizedCoordinates(self.q)
+        q_biorbd = self._module_biorbd.GeneralizedCoordinates(self.q)
         biorbd_return = self.model.RT(q_biorbd, rt_index).to_mx()
         casadi_fun = Function(
             "rt",
@@ -329,7 +342,7 @@ class BiorbdModel:
 
     @cache_function
     def center_of_mass(self) -> Function:
-        q_biorbd = GeneralizedCoordinates(self.q)
+        q_biorbd = self._module_biorbd.GeneralizedCoordinates(self.q)
         biorbd_return = self.model.CoM(q_biorbd, True).to_mx()
         casadi_fun = Function(
             "center_of_mass",
@@ -342,8 +355,8 @@ class BiorbdModel:
 
     @cache_function
     def center_of_mass_velocity(self) -> Function:
-        q_biorbd = GeneralizedCoordinates(self.q)
-        qdot_biorbd = GeneralizedVelocity(self.qdot)
+        q_biorbd = self._module_biorbd.GeneralizedCoordinates(self.q)
+        qdot_biorbd = self._module_biorbd.GeneralizedVelocity(self.qdot)
         biorbd_return = self.model.CoMdot(q_biorbd, qdot_biorbd, True).to_mx()
         casadi_fun = Function(
             "center_of_mass_velocity",
@@ -356,9 +369,9 @@ class BiorbdModel:
 
     @cache_function
     def center_of_mass_acceleration(self) -> Function:
-        q_biorbd = GeneralizedCoordinates(self.q)
-        qdot_biorbd = GeneralizedVelocity(self.qdot)
-        qddot_biorbd = GeneralizedAcceleration(self.qddot)
+        q_biorbd = self._module_biorbd.GeneralizedCoordinates(self.q)
+        qdot_biorbd = self._module_biorbd.GeneralizedVelocity(self.qdot)
+        qddot_biorbd = self._module_biorbd.GeneralizedAcceleration(self.qddot)
         biorbd_return = self.model.CoMddot(q_biorbd, qdot_biorbd, qddot_biorbd, True).to_mx()
         casadi_fun = Function(
             "center_of_mass_acceleration",
@@ -371,8 +384,8 @@ class BiorbdModel:
 
     @cache_function
     def body_rotation_rate(self) -> Function:
-        q_biorbd = GeneralizedCoordinates(self.q)
-        qdot_biorbd = GeneralizedVelocity(self.qdot)
+        q_biorbd = self._module_biorbd.GeneralizedCoordinates(self.q)
+        qdot_biorbd = self._module_biorbd.GeneralizedVelocity(self.qdot)
         biorbd_return = self.model.bodyAngularVelocity(q_biorbd, qdot_biorbd, True).to_mx()
         casadi_fun = Function(
             "body_rotation_rate",
@@ -385,7 +398,7 @@ class BiorbdModel:
 
     @cache_function
     def mass_matrix(self) -> Function:
-        q_biorbd = GeneralizedCoordinates(self.q)
+        q_biorbd = self._module_biorbd.GeneralizedCoordinates(self.q)
         biorbd_return = self.model.massMatrix(q_biorbd).to_mx()
         casadi_fun = Function(
             "mass_matrix",
@@ -398,8 +411,8 @@ class BiorbdModel:
 
     @cache_function
     def non_linear_effects(self) -> Function:
-        q_biorbd = GeneralizedCoordinates(self.q)
-        qdot_biorbd = GeneralizedVelocity(self.qdot)
+        q_biorbd = self._module_biorbd.GeneralizedCoordinates(self.q)
+        qdot_biorbd = self._module_biorbd.GeneralizedVelocity(self.qdot)
         biorbd_return = self.model.NonLinearEffect(q_biorbd, qdot_biorbd).to_mx()
         casadi_fun = Function(
             "non_linear_effects",
@@ -412,8 +425,8 @@ class BiorbdModel:
 
     @cache_function
     def angular_momentum(self) -> Function:
-        q_biorbd = GeneralizedCoordinates(self.q)
-        qdot_biorbd = GeneralizedVelocity(self.qdot)
+        q_biorbd = self._module_biorbd.GeneralizedCoordinates(self.q)
+        qdot_biorbd = self._module_biorbd.GeneralizedVelocity(self.qdot)
         biorbd_return = self.model.angularMomentum(q_biorbd, qdot_biorbd, True).to_mx()
         casadi_fun = Function(
             "angular_momentum",
@@ -427,8 +440,8 @@ class BiorbdModel:
     @cache_function
     def reshape_qdot(self, k_stab=1) -> Function:
         biorbd_return = self.model.computeQdot(
-            GeneralizedCoordinates(self.q),
-            GeneralizedCoordinates(self.qdot),  # mistake in biorbd
+            self._module_biorbd.GeneralizedCoordinates(self.q),
+            self._module_biorbd.GeneralizedCoordinates(self.qdot),  # mistake in biorbd
             k_stab,
         ).to_mx()
         casadi_fun = Function(
@@ -445,8 +458,8 @@ class BiorbdModel:
         """
         Returns the angular velocity of the segment in the global reference frame.
         """
-        q_biorbd = GeneralizedCoordinates(self.q)
-        qdot_biorbd = GeneralizedVelocity(self.qdot)
+        q_biorbd = self._module_biorbd.GeneralizedCoordinates(self.q)
+        qdot_biorbd = self._module_biorbd.GeneralizedVelocity(self.qdot)
         biorbd_return = self.model.segmentAngularVelocity(q_biorbd, qdot_biorbd, idx, True).to_mx()
         casadi_fun = Function(
             "segment_angular_velocity",
@@ -462,7 +475,7 @@ class BiorbdModel:
         """
         Returns the angular position of the segment in the global reference frame.
         """
-        q_biorbd = GeneralizedCoordinates(self.q)
+        q_biorbd = self._module_biorbd.GeneralizedCoordinates(self.q)
         rotation_matrix = self.homogeneous_matrices_in_global(idx)(q_biorbd, self.parameters)[:3, :3]
         biorbd_return = self.rotation_matrix_to_euler_angles(sequence=sequence)(rotation_matrix)
         casadi_fun = Function(
@@ -507,8 +520,8 @@ class BiorbdModel:
         Returns the torque from the torque_activations.
         Note that tau_activation should be between 0 and 1.
         """
-        q_biorbd = GeneralizedCoordinates(self.q)
-        qdot_biorbd = GeneralizedVelocity(self.qdot)
+        q_biorbd = self._module_biorbd.GeneralizedCoordinates(self.q)
+        qdot_biorbd = self._module_biorbd.GeneralizedVelocity(self.qdot)
         tau_activations_biorbd = self.tau
         biorbd_return = self.model.torque(tau_activations_biorbd, q_biorbd, qdot_biorbd).to_mx()
         casadi_fun = Function(
@@ -522,9 +535,9 @@ class BiorbdModel:
 
     @cache_function
     def forward_dynamics_free_floating_base(self) -> Function:
-        q_biorbd = GeneralizedCoordinates(self.q)
-        qdot_biorbd = GeneralizedVelocity(self.qdot)
-        qddot_joints_biorbd = GeneralizedAcceleration(self.qddot_joints)
+        q_biorbd = self._module_biorbd.GeneralizedCoordinates(self.q)
+        qdot_biorbd = self._module_biorbd.GeneralizedVelocity(self.qdot)
+        qddot_joints_biorbd = self._module_biorbd.GeneralizedAcceleration(self.qddot_joints)
         biorbd_return = self.model.ForwardDynamicsFreeFloatingBase(q_biorbd, qdot_biorbd, qddot_joints_biorbd).to_mx()
         casadi_fun = Function(
             "forward_dynamics_free_floating_base",
@@ -690,9 +703,9 @@ class BiorbdModel:
     @cache_function
     def forward_dynamics(self, with_contact: bool = False) -> Function:
 
-        q_biorbd = GeneralizedCoordinates(self.q)
-        qdot_biorbd = GeneralizedVelocity(self.qdot)
-        tau_biorbd = GeneralizedTorque(self.tau)
+        q_biorbd = self._module_biorbd.GeneralizedCoordinates(self.q)
+        qdot_biorbd = self._module_biorbd.GeneralizedVelocity(self.qdot)
+        tau_biorbd = self._module_biorbd.GeneralizedTorque(self.tau)
 
         if with_contact:
             if self.external_force_set is None:
@@ -730,9 +743,9 @@ class BiorbdModel:
         if with_contact:
             raise NotImplementedError("Inverse dynamics with contact is not implemented yet")
 
-        q_biorbd = GeneralizedCoordinates(self.q)
-        qdot_biorbd = GeneralizedVelocity(self.qdot)
-        qddot_biorbd = GeneralizedAcceleration(self.qddot)
+        q_biorbd = self._module_biorbd.GeneralizedCoordinates(self.q)
+        qdot_biorbd = self._module_biorbd.GeneralizedVelocity(self.qdot)
+        qddot_biorbd = self._module_biorbd.GeneralizedAcceleration(self.qddot)
         if self.external_force_set is None:
             biorbd_return = self.model.InverseDynamics(q_biorbd, qdot_biorbd, qddot_biorbd).to_mx()
         else:
@@ -751,9 +764,9 @@ class BiorbdModel:
     @cache_function
     def contact_forces_from_constrained_forward_dynamics(self) -> Function:
 
-        q_biorbd = GeneralizedCoordinates(self.q)
-        qdot_biorbd = GeneralizedVelocity(self.qdot)
-        tau_biorbd = GeneralizedTorque(self.tau)
+        q_biorbd = self._module_biorbd.GeneralizedCoordinates(self.q)
+        qdot_biorbd = self._module_biorbd.GeneralizedVelocity(self.qdot)
+        tau_biorbd = self._module_biorbd.GeneralizedTorque(self.tau)
         if self.external_force_set is None:
             biorbd_return = self.model.ContactForcesFromForwardDynamicsConstraintsDirect(
                 q_biorbd, qdot_biorbd, tau_biorbd
@@ -776,7 +789,7 @@ class BiorbdModel:
         """
         Returns the position of the rigid contact (contact_index) in the global reference frame.
         """
-        q_biorbd = GeneralizedCoordinates(self.q)
+        q_biorbd = self._module_biorbd.GeneralizedCoordinates(self.q)
         biorbd_return = self.model.rigidContact(q_biorbd, index, True).to_mx()
         casadi_fun = Function(
             "rigid_contact_position",
@@ -822,8 +835,8 @@ class BiorbdModel:
 
     @cache_function
     def qdot_from_impact(self) -> Function:
-        q_biorbd = GeneralizedCoordinates(self.q)
-        qdot_pre_impact_biorbd = GeneralizedVelocity(self.qdot)
+        q_biorbd = self._module_biorbd.GeneralizedCoordinates(self.q)
+        qdot_pre_impact_biorbd = self._module_biorbd.GeneralizedVelocity(self.qdot)
         biorbd_return = self.model.ComputeConstraintImpulsesDirect(q_biorbd, qdot_pre_impact_biorbd).to_mx()
         casadi_fun = Function(
             "qdot_from_impact",
@@ -852,7 +865,7 @@ class BiorbdModel:
 
     @cache_function
     def muscle_length_jacobian(self) -> Function:
-        q_biorbd = GeneralizedCoordinates(self.q)
+        q_biorbd = self._module_biorbd.GeneralizedCoordinates(self.q)
         biorbd_return = self.model.musclesLengthJacobian(q_biorbd).to_mx()
         casadi_fun = Function(
             "muscle_length_jacobian",
@@ -882,8 +895,8 @@ class BiorbdModel:
         muscles_activations = self.muscle
         for k in range(self.model.nbMuscles()):
             muscles_states[k].setActivation(muscles_activations[k])
-        q_biorbd = GeneralizedCoordinates(self.q)
-        qdot_biorbd = GeneralizedVelocity(self.qdot)
+        q_biorbd = self._module_biorbd.GeneralizedCoordinates(self.q)
+        qdot_biorbd = self._module_biorbd.GeneralizedVelocity(self.qdot)
         biorbd_return = self.model.muscularJointTorque(muscles_states, q_biorbd, qdot_biorbd).to_mx()
         casadi_fun = Function(
             "muscle_joint_torque",
@@ -896,7 +909,9 @@ class BiorbdModel:
 
     @cache_function
     def markers(self) -> list[MX]:
-        biorbd_return = horzcat(*[m.to_mx() for m in self.model.markers(GeneralizedCoordinates(self.q))])
+        biorbd_return = horzcat(
+            *[m.to_mx() for m in self.model.markers(self._module_biorbd.GeneralizedCoordinates(self.q))]
+        )
         casadi_fun = Function(
             "markers",
             [self.q, self.parameters],
@@ -911,14 +926,14 @@ class BiorbdModel:
         return self.model.nbMarkers()
 
     def marker_index(self, name):
-        return biorbd.marker_index(self.model, name)
+        return self._module_biorbd.marker_index(self.model, name)
 
     def contact_index(self, name):
-        return biorbd.contact_index(self.model, name)
+        return self._module_biorbd.contact_index(self.model, name)
 
     @cache_function
     def marker(self, index: int, reference_segment_index: int = None) -> Function:
-        q_biorbd = GeneralizedCoordinates(self.q)
+        q_biorbd = self._module_biorbd.GeneralizedCoordinates(self.q)
         marker = self.model.marker(q_biorbd, index)
         if reference_segment_index is not None:
             global_homogeneous_matrix = self.model.globalJCS(q_biorbd, reference_segment_index)
@@ -991,8 +1006,8 @@ class BiorbdModel:
             biorbd_return = [
                 m.to_mx()
                 for m in self.model.markersVelocity(
-                    GeneralizedCoordinates(self.q),
-                    GeneralizedVelocity(self.qdot),
+                    self._module_biorbd.GeneralizedCoordinates(self.q),
+                    self._module_biorbd.GeneralizedVelocity(self.qdot),
                     True,
                 )
             ]
@@ -1002,9 +1017,11 @@ class BiorbdModel:
             homogeneous_matrix_transposed = self.homogeneous_matrices_in_global(
                 segment_index=reference_index, inverse=True
             )(
-                GeneralizedCoordinates(self.q),
+                self._module_biorbd.GeneralizedCoordinates(self.q),
             )
-            for m in self.model.markersVelocity(GeneralizedCoordinates(self.q), GeneralizedVelocity(self.qdot)):
+            for m in self.model.markersVelocity(
+                self._module_biorbd.GeneralizedCoordinates(self.q), self._module_biorbd.GeneralizedVelocity(self.qdot)
+            ):
                 if m.applyRT(homogeneous_matrix_transposed) is None:
                     biorbd_return.append(m.to_mx())
                 else:
@@ -1022,8 +1039,8 @@ class BiorbdModel:
     @cache_function
     def marker_velocity(self, marker_index: int) -> list[MX]:
         biorbd_return = self.model.markersVelocity(
-            GeneralizedCoordinates(self.q),
-            GeneralizedVelocity(self.qdot),
+            self._module_biorbd.GeneralizedCoordinates(self.q),
+            self._module_biorbd.GeneralizedVelocity(self.qdot),
             True,
         )[marker_index].to_mx()
         casadi_fun = Function(
@@ -1041,9 +1058,9 @@ class BiorbdModel:
             biorbd_return = [
                 m.to_mx()
                 for m in self.model.markerAcceleration(
-                    GeneralizedCoordinates(self.q),
-                    GeneralizedVelocity(self.qdot),
-                    GeneralizedAcceleration(self.qddot),
+                    self._module_biorbd.GeneralizedCoordinates(self.q),
+                    self._module_biorbd.GeneralizedVelocity(self.qdot),
+                    self._module_biorbd.GeneralizedAcceleration(self.qddot),
                     True,
                 )
             ]
@@ -1054,12 +1071,12 @@ class BiorbdModel:
                 segment_index=reference_index,
                 inverse=True,
             )(
-                GeneralizedCoordinates(self.q),
+                self._module_biorbd.GeneralizedCoordinates(self.q),
             )
             for m in self.model.markersAcceleration(
-                GeneralizedCoordinates(self.q),
-                GeneralizedVelocity(self.qdot),
-                GeneralizedAcceleration(self.qddot),
+                self._module_biorbd.GeneralizedCoordinates(self.q),
+                self._module_biorbd.GeneralizedVelocity(self.qdot),
+                self._module_biorbd.GeneralizedAcceleration(self.qddot),
             ):
                 if m.applyRT(homogeneous_matrix_transposed) is None:
                     biorbd_return.append(m.to_mx())
@@ -1078,9 +1095,9 @@ class BiorbdModel:
     @cache_function
     def marker_acceleration(self, marker_index: int) -> list[MX]:
         biorbd_return = self.model.markerAcceleration(
-            GeneralizedCoordinates(self.q),
-            GeneralizedVelocity(self.qdot),
-            GeneralizedAcceleration(self.qddot),
+            self._module_biorbd.GeneralizedCoordinates(self.q),
+            self._module_biorbd.GeneralizedVelocity(self.qdot),
+            self._module_biorbd.GeneralizedAcceleration(self.qddot),
             True,
         )[marker_index].to_mx()
         casadi_fun = Function(
@@ -1095,8 +1112,8 @@ class BiorbdModel:
     @cache_function
     def tau_max(self) -> Function:
         self.model.closeActuator()
-        q_biorbd = GeneralizedCoordinates(self.q)
-        qdot_biorbd = GeneralizedVelocity(self.qdot)
+        q_biorbd = self._module_biorbd.GeneralizedCoordinates(self.q)
+        qdot_biorbd = self._module_biorbd.GeneralizedVelocity(self.qdot)
         torque_max, torque_min = self.model.torqueMax(q_biorbd, qdot_biorbd)
         casadi_fun = Function(
             "tau_max",
@@ -1110,8 +1127,8 @@ class BiorbdModel:
     @cache_function
     def rigid_contact_velocity(self, contact_index: Int, contact_axis: IntTuple = None) -> Function:
         contact_axis = [0, 1, 2] if contact_axis is None else contact_axis
-        q_biorbd = GeneralizedCoordinates(self.q)
-        qdot_biorbd = GeneralizedVelocity(self.qdot)
+        q_biorbd = self._module_biorbd.GeneralizedCoordinates(self.q)
+        qdot_biorbd = self._module_biorbd.GeneralizedVelocity(self.qdot)
 
         velocity = self.model.rigidContactVelocity(q_biorbd, qdot_biorbd, contact_index, True).to_mx()
         biorbd_return = MX()
@@ -1128,9 +1145,9 @@ class BiorbdModel:
 
     @cache_function
     def rigid_contact_acceleration(self, contact_index, contact_axis) -> Function:
-        q_biorbd = GeneralizedCoordinates(self.q)
-        qdot_biorbd = GeneralizedVelocity(self.qdot)
-        qddot_biorbd = GeneralizedAcceleration(self.qddot)
+        q_biorbd = self._module_biorbd.GeneralizedCoordinates(self.q)
+        qdot_biorbd = self._module_biorbd.GeneralizedVelocity(self.qdot)
+        qddot_biorbd = self._module_biorbd.GeneralizedAcceleration(self.qddot)
         biorbd_return = self.model.rigidContactAcceleration(
             q_biorbd, qdot_biorbd, qddot_biorbd, contact_index, True
         ).to_mx()[contact_axis]
@@ -1145,7 +1162,9 @@ class BiorbdModel:
 
     @cache_function
     def markers_jacobian(self) -> Function:
-        biorbd_return = [m.to_mx() for m in self.model.markersJacobian(GeneralizedCoordinates(self.q))]
+        biorbd_return = [
+            m.to_mx() for m in self.model.markersJacobian(self._module_biorbd.GeneralizedCoordinates(self.q))
+        ]
         casadi_fun = Function(
             "markers_jacobian",
             [self.q, self.parameters],
@@ -1161,14 +1180,16 @@ class BiorbdModel:
 
     @cache_function
     def soft_contact_forces(self) -> Function:
-        q_biorbd = GeneralizedCoordinates(self.q)
-        qdot_biorbd = GeneralizedVelocity(self.qdot)
+        q_biorbd = self._module_biorbd.GeneralizedCoordinates(self.q)
+        qdot_biorbd = self._module_biorbd.GeneralizedVelocity(self.qdot)
 
         biorbd_return = MX.zeros(self.nb_soft_contacts * 6, 1)
         for i_sc in range(self.nb_soft_contacts):
             soft_contact = self.soft_contact(i_sc)
             biorbd_return[i_sc * 6 : (i_sc + 1) * 6, :] = (
-                biorbd.SoftContactSphere(soft_contact).computeForceAtOrigin(self.model, q_biorbd, qdot_biorbd).to_mx()
+                self._module_biorbd.SoftContactSphere(soft_contact)
+                .computeForceAtOrigin(self.model, q_biorbd, qdot_biorbd)
+                .to_mx()
             )
 
         casadi_fun = Function(
@@ -1235,8 +1256,8 @@ class BiorbdModel:
 
     @cache_function
     def passive_joint_torque(self) -> Function:
-        q_biorbd = GeneralizedCoordinates(self.q)
-        qdot_biorbd = GeneralizedVelocity(self.qdot)
+        q_biorbd = self._module_biorbd.GeneralizedCoordinates(self.q)
+        qdot_biorbd = self._module_biorbd.GeneralizedVelocity(self.qdot)
         biorbd_return = self.model.passiveJointTorque(q_biorbd, qdot_biorbd).to_mx()
         casadi_fun = Function(
             "passive_joint_torque",
@@ -1249,8 +1270,8 @@ class BiorbdModel:
 
     @cache_function
     def ligament_joint_torque(self) -> Function:
-        q_biorbd = GeneralizedCoordinates(self.q)
-        qdot_biorbd = GeneralizedVelocity(self.qdot)
+        q_biorbd = self._module_biorbd.GeneralizedCoordinates(self.q)
+        qdot_biorbd = self._module_biorbd.GeneralizedVelocity(self.qdot)
         biorbd_return = self.model.ligamentsJointTorque(q_biorbd, qdot_biorbd).to_mx()
         casadi_fun = Function(
             "ligament_joint_torque",
@@ -1320,8 +1341,8 @@ class BiorbdModel:
 
     @cache_function
     def lagrangian(self) -> Function:
-        q_biorbd = GeneralizedCoordinates(self.q)
-        qdot_biorbd = GeneralizedVelocity(self.qdot)
+        q_biorbd = self._module_biorbd.GeneralizedCoordinates(self.q)
+        qdot_biorbd = self._module_biorbd.GeneralizedVelocity(self.qdot)
         biorbd_return = self.model.Lagrangian(q_biorbd, qdot_biorbd).to_mx()
         casadi_fun = Function(
             "lagrangian",

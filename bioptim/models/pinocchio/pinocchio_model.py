@@ -1,23 +1,33 @@
-from typing import Callable
+from pathlib import Path
+from typing import Callable, TYPE_CHECKING
 
-from casadi import SX, Function, horzcat, vertcat
+from casadi import SX, Function, horzcat, vertcat, norm_fro
 import numpy as np
 
 from ..utils import _var_mapping, bounds_from_ranges, cache_function, Range
 from ...limits.path_conditions import Bounds
 from ...misc.enums import ContactType
 from ...misc.mapping import BiMapping, BiMappingList
+from ...misc.utils import check_version
 from ...optimization.parameters import Parameter, ParameterList
+
+if TYPE_CHECKING:
+    import pinocchio as pin
+    import pinocchio.casadi as cpin
 
 
 def _import_pinocchio():
     try:
         import pinocchio as pin
         import pinocchio.casadi as cpin
+
+        check_version(pin, "4.0", "4.2")
+        check_version(cpin, "4.0", "4.2")
     except ModuleNotFoundError as e:
         raise ModuleNotFoundError(
             "PinocchioModel requires the optional dependency 'pinocchio'. "
-            "Install the Pinocchio Python bindings to use this model backend."
+            "Install the Pinocchio Python bindings to use this model backend. "
+            "You can do this from conda forge: 'conda install -c conda-forge pinocchio' or from pip: 'pip install pin'."
         ) from e
 
     return pin, cpin
@@ -34,24 +44,42 @@ class PinocchioModel:
 
     def __init__(
         self,
-        bio_model: str | object,
+        bio_model: str | pin.Model | cpin.Model,
         parameters: ParameterList = None,
+        visual_model: pin.GeometryModel = None,
+        collision_model: pin.GeometryModel = None,
         **kwargs,
     ):
         super().__init__(**kwargs)  # For multiple inheritance compatibility
-        self._pinocchio_module, self._casadi_pinocchio_module = _import_pinocchio()
+
+        self._module_pin, self._module_cpin = _import_pinocchio()
         self._path = None
 
         if isinstance(bio_model, str):
             self._path = bio_model
-            self._model = self._pinocchio_module.buildModelFromUrdf(bio_model)
-        elif isinstance(bio_model, self._pinocchio_module.Model):
-            self._model = bio_model
-        else:
-            raise ValueError("The model should be of type 'str' or 'pinocchio.Model'")
+            self._model = self._module_pin.buildModelFromUrdf(bio_model)
+            self._casadi_model = self._module_cpin.Model(self._model)
 
-        self._casadi_model = self._casadi_pinocchio_module.Model(self._model)
+            # buildModelFromUrdf only reads the kinematics; the geometries declared in the URDF have to be asked
+            # for separately, otherwise there is simply nothing to animate.
+            if visual_model is None:
+                visual_model = self._geometry_from_urdf(self._module_pin.GeometryType.VISUAL)
+            if collision_model is None:
+                collision_model = self._geometry_from_urdf(self._module_pin.GeometryType.COLLISION)
+        elif isinstance(bio_model, self._module_pin.Model):
+            self._model = bio_model
+            self._casadi_model = self._module_cpin.Model(self._model)
+        elif isinstance(bio_model, self._module_cpin.Model):
+            # Already converted by the caller. Pinocchio offers no way back to a numeric model, so the CasADi one
+            # also serves as the metadata source: it exposes the same names, frames and limits, as SX scalars.
+            self._model = bio_model
+            self._casadi_model = bio_model
+        else:
+            raise ValueError("The model should be of type 'str', 'pinocchio.Model' or 'pinocchio.casadi.Model'")
+
         self._data = self._casadi_model.createData()
+        self.visual_model = visual_model
+        self.collision_model = collision_model
 
         if parameters is not None:
             for param_key in parameters:
@@ -61,6 +89,23 @@ class PinocchioModel:
         self._marker_names = self._extract_marker_names()
         self._symbolic_variables()
         self._cached_functions = {}
+
+    def _geometry_from_urdf(self, geometry_type):
+        """
+        Read one geometry model out of the URDF, resolving mesh paths against the folder holding it.
+
+        Returns None when the geometries cannot be read, typically because the URDF points at meshes that are not
+        shipped alongside it. The model stays perfectly usable then, only without anything to display.
+        """
+        try:
+            return self._module_pin.buildGeomFromUrdf(
+                self._model,
+                self._path,
+                geometry_type,
+                package_dirs=[str(Path(self._path).parent)],
+            )
+        except Exception:
+            return None
 
     def _symbolic_variables(self):
         self.q = SX.sym("q_sx", self.nb_q, 1)
@@ -73,9 +118,13 @@ class PinocchioModel:
         self.activations = SX.sym("activations_sx", 0, 1)
 
     def _extract_marker_names(self) -> tuple[str, ...]:
-        return tuple(
-            frame.name for frame in self._model.frames[1:] if frame.type == self._pinocchio_module.FrameType.FIXED_JOINT
+        # FIXED_JOINT frames are what a fixed link in a URDF produces. OP_FRAME frames are operational points, which
+        # is how markers come out of an OpenSim conversion; without them such a model exposes no marker at all.
+        marker_frame_types = (
+            self._module_pin.FrameType.FIXED_JOINT,
+            self._module_pin.FrameType.OP_FRAME,
         )
+        return tuple(frame.name for frame in self._model.frames[1:] if frame.type in marker_frame_types)
 
     @property
     def name(self) -> str:
@@ -86,22 +135,40 @@ class PinocchioModel:
         return self._path
 
     def copy(self):
-        if self.path:
-            return PinocchioModel(self.path)
-        return PinocchioModel(self._model)
+        cls, kwargs = self.serialize()
+        return cls(**kwargs)
 
     def serialize(self) -> tuple[Callable, dict]:
-        bio_model = self.path if self.path else self._model
-        return PinocchioModel, dict(bio_model=bio_model)
+        # type(self) keeps the subclass: serializing a TorquePinocchioModel must not hand back a plain
+        # PinocchioModel. The path is preferred when known, so the rebuilt model stays reproducible from disk.
+        return type(self), dict(
+            bio_model=self.path if self.path else self._model,
+            visual_model=self.visual_model,
+            collision_model=self.collision_model,
+        )
 
     @cache_function
     def gravity(self) -> Function:
-        gravity = SX(self._model.gravity.linear)
+        # Read from the CasADi model: it is the one every algorithm evaluates, so it is always the current value.
+        gravity = SX(self._casadi_model.gravity.linear)
         return Function("gravity", [self.parameters], [gravity], ["parameters"], ["gravity"])
 
     def set_gravity(self, new_gravity: Parameter | SX | np.ndarray) -> None:
         new_value = new_gravity.sx if isinstance(new_gravity, Parameter) else new_gravity
-        self._model.gravity.linear = np.asarray(new_value, dtype=float).reshape(3)
+
+        # The CasADi model must be updated as well. Writing only to the numeric model used to change gravity()
+        # while forward_dynamics and non_linear_effects silently kept using the former value, because the CasADi
+        # model had already been built from it.
+        self._casadi_model.gravity.linear = SX(new_value)
+        if self._model is not self._casadi_model:
+            try:
+                self._model.gravity.linear = np.asarray(new_value, dtype=float).reshape(3)
+            except (TypeError, ValueError, RuntimeError):
+                # A symbolic gravity has no numeric counterpart; the CasADi model alone carries it.
+                pass
+
+        # Functions already built have the former gravity baked into their graph.
+        self._cached_functions = {}
 
     @property
     def nb_tau(self) -> int:
@@ -157,9 +224,7 @@ class PinocchioModel:
         return tuple(self._model.joints[1:])
 
     def _frame_placement(self, frame_index: int, q: SX = None):
-        self._casadi_pinocchio_module.framesForwardKinematics(
-            self._casadi_model, self._data, self.q if q is None else q
-        )
+        self._module_cpin.framesForwardKinematics(self._casadi_model, self._data, self.q if q is None else q)
         return self._data.oMf[frame_index]
 
     def _frame_translation(self, frame_index: int, q: SX = None) -> SX:
@@ -215,12 +280,12 @@ class PinocchioModel:
 
     @cache_function
     def center_of_mass(self) -> Function:
-        com = self._casadi_pinocchio_module.centerOfMass(self._casadi_model, self._data, self.q)
+        com = self._module_cpin.centerOfMass(self._casadi_model, self._data, self.q)
         return Function("center_of_mass", [self.q, self.parameters], [com], ["q", "parameters"], ["Center of mass"])
 
     @cache_function
     def center_of_mass_velocity(self) -> Function:
-        jacobian = self._casadi_pinocchio_module.jacobianCenterOfMass(self._casadi_model, self._data, self.q)
+        jacobian = self._module_cpin.jacobianCenterOfMass(self._casadi_model, self._data, self.q)
         com_velocity = jacobian @ self.qdot
         return Function(
             "center_of_mass_velocity",
@@ -232,7 +297,7 @@ class PinocchioModel:
 
     @cache_function
     def center_of_mass_acceleration(self) -> Function:
-        self._casadi_pinocchio_module.centerOfMass(self._casadi_model, self._data, self.q, self.qdot, self.qddot)
+        self._module_cpin.centerOfMass(self._casadi_model, self._data, self.q, self.qdot, self.qddot)
         com_acceleration = self._data.acom[0]
         return Function(
             "center_of_mass_acceleration",
@@ -244,12 +309,12 @@ class PinocchioModel:
 
     @cache_function
     def mass_matrix(self) -> Function:
-        mass_matrix = self._casadi_pinocchio_module.crba(self._casadi_model, self._data, self.q)
+        mass_matrix = self._module_cpin.crba(self._casadi_model, self._data, self.q)
         return Function("mass_matrix", [self.q, self.parameters], [mass_matrix], ["q", "parameters"], ["Mass matrix"])
 
     @cache_function
     def non_linear_effects(self) -> Function:
-        effects = self._casadi_pinocchio_module.nonLinearEffects(self._casadi_model, self._data, self.q, self.qdot)
+        effects = self._module_cpin.nonLinearEffects(self._casadi_model, self._data, self.q, self.qdot)
         return Function(
             "non_linear_effects",
             [self.q, self.qdot, self.parameters],
@@ -260,7 +325,7 @@ class PinocchioModel:
 
     @cache_function
     def angular_momentum(self) -> Function:
-        self._casadi_pinocchio_module.computeCentroidalMomentum(self._casadi_model, self._data, self.q, self.qdot)
+        self._module_cpin.computeCentroidalMomentum(self._casadi_model, self._data, self.q, self.qdot)
         return Function(
             "angular_momentum",
             [self.q, self.qdot, self.parameters],
@@ -281,9 +346,9 @@ class PinocchioModel:
 
     @cache_function
     def segment_angular_velocity(self, idx) -> Function:
-        self._casadi_pinocchio_module.forwardKinematics(self._casadi_model, self._data, self.q, self.qdot)
-        velocity = self._casadi_pinocchio_module.getVelocity(
-            self._casadi_model, self._data, idx, self._casadi_pinocchio_module.ReferenceFrame.LOCAL_WORLD_ALIGNED
+        self._module_cpin.forwardKinematics(self._casadi_model, self._data, self.q, self.qdot)
+        velocity = self._module_cpin.getVelocity(
+            self._casadi_model, self._data, idx, self._module_cpin.ReferenceFrame.LOCAL_WORLD_ALIGNED
         )
         return Function(
             "segment_angular_velocity",
@@ -326,7 +391,7 @@ class PinocchioModel:
         if with_contact:
             raise NotImplementedError("forward_dynamics with contact is not implemented yet for PinocchioModel")
 
-        qddot = self._casadi_pinocchio_module.aba(self._casadi_model, self._data, self.q, self.qdot, self.tau)
+        qddot = self._module_cpin.aba(self._casadi_model, self._data, self.q, self.qdot, self.tau)
         return Function(
             "forward_dynamics",
             [self.q, self.qdot, self.tau, self.external_forces, self.parameters],
@@ -340,7 +405,7 @@ class PinocchioModel:
         if with_contact:
             raise NotImplementedError("inverse_dynamics with contact is not implemented yet for PinocchioModel")
 
-        tau = self._casadi_pinocchio_module.rnea(self._casadi_model, self._data, self.q, self.qdot, self.qddot)
+        tau = self._module_cpin.rnea(self._casadi_model, self._data, self.q, self.qdot, self.qddot)
         return Function(
             "inverse_dynamics",
             [self.q, self.qdot, self.qddot, self.external_forces, self.parameters],
@@ -351,7 +416,7 @@ class PinocchioModel:
 
     @cache_function
     def forward_dynamics_derivatives(self) -> Function:
-        self._casadi_pinocchio_module.computeABADerivatives(self._casadi_model, self._data, self.q, self.qdot, self.tau)
+        self._module_cpin.computeABADerivatives(self._casadi_model, self._data, self.q, self.qdot, self.tau)
         return Function(
             "forward_dynamics_derivatives",
             [self.q, self.qdot, self.tau, self.parameters],
@@ -362,7 +427,7 @@ class PinocchioModel:
 
     @cache_function
     def inverse_dynamics_derivatives(self) -> Function:
-        derivatives = self._casadi_pinocchio_module.computeRNEADerivatives(
+        derivatives = self._module_cpin.computeRNEADerivatives(
             self._casadi_model, self._data, self.q, self.qdot, self.qddot
         )
         if derivatives is not None:
@@ -429,13 +494,13 @@ class PinocchioModel:
 
     @cache_function
     def marker_velocity(self, marker_index: int) -> Function:
-        self._casadi_pinocchio_module.forwardKinematics(self._casadi_model, self._data, self.q, self.qdot)
-        self._casadi_pinocchio_module.updateFramePlacements(self._casadi_model, self._data)
-        velocity = self._casadi_pinocchio_module.getFrameVelocity(
+        self._module_cpin.forwardKinematics(self._casadi_model, self._data, self.q, self.qdot)
+        self._module_cpin.updateFramePlacements(self._casadi_model, self._data)
+        velocity = self._module_cpin.getFrameVelocity(
             self._casadi_model,
             self._data,
             self._marker_frame_index(marker_index),
-            self._casadi_pinocchio_module.ReferenceFrame.LOCAL_WORLD_ALIGNED,
+            self._module_cpin.ReferenceFrame.LOCAL_WORLD_ALIGNED,
         ).linear
         return Function(
             "marker_velocity",
@@ -463,13 +528,16 @@ class PinocchioModel:
 
     @cache_function
     def marker_acceleration(self, marker_index: int) -> Function:
-        self._casadi_pinocchio_module.forwardKinematics(self._casadi_model, self._data, self.q, self.qdot, self.qddot)
-        self._casadi_pinocchio_module.updateFramePlacements(self._casadi_model, self._data)
-        acceleration = self._casadi_pinocchio_module.getFrameAcceleration(
+        self._module_cpin.forwardKinematics(self._casadi_model, self._data, self.q, self.qdot, self.qddot)
+        self._module_cpin.updateFramePlacements(self._casadi_model, self._data)
+        # Classical acceleration, not the spatial one: a marker is a point, and what an OCP penalises or
+        # constrains is the acceleration of that point. The two differ by omega x v, so they only agree when the
+        # frame has no angular velocity. This also matches the BiorbdModel convention.
+        acceleration = self._module_cpin.getFrameClassicalAcceleration(
             self._casadi_model,
             self._data,
             self._marker_frame_index(marker_index),
-            self._casadi_pinocchio_module.ReferenceFrame.LOCAL_WORLD_ALIGNED,
+            self._module_cpin.ReferenceFrame.LOCAL_WORLD_ALIGNED,
         ).linear
         return Function(
             "marker_acceleration",
@@ -494,21 +562,21 @@ class PinocchioModel:
         jacobians = []
         for marker_index in range(self.nb_markers):
             try:
-                jacobian = self._casadi_pinocchio_module.computeFrameJacobian(
+                jacobian = self._module_cpin.computeFrameJacobian(
                     self._casadi_model,
                     self._data,
                     self.q,
                     self._marker_frame_index(marker_index),
-                    self._casadi_pinocchio_module.ReferenceFrame.LOCAL_WORLD_ALIGNED,
+                    self._module_cpin.ReferenceFrame.LOCAL_WORLD_ALIGNED,
                 )
             except TypeError:
                 jacobian = SX.zeros(6, self.nb_qdot)
-                self._casadi_pinocchio_module.computeFrameJacobian(
+                self._module_cpin.computeFrameJacobian(
                     self._casadi_model,
                     self._data,
                     self.q,
                     self._marker_frame_index(marker_index),
-                    self._casadi_pinocchio_module.ReferenceFrame.LOCAL_WORLD_ALIGNED,
+                    self._module_cpin.ReferenceFrame.LOCAL_WORLD_ALIGNED,
                     jacobian,
                 )
             jacobians.append(jacobian[:3, :])
@@ -540,7 +608,9 @@ class PinocchioModel:
             lower = lower[: self.nb_root]
             upper = upper[: self.nb_root]
 
-        return [Range(float(min_bound), float(max_bound)) for min_bound, max_bound in zip(lower, upper)]
+        # Index rather than iterate: when the model was handed over already converted, the limits are constant SX
+        # scalars, and CasADi matrices are deliberately not iterable. float() works element-wise on both.
+        return [Range(float(lower[i]), float(upper[i])) for i in range(lower.shape[0])]
 
     def _var_mapping(
         self,
@@ -554,11 +624,75 @@ class PinocchioModel:
         return bounds_from_ranges(self, variables, mapping)
 
     @cache_function
+    def normalize_state_quaternions(self) -> Function:
+        """
+        Renormalize the quaternion part of q, leaving every other coordinate untouched.
+
+        The integrator calls this after each step whenever nb_quaternions is non-zero, so that numerical drift does
+        not take the quaternions off the unit sphere.
+        """
+        q_normalized = SX.zeros(self.nb_q)
+        q_normalized[:] = self.q
+
+        for joint in self._model.joints[1:]:
+            # A quaternion-bearing joint, spherical or free-flyer, carries exactly one more configuration value
+            # than velocity coordinate. Pinocchio always stores that quaternion as the last four configuration
+            # values of the joint, in (x, y, z, w) order. Normalizing is scale-only, so the order does not matter
+            # here, unlike in BiorbdModel where the scalar has to be moved around.
+            if joint.nq != joint.nv + 1:
+                continue
+            start = joint.idx_q + joint.nq - 4
+            quaternion = self.q[start : start + 4]
+            q_normalized[start : start + 4] = quaternion / norm_fro(quaternion)
+
+        return Function(
+            "normalize_state_quaternions",
+            [self.q],
+            [q_normalized],
+            ["q"],
+            ["q_normalized"],
+        )
+
+    @cache_function
     def lagrangian(self) -> Function:
-        kinetic = self._casadi_pinocchio_module.computeKineticEnergy(self._casadi_model, self._data, self.q, self.qdot)
-        potential = self._casadi_pinocchio_module.computePotentialEnergy(self._casadi_model, self._data, self.q)
+        kinetic = self._module_cpin.computeKineticEnergy(self._casadi_model, self._data, self.q, self.qdot)
+        potential = self._module_cpin.computePotentialEnergy(self._casadi_model, self._data, self.q)
         return Function("lagrangian", [self.q, self.qdot], [kinetic - potential], ["q", "qdot"], ["lagrangian"])
 
+    def to_pyorerun_model(self):
+        """Build the pyorerun counterpart of this model, carrying the geometries over when they were provided."""
+        import pyorerun
+
+        numeric_model = self._model
+        if numeric_model is self._casadi_model:
+            # The model was handed over already converted; pyorerun needs a numeric one to place the geometries.
+            numeric_model = self._module_pin.Model(self._casadi_model)
+
+        return pyorerun.PinocchioModel.from_pinocchio_object(
+            numeric_model,
+            visual_model=self.visual_model,
+            collision_model=self.collision_model,
+        )
+
+    @property
+    def pyorerun_marker_names(self) -> list[str]:
+        return list(self.marker_names)
+
     @staticmethod
-    def animate(*args, **kwargs):
-        raise NotImplementedError("Animation is not implemented for PinocchioModel")
+    def animate(
+        ocp,
+        solution,
+        show_now: bool = True,
+        show_tracked_markers: bool = False,
+        viewer: str = "pyorerun",
+        n_frames: int = 0,
+        **kwargs,
+    ):
+        if viewer != "pyorerun":
+            raise NotImplementedError(
+                f"Animating a PinocchioModel with '{viewer}' is not implemented, only 'pyorerun' is supported"
+            )
+
+        from ..viewer_pyorerun import animate_with_pyorerun
+
+        return animate_with_pyorerun(ocp, solution, show_now, show_tracked_markers, **kwargs)
