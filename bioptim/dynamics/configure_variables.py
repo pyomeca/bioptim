@@ -469,7 +469,7 @@ class ConfigureVariables:
             raise NotImplementedError("qddot_joints is not ready for variable mapping yet.")
 
         name_qddot = ConfigureVariables._get_kinematics_based_names(nlp, "qddot")
-        name_qddot_joints = [name_qddot[i] for i in range(nlp.model.nb_root, nlp.model.nb_q)]
+        name_qddot_joints = [name_qddot[i] for i in range(nlp.model.nb_root, nlp.model.nb_qdot)]
         ConfigureVariables.configure_new_variable(
             name,
             name_qddot_joints,
@@ -479,8 +479,8 @@ class ConfigureVariables:
             as_controls=as_controls,
             as_algebraic_states=as_algebraic_states,
             axes_idx=BiMapping(
-                to_first=list(range(0, nlp.model.nb_q - nlp.model.nb_root)),
-                to_second=list(range(0, nlp.model.nb_q - nlp.model.nb_root)),
+                to_first=list(range(0, nlp.model.nb_qdot - nlp.model.nb_root)),
+                to_second=list(range(0, nlp.model.nb_qdot - nlp.model.nb_root)),
             ),
         )
 
