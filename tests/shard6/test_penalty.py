@@ -26,9 +26,13 @@ from bioptim import (
     TorqueActivationBiorbdModel,
     DynamicsOptions,
     ObjectiveWeight,
+    ParameterList,
+    VariableScaling,
 )
 from bioptim.limits.penalty import PenaltyOption
 from bioptim.limits.penalty_controller import PenaltyController
+from bioptim.limits.penalty_helpers import PenaltyHelpers
+from bioptim.limits.objective_functions import ParameterObjective
 from bioptim.misc.mapping import BiMapping
 from bioptim.optimization.non_linear_program import NonLinearProgram as NLP
 from bioptim.optimization.optimization_variable import OptimizationVariableList
@@ -205,6 +209,56 @@ def test_penalty_targets_shapes():
     npt.assert_equal(Objective([], custom_type=p, target=[[1], [2]]).target.shape, (2, 1))
     npt.assert_equal(Objective([], custom_type=p, target=[[1, 2]]).target.shape, (1, 2))
     npt.assert_equal(Objective([], custom_type=p, target=np.array([[1, 2]])).target.shape, (1, 2))
+
+
+@pytest.mark.parametrize(
+    "key, rows, physical_target, function_target",
+    [
+        ("gravity", None, [20, 300], [2, 3]),
+        ("all", None, [20, 300, 20], [2, 3, 4]),
+        (None, None, [20, 300, 20], [2, 3, 4]),
+        ("all", [1], [300], [3]),
+    ],
+)
+def test_minimize_parameter_converts_physical_target_without_rescaling_function(
+    key, rows, physical_target, function_target
+):
+    parameters = ParameterList(use_sx=False)
+    parameters.add("gravity", lambda *_: None, size=2, scaling=VariableScaling("gravity", [10, 100]))
+    parameters.add("mass", lambda *_: None, size=1, scaling=VariableScaling("mass", [5]))
+    nlp = NLP(phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE, use_sx=False)
+    nlp.parameters.initialize(parameters)
+    controller = PenaltyController(None, nlp, [], [], [], [], [], parameters.cx, [], [], [], 0)
+    penalty = ParameterObjective(
+        ObjectiveFcn.Parameter.MINIMIZE_PARAMETER,
+        target=physical_target,
+        key=key,
+        rows=rows,
+    )
+
+    value = ObjectiveFcn.Parameter.MINIMIZE_PARAMETER(penalty, controller, key=key)
+    penalty.rows = penalty._set_dim_idx(penalty.rows, value.rows())
+    penalty.node_idx = [0]
+
+    value_function = Function("scaled_parameter", [parameters.cx], [value])
+    expected_value = [2, 3, 4] if key is None or key == "all" else [2, 3]
+    npt.assert_equal(np.array(value_function([2, 3, 4])).squeeze(), expected_value)
+    npt.assert_equal(penalty.target.squeeze(), physical_target)
+    npt.assert_equal(PenaltyHelpers.target(penalty, 0), function_target)
+
+
+def test_custom_penalty_can_declare_target_scaling_explicitly():
+    penalty = ParameterObjective(
+        lambda controller: controller.parameters["gravity"].cx,
+        custom_type=ObjectiveFcn.Parameter,
+        target=[20, 300],
+        target_scaling=[10, 100],
+    )
+    penalty.rows = range(2)
+    penalty.node_idx = [0]
+
+    npt.assert_equal(PenaltyHelpers.target(penalty, 0), [2, 3])
+    npt.assert_equal(penalty.target[:, 0], [20, 300])
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
