@@ -1086,6 +1086,8 @@ class OptimalControlProgram:
                 )
 
             for key in parameter_bounds.keys():
+                if parameter_bounds[key].type != InterpolationType.CONSTANT:
+                    raise ValueError(f"Parameter bounds for '{key}' must use InterpolationType.CONSTANT")
                 self.parameter_bounds.add(key, parameter_bounds[key], phase=0)
 
         for nlp in self.nlp:
@@ -1149,6 +1151,8 @@ class OptimalControlProgram:
                 )
 
             for key in parameter_init.keys():
+                if parameter_init[key].type != InterpolationType.CONSTANT:
+                    raise ValueError(f"Parameter initial guess for '{key}' must use InterpolationType.CONSTANT")
                 self.parameter_init.add(key, parameter_init[key], phase=0)
 
     def add_plot(self, fig_name: Str, update_function: Callable, phase: Int = -1, **parameters: Any) -> None:
