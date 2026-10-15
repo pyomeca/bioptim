@@ -4,6 +4,10 @@ on:
   pull_request:
     types: [review_requested]
 
+concurrency:
+  group: ci-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 env:
   PREFIX_MACOS: /Users/runner/miniconda3/envs/bioptim
   PREFIX_WINDOWS: C:\Miniconda3\envs\bioptim
