@@ -398,7 +398,7 @@ class RK8(RK4):
             d,
         )[:, self.ode_idx]
         k3 = self.fun(
-            vertcat(t0 + h / 18, dt),
+            vertcat(t0 + h * (2 / 9), dt),
             x_prev + (h / 18) * (k1 + 3 * k2),
             self.get_u(u, t0 + h * (2 / 9)),
             p,
@@ -406,7 +406,7 @@ class RK8(RK4):
             d,
         )[:, self.ode_idx]
         k4 = self.fun(
-            vertcat(t0 + h / 12, dt),
+            vertcat(t0 + h * (1 / 3), dt),
             x_prev + (h / 12) * (k1 + 3 * k3),
             self.get_u(u, t0 + h * (1 / 3)),
             p,
@@ -414,7 +414,7 @@ class RK8(RK4):
             d,
         )[:, self.ode_idx]
         k5 = self.fun(
-            vertcat(t0 + h / 8, dt),
+            vertcat(t0 + h * (1 / 2), dt),
             x_prev + (h / 8) * (k1 + 3 * k4),
             self.get_u(u, t0 + h * (1 / 2)),
             p,
@@ -422,7 +422,7 @@ class RK8(RK4):
             d,
         )[:, self.ode_idx]
         k6 = self.fun(
-            vertcat(t0 + h / 54, dt),
+            vertcat(t0 + h * (2 / 3), dt),
             x_prev + (h / 54) * (13 * k1 - 27 * k3 + 42 * k4 + 8 * k5),
             self.get_u(u, t0 + h * (2 / 3)),
             p,
@@ -430,7 +430,7 @@ class RK8(RK4):
             d,
         )[:, self.ode_idx]
         k7 = self.fun(
-            vertcat(t0 + h / 4320, dt),
+            vertcat(t0 + h * (1 / 6), dt),
             x_prev + (h / 4320) * (389 * k1 - 54 * k3 + 966 * k4 - 824 * k5 + 243 * k6),
             self.get_u(u, t0 + h * (1 / 6)),
             p,
@@ -438,15 +438,15 @@ class RK8(RK4):
             d,
         )[:, self.ode_idx]
         k8 = self.fun(
-            vertcat(t0 + h / 20, dt),
-            x_prev + (h / 20) * (-234 * k1 + 81 * k3 - 1164 * k4 + 656 * k5 - 122 * k6 + 800 * k7),
+            vertcat(t0 + h, dt),
+            x_prev + (h / 20) * (-231 * k1 + 81 * k3 - 1164 * k4 + 656 * k5 - 122 * k6 + 800 * k7),
             self.get_u(u, t0 + h),
             p,
             a,
             d,
         )[:, self.ode_idx]
         k9 = self.fun(
-            vertcat(t0 + h / 288, dt),
+            vertcat(t0 + h * (5 / 6), dt),
             x_prev + (h / 288) * (-127 * k1 + 18 * k3 - 678 * k4 + 456 * k5 - 9 * k6 + 576 * k7 + 4 * k8),
             self.get_u(u, t0 + h * (5 / 6)),
             p,
@@ -454,7 +454,7 @@ class RK8(RK4):
             d,
         )[:, self.ode_idx]
         k10 = self.fun(
-            vertcat(t0 + h / 820, dt),
+            vertcat(t0 + h, dt),
             x_prev
             + (h / 820) * (1481 * k1 - 81 * k3 + 7104 * k4 - 3376 * k5 + 72 * k6 - 5040 * k7 - 60 * k8 + 720 * k9),
             self.get_u(u, t0 + h),

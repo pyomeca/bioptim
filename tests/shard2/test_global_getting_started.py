@@ -178,8 +178,8 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type, s
 
     # Check objective function valueà
     if isinstance(ode_solver_obj, OdeSolver.RK8):
-        TestUtils.assert_objective_value(sol=sol, expected_value=41.57063948309302)
-        npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [-0.5010317, 0.6824593])
+        TestUtils.assert_objective_value(sol=sol, expected_value=41.5713363055625)
+        npt.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [-0.50107768, 0.68251777])
 
     elif isinstance(ode_solver_obj, OdeSolver.IRK):
         if solver == Solver.IPOPT:
@@ -255,8 +255,8 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics, defects_type, s
 
     # initial and final controls
     if isinstance(ode_solver_obj, OdeSolver.RK8):
-        npt.assert_almost_equal(tau[:, 0], np.array((6.03763589, 0)))
-        npt.assert_almost_equal(tau[:, -1], np.array((-13.59527556, 0)))
+        npt.assert_almost_equal(tau[:, 0], np.array((6.0378835, 0)))
+        npt.assert_almost_equal(tau[:, -1], np.array((-13.59437077, 0)))
     elif isinstance(ode_solver_obj, OdeSolver.IRK):
         if solver == Solver.IPOPT:
             npt.assert_almost_equal(tau[:, 0], np.array((5.40765381, 0)))
@@ -813,14 +813,14 @@ def test_parameter_optimization(ode_solver, phase_dynamics):
         npt.assert_equal(g.shape, (80, 1))
         npt.assert_almost_equal(g, np.zeros((80, 1)), decimal=6)
 
-        TestUtils.assert_objective_value(sol=sol, expected_value=49.828261340026486, decimal=6)
+        TestUtils.assert_objective_value(sol=sol, expected_value=49.82695602609935, decimal=6)
 
         # initial and final controls
-        npt.assert_almost_equal(tau[:, 0], np.array((5.82740495, 0.0)))
-        npt.assert_almost_equal(tau[:, -1], np.array((-13.06649769, 0.0)))
+        npt.assert_almost_equal(tau[:, 0], np.array((5.831383664, 0.0)))
+        npt.assert_almost_equal(tau[:, -1], np.array((-13.07736919, 0.0)))
 
         # gravity parameter
-        npt.assert_almost_equal(gravity, np.array([0, 5.19787253e-03, -9.84722491e00]))
+        npt.assert_almost_equal(gravity, np.array([0, 5.182744312e-03, -9.847282659e00]))
 
     elif isinstance(ode_solver, OdeSolver.COLLOCATION) and phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
         npt.assert_equal(g.shape, (400, 1))
@@ -1504,7 +1504,7 @@ def test_multinode_objective(ode_solver, phase_dynamics):
 
     elif isinstance(ode_solver, OdeSolver.RK8):
         # Check objective function value
-        TestUtils.assert_objective_value(sol=sol, expected_value=475.44403901331214)
+        TestUtils.assert_objective_value(sol=sol, expected_value=475.43174019996263)
 
         # Check constraints
         g = np.array(sol.constraints)
@@ -1512,8 +1512,8 @@ def test_multinode_objective(ode_solver, phase_dynamics):
         npt.assert_almost_equal(g, np.zeros((80, 1)))
 
         # initial and final controls
-        npt.assert_almost_equal(controls["tau"][:, 0], np.array([5.84195684, 0.0]))
-        npt.assert_almost_equal(controls["tau"][:, -1], np.array([-13.1269555, 0.0]))
+        npt.assert_almost_equal(controls["tau"][:, 0], np.array([5.845746921, 0.0]))
+        npt.assert_almost_equal(controls["tau"][:, -1], np.array([-13.13740523, 0.0]))
 
     # Check that the output is what we expect
     weight = 10
