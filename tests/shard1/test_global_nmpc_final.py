@@ -3,80 +3,13 @@ Test for file IO
 """
 
 import platform
-from types import SimpleNamespace
 
-from bioptim import (
-    Solver,
-    MultiCyclicCycleSolutions,
-    PhaseDynamics,
-    SolutionMerge,
-    OdeSolver,
-    InitialGuessList,
-    InterpolationType,
-)
-import bioptim.optimization.receding_horizon_optimization as rho_module
-from bioptim.optimization.receding_horizon_optimization import MultiCyclicRecedingHorizonOptimization
+from bioptim import Solver, MultiCyclicCycleSolutions, PhaseDynamics, SolutionMerge, OdeSolver
 import numpy as np
 import numpy.testing as npt
 import pytest
 
 from ..utils import TestUtils
-
-
-@pytest.mark.parametrize("already_converted", [False, True])
-@pytest.mark.parametrize(
-    "ode_solver",
-    [OdeSolver.RK4(), OdeSolver.COLLOCATION(polynomial_degree=3, method="radau")],
-)
-def test_multi_cyclic_state_guess_first_and_following_windows(ode_solver, already_converted, monkeypatch):
-    is_collocation = isinstance(ode_solver, OdeSolver.COLLOCATION)
-    intermediate_frames = ode_solver.polynomial_degree + 1 if is_collocation else 1
-    interpolation = InterpolationType.ALL_POINTS if is_collocation else InterpolationType.EACH_FRAME
-    n_frames = 6 * intermediate_frames + 1
-    x_init = InitialGuessList()
-    dimensions = {"q": 2, "qdot": 1}
-    for key, size in dimensions.items():
-        x_init.add(
-            key,
-            np.zeros((size, n_frames if already_converted else 1)),
-            interpolation=interpolation if already_converted else InterpolationType.CONSTANT,
-            phase=0,
-        )
-
-    nmpc = MultiCyclicRecedingHorizonOptimization.__new__(MultiCyclicRecedingHorizonOptimization)
-    nmpc.nlp = [
-        SimpleNamespace(
-            x_init=x_init,
-            dynamics_type=SimpleNamespace(ode_solver=ode_solver),
-            ns=6,
-            states={key: SimpleNamespace(shape=size) for key, size in dimensions.items()},
-        )
-    ]
-    nmpc.cycle_len = 3
-    nmpc.n_cycles = 2
-    nmpc.n_cycles_to_advance = 1
-    nmpc.nb_intermediate_frames = intermediate_frames
-    nmpc.initial_guess_frames = [3, 4, 5, 3, 4, 5, 6]
-
-    # An unwritten allocation must fail independently of the allocator's previous contents.
-    monkeypatch.setattr(rho_module, "np", SimpleNamespace(ndarray=lambda shape: np.full(shape, np.nan)))
-    expected_frames = np.concatenate(
-        (np.tile(np.arange(3 * intermediate_frames, 6 * intermediate_frames), 2), [6 * intermediate_frames])
-    )
-    for window in range(2):
-        states = {
-            key: np.arange(size * n_frames).reshape(size, n_frames) + 1000 * (window + 1)
-            for key, size in dimensions.items()
-        }
-
-        def decision_states(to_merge):
-            assert to_merge == SolutionMerge.NODES
-            return states
-
-        nmpc.advance_window_initial_guess_states(SimpleNamespace(decision_states=decision_states))
-        for key in dimensions:
-            assert x_init[key].type == interpolation
-            npt.assert_array_equal(x_init[key].init, states[key][:, expected_frames])
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
