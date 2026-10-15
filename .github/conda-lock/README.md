@@ -25,6 +25,8 @@ including drafts. A single Ubuntu job checks the committed source fingerprint
 and all three lockfiles. When they are current, it skips Python setup,
 conda-lock installation and dependency resolution. Otherwise it resolves all
 three platforms once, updates the fingerprint and validates the generated files.
+The generator uses `conda-lock 4.0.2` and Micromamba `2.5.0-2` explicitly;
+an unpinned Micromamba auto-download crashed with SIGSEGV in the Linux validation.
 It does not run a solver in each test shard. New pushes cancel an older run for
 the same PR. The workflow can also be launched manually with `workflow_dispatch`.
 

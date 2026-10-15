@@ -48,10 +48,20 @@ jobs:
         if: steps.inspect.outputs.stale == 'true'
         run: python -m pip install --disable-pip-version-check "conda-lock==4.0.2"
 
+      - name: Install pinned Micromamba
+        if: steps.inspect.outputs.stale == 'true'
+        uses: mamba-org/setup-micromamba@v3
+        with:
+          micromamba-version: "2.5.0-2"
+          init-shell: none
+          generate-run-shell: false
+
       - name: Regenerate all platforms once
         if: steps.inspect.outputs.stale == 'true'
         run: |
+          micromamba --version
           conda-lock lock \
+            --conda micromamba \
             --kind explicit \
             --micromamba \
             --lockfile "$RUNNER_TEMP/conda-lock.yml" \
