@@ -2,7 +2,7 @@ name: Run the tests
 
 on:
   pull_request:
-    types: [review_requested]
+    types: [auto_merge_enabled]
 
 concurrency:
   group: ci-pr-${{ github.event.pull_request.number }}
