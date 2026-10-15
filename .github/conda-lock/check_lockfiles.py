@@ -29,7 +29,8 @@ def compute_source_hash(repository_root: Path) -> str:
     """Hash paths, sizes, and contents to avoid ambiguous concatenations."""
     digest = hashlib.sha256()
     for relative_path in SOURCE_FILES:
-        content = (repository_root / relative_path).read_bytes()
+        # Git may check out these text files with CRLF on Windows.
+        content = (repository_root / relative_path).read_bytes().replace(b"\r\n", b"\n")
         digest.update(relative_path.as_posix().encode())
         digest.update(b"\0")
         digest.update(str(len(content)).encode())
