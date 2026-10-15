@@ -1,6 +1,12 @@
 name: Run the tests
 
-on: [pull_request]
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, review_requested]
+    
+concurrency:
+  group: ci-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -57,7 +63,7 @@ jobs:
         if: matrix.shard == 1
 
       - name: Run tests with code coverage
-        run: pytest -v --color=yes --cov-report term-missing --cov=bioptim tests/shard${{ matrix.shard }} --mpl-baseline-path=bioptim/tests/plot_reference_images
+        run: pytest -v --color=yes --cov-report term-missing --cov=bioptim tests/shard${{ matrix.shard }} --mpl-baseline-path=tests/plot_reference_images
         if: matrix.os == 'ubuntu-latest'
 
       - name: Archive coverage report

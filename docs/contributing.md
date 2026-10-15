@@ -2,6 +2,7 @@
 All contributions, bug reports, bug fixes, documentation improvements, enhancements, and ideas are welcome.
 We recommend going through the list of [`issues`](https://github.com/pyomeca/bioptim/issues) to find issues that interest you, preferable those tagged with `good first issue`.
 You can then get your development environment setup with the following instructions.
+If you contribute with an AI agent, it should also follow [`agent-context/RULES.md`](../agent-context/RULES.md).
 
 ## Forking `bioptim`
 
@@ -24,7 +25,7 @@ The easiest and most efficient way (due to the numerous dependencies of `bioptim
 
 ```bash
 conda env create -f environment.yml
-conda activate biorbd_optim
+conda activate bioptim
 ```
 
 ## Implementing new features

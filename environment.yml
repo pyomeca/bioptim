@@ -1,4 +1,4 @@
-# create a dev conda environment with: `make create_env` or `conda env create -f environment.yml`
+# create a dev conda environment with: `conda env create -f environment.yml`
 name: bioptim
 channels:
 - conda-forge
