@@ -69,7 +69,11 @@ def prepare_ocp(
     u_bounds.add("tau", min_bound=tau_min, max_bound=tau_max, interpolation=interpolation_type)
 
     u_init = InitialGuessList()
-    u_init.add("tau", tau_init, interpolation=interpolation_type)
+    # Controls have values at shooting nodes, including when states use collocation stages.
+    control_interpolation = (
+        InterpolationType.EACH_FRAME if interpolation_type == InterpolationType.ALL_POINTS else interpolation_type
+    )
+    u_init.add("tau", tau_init, interpolation=control_interpolation)
 
     return OptimalControlProgram(
         bio_model,

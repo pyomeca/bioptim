@@ -426,8 +426,8 @@ def test_initial_guesses(ode_solver, interpolation, random_init, phase_dynamics)
 
     np.random.seed(42)
 
-    if interpolation == InterpolationType.ALL_POINTS and ode_solver.is_direct_shooting:
-        with pytest.raises(ValueError, match="InterpolationType.ALL_POINTS must only be used with direct collocation"):
+    if interpolation == InterpolationType.ALL_POINTS:
+        with pytest.raises(ValueError, match="InterpolationType.ALL_POINTS cannot be used for control initial guesses"):
             _ = ocp_module.prepare_ocp(
                 biorbd_model_path=bioptim_folder + "/examples/models/cube.bioMod",
                 final_time=1,
@@ -835,6 +835,19 @@ def test_parameter_optimization(ode_solver, phase_dynamics):
 
         # # gravity parameter
         # npt.assert_almost_equal(gravity, np.array([0, 7.0281362e-03, -1.0000000e01]))
+
+    elif isinstance(ode_solver, OdeSolver.COLLOCATION) and phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
+        npt.assert_equal(g.shape, (400, 1))
+        npt.assert_almost_equal(g, np.zeros((400, 1)), decimal=6)
+
+        TestUtils.assert_objective_value(sol=sol, expected_value=99.67117614751174, decimal=6)
+
+        # initial and final controls
+        npt.assert_almost_equal(tau[:, 0], np.array((9.5552488, 0.0)))
+        npt.assert_almost_equal(tau[:, -1], np.array((-24.212346, 0.0)))
+
+        # gravity parameter
+        npt.assert_almost_equal(gravity, np.array([0, 7.0281362e-03, -1.0000000e01]))
 
     else:
         npt.assert_equal(g.shape, (400, 1))
@@ -2215,26 +2228,6 @@ def test_memory_and_execution_time():
             4.9596595764160156,
             0.8695292472839355,
             436745,
-        ],
-        "initial_guesses-COLLOCATION legendre 4-InterpolationType.ALL_POINTS-True-PhaseDynamics.SHARED_DURING_THE_PHASE": [
-            2.6180410385131836,
-            1.0502195358276367,
-            410309,
-        ],
-        "initial_guesses-COLLOCATION legendre 4-InterpolationType.ALL_POINTS-True-PhaseDynamics.ONE_PER_NODE": [
-            5.576479434967041,
-            2.1515202522277832,
-            444541,
-        ],
-        "initial_guesses-COLLOCATION legendre 4-InterpolationType.ALL_POINTS-False-PhaseDynamics.SHARED_DURING_THE_PHASE": [
-            3.1530189514160156,
-            1.218109130859375,
-            403795,
-        ],
-        "initial_guesses-COLLOCATION legendre 4-InterpolationType.ALL_POINTS-False-PhaseDynamics.ONE_PER_NODE": [
-            4.999852180480957,
-            0.9397292137145996,
-            442997,
         ],
         "initial_guesses-COLLOCATION legendre 4-InterpolationType.SPLINE-True-PhaseDynamics.SHARED_DURING_THE_PHASE": [
             2.5156712532043457,
