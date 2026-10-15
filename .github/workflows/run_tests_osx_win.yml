@@ -5,7 +5,7 @@ on:
     types: [auto_merge_enabled]
 
 concurrency:
-  group: ci-pr-${{ github.event.pull_request.number }}
+  group: ${{ github.workflow }}-pr-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 env:
