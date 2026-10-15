@@ -1,11 +1,11 @@
-name: Run the tests
+name: Run the Multiplatform tests
 
 on:
   pull_request:
     types: [auto_merge_enabled]
 
 concurrency:
-  group: ${{ github.workflow }}-pr-${{ github.event.pull_request.number }}
+  group: multiplatform-pr-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
 env:
