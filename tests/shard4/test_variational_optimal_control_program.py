@@ -1,7 +1,8 @@
 """
-Tests of the construction of VariationalOptimalControlProgram (no solving involved).
+Tests of the construction of VariationalOptimalControlProgram.
 """
 
+import numpy as np
 import numpy.testing as npt
 import pytest
 from bioptim import (
@@ -12,9 +13,13 @@ from bioptim import (
     MultinodeConstraintFcn,
     MultinodeConstraintList,
     Node,
+    Objective,
     ObjectiveFcn,
     ParameterConstraintList,
+    ParameterList,
     ParameterObjectiveList,
+    SolutionMerge,
+    Solver,
     TorqueBiorbdModel,
     VariationalOptimalControlProgram,
     VariationalTorqueBiorbdModel,
@@ -98,3 +103,92 @@ def test_variational_ocp_does_not_mutate_user_multinode_constraints():
     # The user constraint plus n_shooting - 1 three-node and 2 boundary variational constraints
     n_shooting = ocp.nlp[0].ns
     assert len([g for g in ocp.nlp[0].g_internal if g]) == 1 + (n_shooting - 1) + 2
+
+
+def test_variational_ocp_reads_qdot_parameters_by_name():
+    """
+    A user parameter declared before qdot_start and qdot_end must not shift the velocities used by the boundary
+    constraints. The problem below is the pendulum example with an extra, unused, user parameter fixed to a non-zero
+    value, so its solution must match the one of test_variational_pendulum.
+    """
+    bio_model = VariationalTorqueBiorbdModel(TestUtils.bioptim_folder() + "/examples/models/pendulum.bioMod")
+    n_shooting = 20
+    n_q = bio_model.nb_q
+
+    q_bounds = BoundsList()
+    q_bounds["q"] = bio_model.bounds_from_ranges("q")
+    q_bounds["q"][:, [0, -1]] = 0
+    q_bounds["q"][1, -1] = 3.14
+
+    q_init = InitialGuessList()
+    q_init.add(
+        "q",
+        initial_guess=[np.zeros(n_shooting + 1), np.linspace(0, np.pi, n_shooting + 1)],
+        interpolation=InterpolationType.EACH_FRAME,
+    )
+
+    u_bounds = BoundsList()
+    u_bounds["tau"] = [-100] * n_q, [100] * n_q
+    u_bounds["tau"][1, :] = 0
+
+    qdot_bounds = BoundsList()
+    qdot_bounds.add("qdot_start", min_bound=[0] * n_q, max_bound=[0] * n_q, interpolation=InterpolationType.CONSTANT)
+    qdot_bounds.add("qdot_end", min_bound=[0] * n_q, max_bound=[0] * n_q, interpolation=InterpolationType.CONSTANT)
+
+    parameters = ParameterList(use_sx=False)
+    parameters.add("unused", lambda model, value: None, size=1)
+    parameter_bounds = BoundsList()
+    parameter_bounds.add("unused", min_bound=[5], max_bound=[5], interpolation=InterpolationType.CONSTANT)
+
+    ocp = VariationalOptimalControlProgram(
+        bio_model,
+        n_shooting,
+        final_time=1,
+        q_bounds=q_bounds,
+        u_bounds=u_bounds,
+        qdot_bounds=qdot_bounds,
+        q_init=q_init,
+        parameters=parameters,
+        parameter_bounds=parameter_bounds,
+        objective_functions=Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau"),
+        use_sx=False,
+    )
+    sol = ocp.solve(Solver.IPOPT())
+
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    npt.assert_almost_equal(states["q"][:, 10], [-0.227191682344467, 0.417947896973504], decimal=6)
+    npt.assert_almost_equal(controls["tau"][:, 0], [11.973897222965608, 0.0], decimal=6)
+    npt.assert_almost_equal(sol.parameters["qdot_start"], [0.0, 0.0], decimal=6)
+    npt.assert_almost_equal(sol.parameters["qdot_end"], [0.0, 0.0], decimal=6)
+
+
+def test_variational_ocp_declares_qdot_parameters_without_model_function():
+    ocp = _prepare_variational_ocp()
+
+    parameters = ocp.nlp[0].parameters
+    assert parameters.keys() == ["qdot_start", "qdot_end"]
+    for key in parameters.keys():
+        assert parameters[key].size == ocp.nlp[0].model.nb_q
+        assert parameters[key].function is None
+
+
+def test_variational_ocp_does_not_mutate_user_parameters():
+    parameters = ParameterList(use_sx=False)
+    parameters.add("unused", lambda model, value: None, size=1)
+
+    ocp = _prepare_variational_ocp(parameters=parameters)
+
+    assert parameters.keys() == ["unused"]
+    assert ocp.nlp[0].parameters.keys() == ["unused", "qdot_start", "qdot_end"]
+    # The same user parameters can therefore be used to build another ocp
+    _prepare_variational_ocp(parameters=parameters)
+
+
+@pytest.mark.parametrize("name", ["qdot_start", "qdot_end"])
+def test_variational_ocp_rejects_user_parameters_named_as_qdot_parameters(name):
+    parameters = ParameterList(use_sx=False)
+    parameters.add(name, lambda model, value: None, size=2)
+
+    with pytest.raises(KeyError, match="reserved words of OdeSolver.VARIATIONAL.*qdot_init"):
+        _prepare_variational_ocp(parameters=parameters)

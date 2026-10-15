@@ -24,7 +24,7 @@ from ...dynamics.state_space_dynamics import (
 from ..protocols.holonomic_constraints import HolonomicConstraintsList
 from ...misc.parameters_types import Str, Int, Bool, NpArray, DM
 from ...misc.mapping import BiMappingList
-from ...misc.enums import ContactType, QuadratureRule, ControlType
+from ...misc.enums import ContactType
 from ...optimization.problem_type import SocpType
 from ...dynamics.fatigue.fatigue_dynamics import FatigueList
 
@@ -144,20 +144,10 @@ class VariationalTorqueBiorbdModel(VariationalBiorbdModel, VariationalTorqueDyna
     def __init__(
         self,
         bio_model: str | biorbd.Model,
-        discrete_approximation: QuadratureRule = QuadratureRule.TRAPEZOIDAL,
-        control_type: ControlType = ControlType.CONSTANT,
-        control_discrete_approximation: QuadratureRule = QuadratureRule.MIDPOINT,
         parameters: ParameterList = None,
         holonomic_constraints: HolonomicConstraintsList | None = None,
     ):
-        VariationalBiorbdModel.__init__(
-            self,
-            bio_model=bio_model,
-            discrete_approximation=discrete_approximation,
-            control_type=control_type,
-            control_discrete_approximation=control_discrete_approximation,
-            parameters=parameters,
-        )
+        VariationalBiorbdModel.__init__(self, bio_model=bio_model, parameters=parameters)
         if holonomic_constraints is not None:
             # TODO: @ipuch -> add partitioning one day
             self.set_holonomic_configuration(holonomic_constraints)
