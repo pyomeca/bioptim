@@ -6,7 +6,7 @@
 conda install pytest-mpl -c conda-forge
 ```
 
-2) Navigate to shard6 where the test_plots.py file is located
+2) Navigate to `tests/shard1` where the test_plots.py file is located
 
 
 3) Generate the reference images by running:
@@ -16,7 +16,7 @@ pytest --mpl-generate-path=../plot_reference_images -m mpl_image_compare
 
 4) Verify that the tests pass by running:
 ```bash
-pytest -m mpl
+pytest --mpl --mpl-baseline-path=../plot_reference_images test_plots.py
 ```
 
 
