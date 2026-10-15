@@ -1468,7 +1468,7 @@ class OptimalControlProgram:
                     "You cannot change the solver once it has been set. Please create a new OptimalControlProgram."
                 )
 
-    def set_warm_start(self, sol: Solution) -> None:
+    def set_warm_start(self, sol: Solution, transfer_multipliers: Bool | None = None) -> None:
         """
         Modify x and u initial guess based on a solution.
 
@@ -1476,6 +1476,9 @@ class OptimalControlProgram:
         ----------
         sol: Solution
             The solution to initiate the OCP from
+        transfer_multipliers: bool | None
+            Whether to transfer solver multipliers. By default they are reused only for IPOPT, whose NLP multiplier
+            layout is compatible. Acados QP multipliers require explicit opt-in and Acados-origin iterates.
         """
 
         state = sol.decision_states(to_merge=SolutionMerge.NODES)
@@ -1509,7 +1512,9 @@ class OptimalControlProgram:
 
         self.update_initial_guess(x_init=x_init_guess, u_init=u_init_guess, parameter_init=param_init_guess)
 
-        if self.ocp_solver:
+        if transfer_multipliers is None:
+            transfer_multipliers = self.ocp_solver is not None and self.ocp_solver.opts.type == SolverType.IPOPT
+        if self.ocp_solver and transfer_multipliers:
             self.ocp_solver.set_lagrange_multiplier(sol)
 
         self._is_warm_starting = True
