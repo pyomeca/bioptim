@@ -219,7 +219,6 @@ def test_pinocchio_rx_plus_rubx_sizes():
 # ----------------------------------------------------------------------------------------------------------------------
 # Strict xfail reproducers: each asserts the CORRECT behaviour and must pass once the corresponding bug is fixed.
 # ----------------------------------------------------------------------------------------------------------------------
-@pytest.mark.xfail(strict=True, reason="B2: configure_qddot_joints slices name_qddot with nb_q instead of nb_qdot")
 def test_b2_joint_acceleration_quaternion_ocp_builds():
     from bioptim import JointAccelerationBiorbdModel
 
@@ -228,7 +227,6 @@ def test_b2_joint_acceleration_quaternion_ocp_builds():
     assert len(ocp.nlp[0].states["qdot"]) == 12
 
 
-@pytest.mark.xfail(strict=True, reason="B2b: joint_acceleration_dynamics returns qdot instead of reshape_qdot(q, qdot)")
 def test_b2b_joint_acceleration_dynamics_uses_reshape_qdot():
     from bioptim import JointAccelerationBiorbdModel
 
