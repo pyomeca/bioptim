@@ -4,8 +4,9 @@ Shared, agent-maintained map of the codebase. Rules for contributing are in `age
 Last verified against the code on 2026-10-15 (bioptim 3.5.0). The code wins over this file: when you find a
 wrong fact, fix it here in the same PR.
 
-Package paths below are relative to `bioptim/` (e.g. `misc/enums.py` is `bioptim/misc/enums.py`); paths that start
-with `tests/`, `docs/`, `external/` or `.github/` are relative to the repository root.
+Package paths below are relative to `bioptim/` (e.g. `misc/enums.py` is `bioptim/misc/enums.py`, `examples/models/`
+is `bioptim/examples/models/`); paths that start with `tests/`, `docs/`, `external/` or `.github/` are relative to the
+repository root. The root `examples/` folder only holds a README.
 
 ## What bioptim is
 
@@ -24,10 +25,10 @@ a home-made SQP. Version: `misc/__version__.py`. Dependencies are conda-only (`e
 | same, variants | `stochastic_optimal_control_program.py`, `variational_optimal_control_program.py`, `receding_horizon_optimization.py`, `multi_start.py`, `problem_type.py` | `StochasticOptimalControlProgram`, `VariationalOptimalControlProgram`, `RecedingHorizonOptimization`* (base of `MovingHorizonEstimator`, `NonlinearModelPredictiveControl` and their `Cyclic*`/`MultiCyclic*` variants), `MultiStart`, `SocpType` |
 | `dynamics/` | `configure_problem.py`, `configure_variables.py`, `configure_new_variable.py`, `dynamics_evaluation.py`, `dynamics_functions.py`, `ode_solvers.py`, `ode_solver_base.py`, `rk_base.py`, `integrator.py`, `lagrange_interpolation.py`, `state_space_dynamics/`, `fatigue/` | `ConfigureProblem`, `DynamicsOptions(List)`, `AutoConfigure`, `DynamicsEvaluation`, `DynamicsFunctions`, `OdeSolver`, `OdeSolverBase`, `Integrator`*, `LagrangeInterpolation`*; one dynamics mixin per file in `state_space_dynamics/` (`StateDynamics`, `TorqueDynamics`, `MusclesDynamics`, ...) |
 | `limits/` | `objective_functions.py`, `constraints.py`, `penalty.py`, `penalty_option.py`, `penalty_controller.py`, `penalty_helpers.py`, `weight.py`, `path_conditions.py`, `phase_transition.py`, `phase_transtion_factory.py`, `multinode_penalty.py`, `multinode_constraint.py`, `multinode_objective.py` | `Objective(List)`/`ObjectiveFcn`, `Constraint(List)`/`ConstraintFcn`, `PenaltyFunctionAbstract`*, `PenaltyOption`*, `PenaltyController`, `PenaltyHelpers`, `ObjectiveWeight`, `ConstraintWeight`, `Bounds(List)`, `InitialGuess(List)`, `PhaseTransition(List)`/`PhaseTransitionFcn`, `MultinodePenalty`*, `MultinodeConstraint(List)`, `MultinodeObjective(List)` |
-| `models/` | `protocols/biomodel.py` (+ `holonomic_biomodel.py`, `stochastic_biomodel.py`, `variational_biomodel.py`), `biorbd/biorbd_model.py` (+ `multi_biorbd_model.py`, `holonomic_biorbd_model.py`, `stochastic_biorbd_model.py`, `variational_biorbd_model.py`, `external_forces.py`), `biorbd/model_dynamics.py`, `pinocchio/pinocchio_model.py`, `pinocchio/model_dynamics.py`, viewers (`biorbd/viewer_bioviz.py`, `viewer_pyorerun.py`) | `BioModel` (a `typing.Protocol`), `BiorbdModel`, `MultiBiorbdModel`, `HolonomicBiorbdModel`, `StochasticBiorbdModel`, `VariationalBiorbdModel`, `PinocchioModel`; model+dynamics classes (`TorqueBiorbdModel`, `MusclesBiorbdModel`, `TorquePinocchioModel`, ...); `ExternalForceSetTimeSeries`, `ExternalForceSetVariables` |
-| `interfaces/` | `__init__.py`, `solver_interface.py`, `interface_utils.py`, `ipopt_interface.py`, `fatrop_interface.py`, `sqp_interface.py`, `acados_interface.py`, `*_options.py`, `abstract_options.py`, `solve_ivp_interface.py` | `Solver` namespace (`IPOPT`, `FATROP`, `SQP_METHOD`, `ACADOS`), `GenericSolver` (base of the option classes), `SolverInterface`*, `IpoptInterface`*, `FatropInterface`*, `SQPInterface`*, `AcadosInterface`*; `solve_ivp_interface` is used by `Solution.integrate` |
+| `models/` | `protocols/biomodel.py` (+ `holonomic_biomodel.py`, `stochastic_biomodel.py`, `variational_biomodel.py`), `biorbd/biorbd_model.py` (+ `multi_biorbd_model.py`, `holonomic_biorbd_model.py`, `stochastic_biorbd_model.py`, `variational_biorbd_model.py`, `external_forces.py`), `biorbd/model_dynamics.py`, `pinocchio/pinocchio_model.py`, `pinocchio/model_dynamics.py`, viewers (`biorbd/viewer_bioviz.py`, `models/viewer_pyorerun.py`) | `BioModel` (a `typing.Protocol`), `BiorbdModel`, `MultiBiorbdModel`, `HolonomicBiorbdModel`, `StochasticBiorbdModel`, `VariationalBiorbdModel`, `PinocchioModel`; model+dynamics classes (`TorqueBiorbdModel`, `MusclesBiorbdModel`, `TorquePinocchioModel`, ...); `ExternalForceSetTimeSeries`, `ExternalForceSetVariables` |
+| `interfaces/` | `__init__.py`, `solver_interface.py`, `interface_utils.py`, `ipopt_interface.py`, `fatrop_interface.py`, `sqp_interface.py`, `acados_interface.py`, `*_options.py`, `abstract_options.py`, `solve_ivp_interface.py` | `Solver` namespace (`IPOPT`, `FATROP`, `SQP_METHOD`, `ACADOS`), `GenericSolver`* (base of the option classes), `SolverInterface`*, `IpoptInterface`*, `FatropInterface`*, `SQPInterface`*, `AcadosInterface`*; `solve_ivp_interface` is used by `Solution.integrate` |
 | `gui/` | `plot.py`, `graph.py`, `online_callback_*.py`, `ipopt_output_plot.py`, `check_conditioning.py` | `CustomPlot`, `PlotOcp`*, `PlottingServer` |
-| `misc/` | `enums.py`, `fcn_enum.py`, `options.py`, `mapping.py`, `parameters_types.py`, `utils.py` | Enums (`ControlType`, `Node`, `PhaseDynamics`, `InterpolationType`, `Shooting`, `SolutionIntegrator`, `QuadratureRule`, `DefectType`, ...); `FcnEnum` (base of the `*Fcn` enums); `OptionList`*; `BiMapping(List)`; type aliases (`CX`, `Int`, ...) |
+| `misc/` | `enums.py`, `fcn_enum.py`, `options.py`, `mapping.py`, `parameters_types.py`, `utils.py` | Enums (`ControlType`, `Node`, `PhaseDynamics`, `InterpolationType`, `Shooting`, `SolutionIntegrator`, `QuadratureRule`, `DefectType`, ...); `FcnEnum`* (base of the `*Fcn` enums); `OptionList`*; `BiMapping(List)`; type aliases (`CX`, `Int`, ...) |
 | `examples/` | `__main__.py` (Qt GUI launcher), `getting_started/`, `toy_examples/` (16 topics: `torque_driven_ocp/`, `muscle_driven_ocp/`, `stochastic_optimal_control/`, `acados/`, `moving_horizon_estimation/`, `custom_model/`, ...), `biomechanics/gait_optimal_estimation/`, `models/` | Runnable scripts, most with `prepare_ocp(...)` + `main()`. All `.bioMod` files and meshes live in `examples/models/` |
 
 Public API is re-exported from `bioptim/__init__.py`; new public classes must be added there.
@@ -56,10 +57,10 @@ Public API is re-exported from `bioptim/__init__.py`; new public classes must be
 - `DynamicsOptions(ode_solver=OdeSolver.RK4(), phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
   expand_dynamics=True, expand_continuity=False, skip_continuity=False, state_continuity_weight=ConstraintWeight(),
   numerical_data_timeseries=None)`. `SHARED_DURING_THE_PHASE` builds one integrator reused at every node;
-  `ONE_PER_NODE` builds one per node (required by stochastic OCPs).
+  `ONE_PER_NODE` builds one per node (required by stochastic OCPs, except `SocpType.COLLOCATION`).
 - `Node` (`misc/enums.py`): `START`, `MID`, `INTERMEDIATES`, `PENULTIMATE`, `END`, `ALL`, `ALL_SHOOTING`, `TRANSITION`,
-  `MULTINODES`, `DEFAULT`, or integer node indices. `DEFAULT` becomes `ALL_SHOOTING` for Lagrange terms and `END`
-  for Mayer terms.
+  `MULTINODES`, `DEFAULT`, or integer node indices. For objectives only, `DEFAULT` becomes `ALL_SHOOTING` (Lagrange)
+  or `END` (Mayer); constraints must be given an explicit node.
 - After construction: `ocp.update_objectives`, `update_constraints`, `update_parameter_objectives`,
   `update_parameter_constraints`, `update_objectives_target`, `update_bounds`, `update_initial_guess`.
 
@@ -79,8 +80,9 @@ Public API is re-exported from `bioptim/__init__.py`; new public classes must be
     `Solution.from_dict` only fills cost and constraint values for Ipopt-like solvers (Ipopt, Fatrop).
 - Decision vector: `OptimizationVectorHelper.vector/bounds_vectors/init_vector`. Content is time (dt), states X,
   controls U, algebraic states A and parameters; the order is set by `VectorLayout` / `OrderingStrategy`
-  (`optimization/vector_layout.py`; `VARIABLE_MAJOR` is the historical default, `TIME_MAJOR` the alternative; a
-  custom generator callable is also accepted). Never index the vector by hand; use the helpers and
+  (`optimization/vector_layout.py`; `VARIABLE_MAJOR` is the historical default, `TIME_MAJOR` the alternative;
+  `VectorLayout` also accepts a custom generator callable, although `OptimalControlProgram` only types
+  `OrderingStrategy`). Never index the vector by hand; use the helpers and
   `Solution`/`SolutionMerge`.
 - Dynamics and variables of a phase: `ConfigureProblem.initialize` -> `AutoConfigure` (`configure_variables.py`), fed
   by the `*_configuration_functions` of the model's dynamics mixin (see above).
@@ -110,15 +112,16 @@ Public API is re-exported from `bioptim/__init__.py`; new public classes must be
 - Continuity/defects: `OptimalControlProgram._declare_continuity` adds `ConstraintFcn.STATE_CONTINUITY`
   (or `ObjectiveFcn.Mayer.STATE_CONTINUITY` when `state_continuity_weight` is not a `ConstraintWeight`) on
   `Node.ALL_SHOOTING` per phase (skipped with `skip_continuity=True`), plus phase-transition continuity between phases
-  (except `DISCONTINUOUS` transitions). With collocation and `duplicate_starting_point`, it also adds
-  `FIRST_COLLOCATION_HELPER_EQUALS_STATE`. Collocation defects come from `integrator.COLLOCATION` and are concatenated
+  (except `DISCONTINUOUS` transitions). With collocation and `duplicate_starting_point`, the constraint branch also
+  adds `FIRST_COLLOCATION_HELPER_EQUALS_STATE` (not when continuity is an objective). Collocation defects come from `integrator.COLLOCATION` and are concatenated
   in the `state_continuity` penalty (`limits/penalty.py`).
 - Per-node variables: `NonLinearProgram.declare_shooting_points` (states, controls, algebraic states, one symbol set
   per node; `n_states_decision_steps` gives the number of columns: 1 for RK/IRK, `polynomial_degree + 1` for
   collocation, +1 with `duplicate_starting_point`, and 1 at the last node).
-- Control interpolation: `ControlType` (`misc/enums.py`): `NONE`, `CONSTANT` (no value at the last node),
-  `CONSTANT_WITH_LAST_NODE`, `LINEAR_CONTINUOUS` (2 columns per interval); the number of control columns per node
-  depends on it.
+- Control interpolation: `ControlType` (`misc/enums.py`): `NONE`, `CONSTANT`, `CONSTANT_WITH_LAST_NODE`,
+  `LINEAR_CONTINUOUS`. Decision controls are always one column per node; what changes is the number of control
+  nodes (`n_shooting` for `CONSTANT`, `n_shooting + 1` for the two others) and how many points the integrator
+  interpolates per interval (`ControlType.nb_interpolation_points`: 2 for `LINEAR_CONTINUOUS`).
 - Initial guesses/targets: `InterpolationType` (`CONSTANT`, `LINEAR`, `EACH_FRAME`, `ALL_POINTS` (every collocation
   point; same as `EACH_FRAME` in shooting), `SPLINE`, `CUSTOM`, ...).
 
@@ -136,7 +139,7 @@ Public API is re-exported from `bioptim/__init__.py`; new public classes must be
 | Stochastic OCP | `optimization/stochastic_optimal_control_program.py`, `optimization/problem_type.py` | `tests/shard5/test_global_stochastic_collocation.py`, `tests/shard6/test_global_stochastic_except_collocation.py` |
 | Variational OCP | `optimization/variational_optimal_control_program.py`, `models/biorbd/variational_biorbd_model.py` | `tests/shard4/test_variational_biorbd_model.py`, `tests/shard4/test_variational_optimal_control_program.py` |
 | Receding horizon (MHE/NMPC) | `optimization/receding_horizon_optimization.py` | `tests/shard1/test_mhe.py`, `tests/shard1/test_global_mhe.py`, `tests/shard1/test_global_nmpc_final.py` |
-| New or changed example | the example and its `prepare_ocp` | `tests/shard4/test_prepare_all_examples.py` + the global test that solves it |
+| New or changed example | the example and its `prepare_ocp` | `grep -rn "<module name>" tests` to find the tests that import it; `tests/shard4/test_prepare_all_examples.py` if it is listed there |
 
 ## Scientific invariants
 
@@ -157,12 +160,15 @@ Public API is re-exported from `bioptim/__init__.py`; new public classes must be
   `simulate`, `mx_to_array`, `bioptim_folder`, `load_module`, ...) and `tests/test_utils_ocp.py` (a shared
   `prepare_ocp`). No `conftest.py`, no pytest config, no custom markers. Run from the repository root
   (tests import `tests.utils`).
-- Typical pattern: load an example with `TestUtils.load_module`, call its `prepare_ocp`, solve with
-  `Solver.IPOPT()`, then `TestUtils.assert_objective_value(sol, expected)` and `npt.assert_almost_equal` on
+- Typical pattern: import the example inside the test (`from bioptim.examples.getting_started import basic_ocp as
+  ocp_module`), call its `prepare_ocp`, solve with `Solver.IPOPT()`, then `TestUtils.assert_objective_value(sol, expected)` and `npt.assert_almost_equal` on
   `sol.decision_states()[...]`. Tests are heavily parametrized over `phase_dynamics`, `ode_solver`, `use_sx`; invalid
   combinations are pruned with `pytest.skip`.
-- `tests/shard4/test_prepare_all_examples.py` builds the `prepare_ocp` of every example (no solve).
-  `tests/shard1/test__run_examples.py` only tests the GUI launcher and returns immediately on Linux.
+- `tests/shard4/test_prepare_all_examples.py` builds the `prepare_ocp` of many examples (no solve), but not all:
+  some tests are `pass` stubs and several folders (`holonomic_constraints/`, `fatigue/`, `stochastic_optimal_control/`,
+  `sqp_method/`, `biomechanics/`, ...) are not covered there. Check that your example is called by some test.
+- `tests/shard1/test__run_examples.py` only tests the GUI launcher (example list, search); `test_run_examples` itself
+  returns immediately on Linux.
 - Plot reference images: `tests/plot_reference_images/`, used by `tests/shard1/test_plots.py`
   (`@pytest.mark.mpl_image_compare`). CI does not pass `--mpl`, so images are not compared there; see
   `docs/generating_plot_reference_images.md`.
@@ -179,7 +185,8 @@ Public API is re-exported from `bioptim/__init__.py`; new public classes must be
 - Type aliases (`CX`, `Int`, `Str`, `Bool`, `NpArray`, ...) come from `misc/parameters_types.py`; use them in
   annotations (most of the package already does).
 - Variable names that can be plural are plural (`docs/contributing.md`).
-- PR titles: `[WIP]` while in progress, `[RTR]` ready to review, `[RTM]` ready to merge (`docs/contributing.md`).
+- PR titles: `[WIP]` while in progress, `[RTR]` ready to review, `[RTM]` ready to merge (`docs/contributing.md`;
+  for agent PRs, `[RTM]` is set by a reviewer, see `agent-context/RULES.md`).
 - `external/` (`acados`, `biomechanics_models`) holds git submodules; do not edit it.
 
 ## Things worth knowing
@@ -193,4 +200,8 @@ Public API is re-exported from `bioptim/__init__.py`; new public classes must be
 - `OrderingStrategy` values are functions, so it has no real enum members (`list(OrderingStrategy)` is empty);
   `VectorLayout` handles them as callables.
 - `examples/getting_started/custom_dynamics.py` is a stub; the real example is `examples/toy_examples/custom_model/`.
-- Python requirement lives in `pyproject.toml` (`requires-python >= 3.10`); there is no `setup.py`.
+- Python requirement lives in `pyproject.toml` (`requires-python >= 3.10`); there is no `setup.py`. In practice
+  (2026-10-15), `import bioptim` fails with `NameError: GeneralizedCoordinates` before Python 3.14 (checked on
+  3.11 to 3.13) and works on 3.14: `models/protocols/holonomic_biomodel.py` uses a `TYPE_CHECKING`-only import in an
+  annotation evaluated at class creation. Use a Python 3.14 environment until this is fixed, and remove this note
+  once it is.

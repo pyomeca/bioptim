@@ -21,12 +21,12 @@ Read this file first (the rules), then `OVERVIEW.md` (the map of the codebase). 
     - a test that compares numerical values;
     - an export in `bioptim/__init__.py` if the class is public, and an update of the API section of `README.md` if the public API changes;
     - NumPy-style docstrings on every function, class and module; type aliases from `bioptim/misc/parameters_types.py` in annotations; plural names for variables that can be plural.
-  - Scratch work goes in `bioptim/examples/sandbox/` (git-ignored). Never commit binary files.
+  - Scratch work goes in `bioptim/examples/sandbox/` (git-ignored). Do not commit binary files (results, figures, pickles); the only exceptions are assets the code or tests need, such as test reference data (`tests/plot_reference_images/`, `.npy` files in `tests/shard6/`) and model meshes, and only when explicitly required.
   - Do not edit `external/` (git submodules) or generated code (`c_generated_code/`).
 
 - Validation
   - Format before each commit: `black . -l120 --exclude "external/*"`. CI checks this on every PR with an unpinned black; `docs/contributing.md` names black 26.5.
-  - Run the closest test first, from the repository root: `pytest tests/shardN/test_<topic>.py -k <name> -x`. The suite has 75 test files with heavy parametrization; run the relevant file or shard, not all of `tests/` by default.
+  - Run the closest test first, from the repository root: `pytest tests/shardN/test_<topic>.py -k <name> -x`. The suite has 75 test files with heavy parametrization; run the relevant file or shard, not all of `tests/` by default. One test name can expand to hundreds of cases (`-k test_pendulum` in shard2: 512 cases, about 5 minutes); list them with `--collect-only -q` and narrow `-k` with the parametrization id (e.g. `-k "test_pendulum and RK4 and SHARED"`).
   - For numerical or solver changes, compare more than one scalar: cost, solver status, constraint violation and problem dimensions. Compare against `pyomeca/bioptim` master in the same environment, and record the package versions (`conda list`). Call a failure a pre-existing baseline issue only after reproducing it on master.
 
 - Commits
@@ -44,7 +44,7 @@ Read this file first (the rules), then `OVERVIEW.md` (the map of the codebase). 
 - Pull requests (PR)
   - Open PRs against `master` of `pyomeca/bioptim`.
   - Open new PRs as GitHub draft PRs (`gh pr create --draft`). This should be the default state for new PRs unless they are fully ready for review. The test workflows skip draft PRs, which preserves CI time and tokens; only the black check runs. When the PR is ready, mark it with `gh pr ready`, which starts the tests. A `draft` *label* has no effect on CI.
-  - Prefix the PR title with `[WIP]` while in progress, `[RTR]` when ready to review and `[RTM]` when ready to merge (`docs/contributing.md`).
+  - Prefix the PR title with `[WIP]` while in progress, `[RTR]` when ready to review, but `[RTM]` when ready to merge is done by a reviewer(`docs/contributing.md`).
   - Fill the checklist of `docs/pull_request_template.md`. For a change that breaks the public API, write the description from `docs/breaking_change_template.md` (before/after migration example).
   - If an active issue exists related to the pull request, reference the issue in the PR description:
     - `closes #<issue_number>`: Indicates that the pull request resolves the specified issue.
