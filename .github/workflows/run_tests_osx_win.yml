@@ -2,7 +2,7 @@ name: Run the tests
 
 on:
   pull_request:
-    types: [ready_for_review]
+    types: [review_requested]
 
 env:
   PREFIX_MACOS: /Users/runner/miniconda3/envs/bioptim
