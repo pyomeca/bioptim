@@ -1,0 +1,1 @@
+Refer to `llm/AGENT.md` for guidance on AI contributions.
