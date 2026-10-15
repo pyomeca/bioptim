@@ -1,6 +1,8 @@
 name: Run the tests
 
-on: [pull_request]
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
 
 env:
   PREFIX_MACOS: /Users/runner/miniconda3/envs/bioptim
@@ -8,6 +10,7 @@ env:
 
 jobs:
   build:
+    if: github.event.pull_request.draft == false
     strategy:
       fail-fast: false
       matrix:
