@@ -214,3 +214,228 @@ def test_pinocchio_rx_plus_rubx_sizes():
     model = PinocchioModel(_build_pin_model(("rx", pin.JointModelRX()), ("rubx", pin.JointModelRUBX())))
     assert model.nb_q == 3
     assert model.nb_qdot == 2
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# Strict xfail reproducers: each asserts the CORRECT behaviour and must pass once the corresponding bug is fixed.
+# ----------------------------------------------------------------------------------------------------------------------
+@pytest.mark.xfail(strict=True, reason="B2: configure_qddot_joints slices name_qddot with nb_q instead of nb_qdot")
+def test_b2_joint_acceleration_quaternion_ocp_builds():
+    from bioptim import JointAccelerationBiorbdModel
+
+    ocp = _quaternion_ocp(JointAccelerationBiorbdModel)
+    assert len(ocp.nlp[0].states["q"]) == 14
+    assert len(ocp.nlp[0].states["qdot"]) == 12
+
+
+@pytest.mark.xfail(strict=True, reason="B2b: joint_acceleration_dynamics returns qdot instead of reshape_qdot(q, qdot)")
+def test_b2b_joint_acceleration_dynamics_uses_reshape_qdot():
+    from bioptim import JointAccelerationBiorbdModel
+
+    ocp = _quaternion_ocp(JointAccelerationBiorbdModel)
+    nlp = ocp.nlp[0]
+    n_q, n_qdot = nlp.model.nb_q, nlp.model.nb_qdot
+
+    rng = np.random.default_rng(0)
+    q = rng.uniform(-0.5, 0.5, n_q)
+    for idx in ([6, 7, 8, 12], [9, 10, 11, 13]):
+        q[idx] /= np.linalg.norm(q[idx])
+    qdot = rng.uniform(0.5, 1.5, n_qdot)
+    x = np.concatenate((q, qdot))
+    u = np.zeros(nlp.controls.shape)
+
+    xdot = np.array(nlp.dynamics_func(0.0, x, u, [], [], [])).reshape(-1)
+    expected = np.array(nlp.model.reshape_qdot()(q, qdot, [])).reshape(-1)
+    assert expected.shape == (n_q,)
+    npt.assert_allclose(xdot[:n_q], expected, atol=1e-8)
+
+
+@pytest.mark.xfail(
+    strict=True, reason="B3: phase_mapping indices into the cross-phase union are used on per-phase names"
+)
+def test_b3_two_phases_with_different_models():
+    folder = TestUtils.bioptim_folder() + "/examples/models/"
+    models = [TorqueBiorbdModel(folder + "cube.bioMod"), TorqueBiorbdModel(folder + "double_pendulum.bioMod")]
+    ocp = OptimalControlProgram(models, [5, 5], [1.0, 1.0])
+
+    for nlp in ocp.nlp:
+        assert _legend_names(nlp, "qdot_states", "qdot") == list(nlp.model.name_dofs)
+        assert len(nlp.states["qdot"]) == len(nlp.model.name_dofs)
+
+
+def _pin_ocp(pin_model, n_shooting=5, **kwargs):
+    from bioptim.models.pinocchio import TorquePinocchioModel
+
+    return OptimalControlProgram(TorquePinocchioModel(pin_model), n_shooting, 1.0, **kwargs)
+
+
+@pytest.mark.xfail(strict=True, reason="B4: Pinocchio OCP declares q with nb_qdot elements instead of nb_q")
+def test_b4_pinocchio_freeflyer_ocp_sizes():
+    nlp = _pin_ocp(_freeflyer_rx_model()).nlp[0]
+    assert len(nlp.states["q"]) == 8
+    assert len(nlp.states["qdot"]) == 7
+
+
+@pytest.mark.xfail(
+    strict=True, reason="B4: Pinocchio free-flyer quaternion is not kept on the unit sphere along the OCP"
+)
+def test_b4_pinocchio_freeflyer_quaternion_stays_unit_after_solve():
+    from bioptim import BoundsList, InitialGuessList, InterpolationType, Solver, SolutionMerge
+
+    pin = pytest.importorskip("pinocchio")
+    pin_model = _freeflyer_rx_model()
+    q0 = pin.neutral(pin_model)
+    n_q, n_qdot = pin_model.nq, pin_model.nv
+
+    x_bounds = BoundsList()
+    q_min, q_max = np.full((n_q, 3), -5.0), np.full((n_q, 3), 5.0)
+    q_min[:, 0] = q_max[:, 0] = q0  # start at the neutral configuration
+    x_bounds.add(
+        "q", min_bound=q_min, max_bound=q_max, interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT
+    )
+    qdot_min, qdot_max = np.full((n_qdot, 3), -10.0), np.full((n_qdot, 3), 10.0)
+    qdot_min[:, 0] = qdot_max[:, 0] = 0.0
+    x_bounds.add(
+        "qdot",
+        min_bound=qdot_min,
+        max_bound=qdot_max,
+        interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
+    )
+    x_init = InitialGuessList()
+    x_init.add("q", q0, interpolation=InterpolationType.CONSTANT)
+    x_init.add("qdot", np.ones(n_qdot), interpolation=InterpolationType.CONSTANT)
+
+    ocp = _pin_ocp(pin_model, x_bounds=x_bounds, x_init=x_init)
+    solver = Solver.IPOPT()
+    solver.set_maximum_iterations(2)
+    sol = ocp.solve(solver)
+
+    q = sol.decision_states(to_merge=SolutionMerge.NODES)["q"]
+    assert q.shape[0] == n_q
+    for node in range(q.shape[1]):
+        npt.assert_allclose(np.linalg.norm(q[3:7, node]), 1.0, atol=1e-6)
+
+
+@pytest.mark.xfail(
+    strict=True, reason="B4: Pinocchio reshape_qdot returns qdot (nv entries) instead of the nq derivative of q"
+)
+def test_b4_pinocchio_reshape_qdot_matches_finite_difference():
+    from bioptim import PinocchioModel
+
+    pin = pytest.importorskip("pinocchio")
+    pin_model = _freeflyer_rx_model()
+    model = PinocchioModel(pin_model)
+
+    rng = np.random.default_rng(1)
+    q = pin.integrate(pin_model, pin.neutral(pin_model), rng.uniform(-0.5, 0.5, pin_model.nv))
+    v = rng.uniform(-1.0, 1.0, pin_model.nv)
+    eps = 1e-7
+
+    q_dot = np.array(model.reshape_qdot()(_col(q), _col(v), [])).reshape(-1)
+    assert q_dot.shape == (pin_model.nq,)
+    expected = (pin.integrate(pin_model, q, eps * v) - q) / eps
+    npt.assert_allclose(q_dot, expected, atol=1e-5)
+
+
+@pytest.mark.xfail(strict=True, reason="B5: Pinocchio nb_quaternions counts nq - nv, wrong for RUBX and Planar joints")
+@pytest.mark.parametrize("joint_name", ["RUBX", "Planar"])
+def test_b5_pinocchio_nb_quaternions_is_zero_without_quaternion(joint_name):
+    from bioptim import PinocchioModel
+
+    pin = pytest.importorskip("pinocchio")
+    joint = pin.JointModelRUBX() if joint_name == "RUBX" else pin.JointModelPlanar()
+    model = PinocchioModel(_build_pin_model(("joint", joint)))
+    assert model.nb_q > model.nb_qdot
+    assert model.nb_quaternions == 0
+
+
+@pytest.mark.xfail(
+    strict=True, reason="B5: Pinocchio normalizes the last 4 q of any joint with nq = nv + 1 (RUBX gives NaN)"
+)
+def test_b5_pinocchio_normalize_rx_plus_rubx():
+    from bioptim import PinocchioModel
+
+    pin = pytest.importorskip("pinocchio")
+    model = PinocchioModel(_build_pin_model(("rx", pin.JointModelRX()), ("rubx", pin.JointModelRUBX())))
+    q_norm = np.array(model.normalize_state_quaternions()(_col([3.0, 4.0, 0.0]))).reshape(-1)
+    npt.assert_allclose(q_norm, [3.0, 1.0, 0.0], atol=1e-12)
+
+
+def _quaternion_model_with_actuators(tmp_path) -> str:
+    """The quaternion bioMod with a constant actuator (both directions) on every DoF."""
+    text = open(TestUtils.bioptim_folder() + QUAT_MODEL).read()
+    dofs = {
+        "Pelvis": ["TransX", "TransY", "TransZ", "RotX", "RotY", "RotZ"],
+        "RightArm": ["QuatX", "QuatY", "QuatZ"],
+        "LeftArm": ["QuatX", "QuatY", "QuatZ"],
+    }
+    for segment, names in dofs.items():
+        for name in names:
+            for direction in ("positive", "negative"):
+                text += (
+                    f"\nactuator {segment}\n type Constant\n dof {name}\n direction {direction}\n Tmax 10\n"
+                    "endactuator\n"
+                )
+    path = tmp_path / "quaternion_with_actuators.bioMod"
+    path.write_text(text)
+    return str(path)
+
+
+@pytest.mark.xfail(
+    strict=True, reason="B6: residual_tau of a quaternion model is sized/named with 6 elements instead of 12"
+)
+def test_b6_residual_tau_has_nb_qdot_elements(tmp_path):
+    from bioptim import TorqueActivationBiorbdModel
+
+    model = TorqueActivationBiorbdModel(_quaternion_model_with_actuators(tmp_path), with_residual_torque=True)
+    nlp = OptimalControlProgram(model, 5, 1.0).nlp[0]
+    assert len(nlp.controls["residual_tau"]) == 12
+
+
+@pytest.mark.xfail(strict=True, reason="B7: plot mapping of qdot/tau maps nb_q entries instead of nb_qdot")
+def test_b7_plot_phase_mappings_have_nb_qdot_entries():
+    nlp = _quaternion_ocp().nlp[0]
+    assert len(nlp.plot["qdot_states"].phase_mappings.to_first.map_idx) == 12
+    assert len(nlp.plot["tau_controls"].phase_mappings.to_first.map_idx) == 12
+
+
+@pytest.mark.xfail(strict=True, reason="B10: out of scope of #1037, follow-up issue")
+def test_b10_quaternion_root_with_free_floating_base(tmp_path):
+    from bioptim import TorqueFreeFloatingBaseBiorbdModel
+
+    path = tmp_path / "quaternion_root.bioMod"
+    path.write_text("""version 3
+root_actuated 0
+external_forces 0
+gravity 0 0 -9.81
+
+segment Root
+    translations xyz
+    rotations q
+    mass 10
+    inertia
+        1 0 0
+        0 1 0
+        0 0 1
+    com 0 0 0
+    mesh 0 0 -0.5
+    mesh 0 0 0.5
+endsegment
+
+segment Child
+    parent Root
+    RT 0 0 0 xyz 0 0 0.5
+    rotations x
+    mass 1
+    inertia
+        0.1 0 0
+        0 0.1 0
+        0 0 0.01
+    com 0 0 -0.2
+    mesh 0 0 0
+    mesh 0 0 -0.4
+endsegment
+""")
+    model = TorqueFreeFloatingBaseBiorbdModel(str(path))
+    nlp = OptimalControlProgram(model, 5, 1.0).nlp[0]
+    assert len(nlp.states["q_roots"]) == 7
