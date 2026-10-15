@@ -3,11 +3,12 @@ from abc import ABC, abstractmethod
 
 from ..dynamics_evaluation import DynamicsEvaluation
 from ...misc.enums import ContactType
-from ...misc.parameters_types import Bool, CXOptional
+from ...misc.parameters_types import CXOptional
+from ...models.protocols.configuration_space import EuclideanConfigurationSpace
 from ..configure_variables import States, Controls, AlgebraicStates
 
 
-class StateDynamics(ABC):
+class StateDynamics(EuclideanConfigurationSpace, ABC):
     def __init__(self, *args, fatigue=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fatigue = fatigue
