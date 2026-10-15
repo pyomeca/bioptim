@@ -170,6 +170,8 @@ jobs:
 
   merge-coverage:
     needs: build
+    # The PR-only build can succeed even when its prepare-cache dependency is skipped.
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
