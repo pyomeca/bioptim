@@ -92,10 +92,14 @@ class IPOPT(GenericSolver):
     _constr_viol_tol: Float = 0.0001
     _compl_inf_tol: Float = 0.0001
     _acceptable_tol: Float = 1e-6
+    _acceptable_iter: Int = 15
+    _acceptable_obj_change_tol: Float = 1e20
     _acceptable_dual_inf_tol: Float = 1e10
     _acceptable_constr_viol_tol: Float = 1e-2
     _acceptable_compl_inf_tol: Float = 1e-2
     _max_iter: Int = 1000
+    _max_wall_time: Float = 1e20
+    _max_cpu_time: Float = 1e20
     _hessian_approximation: Str = "exact"  # "exact", "limited-memory"
     _nlp_scaling_method: Str = "gradient-based"  # "none"
     _limited_memory_max_history: Int = 50
@@ -112,6 +116,12 @@ class IPOPT(GenericSolver):
     _print_level: Int = 5
     _c_compile: Bool = False
     _check_derivatives_for_naninf: Str = "no"  # "yes"
+    _derivative_test: Str = "none"
+    _derivative_test_first_index: Int = -2
+    _derivative_test_perturbation: Float = 1e-8
+    _derivative_test_tol: Float = 1e-4
+    _derivative_test_print_all: Str = "no"
+    _point_perturbation_radius: Float = 10.0
 
     @property
     def tol(self) -> Float:
@@ -134,6 +144,14 @@ class IPOPT(GenericSolver):
         return self._acceptable_tol
 
     @property
+    def acceptable_iter(self) -> Int:
+        return self._acceptable_iter
+
+    @property
+    def acceptable_obj_change_tol(self) -> Float:
+        return self._acceptable_obj_change_tol
+
+    @property
     def acceptable_dual_inf_tol(self) -> Float:
         return self._acceptable_dual_inf_tol
 
@@ -148,6 +166,14 @@ class IPOPT(GenericSolver):
     @property
     def max_iter(self) -> Int:
         return self._max_iter
+
+    @property
+    def max_wall_time(self) -> Float:
+        return self._max_wall_time
+
+    @property
+    def max_cpu_time(self) -> Float:
+        return self._max_cpu_time
 
     @property
     def hessian_approximation(self) -> Str:
@@ -210,8 +236,32 @@ class IPOPT(GenericSolver):
         return self._c_compile
 
     @property
-    def check_derivatives_for_naninf(self) -> Bool:
+    def check_derivatives_for_naninf(self) -> Str:
         return self._check_derivatives_for_naninf
+
+    @property
+    def derivative_test(self) -> Str:
+        return self._derivative_test
+
+    @property
+    def derivative_test_first_index(self) -> Int:
+        return self._derivative_test_first_index
+
+    @property
+    def derivative_test_perturbation(self) -> Float:
+        return self._derivative_test_perturbation
+
+    @property
+    def derivative_test_tol(self) -> Float:
+        return self._derivative_test_tol
+
+    @property
+    def derivative_test_print_all(self) -> Str:
+        return self._derivative_test_print_all
+
+    @property
+    def point_perturbation_radius(self) -> Float:
+        return self._point_perturbation_radius
 
     def set_tol(self, val: Float) -> None:
         self._tol = val
@@ -228,6 +278,12 @@ class IPOPT(GenericSolver):
     def set_acceptable_tol(self, val: Float) -> None:
         self._acceptable_tol = val
 
+    def set_acceptable_iter(self, num: Int) -> None:
+        self._acceptable_iter = num
+
+    def set_acceptable_obj_change_tol(self, val: Float) -> None:
+        self._acceptable_obj_change_tol = val
+
     def set_acceptable_dual_inf_tol(self, val: Float) -> None:
         self._acceptable_dual_inf_tol = val
 
@@ -239,6 +295,12 @@ class IPOPT(GenericSolver):
 
     def set_maximum_iterations(self, num: Int) -> None:
         self._max_iter = num
+
+    def set_maximum_wall_time(self, val: Float) -> None:
+        self._max_wall_time = val
+
+    def set_maximum_cpu_time(self, val: Float) -> None:
+        self._max_cpu_time = val
 
     def set_hessian_approximation(self, val: Str) -> None:
         self._hessian_approximation = val
@@ -288,6 +350,24 @@ class IPOPT(GenericSolver):
     def set_check_derivatives_for_naninf(self, val: Bool) -> None:
         string_val = "yes" if val else "no"
         self._check_derivatives_for_naninf = string_val
+
+    def set_derivative_test(self, val: Str) -> None:
+        self._derivative_test = val
+
+    def set_derivative_test_first_index(self, index: Int) -> None:
+        self._derivative_test_first_index = index
+
+    def set_derivative_test_perturbation(self, val: Float) -> None:
+        self._derivative_test_perturbation = val
+
+    def set_derivative_test_tol(self, val: Float) -> None:
+        self._derivative_test_tol = val
+
+    def set_derivative_test_print_all(self, val: Bool) -> None:
+        self._derivative_test_print_all = "yes" if val else "no"
+
+    def set_point_perturbation_radius(self, val: Float) -> None:
+        self._point_perturbation_radius = val
 
     def set_convergence_tolerance(self, val: Float) -> None:
         self._tol = val

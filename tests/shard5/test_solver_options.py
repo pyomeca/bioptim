@@ -32,10 +32,14 @@ def test_ipopt_solver_options():
     assert solver.constr_viol_tol == 0.0001
     assert solver.compl_inf_tol == 0.0001
     assert solver.acceptable_tol == 1e-6
+    assert solver.acceptable_iter == 15
+    assert solver.acceptable_obj_change_tol == 1e20
     assert solver.acceptable_dual_inf_tol == 1e10
     assert solver.acceptable_constr_viol_tol == 1e-2
     assert solver.acceptable_compl_inf_tol == 1e-2
     assert solver.max_iter == 1000
+    assert solver.max_wall_time == 1e20
+    assert solver.max_cpu_time == 1e20
     assert solver.hessian_approximation == "exact"
     assert solver.limited_memory_max_history == 50
     assert solver.linear_solver == "mumps"
@@ -52,6 +56,12 @@ def test_ipopt_solver_options():
     assert solver.print_level == 5
     assert solver.c_compile is False
     assert solver.check_derivatives_for_naninf == "no"
+    assert solver.derivative_test == "none"
+    assert solver.derivative_test_first_index == -2
+    assert solver.derivative_test_perturbation == 1e-8
+    assert solver.derivative_test_tol == 1e-4
+    assert solver.derivative_test_print_all == "no"
+    assert solver.point_perturbation_radius == 10.0
 
     solver.set_linear_solver("ma57")
     assert solver.linear_solver == "ma57"
@@ -65,6 +75,10 @@ def test_ipopt_solver_options():
     assert solver.compl_inf_tol == 5
     solver.set_acceptable_tol(6)
     assert solver.acceptable_tol == 6
+    solver.set_acceptable_iter(7)
+    assert solver.acceptable_iter == 7
+    solver.set_acceptable_obj_change_tol(8)
+    assert solver.acceptable_obj_change_tol == 8
     solver.set_acceptable_dual_inf_tol(7)
     assert solver.acceptable_dual_inf_tol == 7
     solver.set_acceptable_constr_viol_tol(8)
@@ -73,6 +87,10 @@ def test_ipopt_solver_options():
     assert solver.acceptable_compl_inf_tol == 9
     solver.set_maximum_iterations(10)
     assert solver.max_iter == 10
+    solver.set_maximum_wall_time(11)
+    assert solver.max_wall_time == 11
+    solver.set_maximum_cpu_time(12)
+    assert solver.max_cpu_time == 12
     solver.set_hessian_approximation("hello bioptim")
     assert solver.hessian_approximation == "hello bioptim"
     solver.set_nlp_scaling_method("how are you?")
@@ -103,6 +121,18 @@ def test_ipopt_solver_options():
     assert solver.c_compile is True
     solver.set_check_derivatives_for_naninf(True)
     assert solver.check_derivatives_for_naninf == "yes"
+    solver.set_derivative_test("first-order")
+    assert solver.derivative_test == "first-order"
+    solver.set_derivative_test_first_index(3)
+    assert solver.derivative_test_first_index == 3
+    solver.set_derivative_test_perturbation(1e-7)
+    assert solver.derivative_test_perturbation == 1e-7
+    solver.set_derivative_test_tol(1e-3)
+    assert solver.derivative_test_tol == 1e-3
+    solver.set_derivative_test_print_all(True)
+    assert solver.derivative_test_print_all == "yes"
+    solver.set_point_perturbation_radius(2.5)
+    assert solver.point_perturbation_radius == 2.5
 
     solver.set_convergence_tolerance(21)
     assert solver.tol == 21
