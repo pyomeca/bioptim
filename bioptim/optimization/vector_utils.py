@@ -109,7 +109,7 @@ def _compute_value_for_node(
     real_keys = [key for key in defined_values.keys() if key != "None"]
     for key in real_keys:
 
-        if defined_values[key].type == InterpolationType.ALL_POINTS:
+        if defined_values[key].type in (InterpolationType.ALL_POINTS, InterpolationType.SPLINE):
             point = node * repeat + sub_node
         else:
             point = _get_interpolation_point(node, sub_node)
