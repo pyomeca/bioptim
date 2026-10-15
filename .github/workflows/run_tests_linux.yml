@@ -1,16 +1,90 @@
 name: Run the Linux tests
 
 on:
+  push:
+    branches: [master]
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-    
+
 concurrency:
-  group: linux-pr-${{ github.event.pull_request.number }}
+  group: linux-pr-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
+  prepare-cache:
+    if: github.event_name == 'push'
+    name: Prepare Linux Conda cache
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash -l {0}
+    env:
+      CONDA_LOCKFILE: .github/conda-lock/conda-linux-64.lock
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Verify Conda lockfiles
+        run: python .github/conda-lock/check_lockfiles.py
+
+      - name: Setup Conda
+        uses: conda-incubator/setup-miniconda@v4
+        with:
+          miniforge-version: latest
+          activate-environment: bioptim
+          conda-remove-defaults: true
+          channel-priority: strict
+
+      - name: Get cache refresh period
+        id: cache-period
+        run: echo "week=$(date -u '+%G-W%V')" >> "$GITHUB_OUTPUT"
+
+      - name: Check for current Conda cache
+        id: cache-lookup
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ env.CONDA }}/envs/bioptim
+          key: conda-env-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(env.CONDA_LOCKFILE) }}-${{ steps.cache-period.outputs.week }}
+          lookup-only: true
+
+      - name: Restore previous Conda cache
+        if: steps.cache-lookup.outputs.cache-hit != 'true'
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ env.CONDA }}/envs/bioptim
+          key: conda-env-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(env.CONDA_LOCKFILE) }}-${{ steps.cache-period.outputs.week }}
+          restore-keys: |
+            conda-env-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(env.CONDA_LOCKFILE) }}-
+
+      - name: Install locked Conda environment
+        if: steps.cache-lookup.outputs.cache-hit != 'true'
+        run: conda install --name bioptim --file "$CONDA_LOCKFILE" --yes
+
+      - name: Validate environment
+        if: steps.cache-lookup.outputs.cache-hit != 'true'
+        run: |
+          python -c "import biorbd, numpy, pinocchio, pytest"
+          python -m pip --version
+          python .github/conda-lock/check_fatrop.py
+
+      - name: Save Conda environment
+        if: steps.cache-lookup.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ env.CONDA }}/envs/bioptim
+          key: conda-env-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(env.CONDA_LOCKFILE) }}-${{ steps.cache-period.outputs.week }}
+
   build:
-    if: github.event.pull_request.draft == false
+    needs: prepare-cache
+    if: >-
+      always() &&
+      ((github.event_name == 'pull_request' && github.event.pull_request.draft == false) ||
+       (github.event_name == 'push' && needs.prepare-cache.result == 'success'))
     strategy:
       fail-fast: false
       matrix:
@@ -18,57 +92,76 @@ jobs:
         shard: [1, 2, 3, 4, 5, 6]
     name: Tests on ${{ matrix.os }}-shard ${{ matrix.shard }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     defaults:
       run:
         shell: bash -l {0}
+    env:
+      CONDA_LOCKFILE: .github/conda-lock/conda-linux-64.lock
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
+        with:
+          submodules: ${{ matrix.shard == 1 && 'recursive' || 'false' }}
 
-      - name: Checkout submodules
-        if: matrix.shard == 1
-        run: git submodule update --init --recursive
-        
+      - name: Verify Conda lockfiles
+        run: python .github/conda-lock/check_lockfiles.py
+
       - name: Setup environment
-        uses: conda-incubator/setup-miniconda@v3
+        uses: conda-incubator/setup-miniconda@v4
         with:
           miniforge-version: latest
           activate-environment: bioptim
-          environment-file: environment.yml
+          conda-remove-defaults: true
+          channel-priority: strict
+
+      - name: Get cache refresh period
+        id: cache-period
+        run: echo "week=$(date -u '+%G-W%V')" >> "$GITHUB_OUTPUT"
+
+      - name: Restore Conda environment
+        id: conda-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ env.CONDA }}/envs/bioptim
+          key: conda-env-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(env.CONDA_LOCKFILE) }}-${{ steps.cache-period.outputs.week }}
+          restore-keys: |
+            conda-env-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles(env.CONDA_LOCKFILE) }}-
+
+      - name: Install locked Conda environment
+        if: steps.conda-cache.outputs.cache-hit != 'true'
+        run: conda install --name bioptim --file "$CONDA_LOCKFILE" --yes
 
       - name: Print conda info
+        if: matrix.shard == 1
         run: |
           conda info
           conda list
 
-      - name: Install extra dependencies
-        run: | 
-          conda install "numpy>=2.4,<3" pip pytest-cov black pytest pytest-cov codecov packaging pytest-mpl -cconda-forge
-          sudo apt install -y librhash-dev
-
       - name: Install ACADOS on Linux
-        run: |
-          pwd
-          cd external
-          ./acados_install_linux.sh 4 $CONDA_PREFIX
-          cd ..
         if: matrix.shard == 1
+        working-directory: external
+        run: |
+          sudo apt-get install -y --no-install-recommends librhash-dev
+          ./acados_install_linux.sh 4 "$CONDA_PREFIX"
 
       - name: Test installed version of bioptim
+        if: matrix.shard == 1
         run: |
-          pip install .
+          python -m pip install .
           cd
           python -c "import bioptim"
-        if: matrix.shard == 1
+
+      - name: Validate FATROP backend
+        if: matrix.shard == 2
+        run: python .github/conda-lock/check_fatrop.py
 
       - name: Run tests with code coverage
-        run: pytest -v --color=yes --cov-report term-missing --cov=bioptim tests/shard${{ matrix.shard }} --mpl-baseline-path=tests/plot_reference_images
-        if: matrix.os == 'ubuntu-latest'
+        run: python -m pytest -v --color=yes --durations=20 --durations-min=1.0 --cov-report term-missing --cov=bioptim tests/shard${{ matrix.shard }} --mpl-baseline-path=tests/plot_reference_images
 
       - name: Archive coverage report
-        id: archive
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-${{ matrix.shard }}
           path: .coverage
@@ -77,23 +170,27 @@ jobs:
 
   merge-coverage:
     needs: build
+    # The PR-only build can succeed even when its prepare-cache dependency is skipped.
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash -l {0}
+    timeout-minutes: 10
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
 
-      - name: Install extra dependencies
-        run: |
-          sudo apt install -y python3-pip
-          pip3 install coverage
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: .github/workflows/run_tests_linux.yml
+
+      - name: Install coverage
+        run: python -m pip install --disable-pip-version-check coverage
 
       - name: Download all workflow run artifacts
-        id: download
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           pattern: coverage-*
 
@@ -111,7 +208,8 @@ jobs:
           coverage xml
           coverage report -m
 
-      - uses: codecov/codecov-action@v5
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v7
         with:
           files: ./coverage.xml
           flags: unittests

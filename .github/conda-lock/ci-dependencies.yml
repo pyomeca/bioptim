@@ -1,0 +1,12 @@
+channels:
+  - conda-forge
+dependencies:
+  - pip
+  - setuptools >=61.0
+  - wheel
+  - packaging
+  - pytest
+  - pytest-cov
+  - pytest-mpl
+  # FATROP 0.0.4 fails with the Intel Core BLASFEO variant.
+  - libblasfeo=0.1.4.3=*_300  # [linux]

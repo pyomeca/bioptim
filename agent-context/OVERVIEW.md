@@ -176,6 +176,9 @@ Public API is re-exported from `bioptim/__init__.py`; new public classes must be
   installed in CI only on Linux and macOS shard 1.
 - CI (`.github/workflows/`): `isblacked.yml` (black check), `run_tests_linux.yml` (6 shards with coverage),
   `run_tests_osx_win.yml` (macOS and Windows, 6 shards each). The test workflows skip draft PRs.
+  `regenerate_conda_lockfiles.yml` checks every PR, including drafts, and regenerates stale Linux/macOS/Windows
+  locks in one job. It uploads a validated patch and fails until the new locks are committed; see
+  `.github/conda-lock/README.md`. `warm_conda_cache.yml` publishes trusted environment caches from master.
 - `bioptim/examples/`: start with `getting_started/` (`basic_ocp.py`, `custom_*.py`, `example_multiphase.py`, ...).
   GUI launcher: `python -m bioptim.examples`. The root `examples/` folder only holds a README.
 
