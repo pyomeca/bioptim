@@ -18,13 +18,16 @@ jobs:
         shard: [1, 2, 3, 4, 5, 6]
     name: Tests on ${{ matrix.os }}-shard ${{ matrix.shard }}
     runs-on: ${{ matrix.os }}
+    env:
+      # Shard 1 shares Acados output files; shard 2 shares performance measurements.
+      PYTEST_WORKERS: ${{ contains(fromJSON('[3,4,5,6]'), matrix.shard) && '2' || '0' }}
     defaults:
       run:
         shell: bash -l {0}
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Checkout submodules
         if: matrix.shard == 1
@@ -44,7 +47,7 @@ jobs:
 
       - name: Install extra dependencies
         run: | 
-          conda install "numpy>=2.4,<3" pip pytest-cov black pytest pytest-cov codecov packaging pytest-mpl -cconda-forge
+          conda install "numpy>=2.4,<3" pip pytest-cov black pytest "pytest-xdist>=3.8,<4" pytest-cov codecov packaging pytest-mpl -cconda-forge
           sudo apt install -y librhash-dev
 
       - name: Install ACADOS on Linux
@@ -63,7 +66,7 @@ jobs:
         if: matrix.shard == 1
 
       - name: Run tests with code coverage
-        run: pytest -v --color=yes --cov-report term-missing --cov=bioptim tests/shard${{ matrix.shard }} --mpl-baseline-path=tests/plot_reference_images
+        run: pytest -n "$PYTEST_WORKERS" --dist=worksteal --max-worker-restart=0 -v --color=yes --cov-report term-missing --cov=bioptim tests/shard${{ matrix.shard }} --mpl-baseline-path=tests/plot_reference_images
         if: matrix.os == 'ubuntu-latest'
 
       - name: Archive coverage report
@@ -84,7 +87,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install extra dependencies
         run: |
