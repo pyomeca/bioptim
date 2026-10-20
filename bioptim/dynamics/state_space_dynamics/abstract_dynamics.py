@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 from ..dynamics_evaluation import DynamicsEvaluation
 from ...misc.enums import ContactType
-from ...misc.parameters_types import CXOptional
+from ...misc.parameters_types import Bool, CXOptional
 from ...models.protocols.configuration_space import EuclideanConfigurationSpace
 from ..configure_variables import States, Controls, AlgebraicStates
 
