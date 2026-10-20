@@ -699,21 +699,20 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
                     self.nlp[0].x_init[key].check_and_adjust_dimensions(
                         self.nlp[0].states[key].shape, self.nlp[0].ns * self.nb_intermediate_frames
                     )
-                else:
-                    initial_guess_frames = []
-                    for _ in range(self.n_cycles):
-                        initial_guess_frames.extend(
-                            list(
-                                range(
-                                    self.n_cycles_to_advance * self.cycle_len * self.nb_intermediate_frames,
-                                    (self.n_cycles_to_advance + 1) * self.cycle_len * self.nb_intermediate_frames,
-                                )
+                initial_guess_frames = []
+                for _ in range(self.n_cycles):
+                    initial_guess_frames.extend(
+                        list(
+                            range(
+                                self.n_cycles_to_advance * self.cycle_len * self.nb_intermediate_frames,
+                                (self.n_cycles_to_advance + 1) * self.cycle_len * self.nb_intermediate_frames,
                             )
                         )
-                    initial_guess_frames.append(
-                        (self.n_cycles_to_advance + 1) * self.cycle_len * self.nb_intermediate_frames
                     )
-                    self.nlp[0].x_init[key].init[:, :] = states[key][:, initial_guess_frames]
+                initial_guess_frames.append(
+                    (self.n_cycles_to_advance + 1) * self.cycle_len * self.nb_intermediate_frames
+                )
+                self.nlp[0].x_init[key].init[:, :] = states[key][:, initial_guess_frames]
             else:
                 if self.nlp[0].x_init[key].type != InterpolationType.EACH_FRAME:
                     self.nlp[0].x_init.add(
@@ -723,8 +722,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
                         phase=0,
                     )
                     self.nlp[0].x_init[key].check_and_adjust_dimensions(self.nlp[0].states[key].shape, self.nlp[0].ns)
-                else:
-                    self.nlp[0].x_init[key].init[:, :] = states[key][:, self.initial_guess_frames]
+                self.nlp[0].x_init[key].init[:, :] = states[key][:, self.initial_guess_frames]
 
     def advance_window_initial_guess_controls(self, sol: Solution, **advance_options) -> None:
         controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
