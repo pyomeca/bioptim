@@ -93,6 +93,9 @@ jobs:
     name: Tests on ${{ matrix.os }}-shard ${{ matrix.shard }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
+    env:
+      # Shard 1 shares Acados output files; shard 2 shares performance measurements.
+      PYTEST_WORKERS: ${{ contains(fromJSON('[3,4,5,6]'), matrix.shard) && '2' || '0' }}
     defaults:
       run:
         shell: bash -l {0}
@@ -158,7 +161,8 @@ jobs:
         run: python .github/conda-lock/check_fatrop.py
 
       - name: Run tests with code coverage
-        run: python -m pytest -v --color=yes --durations=20 --durations-min=1.0 --cov-report term-missing --cov=bioptim tests/shard${{ matrix.shard }} --mpl-baseline-path=tests/plot_reference_images
+        run: pytest -n "$PYTEST_WORKERS" --dist=worksteal --max-worker-restart=0 -v --color=yes --durations=20 --durations-min=1.0 --cov-report term-missing --cov=bioptim tests/shard${{ matrix.shard }} --mpl-baseline-path=tests/plot_reference_images
+        if: matrix.os == 'ubuntu-latest'
 
       - name: Archive coverage report
         uses: actions/upload-artifact@v7

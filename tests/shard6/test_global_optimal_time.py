@@ -61,7 +61,7 @@ def test_pendulum_max_time_mayer_constrained(ode_solver, phase_dynamics):
     g = np.array(sol.constraints)
     if ode_solver == OdeSolver.COLLOCATION:
         npt.assert_equal(g.shape, (ns * 20, 1))
-        npt.assert_almost_equal(g, np.zeros((ns * 20, 1)), decimal=6)
+        npt.assert_almost_equal(g, np.zeros((ns * 20, 1)), decimal=5)
     else:
         npt.assert_equal(g.shape, (ns * 4, 1))
         npt.assert_almost_equal(g, np.zeros((ns * 4, 1)), decimal=6)

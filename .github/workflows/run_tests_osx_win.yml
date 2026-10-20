@@ -25,7 +25,9 @@ jobs:
         shard: [1, 2, 3, 4, 5, 6]
     name: Tests on ${{ matrix.target.os }}-shard ${{ matrix.shard }}
     runs-on: ${{ matrix.target.os }}
-    timeout-minutes: 75
+    env:
+      # Shard 1 shares Acados output files; shard 2 shares performance measurements.
+      PYTEST_WORKERS: ${{ contains(fromJSON('[3,4,5,6]'), matrix.shard) && '2' || '0' }}
     defaults:
       run:
         shell: bash -l {0}
@@ -85,4 +87,4 @@ jobs:
           python -c "import bioptim"
 
       - name: Run tests without code coverage
-        run: python -m pytest -v --color=yes --durations=20 --durations-min=1.0 tests/shard${{ matrix.shard }}
+        run: pytest -n "$PYTEST_WORKERS" --dist=worksteal --max-worker-restart=0 -v --color=yes --durations=20 --durations-min=1.0 tests/shard${{ matrix.shard }}
