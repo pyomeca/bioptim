@@ -165,23 +165,33 @@ class OdeSolver:
 
         def declare_continuity(self, ocp, nlp) -> None:
             """
-            Declare the discrete Euler-Lagrange equations as internal multinode constraints: the main equations link
-            each triplet of consecutive nodes, and the initial and final boundary conditions link the two first and the
-            two last nodes. The velocities of these boundary conditions are the parameters qdot_start and qdot_end.
+            Overrides the method of OdeSolverBase.
+
+            Declare the discrete Euler-Lagrange equations as internal multinode constraints:
+
+            - the initial condition links the first two nodes to the initial velocity (qdot_start)
+            - the middle nodes are linked by the discrete Euler-Lagrange equations on the three nodes i-1, i and i+1
+            - the final condition links the last two nodes to the final velocity (qdot_end)
+
+            The velocities of these boundary conditions are the parameters qdot_start and qdot_end.
             """
             # Imported here since the limits depend on the dynamics
             from ..limits.multinode_constraint import MultinodeConstraintList
 
             phase = nlp.phase_idx
             constraints = MultinodeConstraintList()
+
+            constraints.add(self.initial_node_equations, nodes_phase=(phase, phase), nodes=(0, 1))
+
             for node in range(nlp.ns - 1):
                 constraints.add(
                     self.three_nodes_equations,
                     nodes_phase=(phase, phase, phase),
                     nodes=(node, node + 1, node + 2),
                 )
-            constraints.add(self.initial_node_equations, nodes_phase=(phase, phase), nodes=(0, 1))
+
             constraints.add(self.final_node_equations, nodes_phase=(phase, phase), nodes=(nlp.ns - 1, nlp.ns))
+
             constraints.add_or_replace_to_penalty_pool(ocp)
 
         @staticmethod
