@@ -573,7 +573,7 @@ class OptimalControlProgram:
         self._define_time(self.phase_time, objective_functions, constraints)
 
         # Declare and fill the parameters
-        self._declare_parameters(parameters)
+        self._declare_parameters(parameters, dynamics)
 
         # Declare the numerical timeseries used at each nodes as symbolic variables
         self._define_numerical_timeseries(dynamics)
@@ -866,33 +866,7 @@ class OptimalControlProgram:
         if nlp.dynamics_type.skip_continuity:
             return
 
-        if isinstance(nlp.dynamics_type.state_continuity_weight, ConstraintWeight):
-            # Continuity as constraints
-            penalty = Constraint(
-                ConstraintFcn.STATE_CONTINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL
-            )
-            penalty.add_or_replace_to_penalty_pool(self, nlp)
-            if (
-                nlp.dynamics_type.ode_solver.is_direct_collocation
-                and nlp.dynamics_type.ode_solver.duplicate_starting_point
-            ):
-                penalty = Constraint(
-                    ConstraintFcn.FIRST_COLLOCATION_HELPER_EQUALS_STATE,
-                    node=Node.ALL_SHOOTING,
-                    penalty_type=PenaltyType.INTERNAL,
-                )
-                penalty.add_or_replace_to_penalty_pool(self, nlp)
-
-        else:
-            # Continuity as objectives
-            penalty = Objective(
-                ObjectiveFcn.Mayer.STATE_CONTINUITY,
-                weight=nlp.dynamics_type.state_continuity_weight,
-                quadratic=True,
-                node=Node.ALL_SHOOTING,
-                penalty_type=PenaltyType.INTERNAL,
-            )
-            penalty.add_or_replace_to_penalty_pool(self, nlp)
+        nlp.dynamics_type.ode_solver.declare_continuity(self, nlp)
 
     def _declare_phase_transition_continuity(self, pt: PhaseTransition) -> None:
         """Declare the continuity function for the variables between phases, mainly for the state variables"""
@@ -1012,14 +986,17 @@ class OptimalControlProgram:
         else:
             raise RuntimeError("new_constraint must be a ParameterConstraint or a ParameterConstraintList")
 
-    def _declare_parameters(self, parameters: ParameterList) -> None:
+    def _declare_parameters(self, parameters: ParameterList, dynamics: DynamicsOptionsList) -> None:
         """
-        The main user interface to add or modify parameters in the ocp
+        Declare the parameters of the ocp: the ones of the user, then the ones needed by the ode solver of each phase.
+        The parameters of the user are copied, so the list that was passed is left untouched.
 
         Parameters
         ----------
         parameters: ParameterList
             The parameters to add to the ocp
+        dynamics: DynamicsOptionsList
+            The dynamics of each phase, whose ode solver may declare additional parameters
         """
 
         if not isinstance(parameters, ParameterList):
@@ -1027,6 +1004,8 @@ class OptimalControlProgram:
 
         self.parameters = ParameterContainer(use_sx=(self.cx == SX))
         self.parameters.initialize(parameters)
+        for nlp, phase_dynamics in zip(self.nlp, dynamics):
+            phase_dynamics.ode_solver.declare_parameters(self.parameters.parameters, nlp.model)
 
     def update_bounds(
         self,

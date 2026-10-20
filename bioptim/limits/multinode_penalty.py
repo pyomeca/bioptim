@@ -872,7 +872,8 @@ class MultinodePenaltyList(UniquePerPhaseOptionList):
                 for node, phase in zip(mnc.nodes, mnc.nodes_phase)
             ]
 
-            mnc.name = mnc.type.name + "_" + "".join(("Multinode: ", *node_names))[:-2]
+            penalty_name = mnc.custom_function.__name__ if mnc.type.name == "CUSTOM" else mnc.type.name
+            mnc.name = penalty_name + "_" + "".join(("Multinode: ", *node_names))[:-2]
 
             if mnc.weight:
                 mnc.base = ObjectiveFunction.MayerFunction

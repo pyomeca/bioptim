@@ -782,9 +782,49 @@ class CVODES(Integrator):
     """
 
 
-class VARIATIONAL(RK4):
+class VARIATIONAL(Integrator):
     """
-    Fake class for variational integrator.
-    The real work is done in VariationalOptimalControlProgram.
-    TODO: The implementation of the variational integrator could be moved here (see issue #962).
+    Placeholder integrator of the variational integrator.
+
+    The variational integrator does not integrate an ode over a shooting interval: the discrete Euler-Lagrange
+    equations link the states of the nodes i-1, i and i+1 and are declared by OdeSolver.VARIATIONAL. This class
+    therefore only describes the layout of the states (one value per node, without any intermediate point) and refuses
+    to integrate.
     """
+
+    def __init__(self, ode: AnyDict, ode_opt: AnyDict):
+        # The parent constructor builds a casadi function from compute_states_end, which does not exist here
+        self.model = ode_opt["model"]
+        self.cx = ode_opt["cx"]
+        self.t_span_sym = ode["t"]
+        self.x_sym = ode["x"]
+        self.control_type = ode_opt["control_type"]
+        self.duplicate_starting_point = ode_opt["duplicate_starting_point"]
+        self.step_times_from_dt = self._time_xall_from_dt_func
+
+    @property
+    def shape_xf(self) -> DoubleIntTuple:
+        return (self.x_sym.shape[0], 1)
+
+    @property
+    def shape_xall(self) -> DoubleIntTuple:
+        return (self.x_sym.shape[0], 1)
+
+    @property
+    def _time_xall_from_dt_func(self) -> Function:
+        return Function("step_time", [self.t_span_sym], [self.t_span_sym[0]])
+
+    def __call__(self, *args, **kwargs):
+        raise NotImplementedError(_NO_INTEGRATION_MESSAGE)
+
+    def map(self, *args) -> Function:
+        raise NotImplementedError(_NO_INTEGRATION_MESSAGE)
+
+    def compute_states_end(self, *args, **kwargs) -> AnyTuple:
+        raise NotImplementedError(_NO_INTEGRATION_MESSAGE)
+
+
+_NO_INTEGRATION_MESSAGE = (
+    "The variational integrator does not integrate an ode over a shooting interval, the states are only defined at "
+    "the nodes by the discrete Euler-Lagrange equations. Use the decision states of the solution instead."
+)

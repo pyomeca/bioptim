@@ -746,6 +746,14 @@ class Solution:
             The integrator to use for the integration
         """
 
+        for i_phase, nlp in enumerate(self.ocp.nlp):
+            if not nlp.dynamics_type.ode_solver.integrates_ode:
+                raise NotImplementedError(
+                    f"The solution cannot be reintegrated since phase {i_phase} uses {nlp.dynamics_type.ode_solver}: "
+                    f"its states are only defined at the nodes by the discrete equations of the ode solver, there is "
+                    f"no ode to integrate. Please use the decision states instead."
+                )
+
         has_direct_collocation = sum([nlp.dynamics_type.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]) > 0
         if has_direct_collocation and integrator == SolutionIntegrator.OCP:
             raise ValueError(
@@ -1096,6 +1104,11 @@ class Solution:
 
         unscaled: list = [None] * len(self.ocp.nlp)
         for p, nlp in enumerate(self.ocp.nlp):
+            if not nlp.dynamics_type.ode_solver.integrates_ode:
+                # The states are only defined at the nodes, there is no intermediate point to integrate
+                unscaled[p] = self._decision_states.unscaled[p]
+                continue
+
             d = []
             for n_idx in range(nlp.ns + 1):
                 d_tp = get_numerical_timeseries(self.ocp, p, n_idx, 0)

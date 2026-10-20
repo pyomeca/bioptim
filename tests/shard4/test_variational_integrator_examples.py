@@ -34,12 +34,12 @@ def test_variational_pendulum(use_sx):
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
 
     npt.assert_almost_equal(states["q"][:, 0], [0.0, 0.0], decimal=6)
-    npt.assert_almost_equal(states["q"][:, 10], [-0.325653795765479, 0.514317755981177], decimal=6)
+    npt.assert_almost_equal(states["q"][:, 10], [-0.227191682344467, 0.417947896973504], decimal=6)
     npt.assert_almost_equal(states["q"][:, -1], [0.0, 3.14], decimal=6)
 
-    npt.assert_almost_equal(controls["tau"][:, 0], [9.952650040830257, 0.0], decimal=6)
-    npt.assert_almost_equal(controls["tau"][:, 20], [1.326124391015805, 0.0], decimal=6)
-    npt.assert_almost_equal(controls["tau"][:, -4], [-24.871395482788490, 0.0], decimal=6)
+    npt.assert_almost_equal(controls["tau"][:, 0], [11.973897222965608, 0.0], decimal=6)
+    npt.assert_almost_equal(controls["tau"][:, 20], [-19.644558618117195, 0.0], decimal=6)
+    npt.assert_almost_equal(controls["tau"][:, -4], [9.998764637575732, 0.0], decimal=6)
 
     npt.assert_almost_equal(sol.parameters["qdot_start"], [0.0, 0.0], decimal=6)
     npt.assert_almost_equal(sol.parameters["qdot_end"], [0.0, 0.0], decimal=6)
@@ -67,16 +67,22 @@ def test_variational_pendulum_with_holonomic_constraints(use_sx):
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
 
-    npt.assert_almost_equal(states["lambdas"][:, 0], [-16.478903], decimal=6)
-    npt.assert_almost_equal(states["lambdas"][:, -1], [7.242878], decimal=6)
+    npt.assert_almost_equal(states["lambdas"][:, 0], [-12.569972544979578], decimal=6)
+    npt.assert_almost_equal(states["lambdas"][:, -1], [22.847930707142613], decimal=6)
 
     npt.assert_almost_equal(states["q"][:, 0], [0.0, 0.0, 0.0], decimal=6)
-    npt.assert_almost_equal(states["q"][:, 10], [-5.307718e-01, -2.969952e-14, 7.052470e-01], decimal=6)
+    npt.assert_almost_equal(
+        states["q"][:, 10], [-2.329813885524443e-01, -3.196131756793987e-14, 4.302587257051049e-01], decimal=6
+    )
     npt.assert_almost_equal(states["q"][:, -1], [0.0, 0.0, 3.14], decimal=6)
 
-    npt.assert_almost_equal(controls["tau"][:, 0], [10.502854, 0.0, 0.0], decimal=6)
-    npt.assert_almost_equal(controls["tau"][:, 20], [12.717297, 0.0, 0.0], decimal=6)
-    npt.assert_almost_equal(controls["tau"][:, -4], [-19.131171, 0.0, 0.0], decimal=6)
+    npt.assert_almost_equal(controls["tau"][:, 0], [11.370708961872488, 0.0, 0.0], decimal=6)
+    npt.assert_almost_equal(controls["tau"][:, 20], [-18.763179166039833, 0.0, 0.0], decimal=6)
+    npt.assert_almost_equal(controls["tau"][:, -4], [9.347683129357181, 0.0, 0.0], decimal=6)
 
-    npt.assert_almost_equal(sol.parameters["qdot_start"], [1.000001e-02, 1.507920e-16, 1.000001e-02], decimal=6)
-    npt.assert_almost_equal(sol.parameters["qdot_end"], [-1.000001e-02, 7.028717e-16, 1.000001e-02], decimal=6)
+    npt.assert_almost_equal(
+        sol.parameters["qdot_start"], [1.000000976270894e-02, -5.248038150251689e-16, 1.000000975829636e-02], decimal=6
+    )
+    npt.assert_almost_equal(
+        sol.parameters["qdot_end"], [-1.000000959168232e-02, 5.121224865078237e-16, 1.000000959323689e-02], decimal=6
+    )

@@ -71,11 +71,10 @@ class JointAccelerationDynamics(StateDynamics):
         qddot_root = nlp.model.forward_dynamics_free_floating_base()(q, qdot, qddot_joints, nlp.parameters.cx)
         qddot_reordered = nlp.model.reorder_qddot_root_joints(qddot_root, qddot_joints)
 
-        qdot_mapped = nlp.variable_mappings["qdot"].to_first.map(qdot)
         qddot_mapped = nlp.variable_mappings["qdot"].to_first.map(qddot_reordered)
 
         dxdt = nlp.cx(nlp.states.shape, 1)
-        dxdt[q_indices, 0] = qdot_mapped
+        dxdt[q_indices, 0] = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         dxdt[qdot_indices, 0] = qddot_mapped
 
         defects = None
@@ -87,8 +86,8 @@ class JointAccelerationDynamics(StateDynamics):
             # Initialize defects
             defects = nlp.cx(nlp.states.shape, 1)
 
-            # qdot = polynomial slope
-            defects[q_indices, 0] = slope_q - qdot_mapped
+            # dq/dt = polynomial slope
+            defects[q_indices, 0] = slope_q - DynamicsFunctions.compute_qdot(nlp, q, qdot)
 
             if nlp.dynamics_type.ode_solver.defects_type == DefectType.QDDOT_EQUALS_FORWARD_DYNAMICS:
                 defects[qdot_indices, 0] = slope_qdot - qddot_mapped
