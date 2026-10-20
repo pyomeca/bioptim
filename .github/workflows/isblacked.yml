@@ -1,9 +1,12 @@
 #Checks if the code is formatted with black.
 
 name: is your code linted with black?
-on: [pull_request]
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
 jobs:
   build:
+    name: Is code blacked
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v1
