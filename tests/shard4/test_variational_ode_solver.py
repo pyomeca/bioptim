@@ -147,7 +147,7 @@ def test_variational_continuity_is_declared_by_the_ode_solver():
     names = [g.name.split("_Multinode")[0] for g in nlp.g_internal if g]
 
     assert names == (
-        ["three_nodes_equations"] * (n_shooting - 1) + ["initial_node_equations"] + ["final_node_equations"]
+        ["initial_node_equations"] + ["three_nodes_equations"] * (n_shooting - 1) + ["final_node_equations"]
     )
     assert not nlp.dynamics_type.skip_continuity
 
