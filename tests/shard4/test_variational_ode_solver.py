@@ -137,7 +137,7 @@ def test_variational_solution_outputs_still_work(solution):
     solution.print_cost()
     assert solution.parameters["qdot_start"].shape == (2,)
     solution.ocp.print(to_console=False, to_graph=False)
-    solution.graphs(show_now=False)
+    solution.graphs(show_now=False, automatically_organize=False)
 
 
 def test_variational_continuity_is_declared_by_the_ode_solver():
