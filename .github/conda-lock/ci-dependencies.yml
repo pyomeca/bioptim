@@ -8,5 +8,6 @@ dependencies:
   - pytest
   - pytest-cov
   - pytest-mpl
+  - pytest-xdist
   # FATROP 0.0.4 fails with the Intel Core BLASFEO variant.
   - libblasfeo=0.1.4.3=*_300  # [linux]
