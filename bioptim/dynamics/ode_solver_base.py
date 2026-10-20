@@ -2,8 +2,7 @@ from typing import Callable, TYPE_CHECKING
 
 from casadi import MX, vertcat
 
-from . import integrator
-from ..misc.enums import ControlType, DefectType, PhaseDynamics
+from ..misc.enums import DefectType, PhaseDynamics
 from ..misc.parameters_types import (
     Bool,
     Int,
