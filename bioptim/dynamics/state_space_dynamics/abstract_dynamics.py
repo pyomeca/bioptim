@@ -79,7 +79,7 @@ class StateDynamics(ABC):
         Whether the model is described by a continuous-time ode (dxdt or defects). It should be overridden to return
         False for a model that is only described by discrete equations on the nodes (e.g. the variational integrator).
         In that case, `dynamics` is never called, `nlp.dynamics_func` and `nlp.dynamics_defects_func` stay None, and
-        the ode solver must not need them (see `OdeSolverBase.integrates_ode`).
+        the ode solver must not need them.
         """
         return True
 

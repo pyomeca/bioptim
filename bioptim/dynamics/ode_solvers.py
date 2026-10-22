@@ -115,10 +115,6 @@ class OdeSolver:
         def defects_type(self) -> DefectType:
             return DefectType.NOT_APPLICABLE
 
-        @property
-        def integrates_ode(self) -> Bool:
-            return False
-
         def x_ode(self, nlp):
             return nlp.states.scaled.cx_start
 

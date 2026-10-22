@@ -86,7 +86,6 @@ def test_variational_has_no_continuous_time_dynamics():
     assert not nlp.model.has_continuous_dynamics
     assert nlp.dynamics_func is None
     assert nlp.extra_dynamics_func == []
-    assert not nlp.dynamics_type.ode_solver.integrates_ode
 
 
 def test_variational_model_cannot_be_used_with_an_integrating_ode_solver():
