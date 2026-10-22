@@ -174,3 +174,54 @@ def test_zero_valued_algebraic_states_are_plotted():
     out = plot_function(0, [0.3], 0, x, u, np.empty((0, 1)), np.ndarray((0, 1)), [])
     assert out.shape == (n_q_v, 1)
     assert np.isnan(out).all()
+
+
+@pytest.mark.parametrize(
+    "fatigue_type, split_controls", [("michaud", False), ("xia", True), ("effort", True), ("effort", False)]
+)
+def test_zero_valued_fatigue_plots(fatigue_type, split_controls):
+    from bioptim.examples.toy_examples.fatigue import pendulum_with_fatigue
+
+    ocp = pendulum_with_fatigue.prepare_ocp(
+        biorbd_model_path=TestUtils.bioptim_folder() + "/examples/models/pendulum.bioMod",
+        final_time=1,
+        n_shooting=N_SHOOTING,
+        fatigue_type=fatigue_type,
+        split_controls=split_controls,
+        use_sx=False,
+    )
+    nlp = ocp.nlp[0]
+    # The plots on which the other ones are drawn are not meant to show anything
+    containers = {plot.combine_to for plot in nlp.plot.values() if plot.combine_to}
+    assert len(containers) == 2 and "fatigue_tau" in containers
+
+    n_columns = 3
+    p = np.empty((0, 1))
+    zeros = {"x": np.zeros((nlp.states.shape, n_columns)), "u": np.zeros((nlp.controls.shape, n_columns))}
+    empties = {"x": np.ndarray((0, 1)), "u": np.ndarray((0, 1))}
+    n_fatigue_plots = 0
+    for name, plot in nlp.plot.items():
+        if name in ("q_states", "qdot_states"):
+            continue  # Not fatigue plots
+        n_fatigue_plots += 1
+
+        # Zero values are data, except for the containers which are always NaN
+        out = plot.function(0, [0.3], 0, zeros["x"], zeros["u"], p, np.ndarray((0, 1)), [], **plot.parameters)
+        if name in containers:
+            assert np.isnan(out).all()
+        else:
+            npt.assert_almost_equal(out, np.zeros(out.shape))
+            assert out.shape[0] == 2
+
+        # An empty array has no data
+        out = plot.function(0, [0.3], 0, empties["x"], empties["u"], p, np.ndarray((0, 1)), [], **plot.parameters)
+        assert out.shape == (2, 1)
+        assert np.isnan(out).all()
+    assert n_fatigue_plots >= 4
+
+    # The factor of the fatigue states is applied to the non zero values
+    for name, plot in nlp.plot.items():
+        if "mod" in plot.parameters:
+            x = np.ones((nlp.states.shape, n_columns))
+            out = plot.function(0, [0.3], 0, x, zeros["u"], p, np.ndarray((0, 1)), [], **plot.parameters)
+            npt.assert_almost_equal(out, plot.parameters["mod"] * np.ones(out.shape))
