@@ -769,12 +769,12 @@ class Solution:
                 " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
             )
 
-        if has_variational_transcription and integrator == SolutionIntegrator.OCP:
+        if has_variational_transcription:
             raise NotImplementedError(
-                "When the ode_solver of the Optimal Control Problem is OdeSolver.VARIATIONAL, "
-                "we cannot use the SolutionIntegrator.OCP.\n"
-                "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
-                " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
+                "The variational integrator does not integrate an ode over a shooting interval, the states are only "
+                "defined at the nodes by the discrete Euler-Lagrange equations, so a solution of "
+                "OdeSolver.VARIATIONAL cannot be reintegrated whatever the SolutionIntegrator. "
+                "Use the decision states of the solution instead."
             )
 
         for i_phase, nlp in enumerate(self.ocp.nlp):
