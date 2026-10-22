@@ -143,7 +143,6 @@ class OdeSolverBase:
         """
         raise RuntimeError("This method should be implemented in the child class")
 
-
     def t_ode(self, nlp) -> AnyList:
         """
         The time span of the integration

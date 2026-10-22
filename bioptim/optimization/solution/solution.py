@@ -749,9 +749,9 @@ class Solution:
         has_trapezoidal = (
             sum([isinstance(nlp.dynamics_type.ode_solver, OdeSolver.TRAPEZOIDAL) for nlp in self.ocp.nlp]) > 0
         )
-        has_variational_transcription = sum(
-            [isinstance(nlp.dynamics_type.ode_solver, OdeSolver.VARIATIONAL) for nlp in self.ocp.nlp]) > 0
-
+        has_variational_transcription = (
+            sum([isinstance(nlp.dynamics_type.ode_solver, OdeSolver.VARIATIONAL) for nlp in self.ocp.nlp]) > 0
+        )
 
         if has_direct_collocation and integrator == SolutionIntegrator.OCP:
             raise NotImplementedError(
@@ -760,7 +760,6 @@ class Solution:
                 "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
                 " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE"
             )
-
 
         if has_trapezoidal and integrator == SolutionIntegrator.OCP:
             raise NotImplementedError(
@@ -777,9 +776,6 @@ class Solution:
                 "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
                 " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
             )
-
-
-
 
         for i_phase, nlp in enumerate(self.ocp.nlp):
             if nlp.dynamics_func is None:

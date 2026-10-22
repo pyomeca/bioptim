@@ -14,7 +14,8 @@ from bioptim import (
     ControlType,
     Solver,
     VariationalTorqueBiorbdModel,
-    VariationalOptimalControlProgram, QuadratureRule,
+    VariationalOptimalControlProgram,
+    QuadratureRule,
 )
 from bioptim.examples.utils import ExampleUtils
 import numpy as np
