@@ -1111,7 +1111,7 @@ class Solution:
 
         unscaled: list = [None] * len(self.ocp.nlp)
         for p, nlp in enumerate(self.ocp.nlp):
-            if not nlp.dynamics_type.ode_solver.integrates_ode:
+            if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.VARIATIONAL):
                 # The states are only defined at the nodes, there is no intermediate point to integrate
                 unscaled[p] = self._decision_states.unscaled[p]
                 continue
