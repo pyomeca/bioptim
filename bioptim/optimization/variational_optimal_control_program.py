@@ -52,6 +52,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         multinode_constraints: MultinodeConstraintList = None,
         use_sx: Bool = False,
         ode_solver: OdeSolver.VARIATIONAL | None = None,
+        control_type: ControlType = ControlType.LINEAR_CONTINUOUS,
         **kwargs,
     ):
         if not isinstance(bio_model, VariationalBiorbdModel):
@@ -186,7 +187,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             parameter_objectives=parameter_objectives,
             parameter_constraints=parameter_constraints,
             multinode_constraints=multinode_constraints,
-            control_type=ControlType.LINEAR_CONTINUOUS,
+            control_type=control_type,
             use_sx=use_sx,
             **kwargs,
         )
