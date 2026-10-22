@@ -104,3 +104,12 @@ def test_states_of_other_ode_solvers_are_still_integrated(ode_solver):
         use_sx=False,
     )
     assert ocp.nlp[0].plot["q_states"].type == PlotType.INTEGRATED
+
+
+def test_variational_first_node_is_plotted(drawn):
+    solution, lines_per_axis = drawn
+    states = solution.decision_states(to_merge=SolutionMerge.NODES)
+
+    for key in _keys_to_check(solution):
+        for dof, lines in enumerate(_axes_of(lines_per_axis, key)):
+            npt.assert_almost_equal(lines[0][1], states[key][dof, :])
