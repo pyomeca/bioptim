@@ -124,7 +124,7 @@ class TestUtils:
     def simulate(sol: Solution, decimal_value=7):
         if sum([nlp.dynamics_type.ode_solver.is_direct_collocation for nlp in sol.ocp.nlp]):
             with pytest.raises(
-                ValueError,
+                NotImplementedError,
                 match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
                 "we cannot use the SolutionIntegrator.OCP.\n"
                 "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
@@ -138,7 +138,7 @@ class TestUtils:
 
         if sum([isinstance(nlp.dynamics_type.ode_solver, OdeSolver.TRAPEZOIDAL) for nlp in sol.ocp.nlp]):
             with pytest.raises(
-                ValueError,
+                NotImplementedError,
                 match="When the ode_solver of the Optimal Control Problem is OdeSolver.TRAPEZOIDAL, "
                 "we cannot use the SolutionIntegrator.OCP.\n"
                 "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
