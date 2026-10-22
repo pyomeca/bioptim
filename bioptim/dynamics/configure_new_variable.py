@@ -16,7 +16,38 @@ from ..misc.parameters_types import (
     NpArray,
     CX,
     CXList,
+    Float,
+    IntIterableorNpArray,
 )
+
+
+def _rows_or_nan(data: NpArray, rows: IntIterableorNpArray | slice, n_rows: Int, factor: Float = 1.0) -> NpArray:
+    """
+    Select the rows of a node's data to plot, or return NaN when this node has no data at all.
+
+    A node has no data when its array is empty, e.g., the controls of the last node with ControlType.CONSTANT, which
+    are passed as an array of shape (0, 1). A node whose values are all exactly zero does have data and is returned
+    as is (zeros are legitimate values, e.g., a rest pose or a torque bounded to zero).
+
+    Parameters
+    ----------
+    data: NpArray
+        The data of the node (states, controls or algebraic states), one row per element, one column per point
+    rows: IntIterableorNpArray | slice
+        The rows of the data to plot
+    n_rows: Int
+        The number of rows of the NaN placeholder returned when there is no data
+    factor: Float
+        A factor applied to the selected rows
+
+    Returns
+    -------
+    NpArray
+        The selected rows multiplied by the factor, or a NaN array of shape (n_rows, 1) if the data is empty
+    """
+    if data.size == 0:
+        return np.full((n_rows, 1), np.nan)
+    return factor * data[rows, :]
 
 
 class NewVariableConfiguration:
@@ -239,10 +270,8 @@ class NewVariableConfiguration:
                 )
                 if not self.skip_plot:
                     self.nlp.plot[f"{self.name}_states"] = CustomPlot(
-                        lambda t0, phases_dt, node_idx, x, u, p, a, d: (
-                            x[self.nlp.states.key_index(self.name), :]
-                            if x.any()
-                            else np.ndarray((cx[0].shape[0], 1)) * np.nan
+                        lambda t0, phases_dt, node_idx, x, u, p, a, d: _rows_or_nan(
+                            x, self.nlp.states.key_index(self.name), cx[0].shape[0]
                         ),
                         plot_type=PlotType.INTEGRATED,
                         axes_idx=self.axes_idx,
@@ -288,10 +317,8 @@ class NewVariableConfiguration:
                 plot_type = PlotType.PLOT if self.nlp.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
                 if not self.skip_plot:
                     self.nlp.plot[f"{self.name}_controls"] = CustomPlot(
-                        lambda t0, phases_dt, node_idx, x, u, p, a, d: (
-                            u[self.nlp.controls.key_index(self.name), :]
-                            if u.any()
-                            else np.ndarray((cx[0].shape[0], 1)) * np.nan
+                        lambda t0, phases_dt, node_idx, x, u, p, a, d: _rows_or_nan(
+                            u, self.nlp.controls.key_index(self.name), cx[0].shape[0]
                         ),
                         plot_type=plot_type,
                         axes_idx=self.axes_idx,
@@ -319,10 +346,8 @@ class NewVariableConfiguration:
                 )
                 if not self.skip_plot:
                     self.nlp.plot[f"{self.name}_algebraic"] = CustomPlot(
-                        lambda t0, phases_dt, node_idx, x, u, p, a, d: (
-                            a[self.nlp.algebraic_states.key_index(self.name), :]
-                            if a.any()
-                            else np.ndarray((cx[0].shape[0], 1)) * np.nan
+                        lambda t0, phases_dt, node_idx, x, u, p, a, d: _rows_or_nan(
+                            a, self.nlp.algebraic_states.key_index(self.name), cx[0].shape[0]
                         ),
                         plot_type=PlotType.INTEGRATED,
                         axes_idx=self.axes_idx,
