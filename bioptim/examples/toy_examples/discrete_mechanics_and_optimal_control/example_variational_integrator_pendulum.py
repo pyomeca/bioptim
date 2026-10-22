@@ -107,7 +107,7 @@ def main():
     sol.animate()
 
     # --- Show the graph results --- #
-    # The states are displayed piecewise constant, but actually they are not.
+    # The states only exist at the nodes, they are displayed as a line going through the nodes.
     sol.graphs()
 
     print(f"qdot_start :{sol.parameters['qdot_start'].squeeze()}")
