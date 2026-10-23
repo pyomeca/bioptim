@@ -745,25 +745,36 @@ class Solution:
         integrator: SolutionIntegrator
             The integrator to use for the integration
         """
-
         has_direct_collocation = sum([nlp.dynamics_type.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]) > 0
+        has_trapezoidal = (
+            sum([isinstance(nlp.dynamics_type.ode_solver, OdeSolver.TRAPEZOIDAL) for nlp in self.ocp.nlp]) > 0
+        )
+        has_variational_transcription = (
+            sum([isinstance(nlp.dynamics_type.ode_solver, OdeSolver.VARIATIONAL) for nlp in self.ocp.nlp]) > 0
+        )
+
         if has_direct_collocation and integrator == SolutionIntegrator.OCP:
-            raise ValueError(
+            raise NotImplementedError(
                 "When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
                 "we cannot use the SolutionIntegrator.OCP.\n"
                 "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
                 " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE"
             )
 
-        has_trapezoidal = (
-            sum([isinstance(nlp.dynamics_type.ode_solver, OdeSolver.TRAPEZOIDAL) for nlp in self.ocp.nlp]) > 0
-        )
         if has_trapezoidal and integrator == SolutionIntegrator.OCP:
-            raise ValueError(
+            raise NotImplementedError(
                 "When the ode_solver of the Optimal Control Problem is OdeSolver.TRAPEZOIDAL, "
                 "we cannot use the SolutionIntegrator.OCP.\n"
                 "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
                 " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
+            )
+
+        if has_variational_transcription:
+            raise NotImplementedError(
+                "The variational integrator does not integrate an ode over a shooting interval, the states are only "
+                "defined at the nodes by the discrete Euler-Lagrange equations, so a solution of "
+                "OdeSolver.VARIATIONAL cannot be reintegrated whatever the SolutionIntegrator. "
+                "Use the decision states of the solution instead."
             )
 
         for i_phase, nlp in enumerate(self.ocp.nlp):
@@ -1096,6 +1107,11 @@ class Solution:
 
         unscaled: list = [None] * len(self.ocp.nlp)
         for p, nlp in enumerate(self.ocp.nlp):
+            if isinstance(nlp.dynamics_type.ode_solver, OdeSolver.VARIATIONAL):
+                # The states are only defined at the nodes, there is no intermediate point to integrate
+                unscaled[p] = self._decision_states.unscaled[p]
+                continue
+
             d = []
             for n_idx in range(nlp.ns + 1):
                 d_tp = get_numerical_timeseries(self.ocp, p, n_idx, 0)

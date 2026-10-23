@@ -1,12 +1,16 @@
-from typing import Callable
+from typing import Callable, TYPE_CHECKING
 
 from casadi import MX, SX, integrator as casadi_integrator, horzcat, Function, vertcat
 
 from . import integrator
 from .ode_solver_base import OdeSolverBase
 from .rk_base import RK
-from ..misc.enums import ControlType, DefectType
+from ..misc.enums import ControlType, DefectType, QuadratureRule
 from ..misc.parameters_types import Bool, Int, Str, CX
+
+if TYPE_CHECKING:
+    from ..models.protocols.biomodel import BioModel
+    from ..optimization.parameters import ParameterList
 
 
 class OdeSolver:
@@ -50,11 +54,329 @@ class OdeSolver:
         def integrator(self):
             return integrator.RK8
 
-    class VARIATIONAL(RK):
+    class VARIATIONAL(OdeSolverBase):
         """
-        This is a fake enum to be able to use the variational integrator.
-        TODO: The implementation of the variational integrator could be moved here (see issue #962).
+        The variational integrator (discrete mechanics). Instead of integrating an ode over each shooting interval,
+        the discrete Euler-Lagrange equations link the positions of three consecutive nodes. The states of the problem
+        are therefore only the positions (and Lagrange multipliers) at the nodes, and the initial and final velocities
+        are parameters (qdot_start and qdot_end).
+
+        The control type is the one of the ocp. Since the final condition needs the controls of the last node, it must
+        be ControlType.LINEAR_CONTINUOUS or ControlType.CONSTANT_WITH_LAST_NODE. With the latter, the forcing of an
+        interval is the one of its first node and control_discrete_approximation is not used.
+
+        Attributes
+        ----------
+        discrete_approximation: QuadratureRule
+            The quadrature rule of the discrete Lagrangian
+        control_discrete_approximation: QuadratureRule
+            The quadrature rule of the discrete forcing of a linear control
         """
+
+        SUPPORTED_CONTROL_TYPES = (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE)
+
+        def __init__(
+            self,
+            discrete_approximation: QuadratureRule = QuadratureRule.TRAPEZOIDAL,
+            control_discrete_approximation: QuadratureRule = QuadratureRule.MIDPOINT,
+            **kwargs,
+        ):
+            """
+            Parameters
+            ----------
+            discrete_approximation: QuadratureRule
+                The quadrature rule of the discrete Lagrangian
+            control_discrete_approximation: QuadratureRule
+                The quadrature rule of the discrete forcing of a linear control
+            """
+            super().__init__(**kwargs)
+            for name, rule in (
+                ("discrete_approximation", discrete_approximation),
+                ("control_discrete_approximation", control_discrete_approximation),
+            ):
+                if not isinstance(rule, QuadratureRule):
+                    raise TypeError(f"{name} should be a QuadratureRule")
+            self.discrete_approximation = discrete_approximation
+            self.control_discrete_approximation = control_discrete_approximation
+
+        @property
+        def is_direct_collocation(self) -> Bool:
+            return False
+
+        @property
+        def is_direct_shooting(self) -> Bool:
+            return True
+
+        @property
+        def n_required_cx(self) -> Int:
+            return 1
+
+        @property
+        def defects_type(self) -> DefectType:
+            return DefectType.NOT_APPLICABLE
+
+        def x_ode(self, nlp):
+            return nlp.states.scaled.cx_start
+
+        def p_ode(self, nlp):
+            return horzcat(nlp.controls.scaled.cx_start, nlp.controls.scaled.cx_end)
+
+        def a_ode(self, nlp):
+            return nlp.algebraic_states.scaled.cx_start
+
+        def d_ode(self, nlp):
+            return nlp.numerical_timeseries.cx_start
+
+        def __str__(self) -> Str:
+            return (
+                f"{self.integrator.__name__} (variational integrator, {self.discrete_approximation.name} Lagrangian, "
+                f"{self.control_discrete_approximation.name} forcing)"
+            )
+
+        def declare_parameters(self, parameters: "ParameterList", model: "BioModel") -> None:
+            """
+            Declare the initial and final velocities, which are not states of the variational integrator.
+
+            Parameters
+            ----------
+            parameters: ParameterList
+                The parameters of the ocp
+            model: BioModel
+                The model of the phase
+
+            Raises
+            ------
+            KeyError
+                If 'qdot_start' or 'qdot_end' is already declared
+            """
+            names = ("qdot_start", "qdot_end")
+            if any(name in parameters.keys() for name in names):
+                raise KeyError(
+                    "'qdot_start' and 'qdot_end' cannot be declared in parameters as they are reserved words of "
+                    "OdeSolver.VARIATIONAL. To define the initial and final velocities, please use `qdot_init` "
+                    "and `qdot_bounds` instead."
+                )
+            for name in names:
+                parameters.add(name, function=None, size=model.nb_q)
+
+        def declare_continuity(self, ocp, nlp) -> None:
+            """
+            Overrides the method of OdeSolverBase.
+
+            Declare the discrete Euler-Lagrange equations as internal multinode constraints:
+
+            - the initial condition links the first two nodes to the initial velocity (qdot_start)
+            - the middle nodes are linked by the discrete Euler-Lagrange equations on the three nodes i-1, i and i+1
+            - the final condition links the last two nodes to the final velocity (qdot_end)
+
+            The velocities of these boundary conditions are the parameters qdot_start and qdot_end.
+            """
+            # Imported here since the limits depend on the dynamics
+            from ..limits.multinode_constraint import MultinodeConstraintList
+
+            phase = nlp.phase_idx
+            constraints = MultinodeConstraintList()
+
+            constraints.add(self.initial_node_equations, nodes_phase=(phase, phase), nodes=(0, 1))
+
+            for node in range(nlp.ns - 1):
+                constraints.add(
+                    self.three_nodes_equations,
+                    nodes_phase=(phase, phase, phase),
+                    nodes=(node, node + 1, node + 2),
+                )
+
+            constraints.add(self.final_node_equations, nodes_phase=(phase, phase), nodes=(nlp.ns - 1, nlp.ns))
+
+            constraints.add_or_replace_to_penalty_pool(ocp)
+
+        @staticmethod
+        def _lambdas(controller) -> list:
+            """
+            The Lagrange multipliers of a node, as the trailing inputs expected by the discrete functions.
+
+            Parameters
+            ----------
+            controller: PenaltyController
+                The controller of the node holding the Lagrange multipliers
+
+            Returns
+            -------
+            A list holding the symbolic Lagrange multipliers if the model has holonomic constraints, an empty list
+            otherwise
+            """
+            return [controller.states["lambdas"].cx] if controller.get_nlp.model.has_holonomic_constraints else []
+
+        @staticmethod
+        def three_nodes_equations(controllers) -> CX:
+            """
+            The discrete Euler-Lagrange equations for the integration from node i-1 to i+1 through node i.
+
+            Parameters
+            ----------
+            controllers: list[PenaltyController]
+                The controllers of the three nodes
+
+            Returns
+            -------
+            The symbolic expression of the discrete Euler-Lagrange equations
+            """
+            return controllers[0].get_nlp.variational_three_nodes_func(
+                controllers[0].dt.cx,
+                controllers[0].states["q"].cx,
+                controllers[1].states["q"].cx,
+                controllers[2].states["q"].cx,
+                controllers[0].controls["tau"].cx,
+                controllers[1].controls["tau"].cx,
+                controllers[2].controls["tau"].cx,
+                *OdeSolver.VARIATIONAL._lambdas(controllers[1]),
+            )
+
+        @staticmethod
+        def initial_node_equations(controllers) -> CX:
+            """
+            The initial condition of the integration, that links the initial velocity (qdot_start) to the two first
+            nodes.
+
+            Parameters
+            ----------
+            controllers: list[PenaltyController]
+                The controllers of the two first nodes
+
+            Returns
+            -------
+            The symbolic expression of the initial condition
+            """
+            return controllers[0].get_nlp.variational_first_node_func(
+                controllers[0].dt.cx,
+                controllers[0].states["q"].cx,
+                controllers[0].parameters["qdot_start"].cx,
+                controllers[1].states["q"].cx,
+                controllers[0].controls["tau"].cx,
+                controllers[1].controls["tau"].cx,
+                *OdeSolver.VARIATIONAL._lambdas(controllers[0]),
+            )
+
+        @staticmethod
+        def final_node_equations(controllers) -> CX:
+            """
+            The final condition of the integration, that links the final velocity (qdot_end) to the two last nodes.
+            Warning: When the system has holonomic constraints, there are more variables than equations so the lambda
+            and the velocity of the last node are "free" variables.
+
+            Parameters
+            ----------
+            controllers: list[PenaltyController]
+                The controllers of the two last nodes
+
+            Returns
+            -------
+            The symbolic expression of the final condition
+            """
+            return controllers[0].get_nlp.variational_last_node_func(
+                controllers[0].dt.cx,
+                controllers[0].states["q"].cx,
+                controllers[1].states["q"].cx,
+                controllers[0].parameters["qdot_end"].cx,
+                controllers[0].controls["tau"].cx,
+                controllers[1].controls["tau"].cx,
+                *OdeSolver.VARIATIONAL._lambdas(controllers[1]),
+            )
+
+        def prepare_dynamic_integrator(self, ocp, nlp):
+            self._declare_discrete_functions(nlp)
+            super().prepare_dynamic_integrator(ocp, nlp)
+
+        def _declare_discrete_functions(self, nlp) -> None:
+            """
+            Build the casadi functions of the discrete Euler-Lagrange equations, that depend on the nodes i-1, i and
+            i+1 and can therefore not be expressed as a dynamics of a single node. They are stored in
+            nlp.variational_three_nodes_func (main nodes), nlp.variational_first_node_func (initial boundary condition)
+            and nlp.variational_last_node_func (final boundary condition).
+
+            Parameters
+            ----------
+            nlp: NonLinearProgram
+                A reference to the current phase of the ocp
+            """
+            if nlp.control_type not in self.SUPPORTED_CONTROL_TYPES:
+                raise NotImplementedError(
+                    f"The control type {nlp.control_type} is not supported by OdeSolver.VARIATIONAL, as the final "
+                    f"condition needs the controls of the last node. Please use one of "
+                    f"{[control_type.name for control_type in self.SUPPORTED_CONTROL_TYPES]}."
+                )
+
+            model = nlp.model
+            n_q = model.nb_q
+            discretization = dict(
+                discrete_approximation=self.discrete_approximation,
+                control_type=nlp.control_type,
+                control_discrete_approximation=self.control_discrete_approximation,
+            )
+
+            dt = nlp.cx.sym("time_step")
+            q_prev = nlp.cx.sym("q_prev", n_q, 1)
+            q_cur = nlp.cx.sym("q_cur", n_q, 1)
+            q_next = nlp.cx.sym("q_next", n_q, 1)
+            control_prev = nlp.cx.sym("control_prev", n_q, 1)
+            control_cur = nlp.cx.sym("control_cur", n_q, 1)
+            control_next = nlp.cx.sym("control_next", n_q, 1)
+            q0 = nlp.cx.sym("q0", n_q, 1)
+            qdot0 = nlp.cx.sym("qdot_start", n_q, 1)
+            q1 = nlp.cx.sym("q1", n_q, 1)
+            control0 = nlp.cx.sym("control0", n_q, 1)
+            control1 = nlp.cx.sym("control1", n_q, 1)
+            q_ultimate = nlp.cx.sym("q_ultimate", n_q, 1)
+            qdot_ultimate = nlp.cx.sym("qdot_ultimate", n_q, 1)
+            q_penultimate = nlp.cx.sym("q_penultimate", n_q, 1)
+            controlN_minus_1 = nlp.cx.sym("controlN_minus_1", n_q, 1)
+            controlN = nlp.cx.sym("controlN", n_q, 1)
+
+            three_nodes_input = [dt, q_prev, q_cur, q_next, control_prev, control_cur, control_next]
+            first_node_input = [dt, q0, qdot0, q1, control0, control1]
+            last_node_input = [dt, q_penultimate, q_ultimate, qdot_ultimate, controlN_minus_1, controlN]
+
+            if model.has_holonomic_constraints:
+                lambdas = nlp.cx.sym("lambda", model.nb_holonomic_constraints, 1)
+                three_nodes_input.append(lambdas)
+                first_node_input.append(lambdas)
+                last_node_input.append(lambdas)
+            else:
+                lambdas = None
+
+            # TODO: see how to restore the possibility to not expand the functions
+            nlp.variational_three_nodes_func = Function(
+                "ThreeNodesIntegration",
+                three_nodes_input,
+                [
+                    model.discrete_euler_lagrange_equations(
+                        dt, q_prev, q_cur, q_next, control_prev, control_cur, control_next, lambdas, **discretization
+                    )
+                ],
+            ).expand()
+
+            nlp.variational_first_node_func = Function(
+                "TwoFirstNodesIntegration",
+                first_node_input,
+                [model.compute_initial_states(dt, q0, qdot0, q1, control0, control1, lambdas, **discretization)],
+            ).expand()
+
+            nlp.variational_last_node_func = Function(
+                "TwoLastNodesIntegration",
+                last_node_input,
+                [
+                    model.compute_final_states(
+                        dt,
+                        q_penultimate,
+                        q_ultimate,
+                        qdot_ultimate,
+                        controlN_minus_1,
+                        controlN,
+                        lambdas,
+                        **discretization,
+                    )
+                ],
+            ).expand()
 
         @property
         def integrator(self):
@@ -145,6 +467,23 @@ class OdeSolver:
             self.polynomial_degree = polynomial_degree
             self.method = method
             self._defects_type = defects_type
+
+        def declare_continuity(self, ocp, nlp) -> None:
+            super().declare_continuity(ocp, nlp)
+
+            # Imported here since the limits depend on the dynamics
+            from ..limits.constraints import Constraint, ConstraintFcn
+            from ..limits.weight import ConstraintWeight
+            from ..misc.enums import Node, PenaltyType
+
+            if self.duplicate_starting_point and isinstance(
+                nlp.dynamics_type.state_continuity_weight, ConstraintWeight
+            ):
+                Constraint(
+                    ConstraintFcn.FIRST_COLLOCATION_HELPER_EQUALS_STATE,
+                    node=Node.ALL_SHOOTING,
+                    penalty_type=PenaltyType.INTERNAL,
+                ).add_or_replace_to_penalty_pool(ocp, nlp)
 
         @property
         def integrator(self):

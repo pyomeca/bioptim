@@ -61,6 +61,12 @@ class NonLinearProgram:
         The extra dynamic function used during the current phase dxdt = f(x,u,p)
     dynamics_type: DynamicsOptions
         The dynamic option declared by the user for the current phase
+    variational_three_nodes_func: Callable
+        The discrete Euler-Lagrange equations of the nodes i-1, i and i+1 (only for OdeSolver.VARIATIONAL)
+    variational_first_node_func: Callable
+        The initial boundary condition of the discrete Euler-Lagrange equations (only for OdeSolver.VARIATIONAL)
+    variational_last_node_func: Callable
+        The final boundary condition of the discrete Euler-Lagrange equations (only for OdeSolver.VARIATIONAL)
     g: list[list[Constraint]]
         All the constraints at each of the node of the phase
     g_internal: list[list[Constraint]]
@@ -155,6 +161,9 @@ class NonLinearProgram:
         self.extra_dynamics_defects = []
         self.dynamics_defects_func = None
         self.extra_dynamics_defects_func: list = []
+        self.variational_three_nodes_func: Callable | None = None
+        self.variational_first_node_func: Callable | None = None
+        self.variational_last_node_func: Callable | None = None
         self.g: AnyList = []
         self.g_internal: AnyList = []
         self.J: AnyList = []

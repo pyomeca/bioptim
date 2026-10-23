@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 from ..dynamics_evaluation import DynamicsEvaluation
 from ...misc.enums import ContactType
-from ...misc.parameters_types import CXOptional
+from ...misc.parameters_types import Bool, CXOptional
 from ..configure_variables import States, Controls, AlgebraicStates
 
 
@@ -72,6 +72,16 @@ class StateDynamics(ABC):
         """
         When inheriting from this class, the dynamics method must be implemented to provide the system dynamics.
         """
+
+    @property
+    def has_continuous_dynamics(self) -> Bool:
+        """
+        Whether the model is described by a continuous-time ode (dxdt or defects). It should be overridden to return
+        False for a model that is only described by discrete equations on the nodes (e.g. the variational integrator).
+        In that case, `dynamics` is never called, `nlp.dynamics_func` and `nlp.dynamics_defects_func` stay None, and
+        the ode solver must not need them.
+        """
+        return True
 
     @property
     def extra_dynamics(self) -> Optional[DynamicsEvaluation]:
