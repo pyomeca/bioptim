@@ -273,7 +273,7 @@ class NewVariableConfiguration:
                         lambda t0, phases_dt, node_idx, x, u, p, a, d: _rows_or_nan(
                             x, self.nlp.states.key_index(self.name), cx[0].shape[0]
                         ),
-                        plot_type=PlotType.INTEGRATED,
+                        plot_type=PlotType.INTEGRATED if self.nlp.model.has_continuous_dynamics else PlotType.PLOT,
                         axes_idx=self.axes_idx,
                         legend=self.legend,
                         combine_to=self.combine_name,

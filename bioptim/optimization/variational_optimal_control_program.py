@@ -191,14 +191,3 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             use_sx=use_sx,
             **kwargs,
         )
-        self._plot_states_through_nodes()
-
-    def _plot_states_through_nodes(self) -> None:
-        """
-        Draw the states as one line through the nodes. With the variational integrator, the states only exist at the
-        nodes, so the default PlotType.INTEGRATED, which draws one segment per interval, would draw nothing.
-        """
-        for key in self.nlp[0].states.keys():
-            state_plot = self.nlp[0].plot.get(f"{key}_states")
-            if state_plot is not None:
-                state_plot.type = PlotType.PLOT
