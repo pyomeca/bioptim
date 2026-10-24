@@ -20,6 +20,7 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
     DynamicsOptions,
+    Solver,
 )
 import numpy as np
 import numpy.testing as npt
@@ -55,7 +56,11 @@ def test_pendulum_max_time_mayer_constrained(ode_solver, phase_dynamics):
         expand_dynamics=ode_solver != OdeSolver.IRK,
         control_type=control_type,
     )
-    sol = ocp.solve()
+    solver = Solver.IPOPT()
+    if ode_solver == OdeSolver.COLLOCATION:
+        # Match IPOPT's convergence criterion to the unscaled defects checked below.
+        solver.set_nlp_scaling_method("none")
+    sol = ocp.solve(solver)
 
     # Check constraints
     g = np.array(sol.constraints)
