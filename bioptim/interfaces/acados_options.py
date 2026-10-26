@@ -10,6 +10,8 @@ from ..misc.parameters_types import (
     Int,
     IntorFloat,
     Float,
+    FloatOptional,
+    IntOptional,
     StrOptional,
     StrList,
 )
@@ -86,6 +88,18 @@ class ACADOS(GenericSolver):
     _sim_method_newton_iter: Int = 5
     _sim_method_num_stages: Int = 4
     _sim_method_num_steps: Int = 1
+    _collocation_type: Str = "GAUSS_LEGENDRE"
+    _sim_method_newton_tol: FloatOptional = None
+    _sim_method_jac_reuse: Int = 0
+    _qp_solver_cond_N: IntOptional = None
+    _qp_solver_iter_max: Int = 50
+    _qp_solver_tol_stat: FloatOptional = None
+    _qp_solver_tol_eq: FloatOptional = None
+    _qp_solver_tol_ineq: FloatOptional = None
+    _qp_solver_tol_comp: FloatOptional = None
+    _regularize_method: Str = "NO_REGULARIZE"
+    _levenberg_marquardt: Float = 0.0
+    _globalization: Str = "FIXED_STEP"
     _print_level: Int = 1
     _cost_type: Str = "NONLINEAR_LS"
     _constr_type: Str = "BGH"
@@ -109,14 +123,7 @@ class ACADOS(GenericSolver):
         This function is unsafe because we did not check if the option exist in the solver option list.
         If it's not it just will be ignored. Please make sure that the option you're asking for exist.
         """
-        if not hasattr(self, "__annotations__"):
-            if hasattr(self, "__annotations_cache__"):
-                self.__annotations__ = self.__annotations_cache__
-            else:
-                raise AttributeError("No annotations found for the class.")
-
-        if f"_{name}" not in self.__annotations__.keys():
-            self.__annotations__[f"_{name}"] = val
+        if f"_{name}" not in self.__dict__:
             self.__setattr__(f"_{name}", val)
             self.set_only_first_options_has_changed(True)
 
@@ -167,6 +174,93 @@ class ACADOS(GenericSolver):
     def set_sim_method_num_steps(self, val: Int) -> None:
         self._sim_method_num_steps = val
         self.set_only_first_options_has_changed(True)
+
+    @property
+    def collocation_type(self) -> Str:
+        return self._collocation_type
+
+    def set_collocation_type(self, val: Str) -> None:
+        self._collocation_type = val
+        self.set_only_first_options_has_changed(True)
+
+    @property
+    def sim_method_newton_tol(self) -> FloatOptional:
+        return self._sim_method_newton_tol
+
+    def set_sim_method_newton_tol(self, val: Float) -> None:
+        self._sim_method_newton_tol = val
+        self.set_only_first_options_has_changed(True)
+
+    @property
+    def sim_method_jac_reuse(self) -> Int:
+        return self._sim_method_jac_reuse
+
+    def set_sim_method_jac_reuse(self, val: Int) -> None:
+        self._sim_method_jac_reuse = val
+        self.set_only_first_options_has_changed(True)
+
+    @property
+    def qp_solver_cond_N(self) -> IntOptional:
+        return self._qp_solver_cond_N
+
+    def set_qp_solver_cond_N(self, val: Int) -> None:
+        self._qp_solver_cond_N = val
+        self.set_only_first_options_has_changed(True)
+
+    @property
+    def qp_solver_iter_max(self) -> Int:
+        return self._qp_solver_iter_max
+
+    def set_qp_solver_iter_max(self, val: Int) -> None:
+        self._qp_solver_iter_max = val
+        self.set_only_first_options_has_changed(True)
+
+    @property
+    def regularize_method(self) -> Str:
+        return self._regularize_method
+
+    def set_regularize_method(self, val: Str) -> None:
+        self._regularize_method = val
+        self.set_only_first_options_has_changed(True)
+
+    @property
+    def levenberg_marquardt(self) -> Float:
+        return self._levenberg_marquardt
+
+    def set_levenberg_marquardt(self, val: Float) -> None:
+        self._levenberg_marquardt = val
+        self.set_only_first_options_has_changed(True)
+
+    @property
+    def globalization(self) -> Str:
+        return self._globalization
+
+    def set_globalization(self, val: Str) -> None:
+        self._globalization = val
+        self.set_only_first_options_has_changed(True)
+
+    def set_qp_solver_tolerances(self, val: Float) -> None:
+        self._qp_solver_tol_stat = val
+        self._qp_solver_tol_eq = val
+        self._qp_solver_tol_ineq = val
+        self._qp_solver_tol_comp = val
+        self.set_only_first_options_has_changed(True)
+
+    @property
+    def qp_solver_tol_stat(self) -> FloatOptional:
+        return self._qp_solver_tol_stat
+
+    @property
+    def qp_solver_tol_eq(self) -> FloatOptional:
+        return self._qp_solver_tol_eq
+
+    @property
+    def qp_solver_tol_ineq(self) -> FloatOptional:
+        return self._qp_solver_tol_ineq
+
+    @property
+    def qp_solver_tol_comp(self) -> FloatOptional:
+        return self._qp_solver_tol_comp
 
     @property
     def cost_type(self) -> Str:
@@ -270,17 +364,14 @@ class ACADOS(GenericSolver):
         }
 
         # Select the set of relevant keys before entering the loop
-        if not hasattr(self, "__annotations__"):
-            if hasattr(self, "__annotations_cache__"):
-                self.__annotations__ = self.__annotations_cache__
-            else:
-                raise AttributeError("No annotations found for the class.")
-        relevant_keys = set(self.__annotations__.keys()) - keys_to_skip
+        relevant_keys = set(self.__dict__) - keys_to_skip
 
         # Iterate only over relevant keys
         for key in relevant_keys:
             option_key = key[1:] if key[0] == "_" else key
-            options[option_key] = getattr(self, key)
+            value = getattr(self, key)
+            if value is not None:
+                options[option_key] = value
 
         return options
 
