@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Protocol, Callable, TYPE_CHECKING
 
 from casadi import MX, Function

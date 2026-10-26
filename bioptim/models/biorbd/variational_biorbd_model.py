@@ -2,6 +2,8 @@
 Biorbd model for holonomic constraints and variational integrator.
 """
 
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from casadi import SX, MX, DM, vertcat, jacobian, transpose
