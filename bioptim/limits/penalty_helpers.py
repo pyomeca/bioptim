@@ -286,9 +286,11 @@ class PenaltyHelpers:
         if penalty.integrate:
             target0 = penalty.target[..., penalty_node_idx]
             target1 = penalty.target[..., penalty_node_idx + 1]
-            return np.vstack((target0, target1)).T
+            target = np.vstack((target0, target1)).T
+        else:
+            target = penalty.target[..., penalty_node_idx]
 
-        return penalty.target[..., penalty_node_idx]
+        return penalty.target_in_function_coordinates(target)
 
     @staticmethod
     def get_multinode_penalty_subnodes_starting_index(p: Int) -> IntList:
