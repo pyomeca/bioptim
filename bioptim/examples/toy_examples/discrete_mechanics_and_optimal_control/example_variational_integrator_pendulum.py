@@ -10,9 +10,12 @@ from bioptim import (
     InterpolationType,
     Objective,
     ObjectiveFcn,
+    OdeSolver,
+    ControlType,
     Solver,
     VariationalTorqueBiorbdModel,
     VariationalOptimalControlProgram,
+    QuadratureRule,
 )
 from bioptim.examples.utils import ExampleUtils
 import numpy as np
@@ -83,6 +86,11 @@ def prepare_ocp(
         q_init=x_init,
         objective_functions=objective_functions,
         use_sx=use_sx,
+        ode_solver=OdeSolver.VARIATIONAL(
+            discrete_approximation=QuadratureRule.TRAPEZOIDAL,
+            control_discrete_approximation=QuadratureRule.MIDPOINT,
+        ),
+        control_type=ControlType.CONSTANT_WITH_LAST_NODE,
     )
 
 
@@ -104,10 +112,10 @@ def main():
 
     # --- Show the results in a bioviz animation --- #
     sol.print_cost()  # /!\ Since the last controls are nan the costs are not accurate /!\
-    sol.animate()
+    sol.animate(viewer="pyorerun")
 
     # --- Show the graph results --- #
-    # The states are displayed piecewise constant, but actually they are not.
+    # The states only exist at the nodes, they are displayed as a line going through the nodes.
     sol.graphs()
 
     print(f"qdot_start :{sol.parameters['qdot_start'].squeeze()}")

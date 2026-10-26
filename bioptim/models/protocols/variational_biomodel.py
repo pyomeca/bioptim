@@ -101,11 +101,10 @@ class VariationalBioModel(HolonomicBioModel, Protocol):
         control_prev: CX,
         control_cur: CX,
         control_next: CX,
-        lambdas: CXOptional = None,
-        *,
         discrete_approximation: QuadratureRule,
         control_type: ControlType,
         control_discrete_approximation: QuadratureRule,
+        lambdas: CXOptional = None,
     ) -> CX:
         """
         Compute the discrete Euler-Lagrange equations of a biorbd model
@@ -126,14 +125,14 @@ class VariationalBioModel(HolonomicBioModel, Protocol):
             The generalized forces at the second node.
         control_next: MX | SX
             The generalized forces at the third node.
-        lambdas: MX | SX
-            The Lagrange multipliers.
         discrete_approximation: QuadratureRule
             The quadrature rule of the discrete Lagrangian.
         control_type: ControlType
             The type of the controls.
         control_discrete_approximation: QuadratureRule
             The quadrature rule of the discrete forcing.
+        lambdas: MX | SX
+            The Lagrange multipliers.
 
         Returns
         -------
@@ -154,11 +153,10 @@ class VariationalBioModel(HolonomicBioModel, Protocol):
         q1: CX,
         control0: CX,
         control1: CX,
-        lambdas0: CXOptional = None,
-        *,
         discrete_approximation: QuadratureRule,
         control_type: ControlType,
         control_discrete_approximation: QuadratureRule,
+        lambdas0: CXOptional = None,
     ):
         """
         Parameters
@@ -204,11 +202,10 @@ class VariationalBioModel(HolonomicBioModel, Protocol):
         q_dot_ultimate: CX,
         control_penultimate: CX,
         control_ultimate: CX,
-        lambdas_ultimate: CXOptional = None,
-        *,
         discrete_approximation: QuadratureRule,
         control_type: ControlType,
         control_discrete_approximation: QuadratureRule,
+        lambdas_ultimate: CXOptional = None,
     ):
         """
         Compute the initial states of the system from the initial position and velocity.
@@ -227,14 +224,14 @@ class VariationalBioModel(HolonomicBioModel, Protocol):
             The generalized forces at the penultimate node.
         control_ultimate: MX | SX
             The generalized forces at the ultimate node.
-        lambdas_ultimate: MX | SX
-            The Lagrange multipliers at the ultimate node.
         discrete_approximation: QuadratureRule
             The quadrature rule of the discrete Lagrangian.
         control_type: ControlType
             The type of the controls.
         control_discrete_approximation: QuadratureRule
             The quadrature rule of the discrete forcing.
+        lambdas_ultimate: MX | SX
+            The Lagrange multipliers at the ultimate node.
 
         Returns
         -------
