@@ -44,6 +44,15 @@ Public API is re-exported from `bioptim/__init__.py`; new public classes must be
   `extra_configuration_functions` (consumed by `AutoConfigure`) and `dynamics(...)`, which returns a
   `DynamicsEvaluation(dxdt=..., defects=...)`: `dxdt` for shooting solvers, `defects` for implicit transcriptions
   (`COLLOCATION`, `IRK`).
+- The `BioModel` protocol also describes the configuration space Q and its tangent space TQ:
+  `nb_q`/`name_q` (coordinates of q, length `nb_q`), `nb_qdot`/`name_qdot` (tangent coordinates, length `nb_qdot`; also
+  the labels of qddot and of tau), `normalize_q()` (projection onto Q, identity when Euclidean) and `reshape_qdot()`
+  ((q, qdot, parameters) -> dq/dt, size `nb_q`). Quaternion storage differs: Biorbd keeps (x, y, z) in place in the
+  segment block and all w at the end of q; Pinocchio stores (x, y, z, w) contiguously.
+- `StateDynamics` inherits `EuclideanConfigurationSpace` (`models/protocols/configuration_space.py`), which gives custom
+  models Euclidean defaults derived from `name_dofs`; backends come first in the MRO, so their own members win.
+  `nb_quaternions` and `normalize_state_quaternions` are deprecated in their docstrings (issue #1037); the OCP layer is
+  still being migrated to the new members.
 - Custom dynamics: subclass a backend and `StateDynamics`; see `examples/toy_examples/custom_model/`
   (`custom_package/my_model.py`, `main.py`).
 
