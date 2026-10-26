@@ -127,6 +127,7 @@ class Solution:
         real_time_to_optimize: FloatOptional = None,
         iterations: IntOptional = None,
         status: IntOptional = None,
+        solver_diagnostics: AnyDict | None = None,
     ):
         """
         Parameters
@@ -168,6 +169,7 @@ class Solution:
 
         # Solver options
         self.status, self.iterations = status, iterations
+        self.solver_diagnostics = solver_diagnostics
         self.lam_g, self.lam_p, self.lam_x, self.inf_pr, self.inf_du = lam_g, lam_p, lam_x, inf_pr, inf_du
         self.solver_time_to_optimize, self.real_time_to_optimize = solver_time_to_optimize, real_time_to_optimize
 
@@ -223,6 +225,7 @@ class Solution:
             real_time_to_optimize=sol["real_time_to_optimize"],
             iterations=sol["iter"],
             status=sol["status"],
+            solver_diagnostics=sol.get("solver_diagnostics"),
         )
 
     @classmethod
@@ -722,6 +725,8 @@ class Solution:
         new.solver_time_to_optimize = deepcopy(self.solver_time_to_optimize)
         new.real_time_to_optimize = deepcopy(self.real_time_to_optimize)
         new.iterations = deepcopy(self.iterations)
+        new.status = deepcopy(self.status)
+        new.solver_diagnostics = deepcopy(self.solver_diagnostics)
 
         new.phases_dt = deepcopy(self.phases_dt)
         new._stepwise_times = deepcopy(self._stepwise_times)
